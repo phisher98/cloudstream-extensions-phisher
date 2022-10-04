@@ -12,7 +12,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
     override var mainUrl = "https://tamilyogi.tube/" 
     override var name = "TamilYogi Provider"
     override val hasMainPage = true
-    override var lang = "hi"
+    override var lang = "ta"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -20,16 +20,10 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/most-favorites/page/" to "Most Viewed",
-        "$mainUrl/director/netflix/page/" to "Netflix",
-        "$mainUrl/director/amazon-prime/page/" to "Amazon Prime",
-        "$mainUrl/director/altbalaji/page/" to "Alt Balaji",
-        "$mainUrl/director/zee5/page/" to "Zee5",
-        "$mainUrl/director/voot-originals/page/" to "Voot Originals",
-        "$mainUrl/director/sonyliv-original/page/" to "Sonyliv Originals",
-        "$mainUrl/director/hotstar/page/" to "Hotstar",
-        "$mainUrl/director/viu-originals/page/" to "Viu Originals",
-        "$mainUrl/director/discovery/page/" to "Discovery"
+        "$mainUrl/category/tamilyogi-full-movie-online/" to "New Movies",
+        "$mainUrl/category/tamil-hd-movies/" to "HD Movies",
+        "$mainUrl/category/tamilyogi-dubbed-movies-online/" to "Dubbed Movies",
+        "$mainUrl/category/tamil-web-series/" to "TV Series"
     )
 
     override suspend fun getMainPage(
@@ -41,7 +35,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
         } else {
             app.get(request.data + page).document
         }
-        val home = document.select("div.ml-item").mapNotNull {
+        val home = document.select("div.cover").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
