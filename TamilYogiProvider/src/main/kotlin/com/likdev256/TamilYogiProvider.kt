@@ -34,11 +34,11 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
         println(request)
         print("Check")
         println(request.data.removeSuffix("page/"))
-        //val document = if (page == 1) {
-        //    app.get(request.data.removeSuffix("page/")).document
-        //} else {
-        //    app.get(request.data + page).document
-        //}
+        val document = if (page == 1) {
+            app.get(request.data.removeSuffix("page/")).document
+        } else {
+            app.get(request.data + page).document
+        }
         val home = document.select("div.cover").mapNotNull {
             it.toSearchResult()
         }
