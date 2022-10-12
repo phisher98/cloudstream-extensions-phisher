@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
+import java.util.*
 
 class TamilYogiProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://tamilyogi.tube"
@@ -53,14 +54,20 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
         val titleS = this.selectFirst("div.cover a")?.attr("title")?.toString()?.trim() ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleS)?.groups?.get(1)?.value.toString()
-        //Log.d("title", title)
+        Log.d("title", titleS)
         val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
         //Log.d("href", href)
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         //Log.d("posterUrl", posterUrl.toString())
+        val qualityRegex = Regex("(?i)((?:DVDRip)|(?:HD)|(?:HQ)|(?:HDRip))")
+        val qualityN = qualityRegex.find(titleS)?.value.toString()
+        //Log.d("QualityN", qualityN)
+        val quality = getQualityFromString(qualityN)
+        //Log.d("Quality", quality.toString())
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.quality = quality
         }
     }
 
@@ -89,10 +96,9 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
         val year = yearRegex.find(title)?.groups?.get(1)?.value
             ?.toIntOrNull()
         Log.d("year", year.toString())
-        val tvType = if (doc.selectFirst("div.les-content")
-                ?.select("a")?.size!! > 1 || doc.selectFirst("ul.idTabs li strong")?.text()
-                ?.contains(Regex("(?i)(EP\\s?[0-9]+)|(episode\\s?[0-9]+)")) == true
-        ) TvType.TvSeries else TvType.Movie
+        val checkTvSeriesRegex = Regex("(?i)(E\\s?[0-9]+)|([-]/?[0-9]+)")
+        val tvType = if (title.contains(checkTvSeriesRegex))
+            TvType.TvSeries else TvType.Movie
         //val description = document.selectFirst("p.f-desc")?.text()?.trim()
         //val trailer = fixUrlNull(document.select("iframe#iframe-trailer").attr("src"))
         //val rating = document.select("div.mvici-right > div.imdb_r span").text().toRatingInt()
