@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
-import java.util.*
 
 class TamilYogiProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://tamilyogi.tube"
@@ -36,25 +35,26 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
     ): HomePageResponse {
         //Log.d("request", request.toString())
         //Log.d("Check", request.data)
-        val document = app.get(request.data).document /* if (page == 1) {
-            app.get(request.data")).document
+        //Log.d("Page", page.toString())
+
+        val document = if (page == 1) {
+            app.get(request.data).document
         } else {
-            app.get(request.data + page).document
-        } */
+            app.get(request.data + "page/" + page).document
+        }
         //Log.d("CSS element", document.select("ul li").toString())
         val home = document.select("ul li").mapNotNull {
             it.toSearchResult()
         }
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)))
-        return newHomePageResponse(request.name, home)
+        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
+        //return newHomePageResponse(request.name, home)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
         val titleS = this.selectFirst("div.cover a")?.attr("title")?.toString()?.trim() ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleS)?.groups?.get(1)?.value.toString()
-        Log.d("title", titleS)
+        //Log.d("title", titleS)
         val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
         //Log.d("href", href)
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
@@ -64,16 +64,31 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
         //Log.d("QualityN", qualityN)
         val quality = getQualityFromString(qualityN)
         //Log.d("Quality", quality.toString())
+        val checkTvSeriesRegex = Regex("(?i)(E\\s?[0-9]+)|([-]/?[0-9]+)")
+        val isTV = title.contains(checkTvSeriesRegex)
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return if (isTV) {
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.posterUrl = posterUrl
+                this.quality = quality
+            }
+        } else {
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = posterUrl
+                this.quality = quality
+            }
+        }
+
+      /*  return if (isTV == true) {
+        newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
             this.quality = quality
-        }
+        } */
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
-        Log.d("document", document.toString())
+        //Log.d("document", document.toString())
 
         return document.select("ul li").mapNotNull {
             it.toSearchResult()
