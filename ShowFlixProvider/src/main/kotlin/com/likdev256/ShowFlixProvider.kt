@@ -52,7 +52,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             //app.get(request.data + "page/" + page).document
         //}
 
-        val reqMain = mapOf(
+        val data = mapOf(
             "_ApplicationId" to "SHOWFLIXAPPID",
             "_ClientVersion" to "js3.4.1",
             "_InstallationId" to "2573d2b7-ef8f-48f0-9e91-8e5c2beb220d",
@@ -177,10 +177,10 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val MovieQuery =
                 """$mainUrl/graphql?variables={"format":"anime"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"21ac672633498a3698e8f6a93ce6c2b3722b29a216dcca93363bf012c360cd54"}}"""
             val getMovies = app.get(MovieQuery).text
-            val jsonran = parseJson<MovieResults>(ranlink)
+            val jsonran = parseJson<MovieResults>(getMovies)
             val ranhome = jsonran.data?.queryRandomRecommendation?.map {
-                newAnimeSearchResponse(it.name!!, "$mainUrl/anime/${it.Id}", fix = false) {
-                    this.posterUrl = it.thumbnail
+                newMovieSearchResponse(it.name!!, "$mainUrl/anime/${it.objectId}", fix = false) {
+                    this.posterUrl = it.poster
                     this.otherName = it.nativeName
                 }
             }

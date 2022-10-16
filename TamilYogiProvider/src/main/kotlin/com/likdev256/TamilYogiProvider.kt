@@ -97,18 +97,19 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
-        Log.d("Doc", doc.toString())
-        val titleL = doc.selectFirst("div.content h1 a")?.attr("title")?.toString()?.trim() ?: return null
+        //Log.d("Doc", doc.toString())
+        val titleL = doc.selectFirst("#content h1 a")?.attr("title")?.toString()?.trim() ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
-        val title = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
+        val rmGibRegex = Regex("(Permanent Link to )")
+        val title = rmGibRegex.replace(titleRegex.find(titleL)?.groups?.get(1)?.value.toString(), "")
         Log.d("title", title)
         //val titleRegex = Regex()
         //val title =
-        val poster = fixUrlNull(doc.selectFirst("img")?.attr("src"))
+        val poster = fixUrlNull(doc.selectFirst("meta[content\$=\".jpg\"]")?.attr("content"))
         Log.d("poster", poster.toString())
         //val tags = document.select("div.mvici-left p:nth-child(1) a").map { it.text() }
-        val yearRegex = Regex("\"(?<=\\()[\\d\\(\\]]+(?!=\\))\"")
-        val year = yearRegex.find(title)?.groups?.get(1)?.value
+        val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
+        val year = yearRegex.find(title)?.value
             ?.toIntOrNull()
         Log.d("year", year.toString())
         val checkTvSeriesRegex = Regex("(?i)(E\\s?[0-9]+)|([-]/?[0-9]+)")
@@ -122,7 +123,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
             it.toSearchResult()
         }
 
-        return if (tvType == TvType.TvSeries) {
+       /* return if (tvType == TvType.TvSeries) {
             val episodes = if (doc.selectFirst("div.les-title strong")?.text().toString()
                     .contains(Regex("(?i)EP\\s?[0-9]+|Episode\\s?[0-9]+"))
             ) {
@@ -152,8 +153,8 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
                 this.recommendations = recommendations
                 //addTrailer(trailer)
             }
-        } else {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
+        } else { */
+        return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.year = year
                 //this.plot = description
@@ -163,7 +164,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
                 this.recommendations = recommendations
                 //addTrailer(trailer)
             }
-        }
+       // }
     }
 
     override suspend fun loadLinks(
