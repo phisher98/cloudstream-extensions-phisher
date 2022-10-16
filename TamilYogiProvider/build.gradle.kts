@@ -5,8 +5,9 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Lorem Ipsum"
-    authors = listOf("Cloudburst")
+    description = "Tamil Only Provider with frequent updates"
+    language = "ta"
+    authors = listOf("LikDev-256")
 
     /**
     * Status int as the following:
@@ -20,5 +21,8 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("Others")
+    tvTypes = listOf(
+        "TvSeries",
+        "Movie",
+    )
 }
