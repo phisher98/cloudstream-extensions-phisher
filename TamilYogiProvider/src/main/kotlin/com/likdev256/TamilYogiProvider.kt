@@ -186,7 +186,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
                         "HD",
                         links[0],
                         "$mainUrl/",
-                        getQualityFromName("720p"),
+                        Qualities.P720.value,
                         false
                     )
                 )
@@ -196,7 +196,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
                         "SD",
                         links[1],
                         "$mainUrl/",
-                        getQualityFromName("480p"),
+                        Qualities.P480.value,
                         false
                     )
                 )
@@ -206,7 +206,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
                         "Low",
                         links[2],
                         "$mainUrl/",
-                        getQualityFromName("360p"),
+                        Qualities.P360.value,
                         false
                     )
                 )
