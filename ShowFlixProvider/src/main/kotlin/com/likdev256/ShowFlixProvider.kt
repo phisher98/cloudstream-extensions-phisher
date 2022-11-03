@@ -237,7 +237,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 }
             }
         val both = Movies + TVSeries
-        return both.map { it to -FuzzyRatio.partialRatio(it.name, query) }.sortedBy { it.second }.map{it.first}
+        return both//.map { it to -FuzzySearch.partialRatio(it.name, query) }.sortedBy { it.second }.map{it.first}
     }
 
     override suspend fun load(url: String): LoadResponse? {
