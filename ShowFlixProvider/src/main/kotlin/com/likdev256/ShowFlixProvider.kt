@@ -237,7 +237,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 }
             }
         val both = Movies + TVSeries
-        return both.sortedBy{ -FuzzySearch.partialRatio(it.name, query) }
+        return both//.sortedBy{ -FuzzySearch.partialRatio(it.name, query) }
+}
 
     override suspend fun load(url: String): LoadResponse? {
         val Regexurl = Regex("(https:\\/\\/showflix\\.in/)")
