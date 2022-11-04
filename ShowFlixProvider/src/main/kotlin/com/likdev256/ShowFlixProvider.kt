@@ -18,6 +18,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import kotlin.math.roundToInt
+import me.xdrop.fuzzywuzzy.FuzzySearch
 
 class ShowFlixProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://showflix.in"
