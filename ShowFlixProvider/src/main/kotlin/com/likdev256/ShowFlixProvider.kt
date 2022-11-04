@@ -223,6 +223,9 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
         val MovieResults = app.post(MovieapiUrl, requestBody = MovieSearchreq, referer = "https://showflix.in/").parsed<MovieAll>().results   //Log.d("JSON", res.toString())
 
+        val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/")
+        Log.D("check", check)
+
         val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/").parsed<TVAll>().results
 
         val Movies = MovieResults.map {
@@ -237,7 +240,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     this.quality = SearchQuality.HD
                 }
             }
-        val both = Movies //Movies + TVSeries
+        val both = TVSeries //Movies + TVSeries
         return both //.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
 }
 
