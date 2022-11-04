@@ -237,8 +237,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     this.quality = SearchQuality.HD
                 }
             }
-        val both = Movies + TVSeries
-        return both.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
+        val both = TVSeries //Movies + TVSeries
+        return both //.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
 }
 
     override suspend fun load(url: String): LoadResponse? {
