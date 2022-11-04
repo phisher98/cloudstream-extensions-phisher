@@ -217,7 +217,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         val TVSearchreq =
-            """{"where":{"seriesName":{"${"$"}regex":"$query","${"$"}options":"i"}},"order":"-updatedAt","_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstMovieAllationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"seriesName":{"${"$"}regex":"$query","${"$"}options":"i"}},"order":"-updatedAt","_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
 
