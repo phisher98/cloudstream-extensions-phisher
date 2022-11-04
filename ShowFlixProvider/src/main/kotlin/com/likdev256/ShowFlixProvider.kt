@@ -109,7 +109,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     private suspend fun queryTVApi(skip: Int, query: String): NiceResponse {
         val req =
-            """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"limit":50,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"limit":10,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         //Log.d("JSON", res.toString())
@@ -177,7 +177,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         ).parsed<MovieAll>().results
 
         val TVlist = queryTVApi(
-            page * 50,
+            page * 10,
             query
         ).parsed<TVAll>().results
         if (request.name.contains("Movies")) {
@@ -237,8 +237,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 }
             }
         val both = Movies + TVSeries
-        return both//.map { it to -FuzzySearch.partialRatio(it.name, query) }.sortedBy { it.second }.map{it.first}
-    }
+        return both.sortedBy{ -FuzzySearch.partialRatio(it.name, query) }
 
     override suspend fun load(url: String): LoadResponse? {
         val Regexurl = Regex("(https:\\/\\/showflix\\.in/)")
