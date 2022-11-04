@@ -240,7 +240,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     this.quality = SearchQuality.HD
                 }
             }
-        val both = TVSeries //Movies + TVSeries
+        val both = Movies + TVSeries
         return both //.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
 }
 
