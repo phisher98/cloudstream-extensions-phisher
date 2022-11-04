@@ -224,7 +224,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         val MovieResults = app.post(MovieapiUrl, requestBody = MovieSearchreq, referer = "https://showflix.in/").parsed<MovieAll>().results   //Log.d("JSON", res.toString())
 
         val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/")
-        Log.d("check", check)
+        Log.d("check", check.toString())
 
         val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/").parsed<TVAll>().results
 
