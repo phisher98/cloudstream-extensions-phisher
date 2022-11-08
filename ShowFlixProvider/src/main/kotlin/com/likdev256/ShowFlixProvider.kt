@@ -32,19 +32,19 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     )
 
     data class Seasons(
-        var Seasons: Map<String, List<String>> = mapOf()
+        var Seasons: Map<String, List<String?>> = mapOf()
     )
 
     data class TVResults(
         @JsonProperty("objectId") var objectId: String,
-        @JsonProperty("Seasons") var Seasons: Seasons? = Seasons(),
+        @JsonProperty("Seasons") var Seasons: Seasons = Seasons(),
         @JsonProperty("seriesName") var seriesName: String,
-        @JsonProperty("seriesRating") var seriesRating: String?,
+        @JsonProperty("seriesRating") var seriesRating: String,
         @JsonProperty("seriesStoryline") var seriesStoryline: String?,
         @JsonProperty("seriesPoster") var seriesPoster: String?,
         @JsonProperty("seriesBackdrop") var seriesBackdrop: String?,
         @JsonProperty("seriesCategory") var seriesCategory: String?,
-        @JsonProperty("seriesTotalSeason") var seriesTotalSeason: String?,
+        @JsonProperty("seriesTotalSeason") var seriesTotalSeason: String,
         @JsonProperty("seriesLanguage") var seriesLanguage: String?,
         @JsonProperty("createdAt") var createdAt: String?,
         @JsonProperty("updatedAt") var updatedAt: String?,
@@ -186,7 +186,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 Movielist.map {
                     newMovieSearchResponse(
                         it.movieName,
-                        it.objectId,
+                        "$mainUrl${"/"}movie${"/"}${it.objectId}",
                         TvType.Movie
                     ) {
                         this.posterUrl = it.poster
@@ -199,7 +199,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 TVlist.map {
                     newTvSeriesSearchResponse(
                         it.seriesName,
-                        it.objectId,
+                        "$mainUrl${"/"}series${"/"}${it.objectId}",
                         TvType.TvSeries
                     ) {
                         this.posterUrl = it.seriesPoster
@@ -229,66 +229,135 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/").parsed<TVAll>().results
 
         val Movies = MovieResults.map {
-                newMovieSearchResponse(it.movieName, it.objectId, TvType.Movie) {
+                newMovieSearchResponse(it.movieName, "$mainUrl${"/"}movie${"/"}${it.objectId}", TvType.Movie) {
                     this.posterUrl = it.poster
                     this.quality = SearchQuality.HD
                 }
             }
         val TVSeries = TVResults.map {
-                newTvSeriesSearchResponse(it.seriesName, it.objectId, TvType.TvSeries) {
+                newTvSeriesSearchResponse(it.seriesName, "$mainUrl${"/"}series${"/"}${it.objectId}", TvType.TvSeries) {
                     this.posterUrl = it.seriesPoster
                     this.quality = SearchQuality.HD
                 }
             }
-        val both = Movies + TVSeries
-        return both //.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
+        val merge = Movies + TVSeries
+        return merge.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
 }
 
     override suspend fun load(url: String): LoadResponse? {
-        val Regexurl = Regex("(https:\\/\\/showflix\\.in/)")
-        val objID = Regexurl.replace(url, "")
-        val MovieLoadreq =
-            """{"where":{"objectId":"$objID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
-                RequestBodyTypes.JSON.toMediaTypeOrNull()
-            )
-        //Log.d("rq", objID.toString())
-        val resp =
-            app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "https://showflix.in/")
-                .toString()
-        val Regexlist1 = Regex("(\\{\"results\":\\[)")
-        val Regexlist2 = Regex("(?<=\\})(?:(.)*)*")
-        val clean1 = Regexlist1.replace(resp, "")
-        //Log.d("res", resp)
-        //Log.d("test1", clean1)
-        val clean2 = Regexlist2.replace(clean1, "")
-        //Log.d("test", clean2)
-        val it = parseJson<MovieResults>(clean2)
-        val title = it.movieName
-        val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
-        val year = yearRegex.find(title)?.value
-            ?.toIntOrNull()
-        val poster = it.poster
-        val backdrop = it.backdrop
-        val plot = it.storyline
-        val rating = it.rating.toDouble().roundToInt() * 1000
-        //val recommendations = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "https://showflix.in/").parsed<MovieAll>().results
-        return newMovieLoadResponse(
-            title,
-            "$mainUrl${"/"}movie${"/"}${it.objectId}",
-            TvType.Movie,
-            "$mainUrl${"/"}movie${"/"}${it.objectId}"
-        ) {
-            this.posterUrl = poster
-            this.year = year
-            this.plot = plot
-            //this.tags = tags
-            this.rating = rating
-            this.backgroundPosterUrl = backdrop
-            //addActors(actors)
-            //this.recommendations = recommendations
-            //addTrailer(trailer)
+        if (url.contains("movie")) {
+            val MovieobjID = url.removePrefix("https://showflix.in/movie/")
+            val MovieLoadreq =
+                """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+                    RequestBodyTypes.JSON.toMediaTypeOrNull()
+                )
+            val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "https://showflix.in/")
+                .toString().removePrefix("""{"results":[""").removeSuffix("]}")
+            //Log.d("res", Movieresp)
+            val Movieit = parseJson<MovieResults>(Movieresp)
+            val title = Movieit.movieName
+            val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
+            val year = yearRegex.find(title)?.value
+                ?.toIntOrNull()
+            val poster = Movieit.poster
+            val backdrop = Movieit.backdrop
+            val plot = Movieit.storyline
+            val rating = Movieit.rating.toDouble().roundToInt() * 1000
+
+            return newMovieLoadResponse(
+                title,
+                "$mainUrl${"/"}movie${"/"}${Movieit.objectId}",
+                TvType.Movie,
+                "$mainUrl${"/"}movie${"/"}${Movieit.objectId}"
+            ) {
+                this.posterUrl = poster
+                this.year = year
+                this.plot = plot
+                //this.tags = tags
+                this.rating = rating
+                this.backgroundPosterUrl = backdrop
+                //addActors(actors)
+                //this.recommendations = recommendations
+                //addTrailer(trailer)
+            }
+        }
+        else {
+            val TVobjID = url.removePrefix("https://showflix.in/series/")//TVRegexurl.replace(url, "")
+            val TVLoadreq =
+                """{"where":{"objectId":"$TVobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+                    RequestBodyTypes.JSON.toMediaTypeOrNull()
+                )
+            val TVresp = app.post(TVapiUrl, requestBody = TVLoadreq, referer = "https://showflix.in/")
+                .toString().removePrefix("""{"results":[""").removeSuffix("]}")
+            //val TVclean1 = Regexlist1.replace(TVresp, "")
+            //Log.d("res", TVresp)
+            //Log.d("test1", TVclean1)
+            //val TVclean2 = TVclean1.removeSuffix("]}")//Regexlist2.replace(TVclean1, "")
+            //Log.d("test", TVclean2)
+            val TVit = parseJson<TVResults>(TVresp)
+            val title = TVit.seriesName
+            val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
+            val year = yearRegex.find(title)?.value
+                ?.toIntOrNull()
+            val poster = TVit.seriesPoster
+            val backdrop = TVit.seriesBackdrop
+            val plot = TVit.seriesStoryline
+            val rating = TVit.seriesRating.toDouble().roundToInt() * 1000
+            val seasonCount = TVit.seriesTotalSeason.toInt()
+            //val recommendations = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "https://showflix.in/").parsed<MovieAll>().results
+
+            /*{
+                "0": {
+                "objectId": "6HTSAD5BWu",
+                "Seasons": {
+                "Season 1": [
+                null,
+                "https://embedsb.com/play/61ivwwqc8aci.html",
+                "https://embedsb.com/play/ol14scunl1lk.html",
+                "https://embedsb.com/play/yt44a3v3brej.html",
+                "https://embedsb.com/play/m88ogvsfmsd0.html",
+                "https://embedsb.com/play/l7eifocs58yt.html",
+                "https://embedsb.com/play/9ualmpfnviqy.html"
+                ]
+            },
+                "seriesName": "Bloody Brothers",
+                "seriesRating": "8",
+                "seriesStoryline": "Driving home late one night, two brothers, Jaggi and Daljeet run over an old man. They put the body back in his house, but when people suspect, the brothers' lives fall apart. They realise they can trust no one. Not even each other.",
+                "seriesPoster": "https://www.themoviedb.org/t/p/original/7l4NR6lipccf43Wtihi9xfMn60a.jpg",
+                "seriesBackdrop": "https://www.themoviedb.org/t/p/original/3KIQGLMKetNJ9xAXx0mrcItLIxS.jpg",
+                "seriesCategory": "Tamil Telugu Hindi",
+                "seriesTotalSeason": "1",
+                "seriesLanguage": "hi",
+                "createdAt": "2022-05-18T13:11:17.073Z",
+                "updatedAt": "2022-05-18T13:11:17.073Z"
+            }
+            }*/
+
+            val episodes = mutableListOf<Episode>()
+            TVit.Seasons.Seasons.forEach {
+                episodes.add(
+                    Episode(
+                        it.value.toString()
+                    ) //Map<String, List<String>> = mapOf()
+                )
+            }
+
+            return newTvSeriesLoadResponse(
+                title,
+                "$mainUrl${"/"}series${"/"}${TVit.objectId}",
+                TvType.TvSeries,
+                episodes
+            ) {
+                this.posterUrl = poster
+                this.year = year
+                this.plot = plot
+                //this.tags = tags
+                this.rating = rating
+                this.backgroundPosterUrl = backdrop
+                //addActors(actors)
+                //this.recommendations = recommendations
+                //addTrailer(trailer)
+            }
         }
     }
-
-
 }
