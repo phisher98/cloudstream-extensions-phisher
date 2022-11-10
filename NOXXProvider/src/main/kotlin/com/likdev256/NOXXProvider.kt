@@ -29,22 +29,30 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     )
 
     private suspend fun queryTVApi(count: Int, query: String): NiceResponse {
-        val req = "no=$count&gpar=&qpar=&spar=$query".toRequestBody()
-        Log.d("req",req.toString())
-        return app.get(
+        //val req = "no=$count&gpar=&qpar=&spar=$query".toRequestBody()
+        //Log.d("req",req.toString())
+        return app.post(
             "$mainUrl/fetch.php",
+            data = mapOf(
+                "no" to "$count",
+                "&gpar" to "",
+                "&qpar" to "",
+                "&spar" to query
+            ),
             referer = "$mainUrl/"
         )
     }
 
     private suspend fun queryTVsearchApi(query: String): NiceResponse {
-        val req =
+        /*val req =
             "searchVal=$query".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
-            )
+            )*/
         return app.post(
             "$mainUrl/livesearch.php",
-            requestBody = req,
+            data = mapOf(
+                "searchVal" to query
+            ),
             referer = "$mainUrl/"
         )
     }
@@ -80,7 +88,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("div > span")?.toString()?.trim() ?: return null
+        val title = this.selectFirst("div > div > span")?.text()?.toString()?.trim() ?: return null
         //Log.d("title", title)
         val href = fixUrl(this.attr("href").toString())
         //Log.d("href", href)

@@ -5,7 +5,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Tamil Provider"
+    description = "Tamil Movie Provider"
     language = "ta"
     authors = listOf("LikDev-256")
 
@@ -22,6 +22,6 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
-        "TvSeries",
+        "Movie",
     )
 }
