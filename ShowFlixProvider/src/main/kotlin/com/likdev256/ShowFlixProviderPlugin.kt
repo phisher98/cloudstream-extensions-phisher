@@ -8,6 +8,8 @@ import android.content.Context
 class ShowFlixProviderPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
+        registerExtractorAPI(Sbcloud())
+        registerExtractorAPI(StreamSB6())
         registerMainAPI(ShowFlixProvider())
     }
 }

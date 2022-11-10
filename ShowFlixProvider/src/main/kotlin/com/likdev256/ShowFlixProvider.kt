@@ -17,6 +17,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.extractors.StreamSB
 import kotlin.math.roundToInt
 import me.xdrop.fuzzywuzzy.FuzzySearch
 
@@ -63,7 +65,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("poster") var poster: String?,
         @JsonProperty("backdrop") var backdrop: String?,
         @JsonProperty("category") var category: String?,
-        @JsonProperty("streamlink") var streamlink: String?,
+        @JsonProperty("streamlink") var streamlink: String,
         @JsonProperty("language") var language: String?,
         @JsonProperty("createdAt") var createdAt: String?,
         @JsonProperty("updatedAt") var updatedAt: String?,
@@ -104,7 +106,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         return app.post(
             MovieapiUrl,
             requestBody = req,
-            referer = "https://showflix.in/"
+            referer = "$mainUrl/"
         )
     }
 
@@ -117,7 +119,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         return app.post(
             TVapiUrl,
             requestBody = req,
-            referer = "https://showflix.in/"
+            referer = "$mainUrl/"
         )
     }
 
@@ -167,8 +169,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             """{"where":{},"limit":0,"count":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
-        val fullMovies = app.post(MovieapiUrl, requestBody = Moviereq, referer = "https://showflix.in/").parsed<fullCount>().count
-        val fullTV = app.post(TVapiUrl, requestBody = TVreq, referer = "https://showflix.in/").parsed<fullCount>().count*/
+        val fullMovies = app.post(MovieapiUrl, requestBody = Moviereq, referer = "$mainUrl/").parsed<fullCount>().count
+        val fullTV = app.post(TVapiUrl, requestBody = TVreq, referer = "$mainUrl/").parsed<fullCount>().count*/
         val elements = ArrayList<HomePageList>()
         //val home = ArrayList<SearchResponse>()
         val query = request.data.format(page)
@@ -221,28 +223,39 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
 
-        val MovieResults = app.post(MovieapiUrl, requestBody = MovieSearchreq, referer = "https://showflix.in/").parsed<MovieAll>().results   //Log.d("JSON", res.toString())
+        val MovieResults =
+            app.post(MovieapiUrl, requestBody = MovieSearchreq, referer = "$mainUrl/")
+                .parsed<MovieAll>().results   //Log.d("JSON", res.toString())
 
-        val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/")
+        val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
         Log.d("check", check.toString())
 
-        val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "https://showflix.in/").parsed<TVAll>().results
+        val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
+            .parsed<TVAll>().results
 
         val Movies = MovieResults.map {
-                newMovieSearchResponse(it.movieName, "$mainUrl${"/"}movie${"/"}${it.objectId}", TvType.Movie) {
-                    this.posterUrl = it.poster
-                    this.quality = SearchQuality.HD
-                }
+            newMovieSearchResponse(
+                it.movieName,
+                "$mainUrl${"/"}movie${"/"}${it.objectId}",
+                TvType.Movie
+            ) {
+                this.posterUrl = it.poster
+                this.quality = SearchQuality.HD
             }
+        }
         val TVSeries = TVResults.map {
-                newTvSeriesSearchResponse(it.seriesName, "$mainUrl${"/"}series${"/"}${it.objectId}", TvType.TvSeries) {
-                    this.posterUrl = it.seriesPoster
-                    this.quality = SearchQuality.HD
-                }
+            newTvSeriesSearchResponse(
+                it.seriesName,
+                "$mainUrl${"/"}series${"/"}${it.objectId}",
+                TvType.TvSeries
+            ) {
+                this.posterUrl = it.seriesPoster
+                this.quality = SearchQuality.HD
             }
+        }
         val merge = Movies + TVSeries
         return merge.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
-}
+    }
 
     override suspend fun load(url: String): LoadResponse? {
         if (url.contains("movie")) {
@@ -251,7 +264,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                     RequestBodyTypes.JSON.toMediaTypeOrNull()
                 )
-            val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "https://showflix.in/")
+            val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/")
                 .toString().removePrefix("""{"results":[""").removeSuffix("]}")
             //Log.d("res", Movieresp)
             val Movieit = parseJson<MovieResults>(Movieresp)
@@ -280,14 +293,14 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 //this.recommendations = recommendations
                 //addTrailer(trailer)
             }
-        }
-        else {
-            val TVobjID = url.removePrefix("https://showflix.in/series/")//TVRegexurl.replace(url, "")
+        } else {
+            val TVobjID =
+                url.removePrefix("https://showflix.in/series/")//TVRegexurl.replace(url, "")
             val TVLoadreq =
                 """{"where":{"objectId":"$TVobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                     RequestBodyTypes.JSON.toMediaTypeOrNull()
                 )
-            val TVresp = app.post(TVapiUrl, requestBody = TVLoadreq, referer = "https://showflix.in/")
+            val TVresp = app.post(TVapiUrl, requestBody = TVLoadreq, referer = "$mainUrl/")
                 .toString().removePrefix("""{"results":[""").removeSuffix("]}")
             //val TVclean1 = Regexlist1.replace(TVresp, "")
             //Log.d("res", TVresp)
@@ -304,7 +317,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val plot = TVit.seriesStoryline
             val rating = TVit.seriesRating.toDouble().roundToInt() * 1000
             val seasonCount = TVit.seriesTotalSeason.toInt()
-            //val recommendations = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "https://showflix.in/").parsed<MovieAll>().results
+            //val recommendations = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/").parsed<MovieAll>().results
 
             /*{
                 "0": {
@@ -360,4 +373,33 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             }
         }
     }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        //Log.d("data", data)
+        val MovieobjID = data.removePrefix("https://showflix.in/movie/")
+        val MovieLoadreq =
+            """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+                RequestBodyTypes.JSON.toMediaTypeOrNull()
+            )
+        val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/")
+            .toString().removePrefix("""{"results":[""").removeSuffix("]}")
+        //Log.d("res", Movieresp)
+        val Movieit = parseJson<MovieResults>(Movieresp)
+        val link = Movieit.streamlink
+
+        return loadExtractor(link, referer = "$mainUrl/", subtitleCallback, callback)
+    }
+}
+
+class Sbcloud : StreamSB() {
+    override var mainUrl = "https://sbcloud1.com"
+}
+
+class StreamSB6 : StreamSB() {
+    override var mainUrl = "https://embedsb.com"
 }

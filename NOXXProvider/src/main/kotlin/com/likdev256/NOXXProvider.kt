@@ -1,6 +1,7 @@
 package com.likdev256
 
 //import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.*
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -8,89 +9,99 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
+import com.fasterxml.jackson.module.kotlin.*
+import com.lagradost.nicehttp.NiceResponse
+import com.lagradost.nicehttp.RequestBodyTypes
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import com.fasterxml.jackson.annotation.*
+import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import okhttp3.RequestBody
 
 class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://noxx.to/"
+    override var mainUrl = "https://noxx.to"
     override var name = "NOXX"
     override val hasMainPage = true
     override var lang = "en"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
-        TvType.Movie,
         TvType.TvSeries
     )
 
-    //private const val TAG = "TamilYogi"
+    private suspend fun queryTVApi(count: Int, query: String): NiceResponse {
+        val req = "no=$count&gpar=&qpar=&spar=$query".toRequestBody()
+        Log.d("req",req.toString())
+        return app.get(
+            "$mainUrl/fetch.php",
+            referer = "$mainUrl/"
+        )
+    }
+
+    private suspend fun queryTVsearchApi(query: String): NiceResponse {
+        val req =
+            "searchVal=$query".toRequestBody(
+                RequestBodyTypes.JSON.toMediaTypeOrNull()
+            )
+        return app.post(
+            "$mainUrl/livesearch.php",
+            requestBody = req,
+            referer = "$mainUrl/"
+        )
+    }
+
+    private val trendingShows = "Trending Shows"
+    private val recentShows = "Latest Shows"
+    private val topratedShows = "TopRated Shows"
+    private val oldestShows = "Oldest Shows"
 
     override val mainPage = mainPageOf(
-        "$mainUrl/category/tamilyogi-full-movie-online/" to "New Movies",
-        "$mainUrl/category/tamil-hd-movies/" to "HD Movies",
-        "$mainUrl/category/tamilyogi-dubbed-movies-online/" to "Dubbed Movies",
-        "$mainUrl/category/tamil-web-series/" to "TV Series"
+        //TV Shows
+        "added_date+desc" to recentShows,
+        "series_rating+desc" to topratedShows,
+        "series_year+asc" to oldestShows,
+        "series_title+asc" to trendingShows
     )
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        //Log.d("request", request.toString())
-        //Log.d("Check", request.data)
-        //Log.d("Page", page.toString())
+        val query = request.data.format(page)
 
-        val document = if (page == 1) {
-            app.get(request.data).document
-        } else {
-            app.get(request.data + "page/" + page).document
-        }
-        //Log.d("CSS element", document.select("ul li").toString())
-        val home = document.select("ul li").mapNotNull {
+        val TVlist = queryTVApi(
+            page * 48,
+            query
+        ).document
+        Log.d("TV",TVlist.toString())
+        val home = TVlist.select("a.block").mapNotNull {
             it.toSearchResult()
         }
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
-        //return newHomePageResponse(request.name, home)
+        return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val titleS = this.selectFirst("div.cover a")?.attr("title")?.toString()?.trim() ?: return null
-        val titleRegex = Regex("(^.*\\)\\d*)")
-        val title = titleRegex.find(titleS)?.groups?.get(1)?.value.toString()
-        //Log.d("title", titleS)
-        val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
+        val title = this.selectFirst("div > span")?.toString()?.trim() ?: return null
+        //Log.d("title", title)
+        val href = fixUrl(this.attr("href").toString())
         //Log.d("href", href)
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("data-src"))
         //Log.d("posterUrl", posterUrl.toString())
-        val qualityRegex = Regex("(?i)((DVDRip)|(HD)|(HQ)|(HDRip))")
-        val qualityN = qualityRegex.find(titleS)?.value.toString()
-        //Log.d("QualityN", qualityN)
-        val quality = getQualityFromString(qualityN)
+        val quality = SearchQuality.HD
         //Log.d("Quality", quality.toString())
-        val checkTvSeriesRegex = Regex("(?i)(E\\s?[0-9]+)|([-]/?[0-9]+)")
-        val isTV = title.contains(checkTvSeriesRegex)
 
-        return if (isTV) {
-            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-                this.posterUrl = posterUrl
-                this.quality = quality
-            }
-        } else {
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
-                this.quality = quality
-            }
-        }
-
-      /*  return if (isTV == true) {
-        newMovieSearchResponse(title, href, TvType.Movie) {
+        return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
             this.posterUrl = posterUrl
             this.quality = quality
-        } */
+        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val TVlist = queryTVsearchApi(
+            query
+        ).document
         //Log.d("document", document.toString())
 
-        return document.select("ul li").mapNotNull {
+        return TVlist.select("a.block").mapNotNull {
             it.toSearchResult()
         }
     }
@@ -98,28 +109,18 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
         //Log.d("Doc", doc.toString())
-        val titleL = doc.selectFirst("#content h1 a")?.attr("title")?.toString()?.trim() ?: return null
-        val titleRegex = Regex("(^.*\\)\\d*)")
-        val rmGibRegex = Regex("(Permanent Link to )")
-        val title = rmGibRegex.replace(titleRegex.find(titleL)?.groups?.get(1)?.value.toString(), "")
+        val title = doc.selectFirst("h1.px-5")?.toString()?.trim() ?: return null
         //Log.d("title", title)
-        //val titleRegex = Regex()
-        //val title =
-        val poster = fixUrlNull(doc.selectFirst("meta[content\$=\".jpg\"]")?.attr("content"))
+        val poster = fixUrlNull(doc.selectFirst("img.relative")?.attr("src"))
         //Log.d("poster", poster.toString())
         //val tags = document.select("div.mvici-left p:nth-child(1) a").map { it.text() }
-        val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
-        val year = yearRegex.find(title)?.value
-            ?.toIntOrNull()
+        val year = doc.selectFirst("h1.px-5.text-gray-400").toString().toRatingInt()
         //Log.d("year", year.toString())
-        val checkTvSeriesRegex = Regex("(?i)(E\\s?[0-9]+)|([-]/?[0-9]+)")
-        val tvType = if (title.contains(checkTvSeriesRegex))
-            TvType.TvSeries else TvType.Movie
-        //val description = document.selectFirst("p.f-desc")?.text()?.trim()
+        val description = doc.selectFirst("p.leading-tight")?.text()?.trim()
         //val trailer = fixUrlNull(document.select("iframe#iframe-trailer").attr("src"))
-        //val rating = document.select("div.mvici-right > div.imdb_r span").text().toRatingInt()
-        //val actors = document.select("div.mvici-left p:nth-child(3) a").map { it.text() }
-        val recommendations = doc.select("ul li").mapNotNull {
+        val rating = doc.select("span.text-xl").text().toRatingInt()
+        //val actors = doc.select("span.text-blue-300").map { it.text() }
+        val recommendations = doc.select("a.block").mapNotNull {
             it.toSearchResult()
         }
 
@@ -157,10 +158,10 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.year = year
-                //this.plot = description
+                this.plot = description
                 //this.tags = tags
-                //this.rating = rating
-                //addActors(actors)
+                this.rating = rating
+                //this.actors = actors
                 this.recommendations = recommendations
                 //addTrailer(trailer)
             }
@@ -173,44 +174,14 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val linkRegex = Regex("(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/\\/=]*mp4))")
-        val source = app.get(data).document.select("div.entry iframe").attr("src")
-        val script = app.get(source, referer = "$mainUrl/").document.select("body > script").toString()
-        //val links = linkRegex.find(script)?.groups?.get(1)?.value.toString()
-        val links = linkRegex.findAll(script).map{it.value.trim()}.toList()
+        val links = app.get(data).document.select("#mainiframe").attr("src").toString()
         //Log.d("links", links.toString())
-            safeApiCall {
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "HD",
-                        links[0],
-                        "$mainUrl/",
-                        Qualities.P720.value,
-                        false
-                    )
-                )
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "SD",
-                        links[1],
-                        "$mainUrl/",
-                        Qualities.P480.value,
-                        false
-                    )
-                )
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "Low",
-                        links[2],
-                        "$mainUrl/",
-                        Qualities.P360.value,
-                        false
-                    )
-                )
-            }
+        loadExtractor(links,subtitleCallback, callback)
+
         return true
     }
+}
+
+class DoodPmExtractor : DoodLaExtractor() {
+    override var mainUrl = "https://dood.pm"
 }
