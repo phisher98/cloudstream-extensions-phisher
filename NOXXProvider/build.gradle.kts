@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 1
+version = 3
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "HD Tv Shows"
+    description = "HD TV Shows"
     language = "en"
     authors = listOf("LikDev-256")
 
