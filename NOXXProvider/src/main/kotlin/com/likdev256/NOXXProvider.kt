@@ -15,6 +15,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.fasterxml.jackson.annotation.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import okhttp3.RequestBody
 
@@ -35,9 +36,9 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             "$mainUrl/fetch.php",
             data = mapOf(
                 "no" to "$count",
-                "&gpar" to "",
+                "&gpar" to "$query",
                 "&qpar" to "",
-                "&spar" to query
+                "&spar" to "added_date+desc"
             ),
             referer = "$mainUrl/"
         )
@@ -57,17 +58,25 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         )
     }
 
-    private val trendingShows = "Trending Shows"
-    private val recentShows = "Latest Shows"
-    private val topratedShows = "TopRated Shows"
-    private val oldestShows = "Oldest Shows"
+    private val scifiShows = "Sci-Fi"
+    private val advenShows = "Adventure"
+    private val actionShows = "Action"
+    private val animShows = "Animation"
+    private val horrorShows = "Horror"
+    private val comedyShows = "Comedy"
+    private val fantasyShows = "Fantasy"
+    private val romanceShows = "Romance"
 
     override val mainPage = mainPageOf(
         //TV Shows
-        "added_date+desc" to recentShows,
-        "series_rating+desc" to topratedShows,
-        "series_year+asc" to oldestShows,
-        "series_title+asc" to trendingShows
+        scifiShows to scifiShows,
+        advenShows to advenShows,
+        actionShows to actionShows,
+        animShows to animShows,
+        horrorShows to horrorShows,
+        comedyShows to comedyShows,
+        fantasyShows to fantasyShows,
+        romanceShows to romanceShows
     )
 
     override suspend fun getMainPage(
@@ -75,12 +84,12 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         request: MainPageRequest
     ): HomePageResponse {
         val query = request.data.format(page)
-
+        Log.d("RRREEEQQQ", query)
         val TVlist = queryTVApi(
             page * 48,
             query
         ).document
-        Log.d("TV",TVlist.toString())
+        //Log.d("TV",TVlist.toString())
         val home = TVlist.select("a.block").mapNotNull {
             it.toSearchResult()
         }
@@ -117,17 +126,18 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
         //Log.d("Doc", doc.toString())
-        val title = doc.selectFirst("h1.px-5")?.toString()?.trim() ?: return null
+        val title = doc.selectFirst("h1.px-5")?.text()?.toString()?.trim() ?: return null
         //Log.d("title", title)
         val poster = fixUrlNull(doc.selectFirst("img.relative")?.attr("src"))
         //Log.d("poster", poster.toString())
-        //val tags = document.select("div.mvici-left p:nth-child(1) a").map { it.text() }
-        val year = doc.selectFirst("h1.px-5.text-gray-400").toString().toRatingInt()
+        val tags = doc.select("div.relative a[class*=\"py-0.5\"]").map { it.text() }
+        //Log.d("TTAAGG", tags.toString())
+        val year = doc.selectFirst("h1.px-5 span.text-gray-400")?.text().toString().removePrefix("(").removeSuffix(")").toInt()
         //Log.d("year", year.toString())
         val description = doc.selectFirst("p.leading-tight")?.text()?.trim()
         //val trailer = fixUrlNull(document.select("iframe#iframe-trailer").attr("src"))
         val rating = doc.select("span.text-xl").text().toRatingInt()
-        //val actors = doc.select("span.text-blue-300").map { it.text() }
+        val actors = doc.select("div.font-semibold span.text-blue-300").map { it.text() }
         val recommendations = doc.select("a.block").mapNotNull {
             it.toSearchResult()
         }
@@ -167,9 +177,9 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
-                //this.tags = tags
+                this.tags = tags
                 this.rating = rating
-                //this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 //addTrailer(trailer)
             }
