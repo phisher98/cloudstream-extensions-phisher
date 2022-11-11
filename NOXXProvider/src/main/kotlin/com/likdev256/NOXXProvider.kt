@@ -84,7 +84,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         request: MainPageRequest
     ): HomePageResponse {
         val query = request.data.format(page)
-        Log.d("RRREEEQQQ", query)
+        //Log.d("RRREEEQQQ", query)
         val TVlist = queryTVApi(
             page * 48,
             query
