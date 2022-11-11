@@ -1,7 +1,7 @@
 package com.likdev256
 
 //import android.util.Log
-import android.util.Log
+//import android.util.Log
 import com.lagradost.cloudstream3.*
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -36,9 +36,9 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             "$mainUrl/fetch.php",
             data = mapOf(
                 "no" to "$count",
-                "&gpar" to "$query",
-                "&qpar" to "",
-                "&spar" to "added_date+desc"
+                "gpar" to "$query",
+                "qpar" to "",
+                "spar" to "added_date+desc"
             ),
             referer = "$mainUrl/"
         )
