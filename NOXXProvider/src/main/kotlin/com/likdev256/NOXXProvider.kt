@@ -1,7 +1,6 @@
 package com.likdev256
 
-//import android.util.Log
-//import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.*
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -17,6 +16,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import com.fasterxml.jackson.annotation.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.syncproviders.providers.Kitsu
+import okhttp3.FormBody
 import okhttp3.RequestBody
 
 class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
@@ -30,25 +31,21 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     )
 
     private suspend fun queryTVApi(count: Int, query: String): NiceResponse {
-        //val req = "no=$count&gpar=&qpar=&spar=$query".toRequestBody()
-        //Log.d("req",req.toString())
+        val body = FormBody.Builder()
+            .addEncoded("no", "$count")
+            .addEncoded("gpar", query)
+            .addEncoded("qpar", "")
+            .addEncoded("spar", "added_date+desc")
+            .build()
+
         return app.post(
             "$mainUrl/fetch.php",
-            data = mapOf(
-                "no" to "$count",
-                "gpar" to "$query",
-                "qpar" to "",
-                "spar" to "added_date+desc"
-            ),
+            requestBody = body,
             referer = "$mainUrl/"
         )
     }
 
     private suspend fun queryTVsearchApi(query: String): NiceResponse {
-        /*val req =
-            "searchVal=$query".toRequestBody(
-                RequestBodyTypes.JSON.toMediaTypeOrNull()
-            )*/
         return app.post(
             "$mainUrl/livesearch.php",
             data = mapOf(
@@ -142,48 +139,31 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             it.toSearchResult()
         }
 
-       /* return if (tvType == TvType.TvSeries) {
-            val episodes = if (doc.selectFirst("div.les-title strong")?.text().toString()
-                    .contains(Regex("(?i)EP\\s?[0-9]+|Episode\\s?[0-9]+"))
-            ) {
-                doc.select("ul.idTabs li").map {
-                    val id = it.select("a").attr("href")
+        val titRegex = Regex("[0-9]+")
+        val episodes = ArrayList<Episode>()
+        doc.select("section.container > div.border-b").forEach { me ->
+            val seasonNum = me.select("button > span").text()
+            me.select("div.season-list > a").forEach {
+                episodes.add(
                     Episode(
-                        data = fixUrl(doc.select("div$id iframe").attr("src")),
-                        name = it.select("strong").text().replace("Server Ep", "Episode")
+                        data = it.attr("href").toString(),
+                        name = it.ownText().toString(),//.removeSuffix("Now Playing Episode "),//.replaceFirst(epName.first().toString(), ""),
+                        season = titRegex.find(seasonNum)?.value?.toInt(),
+                        episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
                     )
-                }
-            } else {
-                doc.select("div.les-content a").map {
-                    Episode(
-                        data = it.attr("href"),
-                        name = it.text().replace("Server Ep", "Episode").trim(),
-                    )
-                }
+                )
             }
-
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
-                this.year = year
-                //this.plot = description
-                //this.tags = tags
-                //this.rating = rating
-                //addActors(actors)
-                this.recommendations = recommendations
-                //addTrailer(trailer)
-            }
-        } else { */
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = poster
-                this.year = year
-                this.plot = description
-                this.tags = tags
-                this.rating = rating
-                addActors(actors)
-                this.recommendations = recommendations
-                //addTrailer(trailer)
-            }
-       // }
+        }
+        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            this.posterUrl = poster
+            this.year = year
+            this.plot = description
+            this.tags = tags
+            this.rating = rating
+            addActors(actors)
+            this.recommendations = recommendations
+            //addTrailer(trailer)
+        }
     }
 
     override suspend fun loadLinks(
@@ -192,9 +172,10 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = app.get(data).document.select("#mainiframe").attr("src").toString()
-        //Log.d("links", links.toString())
-        loadExtractor(links,subtitleCallback, callback)
+        Log.d("khiHCJJBBJ", data)
+        val links = app.get(data).document.select("div.h-vw-65 iframe.w-full").attr("src").toString()
+        Log.d("LLLLLLLIIIIIKKKKJJJJJ", links)
+        loadExtractor(links, subtitleCallback, callback)
 
         return true
     }
