@@ -1,7 +1,6 @@
 package com.likdev256
 
-//import android.util.Log
-//import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.*
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -17,6 +16,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import com.fasterxml.jackson.annotation.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.syncproviders.providers.Kitsu
 import okhttp3.RequestBody
 
 class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
@@ -36,9 +36,9 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             "$mainUrl/fetch.php",
             data = mapOf(
                 "no" to "$count",
-                "gpar" to "$query",
-                "qpar" to "",
-                "spar" to "added_date+desc"
+                "&gpar" to "$query",
+                "&qpar" to "",
+                "&spar" to "added_date+desc"
             ),
             referer = "$mainUrl/"
         )
@@ -142,38 +142,27 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             it.toSearchResult()
         }
 
-       /* return if (tvType == TvType.TvSeries) {
-            val episodes = if (doc.selectFirst("div.les-title strong")?.text().toString()
-                    .contains(Regex("(?i)EP\\s?[0-9]+|Episode\\s?[0-9]+"))
-            ) {
-                doc.select("ul.idTabs li").map {
-                    val id = it.select("a").attr("href")
-                    Episode(
-                        data = fixUrl(doc.select("div$id iframe").attr("src")),
-                        name = it.select("strong").text().replace("Server Ep", "Episode")
-                    )
-                }
-            } else {
-                doc.select("div.les-content a").map {
-                    Episode(
-                        data = it.attr("href"),
-                        name = it.text().replace("Server Ep", "Episode").trim(),
-                    )
-                }
-            }
-
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
-                this.year = year
-                //this.plot = description
-                //this.tags = tags
-                //this.rating = rating
-                //addActors(actors)
-                this.recommendations = recommendations
-                //addTrailer(trailer)
-            }
-        } else { */
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+        val episodes = doc.select("section.container").map {
+            val epName = it.select("div.border-b > div.season-list > a").text()//.replace("Episode ", "")
+            Log.d("EEEPPP", epName)
+            Episode(
+                data = it.select("div.border-b > div > a").attr("href").toString(),
+                name = epName,//.replaceFirst(epName.first().toString(), ""),
+                season = 1,//it.select("button.text-blue-500 > span").text().replace("Season ", "").toInt(),
+                episode = 1//epName?.first()?.code
+            )
+        }
+        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            this.posterUrl = poster
+            this.year = year
+            this.plot = description
+            this.tags = tags
+            this.rating = rating
+            addActors(actors)
+            this.recommendations = recommendations
+            //addTrailer(trailer)
+        }
+        /*return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
@@ -182,8 +171,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
                 addActors(actors)
                 this.recommendations = recommendations
                 //addTrailer(trailer)
-            }
-       // }
+            }*/
     }
 
     override suspend fun loadLinks(
@@ -194,7 +182,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     ): Boolean {
         val links = app.get(data).document.select("#mainiframe").attr("src").toString()
         //Log.d("links", links.toString())
-        loadExtractor(links,subtitleCallback, callback)
+        loadExtractor(links, subtitleCallback, callback)
 
         return true
     }
