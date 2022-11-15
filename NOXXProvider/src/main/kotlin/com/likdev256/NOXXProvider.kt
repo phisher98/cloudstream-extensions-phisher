@@ -1,24 +1,14 @@
 package com.likdev256
 
-import android.util.Log
+//import android.util.Log
 import com.lagradost.cloudstream3.*
-//import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-//import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
-import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.nicehttp.NiceResponse
-import com.lagradost.nicehttp.RequestBodyTypes
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
-import com.fasterxml.jackson.annotation.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
-import com.lagradost.cloudstream3.syncproviders.providers.Kitsu
 import okhttp3.FormBody
-import okhttp3.RequestBody
 
 class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://noxx.to"
@@ -58,7 +48,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     private val scifiShows = "Sci-Fi"
     private val advenShows = "Adventure"
     private val actionShows = "Action"
-    private val animShows = "Animation"
+    //private val animShows = "Animation"
     private val horrorShows = "Horror"
     private val comedyShows = "Comedy"
     private val fantasyShows = "Fantasy"
@@ -69,7 +59,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         scifiShows to scifiShows,
         advenShows to advenShows,
         actionShows to actionShows,
-        animShows to animShows,
+        //animShows to animShows,
         horrorShows to horrorShows,
         comedyShows to comedyShows,
         fantasyShows to fantasyShows,
@@ -115,8 +105,20 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         ).document
         //Log.d("document", document.toString())
 
-        return TVlist.select("a.block").mapNotNull {
-            it.toSearchResult()
+        return TVlist.select("a[href^=\"/tv\"]").mapNotNull {
+            val title = it.selectFirst("div > h2")?.text().toString().trim()
+            //Log.d("title", title)
+            val href = fixUrl(mainUrl + it.attr("href").toString())
+            //Log.d("href", href)
+            val posterUrl = fixUrlNull(it.selectFirst("img")?.attr("src"))
+            //Log.d("posterUrl", posterUrl.toString())
+            val quality = SearchQuality.HD
+            //Log.d("Quality", quality.toString())
+
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.posterUrl = posterUrl
+                this.quality = quality
+            }
         }
     }
 
@@ -146,8 +148,8 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             me.select("div.season-list > a").forEach {
                 episodes.add(
                     Episode(
-                        data = it.attr("href").toString(),
-                        name = it.ownText().toString(),//.removeSuffix("Now Playing Episode "),//.replaceFirst(epName.first().toString(), ""),
+                        data = mainUrl + it.attr("href").toString(),
+                        name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
                         season = titRegex.find(seasonNum)?.value?.toInt(),
                         episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
                     )
@@ -172,9 +174,8 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("khiHCJJBBJ", data)
         val links = app.get(data).document.select("div.h-vw-65 iframe.w-full").attr("src").toString()
-        Log.d("LLLLLLLIIIIIKKKKJJJJJ", links)
+        //Log.d("links", links)
         loadExtractor(links, subtitleCallback, callback)
 
         return true
