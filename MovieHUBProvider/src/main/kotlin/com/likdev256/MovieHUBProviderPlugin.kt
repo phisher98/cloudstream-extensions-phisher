@@ -5,9 +5,9 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class Av1EncodedProviderPlugin: Plugin() {
+class MovieHUBProviderPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(Av1EncodedProvider())
+        registerMainAPI(MovieHUBProvider())
     }
 }
