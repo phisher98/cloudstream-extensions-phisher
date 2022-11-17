@@ -1,6 +1,7 @@
 package com.likdev256
 
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 //import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -11,7 +12,11 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
+import com.lagradost.nicehttp.RequestBodyTypes
 import me.xdrop.fuzzywuzzy.FuzzySearch
+import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://x265rips.co"
@@ -46,8 +51,7 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
             app.get(request.data + "/page/$page/").document
         }
 
-        Log.d("Document", request.data)
-
+        //Log.d("Document", request.data)
         val home = if (request.data.contains("genre")) {
             document.select("div.items > article").mapNotNull {
                 it.toSearchResult()
@@ -72,9 +76,16 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         //Log.d("QualityN", qualityN)
         val quality = getQualityFromString(this.select("div.poster > div.mepo > span").text().toString())
         //Log.d("Quality", quality.toString())
-        return newMovieSearchResponse(title, href, TvType.Movie) {
-            this.posterUrl = posterUrl
-            this.quality = quality
+        return if (href.contains("Movie")) {
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = posterUrl
+                this.quality = quality
+            }
+        } else {
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.posterUrl = posterUrl
+                this.quality = quality
+            }
         }
     }
 
@@ -82,7 +93,7 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         val document = app.get("$mainUrl/?s=$query").document
         //Log.d("document", document.toString())
 
-        val searchResponse = document.select("div.result-item").mapNotNull {
+        return document.select("div.result-item").mapNotNull {
             val title = it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
             //Log.d("title", titleS)
             val href = fixUrl(it.selectFirst("article > div.details > div.title > a")?.attr("href").toString())
@@ -105,33 +116,69 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                 }
             }
         }
-        return searchResponse
     }
+
+    private suspend fun getEmbed(postid: String, nume: String, referUrl: String): NiceResponse {
+        val body = FormBody.Builder()
+            .addEncoded("action", "doo_player_ajax")
+            .addEncoded("post", postid)
+            .addEncoded("nume", nume)
+            .addEncoded("type", "movie")
+            .build()
+
+        return app.post(
+            "$mainUrl/wp-admin/admin-ajax.php",
+            requestBody = body,
+            referer = referUrl
+        )
+    }
+
+    data class embedUrl (
+        @JsonProperty("embed_url") var embedUrl : String,
+        @JsonProperty("type") var type : String?
+    )
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
         //Log.d("Doc", doc.toString())
-        val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.toString()?.trim() ?: return null
+        val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.toString()?.trim()
+            ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
         //Log.d("titleL", titleL)
         //Log.d("title", title)
         val poster = fixUrlNull(doc.selectFirst("div.poster > img")?.attr("src"))
-        val bgposter = fixUrlNull(doc.selectFirst("#dt_galery > div.owl-wrapper-outer > div.owl-wrapper > div.owl-item > div.g-item > a")?.attr("href"))
-        //Log.d("poster", poster.toString())
+        val bgposter = fixUrlNull(
+            doc.selectFirst("div.g-item:nth-child(1) > a:nth-child(1) > img:nth-child(1)")
+                ?.attr("data-src").toString()
+        )
+        Log.d("bgposter", bgposter.toString())
+        Log.d("poster", poster.toString())
         val tags = doc.select("div.sgeneros > a").map { it.text() }
-        //val year = doc.selectFirst("span.date")?.text()?.toString()?.split(",")?.toString()?.toInt()
+        val year =
+            doc.selectFirst("span.date")?.text()?.toString()?.substringAfter(",")?.trim()?.toInt()
         //Log.d("year", year.toString())
         val description = doc.selectFirst("div.wp-content > p > span")?.text()?.trim()
+        val type = if (url.contains("movies")) TvType.Movie else TvType.TvSeries
         //Log.d("desc", description.toString())
-        val trailer = fixUrlNull(doc.select("#trailer > a").attr("href"))
+        val trailer = if (type == TvType.Movie)
+            fixUrlNull(
+                getEmbed(
+                    doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString(),
+                    "trailer",
+                    url
+                ).parsed<embedUrl>().embedUrl
+            )
+        else fixUrlNull(doc.select("iframe.rptss").attr("src").toString())
         //Log.d("trailer", trailer.toString())
         val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
         //Log.d("rating", rating.toString())
-        val duration = doc.selectFirst("span.runtime")?.text()?.toString()?.removeSuffix(" Min.")?.trim()?.toInt()
+        val duration =
+            doc.selectFirst("span.runtime")?.text()?.toString()?.removeSuffix(" Min.")?.trim()
+                ?.toInt()
         //Log.d("dur", duration.toString())
         val actors =
-            doc.select("div.person").map{
+            doc.select("div.person").map {
                 ActorData(
                     Actor(
                         it.select("div.data > div.name > a").text().toString(),
@@ -140,10 +187,27 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                     roleString = it.select("div.data > div.caracter").text().toString(),
                 )
             }
-        val recommendations = doc.select("div.item-container > div").mapNotNull {
+        val recommendations = doc.select("#dtw_content_related-2 article").mapNotNull {
             it.toSearchResult()
         }
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+
+        /*val episodes = ArrayList<Episode>()
+        doc.select("section.container > div.border-b").forEach { me ->
+            val seasonNum = me.select("button > span").text()
+            me.select("div.season-list > a").forEach {
+                episodes.add(
+                    Episode(
+                        data = mainUrl + it.attr("href").toString(),
+                        name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
+                        season = titRegex.find(seasonNum)?.value?.toInt(),
+                        episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
+                    )
+                )
+            }
+        }*/
+
+        //return if (type == TvType.Movie) {
+        return newMovieLoadResponse(title, url, TvType.Movie, url+","+doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString()) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgposter
                 this.year = year
@@ -155,7 +219,20 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
-       // }
+        /*} else {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = poster
+                this.backgroundPosterUrl = bgposter
+                this.year = year
+                this.plot = description
+                this.tags = tags
+                this.rating = rating
+                this.duration = duration
+                this.actors = actors
+                this.recommendations = recommendations
+                addTrailer(trailer)
+            }
+        }*/
     }
 
     override suspend fun loadLinks(
@@ -164,44 +241,16 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val linkRegex = Regex("(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/\\/=]*mp4))")
-        val source = app.get(data).document.select("div.entry iframe").attr("src")
-        val script = app.get(source, referer = "$mainUrl/").document.select("body > script").toString()
-        //val links = linkRegex.find(script)?.groups?.get(1)?.value.toString()
-        val links = linkRegex.findAll(script).map{it.value.trim()}.toList()
-        //Log.d("links", links.toString())
-            safeApiCall {
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "HD",
-                        links[0],
-                        "$mainUrl/",
-                        Qualities.P720.value,
-                        false
-                    )
-                )
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "SD",
-                        links[1],
-                        "$mainUrl/",
-                        Qualities.P480.value,
-                        false
-                    )
-                )
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "Low",
-                        links[2],
-                        "$mainUrl/",
-                        Qualities.P360.value,
-                        false
-                    )
-                )
-            }
+        val url = data.substringBefore(",")
+        val postid = data.substringAfter(",")
+        val Embedlink = getEmbed(
+            postid,
+            "1",
+            url
+        ).parsed<embedUrl>().embedUrl
+
+        loadExtractor(Embedlink, subtitleCallback, callback)
+
         return true
     }
 }
