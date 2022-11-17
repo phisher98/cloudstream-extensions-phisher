@@ -5,7 +5,7 @@ version = 2
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Tamil Movie Provider"
+    description = "Tamil Movies [nolinksfound] (Use webview to watch unable to scrape links)"
     language = "ta"
     authors = listOf("LikDev-256")
 
