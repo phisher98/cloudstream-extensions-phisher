@@ -221,8 +221,8 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
             }
         /*} else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
-                this.backgroundPosterUrl = bgposter
+                this.posterUrl = poster?.trim()
+                this.backgroundPosterUrl = bgposter?.trim()
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -230,7 +230,7 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
-                addTrailer(trailer)
+                addTrailer(trailer?.toString())
             }
         }*/
     }
