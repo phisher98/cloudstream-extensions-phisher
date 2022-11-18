@@ -217,7 +217,7 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
-                addTrailer(trailer?.toString()))
+                addTrailer(trailer?.toString())
             }
         /*} else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
