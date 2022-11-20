@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 1
+version = 2
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Tamil Movie Provider"
+    description = "Tamil Movies [nolinksfound] (Use webview to watch unable to scrape links)"
     language = "ta"
     authors = listOf("LikDev-256")
 
@@ -16,7 +16,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 0 // will be 3 if unspecified
+    status = 3 // will be 3 if unspecified
 
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
