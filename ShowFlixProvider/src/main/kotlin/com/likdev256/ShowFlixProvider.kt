@@ -276,7 +276,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 title,
                 "$mainUrl${"/"}movie${"/"}${Movieit.objectId}",
                 TvType.Movie,
-                "$mainUrl${"/"}movie${"/"}${Movieit.objectId}"
+                "movie,${Movieit.streamlink}"
             ) {
                 this.posterUrl = poster
                 this.year = year
@@ -390,20 +390,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     ): Boolean {
         //Log.d("data", data)
         if (data.contains("movie")) {
-            val MovieobjID = data.removePrefix("https://showflix.in/movie/")
-            val MovieLoadreq =
-                """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
-                    RequestBodyTypes.JSON.toMediaTypeOrNull()
-                )
-            val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/")
-                .toString().removePrefix("""{"results":[""").removeSuffix("]}")
-            //Log.d("res", Movieresp)
-            val Movieit = parseJson<MovieResults>(Movieresp)
-            val url = Movieit.streamlink.replace(Regex("(embed-|/play/)"), "/e/")
-            Log.d("url", url)
+            val url = data.substringAfter(",").replace(Regex("(embed-|/play/)"), "/e/")
+            //Log.d("url", url)
             val main =
                 if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
-            Log.d("main", main)
+            //Log.d("main", main)
 
             val regexID =
                 Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
@@ -430,10 +421,10 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
         } else {
             val url = data.replace(Regex("(embed-|/play/)"), "/e/")
-            Log.d("url", url)
+            //Log.d("url", url)
             val main =
                 if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
-            Log.d("main", main)
+            //Log.d("main", main)
 
             val regexID =
                 Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
