@@ -1,22 +1,14 @@
 package com.likdev256
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-//import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
-import com.lagradost.nicehttp.RequestBodyTypes
-import me.xdrop.fuzzywuzzy.FuzzySearch
 import okhttp3.FormBody
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 
 class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://x265rips.co"
@@ -118,10 +110,10 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         }
     }
 
-    private suspend fun getEmbed(postid: String, nume: String, referUrl: String): NiceResponse {
+    private suspend fun getEmbed(postid: String?, nume: String, referUrl: String?): NiceResponse {
         val body = FormBody.Builder()
             .addEncoded("action", "doo_player_ajax")
-            .addEncoded("post", postid)
+            .addEncoded("post", postid.toString())
             .addEncoded("nume", nume)
             .addEncoded("type", "movie")
             .build()
@@ -133,10 +125,15 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         )
     }
 
-    data class embedUrl (
-        @JsonProperty("embed_url") var embedUrl : String,
+    data class TrailerUrl (
+        @JsonProperty("embed_url") var embedUrl : String?,
         @JsonProperty("type") var type : String?
     )
+
+    /*data class embedUrl (
+        @JsonProperty("embed_url") var embedUrl : String,
+        @JsonProperty("type") var type : String?
+    )*/
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
@@ -152,8 +149,8 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
             doc.selectFirst("div.g-item:nth-child(1) > a:nth-child(1) > img:nth-child(1)")
                 ?.attr("data-src").toString()
         )
-        Log.d("bgposter", bgposter.toString())
-        Log.d("poster", poster.toString())
+        //Log.d("bgposter", bgposter.toString())
+        //Log.d("poster", poster.toString())
         val tags = doc.select("div.sgeneros > a").map { it.text() }
         val year =
             doc.selectFirst("span.date")?.text()?.toString()?.substringAfter(",")?.trim()?.toInt()
@@ -167,7 +164,7 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                     doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString(),
                     "trailer",
                     url
-                ).parsed<embedUrl>().embedUrl
+                ).parsed<TrailerUrl>().embedUrl
             )
         else fixUrlNull(doc.select("iframe.rptss").attr("src").toString())
         //Log.d("trailer", trailer.toString())
@@ -217,7 +214,7 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
-                addTrailer(trailer?.toString())
+                addTrailer(trailer)
             }
         /*} else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
@@ -235,22 +232,111 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         }*/
     }
 
+    data class Subs (
+        @JsonProperty("file") val file: String? = null,
+        @JsonProperty("label") val label: String? = null,
+    )
+
+    data class StreamData (
+        @JsonProperty("file") val file: String,
+        @JsonProperty("cdn_img") val cdnImg: String,
+        @JsonProperty("hash") val hash: String,
+        @JsonProperty("subs") val subs: ArrayList<Subs>? = arrayListOf(),
+        @JsonProperty("length") val length: String,
+        @JsonProperty("id") val id: String,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("backup") val backup: String,
+    )
+
+    data class Main (
+        @JsonProperty("stream_data") val streamData: StreamData,
+        @JsonProperty("status_code") val statusCode: Int,
+    )
+
+    data class getEmbed (
+        @JsonProperty("status") var status: Boolean?,
+        @JsonProperty("statusCode") var statusCode: Int?,
+        @JsonProperty("statusText") var statusText: String?,
+        @JsonProperty("data") var data: Data?
+    )
+
+    data class Data (
+        @JsonProperty("filecode") var filecode : String?
+    )
+
+    private val hexArray = "0123456789ABCDEF".toCharArray()
+
+    private fun bytesToHex(bytes: ByteArray): String {
+        val hexChars = CharArray(bytes.size * 2)
+        for (j in bytes.indices) {
+            val v = bytes[j].toInt() and 0xFF
+
+            hexChars[j * 2] = hexArray[v ushr 4]
+            hexChars[j * 2 + 1] = hexArray[v and 0x0F]
+        }
+        return String(hexChars)
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val url = data.substringBefore(",")
-        val postid = data.substringAfter(",")
-        val Embedlink = getEmbed(
+        val link = data.substringBefore(",")
+        //Log.d("embedlink", link)
+        //val postid = data.substringAfter(",")
+        //Log.d("embedlink", postid)
+        /*val Embedlink = getEmbed(
             postid,
             "1",
-            url
-        ).parsed<embedUrl>().embedUrl
+            link
+        ).parsed<embedUrl>().embedUrl*/
 
-        loadExtractor(Embedlink, subtitleCallback, callback)
+        val doc = app.get(link).document
+        doc.select("div.wp-content > p > span > a[href*=\"filepress\"]").forEach {
+            //Log.d("myitboy", it.toString())
+            val urlid = it.attr("href").replace("https://filepress.online/file/", "")
+            //Log.d("myurlid", urlid)
+            val url = "https://gdpress.xyz/e/" + app.get(
+                "https://api.filepress.online/api/file/video/streamSB/$urlid",
+                referer = "https://filepress.online/"
+            ).parsed<getEmbed>().data?.filecode.toString() + "/"
 
+            //Log.d("myurl", url)
+            val main = "https://gdpress.xyz"
+            val regexID =
+                Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+            val id = regexID.findAll(url).map { me ->
+                me.value.replace(Regex("(embed-|/e/)"), "")
+            }.first()
+//        val master = "$main/sources48/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+            val master = "$main/sources48/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
+            val headers = mapOf(
+                "watchsb" to "sbstream",
+            )
+            val mapped = app.get(
+                master.lowercase(),
+                headers = headers,
+                referer = url,
+            ).parsedSafe<Main>()
+            // val urlmain = mapped.streamData.file.substringBefore("/hls/")
+            M3u8Helper.generateM3u8(
+                name,
+                mapped?.streamData?.file.toString(),
+                url,
+                headers = headers
+            ).forEach(callback)
+
+            mapped?.streamData?.subs?.map {sub ->
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        sub.label.toString(),
+                        sub.file ?: return@map null,
+                    )
+                )
+            }
+        }
         return true
     }
 }

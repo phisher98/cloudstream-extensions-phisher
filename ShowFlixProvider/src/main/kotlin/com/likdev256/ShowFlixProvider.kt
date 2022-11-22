@@ -311,7 +311,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val backdrop = TVit.seriesBackdrop
             val plot = TVit.seriesStoryline
             val rating = TVit.seriesRating.toDouble().roundToInt() * 1000
-            val seasonCount = TVit.seriesTotalSeason.toInt()
+            //val seasonCount = TVit.seriesTotalSeason.toInt()
             //val recommendations = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/").parsed<MovieAll>().results
 
             //val episodes = mutableListOf<Episode>()

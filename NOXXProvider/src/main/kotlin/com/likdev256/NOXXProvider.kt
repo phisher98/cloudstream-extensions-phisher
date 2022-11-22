@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.network.DdosGuardKiller
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
@@ -19,6 +20,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     override val supportedTypes = setOf(
         TvType.TvSeries
     )
+    private var ddosGuardKiller = DdosGuardKiller(true)
 
     private suspend fun queryTVApi(count: Int, query: String): NiceResponse {
         val body = FormBody.Builder()
@@ -31,6 +33,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         return app.post(
             "$mainUrl/fetch.php",
             requestBody = body,
+            interceptor = ddosGuardKiller,
             referer = "$mainUrl/"
         )
     }
@@ -41,6 +44,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             data = mapOf(
                 "searchVal" to query
             ),
+            interceptor = ddosGuardKiller,
             referer = "$mainUrl/"
         )
     }
@@ -123,7 +127,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
+        val doc = app.get(url, interceptor = ddosGuardKiller).document
         //Log.d("Doc", doc.toString())
         val title = doc.selectFirst("h1.px-5")?.text()?.toString()?.trim() ?: return null
         //Log.d("title", title)
@@ -141,7 +145,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             it.toSearchResult()
         }
 
-        val titRegex = Regex("[0-9]+")
+        val titRegex = Regex("\"\\\\d+\"")
         val episodes = ArrayList<Episode>()
         doc.select("section.container > div.border-b").forEach { me ->
             val seasonNum = me.select("button > span").text()
@@ -174,7 +178,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = app.get(data).document.select("div.h-vw-65 iframe.w-full").attr("src").toString()
+        val links = app.get(data, interceptor = ddosGuardKiller).document.select("div.h-vw-65 iframe.w-full").attr("src").toString()
         //Log.d("links", links)
         loadExtractor(links, subtitleCallback, callback)
 
