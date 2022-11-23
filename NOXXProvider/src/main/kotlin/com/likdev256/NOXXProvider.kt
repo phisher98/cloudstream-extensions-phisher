@@ -145,7 +145,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             it.toSearchResult()
         }
 
-        val titRegex = Regex("\"\\\\d+\"")
+        val titRegex = Regex("\\d+")
         val episodes = ArrayList<Episode>()
         doc.select("section.container > div.border-b").forEach { me ->
             val seasonNum = me.select("button > span").text()
