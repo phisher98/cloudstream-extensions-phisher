@@ -22,8 +22,7 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
-        "Movie",
-        "TvSeries",
+        "Movie"
     )
     iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/EinthusanProvider/icon.png"
 }
