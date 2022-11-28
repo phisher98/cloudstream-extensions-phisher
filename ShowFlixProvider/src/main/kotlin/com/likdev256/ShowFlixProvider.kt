@@ -6,9 +6,11 @@ import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.StreamSB
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
@@ -94,7 +96,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     private suspend fun queryMovieApi(skip: Int, query: String): NiceResponse {
         val req =
-            """{"where":{"category":{"${"$"}regex":"$query"}},"limit":40,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"category":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":40,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         //Log.d("JSON", res.toString())
@@ -107,7 +109,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     private suspend fun queryTVApi(skip: Int, query: String): NiceResponse {
         val req =
-            """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"limit":10,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":10,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         //Log.d("JSON", res.toString())
@@ -401,7 +403,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val id = regexID.findAll(url).map {
                 it.value.replace(Regex("(embed-|/e/)"), "")
             }.first()
-//        val master = "$main/sources48/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+          //val master = "$main/sources48/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
             val master = "$main/sources48/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
             val headers = mapOf(
                 "watchsb" to "sbstream",
@@ -412,12 +414,27 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 referer = url,
             ).parsedSafe<Main>()
             // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-            M3u8Helper.generateM3u8(
-                name,
-                mapped?.streamData?.file.toString(),
-                url,
-                headers = headers
-            ).forEach(callback)
+            safeApiCall {
+                callback.invoke(
+                    ExtractorLink(
+                        name + "-MultiAudio",
+                        name + "-MultiAudio",
+                        mapped?.streamData?.file.toString(),
+                        url,
+                        Qualities.Unknown.value,
+                 true,
+                        headers
+                    )
+                )
+            }
+            mapped?.streamData?.subs?.map {sub ->
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        sub.label.toString(),
+                        sub.file ?: return@map null,
+                    )
+                )
+            }
 
         } else {
             val url = data.replace(Regex("(embed-|/play/)"), "/e/")
@@ -442,22 +459,29 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 referer = url,
             ).parsedSafe<Main>()
             // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-            M3u8Helper.generateM3u8(
-                name,
-                mapped?.streamData?.file.toString(),
-                url,
-                headers = headers
-            ).forEach(callback)
+            safeApiCall {
+                callback.invoke(
+                    ExtractorLink(
+                        name,
+                        name,
+                        mapped?.streamData?.file.toString(),
+                        url,
+                        Qualities.P720.value,
+                        true,
+                        headers
+                    )
+                )
+            }
+            mapped?.streamData?.subs?.map {sub ->
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        sub.label.toString(),
+                        sub.file ?: return@map null,
+                    )
+                )
+            }
         }
 
         return true
     }
-}
-
-class Sbcloud : StreamSB() {
-    override var mainUrl = "https://sbcloud1.com"
-}
-
-class StreamSB6 : StreamSB() {
-    override var mainUrl = "https://embedsb.com"
 }
