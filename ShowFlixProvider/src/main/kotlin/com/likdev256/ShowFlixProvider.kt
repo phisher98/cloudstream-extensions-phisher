@@ -1,23 +1,19 @@
 package com.likdev256
 
-//import com.fasterxml.jackson.annotation.JsonProperty
 import android.util.Log
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import me.xdrop.fuzzywuzzy.FuzzySearch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import kotlin.math.roundToInt
+import kotlin.random.Random
 
 class ShowFlixProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://showflix.in"
@@ -78,18 +74,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("results") var results: ArrayList<String> = arrayListOf(),
         @JsonProperty("count") var count: Int
     )
-
-    /* val elements = listOf(
-            Pair("Trending Now", "$mainUrl/movie"),
-            Pair("Tamil Movies", "$mainUrl/lan/movie/Tamil"),
-            Pair("Tamil Dubbed Movies", "$mainUrl/lan/series/Tamil Dubbed"),
-            Pair("English Movies", "$mainUrl/lan/movie/English"),
-            Pair("Tamil Movies", "$mainUrl/lan/movie/Tamil"),
-            Pair("Telugu Movies", "$mainUrl/lan/movie/Telugu"),
-            Pair("Hindi Movies", "$mainUrl/lan/movie/Hindi"),
-            Pair("Malayalam Movies", "$mainUrl/lan/movie/Malayalam"),
-            Pair("Tamil Dubbed TV Series", "$mainUrl/lan/series/Tamil Dubbed")
-        )*/
 
     private val MovieapiUrl = "https://parse.showflix.tk/parse/classes/movies"
     private val TVapiUrl = "https://parse.showflix.tk/parse/classes/series"
@@ -172,12 +156,12 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         //val home = ArrayList<SearchResponse>()
         val query = request.data.format(page)
         val Movielist = queryMovieApi(
-            page * 40,
+            if(page == 1) 0 else page * 40,
             query
         ).parsed<MovieAll>().results
 
         val TVlist = queryTVApi(
-            page * 10,
+            if(page == 1) 0 else page * 10,
             query
         ).parsed<TVAll>().results
         if (request.name.contains("Movies")) {
@@ -272,7 +256,28 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val poster = Movieit.poster
             val backdrop = Movieit.backdrop
             val plot = Movieit.storyline
-            val rating = Movieit.rating.toDouble().roundToInt() * 1000
+            val rating = Movieit.rating.toRatingInt()
+            val recQuery = when(Movieit.category != null) {
+                Movieit.category.toString().contains("Dubbed")    -> """\\QTamil Dubbed\\E"""
+                Movieit.category.toString().contains("Tamil")     -> """\\QTamil\\E"""
+                Movieit.category.toString().contains("English")   -> """\\QEnglish\\E"""
+                Movieit.category.toString().contains("Hindi")     -> """\\QHindi\\E"""
+                Movieit.category.toString().contains("Malayalam") -> """\\QMalayalam\\E"""
+                else -> ""
+            }
+            val recommendations = queryMovieApi(
+                Random.nextInt(0, 100),
+                recQuery
+            ).parsed<MovieAll>().results.map{
+                newMovieSearchResponse(
+                    it.movieName,
+                    "$mainUrl${"/"}movie${"/"}${it.objectId}",
+                    TvType.Movie
+                ) {
+                    this.posterUrl = it.poster
+                    this.quality = SearchQuality.HD
+                }
+            }
 
             return newMovieLoadResponse(
                 title,
@@ -287,7 +292,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 this.rating = rating
                 this.backgroundPosterUrl = backdrop
                 //addActors(actors)
-                //this.recommendations = recommendations
+                this.recommendations = recommendations
                 //addTrailer(trailer)
             }
         } else {
@@ -299,11 +304,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 )
             val TVresp = app.post(TVapiUrl, requestBody = TVLoadreq, referer = "$mainUrl/")
                 .toString().removePrefix("""{"results":[""").removeSuffix("]}")
-            //val TVclean1 = Regexlist1.replace(TVresp, "")
-            //Log.d("res", TVresp)
-            //Log.d("test1", TVclean1)
-            //val TVclean2 = TVclean1.removeSuffix("]}")//Regexlist2.replace(TVclean1, "")
-            //Log.d("test", TVclean2)
             val TVit = parseJson<TVResults>(TVresp)
             val title = TVit.seriesName
             val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
@@ -312,11 +312,32 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val poster = TVit.seriesPoster
             val backdrop = TVit.seriesBackdrop
             val plot = TVit.seriesStoryline
-            val rating = TVit.seriesRating.toDouble().roundToInt() * 1000
+            val rating = TVit.seriesRating.toRatingInt()
             //val seasonCount = TVit.seriesTotalSeason.toInt()
-            //val recommendations = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/").parsed<MovieAll>().results
+            val recQuery = when(TVit.seriesCategory != null) {
+                TVit.seriesCategory.toString().contains("Dubbed")    -> """\\QTamil Dubbed\\E"""
+                TVit.seriesCategory.toString().contains("Tamil")     -> """\\QTamil\\E"""
+                TVit.seriesCategory.toString().contains("English")   -> """\\QEnglish\\E"""
+                TVit.seriesCategory.toString().contains("Hindi")     -> """\\QHindi\\E"""
+                TVit.seriesCategory.toString().contains("Malayalam") -> """\\QMalayalam\\E"""
+                else -> ""
+            }
+            Log.d("request", recQuery)
+            val recommendations = queryTVApi(
+                Random.nextInt(0, 100),
+                recQuery
+            ).parsed<TVAll>().results.map {
+                newTvSeriesSearchResponse(
+                    it.seriesName,
+                    "$mainUrl${"/"}series${"/"}${it.objectId}",
+                    TvType.TvSeries
+                ) {
+                    this.posterUrl = it.seriesPoster
+                    this.quality = SearchQuality.HD
+                }
+            }
+            Log.d("TVResult", recommendations.toString())
 
-            //val episodes = mutableListOf<Episode>()
             val episodes = TVit.Seasons.Seasons.map { (seasonName, episodes) ->
                 val seasonNum = Regex("\\d+").find(seasonName)?.value?.toInt()
 
@@ -344,7 +365,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 this.rating = rating
                 this.backgroundPosterUrl = backdrop
                 //addActors(actors)
-                //this.recommendations = recommendations
+                this.recommendations = recommendations
                 //addTrailer(trailer)
             }
         }

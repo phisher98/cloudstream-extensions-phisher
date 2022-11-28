@@ -56,7 +56,7 @@ class EinthusanProvider : MainAPI() { // all providers must be an instance of Ma
         //Log.d("title", title)
         val href = fixUrl(mainUrl + this.selectFirst("div.block2 > a.title")?.attr("href").toString())
         //Log.d("href", href)
-        val posterUrl = fixUrlNull("https:" + this.selectFirst("div.block1 > a > img")?.attr("src"))
+        val posterUrl = fixUrlNull("https:${this.selectFirst("div.block1 > a > img")?.attr("src")}")
         //Log.d("posterUrl", posterUrl.toString())
         return newMovieSearchResponse(title, href, TvType.Movie) {
                 this.posterUrl = posterUrl
@@ -79,7 +79,7 @@ class EinthusanProvider : MainAPI() { // all providers must be an instance of Ma
         //Log.d("title", title)
         val href = fixUrl(mainUrl + doc.select("#UIMovieSummary > ul > li > div.block2 > a.title").attr("href").toString())
         //Log.d("href", href)
-        val poster = fixUrlNull("https:" + doc.select("#UIMovieSummary > ul > li > div.block1 > a > img").attr("src"))
+        val poster = fixUrlNull("https:${doc.select("#UIMovieSummary > ul > li > div.block1 > a > img").attr("src")}")
         //Log.d("poster", poster.toString())
         val tags = doc.select("ul.average-rating > li").map { it.select("label").text() }
         val year =
