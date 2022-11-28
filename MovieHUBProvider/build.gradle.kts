@@ -25,4 +25,5 @@ cloudstream {
         "Movie",
         "TvSeries",
     )
+    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/MovieHUBProvider/icon.png"
 }
