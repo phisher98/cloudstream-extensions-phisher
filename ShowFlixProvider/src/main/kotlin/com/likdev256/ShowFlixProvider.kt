@@ -443,7 +443,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                         mapped?.streamData?.file.toString(),
                         url,
                         Qualities.Unknown.value,
-                 true,
+                        true,
                         headers
                     )
                 )
@@ -483,11 +483,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             safeApiCall {
                 callback.invoke(
                     ExtractorLink(
-                        name,
-                        name,
+                        name + "-MultiAudio",
+                        name + "-MultiAudio",
                         mapped?.streamData?.file.toString(),
                         url,
-                        Qualities.P720.value,
+                        Qualities.Unknown.value,
                         true,
                         headers
                     )
@@ -501,7 +501,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     )
                 )
             }
-        }
 
         return true
     }
