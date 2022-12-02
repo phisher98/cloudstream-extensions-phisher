@@ -501,6 +501,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     )
                 )
             }
+        }
 
         return true
     }
