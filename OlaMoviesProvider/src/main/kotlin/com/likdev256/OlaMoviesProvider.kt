@@ -2,9 +2,15 @@ package com.likdev256
 
 //import com.fasterxml.jackson.annotation.JsonProperty
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.nicehttp.JsonAsString
 import org.jsoup.nodes.Element
 
 class OlaMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
@@ -118,10 +124,9 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleS)?.groups?.get(1)?.value.toString()
         //Log.d("title", title)
-        val href = fixUrl(
-            mainUrl + doc.select("#UIMovieSummary > ul > li > div.block2 > a.title").attr("href")
-                .toString()
-        )
+        val href = doc.select("div.is-layout-flex > div.wp-block-button").map {
+            mainUrl + it.select("a[target=_blank]").attr("href") + "<?>" + it.select("a[target=_blank]").text().toString()
+        }
         //Log.d("href", href)
         val poster = fixUrlNull(doc.select("span.gridlove-cover > a").attr("href"))
         //Log.d("poster", poster.toString())
@@ -131,11 +136,12 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
             }
             return false
         }
-        val bloat = listOf("720p","1080p","2160p","Bluray","x264","x265","60FPS","120fps","WEB-DL")
+        val bloat = listOf("720p","1080p","2160p","Bluray","x264","x265","60FPS","120fps","144FPS","WEB-DL")
         val tags = doc.select("div.entry-tags > a").map { if (it.text().containsAnyOfIgnoreCase(bloat)) "" else it.text() }.filter { !it.isNullOrBlank() }
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(title)?.value?.toIntOrNull()
         val trailer = fixUrlNull(doc.select("div.perfmatters-lazy-youtube").attr("data-src"))
+        val plot = doc.select("div.entry-content > p").text()
         //Log.d("year", year.toString())
         val type = ArrayList<String>()
         doc.select("article div.entry-category a").forEach { type.add(it.ownText()) }
@@ -144,38 +150,87 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         }
 
         val titRegex = Regex("\\d+")
+        val seasonRegex = Regex("(.eason)+(.\\d)")
         val episodes = ArrayList<Episode>()
-        doc.select("div.w3-margin-bottom").forEach { me ->
-            val seasonNum = me.select("button").text()
-            me.select("div > div.wp-block-button > a").forEach {
-                episodes.add(
-                    Episode(
-                        data = mainUrl + it.attr("href").toString(),
-                        name = it.ownText().toString(),//.replaceFirst(epName.first().toString(), ""),
-                        season = titRegex.find(seasonNum)?.value?.toInt(),
-                        episode = titRegex.find(it.ownText().toString())?.value?.toInt()
-                    )
-                )
+
+        if (doc.select("div.w3-margin-bottom").toString() != "") {
+            doc.select("div.entry-content > div.w3-margin-bottom").forEach { me ->
+                doc.select("div.is-layout-flex").forEach { he ->
+                    if (he.toString().contains("episode", true)) {
+                        // Log.d("myme", he.toString())
+                        val seasonNum = me.select("button.w3-button").text()
+                        // Log.d("myseason", seasonRegex.find(seasonNum)?.groups?.get(2)?.value.toString())
+                        he.select("div.wp-block-button").forEach {
+                            episodes.add(
+                                Episode(
+                                    data = mainUrl + it.select("a[target=_blank]").attr("href").toString(),
+                                    name = it.select("a[target=_blank]").text(),//.replaceFirst(epName.first().toString(), ""),
+                                    season = seasonRegex.find(seasonNum)?.groups?.get(2)?.value?.trim()?.toIntOrNull(),
+                                    episode = titRegex.find(it.select("a[target=_blank]").text().toString())?.value?.toInt()
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            doc.select("div.is-layout-flex").forEach { me ->
+                if (me.toString().contains("episode", true)) {
+                    // Log.d("myme", me.toString())
+                    me.select("div.wp-block-button").forEach {
+                        episodes.add(
+                            Episode(
+                                data = mainUrl + it.select("a[target=_blank]").attr("href").toString(),
+                                name = it.select("a[target=_blank]").text(),//.replaceFirst(epName.first().toString(), ""),
+                                season = 1,
+                                episode = titRegex.find(it.select("a[target=_blank]").text().toString())?.value?.toInt()
+                            )
+                        )
+                    }
+                }
             }
         }
 
         return if (type.contains("Movies")) {
-            newMovieLoadResponse(title, href, TvType.Movie, href) {
+            newMovieLoadResponse(title, url, TvType.Movie, href) {
                 this.posterUrl = poster
                 this.year = year
                 this.tags = tags
+                this.plot = plot
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
         } else {
-            newTvSeriesLoadResponse(title, href, TvType.TvSeries, episodes) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.year = year
                 this.tags = tags
+                this.plot = plot
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
         }
+    }
+
+    data class Response(
+        @JsonProperty("url") var url: String
+    )
+
+    private suspend fun bypassAdLinks(link: String): String {
+        val apiUrl = "https://api.emilyx.in/api/bypass"
+        val type = if (link.contains("rocklinks")) "rocklinks"
+            else if (link.contains("dulink")) "dulink"
+            else if (link.contains("dulink")) "ez4short"
+            else ""
+        val values = mapOf("type" to type, "url" to link)
+        val json = mapper.writeValueAsString(values)
+        return app.post(
+            url = apiUrl,
+            headers = mapOf(
+                "Content-Type" to "application/json"
+            ),
+            json = JsonAsString(json)
+        ).parsed<Response>().url
     }
 
     override suspend fun loadLinks(
@@ -184,25 +239,48 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language" to "en-US,en;q=0.5",
-            "Referer" to data,
-            "Alt-Used" to "olamovies.ink",
-            "Connection" to "keep-alive",
-            "Upgrade-Insecure-Requests" to "1",
-            "Sec-Fetch-Dest" to "document",
-            "Sec-Fetch-Mode" to "navigate",
-            "Sec-Fetch-Site" to "same-origin",
-            "Sec-Fetch-User" to "?1"
-        )
+        // Log.d("mydata", data)
 
-        val doc = app.get(
-            data,
-            headers
-        )
-
+        if (data.contains("[\"")) {
+            val firstLink = data.removePrefix("[\"").removeSuffix("\"]").split("\",\"").map { it.trim() }
+            // Log.d("myfirstlinks1", firstLink.toString())
+            val fixedfirstLink = arrayListOf<String>()
+            firstLink.filterTo(fixedfirstLink, { it != "https://olamovies.cyou<?>" })
+            fixedfirstLink.forEach {
+                // val doc = app.get(it, referer = "$mainUrl/").document
+                // Log.d("mydoc", doc.toString())
+                // Log.d("mylinks", bypassAdLinks(doc.select("#download > a").attr("href")))
+                safeApiCall {
+                    callback.invoke(
+                        ExtractorLink(
+                            it.substringAfter("<?>"),
+                            it.substringAfter("<?>"),
+                            it.substringBefore("<?>"),
+                            "$mainUrl/",
+                            getQualityFromName(Regex("(?i)((DVDRip)|(HD)|(HQ)|(HDRip))").find(it.substringAfter("<?>"))?.value.toString().lowercase()),
+                            false
+                        )
+                    )
+                }
+            }
+        } else {
+            val firstLink = data
+            Log.d("myfirstlinks2", firstLink)
+            // val doc = app.get(firstLink, referer = "$mainUrl/").document
+            // Log.d("mylinks", bypassAdLinks(doc.select("#download > a").attr("href")))
+            safeApiCall {
+                callback.invoke(
+                    ExtractorLink(
+                        firstLink.substringAfter("<?>"),
+                        firstLink.substringAfter("<?>"),
+                        firstLink.substringBefore("<?>"),
+                        "$mainUrl/",
+                        getQualityFromName(Regex("(?i)((DVDRip)|(HD)|(HQ)|(HDRip))").find(firstLink.substringAfter("<?>"))?.value.toString().lowercase()),
+                        false
+                    )
+                )
+            }
+        }
         return true
     }
 }
