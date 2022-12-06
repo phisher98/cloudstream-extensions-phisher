@@ -18,6 +18,7 @@ class EinthusanProvider : MainAPI() { // all providers must be an instance of Ma
     override var lang = "ta"
     override val hasDownloadSupport = true
     override var sequentialMainPage = true
+    override var sequentialMainPageDelay: Long = 100
     override val supportedTypes = setOf(
         TvType.Movie
     )

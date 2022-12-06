@@ -1,6 +1,6 @@
 package com.likdev256
 
-import android.util.Log
+// import android.util.Log
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
@@ -70,10 +70,10 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("results") var results: ArrayList<MovieResults> = arrayListOf()
     )
 
-    data class fullCount(
+    /*data class fullCount(
         @JsonProperty("results") var results: ArrayList<String> = arrayListOf(),
         @JsonProperty("count") var count: Int
-    )
+    )*/
 
     private val MovieapiUrl = "https://parse.showflix.tk/parse/classes/movies"
     private val TVapiUrl = "https://parse.showflix.tk/parse/classes/series"
@@ -208,8 +208,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             app.post(MovieapiUrl, requestBody = MovieSearchreq, referer = "$mainUrl/")
                 .parsed<MovieAll>().results   //Log.d("JSON", res.toString())
 
-        val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
-        Log.d("check", check.toString())
+        // val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
+        // Log.d("check", check.toString())
 
         val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
             .parsed<TVAll>().results
@@ -235,10 +235,14 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             }
         }
         val merge = Movies + TVSeries
-        return merge.sortedBy { -FuzzySearch.partialRatio(it.name.lowercase(), query.lowercase()) }
+        // merge.map {
+            // Log.d("myname", it.name.replace("(\\()+(.*)+(\\))".toRegex(), "").lowercase())
+            // Log.d("myquery", query)
+        // }
+        return merge.sortedBy { -FuzzySearch.partialRatio(it.name.replace("(\\()+(.*)+(\\))".toRegex(), "").lowercase(), query.lowercase()) }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse {
         if (url.contains("movie")) {
             val MovieobjID = url.removePrefix("https://showflix.in/movie/")
             val MovieLoadreq =
@@ -322,7 +326,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 TVit.seriesCategory.toString().contains("Malayalam") -> """\\QMalayalam\\E"""
                 else -> ""
             }
-            Log.d("request", recQuery)
+            // Log.d("request", recQuery)
             val recommendations = queryTVApi(
                 Random.nextInt(0, 100),
                 recQuery
@@ -336,7 +340,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     this.quality = SearchQuality.HD
                 }
             }
-            Log.d("TVResult", recommendations.toString())
+            // Log.d("TVResult", recommendations.toString())
 
             val episodes = TVit.Seasons.Seasons.map { (seasonName, episodes) ->
                 val seasonNum = Regex("\\d+").find(seasonName)?.value?.toInt()
@@ -405,6 +409,51 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         return String(hexChars)
     }
 
+    private suspend fun loadMu38(
+        url: String,
+        main: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
+
+        val regexID =
+            Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+        val id = regexID.findAll(url).map {
+            it.value.replace(Regex("(embed-|/e/)"), "")
+        }.first()
+        //val master = "$main/sources48/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+        val master = "$main/sources48/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
+        val headers = mapOf(
+            "watchsb" to "sbstream",
+        )
+        val mapped = app.get(
+            master.lowercase(),
+            headers = headers,
+            referer = url,
+        ).parsedSafe<Main>()
+        // val urlmain = mapped.streamData.file.substringBefore("/hls/")
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    name + "-MultiAudio",
+                    name + "-MultiAudio",
+                    mapped?.streamData?.file.toString(),
+                    url,
+                    Qualities.Unknown.value,
+                    true,
+                    headers
+                )
+            )
+        }
+        mapped?.streamData?.subs?.map {sub ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    sub.label.toString(),
+                    sub.file ?: return@map null,
+                )
+            )
+        }
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -415,92 +464,15 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         if (data.contains("movie")) {
             val url = data.substringAfter(",").replace(Regex("(embed-|/play/)"), "/e/")
             //Log.d("url", url)
-            val main =
-                if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
+            val main = if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
             //Log.d("main", main)
-
-            val regexID =
-                Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
-            val id = regexID.findAll(url).map {
-                it.value.replace(Regex("(embed-|/e/)"), "")
-            }.first()
-          //val master = "$main/sources48/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-            val master = "$main/sources48/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
-            val headers = mapOf(
-                "watchsb" to "sbstream",
-            )
-            val mapped = app.get(
-                master.lowercase(),
-                headers = headers,
-                referer = url,
-            ).parsedSafe<Main>()
-            // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-            safeApiCall {
-                callback.invoke(
-                    ExtractorLink(
-                        name + "-MultiAudio",
-                        name + "-MultiAudio",
-                        mapped?.streamData?.file.toString(),
-                        url,
-                        Qualities.Unknown.value,
-                        true,
-                        headers
-                    )
-                )
-            }
-            mapped?.streamData?.subs?.map {sub ->
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        sub.label.toString(),
-                        sub.file ?: return@map null,
-                    )
-                )
-            }
-
+            loadMu38(url, main, subtitleCallback, callback)
         } else {
             val url = data.replace(Regex("(embed-|/play/)"), "/e/")
             //Log.d("url", url)
-            val main =
-                if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
+            val main = if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
             //Log.d("main", main)
-
-            val regexID =
-                Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
-            val id = regexID.findAll(url).map {
-                it.value.replace(Regex("(embed-|/e/)"), "")
-            }.first()
-//        val master = "$main/sources48/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-            val master = "$main/sources48/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
-            val headers = mapOf(
-                "watchsb" to "sbstream",
-            )
-            val mapped = app.get(
-                master.lowercase(),
-                headers = headers,
-                referer = url,
-            ).parsedSafe<Main>()
-            // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-            safeApiCall {
-                callback.invoke(
-                    ExtractorLink(
-                        name + "-MultiAudio",
-                        name + "-MultiAudio",
-                        mapped?.streamData?.file.toString(),
-                        url,
-                        Qualities.Unknown.value,
-                        true,
-                        headers
-                    )
-                )
-            }
-            mapped?.streamData?.subs?.map {sub ->
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        sub.label.toString(),
-                        sub.file ?: return@map null,
-                    )
-                )
-            }
+            loadMu38(url, main, subtitleCallback, callback)
         }
 
         return true
