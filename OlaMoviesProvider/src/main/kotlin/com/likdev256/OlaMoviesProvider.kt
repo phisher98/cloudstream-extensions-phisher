@@ -11,6 +11,11 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.nicehttp.JsonAsString
+import com.lagradost.nicehttp.RequestBodyTypes
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.nodes.Element
 
 class OlaMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
@@ -213,24 +218,47 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     data class Response(
+        @JsonProperty("credits") var credits: String,
+        @JsonProperty("from_db") var fromDb: Boolean,
+        @JsonProperty("success") var success: Boolean,
+        @JsonProperty("type") var type: String,
         @JsonProperty("url") var url: String
     )
 
-    private suspend fun bypassAdLinks(link: String): String {
+    private suspend fun bypassAdLinks(link: String): String? {
         val apiUrl = "https://api.emilyx.in/api/bypass"
         val type = if (link.contains("rocklinks")) "rocklinks"
             else if (link.contains("dulink")) "dulink"
-            else if (link.contains("dulink")) "ez4short"
+            else if (link.contains("ez4short")) "ez4short"
             else ""
+        //Log.d("mytype", type)
         val values = mapOf("type" to type, "url" to link)
-        val json = mapper.writeValueAsString(values)
-        return app.post(
-            url = apiUrl,
-            headers = mapOf(
-                "Content-Type" to "application/json"
-            ),
-            json = JsonAsString(json)
-        ).parsed<Response>().url
+        //Log.d("mytype", values.toString())
+        val json = mapper.writeValueAsString(values).toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+       // Log.d("mytype", json.toString())
+        //Log.d("mytype", JsonAsString(json).toString())
+        return coroutineScope {
+                    val asyncTask = async {
+                        app.post(
+                        url = apiUrl,
+                        requestBody = json
+                        ).toString()//.parsedSafe<Response>()?.url?.substringBefore("""\""")?.trim()
+                    }
+            asyncTask.await()
+        }
+    }
+
+    private suspend fun bypassOlaRedirect(link: String): String {
+        //Log.d("myfirstlink", link)
+        val key = link.substringAfter("?key=").substringBefore("&id=")//.replace("%2B","+").replace("%3D","=").replace("%2F","/")
+        //Log.d("mykey", key)
+        val id = link.substringAfter("&id=")
+        //Log.d("myid", id)
+        val param = mapOf(key to id)
+        val doc = app.get(link, referer = "$mainUrl/", params = param).document
+        //Log.d("mydoctest", doc.toString())
+        //Log.d("mydoc", doc.select("#download > a").attr("href"))
+        return doc.select("#download > a").attr("href").trim()
     }
 
     override suspend fun loadLinks(
@@ -247,9 +275,9 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
             val fixedfirstLink = arrayListOf<String>()
             firstLink.filterTo(fixedfirstLink, { it != "https://olamovies.cyou<?>" })
             fixedfirstLink.forEach {
-                // val doc = app.get(it, referer = "$mainUrl/").document
-                // Log.d("mydoc", doc.toString())
-                // Log.d("mylinks", bypassAdLinks(doc.select("#download > a").attr("href")))
+                Log.d("mybypassolalinks1", bypassOlaRedirect(it.substringBefore("<?>")))
+                Log.d("mybypasslinks1", bypassAdLinks(bypassOlaRedirect(it.substringBefore("<?>"))).toString())
+                //Log.d("mylist", mylinks.toString())
                 safeApiCall {
                     callback.invoke(
                         ExtractorLink(
@@ -265,9 +293,8 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
             }
         } else {
             val firstLink = data
-            Log.d("myfirstlinks2", firstLink)
-            // val doc = app.get(firstLink, referer = "$mainUrl/").document
-            // Log.d("mylinks", bypassAdLinks(doc.select("#download > a").attr("href")))
+            Log.d("mybypassolalinks1", bypassOlaRedirect(firstLink.substringBefore("<?>")))
+            Log.d("mybypasslinks2", bypassAdLinks(bypassOlaRedirect(firstLink.substringBefore("<?>"))).toString())
             safeApiCall {
                 callback.invoke(
                     ExtractorLink(

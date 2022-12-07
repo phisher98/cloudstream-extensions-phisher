@@ -41,11 +41,11 @@ subprojects {
     }
 
     android {
-        compileSdkVersion(31)
+        compileSdkVersion(33)
 
         defaultConfig {
             minSdk = 26
-            targetSdk = 31
+            targetSdk = 33
         }
 
         compileOptions {
@@ -76,10 +76,11 @@ subprojects {
         // but you dont need to include any of them if you dont need them
         // https://github.com/recloudstream/cloudstream/blob/master/app/build.gradle
         implementation(kotlin("stdlib")) // adds standard kotlin features, like listOf, mapOf etc
-        implementation("com.github.Blatzar:NiceHttp:0.3.2") // http library
-        implementation("org.jsoup:jsoup:1.13.1") // html parser
+        implementation("com.github.Blatzar:NiceHttp:0.4.0") // http library
+        implementation("org.jsoup:jsoup:1.15.3") // html parser
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.1.1")
     }
 }
 
