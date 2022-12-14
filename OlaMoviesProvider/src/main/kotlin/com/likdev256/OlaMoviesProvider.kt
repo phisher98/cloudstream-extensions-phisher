@@ -17,6 +17,7 @@ import kotlinx.coroutines.coroutineScope
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -106,7 +107,7 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val document = app.get("$mainUrl/?s=$query").document
         //Log.d("document", document.toString())
 
-        return document.select("div.layout-simple").mapNotNull {
+        return document.select("div.layout-simple").mapNotNull { it ->
             val titleS = it.selectFirst("article > div.entry-overlay h2.entry-title > a")?.text().toString()
             val titleRegex = Regex("(^.*\\)\\d*)")
             val title = titleRegex.find(titleS)?.groups?.get(1)?.value.toString()
@@ -118,7 +119,7 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
             //Log.d("QualityN", qualityN).post-152185 > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > a:nth-child(1)
             val quality = getQualityFromString(if (titleS.contains("2160p")) "4k" else "hd")
             val type = ArrayList<String>()
-            it.select("article div.entry-category a").forEach { type.add(it.ownText()) }
+            it.select("article div.entry-category a").forEach {me -> type.add(me.ownText()) }
             //Log.d("mygodtype", type.toString())
             if (type.contains("Movies")) {
                 newMovieSearchResponse(title, href, TvType.Movie) {
@@ -297,22 +298,30 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         }
     }
 
-    private suspend fun bypassOlaRedirect(link: String, referer: String): String {
-        //Log.d("myfirstlink", link)
-        val key = link.substringAfter("?key=").substringBefore("&id=").replace("%2B","+").replace("%3D","=").replace("%2F","/")
-        //Log.d("mykey", key)
-        val id = link.substringAfter("&id=")
-        //Log.d("myid", id)
-        val param = mapOf(key to id)
-        val doc = app.get(link, referer = referer, params = param).document
-        //Log.d("mydoctest", doc.toString())
-        //Log.d("mydoc", doc.select("#download > a").attr("href"))
-        return doc.select("#download > a").attr("href").trim()
+    private suspend fun bypassOlaRedirect(link: String, referer: String): List<String> {
+        var count = 0
+        val shortLinkList = arrayListOf<String>()
+        var doc: Document
+        while (count <= 10) {
+            //Log.d("myfirstlink", link)
+            count += 1
+            val key = link.substringAfter("?key=").substringBefore("&id=").replace("%2B", "+")
+                .replace("%3D", "=").replace("%2F", "/")
+            //Log.d("mykey", key)
+            val id = link.substringAfter("&id=")
+            //Log.d("myid", id)
+            val param = mapOf(key to id)
+            doc = app.get(link, referer = referer, params = param).document
+            //Log.d("mydoctest", doc.toString())
+            Log.d("mydoc", doc.select("#download > a").attr("href"))
+            shortLinkList.add(doc.select("#download > a").attr("href").trim())
+        }
+        return shortLinkList
     }
 
-    val gdbot = "https://gdbot.xyz"
+    private val gdbot = "https://gdbot.xyz"
 
-    suspend fun extractGdbot(url: String): String? {
+    private suspend fun extractGdbot(url: String): String? {
         val headers = mapOf(
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         )
@@ -342,7 +351,7 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         return requestFile.selectFirst("div.mt-8 a.float-right")?.attr("href")
     }
 
-    fun getBaseUrl(url: String): String {
+    private fun getBaseUrl(url: String): String {
         return URI(url).let {
             "${it.scheme}://${it.host}"
         }
@@ -352,7 +361,7 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         @JsonProperty("url") val url: String? = null,
     )
 
-    suspend fun extractDrivebot(url: String): String? {
+    private suspend fun extractDrivebot(url: String): String? {
         val iframeGdbot =
             app.get(url).document.selectFirst("li.flex.flex-col.py-6 a:contains(Drivebot)")
                 ?.attr("href")
@@ -394,27 +403,28 @@ class OlaMoviesProvider : MainAPI() { // all providers must be an instance of Ma
         // Log.d("mydata", data)
         val me = parseJson<MovieLinks>(data)
         //Log.d("mydata", me.list.toString())
-        me.list.forEach {
-            if (it.quality.isNotEmpty()) {
+        me.list.forEach { he ->
+            if (he.quality.isNotEmpty()) {
                 //Log.d("mydata", it.toString())
-                var count = 0
-                Log.d("mybypassolalinks1", bypassOlaRedirect(it.link, me.url))
-                Log.d("mydata", "got-here")
-                val shortLink = bypassOlaRedirect(it.link, me.url)
-                if (bypassOlaRedirect(it.link, me.url).isNotEmpty()) {
-                    while (count <= 10) {
+                val shortLink = bypassOlaRedirect(he.link, me.url).filter { it.isNotBlank() }
+                if (bypassOlaRedirect(he.link, me.url).isNotEmpty()) {
+                    shortLink.forEach {
                         Log.d("mylist", "got")
-                        Log.d("myfinallinks1", extractDrivebot(extractGdbot(bypassAdLinks(shortLink).toString()).toString()).toString())
-                        count = count + 1
+                        Log.d("mybypassolalinks1", bypassOlaRedirect(he.link, me.url).toString())
+                        //Log.d("mydata", "got-here")
+                        Log.d(
+                            "myfinallinks1",
+                            extractDrivebot(extractGdbot(bypassAdLinks(it).toString()).toString()).toString()
+                        )
                         safeApiCall {
                             callback.invoke(
                                 ExtractorLink(
-                                    it.quality,
-                                    it.quality,
-                                    extractDrivebot(extractGdbot(bypassAdLinks(shortLink).toString()).toString()).toString(),
+                                    he.quality,
+                                    he.quality,
+                                    extractDrivebot(extractGdbot(bypassAdLinks(it).toString()).toString()).toString(),
                                     "$mainUrl/",
                                     getQualityFromName(
-                                        Regex("(?i)((DVDRip)|(HD)|(HQ)|(HDRip))").find(it.quality)?.value.toString()
+                                        Regex("(?i)((DVDRip)|(HD)|(HQ)|(HDRip))").find(he.quality)?.value.toString()
                                             .lowercase()
                                     ),
                                     false
