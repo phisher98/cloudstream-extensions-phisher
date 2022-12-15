@@ -9,6 +9,8 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import org.jsoup.nodes.Element
 import okhttp3.FormBody
 import org.jsoup.Jsoup
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class TamilDhoolProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://www.tamildhool.net"
@@ -30,6 +32,10 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         "tamil-tv" to "Tamil TV"
     )
 
+    private val dateOne   = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yy"))
+    private val dateTwo   = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    private val dateThree = LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
     data class homeDocument (
         @JsonProperty("type"       ) var type       : String?,
         @JsonProperty("html"       ) var html       : String,
@@ -38,10 +44,11 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
     )
 
     private suspend fun queryTVApi(page: Int, query: String): String {
+        //Log.d("mygoddate", dateOne)
         val body = FormBody.Builder()
             .addEncoded("action", "infinite_scroll")
             .addEncoded("page", "$page")
-            .addEncoded("currentday", "13.12.22")
+            .addEncoded("currentday", dateOne)
             .addEncoded("order", "DESC")
             .addEncoded("scripts[0]", "jquery-core")
             .addEncoded("scripts[1]", "jquery-migrate")
@@ -138,8 +145,8 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
             .addEncoded("query_args[comments_per_page]", "50")
             .addEncoded("query_args[no_found_rows]", "false")
             .addEncoded("query_args[order]", "DESC")
-            .addEncoded("query_before", "2022-12-14%2018%3A06%3A56")
-            .addEncoded("last_post_date", "2022-12-13%2023%3A10%3A55")
+            .addEncoded("query_before", "$dateTwo%2018%3A06%3A56")
+            .addEncoded("last_post_date", "$dateThree%2023%3A10%3A55")
             .build()
 
         return app.post(
@@ -153,7 +160,7 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         val body = FormBody.Builder()
             .addEncoded("action", "infinite_scroll")
             .addEncoded("page", "1")
-            .addEncoded("currentday", "28.11.22")
+            .addEncoded("currentday", dateOne)
             .addEncoded("order", "DESC")
             .addEncoded("scripts[0]", "jquery-core")
             .addEncoded("scripts[1]", "jquery-migrate")
@@ -253,8 +260,8 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
             .addEncoded("query_args[search_terms][0]", query)
             .addEncoded("query_args[search_orderby_title][0]", "wp_c58d0c057a_posts.post_title%20LIKE%20'%7B3b8a4bf4290993b6bc34eef3fe3b6a426ed7c9e299d2fb7178e638a814f0a65a%7D$query%7B3b8a4bf4290993b6bc34eef3fe3b6a426ed7c9e299d2fb7178e638a814f0a65a%7D'")
             .addEncoded("query_args[order]", "DESC")
-            .addEncoded("query_before", "2022-12-14%2018%3A14%3A37")
-            .addEncoded("last_post_date", "2022-11-28%2000%3A23%3A09")
+            .addEncoded("query_before", "$dateTwo%2018%3A14%3A37")
+            .addEncoded("last_post_date", "$dateThree%2000%3A23%3A09")
             .build()
 
         return app.post(
@@ -279,8 +286,8 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         //Log.d("mygodquery", query)
         //Log.d("mygoddocument", document.toString())
         val home = document.select("article.regular-post").mapNotNull {
-                it.toSearchResult()
-            }
+            it.toSearchResult()
+        }
 
         return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
     }
@@ -294,10 +301,10 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         val posterUrl = fixUrlNull(this.selectFirst("div.post-thumb > a > img")?.attr("src"))
         //Log.d("mygodposterUrl", posterUrl.toString())
         return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-                this.posterUrl = posterUrl
-                this.posterHeaders = mapOf("referer" to "$mainUrl/")
-                this.quality = SearchQuality.HD
-            }
+            this.posterUrl = posterUrl
+            this.posterHeaders = mapOf("referer" to "$mainUrl/")
+            this.quality = SearchQuality.HD
+        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -334,9 +341,9 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         )
 
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster?.trim()
-                this.posterHeaders = mapOf("referer" to "$mainUrl/")
-            }
+            this.posterUrl = poster?.trim()
+            this.posterHeaders = mapOf("referer" to "$mainUrl/")
+        }
     }
 
     override suspend fun loadLinks(

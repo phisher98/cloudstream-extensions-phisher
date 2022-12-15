@@ -1,16 +1,16 @@
 package com.likdev256
 
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.*
 import com.lagradost.cloudstream3.*
-//import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-//import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
-import com.lagradost.nicehttp.NiceResponse
 
 class Av1EncodedProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://www.av1encoded.in"
@@ -97,7 +97,9 @@ class Av1EncodedProvider : MainAPI() { // all providers must be an instance of M
         val recommendations = doc.select("div.item-container > div").mapNotNull {
             it.toSearchResult()
         }
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+        val link = doc.select("#videoplayer").attr("href")
+        Log.d("mygodcheck", link)
+        return newMovieLoadResponse(title, url, TvType.Movie, link) {
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
@@ -111,50 +113,58 @@ class Av1EncodedProvider : MainAPI() { // all providers must be an instance of M
        // }
     }
 
+    data class getMp4 (
+        @JsonProperty("playerId"                  ) var playerId                  : String?,
+        @JsonProperty("width"                     ) var width                     : String?,
+        @JsonProperty("height"                    ) var height                    : String?,
+        @JsonProperty("notifyEnabled"             ) var notifyEnabled             : Boolean?,
+        @JsonProperty("url"                       ) var url                       : String,
+        @JsonProperty("url11"                     ) var url11                     : String?,
+        @JsonProperty("html5url"                  ) var html5url                  : String?,
+        @JsonProperty("minFlashVersionNewPlayer"  ) var minFlashVersionNewPlayer  : String?,
+        @JsonProperty("wmode"                     ) var wmode                     : String?,
+        @JsonProperty("asa"                       ) var asa                       : Boolean?,
+        @JsonProperty("provider"                  ) var provider                  : String?,
+        @JsonProperty("flashvars"                 ) var flashvars                 : String?,
+        @JsonProperty("liveRertyTimeout"          ) var liveRertyTimeout          : Int?   ,
+        @JsonProperty("poster"                    ) var poster                    : String?,
+        @JsonProperty("isExternalPlayer"          ) var isExternalPlayer          : Boolean?,
+        @JsonProperty("isIframePlayer"            ) var isIframePlayer            : Boolean?,
+        @JsonProperty("isHtml5Player"             ) var isHtml5Player             : Boolean?,
+        @JsonProperty("timestamp"                 ) var timestamp                 : String?,
+        @JsonProperty("stubEnabled"               ) var stubEnabled               : Boolean?,
+        @JsonProperty("verifyInline"              ) var verifyInline              : Boolean?,
+        @JsonProperty("webrtcBrokenH264"          ) var webrtcBrokenH264          : Boolean?,
+        @JsonProperty("playerLocalizationEnabled" ) var playerLocalizationEnabled : Boolean?,
+
+    )
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val linkRegex = Regex("(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/\\/=]*mp4))")
-        val source = app.get(data).document.select("div.entry iframe").attr("src")
-        val script = app.get(source, referer = "$mainUrl/").document.select("body > script").toString()
-        //val links = linkRegex.find(script)?.groups?.get(1)?.value.toString()
-        val links = linkRegex.findAll(script).map{it.value.trim()}.toList()
-        //Log.d("links", links.toString())
-            safeApiCall {
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "HD",
-                        links[0],
-                        "$mainUrl/",
-                        Qualities.P720.value,
-                        false
-                    )
+        Log.d("mygoddata", data)
+        val data1 = "https://www.ok.ru/videoembed/5333288946406"
+        val linkJson = app.get(data1.trim(), referer = "$mainUrl/").document.select("div.vid-card_cnt").attr("data-options")
+        val link = tryParseJson<getMp4>(linkJson.toString())?.url
+        Log.d("mygodjson", linkJson.toString())
+        Log.d("mygodlink", link.toString())
+
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    "Av1Encoded",
+                    "Av1Encoded",
+                    link.toString(),
+                    "https://ok.ru/",
+                    Qualities.Unknown.value,
+                    false
                 )
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "SD",
-                        links[1],
-                        "$mainUrl/",
-                        Qualities.P480.value,
-                        false
-                    )
-                )
-                callback.invoke(
-                    ExtractorLink(
-                        "TamilYogi",
-                        "Low",
-                        links[2],
-                        "$mainUrl/",
-                        Qualities.P360.value,
-                        false
-                    )
-                )
-            }
+            )
+        }
+
         return true
     }
 }
