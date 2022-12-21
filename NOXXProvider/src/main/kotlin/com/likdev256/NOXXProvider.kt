@@ -154,6 +154,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
                     Episode(
                         data = mainUrl + it.attr("href").toString(),
                         name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
+                        posterUrl = poster,
                         season = titRegex.find(seasonNum)?.value?.toInt(),
                         episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
                     )

@@ -5,8 +5,8 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "English Provider"
-    language = "en"
+    description = "Indian MultiLanguage Provider (Mostly Hindi)"
+    language = "hi"
     authors = listOf("LikDev-256")
 
     /**
@@ -23,7 +23,8 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
         "Movie",
-        "TvSeries"
+        "TvSeries",
+        "Cartoon"
     )
     iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/AllMovieLandProvider/icon.png"
 }

@@ -1,72 +1,169 @@
 package com.likdev256
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.nicehttp.NiceResponse
+import okhttp3.FormBody
 import org.jsoup.nodes.Element
 
 class AllMovieLandProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://allmovieland.com"
     override var name = "AllMovieLand"
     override val hasMainPage = true
-    override var lang = "en"
+    override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
-        TvType.Movie
+        TvType.Movie,
+        TvType.TvSeries,
+        TvType.Cartoon
     )
+
+    private var cookiesSSID: String? = ""
+    private var cookies = mapOf<String, String>()
+    private var tokenKey: String? = ""
 
     override val mainPage = mainPageOf(
         "$mainUrl/films/" to "Movies",
         "$mainUrl/bollywood/" to "Bollywood Movies",
         "$mainUrl/hollywood/" to "Hollywood Movies",
         "$mainUrl/series/" to "TV Shows",
-        "$mainUrl/cartoons/" to "Cartoons"
+        "$mainUrl/cartoon/" to "Cartoons"
     )
+
+    private suspend fun querySearchApi(query: String): NiceResponse {
+        val body = FormBody.Builder()
+            .addEncoded("do", "search")
+            .addEncoded("subaction", "search")
+            .addEncoded("search_start", "0")
+            .addEncoded("full_search", "0")
+            .addEncoded("result_from", "1")
+            .addEncoded("story", query)
+            .build()
+
+        return app.post(
+            "$mainUrl/index.php?do=opensearch", //$mainUrl/engine/ajax/controller.php?mod=search
+            requestBody = body,
+            referer = "$mainUrl/",
+            cookies = cookies
+        )
+    }
+
+    private suspend fun getDlJson(link: String, url: String): String {
+        val doc = app.get(link, referer = url).document
+        val jsonString = Regex("""\{.*\}""").find(doc.select("body > script:last-child").toString())?.value.toString()
+        //Log.d("mybaddoc", doc.toString())
+        //Log.d("mybaddoc", jsonString)
+        val json = parseJson<Getfile>(jsonString)
+        //Log.d("mygodjson1", json.toString())
+        //Log.d("mybadjson2", "https://${json.href}${json.file}")
+        tokenKey = json.key
+        val m3u8Langs = app.post(
+            "https://${json.href}${json.file}",
+            referer = link,
+            headers = mapOf(
+                "X-CSRF-TOKEN" to "${json.key}",
+            ),
+        ).toString()
+        //Log.d("mybadjson3", m3u8Langs)
+        return m3u8Langs.replace(Regex("(\\,)\\s*\\[\\]"), "")
+    }
+
+    private suspend fun getM3u8(file: String?): String {
+        return app.post(
+            "https://advise-shine-i-206.site/playlist/$file.txt",
+            headers = mapOf(
+                "X-CSRF-TOKEN" to "$tokenKey",
+            ),
+            referer = "$mainUrl/"
+        ).toString()
+    }
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        cookiesSSID = app.get("$mainUrl/").cookies["PHPSESSID"]
+        cookies = mapOf(
+            "PHPSESSID" to "$cookiesSSID"
+        )
         val document = if (page == 1) {
-            app.get(request.data).document
+            app.get(request.data, cookies = cookies).document
         } else {
-            app.get(request.data + "/page/$page/").document
+            app.get(request.data + "/page/$page/", cookies = cookies).document
         }
 
         //Log.d("Document", request.data)
         val home = document.select("article.short-mid").mapNotNull {
-                    it.toSearchResult()
+                    it.toHomeSearchResult()
                 }
 
         return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        //Log.d("Got","got here")
+        //Log.d("mygodcookie",cookies.toString())
+        val title = this.selectFirst("a > h3")?.text()?.trim() ?: return null
+        //Log.d("mybatitle", title)
+        val href = fixUrl(this.select("a").attr("href"))
+        //Log.d("href", href)
+        val posterUrl = fixUrlNull(mainUrl + this.select("div.new-short__poster > a.new-short__poster--link > img").attr("data-src"))
+        //Log.d("mygodposterUrl", posterUrl.toString())
+        val checkType = this.select("span.new-short__cats").text()
+        //Log.d("mybacheck", checkType)
+        val type = if (checkType.contains("films", true)) TvType.Movie
+        else if (checkType.contains("series", true)) TvType.TvSeries
+        else TvType.Cartoon
+        return when (type) {
+            TvType.Movie -> {
+                newMovieSearchResponse(title, href, TvType.Movie) {
+                    this.posterUrl = posterUrl
+                    posterHeaders = cookies
+                }
+            }
+            TvType.TvSeries -> {
+                newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                    this.posterUrl = posterUrl
+                    posterHeaders = cookies
+                }
+            }
+            else -> {
+                newMovieSearchResponse(title, href, TvType.Cartoon) {
+                    this.posterUrl = posterUrl
+                    posterHeaders = cookies
+                }
+            }
+        }
+    }
+
+    private fun Element.toHomeSearchResult(): SearchResponse? {
+        //Log.d("mygodcookie",cookies.toString())
         val title = this.selectFirst("a > h3")?.text()?.trim() ?: return null
         //Log.d("title", title)
         val href = fixUrl(this.select("a").attr("href"))
         //Log.d("href", href)
-        val posterUrl = fixUrlNull(mainUrl + this.select("div.new-short > a.new-short > img.new-short").attr("src"))
-        //Log.d("posterUrl", posterUrl.toString())
+        val posterUrl = fixUrlNull(mainUrl + this.select("div.new-short__poster > a.new-short__poster--link > img").attr("data-src"))
+        //Log.d("mygodposterUrl", posterUrl.toString())
         return newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
-            }
+            this.posterUrl = posterUrl
+            posterHeaders = cookies
+        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
-        //Log.d("document", document.toString())
+        val searchList = querySearchApi(
+            query
+        ).document
 
-        return document.select("ul.recent-posts > li").mapNotNull {
-                it.toSearchResult()
-        }.filter { document.select("div.post-content > h2 > a")
-            .text().trim()
-            .contains(Regex("(?i)EP\\\\s?[0-9]+|Episode\\\\s?[0-9]+|Season..|season")).not() }
+        return searchList.select("article.short-mid").mapNotNull {
+            it.toSearchResult()
+        }
     }
 
     override suspend fun load(url: String): LoadResponse? {
@@ -74,81 +171,123 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         //Log.d("Doc", doc.toString())
         val title = doc.selectFirst("h1.fs__title")?.text()?.toString()?.trim()
             ?: return null
-        //Log.d("titleL", titleL)
         //Log.d("title", title)
-        val poster = fixUrlNull(doc.selectFirst("div.poster > img")?.attr("src"))
+        val poster = fixUrlNull(mainUrl + doc.selectFirst("img.fs__poster-img")?.attr("src"))
         //Log.d("poster", poster.toString())
         val tags = doc.select("div.xfs__item--value[itemprop=genre] > a").map { it.text() }
-        val year =
-            doc.selectFirst("span.date")?.text()?.toString()?.substringAfter(",")?.trim()?.toInt()
+        val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
+        val year = yearRegex.find(title)?.value
+            ?.toIntOrNull()
         //Log.d("year", year.toString())
-        val description = doc.selectFirst("div.wp-content > p > span")?.text()?.trim()
-        val type = if (doc.select("li.fs__info_top--li:nth-child(3)").text().contains("pg", true)) TvType.Movie else TvType.TvSeries
-        //Log.d("desc", description.toString())
-        val trailerLink = doc.select("#player > div.tabs").map {
+        val description = doc.select("div.fs__descr--text > p").joinToString {
+            it.text().trim()
+        }
+        val isMovie    = tags.filter { it.contains("films", true) }.joinToString()
+        val isTvSeries = tags.filter { it.contains("series", true) }.joinToString()
+        //val isCartoon  = tags.filter { it.contains("cartoon", true) }.joinToString()
+        //Log.d("mybaddesc", mycheckType.toString())
+        val type = if (isMovie.contains("films", true)) TvType.Movie
+        else if (isTvSeries.contains("series", true)) TvType.TvSeries
+        else TvType.Cartoon
+        val trailerLink = doc.select("#player > div").map {
             it.select("iframe").attr("src")
-        }.filter { it.contains("youtube") }
-        val trailer = fixUrlNull(
-                getEmbed(trailerLink)
-            )
-        //Log.d("trailer", trailer.toString())
+        }.filter { it.contains("youtube") }.joinToString()
+        val trailer = fixUrlNull(trailerLink)
+        //Log.d("mygodtrailer", trailerLink)
         val rating = doc.select("b.imdb__value").text().replace(",", ".").toRatingInt()
         //Log.d("rating", rating.toString())
         val duration =
-            doc.select("li.xfs__item_op:nth-child(3) > b")?.text()?.toString()?.removeSuffix(" min.")?.trim()
-                ?.toInt()
+            doc.select("li.xfs__item_op:nth-child(3) > b").text().removeSuffix(" min.").trim()
+                .toIntOrNull()
         //Log.d("dur", duration.toString())
         val actors =
-            doc.select("div.person").map {
+            doc.select("div.xfs__item_op > b[itemprop=actors]").text().split(", ").map {
                 ActorData(
-                    Actor(
-                        it.select("div.xfs__item_op > b[itemprop=actors]").text().toString()
-                    )
+                    Actor(it)
                 )
             }
         val recommendations = doc.select("li.short-mid").mapNotNull {
             it.toSearchResult()
         }
+        val idRegex = Regex("(src:.')+(\\D.*\\d)")
+        val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
+        val embedLink = "https://advise-shine-i-206.site/play/$id"
+        val jsonReceive = getDlJson(embedLink, url)
 
-        /*val episodes = ArrayList<Episode>()
-        doc.select("section.container > div.border-b").forEach { me ->
-            val seasonNum = me.select("button > span").text()
-            me.select("div.season-list > a").forEach {
-                episodes.add(
-                    Episode(
-                        data = mainUrl + it.attr("href").toString(),
-                        name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
-                        season = titRegex.find(seasonNum)?.value?.toInt(),
-                        episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
-                    )
-                )
-            }
-        }*/
-
-        return if (type == TvType.Movie) {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = poster?.trim()
-                this.year = year
-                this.plot = description
-                this.tags = tags
-                this.rating = rating
-                this.duration = duration
-                this.actors = actors
-                this.recommendations = recommendations
-                addTrailer(trailer)
+        var episodes: List<Episode> = listOf()
+        var data = ""
+        if (type == TvType.TvSeries) {
+            if (jsonReceive.contains("folder", true)) {
+                    //Log.d("mybadEmbed", jsonReceive)
+                    episodes = parseJson<ArrayList<Seasons>>(jsonReceive).map { Seasons ->
+                        val sNum = Seasons.id.toIntOrNull()
+                        //Log.d("mybadSnum", Snum.toString())
+                        Seasons.folder.map { ep ->
+                            val eNum = ep.episode.toIntOrNull()
+                            Episode(
+                                ep.folder.toJson(),
+                                ep.title,
+                                sNum,
+                                eNum,
+                                poster
+                            )
+                        }
+                    }.flatten()
+                } else {
+                    //Log.d("mybadepisode", jsonReceive)
+                    episodes = parseJson<Array<Extract>>(jsonReceive).map {
+                        Episode(
+                            jsonReceive.toJson(),
+                            "1 episode",
+                            1,
+                            1,
+                            poster
+                        )
+                    }
             }
         } else {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster?.trim()
-                this.backgroundPosterUrl = bgposter?.trim()
-                this.year = year
-                this.plot = description
-                this.tags = tags
-                this.rating = rating
-                this.duration = duration
-                this.actors = actors
-                this.recommendations = recommendations
-                addTrailer(trailer?.toString())
+            data = jsonReceive.toJson()
+        }
+
+        return when (type) {
+            TvType.Movie -> {
+                newMovieLoadResponse(title, url, TvType.Movie, data) {
+                    this.posterUrl = poster?.trim()
+                    this.year = year
+                    this.plot = description
+                    this.tags = tags
+                    this.rating = rating
+                    this.duration = duration
+                    this.actors = actors
+                    this.recommendations = recommendations
+                    addTrailer(trailer)
+                }
+            }
+            TvType.TvSeries -> {
+                newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                    this.posterUrl = poster?.trim()
+                    this.year = year
+                    this.plot = description
+                    this.tags = tags
+                    this.rating = rating
+                    this.duration = duration
+                    this.actors = actors
+                    this.recommendations = recommendations
+                    addTrailer(trailer)
+                }
+            }
+            else -> {
+                newMovieLoadResponse(title, url, TvType.Movie, data) {
+                    this.posterUrl = poster?.trim()
+                    this.year = year
+                    this.plot = description
+                    this.tags = tags
+                    this.rating = rating
+                    this.duration = duration
+                    this.actors = actors
+                    this.recommendations = recommendations
+                    addTrailer(trailer)
+                }
             }
         }
     }
@@ -173,50 +312,54 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         @JsonProperty("kp"         ) var kp         : String?,
     )
 
+    data class Extract (
+        @JsonProperty("title" ) var title : String?,
+        @JsonProperty("id"    ) var id    : String?,
+        @JsonProperty("file"  ) var file  : String?
+    )
+
+    data class Seasons (
+        @JsonProperty("title"  ) var title  : String?,
+        @JsonProperty("id"     ) var id     : String,
+        @JsonProperty("folder" ) var folder : List<Episodes> = listOf()
+    )
+
+    data class Episodes (
+        @JsonProperty("episode" ) var episode : String,
+        @JsonProperty("title"   ) var title   : String?,
+        @JsonProperty("id"      ) var id      : String?,
+        @JsonProperty("folder"  ) var folder  : List<Files> = listOf()
+    )
+
+    data class Files (
+        @JsonProperty("file"    ) var file   : String,
+        @JsonProperty("end_tag" ) var endTag : String?,
+        @JsonProperty("title"   ) var title  : String?,
+        @JsonProperty("id"      ) var id     : String?
+    )
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val url  = data.substringBefore(",")
-        val link = data.substringAfter(",")
-        Log.d("mygodembedlink", link)
+        //Log.d("mybadembedlink", data)
+        val m3u8Links = parseJson<Array<Extract>>(data)
 
-        val doc = app.get(link, referer = url).document
-        val jsonString = Regex("""\{.*\}""").find(doc.select("body > script:last-child").toString())?.value.toString()
-        Log.d("mygoddoc", doc.toString())
-        Log.d("mygoddoc", jsonString)
-        val json = tryParseJson<Getfile>(jsonString)
-        //Log.d("mygodjson1", json.toString())
-        Log.d("mygodjson2", "https://${json?.href}/playlist/${json?.file}.txt")
-        val m3u8Link = app.post(
-            "https://${json?.href}/playlist/${json?.file}.txt",
-            referer = link,
-            headers = mapOf("Content-Type" to "application/x-www-form-urlencoded",),
-            data = mapOf(
-                "id" to json?.id.toString(),
-                "cuid" to json?.cuid.toString(),
-                "key" to json?.key.toString(),
-                "movie" to json?.movie.toString(),
-                "host" to json?.host.toString(),
-                "masterId" to json?.masterId.toString(),
-                "masterHash" to json?.masterHash.toString(),
-            )
-        ).toString()
-        Log.d("mygodjson1", m3u8Link)
-
-        safeApiCall {
-            callback.invoke(
-                ExtractorLink(
-                    "KatMovies",
-                    "KatMovies-HD",
-                    m3u8Link,
-                    "https://${json?.href}",
-                    Qualities.Unknown.value,
-                    true
+        m3u8Links.map {
+            safeApiCall {
+                callback.invoke(
+                    ExtractorLink(
+                        "AllMovieLand-${it.title}",
+                        "AllMovieLand-${it.title}",
+                        getM3u8(it.file),
+                        "https://advise-shine-i-206.site",
+                        Qualities.Unknown.value,
+                        true
+                    )
                 )
-            )
+            }
         }
 
         return true
