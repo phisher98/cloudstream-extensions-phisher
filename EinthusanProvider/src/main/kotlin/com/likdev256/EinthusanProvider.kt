@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
+import me.xdrop.fuzzywuzzy.FuzzySearch
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
@@ -66,11 +67,34 @@ class EinthusanProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/movie/results/?query=$query").document
-
-        return document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val query = query.replace(" ", "+")
+        val resultTamil = app.get("$mainUrl/movie/results/?lang=tamil&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
+        val resultHindi = app.get("$mainUrl/movie/results/?lang=hindi&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val resultMalayalam = app.get("$mainUrl/movie/results/?lang=malayalam&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val resultTelugu = app.get("$mainUrl/movie/results/?lang=telugu&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val resultKannada = app.get("$mainUrl/movie/results/?lang=kannada&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val resultBengali = app.get("$mainUrl/movie/results/?lang=bengali&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val resultMarathi = app.get("$mainUrl/movie/results/?lang=marathi&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val resultPunjabi = app.get("$mainUrl/movie/results/?lang=punjabi&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+            it.toSearchResult()
+        }
+        val merge = resultTamil + resultHindi + resultMalayalam + resultTelugu + resultKannada + resultBengali + resultMarathi + resultPunjabi
+
+        return merge.sortedBy { -FuzzySearch.partialRatio(it.name.replace("(\\()+(.*)+(\\))".toRegex(), "").lowercase(), query.lowercase()) }
     }
 
     override suspend fun load(url: String): LoadResponse? {
