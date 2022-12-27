@@ -67,29 +67,29 @@ class EinthusanProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val query = query.replace(" ", "+")
-        val resultTamil = app.get("$mainUrl/movie/results/?lang=tamil&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val fixedQuery = query.replace(" ", "+")
+        val resultTamil = app.get("$mainUrl/movie/results/?lang=tamil&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultHindi = app.get("$mainUrl/movie/results/?lang=hindi&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultHindi = app.get("$mainUrl/movie/results/?lang=hindi&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultMalayalam = app.get("$mainUrl/movie/results/?lang=malayalam&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultMalayalam = app.get("$mainUrl/movie/results/?lang=malayalam&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultTelugu = app.get("$mainUrl/movie/results/?lang=telugu&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultTelugu = app.get("$mainUrl/movie/results/?lang=telugu&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultKannada = app.get("$mainUrl/movie/results/?lang=kannada&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultKannada = app.get("$mainUrl/movie/results/?lang=kannada&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultBengali = app.get("$mainUrl/movie/results/?lang=bengali&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultBengali = app.get("$mainUrl/movie/results/?lang=bengali&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultMarathi = app.get("$mainUrl/movie/results/?lang=marathi&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultMarathi = app.get("$mainUrl/movie/results/?lang=marathi&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
-        val resultPunjabi = app.get("$mainUrl/movie/results/?lang=punjabi&query=$query").document.select("#UIMovieSummary > ul > li").mapNotNull {
+        val resultPunjabi = app.get("$mainUrl/movie/results/?lang=punjabi&query=$fixedQuery").document.select("#UIMovieSummary > ul > li").mapNotNull {
             it.toSearchResult()
         }
         val merge = resultTamil + resultHindi + resultMalayalam + resultTelugu + resultKannada + resultBengali + resultMarathi + resultPunjabi
