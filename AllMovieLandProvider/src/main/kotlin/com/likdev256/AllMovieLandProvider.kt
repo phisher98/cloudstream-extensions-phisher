@@ -345,7 +345,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         //Log.d("mybadembedlink", data)
-        val m3u8Links = parseJson<Array<Extract>>(data.replace(Regex("(\\,)\\s*\\[\\]"), ""))
+        val m3u8Links = parseJson<Array<Extract>>(data.replace(Regex("\\[\\],"), ""))
 
         m3u8Links.map {
             safeApiCall {
