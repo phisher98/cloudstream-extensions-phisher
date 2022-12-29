@@ -77,7 +77,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
 
     private suspend fun getM3u8(file: String?): String {
         return app.post(
-            "https://advise-shine-i-206.site/playlist/$file.txt",
+            "https://hemingway-dries-i-207.site/playlist/$file.txt",
             headers = mapOf(
                 "X-CSRF-TOKEN" to "$tokenKey",
             ),
@@ -354,7 +354,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                         "AllMovieLand-${it.title}",
                         "AllMovieLand-${it.title}",
                         getM3u8(it.file),
-                        "https://advise-shine-i-206.site",
+                        "https://hemingway-dries-i-207.site",
                         Qualities.Unknown.value,
                         true
                     )
