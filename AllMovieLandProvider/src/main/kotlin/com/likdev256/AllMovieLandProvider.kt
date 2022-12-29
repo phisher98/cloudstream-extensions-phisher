@@ -211,7 +211,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         }
         val idRegex = Regex("(src:.')+(\\D.*\\d)")
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
-        val embedLink = "https://advise-shine-i-206.site/play/$id"
+        val embedLink = "https://hemingway-dries-i-207.site/play/$id"
         val jsonReceive = getDlJson(embedLink, url)
 
         var episodes: List<Episode> = listOf()
