@@ -25,6 +25,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         TvType.Cartoon
     )
 
+    private val playerDomain = "https://butterscotch-trister-i-208.site"
     private var cookiesSSID: String? = ""
     private var cookies = mapOf<String, String>()
     private var tokenKey: String? = ""
@@ -77,7 +78,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
 
     private suspend fun getM3u8(file: String?): String {
         return app.post(
-            "https://hemingway-dries-i-207.site/playlist/$file.txt",
+            "$playerDomain/playlist/$file.txt",
             headers = mapOf(
                 "X-CSRF-TOKEN" to "$tokenKey",
             ),
@@ -211,7 +212,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         }
         val idRegex = Regex("(src:.')+(\\D.*\\d)")
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
-        val embedLink = "https://hemingway-dries-i-207.site/play/$id"
+        val embedLink = "$playerDomain/play/$id"
         val jsonReceive = getDlJson(embedLink, url)
 
         var episodes: List<Episode> = listOf()
@@ -345,16 +346,16 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         //Log.d("mybadembedlink", data)
-        val m3u8Links = parseJson<Array<Extract>>(data.replace(Regex("\\[\\],"), ""))
+        val m3u8Links = parseJson<List<Extract>>(data.replace(Regex("""\[],"""), ""))
 
-        m3u8Links.map {
+        m3u8Links.forEach {
             safeApiCall {
                 callback.invoke(
                     ExtractorLink(
                         "AllMovieLand-${it.title}",
                         "AllMovieLand-${it.title}",
                         getM3u8(it.file),
-                        "https://hemingway-dries-i-207.site",
+                        playerDomain,
                         Qualities.Unknown.value,
                         true
                     )
