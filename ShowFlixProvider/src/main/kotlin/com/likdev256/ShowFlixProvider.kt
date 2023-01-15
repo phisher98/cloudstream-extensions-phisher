@@ -1,11 +1,12 @@
 package com.likdev256
 
-// import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.nicehttp.NiceResponse
@@ -16,7 +17,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.random.Random
 
 class ShowFlixProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://showflix.in"
+    override var mainUrl = "https://showflix.click"
     override var name = "ShowFlix"
     override val hasMainPage = true
     override var lang = "ta"
@@ -26,24 +27,31 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         TvType.TvSeries
     )
 
+    private val installationID = "1153d166-be0a-46ad-9197-cb77247722f9"
+
     data class Seasons(
         var Seasons: Map<String, List<String?>> = mapOf()
     )
 
+    data class Streamhide(
+        var Streamhide: Map<String, List<String?>> = mapOf()
+    )
+
     data class TVResults(
-        @JsonProperty("objectId") var objectId: String,
-        @JsonProperty("Seasons") var Seasons: Seasons = Seasons(),
-        @JsonProperty("seriesName") var seriesName: String,
-        @JsonProperty("seriesRating") var seriesRating: String,
-        @JsonProperty("seriesStoryline") var seriesStoryline: String?,
-        @JsonProperty("seriesPoster") var seriesPoster: String?,
-        @JsonProperty("seriesBackdrop") var seriesBackdrop: String?,
-        @JsonProperty("seriesCategory") var seriesCategory: String?,
-        @JsonProperty("seriesTotalSeason") var seriesTotalSeason: String,
-        @JsonProperty("seriesLanguage") var seriesLanguage: String?,
-        @JsonProperty("createdAt") var createdAt: String?,
-        @JsonProperty("updatedAt") var updatedAt: String?,
-        @JsonProperty("hdlink") var hdlink: String?
+        @JsonProperty("objectId"          ) var objectId          : String?,
+        @JsonProperty("Seasons"           ) var Seasons           : Seasons = Seasons(),
+        @JsonProperty("seriesName"        ) var seriesName        : String,
+        @JsonProperty("seriesRating"      ) var seriesRating      : String?,
+        @JsonProperty("seriesStoryline"   ) var seriesStoryline   : String?,
+        @JsonProperty("seriesPoster"      ) var seriesPoster      : String?,
+        @JsonProperty("seriesBackdrop"    ) var seriesBackdrop    : String?,
+        @JsonProperty("seriesCategory"    ) var seriesCategory    : String?,
+        @JsonProperty("seriesLanguage"    ) var seriesLanguage    : String?,
+        @JsonProperty("seriesTotalSeason" ) var seriesTotalSeason : String?,
+        @JsonProperty("createdAt"         ) var createdAt         : String?,
+        @JsonProperty("updatedAt"         ) var updatedAt         : String?,
+        @JsonProperty("streamhide"        ) var streamhide        : Streamhide = Streamhide(),
+        @JsonProperty("hdlink"            ) var hdlink            : String?
     )
 
     data class TVAll(
@@ -51,23 +59,46 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     )
 
     data class MovieResults(
-        @JsonProperty("objectId") var objectId: String,
-        @JsonProperty("movieName") var movieName: String,
-        @JsonProperty("rating") var rating: String,
-        @JsonProperty("storyline") var storyline: String?,
-        @JsonProperty("poster") var poster: String?,
-        @JsonProperty("backdrop") var backdrop: String?,
-        @JsonProperty("category") var category: String?,
-        @JsonProperty("streamlink") var streamlink: String,
-        @JsonProperty("language") var language: String?,
-        @JsonProperty("createdAt") var createdAt: String?,
-        @JsonProperty("updatedAt") var updatedAt: String?,
-        @JsonProperty("shrink") var shrink: Boolean?,
-        @JsonProperty("hdlink") var hdlink: String?
+        @JsonProperty("objectId"   ) var objectId   : String?,
+        @JsonProperty("movieName"  ) var movieName  : String,
+        @JsonProperty("rating"     ) var rating     : String?,
+        @JsonProperty("storyline"  ) var storyline  : String?,
+        @JsonProperty("poster"     ) var poster     : String?,
+        @JsonProperty("backdrop"   ) var backdrop   : String?,
+        @JsonProperty("category"   ) var category   : String?,
+        @JsonProperty("streamlink" ) var streamlink : String,
+        @JsonProperty("language"   ) var language   : String?,
+        @JsonProperty("hdlink"     ) var hdlink     : String?,
+        @JsonProperty("sharedisk"  ) var sharedisk  : String?,
+        @JsonProperty("streamhide" ) var streamhide : String?,
+        @JsonProperty("shrink"     ) var shrink     : Boolean?,
+        @JsonProperty("createdAt"  ) var createdAt  : String?,
+        @JsonProperty("updatedAt"  ) var updatedAt  : String?
     )
 
     data class MovieAll(
         @JsonProperty("results") var results: ArrayList<MovieResults> = arrayListOf()
+    )
+
+    data class MovieLinks(
+        @JsonProperty("streamsb"  ) val streamsb  : String,
+        @JsonProperty("streamhide") val streamhide: String?,
+        @JsonProperty("sharedisk" ) val sharedisk : String?
+    )
+
+    data class GetShareDiskDl (
+        @JsonProperty("uploaded_by"     ) var uploadedBy     : String?,
+        @JsonProperty("type"            ) var type           : String?,
+        @JsonProperty("video_url"       ) var videoUrl       : String?,
+        @JsonProperty("title"           ) var title          : String?,
+        @JsonProperty("online_playable" ) var onlinePlayable : Boolean?,
+        @JsonProperty("date"            ) var date           : String?,
+        @JsonProperty("size"            ) var size           : Int?   ,
+        @JsonProperty("length"          ) var length         : Int?   ,
+        @JsonProperty("download_data"   ) var downloadData   : String?,
+        @JsonProperty("video_thumbnail" ) var videoThumbnail : String?,
+        @JsonProperty("ad_type"         ) var adType         : String?,
+        @JsonProperty("server_id"       ) var serverId       : String?
     )
 
     /*data class fullCount(
@@ -76,11 +107,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     )*/
 
     private val MovieapiUrl = "https://parse.showflix.tk/parse/classes/movies"
-    private val TVapiUrl = "https://parse.showflix.tk/parse/classes/series"
+    private val TVapiUrl    = "https://parse.showflix.tk/parse/classes/series"
 
     private suspend fun queryMovieApi(skip: Int, query: String): NiceResponse {
         val req =
-            """{"where":{"category":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":40,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"category":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":40,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         //Log.d("JSON", res.toString())
@@ -93,7 +124,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     private suspend fun queryTVApi(skip: Int, query: String): NiceResponse {
         val req =
-            """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":10,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":10,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         //Log.d("JSON", res.toString())
@@ -143,11 +174,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         request: MainPageRequest
     ): HomePageResponse {
         /*val Moviereq =
-            """{"where":{},"limit":0,"count":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{},"limit":0,"count":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         val TVreq =
-            """{"where":{},"limit":0,"count":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{},"limit":0,"count":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         val fullMovies = app.post(MovieapiUrl, requestBody = Moviereq, referer = "$mainUrl/").parsed<fullCount>().count
@@ -169,7 +200,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 Movielist.map {
                     newMovieSearchResponse(
                         it.movieName,
-                        "$mainUrl${"/"}movie${"/"}${it.objectId}",
+                        "$mainUrl/movie/${it.objectId}",
                         TvType.Movie
                     ) {
                         this.posterUrl = it.poster
@@ -182,7 +213,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 TVlist.map {
                     newTvSeriesSearchResponse(
                         it.seriesName,
-                        "$mainUrl${"/"}series${"/"}${it.objectId}",
+                        "$mainUrl/series/${it.objectId}",
                         TvType.TvSeries
                     ) {
                         this.posterUrl = it.seriesPoster
@@ -196,11 +227,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     override suspend fun search(query: String): List<SearchResponse> {
         val MovieSearchreq =
-            """{"where":{"movieName":{"${"$"}regex":"$query","${"$"}options":"i"}},"order":"-updatedAt","_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"movieName":{"${"$"}regex":"$query","${"$"}options":"i"}},"order":"-updatedAt","_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
         val TVSearchreq =
-            """{"where":{"seriesName":{"${"$"}regex":"$query","${"$"}options":"i"}},"order":"-updatedAt","_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+            """{"where":{"seriesName":{"${"$"}regex":"$query","${"$"}options":"i"}},"order":"-updatedAt","_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
 
@@ -217,7 +248,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         val Movies = MovieResults.map {
             newMovieSearchResponse(
                 it.movieName,
-                "$mainUrl${"/"}movie${"/"}${it.objectId}",
+                "$mainUrl/movie/${it.objectId}",
                 TvType.Movie
             ) {
                 this.posterUrl = it.poster
@@ -227,7 +258,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         val TVSeries = TVResults.map {
             newTvSeriesSearchResponse(
                 it.seriesName,
-                "$mainUrl${"/"}series${"/"}${it.objectId}",
+                "$mainUrl/series/${it.objectId}",
                 TvType.TvSeries
             ) {
                 this.posterUrl = it.seriesPoster
@@ -244,9 +275,9 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     override suspend fun load(url: String): LoadResponse {
         if (url.contains("movie")) {
-            val MovieobjID = url.removePrefix("https://showflix.in/movie/")
+            val MovieobjID = url.removePrefix("$mainUrl/movie/")
             val MovieLoadreq =
-                """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+                """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_JavaScriptKey":"SHOWFLIXMASTERKEY","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                     RequestBodyTypes.JSON.toMediaTypeOrNull()
                 )
             val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/")
@@ -270,12 +301,12 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 else -> ""
             }
             val recommendations = queryMovieApi(
-                Random.nextInt(0, 100),
+                Random.nextInt(0, 2000),
                 recQuery
             ).parsed<MovieAll>().results.map{
                 newMovieSearchResponse(
                     it.movieName,
-                    "$mainUrl${"/"}movie${"/"}${it.objectId}",
+                    "$mainUrl/movie/${it.objectId}",
                     TvType.Movie
                 ) {
                     this.posterUrl = it.poster
@@ -285,9 +316,13 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
             return newMovieLoadResponse(
                 title,
-                "$mainUrl${"/"}movie${"/"}${Movieit.objectId}",
+                "$mainUrl/movie/${Movieit.objectId}",
                 TvType.Movie,
-                "movie,${Movieit.streamlink}"
+                MovieLinks(
+                    Movieit.streamlink,
+                    Movieit.streamhide,
+                    Movieit.sharedisk
+                ).toJson()
             ) {
                 this.posterUrl = poster
                 this.year = year
@@ -301,9 +336,9 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             }
         } else {
             val TVobjID =
-                url.removePrefix("https://showflix.in/series/")//TVRegexurl.replace(url, "")
+                url.removePrefix("$mainUrl/series/")//TVRegexurl.replace(url, "")
             val TVLoadreq =
-                """{"where":{"objectId":"$TVobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"1c380d0e-7415-433c-b0ab-675872a0e782"}""".toRequestBody(
+                """{"where":{"objectId":"$TVobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_JavaScriptKey":"SHOWFLIXMASTERKEY","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                     RequestBodyTypes.JSON.toMediaTypeOrNull()
                 )
             val TVresp = app.post(TVapiUrl, requestBody = TVLoadreq, referer = "$mainUrl/")
@@ -333,7 +368,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             ).parsed<TVAll>().results.map {
                 newTvSeriesSearchResponse(
                     it.seriesName,
-                    "$mainUrl${"/"}series${"/"}${it.objectId}",
+                    "$mainUrl/series/${it.objectId}",
                     TvType.TvSeries
                 ) {
                     this.posterUrl = it.seriesPoster
@@ -358,7 +393,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
             return newTvSeriesLoadResponse(
                 title,
-                "$mainUrl${"/"}series${"/"}${TVit.objectId}",
+                "$mainUrl/series/${TVit.objectId}",
                 TvType.TvSeries,
                 episodes
             ) {
@@ -409,7 +444,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         return String(hexChars)
     }
 
-    private suspend fun loadMu38(
+    private suspend fun loadStreamSBM3u8(
         url: String,
         main: String,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -421,7 +456,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             it.value.replace(Regex("(embed-|/e/)"), "")
         }.first()
         //val master = "$main/sources49/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-        val master = "$main/sources49/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
+        val master = "$main/sources50/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
         val headers = mapOf(
             "watchsb" to "sbstream",
         )
@@ -434,8 +469,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         safeApiCall {
             callback.invoke(
                 ExtractorLink(
-                    name + "-MultiAudio",
-                    name + "-MultiAudio",
+                    name + "-StreamSb_MultiAudio",
+                    name + "-StreamSb_MultiAudio",
                     mapped?.streamData?.file.toString(),
                     url,
                     Qualities.Unknown.value,
@@ -454,6 +489,72 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         }
     }
 
+    private suspend fun loadStreamHideM3u8(
+        url: String,
+        id: String,
+        main: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
+
+        //val master = "$main/sources49/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+        val master = "$main/sources50/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
+        val headers = mapOf(
+            "watchsb" to "sbstream",
+        )
+        val mapped = app.get(
+            master.lowercase(),
+            headers = headers,
+            referer = url,
+        ).parsedSafe<Main>()
+        // val urlmain = mapped.streamData.file.substringBefore("/hls/")
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    name + "-StreamHide_MultiAudio",
+                    name + "-StreamHide_MultiAudio",
+                    mapped?.streamData?.file.toString(),
+                    url,
+                    Qualities.Unknown.value,
+                    true,
+                    headers
+                )
+            )
+        }
+        mapped?.streamData?.subs?.map {sub ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    sub.label.toString(),
+                    sub.file ?: return@map null,
+                )
+            )
+        }
+    }
+
+    private suspend fun loadShareDisk(
+        id: String,
+        main: String,
+        callback: (ExtractorLink) -> Unit) {
+
+        val link = parseJson<GetShareDiskDl>(
+            app.get("$main$id").text
+        ).videoUrl.toString()
+        Log.d("mybadlink", link)
+
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    name + "-ShareDisk",
+                    name + "-ShareDisk",
+                    link,
+                    "",
+                    Qualities.Unknown.value,
+                    false
+                )
+            )
+        }
+
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -461,18 +562,38 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         //Log.d("data", data)
-        if (data.contains("movie")) {
-            val url = data.substringAfter(",").replace(Regex("(embed-|/play/)"), "/e/")
-            //Log.d("url", url)
-            val main = if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
-            //Log.d("main", main)
-            loadMu38(url, main, subtitleCallback, callback)
+            
+        if (data.contains("sharedisk")) {
+            val it = parseJson<MovieLinks>(data)
+            //load streamsb links
+            val streamsb = it.streamsb.replace(Regex("(/d/|embed-|/play/)"), "/e/")
+            var main = "https://sbcloud1.com"
+            loadStreamSBM3u8(streamsb, main, subtitleCallback, callback)
+
+            if (it.sharedisk.isNullOrBlank().not()) {
+                //load sharedisk links
+                Log.d("mybadsharedisk", it.sharedisk.toString())
+                main = "https://us-central1-affiliate2apk.cloudfunctions.net/get_data?shortid="
+                loadShareDisk(it.sharedisk.toString(), main, callback)
+            } else {
+                Log.d("Nothing", "Nothing")
+            }
+
+            if (it.streamhide.isNullOrBlank().not()) {
+                //load streamhide links
+                main = "https://streamhide.to"
+                val streamhide = "$main/e/${it.streamhide}.html"
+                loadStreamHideM3u8(streamhide, it.streamhide.toString(), main, subtitleCallback, callback)
+            } else {
+                Log.d("Nothing", "Nothing")
+            }
+
         } else {
             val url = data.replace(Regex("(embed-|/play/)"), "/e/")
             //Log.d("url", url)
-            val main = if (url.contains("sbcloud")) "https://sbcloud1.com" else "https://embedsb.com"
+            val main = "https://sbcloud1.com"
             //Log.d("main", main)
-            loadMu38(url, main, subtitleCallback, callback)
+            loadStreamSBM3u8(url, main, subtitleCallback, callback)
         }
 
         return true
