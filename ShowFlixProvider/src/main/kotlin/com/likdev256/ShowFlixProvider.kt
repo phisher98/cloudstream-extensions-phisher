@@ -1,6 +1,6 @@
 package com.likdev256
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
@@ -575,8 +575,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 Log.d("mybadsharedisk", it.sharedisk.toString())
                 main = "https://us-central1-affiliate2apk.cloudfunctions.net/get_data?shortid="
                 loadShareDisk(it.sharedisk.toString(), main, callback)
-            } else {
-                Log.d("Nothing", "Nothing")
             }
 
             if (it.streamhide.isNullOrBlank().not()) {
@@ -584,8 +582,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 main = "https://streamhide.to"
                 val streamhide = "$main/e/${it.streamhide}.html"
                 loadStreamHideM3u8(streamhide, it.streamhide.toString(), main, subtitleCallback, callback)
-            } else {
-                Log.d("Nothing", "Nothing")
             }
 
         } else {
