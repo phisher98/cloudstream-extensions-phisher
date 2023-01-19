@@ -538,7 +538,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         val link = parseJson<GetShareDiskDl>(
             app.get("$main$id").text
         ).videoUrl.toString()
-        Log.d("mybadlink", link)
+        //Log.d("mybadlink", link)
 
         safeApiCall {
             callback.invoke(
@@ -572,7 +572,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
             if (it.sharedisk.isNullOrBlank().not()) {
                 //load sharedisk links
-                Log.d("mybadsharedisk", it.sharedisk.toString())
+                //Log.d("mybadsharedisk", it.sharedisk.toString())
                 main = "https://us-central1-affiliate2apk.cloudfunctions.net/get_data?shortid="
                 loadShareDisk(it.sharedisk.toString(), main, callback)
             }
