@@ -361,7 +361,7 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
                     "TamilDhool",
                     "TamilDhool",
                     link,
-                    "",
+                    data,
                     Qualities.Unknown.value,
                     true
                 )
