@@ -328,7 +328,9 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         val posterRaw = doc.selectFirst("div.entry-cover")?.attr("style").toString()
         val poster = posterRegex.find(posterRaw)?.value?.trim()
         //Log.d("poster", poster.toString())
-        val link = doc.select("div.entry-content > div > iframe").attr("src")
+        val link = doc.select("div.entry-content > div > iframe").map {
+            it.attr("src")
+        }.filter { it.toString().contains("thiraione", true) }
         //Log.d("mygodlink", link)
         val episodes = listOf(
             Episode(
