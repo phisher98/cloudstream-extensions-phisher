@@ -330,7 +330,7 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         //Log.d("poster", poster.toString())
         val link = doc.select("div.entry-content > div > iframe").map {
             it.attr("src")
-        }.filter { it.toString().contains("thiraione", true) }
+        }.filter { it.toString().contains("thiraione", true) }.jointToString()
         //Log.d("mygodlink", link)
         val episodes = listOf(
             Episode(
