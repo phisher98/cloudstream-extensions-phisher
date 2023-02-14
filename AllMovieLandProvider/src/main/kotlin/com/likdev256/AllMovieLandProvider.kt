@@ -25,7 +25,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         TvType.Cartoon
     )
 
-    private val playerDomain = "https://butterscotch-trister-i-208.site"
+    private val playerDomain = "https://omu-zorra-i-213.site"
     private var cookiesSSID: String? = ""
     private var cookies = mapOf<String, String>()
     private var tokenKey: String? = ""
