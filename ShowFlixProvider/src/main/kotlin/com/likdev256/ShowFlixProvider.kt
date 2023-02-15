@@ -93,7 +93,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("title"           ) var title          : String?,
         @JsonProperty("online_playable" ) var onlinePlayable : Boolean?,
         @JsonProperty("date"            ) var date           : String?,
-        @JsonProperty("size"            ) var size           : Int?   ,
+        @JsonProperty("size"            ) var size           : Long?   ,
         @JsonProperty("length"          ) var length         : Int?   ,
         @JsonProperty("download_data"   ) var downloadData   : String?,
         @JsonProperty("video_thumbnail" ) var videoThumbnail : String?,
@@ -466,6 +466,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             referer = url,
         ).parsedSafe<Main>()
         // val urlmain = mapped.streamData.file.substringBefore("/hls/")
+
         safeApiCall {
             callback.invoke(
                 ExtractorLink(
