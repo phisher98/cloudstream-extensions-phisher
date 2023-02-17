@@ -5,10 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
-import com.lagradost.nicehttp.NiceResponse
-import okhttp3.FormBody
 
 class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://madstream.live"
@@ -22,10 +22,10 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
 
     override val mainPage = mainPageOf(
         "$mainUrl/" to "LiveStreams",
-        "$mainUrl/index.php" to "TV Shows",
-        "$mainUrl/epic/index.php" to "Action",
-        "$mainUrl/sports.php" to "Adventure",
-        "$mainUrl/sony.php" to "Animation"
+        "$mainUrl/index.php" to "JioTv",
+        "$mainUrl/epic/index.php" to "Epic",
+        "$mainUrl/sports.php" to "Sports",
+        "$mainUrl/sony.php" to "Sony"
     )
 
     data class LiveStreamLinks (
@@ -41,31 +41,57 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         val document = app.get(request.data).document
 
         //Log.d("Document", request.data)
-        val home = document.select("div.col-6").mapNotNull {
+        val home = if (request.data.contains("epic")) {
+            document.select("div.col-md-6").mapNotNull {
+                it.toEpicSearchResult()
+            }
+        } else {
+            document.select("div.col-6").mapNotNull {
                 it.toSearchResult()
             }
+        }
 
         return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
-        val title = this.select("div.card > a > div.info > span").text().trim()
+        val titleRaw = this.selectFirst("div.card > a > div.info > span")?.text()?.trim()
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //Log.d("title", title)
-        val posterUrl = fixUrlNull(this.select("div.card > a > img").attr("src"))
-        //Log.d("posterUrl", posterUrl.toString())
-        val href = fixUrl(this.select("div.card > a ").attr("href"))
-        //Log.d("href", href)
-        val loadData = PrivateLinks(
+        val posterUrl = fixUrl(this.select("img").attr("src"))
+        //Log.d("posterUrl", posterUrl)
+        val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
+        //Log.d("mybadhref", href)
+        val loadData = LiveStreamLinks(
                 title,
                 posterUrl,
                 href
             ).toJson()
 
-        return newLiveStreamSearchResponse(title, loadData, TvType.Live) {
+        return newMovieSearchResponse(title, loadData, TvType.Live) {
                 this.posterUrl = posterUrl
-                this.quality = quality
             }
+    }
+
+    private fun Element.toEpicSearchResult(): SearchResponse {
+        //Log.d("Got","got here")
+        val titleRaw = this.selectFirst("div.livetv > h3 > span")?.text()?.trim()
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
+        //Log.d("title", title)
+        val posterUrl = fixUrl(this.select("div.livetc-right > img").attr("src"))
+        //Log.d("posterUrl", posterUrl)
+        val href = fixUrl(this.selectFirst("div.livetv > a")?.attr("href").toString())
+        //Log.d("href", href)
+        val loadData = LiveStreamLinks(
+            title,
+            posterUrl,
+            href
+        ).toJson()
+
+        return newMovieSearchResponse(title, loadData, TvType.Live) {
+            this.posterUrl = posterUrl
+        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -77,13 +103,13 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         }.filter { it.name.contains(query, true) }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse {
         val data = parseJson<LiveStreamLinks>(url)
-        val title =
-        val poster =
-        val link =
+        val title = data.title
+        val poster = data.poster
+        val link = data.link
 
-        return newLiveStreamLoadResponse(title, url, TvType.Live, link) {
+        return newMovieLoadResponse(title, link, TvType.Live, link) {
                 this.posterUrl = poster
             }
     }
@@ -95,12 +121,64 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        if (data.contains(".m3u8", true)) {
-
-        } else if (data.contains(".png", true)) {
-
-        } else {
-
+        //Log.d("mybadstreamData", data)
+        safeApiCall {
+            if (data.endsWith(".m3u8")) {
+                callback.invoke(
+                    ExtractorLink(
+                        name,
+                        name,
+                        data,
+                        data,
+                        Qualities.Unknown.value,
+                        true
+                    )
+                )
+            } else if (data.contains(".m3u8", true)) {
+                val stream = "https" + data.replace(Regex("https:\\/\\/.*\\.php\\?https"), "")
+                //Log.d("mybadstreamDirect", stream)
+                callback.invoke(
+                    ExtractorLink(
+                        name,
+                        name,
+                        stream,
+                        "",
+                        Qualities.Unknown.value,
+                        true
+                    )
+                )
+            } else if (data.contains(".png", true)) {
+                val id = Regex("\\?id=(\\d*)\\&").find(data)?.groups?.get(1)?.value.toString()
+                val stream = "https://livesportsclub.tech/getm3u8/$id/master.m3u8"
+                //Log.d("mybadstreamTECH", stream)
+                callback.invoke(
+                    ExtractorLink(
+                        "$name-livesportsclub.tech",
+                        "$name-livesportsclub.tech",
+                        stream,
+                        data,
+                        Qualities.Unknown.value,
+                        true
+                    )
+                )
+            } else {
+                val streamRaw = app.get(data).document
+                    .select("video source").attr("src")
+                    .replace("livesportsclub.tk", "livesportsclub.me")
+                val stream = if (streamRaw.contains("http", true)) streamRaw
+                    else "http://livesportsclub.me/sports/$streamRaw"
+                //Log.d("mybadstreamME", stream)
+                callback.invoke(
+                    ExtractorLink(
+                        "$name-livesportsclub.me",
+                        "$name-livesportsclub.me",
+                        stream,
+                        data.replace("livesportsclub.tk", "livesportsclub.me"),
+                        Qualities.Unknown.value,
+                        true
+                    )
+                )
+            }
         }
 
         return true
