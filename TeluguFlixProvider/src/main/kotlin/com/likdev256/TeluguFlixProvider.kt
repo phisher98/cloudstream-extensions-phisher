@@ -182,8 +182,8 @@ class TeluguFlixProvider : MainAPI() { // all providers must be an instance of M
         val id = regexID.findAll(url).map {
             it.value.replace(Regex("(embed-|/e/)"), "")
         }.first()
-        //val master = "$main/sources49/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-        val master = "https://sbchill.com/sources50/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
+        //val master = "$main/sources51/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+        val master = "https://sbchill.com/sources51/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
         val headers = mapOf(
             "watchsb" to "sbstream",
         )
@@ -222,10 +222,10 @@ class TeluguFlixProvider : MainAPI() { // all providers must be an instance of M
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.contains("sbchill", true)) {
-            loadStreamSB(data, subtitleCallback, callback)
-        } else if (data.contains("dood", true)) {
+        if (data.contains("dood", true)) {
             loadExtractor(data, subtitleCallback, callback)
+        } else {
+            loadStreamSB(data, subtitleCallback, callback)
         }
 
         return true
