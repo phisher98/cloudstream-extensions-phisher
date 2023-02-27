@@ -73,7 +73,7 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
     private suspend fun fetchScrollSettings(query: String): ScrollSettings? {
         return tryParseJson<ScrollSettings>(
             app.get("$mainUrl/$query/").document
-            .selectFirst("body > script")?.html()
+            .selectFirst("body > script[type=text/javascript]")?.html()
             ?.removePrefix("var infiniteScroll = ")
             ?.removeSuffix(";")?.trim()
         )
@@ -190,6 +190,7 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
 
         return app.post(
             "$mainUrl/?infinity=scrolling",
+            headers = mapOf("Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8"),
             requestBody = body,
             referer = "$mainUrl/"
         ).parsed<HomeDocument>().html
@@ -308,6 +309,7 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
 
         return app.post(
             "$mainUrl/?infinity=scrolling",
+            headers = mapOf("Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8"),
             requestBody = body,
             referer = "$mainUrl/"
         ).parsed<HomeDocument>().html
