@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 10
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian MultiLanguage Provider (Mostly Hindi)"
-    language = "hi"
+    description = "Sinhala subbed HD Provider"
+    language = "si"
     authors = listOf("LikDev-256")
 
     /**
@@ -16,7 +16,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 1 // will be 3 if unspecified
+    status = 3 // will be 3 if unspecified
 
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
@@ -24,7 +24,6 @@ cloudstream {
     tvTypes = listOf(
         "Movie",
         "TvSeries",
-        "Cartoon"
     )
-    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/AllMovieLandProvider/icon.png"
+    //iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/MovieHUBProvider/icon.png"
 }
