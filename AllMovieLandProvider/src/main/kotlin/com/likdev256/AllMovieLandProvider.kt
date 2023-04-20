@@ -25,7 +25,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         TvType.Cartoon
     )
 
-    private val playerDomain = "https://solis-pivotal-i-216.site"
+    private var playerDomain: String? = ""
     private var cookiesSSID: String? = ""
     private var cookies = mapOf<String, String>()
     private var tokenKey: String? = ""
@@ -212,6 +212,10 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         }
         val idRegex = Regex("(src:.')+(\\D.*\\d)")
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
+        // Automating awful player domain changes
+        val playerScript = "https:" + doc.select("div.tabs__content > script:nth-child(3)").attr("src")
+        val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
+        playerDomain = domainRegex.find(app.get(playerScript).toString())?.groups?.get(1)?.value
         val embedLink = "$playerDomain/play/$id"
         val jsonReceive = getDlJson(embedLink, url)
 
@@ -355,7 +359,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                         "AllMovieLand-${it.title}",
                         "AllMovieLand-${it.title}",
                         getM3u8(it.file),
-                        playerDomain,
+                        playerDomain.toString(),
                         Qualities.Unknown.value,
                         true
                     )
