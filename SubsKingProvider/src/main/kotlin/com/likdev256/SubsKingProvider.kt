@@ -1,9 +1,6 @@
 package com.likdev256
 
 //import android.util.Log
-import android.os.Build
-import android.util.Log
-import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -11,12 +8,13 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
-import okhttp3.FormBody
-import java.util.*
-import javax.crypto.*
+import javax.crypto.Cipher
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import okhttp3.FormBody
+import java.net.URI
 
 class SubsKingProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://subsking.com"
@@ -117,48 +115,6 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         }
     }
 
-    fun String.decodeFromHexString(): ByteArray {
-        check(length % 2 == 0) { "Must have an even length" }
-
-        return chunked(2)
-            .map { it.toInt(16).toByte() }
-            .toByteArray()
-    }
-
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun decryptVideoUrl(cipherText: ByteArray, salt: ByteArray, iv: ByteArray, key: ByteArray): String {
-        Log.d("mybadsalt", String(salt))
-        Log.d("mybadiv", String(iv))
-        Log.d("mybadkey", String(key))
-        val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-        val keySpec = PBEKeySpec(String(key).toCharArray(), salt, 999, 32)
-        val secretKey = secretKeyFactory.generateSecret(keySpec)
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        val secretKeySpec = SecretKeySpec(secretKey.encoded, "AES")
-        val ivParameterSpec = IvParameterSpec(iv)
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec)
-        val decodedBytes = cipher.doFinal(cipherText.copyOfRange(16, cipherText.size))
-        return String(decodedBytes)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun chillxExctractor(url: String):String {
-        val cipherData = AppUtils.parseJson<CipherData>(
-            String(
-                base64DecodeArray(
-                    Regex("MasterJS\\s*=\\s*'([^']+)").find(app.get(url).text)?.groupValues?.get(1).toString()
-                )
-            )
-        )
-        val key = "4VqE3%23N7zt%26HEP%5Ea".toByteArray()
-        val salt = cipherData.salt.toByteArray()
-        val iv = cipherData.iv.toByteArray()
-        val cipherText = cipherData.ciphertext.toByteArray()
-
-        return decryptVideoUrl(cipherText, salt, iv, key)
-    }
-
     private suspend fun getEmbed(postid: String?, nume: String, referUrl: String?): NiceResponse {
         val body = FormBody.Builder()
             .addEncoded("action", "doo_player_ajax")
@@ -177,13 +133,6 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
     data class EmbedUrl (
         @JsonProperty("embed_url") var embedUrl : String?,
         @JsonProperty("type") var type : String?
-    )
-
-    data class CipherData (
-        @JsonProperty("ciphertext" ) var ciphertext : String,
-        @JsonProperty("iv"         ) var iv         : String,
-        @JsonProperty("salt"       ) var salt       : String,
-        @JsonProperty("iterations" ) var iterations : Int
     )
 
     override suspend fun load(url: String): LoadResponse? {
@@ -210,7 +159,7 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         val trailer = if (type == TvType.Movie)
             fixUrlNull(
                 getEmbed(
-                    doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString(),
+                    doc.select("#player-option-trailer").attr("data-post").toString(),
                     "trailer",
                     url
                 ).parsed<EmbedUrl>().embedUrl
@@ -253,7 +202,7 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         }*/
 
         //return if (type == TvType.Movie) {
-        return newMovieLoadResponse(title, url, TvType.Movie, url+","+doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString()) {
+        return newMovieLoadResponse(title, url, TvType.Movie, url+","+doc.select("#player-option-1").attr("data-post").toString()) {
                 this.posterUrl = poster?.trim()
                 this.backgroundPosterUrl = bgposter?.trim()
                 this.year = year
@@ -281,37 +230,124 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         }*/
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
+        }
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val url = data.substringBefore(",")
-        Log.d("mybadembedlink", url)
-        //val postid = data.substringAfter(",")
-        //Log.d("embedlink", postid)
-        /*val Embedlink = getEmbed(
-            postid,
-            "1",
-            link
-        ).parsed<embedUrl>().embedUrl*/
-        val doc = app.get(url).document
-        doc.select("#playeroptionsul > li").map {
-            Log.d("mybadembedlink", "got")
-            val link = getEmbed(
-                it.attr("data-post"),
-                it.attr("data-nume"),
-                ""
-            ).parsed<EmbedUrl>().embedUrl
+        val referer = data.substringBefore(",")
+        val url = fixUrlNull(
+                getEmbed(
+                    data.substringAfter(","),
+                    "1",
+                    referer
+                ).parsed<EmbedUrl>().embedUrl
+            ).toString()
+        val main = getBaseUrl(url)
+        
+        //Log.d("embedlink", url)
+        val KEY = "4VqE3#N7zt&HEP^a"
 
-            if (link != null) {
-                if (link.contains("beastx", true) || link.contains("chillx", true)) {
-                    Log.d("mybadembedlink", chillxExctractor(link))
-                }
-            }
+        val master = Regex("MasterJS\\s*=\\s*'([^']+)").find(
+            app.get(
+                url,
+                referer = referer
+            ).text
+        )?.groupValues?.get(1)
+        val encData = AppUtils.tryParseJson<AESData>(base64Decode(master ?: return true))
+        val decrypt = cryptoAESHandler(encData ?: return true, KEY, false)
+        //Log.d("decrypt", decrypt)
+
+        val source = Regex("""file:\s*\"([^\"]+)""").find(decrypt)?.groupValues?.get(1)
+        val tracks = Regex("""subtitle:\s*\"([^\"]+)""").find(decrypt)?.groupValues?.get(1)
+
+        //Log.d("source", source.toString())
+
+        // required
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Connection" to "keep-alive",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Origin" to main,
+        )
+
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                source ?: return true,
+                "$main/",
+                Qualities.Unknown.value,
+                headers = headers,
+                isM3u8 = true
+            )
+        )
+
+        val subRegex = Regex("""\[.*\]""")
+        "$tracks".split(",").map { track ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    subRegex.find(track)?.value.toString(),
+                    track.replace(subRegex, "")
+                )
+            )
         }
         return true
     }
+
+
+    private fun cryptoAESHandler(
+        data: AESData,
+        pass: String,
+        encrypt: Boolean = true
+    ): String {
+        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+        val spec = PBEKeySpec(
+            pass.toCharArray(),
+            data.salt?.hexToByteArray(),
+            data.iterations?.toIntOrNull() ?: 1,
+            256
+        )
+        val key = factory.generateSecret(spec)
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        return if (!encrypt) {
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(key.encoded, "AES"),
+                IvParameterSpec(data.iv?.hexToByteArray())
+            )
+            String(cipher.doFinal(base64DecodeArray(data.ciphertext.toString())))
+        } else {
+            cipher.init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(key.encoded, "AES"),
+                IvParameterSpec(data.iv?.hexToByteArray())
+            )
+            base64Encode(cipher.doFinal(data.ciphertext?.toByteArray()))
+        }
+    }
+
+    private fun String.hexToByteArray(): ByteArray {
+        check(length % 2 == 0) { "Must have an even length" }
+        return chunked(2)
+            .map { it.toInt(16).toByte() }
+
+            .toByteArray()
+    }
+
+    data class AESData(
+        @JsonProperty("ciphertext") val ciphertext: String? = null,
+        @JsonProperty("iv") val iv: String? = null,
+        @JsonProperty("salt") val salt: String? = null,
+        @JsonProperty("iterations") val iterations: String? = null,
+    )
 }

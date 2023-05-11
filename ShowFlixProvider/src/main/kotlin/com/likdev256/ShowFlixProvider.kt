@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import me.xdrop.fuzzywuzzy.FuzzySearch
@@ -493,42 +494,29 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     private suspend fun loadStreamHideM3u8(
         url: String,
-        id: String,
         main: String,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit) {
 
-        //val master = "$main/sources16/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-        val master = "$main/sources16/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
-        val headers = mapOf(
-            "watchsb" to "sbstream",
-        )
-        val mapped = app.get(
-            master.lowercase(),
-            headers = headers,
-            referer = url,
-        ).parsedSafe<Main>()
-        // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-        safeApiCall {
-            callback.invoke(
-                ExtractorLink(
-                    name + "-StreamHide_MultiAudio",
-                    name + "-StreamHide_MultiAudio",
-                    mapped?.streamData?.file.toString(),
-                    url,
-                    Qualities.Unknown.value,
-                    true,
-                    headers
-                )
-            )
-        }
-        mapped?.streamData?.subs?.map {sub ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    sub.label.toString(),
-                    sub.file ?: return@map null,
-                )
-            )
+        val response = app.get(url, referer = main).document
+        response.select("script[type=text/javascript]").map { script ->
+            if (script.data().contains(Regex("eval\\(function\\(p,a,c,k,e,[rd]"))) {
+                val unpackedscript = getAndUnpack(script.data())
+                val m3u8Regex = Regex("file.\\\"(.*?m3u8.*?)\\\"")
+                val m3u8 = m3u8Regex.find(unpackedscript)?.destructured?.component1() ?: ""
+                if (m3u8.isNotEmpty()) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "$name-StreamHide_MultiAudio",
+                            "$name-StreamHide_MultiAudio",
+                            m3u8,
+                            main,
+                            Qualities.Unknown.value,
+                            true
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -583,7 +571,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 //load streamhide links
                 main = "https://streamhide.to"
                 val streamhide = "$main/e/${it.streamhide}.html"
-                loadStreamHideM3u8(streamhide, it.streamhide.toString(), main, subtitleCallback, callback)
+                loadStreamHideM3u8(streamhide, main, subtitleCallback, callback)
             }
 
         } else {

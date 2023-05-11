@@ -8,7 +8,13 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
+import javax.crypto.Cipher
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 import okhttp3.FormBody
+import java.net.URI
 
 class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://x265rips.us"
@@ -59,14 +65,16 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
 
     private fun Element.toSearchResult(): SearchResponse? {
         //Log.d("Got","got here")
-        val title = this.selectFirst("div.animation-1 > div.title > h4")?.text()?.toString()?.trim() ?: return null
+        val title = this.selectFirst("div.animation-1 > div.title > h4")?.text()?.toString()?.trim()
+            ?: return null
         //Log.d("title", title)
         val href = fixUrl(this.selectFirst("div.poster > a")?.attr("href").toString())
         //Log.d("href", href)
         val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("data-src"))
         //Log.d("posterUrl", posterUrl.toString())
         //Log.d("QualityN", qualityN)
-        val quality = getQualityFromString(this.select("div.poster > div.mepo > span").text().toString())
+        val quality =
+            getQualityFromString(this.select("div.poster > div.mepo > span").text().toString())
         //Log.d("Quality", quality.toString())
         return if (href.contains("Movie")) {
             newMovieSearchResponse(title, href, TvType.Movie) {
@@ -86,14 +94,20 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         //Log.d("document", document.toString())
 
         return document.select("div.result-item").mapNotNull {
-            val title = it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
+            val title =
+                it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
             //Log.d("title", titleS)
-            val href = fixUrl(it.selectFirst("article > div.details > div.title > a")?.attr("href").toString())
+            val href = fixUrl(
+                it.selectFirst("article > div.details > div.title > a")?.attr("href").toString()
+            )
             //Log.d("href", href)
-            val posterUrl = fixUrlNull(it.selectFirst("article > div.image > div.thumbnail > a > img")?.attr("src"))
+            val posterUrl = fixUrlNull(
+                it.selectFirst("article > div.image > div.thumbnail > a > img")?.attr("src")
+            )
             //Log.d("posterUrl", posterUrl.toString())
             //Log.d("QualityN", qualityN)
-            val quality = getQualityFromString(it.select("div.poster > div.mepo > span").text().toString())
+            val quality =
+                getQualityFromString(it.select("div.poster > div.mepo > span").text().toString())
             //Log.d("Quality", quality.toString())
             val type = it.select("article > div.image > div.thumbnail > a > span").text().toString()
             if (type.contains("Movie")) {
@@ -125,15 +139,15 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         )
     }
 
-    data class TrailerUrl (
-        @JsonProperty("embed_url") var embedUrl : String?,
-        @JsonProperty("type") var type : String?
+    data class TrailerUrl(
+        @JsonProperty("embed_url") var embedUrl: String?,
+        @JsonProperty("type") var type: String?
     )
 
-    /*data class embedUrl (
+    data class EmbedUrl (
         @JsonProperty("embed_url") var embedUrl : String,
         @JsonProperty("type") var type : String?
-    )*/
+    )
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
@@ -161,7 +175,8 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         val trailer = if (type == TvType.Movie)
             fixUrlNull(
                 getEmbed(
-                    doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString(),
+                    doc.select("#report-video-button-field > input[name~=postid]").attr("value")
+                        .toString(),
                     "trailer",
                     url
                 ).parsed<TrailerUrl>().embedUrl
@@ -204,18 +219,24 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         }*/
 
         //return if (type == TvType.Movie) {
-        return newMovieLoadResponse(title, url, TvType.Movie, url+","+doc.select("#report-video-button-field > input[name~=postid]").attr("value").toString()) {
-                this.posterUrl = poster?.trim()
-                this.backgroundPosterUrl = bgposter?.trim()
-                this.year = year
-                this.plot = description
-                this.tags = tags
-                this.rating = rating
-                this.duration = duration
-                this.actors = actors
-                this.recommendations = recommendations
-                addTrailer(trailer)
-            }
+        return newMovieLoadResponse(
+            title,
+            url,
+            TvType.Movie,
+            "$url," + doc.select("#report-video-button-field > input[name~=postid]").attr("value")
+                .toString()
+        ) {
+            this.posterUrl = poster?.trim()
+            this.backgroundPosterUrl = bgposter?.trim()
+            this.year = year
+            this.plot = description
+            this.tags = tags
+            this.rating = rating
+            this.duration = duration
+            this.actors = actors
+            //this.recommendations = recommendations
+            addTrailer(trailer)
+        }
         /*} else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster?.trim()
@@ -232,111 +253,124 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         }*/
     }
 
-    data class Subs (
-        @JsonProperty("file") val file: String? = null,
-        @JsonProperty("label") val label: String? = null,
-    )
-
-    data class StreamData (
-        @JsonProperty("file") val file: String,
-        @JsonProperty("cdn_img") val cdnImg: String,
-        @JsonProperty("hash") val hash: String,
-        @JsonProperty("subs") val subs: ArrayList<Subs>? = arrayListOf(),
-        @JsonProperty("length") val length: String,
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("backup") val backup: String,
-    )
-
-    data class Main (
-        @JsonProperty("stream_data") val streamData: StreamData,
-        @JsonProperty("status_code") val statusCode: Int,
-    )
-
-    data class getEmbed (
-        @JsonProperty("status") var status: Boolean?,
-        @JsonProperty("statusCode") var statusCode: Int?,
-        @JsonProperty("statusText") var statusText: String?,
-        @JsonProperty("data") var data: Data?
-    )
-
-    data class Data (
-        @JsonProperty("filecode") var filecode : String?
-    )
-
-    private val hexArray = "0123456789ABCDEF".toCharArray()
-
-    private fun bytesToHex(bytes: ByteArray): String {
-        val hexChars = CharArray(bytes.size * 2)
-        for (j in bytes.indices) {
-            val v = bytes[j].toInt() and 0xFF
-
-            hexChars[j * 2] = hexArray[v ushr 4]
-            hexChars[j * 2 + 1] = hexArray[v and 0x0F]
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
-        return String(hexChars)
     }
-
+    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val link = data.substringBefore(",")
-        //Log.d("embedlink", link)
-        //val postid = data.substringAfter(",")
-        //Log.d("embedlink", postid)
-        /*val Embedlink = getEmbed(
-            postid,
-            "1",
-            link
-        ).parsed<embedUrl>().embedUrl*/
+        val referer = data.substringBefore(",")
+        val url = fixUrlNull(
+                getEmbed(
+                    data.substringAfter(","),
+                    "1",
+                    referer
+                ).parsed<EmbedUrl>().embedUrl
+            ).toString()
+        val main = getBaseUrl(url)
+        
+        //Log.d("embedlink", url)
+        val KEY = "4VqE3#N7zt&HEP^a"
 
-        val doc = app.get(link).document
-        doc.select("div.wp-content > p > span > a[href*=\"filepress\"]").forEach {
-            //Log.d("myitboy", it.toString())
-            val urlid = it.attr("href").replace("https://filepress.online/file/", "")
-            //Log.d("myurlid", urlid)
-            val url = "https://gdpress.xyz/e/" + app.get(
-                "https://api.filepress.online/api/file/video/streamSB/$urlid",
-                referer = "https://filepress.online/"
-            ).parsed<getEmbed>().data?.filecode.toString() + "/"
-
-            //Log.d("myurl", url)
-            val main = "https://gdpress.xyz"
-            val regexID =
-                Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
-            val id = regexID.findAll(url).map { me ->
-                me.value.replace(Regex("(embed-|/e/)"), "")
-            }.first()
-//        val master = "$main/sources16/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-            val master = "$main/sources16/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
-            val headers = mapOf(
-                "watchsb" to "sbstream",
-            )
-            val mapped = app.get(
-                master.lowercase(),
-                headers = headers,
-                referer = url,
-            ).parsedSafe<Main>()
-            // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-            M3u8Helper.generateM3u8(
-                name,
-                mapped?.streamData?.file.toString(),
+        val master = Regex("MasterJS\\s*=\\s*'([^']+)").find(
+            app.get(
                 url,
-                headers = headers
-            ).forEach(callback)
+                referer = referer
+            ).text
+        )?.groupValues?.get(1)
+        val encData = AppUtils.tryParseJson<AESData>(base64Decode(master ?: return true))
+        val decrypt = cryptoAESHandler(encData ?: return true, KEY, false)
+        //Log.d("decrypt", decrypt)
 
-            mapped?.streamData?.subs?.map {sub ->
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        sub.label.toString(),
-                        sub.file ?: return@map null,
-                    )
+        val source = Regex("""file:\s*\"([^\"]+)""").find(decrypt)?.groupValues?.get(1)
+        val tracks = Regex("""subtitle:\s*\"([^\"]+)""").find(decrypt)?.groupValues?.get(1)
+
+        //Log.d("source", source.toString())
+
+        // required
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Connection" to "keep-alive",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Origin" to main,
+        )
+
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                source ?: return true,
+                "$main/",
+                Qualities.Unknown.value,
+                headers = headers,
+                isM3u8 = true
+            )
+        )
+
+        val subRegex = Regex("""\[.*\]""")
+        "$tracks".split(",").map { track ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    subRegex.find(track)?.value.toString(),
+                    track.replace(subRegex, "")
                 )
-            }
+            )
         }
         return true
     }
+
+
+    private fun cryptoAESHandler(
+        data: AESData,
+        pass: String,
+        encrypt: Boolean = true
+    ): String {
+        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+        val spec = PBEKeySpec(
+            pass.toCharArray(),
+            data.salt?.hexToByteArray(),
+            data.iterations?.toIntOrNull() ?: 1,
+            256
+        )
+        val key = factory.generateSecret(spec)
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        return if (!encrypt) {
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(key.encoded, "AES"),
+                IvParameterSpec(data.iv?.hexToByteArray())
+            )
+            String(cipher.doFinal(base64DecodeArray(data.ciphertext.toString())))
+        } else {
+            cipher.init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(key.encoded, "AES"),
+                IvParameterSpec(data.iv?.hexToByteArray())
+            )
+            base64Encode(cipher.doFinal(data.ciphertext?.toByteArray()))
+        }
+    }
+
+    private fun String.hexToByteArray(): ByteArray {
+        check(length % 2 == 0) { "Must have an even length" }
+        return chunked(2)
+            .map { it.toInt(16).toByte() }
+
+            .toByteArray()
+    }
+
+    data class AESData(
+        @JsonProperty("ciphertext") val ciphertext: String? = null,
+        @JsonProperty("iv") val iv: String? = null,
+        @JsonProperty("salt") val salt: String? = null,
+        @JsonProperty("iterations") val iterations: String? = null,
+    )
 }

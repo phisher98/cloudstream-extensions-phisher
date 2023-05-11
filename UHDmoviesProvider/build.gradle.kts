@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 8
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Tamil Tv Serial/Shows Provider"
-    language = "ta"
+    description = "Indian Multi-language 4K Provider"
+    language = "hi"
     authors = listOf("LikDev-256")
 
     /**
@@ -22,7 +22,8 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
+        "Movie",
         "TvSeries",
     )
-    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/TamilDhoolProvider/icon.png"
+    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/UHDmoviesProvider/icon.png"
 }

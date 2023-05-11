@@ -37,7 +37,8 @@ class TamilDhoolProvider : MainAPI() { // all providers must be an instance of M
         // The site has removed this catergory for idk reason, Will enable if it's back
         "kalaignar-tv" to "Kalaignar TV",
         "news-gossips" to "News Gossips TV",
-        "tamil-tv" to "Tamil TV"
+        //"tamil-tv" to "Tamil TV"
+        //Same shit removed causing home catalouge to fail loading
     )
 
     // Used temporarily for POST request (Replaced by a more reliable & failsafe method)
