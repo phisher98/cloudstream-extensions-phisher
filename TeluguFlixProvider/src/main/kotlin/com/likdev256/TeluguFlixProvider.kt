@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import org.jsoup.nodes.Element
+import kotlin.random.Random
 
 class TeluguFlixProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://teluguflix.site"
