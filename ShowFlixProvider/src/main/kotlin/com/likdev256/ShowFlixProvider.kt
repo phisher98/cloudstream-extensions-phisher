@@ -1,6 +1,6 @@
 package com.likdev256
 
-//import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
@@ -433,17 +433,21 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("status_code") val statusCode: Int,
     )
 
-    private val hexArray = "0123456789ABCDEF".toCharArray()
+    private val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-    private fun bytesToHex(bytes: ByteArray): String {
-        val hexChars = CharArray(bytes.size * 2)
-        for (j in bytes.indices) {
-            val v = bytes[j].toInt() and 0xFF
-
-            hexChars[j * 2] = hexArray[v ushr 4]
-            hexChars[j * 2 + 1] = hexArray[v and 0x0F]
+    private fun encodeId(id: String): String {
+        val code = "${createHashTable()}||$id||${createHashTable()}||streamsb"
+        return code.toCharArray().joinToString("") { char ->
+            char.code.toString(16)
         }
-        return String(hexChars)
+    }
+
+    private fun createHashTable(): String {
+        return buildString {
+            repeat(12) {
+                append(alphabet[Random.nextInt(alphabet.length)])
+            }
+        }
     }
 
     private suspend fun loadStreamSBM3u8(
@@ -453,12 +457,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         callback: (ExtractorLink) -> Unit) {
 
         val regexID =
-            Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|/e/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+            Regex("(embed-[a-zA-Z\\d]{0,8}[a-zA-Z\\d_-]+|/e/[a-zA-Z\\d]{0,8}[a-zA-Z\\d_-]+)")
         val id = regexID.findAll(url).map {
             it.value.replace(Regex("(embed-|/e/)"), "")
         }.first()
-        //val master = "$main/sources16/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
-        val master = "$main/sources16/" + bytesToHex("||$id||||streamsb".toByteArray()) + "/"
+        val master = "$main/375664356a494546326c4b797c7c6e756577776778623171737/${encodeId(id)}"
         val headers = mapOf(
             "watchsb" to "sbstream",
         )
