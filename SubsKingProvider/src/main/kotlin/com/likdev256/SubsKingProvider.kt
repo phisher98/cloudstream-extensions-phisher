@@ -115,7 +115,7 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         }
     }
 
-    private suspend fun getEmbed(postid: String?, nume: String, referUrl: String?): NiceResponse {
+    private suspend fun getEmbed(postid: String?, nume: String, type:String, referUrl: String?): NiceResponse {
         val body = FormBody.Builder()
             .addEncoded("action", "doo_player_ajax")
             .addEncoded("post", postid.toString())
@@ -161,6 +161,7 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
                 getEmbed(
                     doc.select("#player-option-trailer").attr("data-post").toString(),
                     "trailer",
+                    "movie",
                     url
                 ).parsed<EmbedUrl>().embedUrl
             )
@@ -186,23 +187,23 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
             it.toSearchResult()
         }
 
-        /*val episodes = ArrayList<Episode>()
-        doc.select("section.container > div.border-b").forEach { me ->
-            val seasonNum = me.select("button > span").text()
-            me.select("div.season-list > a").forEach {
+        val episodes = ArrayList<Episode>()
+        doc.select("#seasons ul.episodios").mapIndexed { seasonNum, me ->
+            me.select("li").mapIndexed { epNum, it ->
                 episodes.add(
                     Episode(
-                        data = mainUrl + it.attr("href").toString(),
-                        name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
-                        season = titRegex.find(seasonNum)?.value?.toInt(),
-                        episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
+                        data = it.select("div.episodiotitle > a").attr("href"),
+                        name = it.select("div.episodiotitle > a").text(),
+                        season = seasonNum+1,
+                        episode = epNum+1,
+                        posterUrl = it.select("div.imagen > img").attr("src")
                     )
                 )
             }
-        }*/
+        }
 
-        //return if (type == TvType.Movie) {
-        return newMovieLoadResponse(title, url, TvType.Movie, url+","+doc.select("#player-option-1").attr("data-post").toString()) {
+        return if (type == TvType.Movie) {
+            newMovieLoadResponse(title, url, TvType.Movie, url+","+doc.select("#player-option-1").attr("data-post").toString()) {
                 this.posterUrl = poster?.trim()
                 this.backgroundPosterUrl = bgposter?.trim()
                 this.year = year
@@ -214,7 +215,7 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
-        /*} else {
+        } else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster?.trim()
                 this.backgroundPosterUrl = bgposter?.trim()
@@ -227,7 +228,7 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
                 this.recommendations = recommendations
                 addTrailer(trailer?.toString())
             }
-        }*/
+        }
     }
 
     private fun getBaseUrl(url: String): String {
@@ -242,14 +243,29 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val referer = data.substringBefore(",")
-        val url = fixUrlNull(
-                getEmbed(
-                    data.substringAfter(","),
-                    "1",
-                    referer
-                ).parsed<EmbedUrl>().embedUrl
-            ).toString()
+        var url = ""
+        var referer = ""
+        if(data.contains(",")) {
+            referer = data.substringBefore(",")
+            url = fixUrlNull(
+                    getEmbed(
+                        data.substringAfter(","),
+                        "1",
+                        "movie",
+                        referer
+                    ).parsed<EmbedUrl>().embedUrl
+                ).toString()
+        } else {
+            referer = data
+            url = fixUrlNull(
+                    getEmbed(
+                        app.get(data).document.select("#player-option-1").attr("data-post").toString(),
+                        "1",
+                        "tv",
+                        referer
+                    ).parsed<EmbedUrl>().embedUrl
+                ).toString()
+        }
         val main = getBaseUrl(url)
         
         //Log.d("embedlink", url)
