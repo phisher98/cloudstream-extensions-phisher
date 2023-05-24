@@ -265,10 +265,8 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         val decrypt = cryptoAESHandler(encData ?: return true, KEY, false)
         //Log.d("decrypt", decrypt)
 
-        val source = Regex("""file:\s*\"([^\"]+)""").find(decrypt)?.groupValues?.get(1)
-        val tracks = Regex("""subtitle:\s*\"([^\"]+)""").find(decrypt)?.groupValues?.get(1)
-
-        //Log.d("source", source.toString())
+        val source = Regex("""sources:\s*\[\{"file":"([^"]+)""").find(decrypt)?.groupValues?.get(1)
+        val tracks = Regex("""tracks:\s*\[(.+)]""").find(decrypt)?.groupValues?.get(1)
 
         // required
         val headers = mapOf(
@@ -292,15 +290,15 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
             )
         )
 
-        val subRegex = Regex("""\[.*\]""")
-        "$tracks".split(",").map { track ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    subRegex.find(track)?.value.toString(),
-                    track.replace(subRegex, "")
+        AppUtils.tryParseJson<List<Tracks>>("[$tracks]")
+            ?.filter { it.kind == "captions" }?.map { track ->
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        track.label ?: "",
+                        track.file ?: return@map null
+                    )
                 )
-            )
-        }
+            }
         return true
     }
 
@@ -349,5 +347,11 @@ class SubsKingProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("iv") val iv: String? = null,
         @JsonProperty("salt") val salt: String? = null,
         @JsonProperty("iterations") val iterations: String? = null,
+    )
+
+    data class Tracks(
+        @JsonProperty("file") val file: String? = null,
+        @JsonProperty("label") val label: String? = null,
+        @JsonProperty("kind") val kind: String? = null,
     )
 }
