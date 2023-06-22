@@ -1,15 +1,19 @@
 package com.likdev256
 
 //import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
+import javax.crypto.Cipher
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 import okhttp3.FormBody
+import java.net.URI
 
 class BanglaPlexProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://banglaplex.fun"
@@ -22,12 +26,12 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
         TvType.TvSeries
     )
 
-    private suspend fun queryApi(page: Int, query: String): String? {
+    private suspend fun queryApi(page: Int, query: String): String {
         val body = FormBody.Builder()
             .addEncoded("action", "fetch_data")
             .addEncoded("minimum_rating", "0")
             .addEncoded("maximum_rating", "10")
-            .addEncoded("sort", "$query")
+            .addEncoded("sort", query)
             .addEncoded("page", "$page")
             .build()
 
@@ -35,7 +39,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
             "$mainUrl/filter_movies/$page",
             requestBody = body,
             referer = "$mainUrl/movies.html"
-        ).parsed<Home>().movieList
+        ).parsed<Home>().movieList.replace("""\r""", "").replace("""\n""", "").replace("""\"""", "")
     }
 
     private suspend fun querysearchApi(query: String): NiceResponse {
@@ -61,7 +65,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
 
 
     data class Home (
-        @JsonProperty("movie_list"      ) var movieList      : String?,
+        @JsonProperty("movie_list"      ) var movieList      : String,
         @JsonProperty("pagination_link" ) var paginationLink : String?,
         @JsonProperty("inputs"          ) var inputs         : String?,
         @JsonProperty("last_query"      ) var lastQuery      : String
@@ -83,21 +87,21 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
             queryApi(
                 page,
                 query
-            ).replace("${\r}", "").replace("${\n}", "").replace("\"", "")
+            )
         )
-        
-        val home = homeList.select("div.col-sm-4").mapNotNull {
+
+        val home = homeList.select("div.col-sm-4").map {
             it.toSearchResult()
         }
         return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("div.movie-img > div.movie-title > h3 > a")?.text()?.toString()?.trim() ?: return null
+    private fun Element.toSearchResult(): SearchResponse {
+        val title = this.select("div.movie-img > div.movie-title > h3 > a").text().trim()
         //Log.d("title", title)
         val href = fixUrl(this.select("div.movie-img > a.ico-play").attr("href").toString())
         //Log.d("href", href)
-        val posterRegex = Regex("url\('(.*)\);")
+        val posterRegex = Regex("url\\('(.*)\\);")
         val posterUrl = fixUrlNull(posterRegex.find(this.select("div.latest-movie-img-container").attr("style"))?.groups?.get(1)?.value.toString())
         //Log.d("posterUrl", posterUrl.toString())
         val quality = getQualityFromString(this.select("div.video_quality_movie > span.label").text())
@@ -115,7 +119,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
         ).parsed<ArrayList<SearchResult>>()
         //Log.d("document", document.toString())
 
-        return searchList.mapNotNull {
+        return searchList.map {
             val title = it.title
             //Log.d("title", title)
             val href = fixUrl(it.url)
@@ -129,7 +133,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
         }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
 
         val title = doc.select("div.col-md-9 > div.row > div.col-md-12 > h1").text()
@@ -150,7 +154,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
 
         return newMovieLoadResponse(title, url, TvType.Movie, data) {
             this.posterUrl = poster
-            this.year = year
+            //this.year = year
             this.plot = description
             this.tags = tags
             //this.rating = rating

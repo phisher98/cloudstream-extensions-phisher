@@ -31,8 +31,6 @@ class PrivateMoviezProvider : MainAPI() { // all providers must be an instance o
         "" to "Movies"
     )
 
-
-
     data class GetMainPageHtml (
     @JsonProperty("paged"   ) val paged   : Int?,
     @JsonProperty("content" ) val content : String
