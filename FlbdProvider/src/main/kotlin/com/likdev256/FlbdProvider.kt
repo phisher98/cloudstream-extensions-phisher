@@ -16,11 +16,11 @@ import javax.crypto.spec.SecretKeySpec
 import okhttp3.FormBody
 import java.net.URI
 
-class SubsKingProvider : MainAPI() { // all providers must be an instance of MainAPI
+class FlbdProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://subsking.com"
-    override var name = "SubsKing"
+    override var name = "FLBD"
     override val hasMainPage = true
-    override var lang = "si"
+    override var lang = "bn"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
