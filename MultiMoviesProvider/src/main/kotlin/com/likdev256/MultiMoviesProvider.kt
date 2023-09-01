@@ -263,7 +263,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             ).parsed<EmbedUrl>().embedUrl
         ).toString()
         url = urlRegex.find(url)?.groups?.get(1)?.value.toString()
-        loadStreamWish(url, subtitleCallback) { callback }
+        loadStreamWish(url, subtitleCallback, callback)
 
         return true
     }
@@ -288,21 +288,18 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             "Sec-Fetch-Dest" to "empty",
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "cross-site",
-            "Origin" to main,
+            "Origin" to "${splitUrl(url)}",
         )
-
-        safeApiCall {
-            callback.invoke(
-                ExtractorLink(
-                    "$name-$main",
-                    "$name-$main",
-                    link,
-                    "https://$main/",
-                    Qualities.Unknown.value,
-                    true,
-                    headers
-                )
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                link,
+                url,
+                Qualities.Unknown.value,
+                true,
+                headers
             )
-        }
+        )
     }
 }
