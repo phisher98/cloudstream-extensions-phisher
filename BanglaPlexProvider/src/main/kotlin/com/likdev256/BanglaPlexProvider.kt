@@ -1,6 +1,6 @@
 package com.likdev256
 
-//import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -39,12 +39,12 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
             "$mainUrl/filter_movies/$page",
             requestBody = body,
             referer = "$mainUrl/movies.html"
-        ).parsed<Home>().movieList.replace("""\r""", "").replace("""\n""", "").replace("""\"""", "")
+        ).parsed<Home>().movieList.replace("\\r", "").replace("\\n", "").replace("\\\"", "")
     }
 
     private suspend fun querysearchApi(query: String): NiceResponse {
         return app.get(
-            "$mainUrl//home/autocompleteajax?term=$query",
+            "$mainUrl/home/autocompleteajax?term=$query",
             referer = "$mainUrl/movies.html"
         )
     }
@@ -52,7 +52,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
     private val trendingMovies = "total_view"
     private val ratingMovies   = "rating"
     private val recentMovies   = "release"
-    private val randomMovies  = "rand"
+    private val randomMovies   = "rand"
     private val movies         = "az"
 
     override val mainPage = mainPageOf(
@@ -66,9 +66,7 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
 
     data class Home (
         @JsonProperty("movie_list"      ) var movieList      : String,
-        @JsonProperty("pagination_link" ) var paginationLink : String?,
-        @JsonProperty("inputs"          ) var inputs         : String?,
-        @JsonProperty("last_query"      ) var lastQuery      : String
+        @JsonProperty("pagination_link" ) var paginationLink : String?
     )
 
     data class SearchResult (
@@ -83,13 +81,16 @@ class BanglaPlexProvider : MainAPI() { // all providers must be an instance of M
         request: MainPageRequest
     ): HomePageResponse {
         val query = request.data.format(page)
+        Log.d("Mytest", queryApi(
+            page,
+            query
+        ))
         val homeList = Jsoup.parse(
             queryApi(
                 page,
                 query
             )
         )
-
         val home = homeList.select("div.col-sm-4").map {
             it.toSearchResult()
         }

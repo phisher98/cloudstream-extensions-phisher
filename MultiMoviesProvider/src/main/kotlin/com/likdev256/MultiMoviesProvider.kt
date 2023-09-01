@@ -263,64 +263,46 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             ).parsed<EmbedUrl>().embedUrl
         ).toString()
         url = urlRegex.find(url)?.groups?.get(1)?.value.toString()
-
-        Log.d("embedlink", url)
-        val request = app.get(url, referer = referer)
-        val redirectUrl = request.url
-        Log.d("redirectlink", redirectUrl)
-        val mainServer = URI(redirectUrl).let {
-            "${it.scheme}://${it.host}"
-        }
-        val key = redirectUrl.substringAfter("embed-").substringBefore(".html")
-        val token =
-            request.document.select("script").find { it.data().contains("sitekey:") }?.data()
-                ?.substringAfterLast("sitekey: '")?.substringBefore("',")?.let { captchaKey ->
-                    getCaptchaToken(
-                        redirectUrl,
-                        captchaKey,
-                        referer = "$mainServer/"
-                    )
-                } ?: throw ErrorLoadingException("can't bypass captcha")
-        app.post(
-            "$mainServer/player-$key-488x286.html", data = mapOf(
-                "op" to "embed",
-                "token" to token
-            ),
-            referer = redirectUrl,
-            headers = mapOf(
-                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Content-Type" to "application/x-www-form-urlencoded"
-            )
-        ).document.select("script").find { script ->
-            script.data().contains("eval(function(p,a,c,k,e,d)")
-        }?.let {
-            val info = getAndUnpack(it.data()).substringAfter("sources=[").substringBefore(",desc")
-                .replace("file", "\"file\"")
-                .replace("label", "\"label\"")
-            tryParseJson<List<Source>>("[$info}]")?.map { res ->
-                callback.invoke(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        res.file ?: return@map null,
-                        "$mainServer/",
-                        when (res.label) {
-                            "HD" -> Qualities.P720.value
-                            "SD" -> Qualities.P480.value
-                            else -> Qualities.Unknown.value
-                        },
-                        headers = mapOf(
-                            "Range" to "bytes=0-"
-                        )
-                    )
-                )
-            }
-        }
+        loadStreamWish(url, subtitleCallback) { callback }
 
         return true
     }
-}
 
-class StreamwishExtractor : Streamplay() {
-    override var mainUrl = "https://streamwish.to"
+    fun splitUrl(url: String): Pair<String, String> {
+        val urlRegex = Regex("(https?://)?([a-zA-Z0-9.-]+)/./(.*)")
+        val match = urlRegex.find(url)
+        return Pair(match?.groups?.get(2)?.value.toString(), match?.groups?.get(3)?.value.toString())
+    }
+
+    private suspend fun loadStreamWish(
+        url: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
+
+        val doc = app.get(url).text
+        val linkRegex = Regex("sources:.\\[\\{file:\"(.*?)\"")
+        val link = linkRegex.find(doc)?.groups?.get(1)?.value.toString()
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Connection" to "keep-alive",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Origin" to main,
+        )
+
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    "$name-$main",
+                    "$name-$main",
+                    link,
+                    "https://$main/",
+                    Qualities.Unknown.value,
+                    true,
+                    headers
+                )
+            )
+        }
+    }
 }

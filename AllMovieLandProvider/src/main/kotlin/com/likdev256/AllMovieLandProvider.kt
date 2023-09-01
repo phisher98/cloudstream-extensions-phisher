@@ -14,7 +14,7 @@ import okhttp3.FormBody
 import org.jsoup.nodes.Element
 
 class AllMovieLandProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://allmovieland.org"
+    override var mainUrl = "https://allmovieland.fun"
     override var name = "AllMovieLand"
     override val hasMainPage = true
     override var lang = "hi"
