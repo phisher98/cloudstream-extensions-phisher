@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
 class TamilYogiProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://tamilyogi.how"
+    override var mainUrl = "https://tamilyogi.plus"
     override var name = "TamilYogi"
     override val hasMainPage = true
     override var lang = "ta"
@@ -173,7 +173,7 @@ class TamilYogiProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val linkRegex = Regex("(https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&\\/\\/=]*mp4))")
+        val linkRegex = Regex("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)mp4")
         val source = app.get(data).document.select("div.entry iframe").attr("src")
         val script = app.get(source, referer = "$mainUrl/").document.select("body > script").toString()
         //val links = linkRegex.find(script)?.groups?.get(1)?.value.toString()
