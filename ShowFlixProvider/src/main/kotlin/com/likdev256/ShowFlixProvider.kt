@@ -142,7 +142,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             referer = "$mainUrl/"
         )
     }
-
+    private val recentlyuploaded = "Recently Uploaded"
     private val trendingMovies = "Trending Movies"
     private val tamilMovies = "Tamil Movies"
     private val dubbedMovies = "Dubbed Movies"
