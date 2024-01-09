@@ -21,7 +21,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     override var mainUrl = "https://showflix.space"
     override var name = "ShowFlix"
     override val hasMainPage = true
-    override var lang = "ta"
+    override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
