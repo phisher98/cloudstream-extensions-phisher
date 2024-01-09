@@ -142,17 +142,22 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             referer = "$mainUrl/"
         )
     }
-    private val recentlyuploaded = "Recently Uploaded"
+    
     private val trendingMovies = "Trending Movies"
+    private val tamilMovies = "Tamil Movies"
     private val dubbedMovies = "Dubbed Movies"
     private val englishMovies = "English Movies"
+    private val teluguMovies = "Telugu Movies"
     private val hindiMovies = "Hindi Movies"
+    private val malayalamMovies = "Malayalam Movies"
 
-    private val trendingShows = "Trending Series"
-    private val topratedseries= "Top Rated Series"
+    private val trendingShows = "Trending Shows"
+    private val tamilShows = "Tamil Shows"
     private val dubbedShows = "Dubbed Shows"
     private val englishShows = "English Shows"
-    private val hindiseries = "Hindi Series"
+    private val teluguShows = "Telugu Shows"
+    private val hindiShows = "Hindi Shows"
+    private val malayalamShows = "Malayalam Shows"
 
     override val mainPage = mainPageOf(
         "" to trendingMovies,
