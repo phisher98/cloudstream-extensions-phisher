@@ -12,20 +12,20 @@ import org.jsoup.nodes.Element
 
 class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://madstream.live"
+    override var livetvurl = "https://livesportsclub.me"
     override var name = "MadStream"
     override val hasMainPage = true
-    override var lang = "ta"
+    override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Live
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/" to "LiveStreams",
-        "$mainUrl/index.php" to "JioTv",
-        "$mainUrl/epic/index.php" to "Epic",
-        "$mainUrl/sports.php" to "Sports",
-        "$mainUrl/sony.php" to "Sony"
+        "$livetvurl/hls/tata/" to "JioTv",
+        "$mainUrl/bolly.php" to "Movies",
+        "$mainUrl/series.php" to "Series",
+        "$mainUrl/sports.php" to "Sports"
     )
 
     data class LiveStreamLinks (
