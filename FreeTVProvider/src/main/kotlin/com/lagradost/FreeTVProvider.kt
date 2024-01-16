@@ -8,9 +8,9 @@ import com.lagradost.cloudstream3.utils.Qualities
 import java.io.InputStream
 
 class FreeTVProvider : MainAPI() {
-    override var lang = "en"
-    override var mainUrl = "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8"
-    override var name = "Free-TV"
+    override var lang = "hi"
+    override var mainUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/jiolive.m3u"
+    override var name = "Indian-TV"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(
