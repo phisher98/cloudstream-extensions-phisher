@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
-class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
+class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://livesportsclub.me/hls/tata/"
     override var name = "Indian-LiveTv"
     override val hasMainPage = true
