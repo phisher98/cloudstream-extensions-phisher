@@ -16,6 +16,7 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = false
+    val document = Jsoup.connect(mainUrl).get()
     override val supportedTypes = setOf(
         TvType.Live
     )
@@ -29,9 +30,11 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("poster") val poster: String,
         @JsonProperty("link")   val link: String,
     )
-    override suspend fun getMainPage(
-        page: Int,
-        request: MainPageRequest
-    ): HomePageResponse {
-    }
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val link = "$mainUrl${request.data}"
+        val document = app.get(link).document
+        val home = document.select("article").mapNotNull {
+            it.toSearchResult()
+        }
+        return newHomePageResponse(request.name, home)
 }
