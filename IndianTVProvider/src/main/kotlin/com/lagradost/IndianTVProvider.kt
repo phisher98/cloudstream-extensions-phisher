@@ -16,7 +16,6 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = false
-    val document = Jsoup.connect(mainUrl).get()
     override val supportedTypes = setOf(
         TvType.Live
     )
