@@ -1,4 +1,4 @@
-package com.hindiproviders
+package com.lagradost
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
-class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
+class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://livesportsclub.me/hls/tata/"
     override var name = "Indian-LiveTv"
     override val hasMainPage = true
@@ -33,8 +33,5 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get(request.data).document
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
     }
 }
