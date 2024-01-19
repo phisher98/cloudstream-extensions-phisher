@@ -37,4 +37,5 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
+    }
 }
