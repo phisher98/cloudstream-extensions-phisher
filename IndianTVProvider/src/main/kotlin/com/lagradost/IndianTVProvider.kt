@@ -33,8 +33,5 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get(request.data).document
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
     }
 }
