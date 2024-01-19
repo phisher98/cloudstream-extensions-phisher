@@ -1,4 +1,4 @@
-package com.hindiproviders
+package com.lagradost
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
