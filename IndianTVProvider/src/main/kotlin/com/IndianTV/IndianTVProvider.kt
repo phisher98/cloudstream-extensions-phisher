@@ -1,4 +1,5 @@
 package com.IndianTV
+package com.lagradost
 
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.MainAPI
@@ -30,6 +31,9 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         val href = getProperchannelLink(this.selectFirst("a")!!.attr("href"))
         val title = this.selectFirst("div.title.restrictedLines.titleShortened")?.text() ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+    }
+    return newAnimeSearchResponse(title, href, TvType.live) {
+        this.posterUrl = posterUrl
     }
 
     // this function gets called when you search for something
