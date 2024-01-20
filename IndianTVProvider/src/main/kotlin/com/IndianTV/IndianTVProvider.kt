@@ -19,7 +19,7 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     override var lang = "hi"
 
     // enable this when your provider has a main page
-    override val hasMainPage = true
+    override val hasMainPage = false
 
     override suspend fun getMainPage(
         page: Int,
