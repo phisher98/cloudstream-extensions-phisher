@@ -2,6 +2,7 @@ package com.IndianTV
 
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.SearchResponse
 
 class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
