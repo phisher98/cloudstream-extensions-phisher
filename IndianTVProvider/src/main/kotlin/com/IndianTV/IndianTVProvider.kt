@@ -27,11 +27,11 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         return newHomePageResponse(request.name, home)
     }
     private fun Element.toSearchResult(): TVSearchResponse? {
-        val href = getProperchannelLink(this.selectFirst("a")!!.attr("href"))
+        val href = this.selectFirst("a")!!.attr("href")
         val title = this.selectFirst("div.title.restrictedLines.titleShortened")?.text() ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
     }
-    return newAnimeSearchResponse(title, href, TvType.live) {
+    return newAnimeSearchResponse(title, href, TvType.Live) {
         this.posterUrl = posterUrl
     }
 
