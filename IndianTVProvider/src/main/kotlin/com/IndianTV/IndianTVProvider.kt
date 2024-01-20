@@ -27,17 +27,26 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     ): HomePageResponse {
         val document = app.get(request.data).document
 
-        return HomePageResponse(arrayListOf(HomePageList(request.name, document, isHorizontalImages = true)), hasNext = true)
+        //Log.d("Got","got here")
+        val titleRaw = this.selectFirst("div.card > a > div.info > span")?.text()?.trim()
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
+        //Log.d("title", title)
+        val posterUrl = fixUrl(this.select("img").attr("src"))
+        //Log.d("posterUrl", posterUrl)
+        val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
+        //Log.d("mybadhref", href)
+        val loadData = LiveStreamLinks(
+                title,
+                posterUrl,
+                href
+            ).toJson()
+
+            }
+
+        return HomePageResponse(arrayListOf(HomePageList(request.name, title, loadData, isHorizontalImages = true)), hasNext = true)
     }
 
     // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
         return listOf<SearchResponse>()
     }
-
-        override suspend fun load(url: String): LoadResponse {
-        val title = data.title
-        val poster = data.poster
-        val link = data.link
-        }
-}
