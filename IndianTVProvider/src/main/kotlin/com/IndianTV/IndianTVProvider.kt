@@ -25,28 +25,19 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get(request.data).document
-
-        //Log.d("Got","got here")
-        val titleRaw = this.selectFirst("div.card > a > div.info > span")?.text()?.trim()
-        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
-        //Log.d("title", title)
-        val posterUrl = fixUrl(this.select("img").attr("src"))
-        //Log.d("posterUrl", posterUrl)
-        val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
-        //Log.d("mybadhref", href)
-        val loadData = LiveStreamLinks(
-                title,
-                posterUrl,
-                href
-            ).toJson()
-
-            }
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, title, loadData, isHorizontalImages = true)), hasNext = true)
+        val response = app.get(request.data).document
+        val results = response.mapNotNull{
+            box_elements = document.find_all('div', class_='box1')
+            title = box_elements.find('h2', class_='text-center text-sm font-bold').text.strip()
+            link_element = box.find('a', target='_blank')
+            link = link_element['href'] if link_element else None
+            # Extract poster link
+            poster_link = box.find('img')['src']
     }
-
+    return newHomePageResponse(request.name, results)
+    }
     // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
         return listOf<SearchResponse>()
     }
+}
