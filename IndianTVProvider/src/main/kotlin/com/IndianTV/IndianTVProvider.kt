@@ -13,23 +13,24 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     override var lang = "hi"
 
     // enable this when your provider has a main page
-    override val hasMainPage = false
+    override val hasMainPage = true
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val response = app.get(request.data).document
-        val results = response.mapNotNull{
-            box_elements = document.find_all('div', class_='box1')
-            title = box_elements.find('h2', class_='text-center text-sm font-bold').text.strip()
-            link_element = box.find('a', target='_blank')
-            link = link_element['href'] if link_element else None
-            # Extract poster link
-            poster_link = box.find('img')['src']
+        val document = app.get(request.data + page).document
+        val home = document.select("div#listContainer div.box1").mapNotNull {
+            it.toSearchResult()
+        }
+        return newHomePageResponse(request.name, home)
     }
-    return newHomePageResponse(request.name, results)
+    private fun Element.toSearchResult(): TVSearchResponse? {
+        val href = getProperchannelLink(this.selectFirst("a")!!.attr("href"))
+        val title = this.selectFirst("div.title.restrictedLines.titleShortened")?.text() ?: return null
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
     }
+
     // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
         return listOf<SearchResponse>()
