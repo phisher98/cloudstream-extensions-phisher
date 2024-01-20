@@ -39,5 +39,5 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         val title = data.title
         val poster = data.poster
         val link = data.link
-
+        }
 }
