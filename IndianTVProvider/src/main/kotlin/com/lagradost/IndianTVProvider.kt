@@ -11,10 +11,10 @@ import com.lagradost.cloudstream3.utils.safeApiCall
 import org.jsoup.nodes.Element
 
 class IndianTVProvider : MainAPI() {
-    override var mainUrl = "https://livesportsclub.me"
-    override var name = "LiveSportsClub"
+    override var mainUrl = "https://livesportsclub.me/hls/tata/"
+    override var name = "IndianTVProvider"
     override val hasMainPage = false
-    override var lang = "en"
+    override var lang = "hi"
     override val hasDownloadSupport = false
     override val supportedTypes = setOf(TvType.Live)
 
