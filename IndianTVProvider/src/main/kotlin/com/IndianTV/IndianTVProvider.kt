@@ -1,43 +1,62 @@
 package com.IndianTV
 
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.SearchResponse
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.MainAPI
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.SearchResponse
+import com.lagradost.cloudstream3.utils.newMovieSearchResponse
+import com.lagradost.cloudstream3.utils.fixUrl
+import com.lagradost.cloudstream3.utils.safeApiCall
+import org.jsoup.nodes.Element
 
-class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://livesportsclub.me/hls/tata/" 
-    override var name = "IndianTV"
+class LiveSportsClubProvider : MainAPI() {
+    override var mainUrl = "https://livesportsclub.me"
+    override var name = "LiveSportsClub"
+    override val hasMainPage = false
+    override var lang = "en"
+    override val hasDownloadSupport = false
     override val supportedTypes = setOf(TvType.Live)
 
-    data class LiveStreamLinks (
-        @JsonProperty("title")  val title: String,
-        @JsonProperty("poster") val poster: String,
-        @JsonProperty("link")   val link: String,
-    )
-    override var lang = "hi"
-
-    // enable this when your provider has a main page
-    override val hasMainPage = false
-
-    override suspend fun getMainPage(
-        page: Int,
-        request: MainPageRequest
-    ): HomePageResponse {
-        val response = app.get(request.data).document
-        val results = response.mapNotNull{
-            box_elements = document.find_all('div', class_='box1')
-            title = box_elements.find('h2', class_='text-center text-sm font-bold').text.strip()
-            link_element = box.find('a', target='_blank')
-            link = link_element['href'] if link_element else None
-            # Extract poster link
-            poster_link = box.find('img')['src']
-    }
-    return newHomePageResponse(request.name, results)
-    }
-    // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
-        return listOf<SearchResponse>()
+        val url = "$mainUrl/hls/$query/"
+        val response = app.get(url).body
+        val soup = response?.toJsoup()
+
+        return soup?.select("div.box1")?.mapNotNull {
+            it.toSearchResult()
+        } ?: emptyList()
     }
+
+    private fun Element.toSearchResult(): SearchResponse {
+        val title = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
+        val linkElement = this.selectFirst("a[target=_blank]")
+        val link = linkElement?.attr("href")
+        val posterLink = fixUrl(this.selectFirst("img")?.attr("src"))
+
+        return newMovieSearchResponse(title, LiveStreamLinks(title, posterLink, link).toJson(), TvType.Live) {
+            this.posterUrl = posterLink
+        }
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        safeApiCall {
+            // Implement link extraction logic here
+        }
+
+        return true
+    }
+
+    data class LiveStreamLinks(
+        val title: String?,
+        val poster: String?,
+        val link: String?
+    )
+
+    // Other functions can be implemented based on your requirements
 }
