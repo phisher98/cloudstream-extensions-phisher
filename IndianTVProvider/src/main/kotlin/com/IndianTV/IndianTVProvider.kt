@@ -1,4 +1,4 @@
-package com.hindiprovider
+package com.IndianTV
 
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.MainAPI
