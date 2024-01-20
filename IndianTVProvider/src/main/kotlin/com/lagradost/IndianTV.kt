@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.fixUrl
 import com.lagradost.cloudstream3.utils.safeApiCall
 import org.jsoup.nodes.Element
 
-class IndianTVProvider : MainAPI() {
+class IndianTV : MainAPI() {
     override var mainUrl = "https://livesportsclub.me/hls/tata/"
     override var name = "IndianTVProvider"
     override val hasMainPage = false
