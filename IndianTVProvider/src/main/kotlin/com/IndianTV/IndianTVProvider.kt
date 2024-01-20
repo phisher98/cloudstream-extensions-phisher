@@ -31,7 +31,7 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         val title = this.selectFirst("div.title.restrictedLines.titleShortened")?.text() ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
     }
-    return newAnimeSearchResponse(title, href, TvType.Live) {
+    return newTVSearchResponse(title, href, TvType.Live) {
         this.posterUrl = posterUrl
     }
 
