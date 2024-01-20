@@ -23,12 +23,7 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     override val mainPage = mainPageOf(
         "$mainUrl/" to "LiveStreams"
     )
-
-    data class LiveStreamLinks (
-        @JsonProperty("title")  val title: String,
-        @JsonProperty("poster") val poster: String,
-        @JsonProperty("link")   val link: String,
-    )
+    
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val link = "$mainUrl${request.data}"
         val document = app.get(link).document
