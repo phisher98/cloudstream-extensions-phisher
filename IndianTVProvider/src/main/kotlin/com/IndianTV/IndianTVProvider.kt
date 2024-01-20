@@ -27,6 +27,7 @@ class IndianTVProvider : MainAPI() {
             it.toSearchResult()
         } ?: emptyList()
     }
+}
 
     private fun Element.toSearchResult(): SearchResponse {
         val title = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
@@ -59,4 +60,3 @@ class IndianTVProvider : MainAPI() {
     )
 
     // Other functions can be implemented based on your requirements
-}
