@@ -19,22 +19,12 @@ class IndianTVProvider : MainAPI() {
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
-    ): HomePageResponse {
-        if (request.data.contains("tata"))
-        {   
+    ): HomePageResponse { 
             val document = app.get(request.data + page).document
             val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
-        }
-        else
-        {   
-            document.select("div.col-6").mapNotNull {
-                it.toSearchResult()
-        }
-        return newHomePageResponse(request.name, home)
-        }
-        }
-    }
+            }
+         }
     private fun Element.toSearchResult(): SearchResponse {
         val href = fixUrl(this.select("a").attr("href"))
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim() ?: "Unknown Title"
