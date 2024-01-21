@@ -24,6 +24,7 @@ class IndianTVProvider : MainAPI() {
             val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
             }
+            return newHomePageResponse(request.name, home)
          }
     private fun Element.toSearchResult(): SearchResponse {
         val href = fixUrl(this.select("a").attr("href"))
