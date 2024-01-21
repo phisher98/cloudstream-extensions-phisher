@@ -21,10 +21,17 @@ class IndianTVProvider : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val document = app.get(request.data + page).document
+        if (request.name == "Tata")
+        {
         val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
+    }
+    }
+    else
+    {
+        //none
     }
 
     private fun Element.toSearchResult(): SearchResponse {
