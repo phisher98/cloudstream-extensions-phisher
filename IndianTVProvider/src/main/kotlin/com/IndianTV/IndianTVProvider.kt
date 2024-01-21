@@ -11,11 +11,15 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.nicehttp.NiceResponse
 
 class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://livesportsclub.me/hls/tata/" 
+    override var mainUrl = "https://livesportsclub.me" 
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
     override val hasMainPage = true
+
+    override val mainPage = mainPageOf(
+        "$mainUrl/hls/tata/" to "Tata",
+    )
 
     override suspend fun getMainPage(
         page: Int,
