@@ -20,6 +20,8 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("Live")
+    tvTypes = listOf(
+                "Live",
+)
 iconUrl = "https://upload.wikimedia.org/wikipedia/commons/5/52/JioTV_logo.png"
 }
