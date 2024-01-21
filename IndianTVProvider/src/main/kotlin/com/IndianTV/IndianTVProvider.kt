@@ -35,7 +35,6 @@ class IndianTVProvider : MainAPI() {
         val href = resolveUrl(this.select("a").attr("href"))
         val title = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim() ?: "Unknown Title"
         val posterUrl = resolveUrl(this.selectFirst("img")?.attr("src"))
-        println("Search Result - Title: $title, Href: $href, PosterUrl: $posterUrl")
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
         }
