@@ -6,6 +6,12 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.SearchResponse
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.extractors.JWPlayer
 
 class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://livesportsclub.me/hls/tata/" 
