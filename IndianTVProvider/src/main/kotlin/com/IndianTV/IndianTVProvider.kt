@@ -25,9 +25,6 @@ class IndianTVProvider : MainAPI() {
             }
             println("Home data: $home")
             return newHomePageResponse(request.name, home)
-        } catch (e: Exception) {
-            println("Error fetching data: $e")
-            return newErrorHomeResponse("Error fetching data")
         }
     }
 
