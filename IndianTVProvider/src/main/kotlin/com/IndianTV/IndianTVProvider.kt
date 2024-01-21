@@ -12,8 +12,6 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
-
-    // enable this when your provider has a main page
     override val hasMainPage = true
 
     override suspend fun getMainPage(
@@ -21,14 +19,15 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         request: MainPageRequest
     ): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home = document.select("div#listContainer div.box1").mapNotNull {
+        val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
     }
-    private fun Element.toSearchResult(): TVSearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse {
         val href = this.selectFirst("a")!!.attr("href")
-        val title = this.selectFirst("div.title.restrictedLines.titleShortened")?.text() ?: return null
+        val titleRaw = this.selectFirst("h2.text-center text-sm font-bold")?.text()?.trim()
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
     }
     return newTVSearchResponse(title, href, TvType.Live) {
