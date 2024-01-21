@@ -1,17 +1,13 @@
 package com.IndianTV
 
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.SearchResponse
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.extractors.JWPlayer
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 
 class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://livesportsclub.me/hls/tata/" 
@@ -35,10 +31,10 @@ class IndianTVProvider : MainAPI() { // all providers must be an instance of Mai
         val titleRaw = this.selectFirst("h2.text-center text-sm font-bold")?.text()?.trim()
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
-    }
-    return newTVSearchResponse(title, href, TvType.Live) {
+    return newMovieSearchResponse(title, href, TvType.Live) {
         this.posterUrl = posterUrl
     }
+}
 
     // this function gets called when you search for something
     override suspend fun search(query: String): List<SearchResponse> {
