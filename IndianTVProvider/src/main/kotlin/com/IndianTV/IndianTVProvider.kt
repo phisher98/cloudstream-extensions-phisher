@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.extractors.JWPlayer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.nicehttp.NiceResponse
 
 class IndianTVProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://livesportsclub.me/hls/tata/" 
