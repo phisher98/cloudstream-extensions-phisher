@@ -29,10 +29,10 @@ class IndianTVProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val href = fixUrl(this.select("a").attr("href")).toString()
+        val href = fixUrl(this.select("a").attr("href"))
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim() ?: "Unknown Title"
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
-        val posterUrl = URL(mainUrl).resolve(this.selectFirst("img")?.attr("src")).toString()
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
 
         // Extract category information
         val categoryRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim() ?: "Unknown Category"
@@ -40,7 +40,6 @@ class IndianTVProvider : MainAPI() {
 
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
-            this.category = category
         }
     }
 
