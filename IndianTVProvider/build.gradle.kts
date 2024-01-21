@@ -15,7 +15,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 1 // will be 3 if unspecified
+    status = 0 // will be 3 if unspecified
 
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
