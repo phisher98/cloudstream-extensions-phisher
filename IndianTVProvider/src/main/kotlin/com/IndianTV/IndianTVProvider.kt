@@ -19,7 +19,7 @@ class IndianTVProvider : MainAPI() {
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
-    ): HomePageResponse { 
+    ): HomePageResponse {
         val document = app.get(request.data + page).document
         val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
@@ -33,8 +33,13 @@ class IndianTVProvider : MainAPI() {
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
 
+        // Extract category information
+        val categoryRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim() ?: "Unknown Category"
+        val category = if (categoryRaw.isNullOrBlank()) "Unknown Category" else categoryRaw.toString()
+
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
+            this.category = category
         }
     }
 
