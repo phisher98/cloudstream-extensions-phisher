@@ -17,33 +17,35 @@ class IndianTVProvider : MainAPI() {
         "$mainUrl/hls/tata/" to "Tata",
     )
 
-    override suspend fun getMainPage(
-        page: Int,
-        request: MainPageRequest
-    ): HomePageResponse {
-        val document = app.get(request.data + page).document
-        val home = document.select("div.box1").mapNotNull {
-            it.toSearchResult()
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        try {
+            val document = app.get(request.data + page).document
+            val home = document.select("div.box1").mapNotNull {
+                it.toSearchResult()
+            }
+            println("Home data: $home")
+            return newHomePageResponse(request.name, home)
+        } catch (e: Exception) {
+            println("Error fetching data: $e")
+            return newErrorHomeResponse("Error fetching data")
         }
-        return newHomePageResponse(request.name, home)
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val href = fixUrl(this.select("a").attr("href"))
-        val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim() ?: "Unknown Title"
-        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
-
-        // Extract category information
-        val categoryRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim() ?: "Unknown Category"
-        val category = if (categoryRaw.isNullOrBlank()) "Unknown Category" else categoryRaw.toString()
-
+        val href = resolveUrl(this.select("a").attr("href"))
+        val title = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim() ?: "Unknown Title"
+        val posterUrl = resolveUrl(this.selectFirst("img")?.attr("src"))
+        println("Search Result - Title: $title, Href: $href, PosterUrl: $posterUrl")
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
         }
     }
 
+    private fun resolveUrl(url: String?): String {
+        return URL(URL(mainUrl), url).toString()
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
-        return listOf()
+        return emptyList() // Modify this if you implement search functionality
     }
 }
