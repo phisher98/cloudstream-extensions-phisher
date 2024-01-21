@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
+import java.net.URL
 
 class IndianTVProvider : MainAPI() {
     override var mainUrl = "https://livesportsclub.me"
@@ -28,10 +29,10 @@ class IndianTVProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val href = fixUrl(this.select("a").attr("href"))
+        val href = URL(mainUrl).resolve(this.select("a").attr("href")).toString()
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim() ?: "Unknown Title"
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        val posterUrl = URL(mainUrl).resolve(this.selectFirst("img")?.attr("src")).toString()
 
         // Extract category information
         val categoryRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim() ?: "Unknown Category"
