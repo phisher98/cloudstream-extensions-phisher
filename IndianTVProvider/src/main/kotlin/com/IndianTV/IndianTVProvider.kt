@@ -52,6 +52,7 @@ class IndianTVProvider : MainAPI() {
                 title,
                 posterUrl,
                 href,
+                subtitle,
             ).toJson()
 
         return newMovieSearchResponse(title, loadData, TvType.Live) {
