@@ -24,7 +24,7 @@ class IndianTVProvider : MainAPI() {
         @JsonProperty("title")  val title: String,
         @JsonProperty("poster") val poster: String,
         @JsonProperty("link")   val link: String,
-        @JsonProperty("subtitle")  val subtitle: String,
+        @JsonProperty("link")   val subtitle: String,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest
@@ -41,7 +41,7 @@ class IndianTVProvider : MainAPI() {
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //Log.d("title", title)
-        val subtitle = this.selectFirst("p.text-xs.text-center")?.text()?.trim()
+        val subtitle = this.selectFirst("p.text-xs.text-center")?.text()?.trim()..toString()
         //Log.d("mybadhref", subtitle)
         val posterUrl = fixUrl(this.select("img").attr("src"))
         //Log.d("posterUrl", posterUrl)
@@ -52,7 +52,6 @@ class IndianTVProvider : MainAPI() {
                 title,
                 posterUrl,
                 href,
-                subtitle
             ).toJson()
 
         return newMovieSearchResponse(title, loadData, TvType.Live) {
@@ -80,8 +79,4 @@ class IndianTVProvider : MainAPI() {
                 this.posterUrl = poster
             }
         }
-
-    override suspend fun search(query: String): List<SearchResponse> {
-        return emptyList() // Modify this if you implement search functionality
-    }
 }
