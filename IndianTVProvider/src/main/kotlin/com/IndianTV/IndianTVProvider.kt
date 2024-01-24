@@ -46,12 +46,6 @@ class IndianTVProvider : MainAPI() {
         //Log.d("posterUrl", posterUrl)
         val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
         //Log.d("mybadhref", href)
-        val title = titleRaw?.text()?.trim()
-        if (title != null) {
-            println("Title: $title")
-        } else {
-            println("Title not found or is blank.")
-        }
 
         val loadData = LiveStreamLinks(
                 title,
