@@ -75,7 +75,6 @@ class IndianTVProvider : MainAPI() {
             val title = data.title
             val poster = data.poster
             val link = data.link
-            val subtitle=data.subtitle
 
             return newMovieLoadResponse(title, link, TvType.Live, link) {
                 this.posterUrl = poster
