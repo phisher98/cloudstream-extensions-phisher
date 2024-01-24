@@ -37,7 +37,7 @@ class IndianTVProvider : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
         //val titleRaw = this.select("h2.text-center.text-sm.font-bold")?.text()?.trim()
-        val title= this.selectFirst("h2.text-center text-sm font-bold").text()?.trim()
+        val title= this.selectFirst("h2.text-center text-sm font-bold").text().trim()
         val subtitle = this.selectFirst("p.text-xs text-center").text().trim()
         //val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //val subtitle = if (subtitleRaw.isNullOrBlank()) "Unknown LiveStream" else subtitleRaw.toString()
@@ -53,7 +53,6 @@ class IndianTVProvider : MainAPI() {
                 href,
                 subtitle,
             ).toJson()
-
         return newMovieSearchResponse(title, loadData, TvType.Live) {
                 this.posterUrl = posterUrl
             }
