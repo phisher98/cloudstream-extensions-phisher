@@ -41,7 +41,7 @@ class IndianTVProvider : MainAPI() {
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //Log.d("title", title)
-        val subtitle = this.selectFirst("p.text-xs.text-center")?.text()?.trim()..toString()
+        val subtitle = this.selectFirst("p.text-xs.text-center")?.text()?.trim()?.rangeTo(toString())
         //Log.d("mybadhref", subtitle)
         val posterUrl = fixUrl(this.select("img").attr("src"))
         //Log.d("posterUrl", posterUrl)
