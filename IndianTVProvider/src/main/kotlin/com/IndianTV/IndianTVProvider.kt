@@ -35,7 +35,7 @@ class IndianTVProvider : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
         //val titleRaw = this.select("h2.text-center.text-sm.font-bold")?.text()?.trim()
-        val title = this.selectFirst("h2.text-center.text-sm.font-bold").text().trim()
+        val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold").text()?.trim()
         val subtitle = this.selectFirst("p.text-xs.text-center").text().trim()
         //val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //val subtitle = if (subtitleRaw.isNullOrBlank()) "Unknown LiveStream" else subtitleRaw.toString()
@@ -44,6 +44,12 @@ class IndianTVProvider : MainAPI() {
         //Log.d("posterUrl", posterUrl)
         val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
         //Log.d("mybadhref", href)
+        val title = titleRaw?.text()?.trim()
+        if (title != null) {
+            println("Title: $title")
+        } else {
+            println("Title not found or is blank.")
+        }
 
         val loadData = LiveStreamLinks(
                 title,
