@@ -10,15 +10,11 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
 class IndianTVProvider : MainAPI() {
-    override var mainUrl = "https://livesportsclub.me"
+    override var mainUrl = "https://livesportsclub.me/hls/tata/"
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
-    override val hasMainPage = true
-
-    override val mainPage = mainPageOf(
-        "$mainUrl/hls/tata/" to "Channels",
-    )
+    override val hasMainPage = false
 
     data class LiveStreamLinks (
         @JsonProperty("title")  val title: String,
