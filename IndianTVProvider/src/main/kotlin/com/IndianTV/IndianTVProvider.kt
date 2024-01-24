@@ -24,7 +24,7 @@ class IndianTVProvider : MainAPI() {
         @JsonProperty("title")  val title: String,
         @JsonProperty("poster") val poster: String,
         @JsonProperty("link")   val link: String,
-        @JsonProperty("link")   val subtitle: String,
+        //@JsonProperty("link")   val subtitle: String,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest
@@ -37,43 +37,29 @@ class IndianTVProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        Log.d("Got", "got here")
-        
+        //Log.d("Got","got here")
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
-        val title = if (titleRaw.isNullOrBlank()) {
-            Log.d("title", "Unknown LiveStream")
-            "Unknown LiveStream"
-        } else {
-            Log.d("title", titleRaw)
-            titleRaw.toString()
-        }
-    
-        val subtitleRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim()
-        val subtitle = if (subtitleRaw.isNullOrBlank()) {
-            Log.d("mybadhref", "Unknown LiveStream")
-            "Unknown LiveStream"
-        } else {
-            Log.d("mybadhref", subtitleRaw)
-            subtitleRaw.toString()
-        }
-    
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
+        //Log.d("title", title)
+        //val subtitleRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim()
+        //val subtitle = if (subtitleRaw.isNullOrBlank()) "Unknown LiveStream" else subtitleRaw.toString()
+        //Log.d("mybadhref", subtitle)
         val posterUrl = fixUrl(this.select("img").attr("src"))
-        Log.d("posterUrl", posterUrl)
-        
+        //Log.d("posterUrl", posterUrl)
         val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
-        Log.d("mybadhref", href)
-    
+        //Log.d("mybadhref", href)
+
         val loadData = LiveStreamLinks(
-            title,
-            posterUrl,
-            href,
-            subtitle,
-        ).toJson()
-    
+                title,
+                posterUrl,
+                href,
+            ).toJson()
+
         return newMovieSearchResponse(title, loadData, TvType.Live) {
-            this.posterUrl = posterUrl
+                this.posterUrl = posterUrl
+            }
         }
-    }
+
     
         override suspend fun search(query: String): List<SearchResponse> {
             val doc = app.get("$mainUrl/").document
