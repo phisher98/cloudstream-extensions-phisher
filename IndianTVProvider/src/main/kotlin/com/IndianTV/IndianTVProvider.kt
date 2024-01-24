@@ -17,7 +17,7 @@ class IndianTVProvider : MainAPI() {
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        "$mainUrl/hls/tata/" to "Tata",
+        "$mainUrl/hls/tata/" to "Channels",
     )
 
     data class LiveStreamLinks (
@@ -41,7 +41,8 @@ class IndianTVProvider : MainAPI() {
         val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //Log.d("title", title)
-        val subtitle = this.selectFirst("p.text-xs.text-center")?.text()?.trim()?.rangeTo(toString())
+        val subtitleRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim()
+        val subtitle = if (subtitleRaw.isNullOrBlank()) "Unknown LiveStream" else subtitleRaw.toString()
         //Log.d("mybadhref", subtitle)
         val posterUrl = fixUrl(this.select("img").attr("src"))
         //Log.d("posterUrl", posterUrl)
