@@ -20,13 +20,13 @@ class IndianTVProvider : MainAPI() {
         @JsonProperty("title")  val title: String,
         @JsonProperty("poster") val poster: String,
         @JsonProperty("link")   val link: String,
-        //@JsonProperty("link")   val subtitle: String,
+        @JsonProperty("subtitle")   val subtitle: String,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest
 	): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home = document.select("div.box1").mapNotNull {
+        val home = document.select("#listContainer div.box1").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
@@ -34,10 +34,10 @@ class IndianTVProvider : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
-        val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
-        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
-        //Log.d("title", title)
-        //val subtitleRaw = this.selectFirst("p.text-xs.text-center")?.text()?.trim()
+        //val titleRaw = this.select("h2.text-center.text-sm.font-bold")?.text()?.trim()
+        val title = this.selectFirst("h2.text-center.text-sm.font-bold").text().trim()
+        val subtitle = this.selectFirst("p.text-xs.text-center").text().trim()
+        //val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //val subtitle = if (subtitleRaw.isNullOrBlank()) "Unknown LiveStream" else subtitleRaw.toString()
         //Log.d("mybadhref", subtitle)
         val posterUrl = fixUrl(this.select("img").attr("src"))
@@ -49,6 +49,7 @@ class IndianTVProvider : MainAPI() {
                 title,
                 posterUrl,
                 href,
+                subtitle,
             ).toJson()
 
         return newMovieSearchResponse(title, loadData, TvType.Live) {
@@ -71,6 +72,7 @@ class IndianTVProvider : MainAPI() {
             val title = data.title
             val poster = data.poster
             val link = data.link
+            val subtitle=data.subtitle
 
             return newMovieLoadResponse(title, link, TvType.Live, link) {
                 this.posterUrl = poster
