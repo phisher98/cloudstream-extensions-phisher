@@ -36,7 +36,8 @@ class IndianTVProvider : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
-        val title= this.selectFirst("div.container > div h2").text().trim()
+        val titleRaw= this.selectFirst("div.container > div h2")?.text()?.trim()
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         val subtitle = this.selectFirst("div.container > div p").text().trim()
         val posterUrl = this.selectFirst("img").attr("src").toString()
         //Log.d("posterUrl", posterUrl)
