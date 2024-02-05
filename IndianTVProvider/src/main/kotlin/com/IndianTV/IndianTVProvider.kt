@@ -28,7 +28,7 @@ class IndianTVProvider : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest
 	): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home = document.select("div.box1").mapNotNull {
+        val home = document.select("div.container").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
@@ -36,8 +36,8 @@ class IndianTVProvider : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
-        val title= this.selectFirst("h2.text-center text-sm font-bold").text().trim()
-        val subtitle = this.selectFirst("p.text-xs text-center").text().trim()
+        val title= this.selectFirst("div.container > div h2").text().trim()
+        val subtitle = this.selectFirst("div.container > div p").text().trim()
         val posterUrl = this.selectFirst("img").attr("src").toString()
         //Log.d("posterUrl", posterUrl)
         val href = this.selectFirst("a")!!.attr("href")
