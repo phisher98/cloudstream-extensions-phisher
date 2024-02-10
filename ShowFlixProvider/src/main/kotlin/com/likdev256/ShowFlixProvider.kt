@@ -114,8 +114,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("count") var count: Int
     )*/
 
-    private val MovieapiUrl = "https://parse.showflix.tk/parse/classes/movies"
-    private val TVapiUrl    = "https://parse.showflix.tk/parse/classes/series"
+    private val MovieapiUrl = "https://parse.showflix.lol/parse/classes/movies"
+    private val TVapiUrl    = "https://parse.showflix.lol/parse/classes/series"
 
     private suspend fun queryMovieApi(skip: Int, query: String): NiceResponse {
         val req =
