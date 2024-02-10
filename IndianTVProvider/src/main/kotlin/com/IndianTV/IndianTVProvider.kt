@@ -36,8 +36,11 @@ class IndianTVProvider : MainAPI() {
         //val title= this.selectFirst("h2.text-center.text-sm.font-bold").text().trim()
         val titleElement = this.selectFirst("h2.text-center.text-sm.font-bold")
         val title = titleElement?.text()?.trim().toString()
-        val subtitle = this.selectFirst("p.text-xs text-center").text().trim()
-        val posterUrl = this.selectFirst("img").attr("src").toString()
+        val subtitleElement = this.selectFirst("p.text-xs.text-center")
+        val subtitle = subtitleElement?.text()?.trim()
+        val posterElement = this.selectFirst("img")
+        val posterUrl = posterElement?.attr("src")?.toString()
+
         //Log.d("posterUrl", posterUrl)
         val href = this.selectFirst("a")!!.attr("href")
         //Log.d("", href)
