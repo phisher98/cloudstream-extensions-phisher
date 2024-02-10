@@ -9,7 +9,7 @@ import org.jsoup.nodes.Element
 
 
 class IndianTVProvider : MainAPI() {
-    override var mainUrl = "https://madplay.live/hls/tata/"
+    override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
