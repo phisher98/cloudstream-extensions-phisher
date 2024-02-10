@@ -2,17 +2,14 @@ package com.IndianTV
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
-import org.jsoup.Jsoup
 
 
 class IndianTVProvider : MainAPI() {
-    override var mainUrl = "https://livesportsclub.me/hls/tata/"
+    override var mainUrl = "https://madplay.live/hls/tata/"
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
@@ -31,17 +28,19 @@ class IndianTVProvider : MainAPI() {
         val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
         }
-        return newHomePageResponse(request.name, home)
+        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse {
         //Log.d("Got","got here")
-        val title= this.selectFirst("h2.text-center text-sm font-bold").text().trim()
+        //val title= this.selectFirst("h2.text-center.text-sm.font-bold").text().trim()
+        val titleElement = this.selectFirst("h2.text-center.text-sm.font-bold")
+        val title = titleElement?.text()?.trim().toString()
         val subtitle = this.selectFirst("p.text-xs text-center").text().trim()
         val posterUrl = this.selectFirst("img").attr("src").toString()
         //Log.d("posterUrl", posterUrl)
         val href = this.selectFirst("a")!!.attr("href")
-        //Log.d("mybadhref", href)
+        //Log.d("", href)
 
         val loadData = LiveStreamLinks(
                 title,
