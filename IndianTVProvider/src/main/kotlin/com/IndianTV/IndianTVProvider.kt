@@ -32,19 +32,28 @@ class IndianTVProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        //Log.d("Got","got here")
-        //val title= this.selectFirst("h2.text-center.text-sm.font-bold").text().trim()
-        val titleElement = this.selectFirst("h2.text-center.text-sm.font-bold")
+        val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
+        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
+        //Log.d("title", title)
+        val posterUrl = fixUrl(this.select("img").attr("src"))
+        //Log.d("posterUrl", posterUrl)
+        val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
+        //Log.d("mybadhref", href)
+        val loadData = LiveStreamLinks(
+                title,
+                posterUrl,
+                href
+            ).toJson()
+
+        /*val titleElement = this.selectFirst("h2.text-center.text-sm.font-bold")
         val title = titleElement?.text()?.trim().toString()
         val subtitleElement = this.selectFirst("p.text-xs.text-center")
         val subtitle: String = subtitleElement?.text()?.trim() ?: ""
         val posterElement = this.selectFirst("img")
         val posterUrl: String = posterElement?.attr("src")?.toString() ?: ""
-
-
         //Log.d("posterUrl", posterUrl)
         val href = this.selectFirst("a")!!.attr("href")
-        //Log.d("", href)
+        //Log.d("", href)*/
 
         val loadData = LiveStreamLinks(
                 title,
