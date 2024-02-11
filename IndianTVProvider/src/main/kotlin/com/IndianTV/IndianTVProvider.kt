@@ -44,16 +44,6 @@ class IndianTVProvider : MainAPI() {
                 posterUrl,
                 href
             ).toJson()
-
-        /*val titleElement = this.selectFirst("h2.text-center.text-sm.font-bold")
-        val title = titleElement?.text()?.trim().toString()
-        val subtitleElement = this.selectFirst("p.text-xs.text-center")
-        val subtitle: String = subtitleElement?.text()?.trim() ?: ""
-        val posterElement = this.selectFirst("img")
-        val posterUrl: String = posterElement?.attr("src")?.toString() ?: ""
-        //Log.d("posterUrl", posterUrl)
-        val href = this.selectFirst("a")!!.attr("href")
-        //Log.d("", href)*/
         return newMovieSearchResponse(title, loadData, TvType.Live) {
                 this.posterUrl = posterUrl
             }
@@ -74,7 +64,7 @@ class IndianTVProvider : MainAPI() {
             val title = data.title
             val poster = data.poster
             val link = data.link
-            val subtitle=data.subtitle
+            //val subtitle=data.subtitle
 
             return newMovieLoadResponse(title, link, TvType.Live, link) {
                 this.posterUrl = poster
