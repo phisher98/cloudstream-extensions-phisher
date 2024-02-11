@@ -19,7 +19,7 @@ class IndianTVProvider : MainAPI() {
         @JsonProperty("title")  val title: String,
         @JsonProperty("poster") val poster: String,
         @JsonProperty("link")   val link: String,
-        @JsonProperty("subtitle")   val subtitle: String,
+        //@JsonProperty("subtitle")   val subtitle: String,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest
