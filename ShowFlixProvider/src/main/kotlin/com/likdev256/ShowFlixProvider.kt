@@ -624,10 +624,10 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         if (data.contains("sharedisk")) {
             val m = parseJson<MovieLinks>(data)
             //load links in a forEach so it doesn't fail iof one of the links are empty
-                // m.streamsb?.let   { it1 -> loadStreamSB(it1, subtitleCallback, callback) }
+            m.streamsb?.let   { it1 -> loadStreamSB(it1, subtitleCallback, callback) }
             m.streamwish?.let { it1 -> loadStreamWish("streamwish.to", it1, subtitleCallback, callback) }
-            // m.streamruby?.let { it1 -> loadStreamWish("streamruby.com", it1, subtitleCallback, callback) }
-            // m.streamhide?.let { it1 -> loadStreamHide("streamhide.com/e/", it1,  subtitleCallback, callback) }
+            m.streamruby?.let { it1 -> loadStreamWish("streamruby.com", it1, subtitleCallback, callback) }
+            m.streamhide?.let { it1 -> loadStreamHide("streamhide.com/e/", it1,  subtitleCallback, callback) }
             m.filelions?.let  { it1 -> loadStreamHide("filelions.to/v/", it1, subtitleCallback, callback) }
             m.sharedisk?.let  { it1 -> loadShareDisk(it1, subtitleCallback, callback) }
 
