@@ -54,13 +54,6 @@ class IndianTVProvider : MainAPI() {
         //Log.d("posterUrl", posterUrl)
         val href = this.selectFirst("a")!!.attr("href")
         //Log.d("", href)*/
-
-        val loadData = LiveStreamLinks(
-                title,
-                posterUrl,
-                href,
-                subtitle,
-            ).toJson()
         return newMovieSearchResponse(title, loadData, TvType.Live) {
                 this.posterUrl = posterUrl
             }
