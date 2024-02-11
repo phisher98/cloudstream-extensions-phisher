@@ -14,7 +14,7 @@ class IndianTVProvider : MainAPI() {
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
-    override val hasMainPage = false
+    override val hasMainPage = true
 
     data class LiveStreamLinks (
         @JsonProperty("title")  val title: String,
