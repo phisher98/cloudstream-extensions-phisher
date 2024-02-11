@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 import org.jsoup.nodes.Element
 
 
@@ -13,7 +14,7 @@ class IndianTVProvider : MainAPI() {
     override var name = "IndianTV"
     override val supportedTypes = setOf(TvType.Live)
     override var lang = "hi"
-    override val hasMainPage = true
+    override val hasMainPage = false
 
     data class LiveStreamLinks (
         @JsonProperty("title")  val title: String,
@@ -24,7 +25,7 @@ class IndianTVProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest
 	): HomePageResponse {
-        val document = app.get(request.data + page).document
+        val document = app.get(request.data).document
         val home = document.select("div.box1").mapNotNull {
             it.toSearchResult()
         }
