@@ -17,9 +17,9 @@ class IndianTVProvider : MainAPI() {
     override val hasMainPage = true
 
     data class LiveStreamLinks (
-        @JsonProperty("title")  val title: String?,
-        @JsonProperty("poster") val poster: String?,
-        @JsonProperty("link")   val link: String?,
+        @JsonProperty("title")  val title: String,
+        @JsonProperty("poster") val poster: String,
+        @JsonProperty("link")   val link: String,
         //@JsonProperty("subtitle")   val subtitle: String,
     )
 
