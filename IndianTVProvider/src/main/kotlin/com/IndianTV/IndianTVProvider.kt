@@ -20,7 +20,6 @@ class IndianTVProvider : MainAPI() {
         @JsonProperty("title")  val title: String,
         @JsonProperty("poster") val poster: String,
         @JsonProperty("link")   val link: String,
-        //@JsonProperty("subtitle")   val subtitle: String,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest
@@ -29,7 +28,7 @@ class IndianTVProvider : MainAPI() {
         val home = document.select("div#listContainer").mapNotNull {
             it.toSearchResult()
         }
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
+        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = false)), hasNext = false)
     }
 
     private fun Element.toSearchResult(): SearchResponse {
@@ -51,21 +50,20 @@ class IndianTVProvider : MainAPI() {
         }
 
     
-        override suspend fun search(query: String): List<SearchResponse> {
+        /*override suspend fun search(query: String): List<SearchResponse> {
             val doc = app.get("$mainUrl/").document
             //Log.d("document", document.toString())
     
             return doc.select("div.col-6").mapNotNull {
                 it.toSearchResult()
             }.filter { it.name.contains(query, true) }
-        }
+        }*/
 
         override suspend fun load(url: String): LoadResponse {
             val data = parseJson<LiveStreamLinks>(url)
             val title = data.title
             val poster = data.poster
             val link = data.link
-            //val subtitle=data.subtitle
 
             return newMovieLoadResponse(title, link, TvType.Live, link) {
                 this.posterUrl = poster
