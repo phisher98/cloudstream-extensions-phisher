@@ -12,8 +12,7 @@ import org.jsoup.nodes.Element
 class IndianTVProvider : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "IndianTV"
-    override val supportedTypes = setOf(
-        TvType.Live,
+    override val supportedTypes = setOf(TvType.Live,
     )
     override var lang = "hi"
     override val hasMainPage = true
@@ -30,7 +29,7 @@ class IndianTVProvider : MainAPI() {
         val home = document.select("div#listContainer").mapNotNull {
             it.toSearchResult()
         }
-        return HomePageResponse(HomePageList(request.name, home))
+        return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = false)), hasNext = false)
     }
 
     private fun Element.toSearchResult(): SearchResponse {
