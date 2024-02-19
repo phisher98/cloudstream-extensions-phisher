@@ -26,7 +26,7 @@ class IndianTVProvider : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest
 	): HomePageResponse {
         val document = app.get(request.data).document
-        val home = document.select("div.box1").mapNotNull {
+        val home = document.select("div#listContainer").mapNotNull {
             it.toSearchResult()
         }
         return HomePageResponse(arrayListOf(HomePageList(request.name, home, isHorizontalImages = true)), hasNext = true)
