@@ -30,7 +30,7 @@ class IndianTV : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))?.text() ?: return null
+        val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))
         val href      = fixUrl(this.select("[target=_blank]").attr("href"))
         val posterUrl = fixUrlNull(this.select("img").attr("src"))
 
