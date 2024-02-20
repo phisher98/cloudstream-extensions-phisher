@@ -34,7 +34,7 @@ class IndianTVPlugin : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val titleRaw = this.selectFirst("h2.text-center.text-sm.font-bold")?.text()?.trim()
+        val titleRaw = this.selectFirst("h2")?.text()?.trim()
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))
         val href      = fixUrl(this.select("[target=_blank]").attr("href"))
