@@ -3,6 +3,7 @@ package com.IndianTV
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import java.util.*
 
 class IndianTV : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata/"
@@ -29,7 +30,7 @@ class IndianTV : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))?.text()
+        val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))?.text() ?: return null
         val href      = fixUrl(this.select("[target=_blank]").attr("href"))
         val posterUrl = fixUrlNull(this.select("img").attr("src"))
 
