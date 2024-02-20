@@ -72,7 +72,7 @@ class spankbang : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
-        val poster      = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
+        val poster      = fixUrlNull(document.selectFirst("meta[property='og:image']")?.attr("content"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
 
