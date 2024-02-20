@@ -41,7 +41,7 @@ class ixiporn : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.infos").attr("title"))
+        val title     = fixTitle(this.select("a.infos").attr("title")).trim().toString()
         val href      = fixUrl(this.select("a.thumb").attr("href"))
         val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
 
