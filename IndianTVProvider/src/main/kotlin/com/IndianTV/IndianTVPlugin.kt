@@ -1,4 +1,4 @@
-package com.IndianTV
+package com.coxju
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
