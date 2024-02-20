@@ -69,9 +69,9 @@ class ixiporn : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title     = fixTitle(this.select("a").attr("title"))
-        val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.video-block thumbs-rotation > a > img").attr("data-src"))
+        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+        val poster      = fixUrlNull(document.selectFirst("[property='og:image']")?.attr("content"))
+        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
