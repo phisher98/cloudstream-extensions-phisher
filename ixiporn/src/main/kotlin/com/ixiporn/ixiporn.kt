@@ -39,7 +39,7 @@ class ixiporn : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = fixTitle(this.select("a").attr("title"))
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a > div.video-debounce-bar>img").attr("data-src"))
+        val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
