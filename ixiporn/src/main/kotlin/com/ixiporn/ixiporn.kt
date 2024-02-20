@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class UncutMaza : MainAPI() {
-    override var mainUrl              = "https://ixiporn.org/"
+    override var mainUrl              = "https://ixiporn.org"
     override var name                 = "ixiporn"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -16,10 +16,10 @@ class UncutMaza : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/?filter=latest" to "Latest Release"
+            "${mainUrl}/?filter=latest" to "Latest Release",
             "${mainUrl}/tag/ullu-new-web-series/" to "Ullu Web Series",
-            "${mainUrl}/ategory/hindi-hot-web-series/" to "Hindi Web Series"
-            "${mainUrl}/?s=primeplay" to "Prime Play" 
+            "${mainUrl}/ategory/hindi-hot-web-series/" to "Hindi Web Series",
+            "${mainUrl}/?s=primeplay" to "Prime Play",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
