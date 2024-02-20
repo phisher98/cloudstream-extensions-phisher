@@ -24,7 +24,7 @@ class ixiporn : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("div.container > div.video-block.thumbs-rotation").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.container > div.video-loop").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -39,7 +39,7 @@ class ixiporn : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = fixTitle(this.select("a").attr("title"))
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
+        val posterUrl = fixUrlNull(this.select("a > div.video-debounce-bar>img").attr("data-src"))
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
