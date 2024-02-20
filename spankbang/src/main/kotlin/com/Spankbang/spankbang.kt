@@ -90,7 +90,7 @@ class spankbang : MainAPI() {
                     ExtractorLink(
                         source  = this.name,
                         name    = this.name,
-                        url     = fixUrl(res.selectFirst("video.vjs-tech")?.attr("src")),
+                        url     = fixUrl(res.selectFirst("video.vjs-tech")?.attr("src")?.trim().toString()),
                         referer = data,
                         quality = Qualities.Unknown.value
                     )
