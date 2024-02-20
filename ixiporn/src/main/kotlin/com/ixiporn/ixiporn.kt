@@ -4,7 +4,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class UncutMaza : MainAPI() {
+class ixiporn : MainAPI() {
     override var mainUrl              = "https://ixiporn.org"
     override var name                 = "ixiporn"
     override val hasMainPage          = true
