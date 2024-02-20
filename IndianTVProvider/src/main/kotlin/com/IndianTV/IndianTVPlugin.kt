@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl              = "https://madplay.live/hls/tata/"
+    override var mainUrl              = "https://madplay.live"
     override var name                 = "IndianTV"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -14,6 +14,10 @@ class IndianTVPlugin : MainAPI() {
     override val hasDownloadSupport   = true
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.Live)
+
+    override val mainPage = mainPageOf(
+        "${mainUrl}/hls/tata/" to "TATA",
+)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
