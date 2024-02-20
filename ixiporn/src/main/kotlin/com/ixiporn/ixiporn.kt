@@ -23,7 +23,7 @@ class ixiporn : MainAPI() {
             "${mainUrl}/?s=besharams" to "Besharams Web Series",
             "${mainUrl}/?s=primeplay" to "Prime Play",
             "${mainUrl}/?s=neonx" to "Neonx",
-            "${mainUrl}/?s=voovi" to "Voovi Web Series",
+            "${mainUrl}/search/voovi" to "Voovi Web Series",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
