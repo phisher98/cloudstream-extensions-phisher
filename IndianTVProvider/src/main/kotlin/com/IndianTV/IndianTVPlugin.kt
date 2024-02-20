@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
-class IndianTV : MainAPI() {
+class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata/"
     override var name                 = "IndianTV"
     override val hasMainPage          = true
