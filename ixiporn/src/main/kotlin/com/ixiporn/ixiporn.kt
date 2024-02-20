@@ -24,7 +24,7 @@ class ixiporn : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("div.container > div.video-loop").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.video-loop > div.col-12.col-md-4.col-lg-3.col-xl-3").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -49,7 +49,7 @@ class ixiporn : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..5) {
+        for (i in 1..10) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
             val results = document.select("div.col-12").mapNotNull { it.toSearchResult() }
