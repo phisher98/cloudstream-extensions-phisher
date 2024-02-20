@@ -39,9 +39,9 @@ class spankbang : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.thumb > img").attr("alt")).trim().toString()
+        val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
         val href      = fixUrl(this.select("a.thumb").attr("href"))
-        val posterUrl = fixUrlNull(this.select("img").attr("data-src"))
+        val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
