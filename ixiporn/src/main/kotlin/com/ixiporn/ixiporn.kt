@@ -52,7 +52,7 @@ class ixiporn : MainAPI() {
         for (i in 1..10) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
-            val results = document.select("div.col-12.col-md-4.col-lg-3.col-xl-3").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.video-loop").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
