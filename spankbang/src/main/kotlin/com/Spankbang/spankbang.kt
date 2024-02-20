@@ -71,26 +71,26 @@ class spankbang : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.selectFirst("div.left > h1")?.attr("title")?.trim().toString()
-        val poster      = fixUrlNull(document.selectFirst("div.play_cover")?.attr("data-src"))
-        //val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
+        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+        val poster      = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
+        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
 
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
-            //this.plot      = description
+            this.plot      = description
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("div.video-player").map { res ->
+        document.select("div.video_container").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
                         name    = this.name,
-                        url     = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString()),
+                        url     = fixUrl(res.selectFirst("source")?.attr("src")?.trim().toString()),
                         referer = data,
                         quality = Qualities.Unknown.value
                     )
