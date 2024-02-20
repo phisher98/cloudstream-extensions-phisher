@@ -85,7 +85,7 @@ class spankbang : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("video.vjs-tech").map { res ->
+        document.select("#main_video_player_html5_api").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
