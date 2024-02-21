@@ -3,7 +3,7 @@ version = 6
 cloudstream {
     authors     = listOf("HindiProvider")
     language    = "hi"
-    description = "We Provide Huge Colocation of Hindi Porn (Uncut) Web Series"
+    description = "Spankbang"
 
     /**
      * Status int as the following:

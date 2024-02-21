@@ -54,7 +54,7 @@ class spankbang : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..10) {
+        for (i in 1..5) {
             val document = app.get("${mainUrl}/s/$query/$i/?o=all").document
 
             val results = document.select("div.video-list-with-ads > div.video-item").mapNotNull { it.toSearchResult() }
