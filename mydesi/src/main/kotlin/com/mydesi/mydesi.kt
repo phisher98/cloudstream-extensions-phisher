@@ -37,7 +37,7 @@ class mydesi : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
+        val title     = fixTitle(this.select("a.thumb > img").attr("alt")).trim().toString()
         val href      = fixUrl(this.select("a.infos").attr("href"))
         val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
 
