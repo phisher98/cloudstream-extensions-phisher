@@ -48,7 +48,6 @@ class spankbang : MainAPI() {
             this.posterUrl = posterUrl
         }
     }
-    }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
