@@ -17,12 +17,12 @@ class ixiporn : MainAPI() {
 
     override val mainPage = mainPageOf(
             "${mainUrl}/?filter=latest" to "Latest Release",
-            "${mainUrl}/?filter=popular" to "Most Popular",
-            "${mainUrl}/?s=Hunters" to "Hunter Web Series",
-            "${mainUrl}/?s=fugi" to "Fugi Web Series",
-            "${mainUrl}/?s=besharams" to "Besharams Web Series",
-            "${mainUrl}/?s=primeplay" to "Prime Play",
-            "${mainUrl}/?s=neonx" to "Neonx",
+            "${mainUrl}/page/?filter=popular" to "Most Popular",
+            "${mainUrl}/search/Hunters" to "Hunter Web Series",
+            "${mainUrl}/page/?s=fugi" to "Fugi Web Series",
+            "${mainUrl}/page/?s=besharams" to "Besharams Web Series",
+            "${mainUrl}/page/?s=primeplay" to "Prime Play",
+            "${mainUrl}/page/?s=neonx" to "Neonx",
             "${mainUrl}/page/?s=voovi" to "Voovi Web Series",
     )
 
