@@ -15,7 +15,7 @@ class spankbang : MainAPI() {
     override val supportedTypes       = setOf(TvType.NSFW)
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/new_videos/" to "New Videos",
+            "${mainUrl}/trending_videos/" to "New Videos",
             "${mainUrl}/j2/channel/familyxxx/" to "Family XXX",
             "${mainUrl}/ce/channel/bratty+milf/" to "Bratty MILF",
             "${mainUrl}/cf/channel/bratty+sis/" to "Bratty Sis",
