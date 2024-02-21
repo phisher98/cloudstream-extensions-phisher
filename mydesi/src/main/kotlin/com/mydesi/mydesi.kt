@@ -30,7 +30,7 @@ class mydesi : MainAPI() {
             list    = HomePageList(
                 name               = request.name,
                 list               = home,
-                isHorizontalImages = true
+                isHorizontalImages = false
             ),
             hasNext = true
         )
