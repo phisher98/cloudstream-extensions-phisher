@@ -38,9 +38,9 @@ class IndianTVPlugin : MainAPI() {
         val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
         //val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))
         val href      = fixUrl(this.select("[target=_blank]").attr("href"))
-        val posterUrl = fixUrlNull(this.select("img").attr("src"))
+        val posterUrl = fixUrlNull(this.select("img.h-28").attr("src"))
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
         }
     }
@@ -51,7 +51,7 @@ class IndianTVPlugin : MainAPI() {
         for (i in 1..10) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
-            val results = document.select("div.video-item").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.box1").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -68,12 +68,12 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
-        val poster      = fixUrlNull(document.selectFirst("meta[property='og:image']")?.attr("content"))
-        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
+        val title       = document.selectFirst("div.program-name")?.text()?.trim().toString()
+        val poster      = fixUrlNull(document.selectFirst("img.logo")?.attr("src"))
+        val description = document.selectFirst("div.program-description")?.text()?.trim().toString()
     
 
-        return newMovieLoadResponse(title, url, TvType.NSFW, url) {
+        return newMovieLoadResponse(title, url, TvType.Live, url) {
             this.posterUrl = poster
             this.plot      = description
         }
