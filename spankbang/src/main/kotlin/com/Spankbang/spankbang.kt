@@ -48,15 +48,6 @@ class spankbang : MainAPI() {
             this.posterUrl = posterUrl
         }
     }
-
-    private fun Element.toSearchResult1(): SearchResponse {
-        val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
-        val href      = fixUrl(this.select("a.thumb").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
-
-        return newMovieSearchResponse(title, href, TvType.Movie) {
-            this.posterUrl = posterUrl
-        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
