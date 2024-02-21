@@ -24,7 +24,7 @@ class mydesi : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document      
-        val home     = document.select("div.col-12 > div.row.no-gutters").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.video-block.video-with-trailer").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
