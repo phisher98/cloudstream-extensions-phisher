@@ -27,7 +27,7 @@ class spankbang : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document      
-        val home     = document.select("div.video-item").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.main_results > div.video-item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
