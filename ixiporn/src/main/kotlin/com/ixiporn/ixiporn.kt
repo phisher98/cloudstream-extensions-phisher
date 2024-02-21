@@ -17,7 +17,7 @@ class ixiporn : MainAPI() {
 
     override val mainPage = mainPageOf(
             "${mainUrl}/?filter=latest" to "Latest Release",
-            "${mainUrl}/tag/ullu-web-series" to "Ullu Web Series"
+            "${mainUrl}/tag/ullu-web-series" to "Ullu Web Series",
             "${mainUrl}/page/?filter=popular" to "Most Popular",
             "${mainUrl}/search/Hunters" to "Hunter Web Series",
             "${mainUrl}/page/?s=fugi" to "Fugi Web Series",
