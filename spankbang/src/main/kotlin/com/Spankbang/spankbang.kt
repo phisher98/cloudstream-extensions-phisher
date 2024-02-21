@@ -15,6 +15,7 @@ class spankbang : MainAPI() {
     override val supportedTypes       = setOf(TvType.NSFW)
 
     override val mainPage = mainPageOf(
+            "${mainUrl}/new_videos/" to "New Videos",
             "${mainUrl}/j2/channel/familyxxx/" to "Family XXX",
             "${mainUrl}/k5/channel/japan+hdv/" to "Japan HDV",
             "${mainUrl}/j3/channel/hot+wife+xxx/" to "Hot Wife XXX",
@@ -25,7 +26,7 @@ class spankbang : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data + page).document
+        val document = app.get(request.data + page).document      
         val home     = document.select("div.video-item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -39,6 +40,16 @@ class spankbang : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
+        val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
+        val href      = fixUrl(this.select("a.thumb").attr("href"))
+        val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
+
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+            this.posterUrl = posterUrl
+        }
+    }
+
+    private fun Element.toSearchResult1(): SearchResponse {
         val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
         val href      = fixUrl(this.select("a.thumb").attr("href"))
         val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
@@ -85,12 +96,12 @@ class spankbang : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("div#main_video_player").map { res ->
+        document.select("div#video_container").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
                         name    = this.name,
-                        url     = fixUrl(res.selectFirst("#main_video_player_html5_api > source")?.attr("src")?.trim().toString()),
+                        url     = fixUrl(res.selectFirst("#main_video_player_html5_api")?.attr("src")),
                         referer = data,
                         quality = Qualities.Unknown.value
                     )
