@@ -17,6 +17,8 @@ class spankbang : MainAPI() {
     override val mainPage = mainPageOf(
             "${mainUrl}/new_videos/" to "New Videos",
             "${mainUrl}/j2/channel/familyxxx/" to "Family XXX",
+            "${mainUrl}/ce/channel/bratty+milf/" to "Bratty MILF",
+            "${mainUrl}/cf/channel/bratty+sis/" to "Bratty Sis",
             "${mainUrl}/k5/channel/japan+hdv/" to "Japan HDV",
             "${mainUrl}/j3/channel/hot+wife+xxx/" to "Hot Wife XXX",
             "${mainUrl}/d6/channel/my+family+pies/" to "My Family Pies",
