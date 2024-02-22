@@ -4,7 +4,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class mydesi : MainAPI() {
+class masaFun : MainAPI() {
     override var mainUrl              = "https://masafun.com"
     override var name                 = "MasaFun"
     override val hasMainPage          = true
