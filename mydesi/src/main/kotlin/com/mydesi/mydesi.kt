@@ -5,8 +5,8 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class mydesi : MainAPI() {
-    override var mainUrl              = "https://desi49.com"
-    override var name                 = "Desi49"
+    override var mainUrl              = "https://masafun.com"
+    override var name                 = "MasaFun"
     override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = false
@@ -22,7 +22,7 @@ class mydesi : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document      
-        val home     = document.select("article").mapNotNull { it.toSearchResult() }
+        val home     = document.select("li.video").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -37,7 +37,7 @@ class mydesi : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = fixTitle(this.select("a").attr("title")).trim().toString()
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.post-thumbnail>div.inner-border>img").attr("data-src"))
+        val posterUrl = fixUrlNull(this.select("img").attr("src"))
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -50,7 +50,7 @@ class mydesi : MainAPI() {
         for (i in 1..5) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
-            val results = document.select("article").mapNotNull { it.toSearchResult() }
+            val results = document.select("li.video").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -67,7 +67,7 @@ class mydesi : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+        val title       = document.selectFirst("div.posts.post_single > h1")?.text().toString()
         val poster      = fixUrlNull(document.selectFirst("#censor-player_html5_api")?.attr("poster"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
     
@@ -81,7 +81,7 @@ class mydesi : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("div.responsive-player").map { res ->
+        document.select("div.video_player").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
