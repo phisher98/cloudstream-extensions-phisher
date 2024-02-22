@@ -38,7 +38,7 @@ class IndianTVPlugin : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a > div > div > h2")).text()
+        val title     = this.select("a > div > div > h2").text()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("a > div > img").attr("src"))
 
