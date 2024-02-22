@@ -5,10 +5,14 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
+
+private val homePoster =
+        "https://github.com/phisher98/HindiProviders/blob/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
+
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl              = "https://madplay.live"
-    override var name                 = "IndianTV"
-    override val hasMainPage          = true
+    override var mainUrl              = "https://madplay.live/hls/tata"
+    override var name                 = "TATA Sky"
+    override val hasMainPage          = false
     override var lang                 = "hi"
     override val hasQuickSearch       = false
     override val hasDownloadSupport   = true
@@ -16,7 +20,7 @@ class IndianTVPlugin : MainAPI() {
     override val supportedTypes       = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/hls/tata/" to "TATA",
+        "${mainUrl}/page/" to "TATA",
 )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -34,11 +38,9 @@ class IndianTVPlugin : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val titleRaw = this.selectFirst("h2")?.text()?.trim()
-        val title = if (titleRaw.isNullOrBlank()) "Unknown LiveStream" else titleRaw.toString()
-        //val title     = fixTitle(this.selectFirst("h2.text-center.text-sm.font-bold"))
-        val href      = fixUrl(this.select("[target=_blank]").attr("href"))
-        val posterUrl = fixUrlNull(this.select("img.h-28").attr("src"))
+        val title     = fixTitle(this.select("a > div > div > h2")).text()
+        val href      = fixUrl(this.select("a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("a > div > img").attr("src"))
 
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
@@ -68,9 +70,9 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title       = document.selectFirst("div.program-name")?.text()?.trim().toString()
-        val poster      = fixUrlNull(document.selectFirst("img.logo")?.attr("src"))
-        val description = document.selectFirst("div.program-description")?.text()?.trim().toString()
+        val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
+        val poster      = homePoster
+        val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
         return newMovieLoadResponse(title, url, TvType.Live, url) {
