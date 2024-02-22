@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class mydesi : MainAPI() {
-    override var mainUrl              = "https://www.mydesi2.net"
+    override var mainUrl              = "https://bin69.com"
     override var name                 = "Mydesi"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -52,7 +52,7 @@ class mydesi : MainAPI() {
         for (i in 1..10) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
-            val results = document.select("div.col-12 > div.row.no-gutters").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.video-block.video-with-trailer").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -83,7 +83,7 @@ class mydesi : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("#censor-player_html5_api").map { res ->
+        document.select("video#censor-player_html5_api").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
