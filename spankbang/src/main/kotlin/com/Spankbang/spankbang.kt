@@ -1,5 +1,6 @@
 package com.coxju
 
+import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -45,7 +46,7 @@ class spankbang : MainAPI() {
         val title     = fixTitle(this.select("a.thumb > picture > img").attr("alt")).trim().toString()
         val href      = fixUrl(this.select("a.thumb").attr("href"))
         val posterUrl = fixUrlNull(this.select("a.thumb > picture > img").attr("data-src"))
-        printIn(title)
+        Log.d("title","Title check")
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
