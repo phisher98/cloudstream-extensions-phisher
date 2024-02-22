@@ -5,7 +5,7 @@ version = 4
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Live TVV"
+    description = "TATA Sky"
     authors = listOf("HindiProviders")
 
     /**

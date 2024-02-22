@@ -20,7 +20,7 @@ class IndianTVPlugin : MainAPI() {
     override val supportedTypes       = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/page/" to "TATA",
+        "${mainUrl}/" to "TATA",
 )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
