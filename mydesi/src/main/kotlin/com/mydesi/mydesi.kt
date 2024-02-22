@@ -35,9 +35,19 @@ class mydesi : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
+        for (i in 1..5) {
         val title     = fixTitle(this.select("a").attr("title")).trim().toString()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div.post-thumbnail>div.inner-border>img").attr("data-src"))
+
+        if (!searchResponse.containsAll(results)) {
+            searchResponse.addAll(results)
+        } else {
+            break
+        }
+
+        if (results.isEmpty()) break
+        }
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
