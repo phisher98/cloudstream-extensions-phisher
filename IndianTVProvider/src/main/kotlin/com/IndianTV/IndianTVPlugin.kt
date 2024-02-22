@@ -25,7 +25,7 @@ class IndianTVPlugin : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("div.box1").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div#listContainer").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -38,9 +38,9 @@ class IndianTVPlugin : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = this.select("a > div > div > h2").text()
-        val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a > div > img").attr("src"))
+        val title     = this.select("div.box1 > a > div > div > h2").text()
+        val href      = fixUrl(this.select("div.box1> a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("div.box1 > a > div > img").attr("src"))
 
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
