@@ -21,8 +21,6 @@ class mydesi : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-
-        for (page in 1..5) {
         val document = app.get(request.data + page).document      
         val home     = document.select("article").mapNotNull { it.toSearchResult() }
 
@@ -34,7 +32,6 @@ class mydesi : MainAPI() {
             ),
             hasNext = true
         )
-        }
     }
 
     private fun Element.toSearchResult(): SearchResponse {
