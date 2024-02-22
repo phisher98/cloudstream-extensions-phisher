@@ -27,11 +27,11 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(request.data + page).document
         val home     = 
         if (request.data.contains("tata")){
-        document.select("div#listContainer").mapNotNull { it.toSearchResult() }
+            document.select("div#listContainer").mapNotNull { it.toSearchResult() }
         }
         else
         {
-            return true
+            document.select("div#listContainer").mapNotNull { it.toSearchResult()
         }
 
         return newHomePageResponse(
