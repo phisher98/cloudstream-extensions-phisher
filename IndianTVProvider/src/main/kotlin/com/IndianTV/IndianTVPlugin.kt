@@ -33,6 +33,7 @@ class IndianTVPlugin : MainAPI() {
         {
             document.select("div#listContainer").mapNotNull { it.toSearchResult()
         }
+    }
 
         return newHomePageResponse(
             list    = HomePageList(
