@@ -16,17 +16,17 @@ class UncutMaza : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/" to "Home",
-            "${mainUrl}/category/kooku-originals-web-series/" to "Kooku",
-            "${mainUrl}/category/ullu-originals-web-series/" to "Ullu",
-            "${mainUrl}/category/flizmovies-originals-web-series/" to "Fliz movies",
-            "${mainUrl}/category/hotshots-web-series/" to "Kooku",
-            "${mainUrl}/category/niks-indian-porn/" to "Niks Indian",
+            "${mainUrl}/page/" to "Home",
+            "${mainUrl}/category/kooku-originals-web-series/page/" to "Kooku",
+            "${mainUrl}/category/ullu-originals-web-series/page/" to "Ullu",
+            "${mainUrl}/category/flizmovies-originals-web-series/page/" to "Fliz movies",
+            "${mainUrl}/category/hotshots-web-series/page/" to "Kooku",
+            "${mainUrl}/category/niks-indian-porn/page/" to "Niks Indian",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("article.post").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.videos-list > article.post").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
