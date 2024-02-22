@@ -5,8 +5,8 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class mydesi : MainAPI() {
-    override var mainUrl              = "https://bin69.com"
-    override var name                 = "Mydesi"
+    override var mainUrl              = "https://fry99.com"
+    override var name                 = "Desi49"
     override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = false
