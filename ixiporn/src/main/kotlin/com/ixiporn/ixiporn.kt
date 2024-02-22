@@ -19,10 +19,10 @@ class ixiporn : MainAPI() {
             "${mainUrl}/?filter=latest/page/" to "Latest Release",
             "${mainUrl}/tag/ullu-web-series/page/" to "Ullu Web Series",
             "${mainUrl}/search/Hunters/page/" to "Hunter Web Series",
-            "${mainUrl}/?s=fugi/page/" to "Fugi Web Series",
-            "${mainUrl}/?s=besharams/page/" to "Besharams Web Series",
-            "${mainUrl}/?s=primeplay/page/" to "Prime Play",
-            "${mainUrl}/?s=neonx/page/" to "Neonx",
+            "${mainUrl}/search/fugi/page/" to "Fugi Web Series",
+            "${mainUrl}/search/besharams/page/" to "Besharams Web Series",
+            "${mainUrl}/search/primeplay/page/" to "Prime Play",
+            "${mainUrl}/search/neonx/page/" to "Neonx",
             "${mainUrl}/search/voovi/page/" to "Voovi Web Series",
     )
 
