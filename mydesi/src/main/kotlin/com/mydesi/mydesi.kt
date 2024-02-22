@@ -86,7 +86,7 @@ class mydesi : MainAPI() {
                     ExtractorLink(
                         source  = this.name,
                         name    = this.name,
-                        url     = fixUrl(res.selectFirst("video#wpst-video_html5_api > source")?.attr("src")?.trim().toString()),
+                        url     = fixUrl(res.selectFirst("video > source")?.attr("src")?.trim().toString()),
                         referer = data,
                         quality = Qualities.Unknown.value
                     )
