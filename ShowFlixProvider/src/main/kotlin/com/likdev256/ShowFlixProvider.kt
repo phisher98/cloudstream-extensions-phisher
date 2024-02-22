@@ -427,7 +427,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
     // Url Extractor Util
     fun splitUrl(url: String): Pair<String, String> {
-        val urlRegex = Regex("(https?://)?([a-zA-Z0-9.-]+)/./(.*)")
+        val urlRegex = Regex("(https?://)?([a-zA-Z0-9.-]+)(/.*)?")
         val match = urlRegex.find(url)
         return Pair(match?.groups?.get(2)?.value.toString(), match?.groups?.get(3)?.value.toString())
     }
