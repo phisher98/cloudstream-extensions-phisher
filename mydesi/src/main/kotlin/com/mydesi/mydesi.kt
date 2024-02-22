@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class mydesi : MainAPI() {
-    override var mainUrl              = "https://fry99.com"
+    override var mainUrl              = "https://hubmasa.com"
     override var name                 = "Desi49"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -16,15 +16,13 @@ class mydesi : MainAPI() {
 
     override val mainPage = mainPageOf(
             "${mainUrl}/page/" to "New Videos",
-            "${mainUrl}/category/tango/" to "Tango",
-            "${mainUrl}/category/pornography/onlyfans-video-collection/" to "OnlyFans",
-            "${mainUrl}/category/paid/" to "Webseries",
-            "${mainUrl}/category/village/" to "Village",
+            "${mainUrl}/category/web-series/page/" to "Web Series",
+            "${mainUrl}/category/indian-amateur-porn/page/" to "Indian",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document      
-        val home     = document.select("div.video-block.video-with-trailer").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.videos-list > article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -37,9 +35,9 @@ class mydesi : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a.thumb > img").attr("alt")).trim().toString()
-        val href      = fixUrl(this.select("a.infos").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a.thumb > img").attr("data-src"))
+        val title     = fixTitle(this.select("a").attr("title")).trim().toString()
+        val href      = fixUrl(this.select("a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("div.post-thumbnail>div.inner-border>img").attr("data-src"))
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -52,7 +50,7 @@ class mydesi : MainAPI() {
         for (i in 1..5) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
-            val results = document.select("div.video-block.video-with-trailer").mapNotNull { it.toSearchResult() }
+            val results = document.select("article").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -83,7 +81,7 @@ class mydesi : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("video#censor-player_html5_api").map { res ->
+        document.select("video#wpst-video_html5_api").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
