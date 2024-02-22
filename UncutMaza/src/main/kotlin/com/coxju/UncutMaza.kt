@@ -19,7 +19,7 @@ class UncutMaza : MainAPI() {
             "${mainUrl}/page/" to "Home",
             "${mainUrl}/category/kooku-originals-web-series/" to "Kooku",
             "${mainUrl}/category/ullu-originals-web-series/" to "Ullu",
-            "${mainUrl}/category/flizmovies-originals-web-series/" to "Fliz movies"
+            "${mainUrl}/category/flizmovies-originals-web-series/" to "Fliz movies",
             "${mainUrl}/category/hotshots-web-series/" to "Kooku",
             "${mainUrl}/category/niks-indian-porn/" to "Niks Indian",
     )
