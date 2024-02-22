@@ -21,7 +21,9 @@ class mydesi : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data + page).document      
+
+        for (i in 1..5) {
+        val document = app.get(request.data + page + i).document      
         val home     = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -32,10 +34,10 @@ class mydesi : MainAPI() {
             ),
             hasNext = true
         )
+        }
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        for (i in 1..5) {
         val title     = fixTitle(this.select("a").attr("title")).trim().toString()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div.post-thumbnail>div.inner-border>img").attr("data-src"))
@@ -44,7 +46,6 @@ class mydesi : MainAPI() {
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
-    }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
