@@ -15,14 +15,14 @@ class mydesi : MainAPI() {
     override val supportedTypes       = setOf(TvType.NSFW)
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/" to "New Videos",
-            "${mainUrl}/category/web-series/" to "Web Series",
-            "${mainUrl}/category/indian-amateur-porn/" to "Indian",
+            "${mainUrl}/page/" to "New Videos",
+            "${mainUrl}/category/web-series/page/" to "Web Series",
+            "${mainUrl}/category/indian-amateur-porn/page/" to "Indian",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document      
-        val home     = document.select("div.videos-list > article").mapNotNull { it.toSearchResult() }
+        val home     = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
