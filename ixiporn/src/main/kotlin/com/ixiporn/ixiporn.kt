@@ -16,15 +16,15 @@ class ixiporn : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/?filter=latest" to "Latest Release",
-            "${mainUrl}/tag/ullu-web-series" to "Ullu Web Series",
-            "${mainUrl}/page/?filter=popular" to "Most Popular",
-            "${mainUrl}/search/Hunters" to "Hunter Web Series",
-            "${mainUrl}/page/?s=fugi" to "Fugi Web Series",
-            "${mainUrl}/page/?s=besharams" to "Besharams Web Series",
-            "${mainUrl}/page/?s=primeplay" to "Prime Play",
-            "${mainUrl}/page/?s=neonx" to "Neonx",
-            "${mainUrl}/page/?s=voovi" to "Voovi Web Series",
+            "${mainUrl}/?filter=latest/page/" to "Latest Release",
+            "${mainUrl}/tag/ullu-web-series/page/" to "Ullu Web Series",
+            "${mainUrl}/page/?filter=popular/page/" to "Most Popular",
+            "${mainUrl}/search/Hunters/page/" to "Hunter Web Series",
+            "${mainUrl}/page/?s=fugi/page/" to "Fugi Web Series",
+            "${mainUrl}/page/?s=besharams/page/" to "Besharams Web Series",
+            "${mainUrl}/page/?s=primeplay/page/" to "Prime Play",
+            "${mainUrl}/page/?s=neonx/page/" to "Neonx",
+            "${mainUrl}/page/?s=voovi/page/" to "Voovi Web Series",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
