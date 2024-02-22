@@ -1,5 +1,3 @@
-// ! https://codeberg.org/coxju/cs-ext-coxju/src/branch/master/UncutMaza/src/main/kotlin/com/coxju/UncutMaza.kt
-
 package com.coxju
 
 import org.jsoup.nodes.Element
@@ -19,7 +17,8 @@ class UncutMaza : MainAPI() {
 
     override val mainPage = mainPageOf(
             "${mainUrl}/page/"                           to "Home",
-            "${mainUrl}/category/niks-indian-porn/page/" to "Niks Indian"
+            "${mainUrl}/category/kooku-originals-web-series" to "Kooku",
+            "${mainUrl}/category/niks-indian-porn/page/" to "Niks Indian",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
