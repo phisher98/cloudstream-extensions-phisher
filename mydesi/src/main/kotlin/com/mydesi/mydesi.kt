@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class mydesi : MainAPI() {
-    override var mainUrl              = "https://www.mydesi2.net"
+    override var mainUrl              = "https://bin69.com"
     override var name                 = "Mydesi"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -49,7 +49,7 @@ class mydesi : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..10) {
+        for (i in 1..5) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
             val results = document.select("div.video-block.video-with-trailer").mapNotNull { it.toSearchResult() }
