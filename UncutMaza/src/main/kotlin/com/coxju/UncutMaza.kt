@@ -18,6 +18,7 @@ class UncutMaza : MainAPI() {
     override val mainPage = mainPageOf(
             "${mainUrl}/page/"                           to "Home",
             "${mainUrl}/category/kooku-originals-web-series/page/" to "Kooku",
+            "${mainUrl}/category/ullu-originals-web-series/page" to "Ullu"
             "${mainUrl}/category/niks-indian-porn/page/" to "Niks Indian",
     )
 
