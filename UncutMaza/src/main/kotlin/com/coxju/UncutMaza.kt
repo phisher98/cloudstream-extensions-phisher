@@ -16,7 +16,7 @@ class UncutMaza : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/page/" to "Home",
+            "${mainUrl}/" to "Home",
             "${mainUrl}/category/kooku-originals-web-series/" to "Kooku",
             "${mainUrl}/category/ullu-originals-web-series/" to "Ullu",
             "${mainUrl}/category/flizmovies-originals-web-series/" to "Fliz movies",
