@@ -18,13 +18,12 @@ class ixiporn : MainAPI() {
     override val mainPage = mainPageOf(
             "${mainUrl}/?filter=latest/page/" to "Latest Release",
             "${mainUrl}/tag/ullu-web-series/page/" to "Ullu Web Series",
-            "${mainUrl}/page/?filter=popular/page/" to "Most Popular",
             "${mainUrl}/search/Hunters/page/" to "Hunter Web Series",
-            "${mainUrl}/page/?s=fugi/page/" to "Fugi Web Series",
-            "${mainUrl}/page/?s=besharams/page/" to "Besharams Web Series",
-            "${mainUrl}/page/?s=primeplay/page/" to "Prime Play",
-            "${mainUrl}/page/?s=neonx/page/" to "Neonx",
-            "${mainUrl}/page/?s=voovi/page/" to "Voovi Web Series",
+            "${mainUrl}/?s=fugi/page/" to "Fugi Web Series",
+            "${mainUrl}/?s=besharams/page/" to "Besharams Web Series",
+            "${mainUrl}/?s=primeplay/page/" to "Prime Play",
+            "${mainUrl}/?s=neonx/page/" to "Neonx",
+            "${mainUrl}/search/voovi/page/" to "Voovi Web Series",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
