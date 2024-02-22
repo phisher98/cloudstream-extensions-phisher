@@ -5,8 +5,8 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class mydesiProvider: Plugin() {
+class masaFunProvider: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(mydesi())
+        registerMainAPI(masafun())
     }
 }
