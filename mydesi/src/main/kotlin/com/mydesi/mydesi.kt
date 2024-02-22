@@ -38,11 +38,11 @@ class mydesi : MainAPI() {
         val title     = fixTitle(this.select("a").attr("title")).trim().toString()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div.post-thumbnail>div.inner-border>img").attr("data-src"))
-        }
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
+    }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
