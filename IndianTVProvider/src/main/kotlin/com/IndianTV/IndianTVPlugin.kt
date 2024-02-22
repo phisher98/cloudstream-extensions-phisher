@@ -25,7 +25,14 @@ class IndianTVPlugin : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("div#listContainer").mapNotNull { it.toSearchResult() }
+        val home     = 
+        if (request.data.contains("tata")){
+        document.select("div#listContainer").mapNotNull { it.toSearchResult() }
+        }
+        else
+        {
+            return true
+        }
 
         return newHomePageResponse(
             list    = HomePageList(
