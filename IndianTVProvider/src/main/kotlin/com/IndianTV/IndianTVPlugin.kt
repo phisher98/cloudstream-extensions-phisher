@@ -12,7 +12,7 @@ private val homePoster =
 class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live"
     override var name                 = "TATA Sky"
-    override val hasMainPage          = false
+    override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = false
     override val hasDownloadSupport   = true
