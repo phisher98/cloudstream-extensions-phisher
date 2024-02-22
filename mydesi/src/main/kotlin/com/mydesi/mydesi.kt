@@ -81,12 +81,12 @@ class mydesi : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.select("video#wpst-video_html5_api").map { res ->
+        document.select("div.responsive-player").map { res ->
             callback.invoke(
                     ExtractorLink(
                         source  = this.name,
                         name    = this.name,
-                        url     = fixUrl(res.selectFirst("source")?.attr("src")?.trim().toString()),
+                        url     = fixUrl(res.selectFirst("video#wpst-video_html5_api > source")?.attr("src")?.trim().toString()),
                         referer = data,
                         quality = Qualities.Unknown.value
                     )
