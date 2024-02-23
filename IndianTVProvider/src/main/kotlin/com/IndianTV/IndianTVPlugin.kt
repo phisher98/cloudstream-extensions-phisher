@@ -10,7 +10,7 @@ import java.util.*
 public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl              = "https://madplay.live/hls/tata/"
+    override var mainUrl              = "https://madplay.live/hls/tata"
     override var name                 = "TATA Sky"
     override val hasMainPage          = true
     override var lang                 = "hi"
