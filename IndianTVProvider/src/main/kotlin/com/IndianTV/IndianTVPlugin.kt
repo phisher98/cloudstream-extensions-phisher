@@ -41,6 +41,7 @@ class IndianTVPlugin : MainAPI() {
         val title     = this.select("h2.text-center").text()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("img").attr("src"))
+        //val category = this.select("p").text()
 
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
@@ -72,13 +73,16 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-        val poster      = homePoster
+        val poster      = fixUrl("https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg")
+        var rawcategory = document.selectFirst("div.program-info > div.program-name > span.timex")?.text()?.trim().toString()
+        var category    = text.replace("Category: ", "");
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
         return newMovieLoadResponse(title, url, TvType.Live, url) {
             this.posterUrl = poster
             this.plot      = description
+            this.category  = category
         }
     }
     
