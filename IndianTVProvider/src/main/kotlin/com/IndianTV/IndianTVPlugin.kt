@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
 
-//private val homePoster ="https://github.com/phisher98/HindiProviders/blob/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
+public val homePoster ="https://github.com/phisher98/HindiProviders/blob/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata"
@@ -72,7 +72,7 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-        val poster      = fixUrlNull(this.selectFirst(("body > div > img").attr("src")).trim().toString())
+        val poster      = homePoster
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
