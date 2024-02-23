@@ -72,12 +72,12 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-        val poster      = homePoster
+        //val poster      = homePoster
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
         return newMovieLoadResponse(title, url, TvType.Live, url) {
-            this.posterUrl = poster
+            this.posterUrl = homePoster
             this.plot      = description
         }
     }
