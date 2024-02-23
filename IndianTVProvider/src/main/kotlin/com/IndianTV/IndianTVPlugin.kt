@@ -48,12 +48,13 @@ class IndianTVPlugin : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
+    /*override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
             val document = app.get("${mainUrl}/").document
             val results = document.select("div.box1").mapNotNull { it.toSearchResult() }
         return searchResponse
-    }
+    }*/
+    override suspend fun search(query: String): List<SearchResponse>? = quickSearch(query)
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
