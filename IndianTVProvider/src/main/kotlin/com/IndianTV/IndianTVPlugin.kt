@@ -81,41 +81,7 @@ class IndianTVPlugin : MainAPI() {
             this.plot      = description
         }
     }
-
-    fun extractValuesFromWebsite(url: String): Triple<String?, String?, String?> {
-        val document = app.get(url).document
     
-        val scriptElements = doc.select("script")
-    
-        var file: String? = null
-        var keyId: String? = null
-        var key: String? = null
-    
-        scriptElements.forEach { script ->
-            val scriptContent = script.html()
-    
-            // Extract 'file'
-            val fileMatch = "'file':\\s*'([^']*)'".toRegex().find(scriptContent)
-            if (fileMatch != null) {
-                file = fileMatch.groupValues[1]
-            }
-    
-            // Extract 'keyId'
-            val keyIdMatch = "'keyId':\\s*'([^']*)'".toRegex().find(scriptContent)
-            if (keyIdMatch != null) {
-                keyId = keyIdMatch.groupValues[1]
-            }
-    
-            // Extract 'key'
-            val keyMatch = "'key':\\s*'([^']*)'".toRegex().find(scriptContent)
-            if (keyMatch != null) {
-                key = keyMatch.groupValues[1]
-            }
-        }
-    
-        return Triple(file, keyId, key)
-    }
-
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
