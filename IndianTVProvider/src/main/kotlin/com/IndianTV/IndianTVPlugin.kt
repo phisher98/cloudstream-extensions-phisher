@@ -80,7 +80,7 @@ class IndianTVPlugin : MainAPI() {
                 }
 
                 if (finalScript.contains("akamaized:")) {
-                    val file = finalScript.substringAfter("file:")
+                    val link = finalScript.substringAfter("file:")
                                 .substringBefore("\",")
                                 .trim()
                             
@@ -97,7 +97,8 @@ class IndianTVPlugin : MainAPI() {
                             source = this.name,
                             name = URL(this.name).host,
                             url = link,
-                            uuid: UUID = CLEARKEY_UUID,
+                            kid: keyId,     
+                            key: key,
                             referer = "",
                             quality = Qualities.Unknown.value,
                             isM3u8 = false,
