@@ -1,6 +1,7 @@
 package com.coxju
 
 import org.jsoup.nodes.Element
+import org.jsoup.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
@@ -71,7 +72,7 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-        val poster      = fixUrlNull(document.selectFirst(("div.program-info > img").attr("src")))
+        val poster      = fixUrlNull(document.selectFirst(("body > div > img").attr("src")).trim().toString())
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
