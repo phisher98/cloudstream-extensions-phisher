@@ -12,16 +12,16 @@ public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProvide
 class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata"
     override var name                 = "TATA Sky"
-    override val hasMainPage          = false
+    override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = true
     override val hasDownloadSupport   = true
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.Live)
 
-   /*  override val mainPage = mainPageOf(
+   override val mainPage = mainPageOf(
         "${mainUrl}/" to "TATA",
-)*/
+)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
