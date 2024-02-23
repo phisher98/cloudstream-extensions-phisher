@@ -74,15 +74,13 @@ class IndianTVPlugin : MainAPI() {
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
         val poster      = fixUrl("https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg")
-        var rawcategory = document.selectFirst("div.program-info > div.program-name > span.timex")?.text()?.trim().toString()
-        var category    = text.replace("Category: ", "");
+        var showname = document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
         return newMovieLoadResponse(title, url, TvType.Live, url) {
             this.posterUrl = poster
-            this.plot      = description
-            this.category  = category
+            this.plot      = showname
         }
     }
     
