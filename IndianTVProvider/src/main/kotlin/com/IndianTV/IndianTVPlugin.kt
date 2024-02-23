@@ -12,7 +12,7 @@ public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProvide
 class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata"
     override var name                 = "TATA Sky"
-    override val hasMainPage          = true
+    override val hasMainPage          = false
     override var lang                 = "hi"
     override val hasQuickSearch       = true
     override val hasDownloadSupport   = true
