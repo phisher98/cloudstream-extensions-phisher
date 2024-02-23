@@ -50,6 +50,7 @@ class IndianTVPlugin : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
+            val document = app.get(request.data).document
             val results = document.select("div.box1").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
@@ -80,7 +81,7 @@ class IndianTVPlugin : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        //val document = app.get(data).document
+        /*val document = app.get(data).document
         val linksData = AppUtils.parseJson<Links>(data)
         //Log.d("King", "videoUrl:$mainUrl/play.php?id=${linksData.id}")
         val document = app.get(
@@ -121,5 +122,6 @@ class IndianTVPlugin : MainAPI() {
             }
         }
         return true
+        */
     }
 }
