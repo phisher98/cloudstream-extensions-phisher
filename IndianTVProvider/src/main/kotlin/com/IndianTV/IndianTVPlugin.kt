@@ -5,7 +5,7 @@ import org.jsoup.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
-
+import java.io.File
 
 public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
@@ -71,38 +71,33 @@ class IndianTVPlugin : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        /*val document = app.get(data).document
-        val linksData = AppUtils.parseJson<Links>(data)
-        //Log.d("King", "videoUrl:$mainUrl/play.php?id=${linksData.id}")
-        val document = app.get(
-            url = "$mainUrl/play.php?id=${linksData.id}",
-            headers = mapOf(
-                "user-agent" to userAgent
-            )).document
-
-        val servers = document.select("ul[id=\"xservers\"]").select("button").mapNotNull {
-            it.attr("data-embed")
-        }
-        //Log.d("King", "servers:$servers")
-
-        servers.map {
-            app.get(it).document.select("script").mapNotNull { script ->
-
+        val document = app.get(data).document
+        document.select("j#wplayerDiv + script").mapNotNull { script ->
                 val finalScript = if (JsUnpacker(script.data()).detect()) {
                     JsUnpacker(script.data()).unpack()!!
                 } else {
                     script.data()
                 }
 
-                if (finalScript.contains("sources:")) {
-                    val link = finalScript.substringAfter("sources:")
-                        .substringBefore("\"}]").replace("[{file:\"","")
-
+                if (finalScript.contains("akamaized:")) {
+                    val file = finalScript.substringAfter("file:")
+                                .substringBefore("\",")
+                                .trim()
+                            
+                    val keyId = finalScript.substringAfter("\"keyId\":")
+                                .substringBefore(",")
+                                .trim()
+                        
+                    val key = finalScript.substringAfter("\"key\":")
+                                .substringBefore("\n")
+                                .trim()
+                 }
                     callback.invoke(
-                        ExtractorLink(
-                            source = it,
-                            name = URL(it).host,
+                        DrmExtractorLink(
+                            source = this.name,
+                            name = URL(this.name).host,
                             url = link,
+                            uuid: UUID = CLEARKEY_UUID,
                             referer = "",
                             quality = Qualities.Unknown.value,
                             isM3u8 = false,
@@ -110,8 +105,6 @@ class IndianTVPlugin : MainAPI() {
                     )
                 }
             }
-        }
-        */
         return true
     }
 }
