@@ -20,12 +20,12 @@ class IndianTVPlugin : MainAPI() {
     override val supportedTypes       = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/hls/tata/page/" to "TATA",
+        "${mainUrl}/hls/tata/" to "TATA",
 )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("div#listContainer > div").mapNotNull { it.toSearchResult()}
+        val home     = document.select("div#listContainer > div.box1").mapNotNull { it.toSearchResult()}
 
         return newHomePageResponse(
             list    = HomePageList(
