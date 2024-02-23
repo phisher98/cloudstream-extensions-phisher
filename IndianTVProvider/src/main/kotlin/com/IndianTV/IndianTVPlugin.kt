@@ -86,8 +86,7 @@ class IndianTVPlugin : MainAPI() {
                             
                     val keyId = finalScript.substringAfter("\"keyId\":")
                                 .substringBefore(",")
-                                .trim()
-                        
+                                .trim()                        
                     val key = finalScript.substringAfter("\"key\":")
                                 .substringBefore("\n")
                                 .trim()
