@@ -111,7 +111,7 @@ class IndianTVPlugin : MainAPI() {
                 }
             }
         }
-        return true
         */
+        return true
     }
 }
