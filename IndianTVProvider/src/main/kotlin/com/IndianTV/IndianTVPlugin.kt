@@ -51,7 +51,7 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/").document
         return document.select("div#listContainer div.box1:contains($query), div#listContainer div.box1:contains($query)").mapNotNull {
-            it.toSearchResponse()
+            it.toSearchResult()
         }
     }
 
