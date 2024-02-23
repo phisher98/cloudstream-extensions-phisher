@@ -10,7 +10,7 @@ import java.util.*
 public val homePoster ="https://github.com/phisher98/HindiProviders/blob/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl              = "https://madplay.live/hls/tata"
+    override var mainUrl              = "https://madplay.live/hls/tata/"
     override var name                 = "TATA Sky"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -19,9 +19,9 @@ class IndianTVPlugin : MainAPI() {
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.Live)
 
-    override val mainPage = mainPageOf(
+   /*  override val mainPage = mainPageOf(
         "${mainUrl}/" to "TATA",
-)
+)*/
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
