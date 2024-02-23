@@ -1,16 +1,8 @@
-package com.coxju
-
 import org.jsoup.nodes.Element
-import org.jsoup.*
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
-import java.util.*
-
-
-public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl              = "https://madplay.live/hls/tata"
+    override var mainUrl              = "https://madplay.live/hls/tata/"
     override var name                 = "TATA Sky"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -19,20 +11,25 @@ class IndianTVPlugin : MainAPI() {
     override val hasChromecastSupport = true
     override val supportedTypes       = setOf(TvType.Live)
 
-   override val mainPage = mainPageOf(
+      override val mainPage = mainPageOf(
         "${mainUrl}/" to "TATA",
-)
+    )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
-        val home     = document.select("div#listContainer > div.box1").mapNotNull { it.toSearchResult()}
+        val home     = document.select("div#listContainer > div.box1").mapNotNull { it.toSearchResult() }
+        val groupedHome = home.groupBy { it.category } // Grouping by category
+
+        val homePageLists = groupedHome.map { (category, items) ->
+            HomePageList(
+                name = category ?: request.name, // Using category as name if available
+                list = items,
+                isHorizontalImages = true
+            )
+        }
 
         return newHomePageResponse(
-            list    = HomePageList(
-                name               = request.name,
-                list               = home,
-                isHorizontalImages = true
-            ),
+            list    = homePageLists,
             hasNext = false
         )
     }
@@ -41,16 +38,17 @@ class IndianTVPlugin : MainAPI() {
         val title     = this.select("h2.text-center").text()
         val href      = fixUrl(this.select("a").attr("href"))
         val posterUrl = fixUrlNull(this.select("img").attr("src"))
-        //val category = this.select("p").text()
+        val category  = this.select("p").text()
 
         return newMovieSearchResponse(title, href, TvType.Live) {
             this.posterUrl = posterUrl
+            this.category = category // Storing category
         }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
-/* 
+        /* 
         for (i in 1..10) {
             val document = app.get("${mainUrl}/page/$i?s=$query").document
 
@@ -64,9 +62,8 @@ class IndianTVPlugin : MainAPI() {
 
             if (results.isEmpty()) break
         }
-*/
+        */
         return searchResponse
-        
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -74,9 +71,8 @@ class IndianTVPlugin : MainAPI() {
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
         val poster      = fixUrl("https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg")
-        var showname = document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
+        val showname    = document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
-    
 
         return newMovieLoadResponse(title, url, TvType.Live, url) {
             this.posterUrl = poster
