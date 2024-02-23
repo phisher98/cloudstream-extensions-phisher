@@ -71,7 +71,7 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(url).document
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-        val poster      = document.selectFirst(("div.program-info > img")?.attr("src"))
+        val poster      = fixUrlNull(document.selectFirst(("div.program-info > img").attr("src")))
         val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
