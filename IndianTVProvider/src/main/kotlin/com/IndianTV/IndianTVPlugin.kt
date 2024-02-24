@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.utils.*
 import java.util.*
 import java.io.File
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import org.json.JSONObject
+
 
 public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
@@ -99,13 +101,6 @@ class IndianTVPlugin : MainAPI() {
                         type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
                         kid = keyId,
                         key = key,
-                        isDash=true,
-                        headers = mapof(
-                            "Accept-Encoding" to "gzip, deflate, br",
-                            "Connection" to "keep-alive",
-                            "Host" to "*.akamaized.net",
-                            "User-Agent" to	"URL-Player"
-                        )
                     )
                 )
             }
