@@ -90,7 +90,6 @@ class IndianTVPlugin : MainAPI() {
             val keyId = clearKeyJsonObject?.optString("keyId")
             val key = clearKeyJsonObject?.optString("key")
 
-            if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
@@ -104,7 +103,6 @@ class IndianTVPlugin : MainAPI() {
                         key = "ODkyM2FkNWFlZDcxNWE4YmY0Zjc4MjM5ZTEwNDk2ZGM",                        
                     )
                 )
-            }        
         }
             
     }
