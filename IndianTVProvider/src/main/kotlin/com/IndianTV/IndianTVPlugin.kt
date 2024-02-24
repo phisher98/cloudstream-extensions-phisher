@@ -83,10 +83,11 @@ class IndianTVPlugin : MainAPI() {
                         url = "https://bpprod7linear.akamaized.net/bpk-tv/irdeto_com_Channel_307/output/manifest.mpd",
                         referer = "madplay.live",
                         type=INFER_TYPE,
+                        UUID=CLEARKEY_UUID,
                         quality = Qualities.Unknown.value,
                         //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = "db6f1dbe0c005c2694914cca4791f6d5",
-                        key = "8923ad5aed715a8bf4f78239e10496dc",                        
+                        kid = "228dvgwAXCaUkUzKR5H21Q",
+                        key = "iSOtWu1xWov094I54QSW3A",                        
                     )
                 ) 
     return true
