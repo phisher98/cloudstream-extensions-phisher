@@ -91,5 +91,6 @@ class IndianTVPlugin : MainAPI() {
                 ) 
     return true
 }
+}
 
 
