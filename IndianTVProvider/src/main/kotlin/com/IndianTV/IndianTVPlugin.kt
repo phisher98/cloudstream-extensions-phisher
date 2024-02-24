@@ -100,14 +100,7 @@ class IndianTVPlugin : MainAPI() {
                         quality = Qualities.Unknown.value,
                         type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
                         kid = keyId,
-                        key = key,
-                        isDash=true,
-                        headers = mapof(
-                            "Accept-Encoding" to "gzip, deflate, br",
-                            "Connection" to "keep-alive",
-                            "Host" to "*.akamaized.net",
-                            "User-Agent" to	"URL-Player"
-                        )
+                        key = key,                        
                     )
                 )
             }        
