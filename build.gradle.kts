@@ -82,6 +82,7 @@ subprojects {
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
         implementation("org.json:json:20210307")
+        implementation("dev.datlag.jsunpacker:jsunpacker:1.0.1")
     }
 }
 

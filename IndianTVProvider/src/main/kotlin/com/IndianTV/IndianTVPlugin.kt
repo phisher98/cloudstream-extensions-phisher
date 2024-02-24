@@ -77,18 +77,20 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
     val document = app.get(data).document
     document.select("div#jwplayer + script").text().toString().let{
-        val result = JsUnpacker(script.data()).let { unpacker ->
-            if (unpacker.detect()) {
-                val unpackedScript = unpacker.unpack() ?: script.data()
-                AppUtils.parseJson<Map<String, String>>(unpackedScript)
-            } else {
-                null
-            }
+        val decoded = if (JsUnpacker(script.data()).detect()) {
+            JsUnpacker(script.data()).unpack()!!
+        } else {
+            script.data()
         }
+        val result = AppUtils.parseJson<Map<String, String>>(decoded)
+        }
+
         val key = result?.get("key")
         val file = result?.get("file")
         val keyId = result?.get("keyId")
-
+        log.d("key","key")
+        log.d("file","file")
+        log.d("keyId","keyId")
        /*  val base64Key = key?.let {
             val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
             val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
@@ -104,13 +106,13 @@ class IndianTVPlugin : MainAPI() {
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = file,
+                        url = "file",
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = base64Key,
-                        key = base64KeyId,                        
+                        kid = "base64Key",
+                        key = "base64KeyId",                        
                     )
                 ) 
     return true
