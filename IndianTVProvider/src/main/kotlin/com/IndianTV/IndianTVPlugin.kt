@@ -96,7 +96,6 @@ class IndianTVPlugin : MainAPI() {
                             name = this.name,
                             url = link,
                             kid=keyId,  
-                            type=dash ,
                             key=key,
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
