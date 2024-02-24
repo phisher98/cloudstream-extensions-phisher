@@ -89,8 +89,8 @@ class IndianTVPlugin : MainAPI() {
                         key = "8923ad5aed715a8bf4f78239e10496dc",                        
                     )
                 ) 
-    }
     return true
+    }
 }
 
 
