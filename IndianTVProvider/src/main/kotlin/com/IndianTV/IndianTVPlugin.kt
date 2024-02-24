@@ -76,17 +76,41 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
     val document = app.get(data).document
-                callback.invoke(
+    document.select("div#jwplayer + script").text().toString().let{
+        val result = JsUnpacker(script.data()).let { unpacker ->
+            if (unpacker.detect()) {
+                val unpackedScript = unpacker.unpack() ?: script.data()
+                AppUtils.parseJson<Map<String, String>>(unpackedScript)
+            } else {
+                null
+            }
+        }
+        
+        val key = result?.get("key")
+        val file = result?.get("file")
+        val keyId = result?.get("keyId")
+
+        val base64Key = key?.let {
+            val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
+            val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
+        }
+        val base64KeyId = keyId?.let {
+            val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
+            val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
+        }
+        
+        }
+                    callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = "https://bpprod7linear.akamaized.net/bpk-tv/irdeto_com_Channel_307/output/manifest.mpd",
+                        url = file,
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = "228dvgwAXCaUkUzKR5H21Q",
-                        key = "iSOtWu1xWov094I54QSW3A",                        
+                        kid = base64Key,
+                        key = base64KeyId,                        
                     )
                 ) 
     return true
