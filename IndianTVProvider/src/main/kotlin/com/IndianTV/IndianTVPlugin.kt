@@ -85,12 +85,11 @@ class IndianTVPlugin : MainAPI() {
                 null
             }
         }
-        
         val key = result?.get("key")
         val file = result?.get("file")
         val keyId = result?.get("keyId")
 
-        val base64Key = key?.let {
+       /*  val base64Key = key?.let {
             val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
             val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
         }
@@ -98,6 +97,7 @@ class IndianTVPlugin : MainAPI() {
             val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
             val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
         }
+        */
         
         }
                     callback.invoke(
