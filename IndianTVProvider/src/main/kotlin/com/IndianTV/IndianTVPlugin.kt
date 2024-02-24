@@ -92,6 +92,7 @@ class IndianTVPlugin : MainAPI() {
         }
         return true 
     }
+}
 
 class DesuBeta : JWPlayer() {
     override val name = "DesuBeta"
