@@ -71,39 +71,43 @@ class IndianTVPlugin : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
-        document.select("#jwplayerDiv + script").mapNotNull { script ->
-                val finalScript = if (JsUnpacker(script.data()).detect()) {
-                    JsUnpacker(script.data()).unpack()!!
-                } else {
-                    script.data()
-                }
+    val document = app.get(data).document
+    document.select("#jwplayerDiv + script").mapNotNull { script ->
+        val finalScript = if (JsUnpacker(script.data()).detect()) {
+            JsUnpacker(script.data()).unpack()!!
+        } else {
+            script.data()
+        }
 
-                if (finalScript.contains("source:")) {
-                    val link = finalScript.substringAfter("file:")
-                                .substringBefore("\",")
-                                .trim()
-                            
-                    val keyId = finalScript.substringAfter("\"keyId\":")
-                                .substringBefore(",")
-                                .trim()                        
-                    val key = finalScript.substringAfter("\"key\":")
-                                .substringBefore("\n")
-                                .trim()
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = this.name,
-                            name = this.name,
-                            url = link,
-                            kid=keyId,  
-                            key=key,
-                            referer = "madplay.live",
-                            quality = Qualities.Unknown.value,
-                            isDash = true,
-                        )
+        if (finalScript.contains("source:")) {
+            val linkRegex = """'file': "(.*?)",""".toRegex()
+            val linkMatchResult = linkRegex.find(finalScript)
+            val link = linkMatchResult?.groupValues?.get(1)
+
+            val keyIdRegex = """\"keyId\":\s*\"(.*?)\"""".toRegex()
+            val keyIdMatchResult = keyIdRegex.find(finalScript)
+            val keyId = keyIdMatchResult?.groupValues?.get(1)
+
+            val keyRegex = """\"key\":\s*\"(.*?)\"""".toRegex()
+            val keyMatchResult = keyRegex.find(finalScript)
+            val key = keyMatchResult?.groupValues?.get(1)
+
+            if (link != null && keyId != null && key != null) {
+                callback.invoke(
+                    DrmExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = link,
+                        kid = keyId,
+                        key = key,
+                        referer = "madplay.live",
+                        quality = Qualities.Unknown.value,
+                        isDash = true
                     )
-                }
-                }
-        return true
+                )
+            }
+        }
+    }
+    return true
     }
 }
