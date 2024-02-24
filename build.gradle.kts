@@ -41,7 +41,6 @@ subprojects {
     }
 
     android {
-        compileSdkVersion(33)
 
         defaultConfig {
             minSdk = 21
@@ -79,7 +78,7 @@ subprojects {
         implementation(kotlin("stdlib")) // adds standard kotlin features, like listOf, mapOf etc
         implementation("com.github.Blatzar:NiceHttp:0.4.4") // http library
         implementation("org.jsoup:jsoup:1.17.2") // html parser
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
         implementation("org.json:json:20210307")
