@@ -95,7 +95,7 @@ class IndianTVPlugin : MainAPI() {
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = fixUrlNull("https://delta45tatasky.akamaized.net/out/i/722.mpd"),
+                        url = "https://delta45tatasky.akamaized.net/out/i/722.mpd",
                         referer = "madplay.live",
                         quality = Qualities.Unknown.value,
                         type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
