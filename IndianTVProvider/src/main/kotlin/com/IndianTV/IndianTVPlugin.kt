@@ -72,14 +72,14 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select("j#wplayerDiv + script").mapNotNull { script ->
+        document.select("#jwplayerDiv + script").mapNotNull { script ->
                 val finalScript = if (JsUnpacker(script.data()).detect()) {
                     JsUnpacker(script.data()).unpack()!!
                 } else {
                     script.data()
                 }
 
-                if (finalScript.contains("akamaized:")) {
+                if (finalScript.contains("source:")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore("\",")
                                 .trim()
@@ -90,21 +90,21 @@ class IndianTVPlugin : MainAPI() {
                     val key = finalScript.substringAfter("\"key\":")
                                 .substringBefore("\n")
                                 .trim()
-                 }
                     callback.invoke(
                         DrmExtractorLink(
                             source = this.name,
-                            name = URL(this.name).host,
+                            name = this.name,
                             url = link,
-                            kid: keyId,     
-                            key: key,
-                            referer = "",
+                            kid=keyId,  
+                            type=dash ,
+                            key=key,
+                            referer = "madplay.live",
                             quality = Qualities.Unknown.value,
-                            isM3u8 = false,
+                            isDash = true,
                         )
                     )
                 }
-            }
+                }
         return true
     }
 }
