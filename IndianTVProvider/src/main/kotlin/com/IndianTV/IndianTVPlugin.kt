@@ -64,7 +64,7 @@ class IndianTVPlugin : MainAPI() {
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
         val poster      = fixUrl("https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg")
         var showname = document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
-        val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
+        //val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
         return newMovieLoadResponse(title, url, TvType.Live, url) {
@@ -81,26 +81,34 @@ class IndianTVPlugin : MainAPI() {
         } else {
             script.data()
         }
-
         if (finalScript.contains("source:")) {
-            val jsonObject = JSONObject(finalScript)
-            val link = jsonObject.optString("file")
-            val drmJsonObject = jsonObject.optJSONObject("drm")
-            val clearKeyJsonObject = drmJsonObject?.optJSONObject("clearkey")
-            val keyId = clearKeyJsonObject?.optString("keyId")
-            val key = clearKeyJsonObject?.optString("key")
+            val linkRegex = """'file': "(.*?)",""".toRegex()
+            val linkMatchResult = linkRegex.find(finalScript)
+            val link = linkMatchResult?.groupValues?.get(1)
 
-            if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
+            val keyIdRegex = """\"keyId\":\s*\"(.*?)\"""".toRegex()
+            val keyIdMatchResult = keyIdRegex.find(finalScript)
+            val keyId = keyIdMatchResult?.groupValues?.get(1)
+
+            val keyRegex = """\"key\":\s*\"(.*?)\"""".toRegex()
+            val keyMatchResult = keyRegex.find(finalScript)
+            val key = keyMatchResult?.groupValues?.get(1)
+
+            println("Extracted link: $link")
+            println("Extracted keyId: $keyId")
+            println("Extracted key: $key")
+
+            if (link != null && keyId != null && key != null) {
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
                         url = link,
-                        referer = "madplay.live",
-                        quality = Qualities.Unknown.value,
-                        type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
                         kid = keyId,
                         key = key,
+                        referer = "madplay.live",
+                        quality = Qualities.Unknown.value,
+                        isDash = true
                     )
                 )
             }
