@@ -83,8 +83,6 @@ class IndianTVPlugin : MainAPI() {
                 script.data()
                 }
 
-                
-
                 if (finalScript.contains("jwplayer")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore(",")
@@ -114,5 +112,4 @@ class IndianTVPlugin : MainAPI() {
     }
     return true
     }
-}
 
