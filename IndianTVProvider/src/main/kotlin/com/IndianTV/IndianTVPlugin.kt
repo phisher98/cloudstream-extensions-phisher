@@ -76,21 +76,7 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
     val document = app.get(data).document
-    /*document.select("#jwplayerDiv + script").mapNotNull { script ->
-        val finalScript = if (JsUnpacker(script.data()).detect()) {
-            JsUnpacker(script.data()).unpack()!!
-        } else {
-            script.data()
-        }
-        if (finalScript.contains("source:")) {
-            val jsonObject = JSONObject(finalScript)
-            val link = jsonObject.optString("file")
-            val drmJsonObject = jsonObject.optJSONObject("drm")
-            val clearKeyJsonObject = drmJsonObject?.optJSONObject("clearkey")
-            val keyId = clearKeyJsonObject?.optString("keyId")
-            val key = clearKeyJsonObject?.optString("key")
-/* */
-            //if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
+                document.select("#jwplayerDiv + script").map { res ->
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
@@ -106,9 +92,6 @@ class IndianTVPlugin : MainAPI() {
         }
         return true 
     }
-    
-  //  }
-//}
 
 class DesuBeta : JWPlayer() {
     override val name = "DesuBeta"
