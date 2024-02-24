@@ -1,5 +1,6 @@
 package com.coxju
 
+import android.util.Log
 import org.jsoup.nodes.Element
 import org.jsoup.*
 import com.lagradost.cloudstream3.*
@@ -82,7 +83,7 @@ class IndianTVPlugin : MainAPI() {
                 } else {
                 script.data()
                 }
-
+                Log.i("test",finalScript)
                 if (finalScript.contains("jwplayer")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore(",")
