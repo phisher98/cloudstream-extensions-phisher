@@ -88,13 +88,8 @@ class IndianTVPlugin : MainAPI() {
                         kid = "ZGI2ZjFkYmUwYzAwNWMyNjk0OTE0Y2NhNDc5MWY2ZDU",
                         key = "ODkyM2FkNWFlZDcxNWE4YmY0Zjc4MjM5ZTEwNDk2ZGM",                        
                     )
-                )   
+                ) 
+    return true
 }
-
-class DesuBeta : JWPlayer() {
-    override val name = "DesuBeta"
-    override val mainUrl = "https://desustream.me/beta/"
-}
-
 
 
