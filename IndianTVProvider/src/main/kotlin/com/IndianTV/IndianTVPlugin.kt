@@ -100,7 +100,7 @@ class IndianTVPlugin : MainAPI() {
 
             if (link != null && keyId != null && key != null) {
                 callback.invoke(
-                    DrmExtractorLink(
+                    open class DrmExtractorLink(
                         source = this.name,
                         name = this.name,
                         url = link,
