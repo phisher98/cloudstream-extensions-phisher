@@ -88,9 +88,9 @@ class IndianTVPlugin : MainAPI() {
         val key = result?.get("key")
         val file = result?.get("file")
         val keyId = result?.get("keyId")
-        log.d("key","key")
-        log.d("file","file")
-        log.d("keyId","keyId")
+        Log.d("key","key")
+        Log.d("file","file")
+        Log.d("keyId","keyId")
        /*  val base64Key = key?.let {
             val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
             val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
@@ -100,8 +100,6 @@ class IndianTVPlugin : MainAPI() {
             val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
         }
         */
-        
-        }
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
