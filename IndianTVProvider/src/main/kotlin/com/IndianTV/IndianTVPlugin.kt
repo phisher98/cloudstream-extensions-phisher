@@ -85,12 +85,12 @@ class IndianTVPlugin : MainAPI() {
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = "ZGI2ZjFkYmUwYzAwNWMyNjk0OTE0Y2NhNDc5MWY2ZDU",
-                        key = "ODkyM2FkNWFlZDcxNWE4YmY0Zjc4MjM5ZTEwNDk2ZGM",                        
+                        kid = "db6f1dbe0c005c2694914cca4791f6d5",
+                        key = "8923ad5aed715a8bf4f78239e10496dc",                        
                     )
                 ) 
+    }
     return true
-}
 }
 
 
