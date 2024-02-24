@@ -99,7 +99,7 @@ class IndianTVPlugin : MainAPI() {
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
+                        //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
                         kid = "YTJjMjI4MTIwOTNjNGQxNmFkM2U0MTgwNjM5YTk1Nzk",
                         key = "NmYwZGQ2MWQ0ZWE3MWU5MTJmODEzYTQ5NTIwNTI0MmM",                        
                     )
