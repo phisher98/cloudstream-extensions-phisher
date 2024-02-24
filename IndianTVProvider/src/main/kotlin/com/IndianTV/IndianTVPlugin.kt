@@ -75,36 +75,32 @@ class IndianTVPlugin : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-    val document = app.get(data).document
-    document.select("div#jwplayer + script").text().toString().let{
-        val decoded = if (JsUnpacker(script.data()).detect()) {
-            JsUnpacker(script.data()).unpack()!!
-        } else {
-            script.data()
-        }
-        val result = AppUtils.parseJson<Map<String, String>>(decoded)
-        }
+        val document = app.get(data).document
+        document.select("div#jwplayer + script").map { script ->
+        val finalScript = if (JsUnpacker(script.data()).detect()) {
+                JsUnpacker(script.data()).unpack()!!
+                } else {
+                script.data()
+                }
 
-        val key = result?.get("key")
-        val file = result?.get("file")
-        val keyId = result?.get("keyId")
-        Log.d("key","key")
-        Log.d("file","file")
-        Log.d("keyId","keyId")
-       /*  val base64Key = key?.let {
-            val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
-            val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
-        }
-        val base64KeyId = keyId?.let {
-            val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(it)
-            val base64 = java.util.Base64.getEncoder().encodeToString(bytes).trimEnd('=')
-        }
-        */
+                
+
+                if (finalScript.contains("jwplayer")) {
+                    val link = finalScript.substringAfter("file:")
+                                .substringBefore(",")
+                                .trim()
+
+                    val keyId = finalScript.substringAfter(""keyId":")
+                                .substringBefore(",")
+                                .trim()
+                    val key = finalScript.substringAfter(""key":")
+                                .substringBefore("\n")
+                                .trim()
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = "file",
+                        url = link,
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
@@ -113,8 +109,10 @@ class IndianTVPlugin : MainAPI() {
                         key = "base64KeyId",                        
                     )
                 ) 
+                }
+        }
+    }
     return true
     }
 }
-
 
