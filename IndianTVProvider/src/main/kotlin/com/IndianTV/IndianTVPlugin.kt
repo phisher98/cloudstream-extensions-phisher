@@ -76,7 +76,7 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
     val document = app.get(data).document
-    document.select("#jwplayerDiv + script").mapNotNull { script ->
+    /*document.select("#jwplayerDiv + script").mapNotNull { script ->
         val finalScript = if (JsUnpacker(script.data()).detect()) {
             JsUnpacker(script.data()).unpack()!!
         } else {
@@ -89,8 +89,8 @@ class IndianTVPlugin : MainAPI() {
             val clearKeyJsonObject = drmJsonObject?.optJSONObject("clearkey")
             val keyId = clearKeyJsonObject?.optString("keyId")
             val key = clearKeyJsonObject?.optString("key")
-
-            if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
+/* */
+            //if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
@@ -99,11 +99,10 @@ class IndianTVPlugin : MainAPI() {
                         referer = "madplay.live",
                         quality = Qualities.Unknown.value,
                         type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = "a2c22812093c4d16ad3e4180639a9579",
-                        key = "6f0dd61d4ea71e912f813a495205242c",                        
+                        kid = "YTJjMjI4MTIwOTNjNGQxNmFkM2U0MTgwNjM5YTk1Nzk=",
+                        key = "NmYwZGQ2MWQ0ZWE3MWU5MTJmODEzYTQ5NTIwNTI0MmM=",                        
                     )
-                )
-            }        
+                )      
         }
             
     }
