@@ -82,7 +82,7 @@ class IndianTVPlugin : MainAPI() {
         } else {
             script.data()
         }
-        if (finalScript.contains("source:")) {
+        if (finalScript.contains("jwplayerDiv:")) {
             val jsonObject = JSONObject(finalScript)
             val link = jsonObject.optString("file")
             val drmJsonObject = jsonObject.optJSONObject("drm")
@@ -95,13 +95,13 @@ class IndianTVPlugin : MainAPI() {
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = "https://delta45tatasky.akamaized.net/out/i/722.mpd",
+                        url = "https://bpprod7linear.akamaized.net/bpk-tv/irdeto_com_Channel_307/output/manifest.mpd",
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = "YTJjMjI4MTIwOTNjNGQxNmFkM2U0MTgwNjM5YTk1Nzk",
-                        key = "NmYwZGQ2MWQ0ZWE3MWU5MTJmODEzYTQ5NTIwNTI0MmM",                        
+                        kid = "ZGI2ZjFkYmUwYzAwNWMyNjk0OTE0Y2NhNDc5MWY2ZDU",
+                        key = "ODkyM2FkNWFlZDcxNWE4YmY0Zjc4MjM5ZTEwNDk2ZGM",                        
                     )
                 )
             }        
