@@ -76,21 +76,39 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
     val document = app.get(data).document
-                document.select("#jwplayerDiv + script").map { res ->
+    document.select("#jwplayerDiv + script").mapNotNull { script ->
+        val finalScript = if (JsUnpacker(script.data()).detect()) {
+            JsUnpacker(script.data()).unpack()!!
+        } else {
+            script.data()
+        }
+        if (finalScript.contains("source:")) {
+            val jsonObject = JSONObject(finalScript)
+            val link = jsonObject.optString("file")
+            val drmJsonObject = jsonObject.optJSONObject("drm")
+            val clearKeyJsonObject = drmJsonObject?.optJSONObject("clearkey")
+            val keyId = clearKeyJsonObject?.optString("keyId")
+            val key = clearKeyJsonObject?.optString("key")
+
+            if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = "https%3A%2F%2Fdelta45tatasky.akamaized.net%2Fout%2Fi%2F722.mpd&drm_scheme=clearkey&key_id=a2c22812093c4d16ad3e4180639a9579&key=6f0dd61d4ea71e912f813a495205242c",
+                        url = "https://delta45tatasky.akamaized.net/out/i/722.mpd",
                         referer = "madplay.live",
+                        type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                        kid = "YTJjMjI4MTIwOTNjNGQxNmFkM2U0MTgwNjM5YTk1Nzk=",
-                        key = "NmYwZGQ2MWQ0ZWE3MWU5MTJmODEzYTQ5NTIwNTI0MmM=",                        
+                        kid = "YTJjMjI4MTIwOTNjNGQxNmFkM2U0MTgwNjM5YTk1Nzk",
+                        key = "NmYwZGQ2MWQ0ZWE3MWU5MTJmODEzYTQ5NTIwNTI0MmM",                        
                     )
-                )      
+                )
+            }        
         }
-        return true 
+            
+    }
+    return true
     }
 }
 
