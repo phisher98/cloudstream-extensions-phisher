@@ -88,10 +88,10 @@ class IndianTVPlugin : MainAPI() {
                                 .substringBefore(",")
                                 .trim()
 
-                    val keyId = finalScript.substringAfter(""keyId":")
+                    val keyId = finalScript.substringAfter("keyId:")
                                 .substringBefore(",")
                                 .trim()
-                    val key = finalScript.substringAfter(""key":")
+                    val key = finalScript.substringAfter("key:")
                                 .substringBefore("\n")
                                 .trim()
                     callback.invoke(
@@ -109,7 +109,7 @@ class IndianTVPlugin : MainAPI() {
                 ) 
                 }
         }
+        return true
     }
-    return true
-    }
+}
 
