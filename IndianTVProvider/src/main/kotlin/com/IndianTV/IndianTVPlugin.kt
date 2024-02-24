@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 import java.io.File
+import com.lagradost.cloudstream3.utils.ExtractorLink
 
 public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
@@ -80,29 +81,31 @@ class IndianTVPlugin : MainAPI() {
         }
 
         if (finalScript.contains("source:")) {
-            val linkRegex = """'file': "(.*?)",""".toRegex()
-            val linkMatchResult = linkRegex.find(finalScript)
-            val link = linkMatchResult?.groupValues?.get(1)
+            val jsonObject = JSONObject(finalScript)
+            val link = jsonObject.optString("file")
+            val drmJsonObject = jsonObject.optJSONObject("drm")
+            val clearKeyJsonObject = drmJsonObject?.optJSONObject("clearkey")
+            val keyId = clearKeyJsonObject?.optString("keyId")
+            val key = clearKeyJsonObject?.optString("key")
 
-            val keyIdRegex = """\"keyId\":\s*\"(.*?)\"""".toRegex()
-            val keyIdMatchResult = keyIdRegex.find(finalScript)
-            val keyId = keyIdMatchResult?.groupValues?.get(1)
-
-            val keyRegex = """\"key\":\s*\"(.*?)\"""".toRegex()
-            val keyMatchResult = keyRegex.find(finalScript)
-            val key = keyMatchResult?.groupValues?.get(1)
-
-            if (link != null && keyId != null && key != null) {
+            if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
                         url = link,
-                        kid = keyId,
-                        key = key,
                         referer = "madplay.live",
                         quality = Qualities.Unknown.value,
-                        isDash = true
+                        type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
+                        kid = keyId,
+                        key = key,
+                        isDash=true,
+                        headers = mapof(
+                            "Accept-Encoding" to "gzip, deflate, br",
+                            "Connection" to "keep-alive",
+                            "Host" to "*.akamaized.net",
+                            "User-Agent" to	"URL-Player"
+                        )
                     )
                 )
             }
