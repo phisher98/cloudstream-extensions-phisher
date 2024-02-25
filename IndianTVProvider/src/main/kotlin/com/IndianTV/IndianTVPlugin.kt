@@ -4,6 +4,7 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import org.jsoup.*
 import com.lagradost.cloudstream3.*
+import dev.datlag.jsunpacker.JsUnpacker
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 import java.io.File
