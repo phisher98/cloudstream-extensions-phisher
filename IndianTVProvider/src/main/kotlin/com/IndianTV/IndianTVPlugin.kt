@@ -71,28 +71,32 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
         scripts.mapNotNull { script ->
-            val finalScriptRaw = if (JsHunter(script.data()).detect()) {
+
+            val findscript = scripts.toString()
+            if (findscript.contains("split")) {
+                val finalScriptRaw = if (JsHunter(script.data()).detect()) {
                     JsHunter(script.data()).detect()
                 } else {
                     script.data()
                 }
-            Log.d("KingScriptHead1",finalScriptRaw.toString())
-            val finalScript=finalScriptRaw.toString()
-            if (finalScript.contains("split:")) {
-            Log.d("KingScriptHead1",finalScript.toJson())
+                Log.d("KingScriptHead1", finalScriptRaw.toString())
+                val finalScript = finalScriptRaw.toString()
+                if (finalScript.contains("split:")) {
+                    Log.d("KingScriptHead1", finalScript.toJson())
                     callback.invoke(
-                    DrmExtractorLink(
-                        source = this.name,
-                        name = this.name,
-                        url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
-                        referer = "mad-play.live",
-                        type=INFER_TYPE,
-                        quality = Qualities.Unknown.value,
-                        kid = "nkMy90a0UxSLC9CvSvS2iw",
-                        key = "h/Y+thK0P8n+yPbA7ZkmGg",                        
+                        DrmExtractorLink(
+                            source = this.name,
+                            name = this.name,
+                            url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
+                            referer = "mad-play.live",
+                            type = INFER_TYPE,
+                            quality = Qualities.Unknown.value,
+                            kid = "nkMy90a0UxSLC9CvSvS2iw",
+                            key = "h/Y+thK0P8n+yPbA7ZkmGg",
+                        )
                     )
-                ) 
-              }
+                }
+            }
         }
         return true
     }
