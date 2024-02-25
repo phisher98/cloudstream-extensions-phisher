@@ -78,7 +78,7 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        val scripts = document.select("script").text().toString()
+        val scripts = document.select("script")
         val scriptsContainingSplit = scripts.mapNotNull { script ->
         val scriptData = script.data()
 
