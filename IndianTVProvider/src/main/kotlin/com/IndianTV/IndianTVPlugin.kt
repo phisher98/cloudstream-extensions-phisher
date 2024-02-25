@@ -78,7 +78,7 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        val scripts = document.select("script")
+        val scripts = document.select("script").text().toString()
         val scriptsContainingSplit = scripts.mapNotNull { script ->
         val scriptData = script.data()
 
@@ -89,25 +89,6 @@ class IndianTVPlugin : MainAPI() {
         }
         if (finalScript.contains("split")) {
             Log.d("KingScriptHead",finalScript)
-        
-        //Log.d("KingScriptHead",finalScript)
-        //Log.v("King","Script:$script")
-        //Log.v("Kingscript",script.toString())
-              /*   if (finalScript.contains("jwplayer")) {
-                    val link = finalScript.substringAfter("file:")
-                                .substringBefore(",")
-                                .trim()
-
-                    val keyId = finalScript.substringAfter("keyId:")
-                                .substringBefore(",")
-                                .trim()
-                    val key = finalScript.substringAfter("key:")
-                                .substringBefore("\n")
-                                .trim()
-                                Log.d("King","Linkfetched:$link")
-                                Log.d("King","keyidfetched$keyId")
-                                Log.d("king","keyfetched$key")
-                                */
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
@@ -116,15 +97,14 @@ class IndianTVPlugin : MainAPI() {
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
                         kid = "base64Key",
                         key = "base64KeyId",                        
                     )
                 ) 
               }
         }
-    }
         return true
+    }
 }
     
 
