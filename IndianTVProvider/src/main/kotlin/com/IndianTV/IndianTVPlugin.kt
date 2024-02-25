@@ -31,6 +31,7 @@ fun String.runJS(variableName: String): String {
     } finally {
         Context.exit()
     }
+    Log.d("King",result)
     return result
 }
 
