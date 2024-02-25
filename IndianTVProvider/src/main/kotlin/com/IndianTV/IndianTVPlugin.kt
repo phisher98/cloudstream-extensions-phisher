@@ -78,17 +78,19 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
 
-        document.map {
-            app.get(it).document.select("script").mapNotNull { script ->
-                val finalScript = if (JsUnpacker(script.data()).detect()) {
-                    JsUnpacker(script.data()).unpack()!!
-                } else {
-                    script.data()
-                }
-        if (finalScript.contains("split")) {
-            Log.v("King","Script:$finalScript")
+        val scripts = document.select("script")
+        val scriptsContainingSplit = scripts.mapNotNull { script ->
+        val scriptData = script.data()
+
+        val finalScript = if (JsUnpacker(scriptData).detect()) {
+            JsUnpacker(scriptData).unpack()!!
+        } else {
+            scriptData
         }
-        Log.d("KingScriptHead",finalScript)
+        if (finalScript.contains("split")) {
+            Log.d("KingScriptHead",finalScript)
+        
+        //Log.d("KingScriptHead",finalScript)
         //Log.v("King","Script:$script")
         //Log.v("Kingscript",script.toString())
               /*   if (finalScript.contains("jwplayer")) {
@@ -119,8 +121,10 @@ class IndianTVPlugin : MainAPI() {
                         key = "base64KeyId",                        
                     )
                 ) 
+              }
         }
     }
-    return true
+        return true
 }
+    
 
