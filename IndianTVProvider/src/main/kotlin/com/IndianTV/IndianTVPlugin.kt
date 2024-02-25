@@ -86,7 +86,7 @@ class IndianTVPlugin : MainAPI() {
 
         if (scriptData.contains("split")){
             val finalScript =(JsHunter(scriptData).detect()) {
-                Jshunter(scriptData).unpack().toString()
+                Jshunter(scriptData).dehunt()
             } else {
                 scriptData
             }
