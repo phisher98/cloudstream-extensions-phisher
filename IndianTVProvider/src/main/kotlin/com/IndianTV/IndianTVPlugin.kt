@@ -101,7 +101,7 @@ class IndianTVPlugin : MainAPI() {
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = link,
+                        url = "link",
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
