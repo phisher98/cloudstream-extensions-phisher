@@ -41,44 +41,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Access Secrets
-        env:
-          TMDB_API: ${{ secrets.TMDB_API }}
-          DUMP_API: ${{ secrets.DUMP_API }}
-          DUMP_KEY: ${{ secrets.DUMP_KEY }}
-          CRUNCHYROLL_BASIC_TOKEN: ${{ secrets.CRUNCHYROLL_BASIC_TOKEN }}
-          CRUNCHYROLL_REFRESH_TOKEN: ${{ secrets.CRUNCHYROLL_REFRESH_TOKEN }}
-          ANICHI_API: ${{ secrets.ANICHI_API }}
-          ANICHI_SERVER: ${{ secrets.ANICHI_SERVER }}
-          ANICHI_ENDPOINT: ${{ secrets.ANICHI_ENDPOINT }}
-          ANICHI_APP: ${{ secrets.ANICHI_APP }}
-          ZSHOW_API: ${{ secrets.ZSHOW_API }}
-          SFMOVIES_API: ${{ secrets.SFMOVIES_API }}
-          CINEMATV_API: ${{ secrets.CINEMATV_API }}
-          GHOSTX_API: ${{ secrets.GHOSTX_API }}
-          SUPERSTREAM_FIRST_API: ${{ secrets.SUPERSTREAM_FIRST_API }}
-          SUPERSTREAM_SECOND_API: ${{ secrets.SUPERSTREAM_SECOND_API }}
-          SUPERSTREAM_THIRD_API: ${{ secrets.SUPERSTREAM_THIRD_API }}
-          SUPERSTREAM_FOURTH_API: ${{ secrets.SUPERSTREAM_FOURTH_API }}
-        run: |
-          cd $GITHUB_WORKSPACE/src
-          echo TMDB_API=$TMDB_API >> local.properties
-          echo DUMP_API=$DUMP_API >> local.properties
-          echo DUMP_KEY=$DUMP_KEY >> local.properties
-          echo CRUNCHYROLL_BASIC_TOKEN=$CRUNCHYROLL_BASIC_TOKEN >> local.properties
-          echo CRUNCHYROLL_REFRESH_TOKEN=$CRUNCHYROLL_REFRESH_TOKEN >> local.properties
-          echo ANICHI_API=$ANICHI_API >> local.properties
-          echo ANICHI_SERVER=$ANICHI_SERVER >> local.properties
-          echo ANICHI_ENDPOINT=$ANICHI_ENDPOINT >> local.properties
-          echo ANICHI_APP=$ANICHI_APP >> local.properties
-          echo ZSHOW_API=$ZSHOW_API >> local.properties
-          echo SFMOVIES_API=$SFMOVIES_API >> local.properties
-          echo CINEMATV_API=$CINEMATV_API >> local.properties
-          echo GHOSTX_API=$GHOSTX_API >> local.properties
-          echo SUPERSTREAM_FIRST_API=$SUPERSTREAM_FIRST_API >> local.properties
-          echo SUPERSTREAM_SECOND_API=$SUPERSTREAM_SECOND_API >> local.properties
-          echo SUPERSTREAM_THIRD_API=$SUPERSTREAM_THIRD_API >> local.properties
-          echo SUPERSTREAM_FOURTH_API=$SUPERSTREAM_FOURTH_API >> local.properties
+     
 
       - name: Build Plugins
         run: |
@@ -87,11 +50,6 @@ jobs:
           ./gradlew make makePluginsJson
           cp **/build/*.cs3 $GITHUB_WORKSPACE/builds
           cp build/plugins.json $GITHUB_WORKSPACE/builds
-
-      - name: Move Kuramanime
-        run: |
-          rm $GITHUB_WORKSPACE/builds/KuramanimeProvider.cs3 || true
-          cp $GITHUB_WORKSPACE/builds/stored/KuramanimeProvider.cs3 $GITHUB_WORKSPACE/builds
 
       - name: Push builds
         run: |
