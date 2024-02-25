@@ -5,6 +5,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.JsHunter
 import java.util.*
 import java.io.File
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -81,15 +82,12 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
         scripts.mapNotNull { script ->
-        val scriptData = script.data()
-        Log.d("King2",scriptData)
-
-        if (scriptData.contains("split")){
-            val finalScript =(JsHunter(scriptData).detect()) {
-                Jshunter(scriptData).dehunt()
-            } else {
-                scriptData
-            }
+            val finalScript = if (JsHunter(script.data()).detect()) {
+                    JsUnpacker(script.data()).dehunt()!!
+                } else {
+                    script.data()
+                }
+                if (finalScript.contains("split:")) {
             Log.d("KingScriptHead1",finalScript)
                     callback.invoke(
                     DrmExtractorLink(
