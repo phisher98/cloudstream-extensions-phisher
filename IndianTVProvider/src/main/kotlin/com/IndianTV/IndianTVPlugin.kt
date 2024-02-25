@@ -1,21 +1,12 @@
-package com.coxju
+package com.IndianTV
 
 import android.util.Log
 import org.jsoup.nodes.Element
-import org.jsoup.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.JsHunter
-import java.util.*
-import java.io.File
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import org.json.JSONObject
-import com.lagradost.cloudstream3.extractors.JWPlayer
-import org.mozilla.javascript.Context
-import org.mozilla.javascript.Scriptable
-
-
-public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata"
@@ -68,7 +59,7 @@ class IndianTVPlugin : MainAPI() {
 
         val title       = document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
         val poster      = fixUrl("https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg")
-        var showname = document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
+        val showname = document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
         //val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
     
 
@@ -82,19 +73,20 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
         scripts.mapNotNull { script ->
-            val finalScript = if (JsHunter(script.data()).detect()) {
-                    JsUnpacker(script.data()).dehunt()!!
+            val finalScriptRaw = if (JsHunter(script.data()).detect()) {
+                    JsHunter(script.data()).detect()
                 } else {
                     script.data()
                 }
-                if (finalScript.contains("split:")) {
-            Log.d("KingScriptHead1",finalScript)
+            val finalScript=finalScriptRaw.toString()
+            if (finalScript.contains("split:")) {
+            Log.d("KingScriptHead1",finalScript.toJson())
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
                         url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
-                        referer = "madplay.live",
+                        referer = "mad-play.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         kid = "nkMy90a0UxSLC9CvSvS2iw",
