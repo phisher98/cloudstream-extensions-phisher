@@ -80,7 +80,7 @@ class IndianTVPlugin : MainAPI() {
         //Log.v("document","data")
         //Log.v("Document", document.toString())
         //Log.d("King", "servers:$document")
-        val script = document.selectFirst("#jwplayerDiv + script").text()
+        val script = document.selectFirst("#jwplayerDiv + script")?.text()?.trim().toString()
         Log.d("King","Script:$script")
         Log.d("Kingscript",script.toString())
               /*   if (finalScript.contains("jwplayer")) {
