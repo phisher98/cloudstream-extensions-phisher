@@ -88,11 +88,11 @@ class IndianTVPlugin : MainAPI() {
             } else {
                 scriptData
             }
-                Log.d("King","scriptData:$scriptData")
-                Log.d("King",scriptData.toString())
-                Log.d("King","Script selected :$script")
-                Log.d("King", "servers:$finalScript")
-                Log.d("King","elemt:$elements")
+                Log.d("scriptData","scriptData:$scriptData")
+                //Log.d("scriptData",scriptData.toString())
+                //Log.d("King","Script selected :$script")
+                //Log.d("King", "servers:$finalScript")
+                Log.d("Kingele","elemt:$elements")
                 if (finalScript.contains("jwplayer")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore(",")
