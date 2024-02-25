@@ -83,6 +83,7 @@ subprojects {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
         implementation("org.json:json:20210307")
         implementation("dev.datlag.jsunpacker:jsunpacker:1.0.1")
+        implementation("org.mozilla:rhino:1.7.13")
     }
 }
 

@@ -11,6 +11,28 @@ import java.io.File
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.json.JSONObject
 import com.lagradost.cloudstream3.extractors.JWPlayer
+import org.mozilla.javascript.Context
+import org.mozilla.javascript.Scriptable
+
+fun String.runJS(variableName: String): String {
+    val rhino = Context.enter()
+    rhino.initSafeStandardObjects()
+    rhino.optimizationLevel = -1
+    val scope: Scriptable = rhino.initSafeStandardObjects()
+    val script = this
+    val result: String
+    try {
+        var js = ""
+        for (i in script.indices) {
+            js += script[i]
+        }
+        rhino.evaluateString(scope, js, "JavaScript", 1, null)
+        result = Context.toString(scope.get(variableName, scope))
+    } finally {
+        Context.exit()
+    }
+    return result
+}
 
 
 public val homePoster ="https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg"
@@ -84,12 +106,8 @@ class IndianTVPlugin : MainAPI() {
         val scriptData = script.data()
 
         if (scriptData.contains("split")){
-            val finalScript = if (JsUnpacker(scriptData).detect()) {
-                JsUnpacker(scriptData).unpack().toString()
-            } else {
-                scriptData
-            }
-                Log.d("KingScriptHead",finalScript)
+            val javascriptResult = jsCode.runJS("result").split(",")
+                Log.d("KingScriptHead",javascriptResult)
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
