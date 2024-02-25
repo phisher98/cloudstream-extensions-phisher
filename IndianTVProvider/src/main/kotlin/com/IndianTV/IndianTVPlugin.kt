@@ -101,18 +101,13 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        Log.d("King3",document).toString()
         val scripts = document.select("script")
         scripts.mapNotNull { script ->
         val scriptData = script.data()
         Log.d("King2",scriptData)
 
         if (scriptData.contains("split")){
-            val finalScript = (JsUnpacker(scriptData).detect()) {
-                JsUnpacker(scriptData).unpack().toString()
-            } else {
-                scriptData.runJS("result").split(",").toString()
-            }
+            val finalScript = scriptData.runJS("result").split(",").toString()
             Log.d("KingScriptHead1",finalScript)
                     callback.invoke(
                     DrmExtractorLink(
