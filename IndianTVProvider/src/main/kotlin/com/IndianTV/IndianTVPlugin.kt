@@ -87,7 +87,7 @@ class IndianTVPlugin : MainAPI() {
             val finalScript = (JsUnpacker(scriptData).detect()) {
                 JsUnpacker(scriptData).unpack().toString()
             } else {
-                "scriptData"
+                scriptData
             }
                 Log.d("KingScriptHead",finalScript)
                     callback.invoke(
