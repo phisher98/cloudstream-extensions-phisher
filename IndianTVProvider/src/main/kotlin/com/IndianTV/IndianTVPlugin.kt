@@ -79,7 +79,7 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         //Log.v("document","data")
         //Log.v("Document", document.toString())
-        Log.d("King", "servers:$document")
+        //Log.d("King", "servers:$document")
         val elements = document.select("div#jwplayer + script")
             elements.map { script ->
             val scriptData = script.data()
