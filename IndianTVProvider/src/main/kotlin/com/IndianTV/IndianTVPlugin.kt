@@ -105,6 +105,7 @@ class IndianTVPlugin : MainAPI() {
         val scripts = document.select("script")
         scripts.mapNotNull { script ->
         val scriptData = script.data()
+        Log.d("King2",scriptData)
 
         if (scriptData.contains("split")){
             val javascriptResult = scriptData.runJS("result").split(",").toString()
