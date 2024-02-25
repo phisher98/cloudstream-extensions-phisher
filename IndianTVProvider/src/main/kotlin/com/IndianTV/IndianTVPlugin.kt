@@ -2,9 +2,31 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.JsHunter
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import org.mozilla.javascript.Context
+import org.mozilla.javascript.Scriptable
+
+fun String.runJS(variableName: String): String {
+    val rhino = Context.enter()
+    rhino.initSafeStandardObjects()
+    rhino.optimizationLevel = -1
+    val scope: Scriptable = rhino.initSafeStandardObjects()
+    val script = this
+    val result: String
+    try {
+        var js = ""
+        for (i in script.indices) {
+            js += script[i]
+        }
+        rhino.evaluateString(scope, js, "JavaScript", 1, null)
+        result = Context.toString(scope.get(variableName, scope))
+    } finally {
+        Context.exit()
+    }
+    return result
+}
+
+
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl              = "https://madplay.live/hls/tata"
@@ -72,15 +94,12 @@ class IndianTVPlugin : MainAPI() {
         val scripts = document.select("script")
         Log.d("Kingfindscript","$scripts")
         scripts.mapNotNull { script ->
-                val finalScriptRaw = if (JsHunter(script.data()).detect()) {
-                    JsHunter(script.data()).dehunt()
-                } else {
-                    "Not tested"
-                }
-                Log.d("KingScriptHead1", finalScriptRaw.toString())
-                val finalScript = finalScriptRaw.toString()
-                if (finalScript.contains("clearkey")) {
-                    Log.d("KingScriptHead1", finalScript.toJson())
+            val finalScriptRaw =script.toString()
+                Log.d("KingScriptHead1", finalScriptRaw)
+                val finalScript = finalScriptRaw
+                if (finalScript.contains("split")) {
+                    val javascriptResult = finalScript.runJS("result").split(",")
+                    Log.d("KingScriptHead1", javascriptResult.toString())
                     callback.invoke(
                         DrmExtractorLink(
                             source = this.name,

@@ -84,6 +84,7 @@ subprojects {
         implementation("org.json:json:20210307")
         implementation("dev.datlag.jsunpacker:jsunpacker:1.0.1")
         implementation("org.mozilla:rhino:1.7.13")
+        implementation("com.faendir.rhino:rhino-android:1.6.0")
     }
 }
 
