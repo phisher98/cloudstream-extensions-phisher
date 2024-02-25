@@ -80,14 +80,19 @@ class IndianTVPlugin : MainAPI() {
         //Log.v("document","data")
         //Log.v("Document", document.toString())
         Log.v("King", "servers:$document")
-        document.select("div#jwplayer + script").map { script ->
-        val finalScript = if (JsUnpacker(script.data()).detect()) {
-                JsUnpacker(script.data()).unpack()!!
-                } else {
-                script.data()
-                }
+        val elements = document.select("div#jwplayer + script")
+            elements.map { script ->
+            val scriptData = script.data()
+            val finalScript = if (JsUnpacker(scriptData).detect()) {
+                JsUnpacker(scriptData).unpack()!!
+            } else {
+                scriptData
+            }
+                Log.v("King","scriptData:$scriptData")
+                Log.v("King",scriptData.toString())
                 Log.v("King","Script selected :$script")
                 Log.v("King", "servers:$finalScript")
+
                 if (finalScript.contains("jwplayer")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore(",")
