@@ -77,10 +77,19 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
+
+        document.map {
+            app.get(it).document.select("script").mapNotNull { script ->
+
+                val finalScript = if (JsUnpacker(script.data()).detect()) {
+                    JsUnpacker(script.data()).unpack()!!
+                } else {
+                    script.data()
+                }
         val finalScript = document.select("script:contains('split')").let{
             Log.d("KingScriptHead",finalScript)
         }
-        }
+    }   
         Log.d("KingScriptHead",finalScript)
         //Log.v("King","Script:$script")
         //Log.v("Kingscript",script.toString())
@@ -113,6 +122,7 @@ class IndianTVPlugin : MainAPI() {
                     )
                 ) 
         return true
+    }
     }
 }
 
