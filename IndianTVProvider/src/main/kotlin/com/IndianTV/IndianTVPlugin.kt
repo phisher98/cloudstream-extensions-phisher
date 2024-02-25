@@ -84,7 +84,7 @@ class IndianTVPlugin : MainAPI() {
         val scriptData = script.data()
 
         if (scriptData.contains("split")){
-            val finalScript = (JsUnpacker(scriptData).detect()) {
+            val finalScript = if (JsUnpacker(scriptData).detect()) {
                 JsUnpacker(scriptData).unpack().toString()
             } else {
                 scriptData
@@ -99,7 +99,7 @@ class IndianTVPlugin : MainAPI() {
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         kid = "nkMy90a0UxSLC9CvSvS2iw",
-                        key = "h/Y+thK0P8n+yPbA7ZkmGg",
+                        key = "h/Y+thK0P8n+yPbA7ZkmGg",                        
                     )
                 ) 
               }
