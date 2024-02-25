@@ -84,8 +84,11 @@ class IndianTVPlugin : MainAPI() {
         val scriptData = script.data()
 
         if (scriptData.contains("split")){
-            val unpackedScript = JsUnpacker.unpack(scriptData) ?: scriptData
-            val finalScript = unpackedScript.toString()
+            val finalScript = (JsUnpacker(scriptData).detect()) {
+                JsUnpacker(scriptData).unpack().toString()
+            } else {
+                "scriptData"
+            }
                 Log.d("KingScriptHead",finalScript)
                     callback.invoke(
                     DrmExtractorLink(
@@ -96,7 +99,7 @@ class IndianTVPlugin : MainAPI() {
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
                         kid = "nkMy90a0UxSLC9CvSvS2iw",
-                        key = "h/Y+thK0P8n+yPbA7ZkmGg",                        
+                        key = "h/Y+thK0P8n+yPbA7ZkmGg",
                     )
                 ) 
               }
