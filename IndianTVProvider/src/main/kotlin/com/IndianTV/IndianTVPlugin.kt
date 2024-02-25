@@ -76,6 +76,7 @@ class IndianTVPlugin : MainAPI() {
                 } else {
                     script.data()
                 }
+            Log.d("KingScriptHead1",finalScriptRaw.toString())
             val finalScript=finalScriptRaw.toString()
             if (finalScript.contains("split:")) {
             Log.d("KingScriptHead1",finalScript.toJson())
