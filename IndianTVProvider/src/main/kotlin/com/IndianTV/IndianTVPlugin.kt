@@ -94,12 +94,12 @@ class IndianTVPlugin : MainAPI() {
                     DrmExtractorLink(
                         source = this.name,
                         name = this.name,
-                        url = "link",
+                        url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
                         referer = "madplay.live",
                         type=INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = "base64Key",
-                        key = "base64KeyId",                        
+                        kid = "nkMy90a0UxSLC9CvSvS2iw",
+                        key = "h/Y+thK0P8n+yPbA7ZkmGg",                        
                     )
                 ) 
               }
