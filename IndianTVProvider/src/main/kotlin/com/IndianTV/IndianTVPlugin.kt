@@ -1,5 +1,3 @@
-package com.IndianTV
-
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
