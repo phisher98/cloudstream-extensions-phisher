@@ -71,7 +71,8 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("body")
         scripts.mapNotNull { script ->
-            val findscriptRaw=script.selectFirst("#jwplayerDiv + script").toString()
+            val findscriptRaw=script.selectFirst("#jwplayerDiv + script")?.text().toString()
+            Log.d("KingScriptHead1", findscriptRaw)
             if (findscriptRaw.contains("split")) {
                 val finalScriptRaw = if (JsHunter(script.data()).detect()) {
                     JsHunter(script.data()).detect()
