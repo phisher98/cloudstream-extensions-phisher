@@ -80,9 +80,9 @@ class IndianTVPlugin : MainAPI() {
         //Log.v("document","data")
         //Log.v("Document", document.toString())
         //Log.d("King", "servers:$document")
-        var script = document.selectFirst(div#jwplayer + script).text()
+        var script = document.selectFirst("div#jwplayer + script").text()
         Log.d("King","King:$script")
-                if (finalScript.contains("jwplayer")) {
+              /*   if (finalScript.contains("jwplayer")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore(",")
                                 .trim()
@@ -96,6 +96,7 @@ class IndianTVPlugin : MainAPI() {
                                 Log.d("King","Linkfetched:$link")
                                 Log.d("King","keyidfetched$keyId")
                                 Log.d("king","keyfetched$key")
+                                */
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
@@ -109,8 +110,6 @@ class IndianTVPlugin : MainAPI() {
                         key = "base64KeyId",                        
                     )
                 ) 
-                }
-        }
         return true
     }
 }
