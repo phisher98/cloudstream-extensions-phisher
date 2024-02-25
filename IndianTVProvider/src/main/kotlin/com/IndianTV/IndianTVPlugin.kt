@@ -84,12 +84,8 @@ class IndianTVPlugin : MainAPI() {
         val scriptData = script.data()
 
         if (scriptData.contains("split")){
-            val finalScript = (JsUnpacker(scriptData).detect()) {
-                JsUnpacker(scriptData).unpack().toString()
-            } else {
-                "scriptData"
-            }
-                Log.d("KingScriptHead",finalScript)
+            val deobfuscatedScript = Hunter().hunt(scriptData)
+                Log.d("KingScriptHead",deobfuscatedScript)
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
