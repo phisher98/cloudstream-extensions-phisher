@@ -83,7 +83,7 @@ class IndianTVPlugin : MainAPI() {
                 } else {
                 script.data()
                 }
-                Log.d("finalscripttesting",finalScript)
+                Log.d("finalscript","finalscripttesting")
                 if (finalScript.contains("jwplayer")) {
                     val link = finalScript.substringAfter("file:")
                                 .substringBefore(",")
@@ -96,10 +96,10 @@ class IndianTVPlugin : MainAPI() {
                                 .substringBefore("\n")
                                 .trim()
 
-                                Log.d("finalscripttestinglink",link)
+                                Log.d("link","finalscripttestinglink")
                                 //printin(link)
-                                Log.d("finalscripttestingkid",keyId)
-                                Log.d("finalscripttestingkey",key)
+                                Log.d("keyId","finalscripttestingkid")
+                                Log.d("key","finalscripttestingkey")
                     callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
