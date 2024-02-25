@@ -2,28 +2,17 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import org.mozilla.javascript.Context
-import org.mozilla.javascript.Scriptable
 
-fun String.runJS(variableName: String): String {
-    val rhino = Context.enter()
-    rhino.initSafeStandardObjects()
-    rhino.optimizationLevel = -1
-    val scope: Scriptable = rhino.initSafeStandardObjects()
-    val script = this
-    val result: String
-    try {
-        var js = ""
-        for (i in script.indices) {
-            js += script[i]
-        }
-        rhino.evaluateString(scope, js, "JavaScript", 1, null)
-        result = Context.toString(scope.get(variableName, scope))
-    } finally {
-        Context.exit()
+
+suspend fun getRhinoContext(): org.mozilla.javascript.Context {
+    return Coroutines.mainWork {
+        val rhino = org.mozilla.javascript.Context.enter()
+        rhino.initSafeStandardObjects()
+        rhino.optimizationLevel = -1
+        rhino
     }
-    return result
 }
 
 
@@ -88,33 +77,43 @@ class IndianTVPlugin : MainAPI() {
             this.plot      = showname
         }
     }
-    
+
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val scripts = document.select("script")
         Log.d("Kingfindscript","$scripts")
         scripts.mapNotNull { script ->
-            val finalScriptRaw =script.toString()
-                Log.d("KingScriptHead1", finalScriptRaw)
-                val finalScript = finalScriptRaw
+            val finalScript =script.toString()
+                Log.d("KingScriptHead1", finalScript)
                 if (finalScript.contains("split")) {
-                    val javascriptResult = finalScript.runJS("result").split(",")
-                    Log.d("KingScriptHead1", javascriptResult.toString())
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = this.name,
-                            name = this.name,
-                            url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
-                            referer = "mad-play.live",
-                            type = INFER_TYPE,
-                            quality = Qualities.Unknown.value,
-                            kid = "nkMy90a0UxSLC9CvSvS2iw",
-                            key = "h/Y+thK0P8n+yPbA7ZkmGg",
+                    try {
+                        val rhinoContext = getRhinoContext()
+                        val scope: org.mozilla.javascript.Scriptable =
+                            rhinoContext.initSafeStandardObjects()
+                        val js = finalScript
+                        rhinoContext.evaluateString(scope, js, "JavaScript", 1, null)
+
+                        Log.d("KingScriptHead1", rhinoContext.toString())
+                        callback.invoke(
+                            DrmExtractorLink(
+                                source = this.name,
+                                name = this.name,
+                                url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
+                                referer = "mad-play.live",
+                                type = INFER_TYPE,
+                                quality = Qualities.Unknown.value,
+                                kid = "nkMy90a0UxSLC9CvSvS2iw",
+                                key = "h/Y+thK0P8n+yPbA7ZkmGg",
+                            )
                         )
-                    )
+                    }
+                    catch(e: Exception) {
+                        // Handle exception
+                        Log.e("KingScriptError", "Error: $e")
+                    }
                 }
-            }
-        return true
+        }
+            return true
     }
 }
     
