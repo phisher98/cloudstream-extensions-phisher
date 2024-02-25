@@ -80,16 +80,14 @@ class IndianTVPlugin : MainAPI() {
 
         document.map {
             app.get(it).document.select("script").mapNotNull { script ->
-
                 val finalScript = if (JsUnpacker(script.data()).detect()) {
                     JsUnpacker(script.data()).unpack()!!
                 } else {
                     script.data()
                 }
-        val finalScript = document.select("script:contains('split')").let{
-            Log.d("KingScriptHead",finalScript)
+        if (finalScript.contains("split")) {
+            Log.v("King","Script:$finalScript")
         }
-    }   
         Log.d("KingScriptHead",finalScript)
         //Log.v("King","Script:$script")
         //Log.v("Kingscript",script.toString())
@@ -121,8 +119,8 @@ class IndianTVPlugin : MainAPI() {
                         key = "base64KeyId",                        
                     )
                 ) 
-        return true
+        }
     }
-    }
+    return true
 }
 
