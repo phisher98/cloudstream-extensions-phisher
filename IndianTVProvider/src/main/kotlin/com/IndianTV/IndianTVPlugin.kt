@@ -75,7 +75,7 @@ class IndianTVPlugin : MainAPI() {
                 val finalScriptRaw = if (JsHunter(script.data()).detect()) {
                     JsHunter(script.data()).dehunt()
                 } else {
-                    script.data()
+                    "Not tested"
                 }
                 Log.d("KingScriptHead1", finalScriptRaw.toString())
                 val finalScript = finalScriptRaw.toString()
