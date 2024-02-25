@@ -69,12 +69,9 @@ class IndianTVPlugin : MainAPI() {
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val scripts = document.select("script:contains(split)")
+        val scripts = document.select("script")
         Log.d("Kingfindscript","$scripts")
         scripts.mapNotNull { script ->
-            val findscript = scripts.toString()
-            Log.d("Kingfindscript","$findscript")
-            if (findscript.contains("split")) {
                 val finalScriptRaw = if (JsHunter(script.data()).detect()) {
                     JsHunter(script.data()).dehunt()
                 } else {
@@ -98,7 +95,6 @@ class IndianTVPlugin : MainAPI() {
                     )
                 }
             }
-        }
         return true
     }
 }
