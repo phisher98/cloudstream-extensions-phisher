@@ -11,6 +11,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 
+
+
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "TATA Sky"
@@ -128,6 +130,9 @@ class IndianTVPlugin : MainAPI() {
                     println("File: $link")
                     println("KeyId: $keyId")
                     println("Key: $key")
+                    val input = "263e5df7a93ec5f5ea6ac215ed957c30"
+                    val bytes = input.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                    println(bytes)
                     callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
@@ -140,12 +145,12 @@ class IndianTVPlugin : MainAPI() {
                         key = "h/Y+thK0P8n+yPbA7ZkmGg",
                     )
                 )
+                }
             }
-        }
 
-            }
-        return true
         }
+        return true
+    }
 }
     
 
