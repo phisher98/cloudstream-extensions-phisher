@@ -76,10 +76,13 @@ class IndianTVPlugin : MainAPI() {
                 if (finalScript.contains("split")) {
                         //Log.d("KingScriptHead1", rhinoContext.toString())
                     val rhinoContext = getRhinoContext()
+                    Log.d("King","$rhinoContext")
                     val scope = rhinoContext.initStandardObjects()
                     val jSFunction=finalScript.trimIndent()
+                    Log.d("King","$jSFunction")
                     rhinoContext.evaluateString(scope, jSFunction, "JavaScript", 1, null)
                     val extractedLink = rhinoContext.evaluateString(scope, "extractLink(\"$finalScript\");", "JavaScript", 1, null) as String
+                    Log.d("King","$extractedLink")
                         callback.invoke(
                             DrmExtractorLink(
                                 source = this.name,
