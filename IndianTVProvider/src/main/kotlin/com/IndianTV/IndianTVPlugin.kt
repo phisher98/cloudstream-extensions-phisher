@@ -88,12 +88,12 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             //val finalScript=script.data().toString()
             val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
-                JsUnpacker(script.data()).unpack()!!
+                JsUnpacker(script.data()).unpack().toString()
             } else {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
-                script.data()
+                script.data().toString()
             }
-
+            Log.d("KingRaw",finalScriptRaw)
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("KingRaw", finalScriptRaw)
