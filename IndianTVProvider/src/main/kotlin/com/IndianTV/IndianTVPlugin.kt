@@ -6,7 +6,29 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.getRhinoContext
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import org.mozilla.javascript.Scriptable
 
+suspend fun getJsOutput(js: String): String {
+    val startJs =
+        """
+        var globalArgument = null;
+        function jwplayer() {
+            return {
+                id: null,
+                setup: function(arg) {
+                    globalArgument = arg;
+                }
+            };
+        };
+        """
+    val rhino = getRhinoContext()
+    val scope: Scriptable = rhino.initSafeStandardObjects()
+    rhino.evaluateString(scope, startJs + js, "JavaScript", 1, null)
+
+    return scope.get("globalArgument", scope).toJson()
+}
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -97,11 +119,10 @@ class IndianTVPlugin : MainAPI() {
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("KingRaw12", finalScriptRaw)
-                val hunterJS =finalScriptRaw.trimIndent()
-                val jsHunter = JsHunter(hunterJS)
-                val decodedJavaScript = jsHunter.dehunt()
-                println(decodedJavaScript)
-                Log.d("Kingunpack",decodedJavaScript.toString())
+                val input = finalScriptRaw
+                val output = getJsOutput(input)
+                Log.d("King" ,"output")
+                Log.d("King" ,"$output")
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
