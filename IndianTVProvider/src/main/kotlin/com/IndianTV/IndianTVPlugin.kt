@@ -114,15 +114,16 @@ class IndianTVPlugin : MainAPI() {
                     //println("normalprint ${scope.get("globalArgument", scope).toJson()}")
                     val outputRhino = scope.get("globalArgument", scope).toJson()
                     Log.d("variableout", outputRhino)
-                    println(outputRhino)
-                    val jsonObject = JSONObject(outputRhino)
-                    val file = jsonObject.getString("file")
-                    val keyId = jsonObject.getString("keyId")
-                    val key = jsonObject.getString("key")
-                    println(file)
-                    println(key)
-                    println(keyId)
-                callback.invoke(
+                    val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                    val matchResult = pattern.find(outputRhino)
+                    if (matchResult != null && matchResult.groupValues.size == 4) {
+                        println("File: ${matchResult.groupValues[1]}")
+                        println("KeyId: ${matchResult.groupValues[2]}")
+                        println("Key: ${matchResult.groupValues[3]}")
+                    } else {
+                        println("File, KeyId, or Key not found.")
+                    }
+                    callback.invoke(
                     DrmExtractorLink(
                         source = "TATA",
                         name = "TATA",
