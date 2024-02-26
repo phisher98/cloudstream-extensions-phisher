@@ -7,10 +7,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
-fun decodeJavaScript(obfuscatedCode: String): String? {
-    val hunter = JSTVHunter(obfuscatedCode)
-    return hunter.dehunt()
-}
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -101,8 +97,11 @@ class IndianTVPlugin : MainAPI() {
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("KingRaw12", finalScriptRaw)
-                val decodedCode = decodeJavaScript(finalScriptRaw)
-                Log.d("Kingunpack",decodedCode.toString())
+                val hunterJS =finalScriptRaw.trimIndent()
+                val jsHunter = JsHunter(hunterJS)
+                val decodedJavaScript = jsHunter.dehunt()
+                println(decodedJavaScript)
+                Log.d("Kingunpack",decodedJavaScript.toString())
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
