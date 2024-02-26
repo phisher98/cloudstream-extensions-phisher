@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.JsUnpacker.Companion.load
 
 
 class IndianTVPlugin : MainAPI() {
@@ -87,23 +88,23 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             //val finalScript=script.data().toString()
             val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
-                JsUnpacker(script.data()).unpack().toString()
+                JsUnpacker(script.data()).unpack()
             } else {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
-                script.data().toString()
+                script.data()
             }
             //Log.d("KingRaw",finalScriptRaw)
             //val finalScript=finalScriptRaw
-            if (finalScriptRaw.contains("split")) {
-                Log.d("KingRaw12", finalScriptRaw)
-                val final = if (JsHunter(finalScriptRaw).detect()) {
-                    JsHunter(finalScriptRaw).dehunt()
-                }
-                else
-                {
-                    finalScriptRaw
-                }
-                Log.d("Kingunpack",final.toString())
+            if (finalScriptRaw.toString().contains("split")) {
+                Log.d("KingRaw12", finalScriptRaw.toString())
+               val hunt= if(JsHunter(finalScriptRaw.toString()).detect()){
+                    JsHunter(finalScriptRaw.toString()).dehunt()
+                   }
+                   else
+               {
+                   "Not Tested"
+               }
+                Log.d("Kingunpack",hunt.toString())
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
