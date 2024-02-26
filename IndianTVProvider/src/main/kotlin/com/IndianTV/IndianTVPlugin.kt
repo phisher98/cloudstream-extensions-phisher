@@ -1,11 +1,11 @@
+package com.IndianTV
+
 import android.annotation.SuppressLint
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.JsUnpacker
-
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -85,19 +85,19 @@ class IndianTVPlugin : MainAPI() {
         val scripts = document.select("script")
         //Log.d("Kingscript","$scripts")
         scripts.map { script ->
-            //val finalScript=script.data().toString()
-            val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
+            val finalScriptRaw=script.data().toString()
+           /* val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
                 JsUnpacker(script.data()).unpack()
             } else {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
                 script.data()
-            }
+            }*/
             //Log.d("KingRaw",finalScriptRaw)
             //val finalScript=finalScriptRaw
-            if (finalScriptRaw.toString().contains("split")) {
-                Log.d("KingRaw12", finalScriptRaw.toString())
-               val hunt= if(JsHunter(finalScriptRaw.toString()).detect()){
-                    JsHunter(finalScriptRaw.toString()).dehunt()
+            if (finalScriptRaw.contains("split")) {
+                Log.d("KingRaw12", finalScriptRaw)
+               val hunt= if(JsHunter(script.data()).detect()){
+                    JsHunter(script.data()).dehunt()
                    }
                    else
                {
