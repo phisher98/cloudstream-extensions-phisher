@@ -93,9 +93,10 @@ class IndianTVPlugin : MainAPI() {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
                 script.data()
             }
-            //Log.d("KingRaw", finalScriptRaw)
+
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
+                Log.d("KingRaw", finalScriptRaw)
                 val unpackedScript = JsUnpacker(finalScriptRaw).unpack()
                 Log.d("Kingunpack",unpackedScript.toString())
                 callback.invoke(
