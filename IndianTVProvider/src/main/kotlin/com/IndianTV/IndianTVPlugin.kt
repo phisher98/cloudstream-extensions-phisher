@@ -9,8 +9,26 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import org.apache.commons.codec.DecoderException
 import org.mozilla.javascript.Scriptable
+import org.apache.commons.codec.binary.*
 
+
+fun convertHexToBase64(hexString: String): String {
+    // Decode the hex string to byte array
+    val decodedHex = Hex.decodeHex(hexString.toCharArray())
+
+    // Encode the decoded byte array to base64
+    val encodedHexB64 = Base64.encodeBase64(decodedHex)
+
+    // Convert the byte array to a string
+    var base64String = String(encodedHexB64)
+
+    // Remove trailing '=' characters
+    base64String = base64String.trimEnd('=')
+
+    return base64String
+}
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -131,6 +149,15 @@ class IndianTVPlugin : MainAPI() {
                     println("Key: $key")
                     Log.d("Key","$key")
                     Log.d("Key","$keyId")
+                    try {
+                        val base64String1 = convertHexToBase64("$key")
+                        val base64String2 = convertHexToBase64("$keyId")
+                        println("Base64 1: $base64String1")
+                        println("Base64 2: $base64String2")
+                    } catch (e: DecoderException) {
+                        println("Invalid hex string.")
+                        e.printStackTrace()
+                    }
                     callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
