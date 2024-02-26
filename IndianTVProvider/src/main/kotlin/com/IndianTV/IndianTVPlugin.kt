@@ -73,10 +73,11 @@ class IndianTVPlugin : MainAPI() {
         val scripts = document.select("script")
         //Log.d("Kingfindscript","$scripts")
         scripts.mapNotNull { script ->
-            val finalScript =script.toString()
+            val finalScript =script.text().toString()
                 //Log.d("KingScriptHead1", finalScript)
                 if (finalScript.contains("split")) {
                     Log.d("Kingfinalscript", finalScript)
+
                     val rhinoContext = getRhinoContext()
                     Log.d("Kingrhino","$rhinoContext")
                     val scope = rhinoContext.initStandardObjects()
