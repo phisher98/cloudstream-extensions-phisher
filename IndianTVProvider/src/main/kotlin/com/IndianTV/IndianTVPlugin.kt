@@ -70,7 +70,7 @@ class IndianTVPlugin : MainAPI() {
     @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val scripts = document.select("script")
+        val scripts = document.select("script").text()
         //Log.d("Kingfindscript","$scripts")
         scripts.mapNotNull { script ->
             val finalScript =script.toString()
