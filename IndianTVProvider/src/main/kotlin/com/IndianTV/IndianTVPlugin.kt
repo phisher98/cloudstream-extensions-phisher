@@ -3,6 +3,7 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
 
@@ -96,8 +97,8 @@ class IndianTVPlugin : MainAPI() {
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("Kingfinal", finalScriptRaw)
-                       val unpack=JsUnpacker(finalScriptRaw)
-                Log.d("Kingunpack",unpack.toString())
+                val unpack=JsUnpacker(finalScriptRaw).toJson()
+                Log.d("Kingunpack",unpack)
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
