@@ -144,15 +144,10 @@ class IndianTVPlugin : MainAPI() {
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
-                    try {
                         val base64String1 = convertHexToBase64("$key")
                         val base64String2 = convertHexToBase64("$keyId")
                         Log.d("Key","$base64String1")
                         Log.d("Key","$base64String2")
-                    } catch (e: DecoderException) {
-                        Log.d("Key","Invalid")
-                        e.printStackTrace()
-                    }
                     callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
@@ -161,8 +156,8 @@ class IndianTVPlugin : MainAPI() {
                         referer = "mad-play.live",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = "$keyId",
-                        key = "$key",
+                        kid = "$base64String1",
+                        key = "$base64String2",
                     )
                 )
                 }
