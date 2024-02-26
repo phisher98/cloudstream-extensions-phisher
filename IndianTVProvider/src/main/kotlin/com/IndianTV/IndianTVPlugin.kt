@@ -70,22 +70,8 @@ class IndianTVPlugin : MainAPI() {
     @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val scripts = document.select("script")
-        //Log.d("Kingfindscript","$scripts")
-        scripts.mapNotNull { script ->
-            val finalScript =script.text().toString()
-                Log.d("KingScriptHead1", finalScript)
-                if (finalScript.contains("split")) {
-                    Log.d("Kingfinalscript", finalScript)
-
-                    val rhinoContext = getRhinoContext()
-                    Log.d("Kingrhino","$rhinoContext")
-                    val scope = rhinoContext.initStandardObjects()
-                    val jSFunction=finalScript.trimIndent()
-                    //Log.d("King","$jSFunction")
-                    rhinoContext.evaluateString(scope, jSFunction, "JavaScript", 1, null)
-                    //val extractedLink = rhinoContext.evaluateString(scope, "extractLink(\"$finalScript\");", "JavaScript", 1, null) as String
-                    //Log.d("King","$extractedLink")
+        val scripts = document.selectFirst("#jwplayerDiv + script")
+        Log.d("Kingfindscript","$scripts")
                         callback.invoke(
                             DrmExtractorLink(
                                 source = this.name,
@@ -98,8 +84,6 @@ class IndianTVPlugin : MainAPI() {
                                 key = "h/Y+thK0P8n+yPbA7ZkmGg",
                             )
                         )
-                    }
-                }
             return true
     }
 }
