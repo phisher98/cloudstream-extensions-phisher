@@ -116,18 +116,24 @@ class IndianTVPlugin : MainAPI() {
                     Log.d("variableout", outputRhino)
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                     val matchResult = pattern.find(outputRhino)
+                    var link: String? = null
+                    var keyId: String? = null
+                    var key: String? = null
                     if (matchResult != null && matchResult.groupValues.size == 4) {
-                        println("File: ${matchResult.groupValues[1]}")
-                        println("KeyId: ${matchResult.groupValues[2]}")
-                        println("Key: ${matchResult.groupValues[3]}")
+                        link = matchResult.groupValues[1]
+                        keyId = matchResult.groupValues[2]
+                        key = matchResult.groupValues[3]
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
+                    println("File: $link")
+                    println("KeyId: $keyId")
+                    println("Key: $key")
                     callback.invoke(
                     DrmExtractorLink(
                         source = "TATA",
                         name = "TATA",
-                        url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
+                        url = "$link",
                         referer = "mad-play.live",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
