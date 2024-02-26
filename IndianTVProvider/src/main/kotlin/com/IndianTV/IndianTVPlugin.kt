@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import org.json.JSONObject
 import org.mozilla.javascript.Scriptable
 
 class IndianTVPlugin : MainAPI() {
@@ -91,7 +92,7 @@ class IndianTVPlugin : MainAPI() {
         val scripts = document.select("script")
         //Log.d("Kingscript","$scripts")
         scripts.map { script ->
-            val finalScriptRaw=script.data().toString()
+            val finalScriptRaw = script.data().toString()
             if (finalScriptRaw.contains("split")) {
                 val js =
                     """
@@ -110,16 +111,21 @@ class IndianTVPlugin : MainAPI() {
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    println("normalprint ${scope.get("globalArgument", scope).toJson()}")
+                    //println("normalprint ${scope.get("globalArgument", scope).toJson()}")
                     val outputRhino = scope.get("globalArgument", scope).toJson()
-                    Log.d("variableout","outputRhino")
+                    Log.d("variableout", outputRhino)
                     println(outputRhino)
-                }
-                Log.d("outsidemainwork","outputRhino")
+                    val jsonObject = JSONObject(outputRhino)
+                    val file = jsonObject.getString("file")
+                    val keyId = jsonObject.getString("keyId")
+                    val key = jsonObject.getString("key")
+                    println(file)
+                    println(key)
+                    println(keyId)
                 callback.invoke(
                     DrmExtractorLink(
-                        source = this.name,
-                        name = this.name,
+                        source = "TATA",
+                        name = "TATA",
                         url = "https://bpprod4linear.akamaized.net/bpk-tv/irdeto_com_Channel_412/output/manifest.mpd",
                         referer = "mad-play.live",
                         type = INFER_TYPE,
@@ -128,7 +134,8 @@ class IndianTVPlugin : MainAPI() {
                         key = "h/Y+thK0P8n+yPbA7ZkmGg",
                     )
                 )
-                }
+            }
+        }
 
             }
         return true
