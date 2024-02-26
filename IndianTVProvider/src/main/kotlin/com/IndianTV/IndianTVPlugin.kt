@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import org.json.JSONObject
 import org.mozilla.javascript.Scriptable
 
 class IndianTVPlugin : MainAPI() {
@@ -111,9 +110,9 @@ class IndianTVPlugin : MainAPI() {
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    //println("normalprint ${scope.get("globalArgument", scope).toJson()}")
+                    //println("output ${scope.get("globalArgument", scope).toJson()}")
                     val outputRhino = scope.get("globalArgument", scope).toJson()
-                    Log.d("variableout", outputRhino)
+                    Log.d("output", outputRhino)
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                     val matchResult = pattern.find(outputRhino)
                     var link: String? = null
@@ -121,7 +120,7 @@ class IndianTVPlugin : MainAPI() {
                     var key: String? = null
                     if (matchResult != null && matchResult.groupValues.size == 4) {
                         link = matchResult.groupValues[1]
-                        keyId = matchResult.groupValues[2]
+                        keyId= matchResult.groupValues[2]
                         key = matchResult.groupValues[3]
                     } else {
                         println("File, KeyId, or Key not found.")
@@ -131,8 +130,8 @@ class IndianTVPlugin : MainAPI() {
                     println("Key: $key")
                     callback.invoke(
                     DrmExtractorLink(
-                        source = "TATA",
-                        name = "TATA",
+                        source = it.name,
+                        name = it.name,
                         url = "$link",
                         referer = "mad-play.live",
                         type = INFER_TYPE,
