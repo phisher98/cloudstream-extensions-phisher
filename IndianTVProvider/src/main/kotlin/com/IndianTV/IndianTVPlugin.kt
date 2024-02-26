@@ -11,7 +11,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 
-
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "TATA Sky"
@@ -112,8 +111,10 @@ class IndianTVPlugin : MainAPI() {
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
                     println("Outputrhino ${scope.get("globalArgument", scope).toJson()}")
+                    val outputRhino = scope.get("globalArgument", scope).toJson()
+                    Log.d("Kingrhino","outputRhino")
+                    println(outputRhino)
                 }
-
 
                 callback.invoke(
                     DrmExtractorLink(
