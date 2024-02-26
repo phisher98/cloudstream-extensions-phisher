@@ -105,6 +105,7 @@ class IndianTVPlugin : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
+        Log.d("data",data)
         val scripts = document.select("script")
         //Log.d("Kingscript","$scripts")
         scripts.map { script ->
