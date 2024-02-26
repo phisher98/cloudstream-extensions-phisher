@@ -1,6 +1,6 @@
 package com.likdev256
 
-//import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
@@ -122,7 +122,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             """{"where":{"category":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":40,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
-        //Log.d("JSON", res.toString())
+        Log.d("JSON", req.toString())
         return app.post(
             MovieapiUrl,
             requestBody = req,
@@ -135,7 +135,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             """{"where":{"seriesCategory":{"${"$"}regex":"$query"}},"order":"-createdAt","limit":10,"skip":$skip,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                 RequestBodyTypes.JSON.toMediaTypeOrNull()
             )
-        //Log.d("JSON", res.toString())
+        Log.d("JSON", req.toString())
         return app.post(
             TVapiUrl,
             requestBody = req,
@@ -290,7 +290,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 )
             val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/")
                 .toString().removePrefix("""{"results":[""").removeSuffix("]}")
-            //Log.d("res", Movieresp)
+            Log.d("res", Movieresp)
             val Movieit = parseJson<MovieResults>(Movieresp)
             val title = Movieit.movieName
             val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
@@ -386,7 +386,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     this.quality = SearchQuality.HD
                 }
             }
-            // Log.d("TVResult", recommendations.toString())
+            Log.d("TVResult", recommendations.toString())
 
             val seasonDataList = listOf(TVit.Seasons.Seasons,
                 TVit.streamwish.Seasons, TVit.filelions.Seasons, TVit.streamruby.Seasons, TVit.streamhide.Seasons)

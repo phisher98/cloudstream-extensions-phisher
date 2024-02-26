@@ -66,11 +66,16 @@ class IndianTVPlugin : MainAPI() {
         }
     }
 
+
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val scripts = document.select("script").text()
-        //val scriptfin=scripts.toString()
-        Log.d("Kingfindscript",scripts.toString())
+        val scripts = document.select("script")
+        //Log.d("Kingfindscript","$scripts")
+        scripts.mapNotNull { script ->
+            val finalScript =script.toString()
+                //Log.d("KingScriptHead1", finalScript)
+                //if (finalScript.contains("split")) {
+                    Log.d("Kingfinalscript", finalScript)
                         callback.invoke(
                             DrmExtractorLink(
                                 source = this.name,
@@ -83,6 +88,8 @@ class IndianTVPlugin : MainAPI() {
                                 key = "h/Y+thK0P8n+yPbA7ZkmGg",
                             )
                         )
+                  //  }
+                }
             return true
     }
 }
