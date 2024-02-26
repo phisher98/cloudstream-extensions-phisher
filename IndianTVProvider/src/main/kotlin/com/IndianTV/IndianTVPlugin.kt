@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.IndianTV.JSTVHunter
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -96,8 +97,8 @@ class IndianTVPlugin : MainAPI() {
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("KingRaw12", finalScriptRaw)
-               val hunt= if(JsHunter(script.data()).detect()){
-                    JsHunter(script.data()).dehunt()
+               val hunt= if(JSTVHunter(script.data()).detect()){
+                   JSTVHunter(script.data()).dehunt()
                    }
                    else
                {
