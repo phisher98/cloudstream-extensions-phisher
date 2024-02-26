@@ -4,7 +4,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.JsHunter
+import com.lagradost.cloudstream3.utils.JsUnpacker
 
 
 class IndianTVPlugin : MainAPI() {
@@ -83,12 +83,12 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         val scripts = document.select("script")
-        //Log.d("Kingfindscript","$scripts")
+        Log.d("Kingscript","$scripts")
         scripts.mapNotNull { script ->
-            val finalScriptRaw = if (JsHunter(script.data()).detect()) {
-                JsHunter(script.data()).dehunt()
+            val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
+                JsUnpacker(script.data()).unpack()
             } else {
-                script.data()
+                "script.data()"
             }
             Log.d("KingRaw", finalScriptRaw.toString())
             val finalScript=finalScriptRaw.toString()
