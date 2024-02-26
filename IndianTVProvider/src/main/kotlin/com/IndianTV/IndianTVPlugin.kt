@@ -1,3 +1,4 @@
+import android.annotation.SuppressLint
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -66,6 +67,7 @@ class IndianTVPlugin : MainAPI() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val scripts = document.select("script")
@@ -74,15 +76,15 @@ class IndianTVPlugin : MainAPI() {
             val finalScript =script.toString()
                 Log.d("KingScriptHead1", finalScript)
                 if (finalScript.contains("split")) {
-                        //Log.d("KingScriptHead1", rhinoContext.toString())
+                    Log.d("Kingfinalscript", finalScript)
                     val rhinoContext = getRhinoContext()
-                    Log.d("King","$rhinoContext")
+                    Log.d("Kingrhino","$rhinoContext")
                     val scope = rhinoContext.initStandardObjects()
                     val jSFunction=finalScript.trimIndent()
-                    Log.d("King","$jSFunction")
+                    //Log.d("King","$jSFunction")
                     rhinoContext.evaluateString(scope, jSFunction, "JavaScript", 1, null)
-                    val extractedLink = rhinoContext.evaluateString(scope, "extractLink(\"$finalScript\");", "JavaScript", 1, null) as String
-                    Log.d("King","$extractedLink")
+                    //val extractedLink = rhinoContext.evaluateString(scope, "extractLink(\"$finalScript\");", "JavaScript", 1, null) as String
+                    //Log.d("King","$extractedLink")
                         callback.invoke(
                             DrmExtractorLink(
                                 source = this.name,
