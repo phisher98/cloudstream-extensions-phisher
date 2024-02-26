@@ -8,27 +8,9 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 
-suspend fun getJsOutput(js: String): String {
-    val startJs =
-        """
-        var globalArgument = null;
-        function jwplayer() {
-            return {
-                id: null,
-                setup: function(arg) {
-                    globalArgument = arg;
-                }
-            };
-        };
-        """
-    val rhino = getRhinoContext()
-    val scope: Scriptable = rhino.initSafeStandardObjects()
-    rhino.evaluateString(scope, startJs + js, "JavaScript", 1, null)
-
-    return scope.get("globalArgument", scope).toJson()
-}
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -105,8 +87,8 @@ class IndianTVPlugin : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        Log.d("data",data)
-        Log.d("document",document.toString())
+        //Log.d("data",data)
+        //Log.d("document",document.toString())
         val scripts = document.select("script")
         //Log.d("Kingscript","$scripts")
         scripts.map { script ->
@@ -124,6 +106,13 @@ class IndianTVPlugin : MainAPI() {
                 }
             };
         };"""
+                mainWork {
+                    val rhino = getRhinoContext()
+                    val scope: Scriptable = rhino.initSafeStandardObjects()
+                    rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
+
+                    println("Outputrhino ${scope.get("globalArgument", scope).toJson()}")
+                }
                 val rhino = getRhinoContext()
                 val scope: Scriptable = rhino.initSafeStandardObjects()
                 rhino.evaluateString(scope, js, "JavaScript", 1, null)
