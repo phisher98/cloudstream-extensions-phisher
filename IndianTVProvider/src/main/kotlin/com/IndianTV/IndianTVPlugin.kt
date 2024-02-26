@@ -9,26 +9,10 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import org.apache.commons.codec.DecoderException
+import kotlinx.coroutines.CoroutineStart
 import org.mozilla.javascript.Scriptable
-import org.apache.commons.codec.binary.*
-
-
-fun convertHexToBase64(hexString: String): String {
-    // Decode the hex string to byte array
-    val decodedHex = Hex.decodeHex(hexString.toCharArray())
-
-    // Encode the decoded byte array to base64
-    val encodedHexB64 = Base64.encodeBase64(decodedHex)
-
-    // Convert the byte array to a string
-    var base64String = String(encodedHexB64)
-
-    // Remove trailing '=' characters
-    base64String = base64String.trimEnd('=')
-
-    return base64String
-}
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -98,6 +82,7 @@ class IndianTVPlugin : MainAPI() {
 
 
 
+    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -144,10 +129,8 @@ class IndianTVPlugin : MainAPI() {
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
-                        val base64String1 = convertHexToBase64("$key")
-                        val base64String2 = convertHexToBase64("$keyId")
-                        Log.d("Key","$base64String1")
-                        Log.d("Key","$base64String2")
+
+
                     callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
@@ -156,8 +139,8 @@ class IndianTVPlugin : MainAPI() {
                         referer = "mad-play.live",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = "$base64String1",
-                        key = "$base64String2",
+                        kid = "$keyId",
+                        key = "$key",
                     )
                 )
                 }
