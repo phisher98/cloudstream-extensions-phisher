@@ -2,19 +2,7 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import com.lagradost.cloudstream3.utils.ExtractorLink
-
-
-suspend fun getRhinoContext(): org.mozilla.javascript.Context {
-    return Coroutines.mainWork {
-        val rhino = org.mozilla.javascript.Context.enter()
-        rhino.initSafeStandardObjects()
-        rhino.optimizationLevel = -1
-        rhino
-    }
-}
-
 
 
 class IndianTVPlugin : MainAPI() {
@@ -86,14 +74,12 @@ class IndianTVPlugin : MainAPI() {
             val finalScript =script.toString()
                 Log.d("KingScriptHead1", finalScript)
                 if (finalScript.contains("split")) {
-                    try {
-                        val rhinoContext = getRhinoContext()
-                        val scope: org.mozilla.javascript.Scriptable =
-                            rhinoContext.initSafeStandardObjects()
-                        val js = finalScript
-                        rhinoContext.evaluateString(scope, js, "JavaScript", 1, null)
-
-                        Log.d("KingScriptHead1", rhinoContext.toString())
+                        //Log.d("KingScriptHead1", rhinoContext.toString())
+                    val rhinoContext = getRhinoContext()
+                    val scope = rhinoContext.initStandardObjects()
+                    val jSFunction=finalScript.trimIndent()
+                    rhinoContext.evaluateString(scope, jSFunction, "JavaScript", 1, null)
+                    val extractedLink = rhinoContext.evaluateString(scope, "extractLink(\"$finalScript\");", "JavaScript", 1, null) as String
                         callback.invoke(
                             DrmExtractorLink(
                                 source = this.name,
@@ -107,12 +93,7 @@ class IndianTVPlugin : MainAPI() {
                             )
                         )
                     }
-                    catch(e: Exception) {
-                        // Handle exception
-                        Log.e("KingScriptError", "Error: $e")
-                    }
                 }
-        }
             return true
     }
 }
