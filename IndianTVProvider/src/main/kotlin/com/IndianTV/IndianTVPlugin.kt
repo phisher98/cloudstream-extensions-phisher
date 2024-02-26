@@ -1,6 +1,6 @@
 package com.IndianTV
 
-import android.annotation.SuppressLint
+
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -97,7 +97,7 @@ class IndianTVPlugin : MainAPI() {
     }
 
 
-    @SuppressLint("SuspiciousIndentation")
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -109,20 +109,12 @@ class IndianTVPlugin : MainAPI() {
         //Log.d("Kingscript","$scripts")
         scripts.map { script ->
             val finalScriptRaw=script.data().toString()
-           /* val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
-                JsUnpacker(script.data()).unpack()
-            } else {
-                // Assuming `encoded-code` is a variable containing encoded JavaScript code
-                script.data()
-            }*/
-            //Log.d("KingRaw",finalScriptRaw)
-            //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
-                Log.d("KingRaw12", finalScriptRaw)
-                val input = finalScriptRaw
-                val output = getJsOutput(input)
-                Log.d("King" ,"output")
-                Log.d("King" ,"$output")
+                Log.d("KingRaw", finalScriptRaw)
+                val output = getJsOutput(finalScriptRaw)
+                Log.d("King1" ,"output")
+                Log.d("King2" ,"$output")
+                println("Output $output")
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
