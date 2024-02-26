@@ -113,10 +113,6 @@ class IndianTVPlugin : MainAPI() {
 
                     println("Outputrhino ${scope.get("globalArgument", scope).toJson()}")
                 }
-                val rhino = getRhinoContext()
-                val scope: Scriptable = rhino.initSafeStandardObjects()
-                rhino.evaluateString(scope, js, "JavaScript", 1, null)
-                println("Output ${ scope.get("globalArgument", scope).toJson() }")
 
 
                 callback.invoke(
