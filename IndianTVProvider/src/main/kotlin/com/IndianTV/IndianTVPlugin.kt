@@ -110,12 +110,12 @@ class IndianTVPlugin : MainAPI() {
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    println("Outputrhino ${scope.get("globalArgument", scope).toJson()}")
+                    println("normalprint ${scope.get("globalArgument", scope).toJson()}")
                     val outputRhino = scope.get("globalArgument", scope).toJson()
-                    Log.d("Kingrhino","outputRhino")
+                    Log.d("variableout","outputRhino")
                     println(outputRhino)
                 }
-
+                Log.d("outsidemainwork","outputRhino")
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
