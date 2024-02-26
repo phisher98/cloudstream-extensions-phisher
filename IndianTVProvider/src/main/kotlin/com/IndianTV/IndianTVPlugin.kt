@@ -84,7 +84,7 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         val scripts = document.select("script")
-        Log.d("Kingscript","$scripts")
+        //Log.d("Kingscript","$scripts")
         scripts.map { script ->
             //val finalScript=script.data().toString()
             val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
@@ -93,7 +93,7 @@ class IndianTVPlugin : MainAPI() {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
                 script.data()
             }
-            Log.d("KingRaw", finalScriptRaw)
+            //Log.d("KingRaw", finalScriptRaw)
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("Kingfinal", finalScriptRaw)
