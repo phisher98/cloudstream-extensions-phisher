@@ -3,7 +3,6 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
 
@@ -93,11 +92,18 @@ class IndianTVPlugin : MainAPI() {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
                 script.data().toString()
             }
-            Log.d("KingRaw",finalScriptRaw)
+            //Log.d("KingRaw",finalScriptRaw)
             //val finalScript=finalScriptRaw
             if (finalScriptRaw.contains("split")) {
                 Log.d("KingRaw12", finalScriptRaw)
-                //Log.d("Kingunpack",unpackedScript.toString())
+                val final = if (JsHunter(finalScriptRaw).detect()) {
+                    JsHunter(finalScriptRaw).dehunt()
+                }
+                else
+                {
+                    finalScriptRaw
+                }
+                Log.d("Kingunpack",final.toString())
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
@@ -111,6 +117,7 @@ class IndianTVPlugin : MainAPI() {
                     )
                 )
                 }
+
             }
         return true
         }
