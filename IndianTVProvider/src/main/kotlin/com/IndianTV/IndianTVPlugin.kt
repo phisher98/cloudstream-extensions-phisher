@@ -110,8 +110,9 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             val finalScriptRaw=script.data().toString()
             if (finalScriptRaw.contains("split")) {
-                Log.d("KingRaw", finalScriptRaw)
-                val output = getJsOutput(finalScriptRaw)
+                val scriptjson=finalScriptRaw.toJson()
+                Log.d("KingRaw", scriptjson)
+                val output = getJsOutput(scriptjson)
                 Log.d("King1" ,"output")
                 Log.d("King2" ,"$output")
                 println("Output $output")
