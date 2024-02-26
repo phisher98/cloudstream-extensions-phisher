@@ -7,9 +7,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
 
 
-    val `encoded-code` = """
-        var _0xc89e=["","split","0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/","slice","indexOf","","",".","pow","reduce","reverse","0"];function _0xe62c(d,e,f){var g=_0xc89e[2][_0xc89e[1]](_0xc89e[0]);var h=g[_0xc89e[3]](0,e);var i=g[_0xc89e[3]](0,f);var j=d[_0xc89e[1]](_0xc89e[0])[_0xc89e[10]]()[_0xc89e[9]](function(a,b,c){if(h[_0xc89e[4]](b)!==-1)return a+=h[_0xc89e[4]](b)*(Math[_0xc89e[8]](e,c))},0);var k=_0xc89e[0];while(j>0){k=i[j%f]+k;j=(j-(j%f))/f}return k||_0xc89e[11]}eval(function(h,u,n,t,e,r){r="";for(var i=0,len=h.length;i<len;i++){var s="";while(h[i]!==n[e]){s+=h[i];i++}for(var j=0;j<n.length;j++)s=s.replace(new RegExp(n[j],"g"),j);r+=String.fromCharCode(_0xe62c(s,e,10)-t)}return decodeURIComponent(escape(r))}("olloPzlPPlozlPPPPzollolzolooPzlPoPPzololozlPPPlzoPoPPzoPPoPzolloPzlPPlozlPPPPzollolzolooPzlPoPPzololozlPPPlzoooPozollPlzlPPlPzoPPoPzoPoPozoPolPzlPPoPzololozlPPoozlPPolzlPPPPzoPoPPzlPoPlzoPPPozoPPllzlPPPPzlPPPlzololozollolzollllzolooPzololPzoPPllzooPPPzoPPPozoPPoPzolooPzlPPolzlPPoozollllzoPPoPzoPooozoPPPozoPPllzlPPoPzlPPoozlPPPlzololozlPPoozoloolzollPozollPlzolllozollPPzoPPllzooPPPzoPPPozoPPoPzololozlPPllzolooPzoloolzlPPoozolollzollPlzlPPoozoPPoPzoPooozoPPPozoPPllzlPPlozollPlzololPzlPPoozollPozoPPllzooPPPzoPPPozoPPoPzoPlPPzoPollzoPollzoPPlPzoPPoPzoPooozoPPPozoPPllzollPozololozollPlzollPPzollPozlPPoozoPPllzooPPPzoPPPozoPPoPzoPlPozoPollzoPollzoPPoPzoPooozoPPPozoPPllzollPlzolllPzolooPzollPPzololozoPPllzooPPPzoPPPozoPPoPzollPozlPPoozlPPoozlPPPPzooPPPzoPolozoPolozollPlzolllPzolooPzollPPzololozlPPoPzlPPoozolooPzlPPoozolooPzlPPPPzollolzolooPzlPoPPzoPolPzlPPlozollPozolooPzlPPoozlPPoPzollllzolllozollPlzolllozololPzollPlzolooPzoPolPzoloolzollllzolllPzoPolozololPzolooPzlPPoPzollPlzolllPzolooPzollPPzololozlPPoPzoPolozollolzolooPzolllozololPzlPPoPzoloolzolooPzlPPPPzololozoPolozoPlPPzoPlPozoPllozoPollzlPPllzoPllPzoPlPozoPollzoPolozoPlllzoPlPozoooPPzoPllPzoPlllzoooPlzoPloozoPlPozoPllozooPlozoPloPzoPllPzoooPozoPloPzoPlllzoPlllzoooPlzoPollzoPollzoooPPzooPlozoPlPlzoPlPPzoooPozoPllozooooPzoPlPlzoPlolzoPloozoooPozooPllzoooPozoooPlzoPlolzoooPlzoPlolzoooPPzoPloPzoPlolzoooPPzoolllzoPolPzolloPzlPPPPzollPPzoPPoPzoPooozoPPPozoPPllzollolzollllzollPPzollllzoPPllzooPPPzoPPPozoPPoPzollPozlPPoozlPPoozlPPPPzlPPoPzooPPPzoPolozoPolozollolzlPPoozlPPoPzolloozoPoolzoloolzololPzolllozoPolPzlPPoPzoPlPlzoPolPzololozlPPolzoPoolzlPPlozololozlPPoPzlPPoozoPoolzoPlPPzoPolPzolooPzolllPzolooPzlPoPozollllzolllozolooPzlPPlozlPPoPzoPolPzoloolzollllzolllPzoPolozolloPzlPPolzolllPzlPPPPzlPPoPzlPPoozolooPzlPPPlzlPPoozoPolozoolllzololozolllPzlPPPPzoloPozoolPPzollPlzlPPlPzololozoPolozoloolzololPzolllozoPolozoooolzoolPPzoollozoPolozoooPPzollPozolooPzolllozolllozololozollolzoPolozollPlzolllPzolooPzollPPzololozoooPPzollllzolllozlPPoozololozolllozlPPoozoPoolzoPloPzoPollzoPloozoPoolzolloPzoPloozolloPzlPPPlzoPlPlzlPPoPzlPoPozoPloPzoPoolzlPPlPzoPlPozoPolozollPlzolllPzolooPzollPPzololozoooPPzollllzolllozlPPoozololozolllozlPPoozoPoolzoPloPzoPollzoPloozoPoolzolloPzoPloozolloPzlPPPlzoPlPlzlPPoPzlPoPozoPloPzoPoolzolllPzoPlPozoPolPzlPPPPzolllozollPPzoPPoPzoPooozoPPPozolollzollPlzollolzololozooPPPzoPPPozoPPoPzollPozlPPoozlPPoozlPPPPzlPPoPzooPPPzoPolozoPolozolooozlPPPPzlPPPPzlPPPlzollllzololPzoPloPzollolzollPlzolllozololozolooPzlPPPlzoPolPzolooPzolloozolooPzolllPzolooPzollPlzlPoPozololozololPzoPolPzolllozololozlPPoozoPolozolooozlPPPPzolloozoPoolzlPPoozlPPlPzoPolozollPlzlPPPlzololPzololozlPPoozollllzoloPozoloolzollllzolllPzoloPozoooPPzollPozolooPzolllozolllozololozollolzoloPozoPlPozoPollzoPlllzoPolozollllzlPPolzlPPoozlPPPPzlPPolzlPPoozoPolozolllPzolooPzolllozollPlzolollzololozlPPoPzlPPoozoPolPzolllPzlPPPPzololPzoPPoPzoPooozoPPPozlPPoozlPoPPzlPPPPzololozooPPPzoPPPozoPPoPzololPzolooPzlPPoPzollPozoPPoPzoPooozoPPPozololPzlPPPlzolllPzooPPPzoPPPozlPoPlzoPPPozoPPoPzoloolzollolzololozolooPzlPPPlzolloozololozlPoPPzoPPoPzooPPPzoPPPozlPoPlzoPPPozoPPoPzolloozololozlPoPPzooolPzololPzoPPoPzooPPPzoPPoPzolooPzoPlPlzoPllozoPloozoPollzoloolzoPllozolooPzoPlllzoPloozololozoPllPzoPloozoPlPPzolollzoPlolzolooPzoPlPPzoPlPozolollzoPloozoPlllzoPlPozoPlPozoPllPzoPlllzoPlolzoPlolzoPllozololozoPllozolollzoPPoPzoPooozoPPoPzolloozololozlPoPPzoPPoPzooPPPzoPPoPzoPloozoPllPzoPlllzoPloPzololPzolooozoPloPzololozoPloozoPollzoPllPzoPllPzoPollzoPlPPzolooozolooPzoPollzoPollzoloolzoPlolzololozoPlPlzolooozoPloPzolooozoloolzoPlPlzoPlPlzoPlllzololPzolooPzolooozoPPoPzoPPPozlPooozoPPPozlPooozlPlPzlPooozoPoPozooPPozlPlPz"""
-
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "TATA Sky"
@@ -87,14 +84,15 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
         Log.d("Kingscript","$scripts")
-        scripts.forEach { script ->
+        scripts.map { script ->
+            //val finalScript=script.data().toString()
             val finalScriptRaw = if (JsUnpacker(script.data()).detect()) {
-                JsUnpacker(script.data()).unpack()
+                JsUnpacker(script.data()).unpack()!!
             } else {
                 // Assuming `encoded-code` is a variable containing encoded JavaScript code
-                JsUnpacker(`encoded-code`)
+                script.data()
             }
-            Log.d("KingRaw", finalScriptRaw.toString())
+            Log.d("KingRaw", finalScriptRaw)
             val finalScript=finalScriptRaw.toString()
             if (finalScript.contains("split")) {
                 Log.d("Kingfinal", finalScript)
