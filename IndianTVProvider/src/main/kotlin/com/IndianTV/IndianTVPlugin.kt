@@ -74,7 +74,7 @@ class IndianTVPlugin : MainAPI() {
         //Log.d("Kingfindscript","$scripts")
         scripts.mapNotNull { script ->
             val finalScript =script.text().toString()
-                //Log.d("KingScriptHead1", finalScript)
+                Log.d("KingScriptHead1", finalScript)
                 if (finalScript.contains("split")) {
                     Log.d("Kingfinalscript", finalScript)
 
