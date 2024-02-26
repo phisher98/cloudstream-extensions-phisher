@@ -1,4 +1,3 @@
-import android.annotation.SuppressLint
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -67,7 +66,6 @@ class IndianTVPlugin : MainAPI() {
         }
     }
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val scripts = document.select("#jwplayerDiv + script").text()
