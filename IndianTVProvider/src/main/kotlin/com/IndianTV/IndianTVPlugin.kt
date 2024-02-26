@@ -68,7 +68,7 @@ class IndianTVPlugin : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val scripts = document.select("#jwplayerDiv + script").text()
+        val scripts = document.select("script").text()
         //val scriptfin=scripts.toString()
         Log.d("Kingfindscript",scripts.toString())
                         callback.invoke(
