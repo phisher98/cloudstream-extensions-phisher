@@ -110,23 +110,10 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             val finalScriptRaw=script.data().toString()
             if (finalScriptRaw.contains("split")) {
+                val input="""finalScriptRaw"""
+                val output = getJsOutput(input)
+                println("Output $output")
                 Log.d("KingRaw", finalScriptRaw)
-                val js="""
-                                // Add this at the start!
-                                var globalArgument = null;
-                                function jwplayer() {
-                                return {
-                                id: null,
-                                setup: function(arg) {
-                                globalArgument = arg;
-                }
-            };
-        };""".trimIndent()
-                val rhino = getRhinoContext()
-                val scope: Scriptable = rhino.initSafeStandardObjects()
-                rhino.evaluateString(scope, js+finalScriptRaw, "JavaScript", 1, null)
-
-                println("Outputrhino ${ scope.get("globalArgument", scope).toJson() }")
                 Log.d("King1" ,"Outputrhino")
                 callback.invoke(
                     DrmExtractorLink(
