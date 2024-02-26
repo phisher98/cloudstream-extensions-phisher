@@ -106,6 +106,7 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         Log.d("data",data)
+        Log.d("document",document.toString())
         val scripts = document.select("script")
         //Log.d("Kingscript","$scripts")
         scripts.map { script ->
