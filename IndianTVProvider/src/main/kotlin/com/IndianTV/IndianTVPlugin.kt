@@ -93,10 +93,11 @@ class IndianTVPlugin : MainAPI() {
                 script.data()
             }
             Log.d("KingRaw", finalScriptRaw)
-            val finalScript=finalScriptRaw.toString()
-            if (finalScript.contains("split")) {
-                Log.d("Kingfinal", finalScript)
-
+            //val finalScript=finalScriptRaw
+            if (finalScriptRaw.contains("split")) {
+                Log.d("Kingfinal", finalScriptRaw)
+                       val unpack=JsUnpacker(finalScriptRaw)
+                Log.d("Kingunpack",unpack.toString())
                 callback.invoke(
                     DrmExtractorLink(
                         source = this.name,
