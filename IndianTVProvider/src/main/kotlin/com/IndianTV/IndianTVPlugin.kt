@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.getRhinoContext
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -108,9 +109,10 @@ class IndianTVPlugin : MainAPI() {
 
         scripts.map { script ->
             val finalScriptRaw = script.data().toString()
-            if (finalScriptRaw.contains("split")) {
-                val startJs =
-                    """
+            mainWork {
+                if (finalScriptRaw.contains("split")) {
+                    val startJs =
+                        """
         var globalArgument = null;
         function jwplayer() {
             return {
@@ -121,11 +123,11 @@ class IndianTVPlugin : MainAPI() {
             };
         };
         """
-                val rhino = getRhinoContext()
-                val scope: Scriptable = rhino.initSafeStandardObjects()
-                rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
-                val rhinout= scope.get("globalArgument", scope).toJson()
-                Log.d("Rhinoout",rhinout)
+                    val rhino = getRhinoContext()
+                    val scope: Scriptable = rhino.initSafeStandardObjects()
+                    rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
+                    val rhinout = scope.get("globalArgument", scope).toJson()
+                    Log.d("Rhinoout", rhinout)
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                     val matchResult = pattern.find(rhinout)
@@ -147,19 +149,21 @@ class IndianTVPlugin : MainAPI() {
                     val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                callback.invoke(
-                    DrmExtractorLink(
-                        source = this.name,
-                        name = this.name,
-                        url = "$link",
-                        referer = "madplay.live",
-                        quality = Qualities.Unknown.value,
-                        type = INFER_TYPE,
-                        kid = finalkeyid,
-                        key = finalkey,
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = "TATA",
+                            name = "TATA",
+                            url = "$link",
+                            referer = "madplay.live",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = finalkeyid,
+                            key = finalkey,
+                        )
                     )
-                )
+                }
             }
+            return@map
         }
         return true
     }
