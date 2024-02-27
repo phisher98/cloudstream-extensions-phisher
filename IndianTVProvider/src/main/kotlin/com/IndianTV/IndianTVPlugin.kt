@@ -102,6 +102,7 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        return mainWork {
             val document = app.get(data).document
             val scripts = document.select("script")
 
@@ -152,20 +153,22 @@ class IndianTVPlugin : MainAPI() {
 
                     callback.invoke(
                         DrmExtractorLink(
-                            source = "Tata Sky",
-                            name = "Tata Sky",
+                            source = it.name,
+                            name = it.name,
                             url = "$link",
+                            kid = finalkeyid,
+                            key = "$finalkey",
                             referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = finalkey,
+
                         )
                     )
                 }
             }
-            return true
+            return@mainWork true
         }
+    }
 }
     
 
