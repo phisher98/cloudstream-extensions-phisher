@@ -157,13 +157,12 @@ class IndianTVPlugin : MainAPI() {
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = finalkey,
+                            kid = "$keyId",
+                            key = "$key",
                         )
                     )
                 }
             }
-            return@map
         }
         return true
     }
