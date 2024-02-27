@@ -131,11 +131,11 @@ class IndianTVPlugin : MainAPI() {
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                     val matchResult = pattern.find(rhinout)
-                    var link: String? = null
+                    var file: String? = null
                     var keyId: String? = null
                     var key: String? = null
                     if (matchResult != null && matchResult.groupValues.size == 4) {
-                        link = matchResult.groupValues[1]
+                        file = matchResult.groupValues[1]
                         keyId = matchResult.groupValues[2]
                         key = matchResult.groupValues[3]
                     } else {
@@ -144,7 +144,10 @@ class IndianTVPlugin : MainAPI() {
                     val byteArray = hexStringToByteArray("$keyId")
                     val finalkeyid = (byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-                    Log.d("finallink", "Base64 Encoded String: $link")
+
+                    val link=file.toString()
+                    Log.d("Finalfile",link)
+
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
@@ -152,12 +155,12 @@ class IndianTVPlugin : MainAPI() {
                         DrmExtractorLink(
                             source = "TATA",
                             name = "TATA",
-                            url = "https://bpprod2linear.akamaized.net/bpk-tv/irdeto_com_Channel_125/output/manifest.mpd",
+                            url = link,
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = "COj6+BVJUwKd2xs4dmwmkw",
-                            key = "qsehGs8jv4sro8g7tko28g",
+                            kid = finalkeyid,
+                            key = finalkey
                         )
                     )
                     }
