@@ -29,26 +29,6 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
 
-suspend fun getJsOutput(js: String): String {
-    val startJs =
-        """
-        var globalArgument = null;
-        function jwplayer() {
-            return {
-                id: null,
-                setup: function(arg) {
-                    globalArgument = arg;
-                }
-            };
-        };
-        """
-    val rhino = getRhinoContext()
-    val scope: Scriptable = rhino.initSafeStandardObjects()
-    rhino.evaluateString(scope, startJs + js, "JavaScript", 1, null)
-
-    return scope.get("globalArgument", scope).toJson()
-}
-
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -129,11 +109,26 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             val finalScriptRaw = script.data().toString()
             if (finalScriptRaw.contains("split")) {
-                val output = getJsOutput(finalScriptRaw)
-                    Log.d("outrhino", output)
+                val startJs =
+                    """
+        var globalArgument = null;
+        function jwplayer() {
+            return {
+                id: null,
+                setup: function(arg) {
+                    globalArgument = arg;
+                }
+            };
+        };
+        """
+                val rhino = getRhinoContext()
+                val scope: Scriptable = rhino.initSafeStandardObjects()
+                rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
+                val rhinout= scope.get("globalArgument", scope).toJson()
+                Log.d("Rhinoout",rhinout)
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(output)
+                    val matchResult = pattern.find(rhinout)
                     var link: String? = null
                     var keyId: String? = null
                     var key: String? = null
