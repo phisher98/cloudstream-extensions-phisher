@@ -161,8 +161,8 @@ class IndianTVPlugin : MainAPI() {
                         referer = "",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = "$finalkeyid",
-                        key = "$finalkey",
+                        kid = "228dvgwAXCaUkUzKR5H21Q",
+                        key = "iSOtWu1xWov094I54QSW3A",
                     )
                 )
                 }
