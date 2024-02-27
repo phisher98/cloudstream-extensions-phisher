@@ -148,27 +148,25 @@ class IndianTVPlugin : MainAPI() {
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                    callback.invoke(
-                     DrmExtractorLink(
-                        source = "source",
-                        name = "name",
-                        url = "$link",
-                        referer = "madplay.live",
-                        quality = Qualities.Unknown.value,
-                        type = INFER_TYPE,
-                        kid = finalkeyid,
-                        key = finalkey
-                    )
-                    )
+                    mainWork {
+                        callback.invoke(
+                            DrmExtractorLink(
+                                source = "source",
+                                name = "name",
+                                url = "$link",
+                                referer = "madplay.live",
+                                quality = Qualities.Unknown.value,
+                                type = INFER_TYPE,
+                                kid = finalkeyid,
+                                key = finalkey
+                            )
+                        )
+                        }
+                    }
                 }
-                else {
-                    Log.e("loadLinks", "File, KeyId, or Key not found.")
-                }
-            }
             return@mainWork true
+            }
         }
-    }
 }
     
 
