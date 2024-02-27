@@ -144,7 +144,7 @@ class IndianTVPlugin : MainAPI() {
                     val byteArray = hexStringToByteArray("$keyId")
                     val finalkeyid = (byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-
+                    Log.d("finallink", "Base64 Encoded String: $link")
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
