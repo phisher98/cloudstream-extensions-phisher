@@ -160,7 +160,7 @@ class IndianTVPlugin : MainAPI() {
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
                             kid = finalkeyid,
-                            key = finalkey
+                            key = finalkey,
                         )
                     )
                     }
