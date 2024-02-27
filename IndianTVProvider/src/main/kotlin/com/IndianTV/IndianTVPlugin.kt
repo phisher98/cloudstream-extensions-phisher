@@ -11,9 +11,7 @@ import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
-import com.IndianTV.OutputRhinoHolder.outputRhino
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -30,10 +28,6 @@ fun hexStringToByteArray(hexString: String): ByteArray {
 fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
-}
-
-object OutputRhinoHolder {
-    var outputRhino: String? = null
 }
 
 class IndianTVPlugin : MainAPI() {
@@ -117,7 +111,7 @@ class IndianTVPlugin : MainAPI() {
             if (finalScriptRaw.contains("split")) {
 
 
-                mainWork {
+                val job=mainWork {
                        val js = """
                         var globalArgument = null;
                         function jwplayer() {
@@ -133,15 +127,12 @@ class IndianTVPlugin : MainAPI() {
                        val scope: Scriptable = rhino.initSafeStandardObjects()
                        rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                       val outputRhino = scope.get("globalArgument", scope).toJson()
-                       outputRhino.also { OutputRhinoHolder.outputRhino = it }
-                       yield()
+                       scope.get("globalArgument", scope).toJson()
                    }
-                Log.d("outrhino", "$outputRhino")
-
+                    Log.d("outrhino", job)
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(outputRhino.toString())
+                    val matchResult = pattern.find(job)
                     var link: String? = null
                     var keyId: String? = null
                     var key: String? = null
@@ -155,7 +146,6 @@ class IndianTVPlugin : MainAPI() {
                     val byteArray = hexStringToByteArray("$keyId")
                     val finalkeyid = fixTitle(byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-
 
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
