@@ -9,10 +9,26 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import kotlinx.coroutines.CoroutineStart
 import org.mozilla.javascript.Scriptable
-import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import android.util.Base64
+import java.nio.charset.StandardCharsets
+
+fun hexStringToByteArray(hexString: String): ByteArray {
+    val length = hexString.length
+    val byteArray = ByteArray(length / 2)
+
+    for (i in 0 until length step 2) {
+        byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
+                Character.digit(hexString[i + 1], 16)).toByte()
+    }
+    return byteArray
+}
+
+fun byteArrayToBase64(byteArray: ByteArray): String {
+    val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
+    return String(base64ByteArray, StandardCharsets.UTF_8)
+}
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -129,6 +145,10 @@ class IndianTVPlugin : MainAPI() {
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
+                    val hexString = "48656c6c6f576f726c64" // Example hex string
+                    val byteArray = hexStringToByteArray(hexString)
+                    val base64String = byteArrayToBase64(byteArray)
+                    println("Base64 Encoded String: $base64String")
 
 
                     callback.invoke(
