@@ -12,7 +12,6 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -149,7 +148,6 @@ class IndianTVPlugin : MainAPI() {
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
-                    runOnMainThread {
                     callback.invoke(
                         DrmExtractorLink(
                             source = "TATA",
@@ -165,7 +163,6 @@ class IndianTVPlugin : MainAPI() {
                     }
                 }
             }
-        }
         return true
     }
 }
