@@ -149,7 +149,8 @@ class IndianTVPlugin : MainAPI() {
                     val finalkey = byteArrayToBase64(byteArrakey)
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                    val drmExtractorLink = DrmExtractorLink(
+                    callback.invoke(
+                     DrmExtractorLink(
                         source = "source",
                         name = "name",
                         url = "$link",
@@ -158,6 +159,7 @@ class IndianTVPlugin : MainAPI() {
                         type = INFER_TYPE,
                         kid = finalkeyid,
                         key = finalkey
+                    )
                     )
                 }
                 else {
