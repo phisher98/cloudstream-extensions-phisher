@@ -106,7 +106,7 @@ class IndianTVPlugin : MainAPI() {
         return mainWork {
             val scripts = document.select("script")
 
-            scripts.map { script ->
+            scripts.forEach { script ->
                 val finalScriptRaw = script.data().toString()
                 if (finalScriptRaw.contains("split")) {
                     val js = """
@@ -148,18 +148,18 @@ class IndianTVPlugin : MainAPI() {
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = byteArrayToBase64(byteArrakey)
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = it.name,
-                            name = it.name,
-                            url = "$link",
-                            referer = "madplay.live",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = "228dvgwAXCaUkUzKR5H21Q",
-                            key = "iSOtWu1xWov094I54QSW3A"
-                            )
+
+                    val extractorLink = DrmExtractorLink(
+                        source = "source",
+                        name = "name",
+                        url = "$link",
+                        referer = "madplay.live",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
+                        kid = finalkeyid,
+                        key = finalkey
                     )
+                    callback.invoke(extractorLink)
                 }
             }
             return@mainWork true
