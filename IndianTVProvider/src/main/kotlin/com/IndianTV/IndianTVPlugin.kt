@@ -1,6 +1,7 @@
 package com.IndianTV
 
 
+
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -10,6 +11,7 @@ import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
+import com.IndianTV.OutputRhinoHolder.outputRhino
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import java.nio.charset.StandardCharsets
 
@@ -27,6 +29,10 @@ fun hexStringToByteArray(hexString: String): ByteArray {
 fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
+}
+
+object OutputRhinoHolder {
+    var outputRhino: String? = null
 }
 
 class IndianTVPlugin : MainAPI() {
@@ -108,7 +114,8 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             val finalScriptRaw = script.data().toString()
             if (finalScriptRaw.contains("split")) {
-                val js = """
+                mainWork {
+                    val js = """
                         var globalArgument = null;
                         function jwplayer() {
                             return {
@@ -119,58 +126,50 @@ class IndianTVPlugin : MainAPI() {
                             };
                         };
                     """
-           /*     mainWork {
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    return@mainWork { val outputRhino = scope.get("globalArgument", scope).toJson() }
-
-                    Log.d("output", outputRhino)
-                }*/
-                val outputRhino = mainWork {
-                    val rhino = getRhinoContext()
-                    val scope: Scriptable = rhino.initSafeStandardObjects()
-                    rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
-
-                    return@mainWork { val outputRhino = scope.get("globalArgument", scope).toJson() } }
-                Log.d("outrhino","$outputRhino")
-
-                    val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(outputRhino.toString())
-                    var link: String? = null
-                    var keyId: String? = null
-                    var key: String? = null
-                    if (matchResult != null && matchResult.groupValues.size == 4) {
-                        link = matchResult.groupValues[1]
-                        keyId = matchResult.groupValues[2]
-                        key = matchResult.groupValues[3]
-                    } else {
-                        println("File, KeyId, or Key not found.")
-                    }
-                    val byteArray = hexStringToByteArray("$keyId")
-                    val finalkeyid = fixTitle(byteArrayToBase64(byteArray))
-                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-
-
-                    val byteArrakey = hexStringToByteArray("$key")
-                    val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
-                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = "Tata Sky",
-                            name = "Tata Sky",
-                            url = "$link",
-                            referer = "madplay.live",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = finalkey
-                        )
-                    )
+                    val outputRhino = scope.get("globalArgument", scope).toJson()
+                    outputRhino.also { OutputRhinoHolder.outputRhino = it }
                 }
+                Log.d("outrhino", "$outputRhino")
+
+                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                val matchResult = pattern.find(outputRhino.toString())
+                var link: String? = null
+                var keyId: String? = null
+                var key: String? = null
+                if (matchResult != null && matchResult.groupValues.size == 4) {
+                    link = matchResult.groupValues[1]
+                    keyId = matchResult.groupValues[2]
+                    key = matchResult.groupValues[3]
+                } else {
+                    println("File, KeyId, or Key not found.")
+                }
+                val byteArray = hexStringToByteArray("$keyId")
+                val finalkeyid = fixTitle(byteArrayToBase64(byteArray))
+                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+
+
+                val byteArrakey = hexStringToByteArray("$key")
+                val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
+                Log.d("finalkey", "Base64 Encoded String: $finalkey")
+
+                callback.invoke(
+                    DrmExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = "$link",
+                        referer = "madplay.live",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
+                        kid = finalkeyid,
+                        key = finalkey
+                    )
+                )
             }
+        }
         return true
     }
 }
