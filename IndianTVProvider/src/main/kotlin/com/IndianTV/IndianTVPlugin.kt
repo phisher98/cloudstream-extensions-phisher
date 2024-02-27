@@ -154,12 +154,12 @@ class IndianTVPlugin : MainAPI() {
                         DrmExtractorLink(
                             source = "TATA",
                             name = "TATA",
-                            url = "$link",
+                            url = "https://bpprod2linear.akamaized.net/bpk-tv/irdeto_com_Channel_125/output/manifest.mpd",
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = "AZEJw4hSVlCIgC0gx0rviQ",
-                            key = "bUnUJWo/ntSTCfggobnTOQ",
+                            kid = "COj6+BVJUwKd2xs4dmwmkw",
+                            key = "qsehGs8jv4sro8g7tko28g",
                         )
                     )
                     }
