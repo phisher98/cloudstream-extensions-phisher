@@ -7,11 +7,9 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
-import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -120,16 +118,24 @@ class IndianTVPlugin : MainAPI() {
                             };
                         };
                     """
-                mainWork {
+           /*     mainWork {
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    val outputRhino = scope.get("globalArgument", scope).toJson()
+                    return@mainWork { val outputRhino = scope.get("globalArgument", scope).toJson() }
+
                     Log.d("output", outputRhino)
+                }*/
+                val outputRhino = mainWork { val rhino = getRhinoContext()
+                    val scope: Scriptable = rhino.initSafeStandardObjects()
+                    rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
+
+                    return@mainWork }
+                Log.d("outrhino","$outputRhino")
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(outputRhino)
+                    val matchResult = pattern.find(outputRhino.toString())
                     var link: String? = null
                     var keyId: String? = null
                     var key: String? = null
@@ -149,7 +155,6 @@ class IndianTVPlugin : MainAPI() {
                     val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                    runOnMainThread{
                     callback.invoke(
                         DrmExtractorLink(
                             source = "Tata Sky",
@@ -162,12 +167,11 @@ class IndianTVPlugin : MainAPI() {
                             key = finalkey
                         )
                     )
-                    }
                 }
             }
-        }
         return true
     }
 }
+
     
 
