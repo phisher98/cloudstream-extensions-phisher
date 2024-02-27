@@ -106,7 +106,7 @@ class IndianTVPlugin : MainAPI() {
             val document = app.get(data).document
             val scripts = document.select("script")
 
-            scripts.forEach { script ->
+            scripts.map { script ->
                 val finalScriptRaw = script.data().toString()
                 if (finalScriptRaw.contains("split")) {
                     val js = """
@@ -141,12 +141,12 @@ class IndianTVPlugin : MainAPI() {
                         println("File, KeyId, or Key not found.")
                     }
                     val byteArray = hexStringToByteArray("$keyId")
-                    val finalkeyid = byteArrayToBase64(byteArray)
+                    val finalkeyid = fixTitle(byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
 
                     val byteArrakey = hexStringToByteArray("$key")
-                    val finalkey = byteArrayToBase64(byteArrakey)
+                    val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
                     callback.invoke(
