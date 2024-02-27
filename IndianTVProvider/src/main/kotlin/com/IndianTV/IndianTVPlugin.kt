@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
+import com.lagradost.cloudstream3.utils.Coroutines.runOnMainThread
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -102,14 +103,13 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        return mainWork {
-            val document = app.get(data).document
-            val scripts = document.select("script")
+        val document = app.get(data).document
+        val scripts = document.select("script")
 
-            scripts.map { script ->
-                val finalScriptRaw = script.data().toString()
-                if (finalScriptRaw.contains("split")) {
-                    val js = """
+        scripts.map { script ->
+            val finalScriptRaw = script.data().toString()
+            if (finalScriptRaw.contains("split")) {
+                val js = """
                         var globalArgument = null;
                         function jwplayer() {
                             return {
@@ -120,7 +120,7 @@ class IndianTVPlugin : MainAPI() {
                             };
                         };
                     """
-
+                mainWork {
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
@@ -148,25 +148,26 @@ class IndianTVPlugin : MainAPI() {
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
-                    mainWork {
-                        callback.invoke(
-                            DrmExtractorLink(
-                                source = "source",
-                                name = "name",
-                                url = "$link",
-                                referer = "madplay.live",
-                                quality = Qualities.Unknown.value,
-                                type = INFER_TYPE,
-                                kid = finalkeyid,
-                                key = finalkey
-                            )
+
+                    runOnMainThread{
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = "Tata Sky",
+                            name = "Tata Sky",
+                            url = "$link",
+                            referer = "madplay.live",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = finalkeyid,
+                            key = finalkey
                         )
-                        }
+                    )
                     }
                 }
-            return@mainWork true
             }
         }
+        return true
+    }
 }
     
 
