@@ -10,7 +10,6 @@ import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
-import kotlin.io.encoding.ExperimentalEncodingApi
 import android.util.Base64
 import java.nio.charset.StandardCharsets
 
@@ -97,7 +96,6 @@ class IndianTVPlugin : MainAPI() {
     }
 
 
-    @OptIn(ExperimentalEncodingApi::class)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -147,11 +145,11 @@ class IndianTVPlugin : MainAPI() {
                     val keyidbase64 = "$keyId" // Example hex string
                     val byteArray = hexStringToByteArray(keyidbase64)
                     val finalkeyid = byteArrayToBase64(byteArray)
-                    //println("Base64 Encoded String: $finalkeyid")
+                    println("Base64 Encoded String: $finalkeyid")
                     val keybase64 = "$key" // Example hex string
                     val byteArrakey = hexStringToByteArray(keybase64)
                     val finalkey = byteArrayToBase64(byteArrakey)
-                    //println("Base64 Encoded String: $finalkey")
+                    println("Base64 Encoded String: $finalkey")
                 callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
@@ -160,15 +158,15 @@ class IndianTVPlugin : MainAPI() {
                         referer = "",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
+                        uuid = CLEARKEY_UUID,
                         kid = finalkeyid,
                         key = finalkey,
                     )
                 )
             }
         }
-    }
+         }
         return true
-
     }
 }
     
