@@ -156,8 +156,8 @@ class IndianTVPlugin : MainAPI() {
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = "$finalkeyid",
-                            key = "$finalkey"
+                            kid = "228dvgwAXCaUkUzKR5H21Q",
+                            key = "iSOtWu1xWov094I54QSW3A"
                             )
                     )
                 }
