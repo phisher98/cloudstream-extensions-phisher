@@ -11,6 +11,8 @@ import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
+import com.IndianTV.GlobalValues.finalkey
+import com.IndianTV.GlobalValues.finalkeyid
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import java.nio.charset.StandardCharsets
 
@@ -29,6 +31,12 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
+
+object GlobalValues {
+    var finalkeyid: String = ""
+    var finalkey: String = ""
+}
+
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -109,8 +117,6 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             val finalScriptRaw = script.data().toString()
             if (finalScriptRaw.contains("split")) {
-
-
                 val job=mainWork {
                        val js = """
                         var globalArgument = null;
@@ -144,11 +150,11 @@ class IndianTVPlugin : MainAPI() {
                         println("File, KeyId, or Key not found.")
                     }
                     val byteArray = hexStringToByteArray("$keyId")
-                    val finalkeyid = fixTitle(byteArrayToBase64(byteArray))
+                    finalkeyid = (byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
                     val byteArrakey = hexStringToByteArray("$key")
-                    val finalkey = fixTitle(byteArrayToBase64(byteArrakey))
+                    finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
                 callback.invoke(
@@ -160,7 +166,7 @@ class IndianTVPlugin : MainAPI() {
                         quality = Qualities.Unknown.value,
                         type = INFER_TYPE,
                         kid = finalkeyid,
-                        key = finalkey
+                        key = finalkey,
                     )
                 )
             }
