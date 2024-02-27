@@ -148,21 +148,21 @@ class IndianTVPlugin : MainAPI() {
                     val keyidbase64 = "$keyId" // Example hex string
                     val byteArray = hexStringToByteArray(keyidbase64)
                     val finalkeyid = byteArrayToBase64(byteArray)
-                    println("Base64 Encoded String: $finalkeyid")
+                    //println("Base64 Encoded String: $finalkeyid")
                     val keybase64 = "$key" // Example hex string
                     val byteArrakey = hexStringToByteArray(keybase64)
                     val finalkey = byteArrayToBase64(byteArrakey)
-                    println("Base64 Encoded String: $finalkey")
+                    //println("Base64 Encoded String: $finalkey")
                     callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
                         name = it.name,
                         url = "$link",
-                        referer = "TV",
+                        referer = "",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = finalkeyid,
-                        key = finalkey,
+                        kid = "$finalkeyid",
+                        key = "$finalkey",
                     )
                 )
                 }
