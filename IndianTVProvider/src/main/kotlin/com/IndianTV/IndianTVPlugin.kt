@@ -142,14 +142,14 @@ class IndianTVPlugin : MainAPI() {
                         println("File, KeyId, or Key not found.")
                     }
                     var byteArray = hexStringToByteArray("$keyId")
-                    var finalkeyid = (byteArrayToBase64(byteArray))
+                    val finalkeyid = (byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-                    var link=file.toString()
+                    val link=file.toString()
                     Log.d("Finalfile",link)
 
                     var byteArrakey = hexStringToByteArray("$key")
-                    var finalkey = (byteArrayToBase64(byteArrakey))
+                    val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
                     callback.invoke(
                         DrmExtractorLink(
@@ -165,6 +165,7 @@ class IndianTVPlugin : MainAPI() {
                     )
                     }
                 }
+            return@map
             }
         return true
     }
