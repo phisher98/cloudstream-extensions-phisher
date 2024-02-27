@@ -160,14 +160,15 @@ class IndianTVPlugin : MainAPI() {
                         referer = "",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = keyidbase64,
-                        key = keybase64,
+                        kid = finalkeyid,
+                        key = finalkey,
                     )
                 )
             }
         }
     }
         return true
+
     }
 }
     
