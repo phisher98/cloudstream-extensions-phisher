@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -127,11 +128,12 @@ class IndianTVPlugin : MainAPI() {
 
                     Log.d("output", outputRhino)
                 }*/
-                val outputRhino = mainWork { val rhino = getRhinoContext()
+                val outputRhino = mainWork {
+                    val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    return@mainWork }
+                    return@mainWork { val outputRhino = scope.get("globalArgument", scope).toJson() } }
                 Log.d("outrhino","$outputRhino")
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
