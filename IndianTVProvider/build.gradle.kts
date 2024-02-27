@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 8
+version = 9
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "TATA Sky"
-    authors = listOf("HindiProviders")
+    description = "Indian TV"
+    authors = listOf("HindiProviders,King,Lag")
 
     /**
     * Status int as the following:
@@ -23,5 +23,5 @@ cloudstream {
     tvTypes = listOf(
                 "Live",
 )
-iconUrl = "https://upload.wikimedia.org/wikipedia/commons/5/52/JioTV_logo.png"
+iconUrl = "https://www.freepnglogos.com/uploads/tv-png/tv-png-box-television-set-cable-screen-icon-31.png"
 }

@@ -145,22 +145,24 @@ class IndianTVPlugin : MainAPI() {
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
-                    val hexString = "48656c6c6f576f726c64" // Example hex string
-                    val byteArray = hexStringToByteArray(hexString)
-                    val base64String = byteArrayToBase64(byteArray)
-                    println("Base64 Encoded String: $base64String")
-
-
+                    val keyidbase64 = "$keyId" // Example hex string
+                    val byteArray = hexStringToByteArray(keyidbase64)
+                    val finalkeyid = byteArrayToBase64(byteArray)
+                    println("Base64 Encoded String: $finalkeyid")
+                    val keybase64 = "$key" // Example hex string
+                    val byteArrakey = hexStringToByteArray(keybase64)
+                    val finalkey = byteArrayToBase64(byteArrakey)
+                    println("Base64 Encoded String: $finalkey")
                     callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
                         name = it.name,
                         url = "$link",
-                        referer = "mad-play.live",
+                        referer = "TV",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = "$keyId",
-                        key = "$key",
+                        kid = finalkeyid,
+                        key = finalkey,
                     )
                 )
                 }
