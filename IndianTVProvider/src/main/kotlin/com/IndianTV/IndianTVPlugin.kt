@@ -8,11 +8,8 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.getRhinoContext
-import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.mozilla.javascript.Scriptable
 import android.util.Base64
-import com.IndianTV.GlobalValues.finalkey
-import com.IndianTV.GlobalValues.finalkeyid
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import java.nio.charset.StandardCharsets
 
@@ -32,9 +29,24 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
 
-object GlobalValues {
-    var finalkeyid: String = ""
-    var finalkey: String = ""
+suspend fun getJsOutput(js: String): String {
+    val startJs =
+        """
+        var globalArgument = null;
+        function jwplayer() {
+            return {
+                id: null,
+                setup: function(arg) {
+                    globalArgument = arg;
+                }
+            };
+        };
+        """
+    val rhino = getRhinoContext()
+    val scope: Scriptable = rhino.initSafeStandardObjects()
+    rhino.evaluateString(scope, startJs + js, "JavaScript", 1, null)
+
+    return scope.get("globalArgument", scope).toJson()
 }
 
 
@@ -117,28 +129,11 @@ class IndianTVPlugin : MainAPI() {
         scripts.map { script ->
             val finalScriptRaw = script.data().toString()
             if (finalScriptRaw.contains("split")) {
-                val job=mainWork {
-                       val js = """
-                        var globalArgument = null;
-                        function jwplayer() {
-                            return {
-                                id: null,
-                                setup: function(arg) {
-                                    globalArgument = arg;
-                                }
-                            };
-                        };
-                    """
-                       val rhino = getRhinoContext()
-                       val scope: Scriptable = rhino.initSafeStandardObjects()
-                       rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
-
-                       scope.get("globalArgument", scope).toJson()
-                   }
-                    Log.d("outrhino", job)
+                val output = getJsOutput(finalScriptRaw)
+                    Log.d("outrhino", output)
 
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(job)
+                    val matchResult = pattern.find(output)
                     var link: String? = null
                     var keyId: String? = null
                     var key: String? = null
@@ -150,11 +145,11 @@ class IndianTVPlugin : MainAPI() {
                         println("File, KeyId, or Key not found.")
                     }
                     val byteArray = hexStringToByteArray("$keyId")
-                    finalkeyid = (byteArrayToBase64(byteArray))
+                    val finalkeyid = (byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
                     val byteArrakey = hexStringToByteArray("$key")
-                    finalkey = (byteArrayToBase64(byteArrakey))
+                    val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
                 callback.invoke(
