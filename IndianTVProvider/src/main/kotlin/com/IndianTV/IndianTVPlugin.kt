@@ -103,20 +103,67 @@ class IndianTVPlugin : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        callback.invoke(
-            DrmExtractorLink(
-                source = this.name,
-                name = this.name,
-                url = "https://bpprod7linear.akamaized.net/bpk-tv/irdeto_com_Channel_307/output/manifest.mpd",
-                referer = "madplay.live",
-                type=INFER_TYPE,
-                quality = Qualities.Unknown.value,
-                //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
-                kid = "228dvgwAXCaUkUzKR5H21Q",
-                key = "iSOtWu1xWov094I54QSW3A",
-            )
-        )
-        return true
+        return mainWork {
+            val scripts = document.select("script")
+
+            scripts.map { script ->
+                val finalScriptRaw = script.data().toString()
+                if (finalScriptRaw.contains("split")) {
+                    val js = """
+                        var globalArgument = null;
+                        function jwplayer() {
+                            return {
+                                id: null,
+                                setup: function(arg) {
+                                    globalArgument = arg;
+                                }
+                            };
+                        };
+                    """
+
+                    val rhino = getRhinoContext()
+                    val scope: Scriptable = rhino.initSafeStandardObjects()
+                    rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
+
+                    val outputRhino = scope.get("globalArgument", scope).toJson()
+                    Log.d("output", outputRhino)
+
+                    val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                    val matchResult = pattern.find(outputRhino)
+                    var link: String? = null
+                    var keyId: String? = null
+                    var key: String? = null
+                    if (matchResult != null && matchResult.groupValues.size == 4) {
+                        link = matchResult.groupValues[1]
+                        keyId = matchResult.groupValues[2]
+                        key = matchResult.groupValues[3]
+                    } else {
+                        println("File, KeyId, or Key not found.")
+                    }
+                    val byteArray = hexStringToByteArray("$keyId")
+                    val finalkeyid = byteArrayToBase64(byteArray)
+                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+
+
+                    val byteArrakey = hexStringToByteArray("$key")
+                    val finalkey = byteArrayToBase64(byteArrakey)
+                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = it.name,
+                            name = it.name,
+                            url = "$link",
+                            referer = "madplay.live",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = "$finalkeyid",
+                            key = "$finalkey"
+                            )
+                    )
+                }
+            }
+            return@mainWork true
+        }
     }
 }
     
