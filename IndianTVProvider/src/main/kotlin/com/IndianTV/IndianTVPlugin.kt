@@ -155,7 +155,7 @@ class IndianTVPlugin : MainAPI() {
                         DrmExtractorLink(
                             source = "TATA",
                             name = "TATA",
-                            url = link,
+                            url = "https://bpprod6linear.akamaized.net/bpk-tv/irdeto_com_Channel_300/output/manifest.mpd",
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
