@@ -102,72 +102,21 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        return mainWork {
-            val document = app.get(data).document
-            val scripts = document.select("script")
-
-            scripts.map { script ->
-                val finalScriptRaw = script.data().toString()
-                if (finalScriptRaw.contains("split")) {
-                    val js = """
-                        var globalArgument = null;
-                        function jwplayer() {
-                            return {
-                                id: null,
-                                setup: function(arg) {
-                                    globalArgument = arg;
-                                }
-                            };
-                        };
-                    """
-
-                    val rhino = getRhinoContext()
-                    val scope: Scriptable = rhino.initSafeStandardObjects()
-                    rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
-
-                    val outputRhino = scope.get("globalArgument", scope).toJson()
-                    Log.d("output", outputRhino)
-
-                    val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(outputRhino)
-                    var link: String? = null
-                    var keyId: String? = null
-                    var key: String? = null
-                    if (matchResult != null && matchResult.groupValues.size == 4) {
-                        link = matchResult.groupValues[1]
-                        keyId = matchResult.groupValues[2]
-                        key = matchResult.groupValues[3]
-                    } else {
-                        println("File, KeyId, or Key not found.")
-                    }
-
-                    val keyidbase64 = "$keyId" // Example hex string
-                    val byteArray = hexStringToByteArray(keyidbase64)
-                    val finalkeyid = byteArrayToBase64(byteArray)
-                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-
-                    val keybase64 = "$key" // Example hex string
-                    val byteArrakey = hexStringToByteArray(keybase64)
-                    val finalkey = byteArrayToBase64(byteArrakey)
-                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = it.name,
-                            name = it.name,
-                            url = "$link",
-                            kid = finalkeyid,
-                            key = "$finalkey",
-                            referer = "",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-
-                        )
-                    )
-                }
-            }
-            return@mainWork true
-        }
+        val document = app.get(data).document
+        callback.invoke(
+            DrmExtractorLink(
+                source = this.name,
+                name = this.name,
+                url = "https://bpprod7linear.akamaized.net/bpk-tv/irdeto_com_Channel_307/output/manifest.mpd",
+                referer = "madplay.live",
+                type=INFER_TYPE,
+                quality = Qualities.Unknown.value,
+                //type = ExtractorLinkType.DASH, // You need to determine the type of ExtractorLinkType here
+                kid = "db6f1dbe0c005c2694914cca4791f6d5",
+                key = "8923ad5aed715a8bf4f78239e10496dc",
+            )
+        )
+        return true
     }
 }
     
