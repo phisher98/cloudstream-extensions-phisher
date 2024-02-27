@@ -102,34 +102,32 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
-        //Log.d("data",data)
-        //Log.d("document",document.toString())
-        val scripts = document.select("script")
-        //Log.d("Kingscript","$scripts")
-        scripts.map { script ->
-            val finalScriptRaw = script.data().toString()
-            if (finalScriptRaw.contains("split")) {
-                val js =
+        return mainWork {
+            val document = app.get(data).document
+            val scripts = document.select("script")
+
+            scripts.map { script ->
+                val finalScriptRaw = script.data().toString()
+                if (finalScriptRaw.contains("split")) {
+                    val js = """
+                        var globalArgument = null;
+                        function jwplayer() {
+                            return {
+                                id: null,
+                                setup: function(arg) {
+                                    globalArgument = arg;
+                                }
+                            };
+                        };
                     """
-        // Add this at the start!
-        var globalArgument = null;
-        function jwplayer() {
-            return {
-                id: null,
-                setup: function(arg) {
-                    globalArgument = arg;
-                }
-            };
-        };"""
-                mainWork {
+
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, js + finalScriptRaw, "JavaScript", 1, null)
 
-                    //println("output ${scope.get("globalArgument", scope).toJson()}")
                     val outputRhino = scope.get("globalArgument", scope).toJson()
                     Log.d("output", outputRhino)
+
                     val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                     val matchResult = pattern.find(outputRhino)
                     var link: String? = null
@@ -142,31 +140,34 @@ class IndianTVPlugin : MainAPI() {
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
+
                     val keyidbase64 = "$keyId" // Example hex string
                     val byteArray = hexStringToByteArray(keyidbase64)
                     val finalkeyid = byteArrayToBase64(byteArray)
-                    println("Base64 Encoded String: $finalkeyid")
+                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+
                     val keybase64 = "$key" // Example hex string
                     val byteArrakey = hexStringToByteArray(keybase64)
                     val finalkey = byteArrayToBase64(byteArrakey)
-                    println("Base64 Encoded String: $finalkey")
-                callback.invoke(
-                    DrmExtractorLink(
-                        source = it.name,
-                        name = it.name,
-                        url = "$link",
-                        referer = "",
-                        type = INFER_TYPE,
-                        quality = Qualities.Unknown.value,
-                        uuid = CLEARKEY_UUID,
-                        kid = finalkeyid,
-                        key = finalkey,
+                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
+
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = it.name,
+                            name = it.name,
+                            url = "$link",
+                            referer = "",
+                            type = INFER_TYPE,
+                            quality = Qualities.Unknown.value,
+                            uuid = CLEARKEY_UUID,
+                            kid = finalkeyid,
+                            key = finalkey
+                        )
                     )
-                )
+                }
             }
+            return@mainWork true
         }
-         }
-        return true
     }
 }
     
