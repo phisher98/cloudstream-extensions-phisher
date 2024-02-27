@@ -32,11 +32,11 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
-    override var name = "TATA Sky"
+    override var name = "Indian TV"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasQuickSearch = true
-    override val hasDownloadSupport = true
+    override val hasDownloadSupport = false
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(TvType.Live)
 
@@ -97,7 +97,6 @@ class IndianTVPlugin : MainAPI() {
     }
 
 
-
     @OptIn(ExperimentalEncodingApi::class)
     override suspend fun loadLinks(
         data: String,
@@ -140,7 +139,7 @@ class IndianTVPlugin : MainAPI() {
                     var key: String? = null
                     if (matchResult != null && matchResult.groupValues.size == 4) {
                         link = matchResult.groupValues[1]
-                        keyId= matchResult.groupValues[2]
+                        keyId = matchResult.groupValues[2]
                         key = matchResult.groupValues[3]
                     } else {
                         println("File, KeyId, or Key not found.")
@@ -153,7 +152,7 @@ class IndianTVPlugin : MainAPI() {
                     val byteArrakey = hexStringToByteArray(keybase64)
                     val finalkey = byteArrayToBase64(byteArrakey)
                     //println("Base64 Encoded String: $finalkey")
-                    callback.invoke(
+                callback.invoke(
                     DrmExtractorLink(
                         source = it.name,
                         name = it.name,
@@ -161,14 +160,13 @@ class IndianTVPlugin : MainAPI() {
                         referer = "",
                         type = INFER_TYPE,
                         quality = Qualities.Unknown.value,
-                        kid = "228dvgwAXCaUkUzKR5H21Q",
-                        key = "iSOtWu1xWov094I54QSW3A",
+                        kid = keyidbase64,
+                        key = keybase64,
                     )
                 )
-                }
             }
-
         }
+    }
         return true
     }
 }
