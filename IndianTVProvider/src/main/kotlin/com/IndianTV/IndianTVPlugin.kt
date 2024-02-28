@@ -12,6 +12,7 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
 var finalKeyid: String = ""
@@ -132,7 +133,8 @@ class IndianTVPlugin : MainAPI() {
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
                 }
-
+                yield()
+            }
                 // Access globalArgument outside mainWork block
                 val rhinout = globalArgument?.toJson() ?: ""
                 Log.d("Rhinoout", rhinout)
@@ -181,8 +183,6 @@ class IndianTVPlugin : MainAPI() {
                         )
                     }
                 }
-            }
-            return@map
         }
         return true
     }
