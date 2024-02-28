@@ -161,8 +161,8 @@ class IndianTVPlugin : MainAPI() {
 
             callback.invoke(
                 DrmExtractorLink(
-                    source = this.name,
-                    name = this.name,
+                    source = finalkeyid,
+                    name = finalkey,
                     url = link,
                     referer = "madplay.live",
                     quality = Qualities.Unknown.value,
