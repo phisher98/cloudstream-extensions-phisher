@@ -176,7 +176,7 @@ class IndianTVPlugin : MainAPI() {
                                 url = link,
                                 referer = "",
                                 quality = Qualities.Unknown.value,
-                                type = INFER_TYPE,
+                                type = ExtractorLinkType.DASH,
                                 kid = finalKeyid,
                                 key = finalKey,
                             )
