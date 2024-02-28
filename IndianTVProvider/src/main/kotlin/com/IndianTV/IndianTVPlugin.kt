@@ -171,8 +171,8 @@ class IndianTVPlugin : MainAPI() {
                                 referer = "",
                                 quality = Qualities.Unknown.value,
                                 type = INFER_TYPE,
-                                kid = keyId,
-                                key = key,
+                                kid = finalkeyid,
+                                key = finalkey,
                             )
                         )
                     }
