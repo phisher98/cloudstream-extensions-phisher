@@ -145,7 +145,7 @@ class IndianTVPlugin : MainAPI() {
                     keyId = matchResult.groupValues[2]
                     key = matchResult.groupValues[3]
 
-                    if (keyId.length > 10 && key.length > 10) {
+                    if (keyId.length > 6 && key.length > 6) {
                         // Assign to new variables if length condition is met
                         val newkeyId = keyId.toString()
                         val newkey = key.toString()
@@ -165,10 +165,12 @@ class IndianTVPlugin : MainAPI() {
 
                         callback.invoke(
                             DrmExtractorLink(
-                                source = finalkey,
-                                name = finalkeyid,
+                                source = "TATA Sky",
+                                name = "TATA SKy",
                                 url = link,
                                 referer = "madplay.live",
+                                kty = "",
+                                uuid = CLEARKEY_UUID,
                                 quality = Qualities.Unknown.value,
                                 type = INFER_TYPE,
                                 kid = finalkeyid,
