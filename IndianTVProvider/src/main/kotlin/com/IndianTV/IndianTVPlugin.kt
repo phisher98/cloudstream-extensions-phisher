@@ -12,6 +12,7 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
@@ -22,6 +23,11 @@ fun hexStringToByteArray(hexString: String): ByteArray {
                 Character.digit(hexString[i + 1], 16)).toByte()
     }
     return byteArray
+}
+
+fun byteArrayToBase64(byteArray: ByteArray): String {
+    val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
+    return String(base64ByteArray, StandardCharsets.UTF_8)
 }
 
 
@@ -101,29 +107,30 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
 
-        scripts.forEach { script ->
+        scripts.map { script ->
             val finalScriptRaw = script.data().toString()
             mainWork {
                 if (finalScriptRaw.contains("split")) {
                     val startJs =
                         """
-    var globalArgument = null;
-    function jwplayer() {
-        return {
-            id: null,
-            setup: function(arg) {
-                globalArgument = arg;
-            }
+        var globalArgument = null;
+        function jwplayer() {
+            return {
+                id: null,
+                setup: function(arg) {
+                    globalArgument = arg;
+                }
+            };
         };
-    };
-    """
+        """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     val rhinout = scope.get("globalArgument", scope).toJson()
                     Log.d("Rhinoout", rhinout)
 
-                    val pattern =""""file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+
+                    val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                     val matchResult = pattern.find(rhinout)
                     var file: String? = null
                     var keyId: String? = null
@@ -135,38 +142,36 @@ class IndianTVPlugin : MainAPI() {
                     } else {
                         println("File, KeyId, or Key not found.")
                     }
+                    mainWork {
+                        val byteArray = hexStringToByteArray("$keyId")
+                        val finalkeyid = (byteArrayToBase64(byteArray))
+                        Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-                    // Convert hexadecimal keyId to Base64
-                    val byteArrayKeyId = hexStringToByteArray(keyId ?: "")
-                    val finalkeyid = Base64.encodeToString(byteArrayKeyId, Base64.DEFAULT)
-                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                        val link = file.toString()
+                        Log.d("Finalfile", link)
 
-                    val link = file ?: ""
-                    Log.d("Finalfile", link)
+                        val byteArrakey = hexStringToByteArray("$key")
+                        val finalkey = (byteArrayToBase64(byteArrakey))
+                        Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                    // Convert hexadecimal key to Base64
-                    val byteArrayKey = hexStringToByteArray(key ?: "")
-                    val finalkey = Base64.encodeToString(byteArrayKey, Base64.DEFAULT)
-                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = "TATA",
-                            name = "TATA",
-                            url = link,
-                            referer = "madplay.live",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = finalkey,
+                        callback.invoke(
+                            DrmExtractorLink(
+                                source = "TATA",
+                                name = "TATA",
+                                url = link,
+                                referer = "madplay.live",
+                                quality = Qualities.Unknown.value,
+                                type = INFER_TYPE,
+                                kid = finalkeyid,
+                                key = finalkey,
+                            )
                         )
-                    )
+                    }
+                    }
+                    }
                 }
-            }
-        }
         return true
     }
-
 }
 
     
