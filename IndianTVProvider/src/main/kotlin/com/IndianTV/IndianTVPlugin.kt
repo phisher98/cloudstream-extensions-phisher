@@ -168,22 +168,21 @@ class IndianTVPlugin : MainAPI() {
                                 source = "TATA Sky",
                                 name = "TATA SKy",
                                 url = link,
-                                referer = "madplay.live",
-                                kty = "",
-                                uuid = CLEARKEY_UUID,
+                                referer = "",
                                 quality = Qualities.Unknown.value,
                                 type = INFER_TYPE,
-                                kid = finalkeyid,
-                                key = finalkey,
+                                kid = keyId,
+                                key = key,
                             )
                         )
                     }
                 }
             }
-
+            return@map
         }
         return true
     }
+
 }
 
     
