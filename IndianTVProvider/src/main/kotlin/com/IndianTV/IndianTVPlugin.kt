@@ -12,7 +12,6 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import org.json.JSONObject
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -97,6 +96,7 @@ class IndianTVPlugin : MainAPI() {
             this.plot = showname
         }
     }
+
     // Define a nullable global variable to store globalArgument
     private var globalArgument: Any? = null
 
@@ -135,59 +135,53 @@ class IndianTVPlugin : MainAPI() {
                 val rhinout = globalArgument?.toJson() ?: ""
                 Log.d("Rhinoout", rhinout)
 
-
-                val jsonObject = JSONObject(rhinout)
-                Log.d("rhinojson","$jsonObject")
-
-             /*   val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                 val matchResult = pattern.find(rhinout)
-                var file: String? = null
-                var keyId: String? = null
-                var key: String? = null
+                val file: String?
+                val keyId: String?
+                val key: String?
                 if (matchResult != null && matchResult.groupValues.size == 4) {
                     file = matchResult.groupValues[1]
                     keyId = matchResult.groupValues[2]
                     key = matchResult.groupValues[3]
-                } else {
-                    println("File, KeyId, or Key not found.")
+
+                    if (keyId.length > 10 && key.length > 10) {
+                        // Assign to new variables if length condition is met
+                        val newkeyId = keyId.toString()
+                        val newkey = key.toString()
+                        // Proceed with the extracted values
+                        println("File: $file")
+                        println("KeyId: $newkeyId")
+                        println("Key: $newkey")
+
+                        val finalkeyid = byteArrayToBase64(hexStringToByteArray(newkeyId))
+                        Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+
+                        val link = file.toString()
+                        Log.d("Finalfile", link)
+
+                        val finalkey = byteArrayToBase64(hexStringToByteArray(newkey))
+                        Log.d("finalkey", "Base64 Encoded String: $finalkey")
+
+                        callback.invoke(
+                            DrmExtractorLink(
+                                source = finalkey,
+                                name = finalkeyid,
+                                url = link,
+                                referer = "madplay.live",
+                                quality = Qualities.Unknown.value,
+                                type = INFER_TYPE,
+                                kid = finalkeyid,
+                                key = finalkey,
+                            )
+                        )
+                    }
                 }
-
-
-              */
-                val file = jsonObject.getString("file")
-                val keyId = jsonObject.getJSONObject("drm").getJSONObject("clearkey").getString("keyId")
-                val key = jsonObject.getJSONObject("drm").getJSONObject("clearkey").getString("key")
-
-                Log.d("matchkeyid",keyId)
-                Log.d("matchkey",key)
-                Log.d("matchkeyfile",file)
-
-                val finalkeyid = byteArrayToBase64(hexStringToByteArray(keyId))
-                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-
-                val link = file.toString()
-                Log.d("Finalfile", link)
-
-                val finalkey = byteArrayToBase64(hexStringToByteArray(key))
-                Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                callback.invoke(
-                    DrmExtractorLink(
-                        source = finalkey,
-                        name = finalkeyid,
-                        url = link,
-                        referer = "madplay.live",
-                        quality = Qualities.Unknown.value,
-                        type = INFER_TYPE,
-                        kid = finalkeyid,
-                        key = finalkey,
-                    )
-                )
             }
+
         }
         return true
     }
-
 }
 
     
