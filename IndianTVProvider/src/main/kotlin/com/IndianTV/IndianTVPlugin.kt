@@ -148,15 +148,13 @@ class IndianTVPlugin : MainAPI() {
                 println("File, KeyId, or Key not found.")
             }
 
-            val byteArray = hexStringToByteArray("$keyId")
-            val finalkeyid = byteArrayToBase64(byteArray)
+            val finalkeyid = byteArrayToBase64(hexStringToByteArray("$keyId"))
             Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
             val link = file.toString()
             Log.d("Finalfile", link)
 
-            val byteArrakey = hexStringToByteArray("$key")
-            val finalkey = byteArrayToBase64(byteArrakey)
+            val finalkey = byteArrayToBase64(hexStringToByteArray("$key"))
             Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
             callback.invoke(
