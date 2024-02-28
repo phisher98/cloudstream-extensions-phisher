@@ -129,46 +129,47 @@ class IndianTVPlugin : MainAPI() {
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
                 }
-            }
 
-            // Access globalArgument outside mainWork block
-            val rhinout = globalArgument?.toJson() ?: ""
-            Log.d("Rhinoout", rhinout)
+                // Access globalArgument outside mainWork block
+                val rhinout = globalArgument?.toJson() ?: ""
+                Log.d("Rhinoout", rhinout)
 
-            val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-            val matchResult = pattern.find(rhinout)
-            var file: String? = null
-            var keyId: String? = null
-            var key: String? = null
-            if (matchResult != null && matchResult.groupValues.size == 4) {
-                file = matchResult.groupValues[1]
-                keyId = matchResult.groupValues[2]
-                key = matchResult.groupValues[3]
-            } else {
-                println("File, KeyId, or Key not found.")
-            }
+                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                val matchResult = pattern.find(rhinout)
+                var file: String? = null
+                var keyId: String? = null
+                var key: String? = null
+                if (matchResult != null && matchResult.groupValues.size == 4) {
+                    file = matchResult.groupValues[1]
+                    keyId = matchResult.groupValues[2]
+                    key = matchResult.groupValues[3]
+                } else {
+                    println("File, KeyId, or Key not found.")
+                }
+                Log.d("matchkey","$keyId")
+                Log.d("matchkey","$key")
+                val finalkeyid = byteArrayToBase64(hexStringToByteArray("$keyId"))
+                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-            val finalkeyid = byteArrayToBase64(hexStringToByteArray("$keyId"))
-            Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                val link = file.toString()
+                Log.d("Finalfile", link)
 
-            val link = file.toString()
-            Log.d("Finalfile", link)
+                val finalkey = byteArrayToBase64(hexStringToByteArray("$key"))
+                Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-            val finalkey = byteArrayToBase64(hexStringToByteArray("$key"))
-            Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-            callback.invoke(
-                DrmExtractorLink(
-                    source = this.name,
-                    name = finalkeyid,
-                    url = link,
-                    referer = "madplay.live",
-                    quality = Qualities.Unknown.value,
-                    type = INFER_TYPE,
-                    kid = finalkeyid,
-                    key = finalkey,
+                callback.invoke(
+                    DrmExtractorLink(
+                        source = finalkey,
+                        name = finalkeyid,
+                        url = link,
+                        referer = "madplay.live",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
+                        kid = finalkeyid,
+                        key = finalkey,
+                    )
                 )
-            )
+            }
         }
         return true
     }
