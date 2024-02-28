@@ -14,6 +14,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import java.nio.charset.StandardCharsets
 
+var finalKeyid: String = ""
+var finalKey: String = ""
 fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
@@ -155,13 +157,15 @@ class IndianTVPlugin : MainAPI() {
                         println("Key: $newkey")
 
                         val finalkeyid = byteArrayToBase64(hexStringToByteArray(newkeyId))
-                        Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                        finalKeyid = finalkeyid
+                        Log.d("finalkeyid", "Base64 Encoded String: $finalKeyid")
 
                         val link = file.toString()
                         Log.d("Finalfile", link)
 
                         val finalkey = byteArrayToBase64(hexStringToByteArray(newkey))
-                        Log.d("finalkey", "Base64 Encoded String: $finalkey")
+                        finalKey = finalkey
+                        Log.d("finalkey", "Base64 Encoded String: $finalKey")
 
                         callback.invoke(
                             DrmExtractorLink(
@@ -171,8 +175,8 @@ class IndianTVPlugin : MainAPI() {
                                 referer = "",
                                 quality = Qualities.Unknown.value,
                                 type = INFER_TYPE,
-                                kid = "AZEJw4hSVlCIgC0gx0rviQ",
-                                key = "bUnUJWo/ntSTCfggobnTOQ",
+                                kid = finalKeyid,
+                                key = finalKey,
                             )
                         )
                     }
