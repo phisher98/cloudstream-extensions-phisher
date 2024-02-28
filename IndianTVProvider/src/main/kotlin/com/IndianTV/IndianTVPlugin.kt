@@ -18,6 +18,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.charset.StandardCharsets
 
@@ -104,7 +105,6 @@ class IndianTVPlugin : MainAPI() {
         }
     }
 
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -116,76 +116,76 @@ class IndianTVPlugin : MainAPI() {
 
         val scriptPromises = mutableListOf<Deferred<Unit>>()
 
-        scripts.forEach { script ->
-            val finalScriptRaw = script.data().toString()
+        CoroutineScope(Dispatchers.IO).launch { // Added CoroutineScope(Dispatchers.IO).launch
+            scripts.forEach { script ->
+                val finalScriptRaw = script.data().toString()
 
-            val scriptPromise = CoroutineScope(Dispatchers.Default).async {
-                if (finalScriptRaw.contains("split")) {
-                    val startJs =
-                        """
-    var globalArgument = null;
-    function jwplayer() {
-        return {
-            id: null,
-            setup: function(arg) {
-                globalArgument = arg;
-            }
+                val scriptPromise = CoroutineScope(Dispatchers.Default).async {
+                    if (finalScriptRaw.contains("split")) {
+                        val startJs =
+                            """
+        var globalArgument = null;
+        function jwplayer() {
+            return {
+                id: null,
+                setup: function(arg) {
+                    globalArgument = arg;
+                }
+            };
         };
-    };
-    """
-                    val rhino = getRhinoContext()
-                    val scope: Scriptable = rhino.initSafeStandardObjects()
-                    rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
-                    val rhinout = scope.get("globalArgument", scope).toJson()
+        """
+                        val rhino = getRhinoContext()
+                        val scope: Scriptable = rhino.initSafeStandardObjects()
+                        rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
+                        val rhinout = scope.get("globalArgument", scope).toJson()
 
-                    val pattern =
-                        """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                    val matchResult = pattern.find(rhinout)
-                    var file: String? = null
-                    var keyId: String? = null
-                    var key: String? = null
-                    if (matchResult != null && matchResult.groupValues.size == 4) {
-                        file = matchResult.groupValues[1]
-                        keyId = matchResult.groupValues[2]
-                        key = matchResult.groupValues[3]
-                    } else {
-                        println("File, KeyId, or Key not found.")
-                    }
-                    val byteArray = hexStringToByteArray("$keyId")
-                    val finalkeyid = (byteArrayToBase64(byteArray))
-                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                        val pattern =
+                            """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                        val matchResult = pattern.find(rhinout)
+                        var file: String? = null
+                        var keyId: String? = null
+                        var key: String? = null
+                        if (matchResult != null && matchResult.groupValues.size == 4) {
+                            file = matchResult.groupValues[1]
+                            keyId = matchResult.groupValues[2]
+                            key = matchResult.groupValues[3]
+                        } else {
+                            println("File, KeyId, or Key not found.")
+                        }
+                        val byteArray = hexStringToByteArray(keyId ?: "")
+                        val finalkeyid = byteArrayToBase64(byteArray)
 
-                    val link = file.toString()
-                    Log.d("Finalfile", link)
+                        val link = file ?: ""
+                        Log.d("Finalfile", link)
 
-                    val byteArrakey = hexStringToByteArray("$key")
-                    val finalkey = (byteArrayToBase64(byteArrakey))
-                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
+                        val byteArrakey = hexStringToByteArray(key ?: "")
+                        val finalkey = byteArrayToBase64(byteArrakey)
+                        Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                    // Construct the ExtractorLink object
-                    val extractorLink = DrmExtractorLink(
-                        source = "TATA",
-                        name = "TATA",
-                        url = link,
-                        referer = "madplay.live",
-                        quality = Qualities.Unknown.value,
-                        type = INFER_TYPE,
-                        kid = finalkeyid,
-                        key = finalkey,
-                    )
+                        // Invoke the callback only if finalkey and finalkeyid are not null
+                            withContext(Dispatchers.Main) {
+                                callback.invoke(
+                                    DrmExtractorLink(
+                                        source = "TATA",
+                                        name = "TATA",
+                                        url = link,
+                                        referer = "madplay.live",
+                                        quality = Qualities.Unknown.value,
+                                        type = INFER_TYPE,
+                                        kid = finalkeyid,
+                                        key = finalkey,
+                                    )
+                                )
+                            }
 
-                    // Invoke the callback
-                    withContext(Dispatchers.Main) {
-                        callback.invoke(extractorLink)
                     }
                 }
+                scriptPromises.add(scriptPromise)
             }
 
-            scriptPromises.add(scriptPromise)
-        }
-
-        // Wait for all script promises to complete
-        scriptPromises.awaitAll()
+            // Wait for all script promises to complete
+            scriptPromises.awaitAll()
+        } // End of CoroutineScope(Dispatchers.IO).launch
 
         return true
     }
