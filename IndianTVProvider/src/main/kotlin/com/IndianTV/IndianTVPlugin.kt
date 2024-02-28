@@ -12,6 +12,7 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import org.json.JSONObject
 import java.nio.charset.StandardCharsets
 
 fun hexStringToByteArray(hexString: String): ByteArray {
@@ -134,7 +135,11 @@ class IndianTVPlugin : MainAPI() {
                 val rhinout = globalArgument?.toJson() ?: ""
                 Log.d("Rhinoout", rhinout)
 
-                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+
+                val jsonObject = JSONObject(rhinout)
+                Log.d("rhinojson","$jsonObject")
+
+             /*   val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
                 val matchResult = pattern.find(rhinout)
                 var file: String? = null
                 var keyId: String? = null
@@ -146,15 +151,24 @@ class IndianTVPlugin : MainAPI() {
                 } else {
                     println("File, KeyId, or Key not found.")
                 }
-                Log.d("matchkey","$keyId")
-                Log.d("matchkey","$key")
-                val finalkeyid = byteArrayToBase64(hexStringToByteArray("$keyId"))
+
+
+              */
+                val file = jsonObject.getString("file")
+                val keyId = jsonObject.getJSONObject("drm").getJSONObject("clearkey").getString("keyId")
+                val key = jsonObject.getJSONObject("drm").getJSONObject("clearkey").getString("key")
+
+                Log.d("matchkeyid",keyId)
+                Log.d("matchkey",key)
+                Log.d("matchkeyfile",file)
+
+                val finalkeyid = byteArrayToBase64(hexStringToByteArray(keyId))
                 Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
                 val link = file.toString()
                 Log.d("Finalfile", link)
 
-                val finalkey = byteArrayToBase64(hexStringToByteArray("$key"))
+                val finalkey = byteArrayToBase64(hexStringToByteArray(key))
                 Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
                 callback.invoke(
