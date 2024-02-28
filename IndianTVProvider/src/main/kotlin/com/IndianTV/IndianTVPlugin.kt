@@ -145,12 +145,13 @@ class IndianTVPlugin : MainAPI() {
                     val finalkeyid = (byteArrayToBase64(byteArray))
                     Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-                    val link=file.toString()
-                    Log.d("Finalfile",link)
+                    val link = file.toString()
+                    Log.d("Finalfile", link)
 
                     val byteArrakey = hexStringToByteArray("$key")
                     val finalkey = (byteArrayToBase64(byteArrakey))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
+
                     callback.invoke(
                         DrmExtractorLink(
                             source = "TATA",
@@ -163,10 +164,12 @@ class IndianTVPlugin : MainAPI() {
                             key = finalkey,
                         )
                     )
+                    Log.d("DRM",finalkeyid)
+                    Log.d("DRM",finalkey)
                     }
                 }
-            return@map
-            }
+
+        }
         return true
     }
 }
