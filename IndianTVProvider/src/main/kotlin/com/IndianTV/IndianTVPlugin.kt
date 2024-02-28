@@ -15,8 +15,6 @@ import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
-var finalKeyid: String = ""
-var finalKey: String = ""
 fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
@@ -112,22 +110,22 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
 
-        scripts.map { script ->
+        scripts.forEach { script ->
             val finalScriptRaw = script.data().toString()
             mainWork {
                 if (finalScriptRaw.contains("split")) {
                     val startJs =
                         """
-                    var globalArgument = null;
-                    function jwplayer() {
-                        return {
-                            id: null,
-                            setup: function(arg) {
-                                globalArgument = arg;
-                            }
-                        };
+                var globalArgument = null;
+                function jwplayer() {
+                    return {
+                        id: null,
+                        setup: function(arg) {
+                            globalArgument = arg;
+                        }
                     };
-                    """
+                };
+                """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
@@ -135,58 +133,54 @@ class IndianTVPlugin : MainAPI() {
                 }
                 yield()
             }
-                // Access globalArgument outside mainWork block
-                val rhinout = globalArgument?.toJson() ?: ""
-                Log.d("Rhinoout", rhinout)
 
-                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                val matchResult = pattern.find(rhinout)
-                val file: String?
-                val keyId: String?
-                val key: String?
-                if (matchResult != null && matchResult.groupValues.size == 4) {
-                    file = matchResult.groupValues[1]
-                    keyId = matchResult.groupValues[2]
-                    key = matchResult.groupValues[3]
+            // Access globalArgument outside mainWork block
+            val rhinout = globalArgument?.toJson() ?: ""
+            Log.d("Rhinoout", rhinout)
 
-                    if (keyId.length > 6 && key.length > 6) {
-                        // Assign to new variables if length condition is met
-                        val newkeyId = keyId.toString()
-                        val newkey = key.toString()
-                        // Proceed with the extracted values
-                        println("File: $file")
-                        println("KeyId: $newkeyId")
-                        println("Key: $newkey")
+            val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+            val matchResult = pattern.find(rhinout)
+            val link: String
+            val keyId: String
+            val key: String
+            if (matchResult != null && matchResult.groupValues.size == 4) {
+                link = matchResult.groupValues[1]
+                keyId = matchResult.groupValues[2]
+                key = matchResult.groupValues[3]
 
-                        val finalkeyid = byteArrayToBase64(hexStringToByteArray(newkeyId))
-                        finalKeyid = finalkeyid
-                        Log.d("finalkeyid", "Base64 Encoded String: $finalKeyid")
+                if (keyId.length > 6 && key.length > 6) {
+                    // Assign to new variables if length condition is met
+                    // Proceed with the extracted values
+                    println("File: $link")
+                    println("KeyId: $keyId")
+                    println("Key: $key")
 
-                        val link = file.toString()
-                        Log.d("Finalfile", link)
+                    val finalkeyid = byteArrayToBase64(hexStringToByteArray(keyId))
+                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-                        val finalkey = byteArrayToBase64(hexStringToByteArray(newkey))
-                        finalKey = finalkey
-                        Log.d("finalkey", "Base64 Encoded String: $finalKey")
+                    Log.d("Finalfile", link)
 
-                        callback.invoke(
-                            DrmExtractorLink(
-                                source = "TATA Sky",
-                                name = "TATA SKy",
-                                url = link,
-                                referer = "",
-                                quality = Qualities.Unknown.value,
-                                type = ExtractorLinkType.DASH,
-                                kid = finalKeyid,
-                                key = finalKey,
-                            )
+                    val finalkey = byteArrayToBase64(hexStringToByteArray(key))
+                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
+
+                    // Invoke callback with the extracted values
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = "TATA Sky",
+                            name = "TATA SKy",
+                            url = link,
+                            referer = "",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = byteArrayToBase64(hexStringToByteArray(keyId)),
+                            key = byteArrayToBase64(hexStringToByteArray(key)),
                         )
-                    }
+                    )
                 }
+            }
         }
         return true
     }
-
 }
 
     
