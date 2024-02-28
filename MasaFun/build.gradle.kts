@@ -1,4 +1,4 @@
-version = 8
+version = 9
 
 cloudstream {
     authors     = listOf("HindiProvider")
@@ -12,7 +12,7 @@ cloudstream {
      * 2: Slow
      * 3: Beta only
     **/
-    status  = 0  // will be 3 if unspecified
+    status  = 0 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
     iconUrl = "https://www.google.com/s2/favicons?domain=uncutmaza.cc&sz=%size%"
 }
