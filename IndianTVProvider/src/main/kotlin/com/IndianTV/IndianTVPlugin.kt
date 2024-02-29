@@ -55,7 +55,7 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
-    override var name = "Indian TV"
+    override var name = "TATA"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasQuickSearch = true
@@ -210,7 +210,7 @@ class IndianTVPlugin : MainAPI() {
 
     private fun convertToBase64Async(input: String): Deferred<String> = CoroutineScope(Dispatchers.IO).async {
         // Simulate conversion to Base64 asynchronously
-        delay(1000) // Replace this with your actual conversion logic
+        delay(3000) // Replace this with your actual conversion logic
 
         // For demonstration purposes, return the Base64-encoded input
         val base64Encoded = byteArrayToBase64(hexStringToByteArray(input))
