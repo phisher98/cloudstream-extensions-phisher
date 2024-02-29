@@ -30,7 +30,7 @@ fun hexStringToBase64(hexString: String): String {
 
 
 
-fun hexStringToByteArray(hexString: String): ByteArray {
+/*fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
 
@@ -45,6 +45,7 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
+*/
 
 
 class IndianTVPlugin : MainAPI() {
@@ -170,19 +171,19 @@ class IndianTVPlugin : MainAPI() {
                     println("KeyId: $keyId")
                     println("Key: $key")
 
-                    val finalkeyid = byteArrayToBase64(hexStringToByteArray(keyId))
-                    Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                   // val finalkeyid = byteArrayToBase64(hexStringToByteArray(keyId))
+                    //Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
                     Log.d("Finalfile", link)
 
-                    val finalkey = byteArrayToBase64(hexStringToByteArray(key))
-                    Log.d("finalkey", "Base64 Encoded String: $finalkey")
+                   // val finalkey = byteArrayToBase64(hexStringToByteArray(key))
+                    //Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
                     val base64key = hexStringToBase64(key)
                     Log.d("finalkey", "Base64 Encoded String: $base64key")
 
                     val base64keyid = hexStringToBase64(keyId)
-                    Log.d("finalkey", "Base64 Encoded String: $base64keyid")
+                    Log.d("finalkeyid", "Base64 Encoded String: $base64keyid")
 
                     // Invoke callback with the extracted values
                     callback.invoke(
@@ -193,8 +194,8 @@ class IndianTVPlugin : MainAPI() {
                             referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = key,
+                            kid = base64keyid,
+                            key = base64key,
                         )
                     )
                 }
