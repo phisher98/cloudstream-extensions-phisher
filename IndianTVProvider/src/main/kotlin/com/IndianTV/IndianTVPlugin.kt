@@ -194,7 +194,9 @@ class IndianTVPlugin : MainAPI() {
                             type = INFER_TYPE,
                             kid = finalkeyid,
                             key = finalkey,
-                        )
+                        ).also {
+                            Log.d("loadLinks", "DrmExtractorLink created: $it")
+                        }
                     )
                 } else {
                     // Handle case where keys are not valid
