@@ -12,11 +12,6 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
@@ -32,7 +27,6 @@ import java.nio.charset.StandardCharsets
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
-*/
 
 
 
@@ -46,16 +40,17 @@ fun hexStringToByteArray(hexString: String): ByteArray {
     }
     return byteArray
 }
-
+*/
+/*
 fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
-}
+}*/
 
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
-    override var name = "TATA"
+    override var name = "Indian TV"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasQuickSearch = true
@@ -122,15 +117,31 @@ class IndianTVPlugin : MainAPI() {
     // Define a nullable global variable to store globalArgument
     private var globalArgument: Any? = null
 
-    override suspend fun loadLinks(
+        override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+            val hexStringToByteArray: (String) -> ByteArray = { hexString ->
+                val length = hexString.length
+                val byteArray = ByteArray(length / 2)
+                for (i in 0 until length step 2) {
+                    byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
+                            Character.digit(hexString[i + 1], 16)).toByte()
+                }
+                byteArray
+            }
+
+            val byteArrayToBase64: (ByteArray) -> String = { byteArray ->
+                val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
+                String(base64ByteArray, StandardCharsets.UTF_8)
+            }
+
         val document = app.get(data).document
         val scripts = document.select("script")
 
+        // Introduce a flag to track whether the script has been processed
         var scriptProcessed = false
 
         scripts.forEach { script ->
@@ -139,87 +150,82 @@ class IndianTVPlugin : MainAPI() {
                 mainWork {
                     val startJs =
                         """
-                    var globalArgument = null;
-                    function jwplayer() {
-                        return {
-                            id: null,
-                            setup: function(arg) {
-                                globalArgument = arg;
-                            }
-                        };
-                    };
-                    """
+            var globalArgument = null;
+            function jwplayer() {
+                return {
+                    id: null,
+                    setup: function(arg) {
+                        globalArgument = arg;
+                    }
+                };
+            };
+            """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
-                    scriptProcessed = true
+                    scriptProcessed = true // Set the flag to indicate that the script has been processed
                 }
                 yield()
             }
         }
 
+        // Access globalArgument outside mainWork block
         val rhinout = globalArgument?.toJson() ?: ""
         Log.d("Rhinoout", rhinout)
 
         val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
         val matchResult = pattern.find(rhinout)
-        var link: String? = null
-        var keyId: String? = null
-        var key: String? = null
+        val link: String
+        val keyId: String
+        val key: String
+        if (matchResult != null && matchResult.groupValues.size == 4) {
+            link = matchResult.groupValues[1]
+            keyId = matchResult.groupValues[2]
+            key = matchResult.groupValues[3]
 
-        matchResult?.let {
-            if (it.groupValues.size == 4) {
-                link = it.groupValues[1]
-                keyId = it.groupValues[2]
-                key = it.groupValues[3]
-            }
-        }
+            if (keyId.length > 6 && key.length > 6) {
+                // Convert hex strings to byte arrays
+                Log.d("keyId", "Base64 Encoded String: $keyId")
+                val keyIdBytes = hexStringToByteArray(keyId)
+                val keyBytes = hexStringToByteArray(key)
+                Log.d("key", "Base64 Encoded String: $key")
+                Log.d("keyBytes", "Base64 Encoded String: $keyBytes")
+                Log.d("keyIdBytes", "Base64 Encoded String: $keyIdBytes")
 
-        if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
-            try {
-                // Convert keyId and key to Base64 asynchronously
-                val finalKeyId = convertToBase64Async(keyId!!)
-                val finalKey = convertToBase64Async(key!!)
+                // Convert byte arrays to Base64 strings
+                val finalkeyid = byteArrayToBase64(keyIdBytes)
+                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-                // Wait for the conversion to complete
-                val (convertedKeyId, convertedKey) = finalKeyId.await() to finalKey.await()
-                Log.d("finalkey",convertedKey)
-                Log.d("finalkey",convertedKeyId)
+                val finalkey = byteArrayToBase64(keyBytes)
+                Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                // Playback logic using the obtained keys
-                callback.invoke(
-                    DrmExtractorLink(
-                        source = this.name,
-                        name = this.name,
-                        url = link!!,
-                        referer = "",
-                        quality = Qualities.Unknown.value,
-                        type = INFER_TYPE,
-                        kid = convertedKeyId,
-                        key = convertedKey
+                // Ensure the keys are valid
+                if (finalkeyid.isNotEmpty() && finalkey.isNotEmpty()) {
+                    // Invoke callback with the extracted values
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = this.name,
+                            name = this.name,
+                            url = link,
+                            referer = "",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = finalkeyid,
+                            key = finalkey,
+                        ).also {
+                            Log.d("loadLinks", "DrmExtractorLink created: $it")
+                        }
                     )
-                )
-            } catch (e: Exception) {
-                Log.e("PlaybackError", "Error during playback: ${e.message}", e)
+                } else {
+                    // Handle case where keys are not valid
+                    Log.e("loadLinks", "Invalid keys: keyId=$finalkeyid, key=$finalkey")
+                }
             }
-        } else {
-            Log.e("LoadLinksError", "Failed to extract link, keyId, or key from the script data.")
         }
 
         return true
     }
-
-    private fun convertToBase64Async(input: String): Deferred<String> = CoroutineScope(Dispatchers.IO).async {
-        // Simulate conversion to Base64 asynchronously
-        delay(3000) // Replace this with your actual conversion logic
-
-        // For demonstration purposes, return the Base64-encoded input
-        val base64Encoded = byteArrayToBase64(hexStringToByteArray(input))
-        base64Encoded
-    }
-
-
 }
 
     
