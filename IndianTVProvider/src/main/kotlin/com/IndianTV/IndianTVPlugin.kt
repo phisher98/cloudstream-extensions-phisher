@@ -184,6 +184,8 @@ class IndianTVPlugin : MainAPI() {
 
                 // Wait for the conversion to complete
                 val (convertedKeyId, convertedKey) = finalKeyId.await() to finalKey.await()
+                Log.d("finalkey",convertedKey)
+                Log.d("finalkey",convertedKeyId)
 
                 // Playback logic using the obtained keys
                 callback.invoke(
