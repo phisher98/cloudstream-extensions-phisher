@@ -124,7 +124,7 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         val scripts = document.select("script")
-        private var globalArgument: Any? = null
+        var globalArgument: Any? = null
         // List to hold all the extracted links
         val links = mutableListOf<ExtractorLink>()
 
