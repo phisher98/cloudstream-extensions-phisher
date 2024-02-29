@@ -184,20 +184,36 @@ class IndianTVPlugin : MainAPI() {
 
                     val base64keyid = hexStringToBase64(keyId)
                     Log.d("finalkeyid", "Base64 Encoded String: $base64keyid")
-
-                    // Invoke callback with the extracted values
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = this.name,
-                            name = this.name,
-                            url = link,
-                            referer = "",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = base64keyid,
-                            key = base64key,
+                    if (base64keyid.isNotEmpty() && base64key.isNotEmpty()) {
+                        // Invoke callback with the extracted values
+                        callback.invoke(
+                            DrmExtractorLink(
+                                source = this.name,
+                                name = this.name,
+                                url = link,
+                                referer = "",
+                                quality = Qualities.Unknown.value,
+                                type = INFER_TYPE,
+                                kid = base64keyid,
+                                key = base64key,
+                            )
                         )
-                    )
+                    }else {
+                        // Handle case where keys are not valid
+                        Log.e("loadLinks", "Invalid keys: keyId=$base64keyid, key=$base64key")
+                        callback.invoke(
+                            DrmExtractorLink(
+                                source = this.name,
+                                name = this.name,
+                                url = link,
+                                referer = "",
+                                quality = Qualities.Unknown.value,
+                                type = INFER_TYPE,
+                                kid = "AZEJw4hSVlCIgC0gx0rviQ",
+                                key = "bUnUJWo/ntSTCfggobnTOQ",
+                            )
+                        )
+                    }
                 }
             }
         }
