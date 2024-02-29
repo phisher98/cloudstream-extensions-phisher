@@ -12,6 +12,11 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
@@ -126,7 +131,6 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
 
-        // Introduce a flag to track whether the script has been processed
         var scriptProcessed = false
 
         scripts.forEach { script ->
@@ -135,82 +139,84 @@ class IndianTVPlugin : MainAPI() {
                 mainWork {
                     val startJs =
                         """
-            var globalArgument = null;
-            function jwplayer() {
-                return {
-                    id: null,
-                    setup: function(arg) {
-                        globalArgument = arg;
-                    }
-                };
-            };
-            """
+                    var globalArgument = null;
+                    function jwplayer() {
+                        return {
+                            id: null,
+                            setup: function(arg) {
+                                globalArgument = arg;
+                            }
+                        };
+                    };
+                    """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
-                    scriptProcessed = true // Set the flag to indicate that the script has been processed
+                    scriptProcessed = true
                 }
                 yield()
             }
         }
 
-        // Access globalArgument outside mainWork block
         val rhinout = globalArgument?.toJson() ?: ""
         Log.d("Rhinoout", rhinout)
 
         val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
         val matchResult = pattern.find(rhinout)
-        val link: String
-        val keyId: String
-        val key: String
-        if (matchResult != null && matchResult.groupValues.size == 4) {
-            link = matchResult.groupValues[1]
-            keyId = matchResult.groupValues[2]
-            key = matchResult.groupValues[3]
+        var link: String? = null
+        var keyId: String? = null
+        var key: String? = null
 
-            if (keyId.length > 6 && key.length > 6) {
-                // Convert hex strings to byte arrays
-                Log.d("keyId", "Base64 Encoded String: $keyId")
-                val keyIdBytes = hexStringToByteArray(keyId)
-                val keyBytes = hexStringToByteArray(key)
-                Log.d("key", "Base64 Encoded String: $key")
-                Log.d("keyBytes", "Base64 Encoded String: $keyBytes")
-                Log.d("keyIdBytes", "Base64 Encoded String: $keyIdBytes")
-
-                // Convert byte arrays to Base64 strings
-                val finalkeyid = byteArrayToBase64(keyIdBytes)
-                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
-
-                val finalkey = byteArrayToBase64(keyBytes)
-                Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                // Ensure the keys are valid
-                if (finalkeyid.isNotEmpty() && finalkey.isNotEmpty()) {
-                    // Invoke callback with the extracted values
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = this.name,
-                            name = this.name,
-                            url = link,
-                            referer = "",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = "AZEJw4hSVlCIgC0gx0rviQ",
-                            key = "bUnUJWo/ntSTCfggobnTOQ",
-                        ).also {
-                            Log.d("loadLinks", "DrmExtractorLink created: $it")
-                        }
-                    )
-                } else {
-                    // Handle case where keys are not valid
-                    Log.e("loadLinks", "Invalid keys: keyId=$finalkeyid, key=$finalkey")
-                }
+        matchResult?.let {
+            if (it.groupValues.size == 4) {
+                link = it.groupValues[1]
+                keyId = it.groupValues[2]
+                key = it.groupValues[3]
             }
+        }
+
+        if (!link.isNullOrEmpty() && !keyId.isNullOrEmpty() && !key.isNullOrEmpty()) {
+            try {
+                // Convert keyId and key to Base64 asynchronously
+                val finalKeyId = convertToBase64Async(keyId!!)
+                val finalKey = convertToBase64Async(key!!)
+
+                // Wait for the conversion to complete
+                val (convertedKeyId, convertedKey) = finalKeyId.await() to finalKey.await()
+
+                // Playback logic using the obtained keys
+                callback.invoke(
+                    DrmExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = link!!,
+                        referer = "",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
+                        kid = convertedKeyId,
+                        key = convertedKey
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e("PlaybackError", "Error during playback: ${e.message}", e)
+            }
+        } else {
+            Log.e("LoadLinksError", "Failed to extract link, keyId, or key from the script data.")
         }
 
         return true
     }
+
+    private fun convertToBase64Async(input: String): Deferred<String> = CoroutineScope(Dispatchers.IO).async {
+        // Simulate conversion to Base64 asynchronously
+        delay(1000) // Replace this with your actual conversion logic
+
+        // For demonstration purposes, return the Base64-encoded input
+        val base64Encoded = byteArrayToBase64(hexStringToByteArray(input))
+        base64Encoded
+    }
+
 
 }
 
