@@ -12,6 +12,10 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
@@ -117,27 +121,12 @@ class IndianTVPlugin : MainAPI() {
     // Define a nullable global variable to store globalArgument
     private var globalArgument: Any? = null
 
-        override suspend fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-            val hexStringToByteArray: (String) -> ByteArray = { hexString ->
-                val length = hexString.length
-                val byteArray = ByteArray(length / 2)
-                for (i in 0 until length step 2) {
-                    byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
-                            Character.digit(hexString[i + 1], 16)).toByte()
-                }
-                byteArray
-            }
-
-            val byteArrayToBase64: (ByteArray) -> String = { byteArray ->
-                val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
-                String(base64ByteArray, StandardCharsets.UTF_8)
-            }
-
         val document = app.get(data).document
         val scripts = document.select("script")
 
@@ -150,16 +139,16 @@ class IndianTVPlugin : MainAPI() {
                 mainWork {
                     val startJs =
                         """
-            var globalArgument = null;
-            function jwplayer() {
-                return {
-                    id: null,
-                    setup: function(arg) {
-                        globalArgument = arg;
-                    }
-                };
-            };
-            """
+                        var globalArgument = null;
+                        function jwplayer() {
+                            return {
+                                id: null,
+                                setup: function(arg) {
+                                    globalArgument = arg;
+                                }
+                            };
+                        };
+                        """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
@@ -193,15 +182,16 @@ class IndianTVPlugin : MainAPI() {
                 Log.d("keyBytes", "Base64 Encoded String: $keyBytes")
                 Log.d("keyIdBytes", "Base64 Encoded String: $keyIdBytes")
 
-                // Convert byte arrays to Base64 strings
-                val finalkeyid = byteArrayToBase64(keyIdBytes)
-                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                // Convert byte arrays to Base64 strings asynchronously
+                val finalKeyId: Deferred<String> = hexStringToBase64Async(keyIdBytes)
+                val finalKey: Deferred<String> = hexStringToBase64Async(keyBytes)
 
-                val finalkey = byteArrayToBase64(keyBytes)
-                Log.d("finalkey", "Base64 Encoded String: $finalkey")
+                // Wait for the conversion to complete
+                val convertedKeyId = finalKeyId.await()
+                val convertedKey = finalKey.await()
 
                 // Ensure the keys are valid
-                if (finalkeyid.isNotEmpty() && finalkey.isNotEmpty()) {
+                if (convertedKeyId.isNotEmpty() && convertedKey.isNotEmpty()) {
                     // Invoke callback with the extracted values
                     callback.invoke(
                         DrmExtractorLink(
@@ -211,20 +201,36 @@ class IndianTVPlugin : MainAPI() {
                             referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = finalkey,
+                            kid = convertedKeyId,
+                            key = convertedKey,
                         ).also {
                             Log.d("loadLinks", "DrmExtractorLink created: $it")
                         }
                     )
                 } else {
                     // Handle case where keys are not valid
-                    Log.e("loadLinks", "Invalid keys: keyId=$finalkeyid, key=$finalkey")
+                    Log.e("loadLinks", "Invalid keys: keyId=$convertedKeyId, key=$convertedKey")
                 }
             }
         }
 
         return true
+    }
+
+    private fun hexStringToByteArray(hexString: String): ByteArray {
+        val length = hexString.length
+        val byteArray = ByteArray(length / 2)
+        for (i in 0 until length step 2) {
+            byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
+                    Character.digit(hexString[i + 1], 16)).toByte()
+        }
+        return byteArray
+    }
+
+    private fun hexStringToBase64Async(byteArray: ByteArray): Deferred<String> = CoroutineScope(
+        Dispatchers.IO).async {
+        val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
+        String(base64ByteArray, StandardCharsets.UTF_8)
     }
 }
 
