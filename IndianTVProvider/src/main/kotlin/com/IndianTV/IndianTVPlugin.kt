@@ -187,14 +187,14 @@ class IndianTVPlugin : MainAPI() {
                     // Invoke callback with the extracted values
                     callback.invoke(
                         DrmExtractorLink(
-                            source = "TATA Sky",
-                            name = "TATA SKy",
+                            source = this.name,
+                            name = this.name,
                             url = link,
                             referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = base64keyid,
-                            key = base64key,
+                            kid = finalkeyid,
+                            key = key,
                         )
                     )
                 }
