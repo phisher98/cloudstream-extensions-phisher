@@ -12,10 +12,6 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
@@ -182,13 +178,17 @@ class IndianTVPlugin : MainAPI() {
                 Log.d("keyBytes", "Base64 Encoded String: $keyBytes")
                 Log.d("keyIdBytes", "Base64 Encoded String: $keyIdBytes")
 
+
                 // Convert byte arrays to Base64 strings asynchronously
-                val finalKeyId: Deferred<String> = hexStringToBase64Async(keyIdBytes)
-                val finalKey: Deferred<String> = hexStringToBase64Async(keyBytes)
+                //val finalKeyId: Deferred<String> = hexStringToBase64Async(keyIdBytes)
+                //val finalKey: Deferred<String> = hexStringToBase64Async(keyBytes)
 
                 // Wait for the conversion to complete
-                val convertedKeyId = finalKeyId.await()
-                val convertedKey = finalKey.await()
+                //val convertedKeyId = finalKeyId.await()
+                //val convertedKey = finalKey.await()
+
+                val convertedKeyId = test(keyIdBytes)
+                val convertedKey = test(keyBytes)
 
                 // Ensure the keys are valid
                 if (convertedKeyId.isNotEmpty() && convertedKey.isNotEmpty()) {
@@ -226,12 +226,16 @@ class IndianTVPlugin : MainAPI() {
         }
         return byteArray
     }
+    private fun test(byteArray: ByteArray):String {
+        val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
+        return String(base64ByteArray, StandardCharsets.UTF_8)
+    }
 
-    private fun hexStringToBase64Async(byteArray: ByteArray): Deferred<String> = CoroutineScope(
+  /*  private fun hexStringToBase64Async(byteArray: ByteArray): Deferred<String> = CoroutineScope(
         Dispatchers.IO).async {
         val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
         String(base64ByteArray, StandardCharsets.UTF_8)
-    }
+    }*/
 }
 
     
