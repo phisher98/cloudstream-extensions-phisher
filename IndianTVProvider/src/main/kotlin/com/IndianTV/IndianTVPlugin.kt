@@ -15,7 +15,7 @@ import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
-fun hexStringToBase64(hexString: String): String {
+/*fun hexStringToBase64(hexString: String): String {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
 
@@ -27,10 +27,11 @@ fun hexStringToBase64(hexString: String): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
+*/
 
 
 
-/*fun hexStringToByteArray(hexString: String): ByteArray {
+fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
 
@@ -45,7 +46,6 @@ fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
 }
-*/
 
 
 class IndianTVPlugin : MainAPI() {
@@ -126,99 +126,86 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get(data).document
         val scripts = document.select("script")
 
+        // Introduce a flag to track whether the script has been processed
+        var scriptProcessed = false
+
         scripts.forEach { script ->
-            val finalScriptRaw = script.data().toString()
-            mainWork {
-                if (finalScriptRaw.contains("split")) {
+            if (!scriptProcessed && script.data().toString().contains("split")) {
+                val finalScriptRaw = script.data().toString()
+                mainWork {
                     val startJs =
                         """
-                var globalArgument = null;
-                function jwplayer() {
-                    return {
-                        id: null,
-                        setup: function(arg) {
-                            globalArgument = arg;
-                        }
-                    };
+            var globalArgument = null;
+            function jwplayer() {
+                return {
+                    id: null,
+                    setup: function(arg) {
+                        globalArgument = arg;
+                    }
                 };
-                """
+            };
+            """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
+                    scriptProcessed = true // Set the flag to indicate that the script has been processed
                 }
                 yield()
             }
+        }
 
-            // Access globalArgument outside mainWork block
-            val rhinout = globalArgument?.toJson() ?: ""
-            Log.d("Rhinoout", rhinout)
+        // Access globalArgument outside mainWork block
+        val rhinout = globalArgument?.toJson() ?: ""
+        Log.d("Rhinoout", rhinout)
 
-            val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-            val matchResult = pattern.find(rhinout)
-            val link: String
-            val keyId: String
-            val key: String
-            if (matchResult != null && matchResult.groupValues.size == 4) {
-                link = matchResult.groupValues[1]
-                keyId = matchResult.groupValues[2]
-                key = matchResult.groupValues[3]
+        val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+        val matchResult = pattern.find(rhinout)
+        val link: String
+        val keyId: String
+        val key: String
+        if (matchResult != null && matchResult.groupValues.size == 4) {
+            link = matchResult.groupValues[1]
+            keyId = matchResult.groupValues[2]
+            key = matchResult.groupValues[3]
 
-                if (keyId.length > 6 && key.length > 6) {
-                    // Assign to new variables if length condition is met
-                    // Proceed with the extracted values
-                    println("File: $link")
-                    println("KeyId: $keyId")
-                    println("Key: $key")
+            if (keyId.length > 6 && key.length > 6) {
+                // Convert hex strings to byte arrays
+                val keyIdBytes = hexStringToByteArray(keyId)
+                val keyBytes = hexStringToByteArray(key)
 
-                   // val finalkeyid = byteArrayToBase64(hexStringToByteArray(keyId))
-                    //Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
+                // Convert byte arrays to Base64 strings
+                val finalkeyid = byteArrayToBase64(keyIdBytes)
+                Log.d("finalkeyid", "Base64 Encoded String: $finalkeyid")
 
-                    Log.d("Finalfile", link)
+                val finalkey = byteArrayToBase64(keyBytes)
+                Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
-                   // val finalkey = byteArrayToBase64(hexStringToByteArray(key))
-                    //Log.d("finalkey", "Base64 Encoded String: $finalkey")
-
-                    val base64key = hexStringToBase64(key)
-                    Log.d("finalkey", "Base64 Encoded String: $base64key")
-
-                    val base64keyid = hexStringToBase64(keyId)
-                    Log.d("finalkeyid", "Base64 Encoded String: $base64keyid")
-                    if (base64keyid.isNotEmpty() && base64key.isNotEmpty()) {
-                        // Invoke callback with the extracted values
-                        callback.invoke(
-                            DrmExtractorLink(
-                                source = this.name,
-                                name = this.name,
-                                url = link,
-                                referer = "",
-                                quality = Qualities.Unknown.value,
-                                type = INFER_TYPE,
-                                kid = base64keyid,
-                                key = base64key,
-                            )
+                // Ensure the keys are valid
+                if (finalkeyid.isNotEmpty() && finalkey.isNotEmpty()) {
+                    // Invoke callback with the extracted values
+                    callback.invoke(
+                        DrmExtractorLink(
+                            source = this.name,
+                            name = this.name,
+                            url = link,
+                            referer = "",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = finalkeyid,
+                            key = finalkey,
                         )
-                    }else {
-                        // Handle case where keys are not valid
-                        Log.e("loadLinks", "Invalid keys: keyId=$base64keyid, key=$base64key")
-                        callback.invoke(
-                            DrmExtractorLink(
-                                source = this.name,
-                                name = this.name,
-                                url = link,
-                                referer = "",
-                                quality = Qualities.Unknown.value,
-                                type = INFER_TYPE,
-                                kid = "AZEJw4hSVlCIgC0gx0rviQ",
-                                key = "bUnUJWo/ntSTCfggobnTOQ",
-                            )
-                        )
-                    }
+                    )
+                } else {
+                    // Handle case where keys are not valid
+                    Log.e("loadLinks", "Invalid keys: keyId=$finalkeyid, key=$finalkey")
                 }
             }
         }
+
         return true
     }
+
 }
 
     
