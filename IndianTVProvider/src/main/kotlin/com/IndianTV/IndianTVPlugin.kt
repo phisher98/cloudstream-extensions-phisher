@@ -15,6 +15,21 @@ import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
+fun hexStringToBase64(hexString: String): String {
+    val length = hexString.length
+    val byteArray = ByteArray(length / 2)
+
+    for (i in 0 until length step 2) {
+        byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
+                Character.digit(hexString[i + 1], 16)).toByte()
+    }
+
+    val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
+    return String(base64ByteArray, StandardCharsets.UTF_8)
+}
+
+
+
 fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
@@ -163,6 +178,12 @@ class IndianTVPlugin : MainAPI() {
                     val finalkey = byteArrayToBase64(hexStringToByteArray(key))
                     Log.d("finalkey", "Base64 Encoded String: $finalkey")
 
+                    val base64key = hexStringToBase64(key)
+                    Log.d("finalkey", "Base64 Encoded String: $base64key")
+
+                    val base64keyid = hexStringToBase64(keyId)
+                    Log.d("finalkey", "Base64 Encoded String: $base64keyid")
+
                     // Invoke callback with the extracted values
                     callback.invoke(
                         DrmExtractorLink(
@@ -172,8 +193,8 @@ class IndianTVPlugin : MainAPI() {
                             referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = byteArrayToBase64(hexStringToByteArray(keyId)),
-                            key = byteArrayToBase64(hexStringToByteArray(key)),
+                            kid = base64keyid,
+                            key = base64key,
                         )
                     )
                 }
