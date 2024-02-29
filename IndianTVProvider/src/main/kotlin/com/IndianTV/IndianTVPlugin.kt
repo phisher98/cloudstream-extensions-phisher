@@ -186,7 +186,6 @@ class IndianTVPlugin : MainAPI() {
             byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
                     Character.digit(hexString[i + 1], 16)).toByte()
         }
-
         //byteArrayToBase64
         val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
         return String(base64ByteArray, StandardCharsets.UTF_8).trim()
