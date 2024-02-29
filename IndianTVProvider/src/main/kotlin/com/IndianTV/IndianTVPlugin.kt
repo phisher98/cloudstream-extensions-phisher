@@ -196,8 +196,8 @@ class IndianTVPlugin : MainAPI() {
                             referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
-                            kid = "019109c38852565088802d20c74aef89",
-                            key = "6d49d4256a3f9ed49309f820a1b9d339",
+                            kid = "AZEJw4hSVlCIgC0gx0rviQ",
+                            key = "bUnUJWo/ntSTCfggobnTOQ",
                         ).also {
                             Log.d("loadLinks", "DrmExtractorLink created: $it")
                         }
