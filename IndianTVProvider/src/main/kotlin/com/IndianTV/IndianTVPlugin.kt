@@ -171,8 +171,12 @@ class IndianTVPlugin : MainAPI() {
 
             if (keyId.length > 6 && key.length > 6) {
                 // Convert hex strings to byte arrays
+                Log.d("keyId", "Base64 Encoded String: $keyId")
                 val keyIdBytes = hexStringToByteArray(keyId)
                 val keyBytes = hexStringToByteArray(key)
+                Log.d("key", "Base64 Encoded String: $key")
+                Log.d("keyBytes", "Base64 Encoded String: $keyBytes")
+                Log.d("keyIdBytes", "Base64 Encoded String: $keyIdBytes")
 
                 // Convert byte arrays to Base64 strings
                 val finalkeyid = byteArrayToBase64(keyIdBytes)
