@@ -12,7 +12,6 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
-import kotlinx.coroutines.yield
 import java.nio.charset.StandardCharsets
 
 /*fun hexStringToBase64(hexString: String): String {
@@ -26,11 +25,11 @@ import java.nio.charset.StandardCharsets
 
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
-}
+}*/
 
 
 
-fun hexStringToByteArray(hexString: String): ByteArray {
+/*fun hexStringToByteArray(hexString: String): ByteArray {
     val length = hexString.length
     val byteArray = ByteArray(length / 2)
 
@@ -40,13 +39,13 @@ fun hexStringToByteArray(hexString: String): ByteArray {
     }
     return byteArray
 }
-*/
-/*
+
+
 fun byteArrayToBase64(byteArray: ByteArray): String {
     val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
     return String(base64ByteArray, StandardCharsets.UTF_8)
-}*/
-
+}
+*/
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -92,6 +91,7 @@ class IndianTVPlugin : MainAPI() {
         val document = app.get("$mainUrl/").document
         return document.select("div#listContainer div.box1:contains($query), div#listContainer div.box1:contains($query)")
             .mapNotNull {
+
                 it.toSearchResult()
             }
     }
@@ -115,7 +115,6 @@ class IndianTVPlugin : MainAPI() {
     }
 
     // Define a nullable global variable to store globalArgument
-    private var globalArgument: Any? = null
 
     override suspend fun loadLinks(
         data: String,
@@ -125,117 +124,104 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         val scripts = document.select("script")
+        private var globalArgument: Any? = null
+        // List to hold all the extracted links
+        val links = mutableListOf<ExtractorLink>()
 
-        // Introduce a flag to track whether the script has been processed
-        var scriptProcessed = false
+        // Counter to keep track of completed asynchronous operations
+        var completedCount = 0
+
+        // Function to invoke callback after all asynchronous operations have completed
+        fun invokeCallback() {
+            if (completedCount == scripts.size) {
+                // All operations completed, now invoke the callback with all extracted links
+                links.forEach { callback.invoke(it) }
+            }
+        }
 
         scripts.forEach { script ->
-            if (!scriptProcessed && script.data().toString().contains("split")) {
-                val finalScriptRaw = script.data().toString()
-                mainWork {
+            val finalScriptRaw = script.data().toString()
+            mainWork {
+                if (finalScriptRaw.contains("split")) {
                     val startJs =
                         """
-                        var globalArgument = null;
-                        function jwplayer() {
-                            return {
-                                id: null,
-                                setup: function(arg) {
-                                    globalArgument = arg;
-                                }
-                            };
-                        };
-                        """
+                var globalArgument = null;
+                function jwplayer() {
+                    return {
+                        id: null,
+                        setup: function(arg) {
+                            globalArgument = arg;
+                        }
+                    };
+                };
+                """
                     val rhino = getRhinoContext()
                     val scope: Scriptable = rhino.initSafeStandardObjects()
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
-                    scriptProcessed = true // Set the flag to indicate that the script has been processed
                 }
-                yield()
-            }
-        }
-
-        // Access globalArgument outside mainWork block
-        val rhinout = globalArgument?.toJson() ?: ""
-        Log.d("Rhinoout", rhinout)
-
-        val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-        val matchResult = pattern.find(rhinout)
-        val link: String
-        val keyId: String
-        val key: String
-        if (matchResult != null && matchResult.groupValues.size == 4) {
-            link = matchResult.groupValues[1]
-            keyId = matchResult.groupValues[2]
-            key = matchResult.groupValues[3]
-
-            if (keyId.length > 6 && key.length > 6) {
-                // Convert hex strings to byte arrays
-                Log.d("keyId", "Base64 Encoded String: $keyId")
-                val keyIdBytes = hexStringToByteArray(keyId)
-                val keyBytes = hexStringToByteArray(key)
-                Log.d("key", "Base64 Encoded String: $key")
-                Log.d("keyBytes", "Base64 Encoded String: $keyBytes")
-                Log.d("keyIdBytes", "Base64 Encoded String: $keyIdBytes")
-
-
-                // Convert byte arrays to Base64 strings asynchronously
-                //val finalKeyId: Deferred<String> = hexStringToBase64Async(keyIdBytes)
-                //val finalKey: Deferred<String> = hexStringToBase64Async(keyBytes)
-
-                // Wait for the conversion to complete
-                //val convertedKeyId = finalKeyId.await()
-                //val convertedKey = finalKey.await()
-
-                val convertedKeyId = test(keyIdBytes)
-                val convertedKey = test(keyBytes)
-
-                // Ensure the keys are valid
-                if (convertedKeyId.isNotEmpty() && convertedKey.isNotEmpty()) {
-                    // Invoke callback with the extracted values
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = this.name,
-                            name = this.name,
-                            url = link,
-                            referer = "",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = convertedKeyId,
-                            key = convertedKey,
-                        ).also {
-                            Log.d("loadLinks", "DrmExtractorLink created: $it")
-                        }
-                    )
-                } else {
-                    // Handle case where keys are not valid
-                    Log.e("loadLinks", "Invalid keys: keyId=$convertedKeyId, key=$convertedKey")
                 }
-            }
-        }
 
+                // Access globalArgument outside mainWork block
+                val rhinout = globalArgument?.toJson() ?: ""
+                Log.d("Rhinoout", rhinout)
+
+                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                val matchResult = pattern.find(rhinout)
+                val file: String?
+                val keyId: String?
+                val key: String?
+                if (matchResult != null && matchResult.groupValues.size == 4) {
+                    file = matchResult.groupValues[1]
+                    keyId = matchResult.groupValues[2]
+                    key = matchResult.groupValues[3]
+
+                    if (keyId.length > 6 && key.length > 6) {
+                        val newkeyId = keyId.toString()
+                        val newkey = key.toString()
+
+                        val link = file.toString()
+                        val finalkey = decodeHex(newkey)
+                        val finalkeyid = decodeHex(newkeyId)
+
+                        // Add the extracted link to the list
+                        links.add(
+                            DrmExtractorLink(
+                                source = "TATA Sky",
+                                name = "TATA SKy",
+                                url = link,
+                                referer = "madplay.live",
+                                quality = Qualities.Unknown.value,
+                                type = INFER_TYPE,
+                                kid = finalkeyid,
+                                key = finalkey,
+                            )
+                        )
+                    }
+                }
+
+                // Increment the completed count and check if all operations are done
+                completedCount++
+                invokeCallback()
+        }
         return true
     }
 
-    private fun hexStringToByteArray(hexString: String): ByteArray {
+
+    private fun decodeHex(hexString: String):String {
+        //hexStringToByteArray
         val length = hexString.length
         val byteArray = ByteArray(length / 2)
+
         for (i in 0 until length step 2) {
             byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
                     Character.digit(hexString[i + 1], 16)).toByte()
         }
-        return byteArray
-    }
-    private fun test(byteArray: ByteArray):String {
-        val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
-        return String(base64ByteArray, StandardCharsets.UTF_8)
-    }
 
-  /*  private fun hexStringToBase64Async(byteArray: ByteArray): Deferred<String> = CoroutineScope(
-        Dispatchers.IO).async {
+        //byteArrayToBase64
         val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
-        String(base64ByteArray, StandardCharsets.UTF_8)
-    }*/
+        return String(base64ByteArray, StandardCharsets.UTF_8).trim()
+    }
 }
 
     
