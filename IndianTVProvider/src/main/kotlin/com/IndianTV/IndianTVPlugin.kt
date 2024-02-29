@@ -14,38 +14,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import java.nio.charset.StandardCharsets
 
-/*fun hexStringToBase64(hexString: String): String {
-    val length = hexString.length
-    val byteArray = ByteArray(length / 2)
-
-    for (i in 0 until length step 2) {
-        byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
-                Character.digit(hexString[i + 1], 16)).toByte()
-    }
-
-    val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
-    return String(base64ByteArray, StandardCharsets.UTF_8)
-}*/
-
-
-
-/*fun hexStringToByteArray(hexString: String): ByteArray {
-    val length = hexString.length
-    val byteArray = ByteArray(length / 2)
-
-    for (i in 0 until length step 2) {
-        byteArray[i / 2] = ((Character.digit(hexString[i], 16) shl 4) +
-                Character.digit(hexString[i + 1], 16)).toByte()
-    }
-    return byteArray
-}
-
-
-fun byteArrayToBase64(byteArray: ByteArray): String {
-    val base64ByteArray = Base64.encode(byteArray, Base64.NO_PADDING)
-    return String(base64ByteArray, StandardCharsets.UTF_8)
-}
-*/
 
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
@@ -59,6 +27,7 @@ class IndianTVPlugin : MainAPI() {
 
     override val mainPage = mainPageOf(
         "${mainUrl}/" to "TATA",
+        "https://madplay.live/hls/airtel/" to "Airtel"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -160,49 +129,49 @@ class IndianTVPlugin : MainAPI() {
                     rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
                     globalArgument = scope.get("globalArgument", scope)
                 }
-                }
+            }
 
-                // Access globalArgument outside mainWork block
-                val rhinout = globalArgument?.toJson() ?: ""
-                Log.d("Rhinoout", rhinout)
+            // Access globalArgument outside mainWork block
+            val rhinout = globalArgument?.toJson() ?: ""
+            Log.d("Rhinoout", rhinout)
 
-                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                val matchResult = pattern.find(rhinout)
-                val file: String?
-                val keyId: String?
-                val key: String?
-                if (matchResult != null && matchResult.groupValues.size == 4) {
-                    file = matchResult.groupValues[1]
-                    keyId = matchResult.groupValues[2]
-                    key = matchResult.groupValues[3]
+            val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+            val matchResult = pattern.find(rhinout)
+            val file: String?
+            val keyId: String?
+            val key: String?
+            if (matchResult != null && matchResult.groupValues.size == 4) {
+                file = matchResult.groupValues[1]
+                keyId = matchResult.groupValues[2]
+                key = matchResult.groupValues[3]
 
-                    if (keyId.length > 6 && key.length > 6) {
-                        val newkeyId = keyId.toString()
-                        val newkey = key.toString()
+                if (keyId.length > 6 && key.length > 6) {
+                    val newkeyId = keyId.toString()
+                    val newkey = key.toString()
 
-                        val link = file.toString()
-                        val finalkey = decodeHex(newkey)
-                        val finalkeyid = decodeHex(newkeyId)
+                    val link = file.toString()
+                    val finalkey = decodeHex(newkey)
+                    val finalkeyid = decodeHex(newkeyId)
 
-                        // Add the extracted link to the list
-                        links.add(
-                            DrmExtractorLink(
-                                source = "TATA Sky",
-                                name = "TATA SKy",
-                                url = link,
-                                referer = "madplay.live",
-                                quality = Qualities.Unknown.value,
-                                type = INFER_TYPE,
-                                kid = finalkeyid,
-                                key = finalkey,
-                            )
+                    // Add the extracted link to the list
+                    links.add(
+                        DrmExtractorLink(
+                            source = "TATA Sky",
+                            name = "TATA SKy",
+                            url = link,
+                            referer = "madplay.live",
+                            quality = Qualities.Unknown.value,
+                            type = INFER_TYPE,
+                            kid = finalkeyid,
+                            key = finalkey,
                         )
-                    }
+                    )
                 }
+            }
 
-                // Increment the completed count and check if all operations are done
-                completedCount++
-                invokeCallback()
+            // Increment the completed count and check if all operations are done
+            completedCount++
+            invokeCallback()
         }
         return true
     }
@@ -223,6 +192,3 @@ class IndianTVPlugin : MainAPI() {
         return String(base64ByteArray, StandardCharsets.UTF_8).trim()
     }
 }
-
-    
-
