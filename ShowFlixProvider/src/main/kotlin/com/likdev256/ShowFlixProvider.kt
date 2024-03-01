@@ -28,7 +28,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         TvType.TvSeries
     )
 
-    private val installationID = "58f0e9ca-f164-42e0-a683-a1450ccf0221"
+    private val installationID = "845078d0-0602-48b5-be7f-9afd34248cc1"
 
     data class Seasons(
         var Seasons: Map<String, List<String?>> = mapOf()
@@ -247,8 +247,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             app.post(MovieapiUrl, requestBody = MovieSearchreq, referer = "$mainUrl/")
                 .parsed<MovieAll>().results   //Log.d("JSON", res.toString())
 
-        // val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
-        // Log.d("check", check.toString())
+        val check = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
+        Log.d("Mandikcheck", check.toString())
 
         val TVResults = app.post(TVapiUrl, requestBody = TVSearchreq, referer = "$mainUrl/")
             .parsed<TVAll>().results
@@ -288,9 +288,12 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 """{"where":{"objectId":"$MovieobjID"},"limit":1,"_method":"GET","_ApplicationId":"SHOWFLIXAPPID","_JavaScriptKey":"SHOWFLIXMASTERKEY","_ClientVersion":"js3.4.1","_InstallationId":"$installationID"}""".toRequestBody(
                     RequestBodyTypes.JSON.toMediaTypeOrNull()
                 )
+            Log.d("MandikLoadReq", "Expected Link: $MovieLoadreq")
+            Log.d("MandikMovieID", "Expected Link: $MovieobjID")
+
             val Movieresp = app.post(MovieapiUrl, requestBody = MovieLoadreq, referer = "$mainUrl/")
                 .toString().removePrefix("""{"results":[""").removeSuffix("]}")
-            Log.d("res", Movieresp)
+            Log.d("MandikMovieID", Movieresp)
             val Movieit = parseJson<MovieResults>(Movieresp)
             val title = Movieit.movieName
             val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
@@ -308,6 +311,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 Movieit.category.toString().contains("Malayalam") -> """\\QMalayalam\\E"""
                 else -> ""
             }
+            Log.d("Mandik", "Expected Link: $recQuery")
+            Log.d("Mandik", "Expected Link: $Movieit")
             val recommendations = queryMovieApi(
                 Random.nextInt(0, 2000),
                 recQuery
@@ -321,6 +326,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                     this.quality = SearchQuality.HD
                 }
             }
+            Log.d("Mandik", "Expected Link: $recommendations")
 
             return newMovieLoadResponse(
                 title,
@@ -485,6 +491,9 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         val headers = mapOf(
             "watchsb" to "sbstream",
         )
+        Log.d("Mandik", "Expected Link: $id")
+        Log.d("Mandik", "Expected Link: $master")
+        Log.d("Mandik", "Expected Link: $headers")
         val mapped = app.get(
             master.lowercase(),
             headers = headers,
@@ -588,6 +597,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
 
         val url = "https://$main/e/$id"
         val doc = app.get(url).text
+
         val linkRegex = Regex("sources:.\\[\\{file:\"(.*?)\"")
         val link = linkRegex.find(doc)?.groups?.get(1)?.value.toString()
         val headers = mapOf(
@@ -597,7 +607,13 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "cross-site",
             "Origin" to main,
+
         )
+        Log.d("Mandikurl", "Expected Link: $url")
+        Log.d("Mandikdoc", "Expected Link: $doc")
+        Log.d("MandiklinkRegex", "Expected Link: $linkRegex")
+        Log.d("Mandik", "Expected Link: $link")
+        Log.d("Mandik", "Expected Link: $headers")
 
         safeApiCall {
             callback.invoke(
