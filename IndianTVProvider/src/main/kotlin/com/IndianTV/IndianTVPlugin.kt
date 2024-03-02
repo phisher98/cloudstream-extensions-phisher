@@ -1,3 +1,5 @@
+package com.IndianTV
+
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -8,73 +10,72 @@ import org.mozilla.javascript.Scriptable
 import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
+import org.jsoup.nodes.Document
 import java.nio.charset.StandardCharsets
+
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "Indian TV"
     override val hasMainPage = true
     override var lang = "hi"
-    override val hasQuickSearch = true
+    override val hasQuickSearch = false
     override val hasDownloadSupport = false
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/" to "TATA",
+        "$mainUrl/" to "TATA",
         "https://madplay.live/hls/airtel" to "Airtel",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+           //val document = app.get(request.data).document
         val document = app.get(request.data).document
-        val home =
-            document.select("div#listContainer > div.box1").mapNotNull { it.toSearchResult() }
-
-        return newHomePageResponse(
-            list = HomePageList(
-                name = request.name,
-                list = home,
-                isHorizontalImages = true
-            ),
-            hasNext = false
-        )
+            val home =
+                document.select("div#listContainer > div.box1").mapNotNull { it.toSearchResult() }
+            return newHomePageResponse(
+                list = HomePageList(
+                    name = request.name,
+                    list = home,
+                    isHorizontalImages = true
+                ),
+                hasNext = false
+            )
     }
-
     private fun Element.toSearchResult(): SearchResponse {
-        val title = this.select("h2.text-center").text()
-        val href = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("img").attr("src"))
-        //val category = this.select("p").text()
-
-        return newMovieSearchResponse(title, href, TvType.Live) {
-            this.posterUrl = posterUrl
-        }
-    }
-
-    override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/").document
-        return document.select("div#listContainer div.box1:contains($query), div#listContainer div.box1:contains($query)")
-            .mapNotNull {
-
-                it.toSearchResult()
+            val title = this.select("h2.text-center").text()
+            val href = fixUrl(this.select("a").attr("href"))
+            val posterUrl = fixUrlNull(this.select("img").attr("src"))
+            //val category = this.select("p").text()
+            return newMovieSearchResponse(title, href, TvType.Live) {
+                this.posterUrl = posterUrl
             }
     }
 
+    override suspend fun search(query: String): List<SearchResponse> {
+        val documentTata = app.get("$mainUrl/").document
+        val documentAirtel = app.get("https://madplay.live/hls/airtel").document
+        val mergedDocument = Document.createShell("")
+        mergedDocument.body().append(documentTata.body().html())
+        mergedDocument.body().append(documentAirtel.body().html())
+
+            return mergedDocument.select("div#listContainer div.box1:contains($query), div#listContainer div.box1:contains($query)")
+                .mapNotNull {
+                    it.toSearchResult()
+                }
+    }
+
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+            val document = app.get(url).document
+            val title =document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
+            val poster =fixUrl(document.select("div.program-info > img")?.attr("src").toString())
+            val showname =document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
+            //val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
 
-        val title =
-            document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-        val poster =
-            fixUrl("https://raw.githubusercontent.com/phisher98/HindiProviders/master/TATATVProvider/src/main/kotlin/com/lagradost/0-compressed-daf4.jpg")
-        val showname =
-            document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
-        //val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
-
-
-        return newMovieLoadResponse(title, url, TvType.Live, url) {
-            this.posterUrl = poster
-            this.plot = showname
-        }
+            return newMovieLoadResponse(title, url, TvType.Live, url) {
+                this.posterUrl = poster
+                this.plot = showname
+            }
     }
 
     // Define a nullable global variable to store globalArgument
@@ -89,20 +90,8 @@ class IndianTVPlugin : MainAPI() {
         val scripts = document.select("script")
         var globalArgument: Any? = null
         // List to hold all the extracted links
-        val links = mutableListOf<ExtractorLink>()
 
-        // Counter to keep track of completed asynchronous operations
-        var completedCount = 0
-
-        // Function to invoke callback after all asynchronous operations have completed
-        fun invokeCallback() {
-            if (completedCount == scripts.size) {
-                // All operations completed, now invoke the callback with all extracted links
-                links.forEach { callback.invoke(it) }
-            }
-        }
-
-        scripts.forEach { script ->
+        scripts.map { script ->
             val finalScriptRaw = script.data().toString()
             mainWork {
                 if (finalScriptRaw.contains("split")) {
@@ -148,7 +137,7 @@ class IndianTVPlugin : MainAPI() {
                     val finalkeyid = decodeHex(newkeyId)
 
                     // Add the extracted link to the list
-                    links.add(
+                    callback.invoke(
                         DrmExtractorLink(
                             source = "TATA Sky",
                             name = "TATA SKy",
@@ -162,10 +151,6 @@ class IndianTVPlugin : MainAPI() {
                     )
                 }
             }
-
-            // Increment the completed count and check if all operations are done
-            completedCount++
-            invokeCallback()
         }
         return true
     }
