@@ -9,8 +9,6 @@ import android.util.Base64
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import java.nio.charset.StandardCharsets
-
-
 class IndianTVPlugin : MainAPI() {
     override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "Indian TV"
