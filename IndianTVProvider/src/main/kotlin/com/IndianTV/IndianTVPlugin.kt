@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets
 
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl = "https://madplay.live"
+    override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "Indian TV"
     override val hasMainPage = true
     override var lang = "hi"
@@ -26,8 +26,8 @@ class IndianTVPlugin : MainAPI() {
     override val supportedTypes = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/hls/tata" to "TATA",
-        "${mainUrl}/hls/airtel" to "Airtel",
+        "${mainUrl}/" to "TATA",
+        "https://madplay.live/hls/airtel" to "Airtel",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
