@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets
 
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl = "https://madplay.live/hls/tata"
+    override var mainUrl = "https://madplay.live"
     override var name = "Indian TV"
     override val hasMainPage = true
     override var lang = "hi"
