@@ -26,8 +26,8 @@ class IndianTVPlugin : MainAPI() {
     override val supportedTypes = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "${mainUrl}/" to "TATA",
-        "https://madplay.live/hls/airtel/" to "Airtel"
+        "${mainUrl}/hls/tata" to "TATA",
+        "${mainUrl}/hls/airtel" to "Airtel",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
