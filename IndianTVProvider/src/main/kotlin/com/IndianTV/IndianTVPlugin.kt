@@ -68,7 +68,7 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
             val document = app.get(url).document
             val title =document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-            val poster =fixUrl(document.select("div.program-info > img")?.attr("src").toString())
+            val poster =fixUrl(document.select("div.program-info > img").attr("src").toString())
             val showname =document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
             //val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
 
