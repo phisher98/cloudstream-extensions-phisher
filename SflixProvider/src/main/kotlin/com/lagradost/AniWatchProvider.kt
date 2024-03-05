@@ -19,7 +19,7 @@ import java.net.URI
 private const val OPTIONS = "OPTIONS"
 
 class ZoroProvider : MainAPI() {
-    override var mainUrl = "https://HiAnime"
+    override var mainUrl = "https://HiAnime.to"
     override var name = "Aniwatch"
     override val hasQuickSearch = false
     override val hasMainPage = true
