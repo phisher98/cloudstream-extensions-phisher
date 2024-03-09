@@ -84,6 +84,8 @@ subprojects {
         implementation("org.json:json:20210307")
         implementation("com.faendir.rhino:rhino-android:1.6.0")
         implementation("commons-codec:commons-codec:1.15")
+        implementation("com.github.mezhevikin:http-request-kotlin:0.0.5")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
     }
 }
 
