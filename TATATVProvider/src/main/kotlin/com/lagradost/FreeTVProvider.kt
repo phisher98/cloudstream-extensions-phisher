@@ -1,4 +1,3 @@
-package com.coxju
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
