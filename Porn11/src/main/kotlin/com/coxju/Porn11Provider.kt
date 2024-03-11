@@ -7,6 +7,6 @@ import android.content.Context
 @CloudstreamPlugin
 class UncutMazaProvider: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(UncutMaza())
+        registerMainAPI(Porn11())
     }
 }
