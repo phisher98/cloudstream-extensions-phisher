@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class UncutMazaProvider: Plugin() {
+class Porn11Provider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Porn11())
     }
