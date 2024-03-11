@@ -1,12 +1,13 @@
 package com.coxju
 
+import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
 
 class UncutMaza : MainAPI() {
-    override var mainUrl              = "https://uncutmaza.cc"
-    override var name                 = "UncutMaza"
+    override var mainUrl              = "https://pornx11.com"
+    override var name                 = "Porn11"
     override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = false
@@ -84,19 +85,13 @@ class UncutMaza : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-
-        document.select("div.video-player").map { res ->
-            callback.invoke(
-                    ExtractorLink(
-                        source  = this.name,
-                        name    = this.name,
-                        url     = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString()),
-                        referer = data,
-                        quality = Qualities.Unknown.value
-                    )
-            )
-        }
-
-        return true
+        Log.d("Phisher Test","$document")
+        val url = mutableListOf<String>()
+        document.select("div.responsive-player").map { res ->
+            url.add(res.select("iframe").attr("src").toString())
+            val link =res.select("iframe").attr("src").toString()
+            D0000dExtractor().getUrl(data, data)?.forEach { link -> callback.invoke(link) }
     }
+        return true
+}
 }
