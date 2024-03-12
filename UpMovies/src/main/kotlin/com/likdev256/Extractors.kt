@@ -20,7 +20,7 @@ open class EPlayExtractor : ExtractorApi() {
                         this.name,
                         trueUrl,
                         mainUrl,
-                        getQualityFromName("720p"), // this needs to be auto
+                        getQualityFromName(""), // this needs to be auto
                         false
                 )
         )

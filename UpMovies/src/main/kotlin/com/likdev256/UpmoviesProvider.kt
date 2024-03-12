@@ -4,7 +4,6 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.Base64
 import org.jsoup.nodes.Element
@@ -92,7 +91,8 @@ class UpmoviesProvider : MainAPI() {
                         // val description = document.selectFirst("div.film-detail >
                         // div.textSpoiler").text().trim()
                         val episode = it.select("#details > a").text().toString()
-                        Episode(href, episode)
+                        val fullepisode="Episode"+ episode
+                        Episode(href, fullepisode)
                     }
             Log.d("Phisher Epe", "$episodes")
 
@@ -118,7 +118,7 @@ class UpmoviesProvider : MainAPI() {
         val sources = mutableListOf<String>()
         val document = app.get(data).document
         document.select("#total_version > div > p.server_servername > a").forEach { element ->
-            // if (element.text().contains("Dood"))
+            //if (element.text().contains("Dood"))
             sources.add(element.attr("href").trim())
         }
         println(sources)
