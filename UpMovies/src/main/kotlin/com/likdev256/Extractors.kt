@@ -32,7 +32,7 @@ class DoodReExtractor : DoodLaExtractor() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response0 =
-                app.get(url.replace("watch", "re"))
+                app.get(url.replace("watch", "la"))
                         .text // html of DoodStream page to look for /pass_md5/...
         val md5 =
                 mainUrl +
