@@ -1,3 +1,5 @@
+package com.likdev256
+
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -20,6 +22,7 @@ class UpmoviesProvider : MainAPI() {
         "${mainUrl}/movies-countries/india.html" to "India",
         "${mainUrl}/tv-series.html" to "TV Series",
         "${mainUrl}/asian-drama.html" to "Asian Dramas",
+        "${mainUrl}/anime-series.html" to "Anime",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -121,6 +124,9 @@ class UpmoviesProvider : MainAPI() {
             urlPattern.findAll(decodedstrings).forEach { matchResult ->
                 val url = matchResult.groups[1]?.value
                 if (url != null) {
+                    if (data.contains("dood", true)) {
+                loadExtractor(data, subtitleCallback, callback)
+                   }else{
                             loadExtractor(
                                 url,
                                 subtitleCallback,
@@ -129,6 +135,7 @@ class UpmoviesProvider : MainAPI() {
                     }
                 }
             }
+        }
             // Calling loadExtractor function with extracted links
         return true
     }
