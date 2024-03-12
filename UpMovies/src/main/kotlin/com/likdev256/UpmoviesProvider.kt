@@ -49,9 +49,9 @@ class UpmoviesProvider : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..5) {
-            val document = app.get("${mainUrl}/s/$query/$i/?o=all").document
+            val document = app.get("${mainUrl}/search-movies/$query/page-$i.html").document
 
-            val results = document.select("div.video-list-with-ads > div.video-item").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.shortItem.listItem").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
