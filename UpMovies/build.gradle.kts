@@ -1,13 +1,13 @@
 // use an integer for version numbers
-version = 29
+version = 2
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "HD Provider for all Indian Languages"
-    language = "ta"
-    authors = listOf("LikDev-256")
+    language = "hi"
+    authors = listOf("Hindi Provider")
 
     /**
      * Status int as the following:
@@ -25,5 +25,5 @@ cloudstream {
         "TvSeries",
         "Movie",
     )
-    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/ShowFlixProvider/icon.png"
+    iconUrl = "https://upmovies.net/themes/movies/images/favicon.ico"
 }

@@ -10,7 +10,7 @@ import org.jsoup.nodes.Element
 
 class UpmoviesProvider : MainAPI() {
     override var mainUrl = "https://upmovies.net"
-    override var name = "upmovies"
+    override var name = "UPMovies"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
@@ -19,10 +19,17 @@ class UpmoviesProvider : MainAPI() {
     override val mainPage =
             mainPageOf(
                     "${mainUrl}/" to "Latest",
+                    "${mainUrl}/new-released.html" to "New Released",
+                    "${mainUrl}/recently-added.html" to "Recently Added",
                     "${mainUrl}/movies-countries/india.html" to "India",
                     "${mainUrl}/tv-series.html" to "TV Series",
                     "${mainUrl}/asian-drama.html" to "Asian Dramas",
                     "${mainUrl}/anime-series.html" to "Anime",
+                    "${mainUrl}/cartoon.html" to "Cartoon",
+                    "${mainUrl}/movies-genres/sci-fi.html" to "Sci-Fi",
+                    "${mainUrl}/movies-genres/comedy.html" to "Comedy",
+                    "${mainUrl}/movies-genres/action.html" to "Action",
+
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -41,7 +48,7 @@ class UpmoviesProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = fixTitle(this.select("div.title > a").text()).trim()
+        val title = fixTitle(this.select("div.title > a").text().trim())
         val href = fixUrl(this.select("div.title > a").attr("href"))
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
