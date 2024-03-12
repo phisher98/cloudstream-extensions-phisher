@@ -120,8 +120,8 @@ class UpmoviesProvider : MainAPI() {
             urlPattern.findAll(decodedstrings).forEach { matchResult ->
                 val url = matchResult.groups[1]?.value
                 if (url != null) {
-                    if (url.contains("dood.watch")) {
-                        DoodLaExtractor().getUrl(data, data)?.forEach { link ->
+                    if (url.contains("dood")) {
+                        DoodWatchExtractor().getUrl(data, data)?.forEach { link ->
                             callback.invoke(link)
                         }
                     }
@@ -144,8 +144,7 @@ class UpmoviesProvider : MainAPI() {
         return String(decodedBytes, Charsets.UTF_8)
     }
 
-    class dood : DoodLaExtractor() {
-    override var name = "Do0od"
+class DoodWatchExtractor : DoodLaExtractor() {
     override var mainUrl = "https://dood.watch"
 }
 }
