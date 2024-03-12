@@ -120,8 +120,8 @@ class UpmoviesProvider : MainAPI() {
             urlPattern.findAll(decodedstrings).forEach { matchResult ->
                 val url = matchResult.groups[1]?.value
                 if (url != null) {
-                    if (url.contains("dood")) {
-                        D0000dExtractor().getUrl(data, data)?.forEach { link ->
+                    if (url.contains("dood.watch")) {
+                        DoodLaExtractor().getUrl(data, data)?.forEach { link ->
                             callback.invoke(link)
                         }
                     }
@@ -143,40 +143,9 @@ class UpmoviesProvider : MainAPI() {
         val decodedBytes = Base64.getDecoder().decode(this)
         return String(decodedBytes, Charsets.UTF_8)
     }
-    class D0000dExtractor : ExtractorApi() {
-        override var name = "DoodStream"
-        override var mainUrl = "https://d0000d.com"
-        override val requiresReferer = false
 
-        override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-            // html of DoodStream page to look for /pass_md5/...
-            val response0 = app.get(url).text
-
-            // get https://dood.ws/pass_md5/...
-            val md5 = mainUrl + (Regex("/pass_md5/[^']*").find(response0)?.value ?: return null)
-            val res = app.get(md5, referer = mainUrl + "/e/" + url.substringAfterLast("/"))
-
-            // (zUEJeL3mUN is random)
-            val trueUrl =
-                if (res.toString().contains("cloudflarestorage")) res.toString()
-                else res.text + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")
-
-            val quality =
-                Regex("\\d{3,4}p")
-                    .find(response0.substringAfter("<title>").substringBefore("</title>"))
-                    ?.groupValues
-                    ?.get(0)
-
-            return listOf(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    trueUrl,
-                    mainUrl,
-                    getQualityFromName(quality),
-                    false
-                )
-            ) // links are valid for 8h
-        }
-    }
+    class dood : DoodLaExtractor() {
+    override var name = "Do0od"
+    override var mainUrl = "https://dood.watch"
+}
 }
