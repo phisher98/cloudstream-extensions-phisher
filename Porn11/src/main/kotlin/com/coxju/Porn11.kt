@@ -1,12 +1,15 @@
 package com.coxju
 
+import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
 
-class UncutMaza : MainAPI() {
-    override var mainUrl              = "https://uncutmaza.cc"
-    override var name                 = "UncutMaza"
+class Porn11 : MainAPI() {
+    override var mainUrl              = "https://pornx11.com"
+    override var name                 = "Porn11"
     override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = false
@@ -84,19 +87,49 @@ class UncutMaza : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-
-        document.select("div.video-player").map { res ->
-            callback.invoke(
-                    ExtractorLink(
-                        source  = this.name,
-                        name    = this.name,
-                        url     = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString()),
-                        referer = data,
-                        quality = Qualities.Unknown.value
-                    )
-            )
-        }
-
+        Log.d("Phisher Test","$document")
+        val url = mutableListOf<String>()
+        document.select("div.responsive-player").map { res ->
+            url.add(res.select("iframe").attr("src").toString())
+            //val link =res.select("iframe").attr("src").toString()
+            D0000dExtractor().getUrl(data, data)?.forEach { link -> callback.invoke(link) }
+    }
         return true
+}
+    class D0000dExtractor : ExtractorApi() {
+        override var name = "DoodStream"
+        override var mainUrl = "https://d000d.com"
+        override val requiresReferer = false
+
+        override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+            // html of DoodStream page to look for /pass_md5/...
+            val response0 = app.get(url).text
+
+            // get https://dood.ws/pass_md5/...
+            val md5 = mainUrl + (Regex("/pass_md5/[^']*").find(response0)?.value ?: return null)
+            val res = app.get(md5, referer = mainUrl + "/e/" + url.substringAfterLast("/"))
+
+            // (zUEJeL3mUN is random)
+            val trueUrl =
+                if (res.toString().contains("cloudflarestorage")) res.toString()
+                else res.text + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")
+
+            val quality =
+                Regex("\\d{3,4}p")
+                    .find(response0.substringAfter("<title>").substringBefore("</title>"))
+                    ?.groupValues
+                    ?.get(0)
+
+            return listOf(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    trueUrl,
+                    mainUrl,
+                    getQualityFromName(quality),
+                    false
+                )
+            ) // links are valid for 8h
+        }
     }
 }

@@ -87,6 +87,7 @@ class Bolly2TollyProvider : MainAPI() { // all providers must be an instance of 
         }
 
         return if (tvType == TvType.TvSeries) {
+
             val episodes = document.select("tbody tr").mapNotNull {
                 val href = fixUrl(it.select(".MvTbTtl a").attr("href") ?: return null)
                 Log.d("href", href)
@@ -143,11 +144,6 @@ class Bolly2TollyProvider : MainAPI() { // all providers must be an instance of 
         sources.forEach {
             val source = app.get(it, referer = data).document.select("iframe").attr("src")
             println(source)
-            loadExtractor(
-                source,
-                subtitleCallback,
-                callback
-            )
         }
         return true
     }
