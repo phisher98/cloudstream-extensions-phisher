@@ -1,9 +1,9 @@
-version = 4
+version = 5
 
 cloudstream {
-    authors     = listOf("Coxju")
+    authors     = listOf("Hindi Provider")
     language    = "hi"
-    description = "We Provide Huge Colocation of Hindi Porn (Uncut) Web Series"
+    description = "NSFW Search Videos"
 
     /**
      * Status int as the following:
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://www.google.com/s2/favicons?domain=uncutmaza.cc&sz=%size%"
+    iconUrl = "https://actionviewphotography.com/static/extend/light/favicon.ico\n"
 }

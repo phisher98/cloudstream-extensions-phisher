@@ -48,7 +48,7 @@ class UpmoviesProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = fixTitle(this.select("div.title > a").text().trim())
+        val title = fixTitle(this.select("div.title > a").text())
         val href = fixUrl(this.select("div.title > a").attr("href"))
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
@@ -78,7 +78,7 @@ class UpmoviesProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title =
-                fixTitle(document.selectFirst("div.film-detail > div.about > h1")!!.text().trim())
+                fixTitle(document.selectFirst("div.film-detail > div.about > h1")!!.text())
         val poster =
                 fixUrlNull(
                         document.selectFirst("div.film-detail > div.poster > img")

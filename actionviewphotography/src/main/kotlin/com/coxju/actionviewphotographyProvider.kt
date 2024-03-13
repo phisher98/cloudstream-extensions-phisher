@@ -5,8 +5,8 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class UncutMazaProvider: Plugin() {
+class actionviewphotographyProvider: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(UncutMaza())
+        registerMainAPI(actionviewphotography())
     }
 }

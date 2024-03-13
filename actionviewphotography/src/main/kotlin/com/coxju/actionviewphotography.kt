@@ -1,12 +1,16 @@
 package com.coxju
 
+
+import com.google.gson.Gson
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class UncutMaza : MainAPI() {
-    override var mainUrl              = "https://uncutmaza.cc"
-    override var name                 = "UncutMaza"
+
+
+class actionviewphotography : MainAPI() {
+    override var mainUrl              = "https://actionviewphotography.com"
+    override var name                 = "Noodle NSFW"
     override val hasMainPage          = true
     override var lang                 = "hi"
     override val hasQuickSearch       = false
@@ -16,18 +20,12 @@ class UncutMaza : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/page/" to "Home",
-            "${mainUrl}/category/kooku-originals-web-series/page/" to "Kooku",
-            "${mainUrl}/category/ullu-originals-web-series/page/" to "Ullu",
-            "${mainUrl}/category/flizmovies-originals-web-series/page/" to "Fliz movies",
-            "${mainUrl}/category/uncutadda-web-series/page/" to "Uncutadda Webseries",
-            "${mainUrl}/category/hotshots-web-series/page/" to "Hotshots",
-            "${mainUrl}/category/niks-indian-porn/page/" to "Niks Indian",
+            "${mainUrl}/video/milf" to "Milf",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home     = document.select("div.videos-list > article.post").mapNotNull { it.toSearchResult() }
+        val home     = document.select("#list_videos > div.item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -40,9 +38,9 @@ class UncutMaza : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = fixTitle(this.select("a").attr("title"))
+        val title     = fixTitle(this.select("div.i_info > div.title").text())
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("a > div.post-thumbnail>div.post-thumbnail-container>img").attr("data-src"))
+        val posterUrl = fixUrlNull(this.selectFirst("a >div> img").attr("data-src").trim())
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -53,16 +51,13 @@ class UncutMaza : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..5) {
-            val document = app.get("${mainUrl}/page/$i?s=$query").document
-
-            val results = document.select("article.post").mapNotNull { it.toSearchResult() }
-
+            val document = app.get("${mainUrl}/video/$query?p=$i").document
+            val results = document.select("#list_videos > div.item").mapNotNull { it.toSearchResult() }
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
             } else {
                 break
             }
-
             if (results.isEmpty()) break
         }
 
@@ -84,19 +79,33 @@ class UncutMaza : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-
-        document.select("div.video-player").map { res ->
+        val embededurl=document.select("#iplayer").attr("src")
+        val properurldoc = app.get(mainUrl+embededurl).document
+        val properurldocactual=properurldoc.selectFirst("script:containsData(window.playlistUrl)")?.data().toString()
+        // Extracting Base64 encoded string using regex
+        val regex = Regex("""window\.playlistUrl='([^']+)';""")
+        val matchResult = regex.find(properurldocactual)
+        val playlistUrl = matchResult?.groups?.get(1)?.value
+        val sourcesurl= app.get(mainUrl+playlistUrl).document
+        val links=sourcesurl.body().text().toString().trim()
+        val gson = Gson()
+        val jsonObject = gson.fromJson(links, Map::class.java)
+        val sources = (jsonObject["sources"] as? List<Map<String, Any>>) ?: emptyList()
+        sources.forEach { source ->
+            val file = source["file"] as? String
+            val label = source["label"] as? String
             callback.invoke(
-                    ExtractorLink(
-                        source  = this.name,
-                        name    = this.name,
-                        url     = fixUrl(res.selectFirst("meta[itemprop=contentURL]")?.attr("content")?.trim().toString()),
-                        referer = data,
-                        quality = Qualities.Unknown.value
-                    )
-            )
-        }
+                ExtractorLink(
+                    source  = this.name,
+                    name    = this.name,
+                    url     = file.toString(),
+                    referer = data,
+                    quality = getQualityFromName(label)
 
+                )
+            )
+            //println("  File: $file, Label: $label")
+        }
         return true
     }
 }
