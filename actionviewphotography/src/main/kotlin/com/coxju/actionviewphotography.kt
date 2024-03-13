@@ -21,6 +21,10 @@ class actionviewphotography : MainAPI() {
 
     override val mainPage = mainPageOf(
             "${mainUrl}/video/milf" to "Milf",
+            "${mainUrl}/video/brattysis" to "Brattysis",
+            "${mainUrl}/video/web%20series" to "Web Series",
+            "${mainUrl}/video/japanese" to "Japanese",
+            "${mainUrl}/video/Step" to "Step category",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
