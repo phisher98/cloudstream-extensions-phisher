@@ -28,7 +28,7 @@ class actionviewphotography : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}?p=$page).document
+        val document = app.get("$mainUrl/${request.data}?p=$page").document
         val home     = document.select("#list_videos > div.item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
