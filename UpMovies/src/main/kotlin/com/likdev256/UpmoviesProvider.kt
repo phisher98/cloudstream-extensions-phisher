@@ -18,22 +18,22 @@ class UpmoviesProvider : MainAPI() {
 
     override val mainPage =
             mainPageOf(
-                    "${mainUrl}/" to "Latest",
-                    "${mainUrl}/new-released.html" to "New Released",
-                    "${mainUrl}/recently-added.html" to "Recently Added",
-                    "${mainUrl}/movies-countries/india.html" to "India",
-                    "${mainUrl}/tv-series.html" to "TV Series",
-                    "${mainUrl}/asian-drama.html" to "Asian Dramas",
-                    "${mainUrl}/anime-series.html" to "Anime",
-                    "${mainUrl}/cartoon.html" to "Cartoon",
-                    "${mainUrl}/movies-genres/sci-fi.html" to "Sci-Fi",
-                    "${mainUrl}/movies-genres/comedy.html" to "Comedy",
-                    "${mainUrl}/movies-genres/action.html" to "Action",
+                    "" to "Latest",
+                    "new-released" to "New Released",
+                    "recently-added" to "Recently Added",
+                    "movies-countries/india" to "India",
+                    "tv-series" to "TV Series",
+                    "asian-drama" to "Asian Dramas",
+                    "anime-series" to "Anime",
+                    "cartoon" to "Cartoon",
+                    "movies-genres/sci-fi" to "Sci-Fi",
+                    "movies-genres/comedy" to "Comedy",
+                    "movies-genres/action" to "Action",
 
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data/page-$page.html).document
+        val document = app.get("$mainUrl/${request.data}/page-$page.html").document
         // Log.d("Mandik","$document")
         val home =
                 document.select(
