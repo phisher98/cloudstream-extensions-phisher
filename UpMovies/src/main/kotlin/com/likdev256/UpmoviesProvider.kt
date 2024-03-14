@@ -47,7 +47,7 @@ class UpmoviesProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = fixTitle(this.select("div.title > a").text())
+        val title = this.select("div.title > a").text()
         val href = fixUrl(this.select("div.title > a").attr("href"))
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
@@ -157,7 +157,7 @@ class UpmoviesProvider : MainAPI() {
                                 vtbe()
                                     .getUrl(
                                         url,
-                                        "https://vtbe.to/"
+                                        "https:///vtbe.to/"
                                     ) // hardcoding the referer to test
                             links?.forEach { link -> callback.invoke(link) }
                         } else
