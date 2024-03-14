@@ -157,7 +157,7 @@ class UpmoviesProvider : MainAPI() {
                                 vtbe()
                                     .getUrl(
                                         url,
-                                        "https:///vtbe.to/"
+                                        "https://vtbe.to/embed-b86zwx7d1ho3.html"
                                     ) // hardcoding the referer to test
                             links?.forEach { link -> callback.invoke(link) }
                         } else

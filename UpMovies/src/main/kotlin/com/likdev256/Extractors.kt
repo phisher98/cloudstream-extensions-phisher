@@ -1,6 +1,5 @@
 package com.likdev256
 
-import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -71,7 +70,7 @@ open class vtbe : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url,referer=mainUrl).document
+        val response = app.get(url,referer=referer).document
         //println(response)
         val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         val unpacked= getAndUnpack(extractedpack)
