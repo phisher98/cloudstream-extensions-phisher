@@ -18,9 +18,7 @@ class UpmoviesProvider : MainAPI() {
 
     override val mainPage =
             mainPageOf(
-                    "" to "Latest",
                     "new-released" to "New Released",
-                    "recently-added" to "Recently Added",
                     "movies-countries/india" to "India",
                     "tv-series" to "TV Series",
                     "asian-drama" to "Asian Dramas",
