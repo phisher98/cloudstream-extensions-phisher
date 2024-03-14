@@ -33,7 +33,7 @@ class UpmoviesProvider : MainAPI() {
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data).document
+        val document = app.get(request.data/page-$page.html).document
         // Log.d("Mandik","$document")
         val home =
                 document.select(
