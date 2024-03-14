@@ -1,9 +1,11 @@
 package com.likdev256
 
+import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getQualityFromName
 
 open class EPlayExtractor : ExtractorApi() {
@@ -61,3 +63,40 @@ class DoodReExtractor : DoodLaExtractor() {
         ) // links are valid in 8h
     }
 }
+
+
+open class vtbe : ExtractorApi() {
+    override var name = "Vtbe"
+    override var mainUrl = "https://vtbe.to/"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val response = app.get(url, referer = "https://vtbe.to/").document
+        //println(response)
+        val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val unpacked= getAndUnpack(extractedpack)
+        println(unpacked)
+        val regexPattern = """file:"(.*?)".*qualityLabels':\{"\d+":"(\w+)"}.*""".toRegex()
+        val matchResult = regexPattern.find(unpacked)
+        val file: String?
+        val quality: String?
+        file = matchResult!!.groupValues[1]
+        quality = matchResult.groupValues[2]
+
+        println(file)
+        println(quality)
+            return listOf(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    "$file",
+                    mainUrl,
+                    getQualityFromName(quality),
+                    false
+                )
+            )
+    }
+}
+
+
+

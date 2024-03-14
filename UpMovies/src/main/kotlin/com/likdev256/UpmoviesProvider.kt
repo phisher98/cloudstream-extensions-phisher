@@ -1,5 +1,6 @@
 package com.likdev256
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -75,8 +76,7 @@ class UpmoviesProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title =
-                fixTitle(document.selectFirst("div.film-detail > div.about > h1")!!.text())
+        val title =document.selectFirst("div.film-detail > div.about > h1")!!.text()
         val poster =
                 fixUrlNull(
                         document.selectFirst("div.film-detail > div.poster > img")
@@ -113,6 +113,7 @@ class UpmoviesProvider : MainAPI() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
             data: String,
@@ -123,21 +124,21 @@ class UpmoviesProvider : MainAPI() {
         val sources = mutableListOf<String>()
         val document = app.get(data).document
         document.select("#total_version > div > p.server_servername > a").forEach { element ->
-            //if (element.text().contains("Dood"))
+            if (element.text().contains("VTubeTo"))
             sources.add(element.attr("href").trim())
         }
         println(sources)
         // Iterate over each URL in sources
         sources.forEach { url ->
             val document = app.get(url).document
-            val extractbase64 =
-                    document.selectFirst("script:containsData(Base64.decode)")?.data().toString()
+            //println(document)
+            val extractbase64 =document.selectFirst("script:containsData(Base64.decode)")?.data().toString()
             // Extracting Base64 encoded string using regex
             val pattern = "Base64.decode\\(\"([^\"]*)\"\\)".toRegex()
             val matchResult = pattern.find(extractbase64)
             val encodedString = matchResult?.groups?.get(1)?.value ?: ""
             val decodedstrings = encodedString.decodeBase64()
-
+            println(decodedstrings)
             val urlPattern = """src\s*=\s*["'](\bhttps:\/\/\S+\b)["']""".toRegex()
             urlPattern.findAll(decodedstrings).forEach { matchResult ->
                 val url = matchResult.groups[1]?.value
@@ -150,7 +151,17 @@ class UpmoviesProvider : MainAPI() {
                                                 "https://dood.re/"
                                         ) // hardcoding the referer to test
                         links?.forEach { link -> callback.invoke(link) }
-                    } else if (url.contains("eplay")) {
+                    } else
+                        if (url.contains("vtbe")) {
+                            val links =
+                                vtbe()
+                                    .getUrl(
+                                        url,
+                                        "https://vtbe.to/"
+                                    ) // hardcoding the referer to test
+                            links?.forEach { link -> callback.invoke(link) }
+                        } else
+                        if (url.contains("eplay")) {
                         val links =
                                 EPlayExtractor()
                                         .getUrl(
