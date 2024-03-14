@@ -20,15 +20,15 @@ class actionviewphotography : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-            "${mainUrl}/video/milf" to "Milf",
-            "${mainUrl}/video/brattysis" to "Brattysis",
-            "${mainUrl}/video/web%20series" to "Web Series",
-            "${mainUrl}/video/japanese" to "Japanese",
-            "${mainUrl}/video/Step" to "Step category",
+            "video/milf" to "Milf",
+            "video/brattysis" to "Brattysis",
+            "video/web%20series" to "Web Series",
+            "video/japanese" to "Japanese",
+            "video/Step" to "Step category",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data + page).document
+        val document = app.get("$mainUrl/${request.data}?p=$page).document
         val home     = document.select("#list_videos > div.item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
