@@ -25,7 +25,7 @@ open class EPlayExtractor : ExtractorApi() {
                         trueUrl,
                         mainUrl,
                         getQualityFromName(""), // this needs to be auto
-                        true
+                        false
                 )
         )
     }
@@ -92,7 +92,7 @@ open class vtbe : ExtractorApi() {
                     )
                 }
             }
-            return true
+            return null
     }
 }
 
