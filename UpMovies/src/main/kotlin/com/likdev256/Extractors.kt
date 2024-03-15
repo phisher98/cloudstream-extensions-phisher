@@ -22,7 +22,7 @@ open class EPlayExtractor : ExtractorApi() {
                         trueUrl,
                         mainUrl,
                         getQualityFromName(""), // this needs to be auto
-                        false
+                        true
                 )
         )
     }
