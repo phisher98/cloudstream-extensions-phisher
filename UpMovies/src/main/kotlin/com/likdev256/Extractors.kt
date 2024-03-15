@@ -4,8 +4,11 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import java.net.URI
+import com.lagradost.cloudstream3.utils.JsUnpacker
+
 
 open class EPlayExtractor : ExtractorApi() {
     override var name = "EPlay"
@@ -73,29 +76,26 @@ open class vtbe : ExtractorApi() {
         val response = app.get(url,referer=referer).document
         //println(response)
         val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
-        val unpacked= getAndUnpack(extractedpack)
-        println(unpacked)
-        val regexPattern = """file:"(.*?)".*qualityLabels':\{"\d+":"(\w+)"}.*""".toRegex()
-        val matchResult = regexPattern.find(unpacked)
-        val file: String?
-        val quality: String?
-        file = matchResult!!.groupValues[1]
-        quality = matchResult.groupValues[2]
-
-        println(file)
-        println(quality)
-            return listOf(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    "$file",
-                    mainUrl,
-                    getQualityFromName(quality),
-                    false
-                )
-            )
+        //val unpacked= getAndUnpack(extractedpack)
+        println(extractedpack)
+            JsUnpacker("$extractedpack").unpack()?.let { unPacked ->
+                Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
+                    return listOf(
+                        ExtractorLink(
+                            this.name,
+                            this.name,
+                            link,
+                            referer ?: "",
+                            Qualities.Unknown.value,
+                            URI(link).path.endsWith(".m3u8")
+                        )
+                    )
+                }
+            }
+        return null
     }
 }
+
 
 
 
