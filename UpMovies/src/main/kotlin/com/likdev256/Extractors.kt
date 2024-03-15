@@ -92,6 +92,7 @@ open class vtbe : ExtractorApi() {
                     )
                 }
             }
+            return true
     }
 }
 
