@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.*
 import java.util.Base64
 import org.jsoup.nodes.Element
@@ -145,10 +146,10 @@ class UpmoviesProvider : MainAPI() {
                 if (url != null) {
                     if (url.contains("dood")) {
                         val links =
-                                DoodReExtractor()
+                            DoodmainExtractor()
                                         .getUrl(
                                                 url,
-                                                "https://dood.re/"
+                                                "https://dood.re"
                                         ) // hardcoding the referer to test
                         links?.forEach { link -> callback.invoke(link) }
                     } else
@@ -184,4 +185,14 @@ class UpmoviesProvider : MainAPI() {
         val decodedBytes = Base64.getDecoder().decode(this)
         return String(decodedBytes, Charsets.UTF_8)
     }
+    class DoodReExtractor : DoodmainExtractor() {
+        override var mainUrl = "https://dood.re"
+    }
+
+    class DoodwatchExtractor : DoodmainExtractor() {
+        override var mainUrl = "https://dood.watch"
+    }
+
+
+
 }
