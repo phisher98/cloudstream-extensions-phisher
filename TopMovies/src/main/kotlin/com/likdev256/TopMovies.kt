@@ -4,7 +4,9 @@ package com.likdev256
 import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URI
 
 
 class UpmoviesProvider : MainAPI() {
@@ -110,8 +112,57 @@ class UpmoviesProvider : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // Calling loadExtractor function with extracted links
+        val driveurls = mutableListOf<String>()
+        val Gdrivelinks = mutableListOf<String>()
+        val document = app.get(data).document
+        document.select("a.maxbutton-1").forEach {
+            val drive=it.attr("href")
+            driveurls.add(drive)
+            //Log.d("Test23","$drive")
+        }
+        driveurls.forEach {
+            val doc= app.get(it).document
+            val gdrive=doc.select("a.maxbutton-5").attr("href")
+            Gdrivelinks.add(gdrive)
+            Log.d("Test23","$gdrive")
+        }
+        Gdrivelinks.forEach {
+            fun Document.getFormUrl(): String {
+                return this.select("form#landing").attr("action")
+            }
+
+            fun Document.getFormData(): Map<String, String> {
+                return this.select("form#landing input").associate { it.attr("name") to it.attr("value") }
+            }
+
+            fun getBaseUrl(url: String): String {
+                return URI(url).let {
+                    "${it.scheme}://${it.host}"
+                }
+            }
+
+            val host = getBaseUrl(it)
+            var res = app.get(it).document
+            var formUrl = res.getFormUrl()
+            var formData = res.getFormData()
+
+            res = app.post(formUrl, data = formData).document
+            formUrl = res.getFormUrl()
+            formData = res.getFormData()
+
+            res = app.post(formUrl, data = formData).document
+            //Log.d("Test445","$res")
+            val script=res.selectFirst("script:containsData(verify_button)").data().toString().trim().replace(" ","")
+            Log.d("Test1234","$script")
+            val regex = Regex("""s_343\('([^']+)'.+?,\s*'([^']+)'.+?\);""")
+            val matchResult = regex.find("$script")
+            if (matchResult != null) {
+                val (cookieName, cookieValue) = matchResult.destructured
+                println("$cookieName=$cookieValue")
+            } else {
+                println("Cookie not found in the script.")
+            }
+        }
         return true
     }
-
 }
