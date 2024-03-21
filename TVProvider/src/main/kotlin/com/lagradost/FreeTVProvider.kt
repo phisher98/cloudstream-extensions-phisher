@@ -1,5 +1,6 @@
 package com.lagradost
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -9,7 +10,7 @@ import java.io.InputStream
 
 class FreeTVProvider : MainAPI() {
     override var lang = "hi"
-    override var mainUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/29JAN2024.m3u"
+    override var mainUrl = "https://tataplay.code-crafters.app/playlist.m3u"
     override var name = "India-TV"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -29,6 +30,10 @@ class FreeTVProvider : MainAPI() {
                 val channelname = channel.title.toString()
                 val posterurl = channel.attributes["tvg-logo"].toString()
                 val nation = channel.attributes["group-title"].toString()
+                Log.d("Test12",streamurl)
+                Log.d("Test12",channelname)
+                Log.d("Test12",posterurl)
+                Log.d("Test12",nation)
                 LiveSearchResponse(
                     channelname,
                     LoadData(streamurl, channelname, posterurl, nation).toJson(),
@@ -229,32 +234,6 @@ class IptvPlaylistParser {
      */
     private fun String.getUrl(): String? {
         return split("|").firstOrNull()?.replaceQuotesAndTrim()
-    }
-
-    /**
-     * Get url parameters.
-     *
-     * Example:-
-     *
-     * Input:
-     * ```
-     * http://192.54.104.122:8080/d/abcdef/video.mp4|User-Agent=Mozilla&Referer=CustomReferrer
-     * ```
-     * Result will be equivalent to kotlin map:
-     * ```Kotlin
-     * mapOf(
-     *   "User-Agent" to "Mozilla",
-     *   "Referer" to "CustomReferrer"
-     * )
-     * ```
-     */
-    private fun String.getUrlParameters(): Map<String, String> {
-        val urlRegex = Regex("^(.*)\\|", RegexOption.IGNORE_CASE)
-        val headersString = replace(urlRegex, "").replaceQuotesAndTrim()
-        return headersString.split("&").mapNotNull {
-            val pair = it.split("=")
-            if (pair.size == 2) pair.first() to pair.last() else null
-        }.toMap()
     }
 
     /**

@@ -123,24 +123,26 @@ class IndianTVPlugin : MainAPI() {
             val file: String?
             val keyId: String?
             val key: String?
-            if (matchResult != null && matchResult.groupValues.size == 4) {
+            if (matchResult != null) {
                 file = matchResult.groupValues[1]
                 keyId = matchResult.groupValues[2]
                 key = matchResult.groupValues[3]
 
-                if (keyId.length > 6 && key.length > 6) {
+                Log.d("Test",key)
+                Log.d("Test",keyId)
                     val newkeyId = keyId.toString()
                     val newkey = key.toString()
 
                     val link = file.toString()
                     val finalkey = decodeHex(newkey)
                     val finalkeyid = decodeHex(newkeyId)
+                Log.d("Test",finalkey)
+                Log.d("Test",finalkeyid)
 
-                    // Add the extracted link to the list
                     callback.invoke(
                         DrmExtractorLink(
-                            source = "TATA Sky",
-                            name = "TATA SKy",
+                            source = "TATA SKY",
+                            name = "TATA SKY",
                             url = link,
                             referer = "madplay.live",
                             quality = Qualities.Unknown.value,
@@ -149,7 +151,6 @@ class IndianTVPlugin : MainAPI() {
                             key = finalkey,
                         )
                     )
-                }
             }
         }
         return true
