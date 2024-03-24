@@ -185,14 +185,4 @@ class UpmoviesProvider : MainAPI() {
         val decodedBytes = Base64.getDecoder().decode(this)
         return String(decodedBytes, Charsets.UTF_8)
     }
-    class DoodReExtractor : DoodmainExtractor() {
-        override var mainUrl = "https://dood.re"
-    }
-
-    class DoodwatchExtractor : DoodmainExtractor() {
-        override var mainUrl = "https://dood.watch"
-    }
-
-
-
 }

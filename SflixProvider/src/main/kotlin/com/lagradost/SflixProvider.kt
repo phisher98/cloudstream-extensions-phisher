@@ -32,7 +32,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.system.measureTimeMillis
 
 open class SflixProvider : MainAPI() {
-    override var mainUrl = "https://sflix.to"
+    override var mainUrl = "https://sflixtv.to"
     override var name = "Sflix.to"
 
     override val hasQuickSearch = false
