@@ -1,5 +1,4 @@
-package com.likdev256
-
+package com.HDMovie2
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
@@ -121,7 +120,7 @@ class Hdmovie2 : MainAPI() {
             val doc= app.get(it).document
             val gdrive=doc.select("a.maxbutton-5").attr("href")
             Gdrivelinks.add(gdrive)
-            Log.d("Test23","$gdrive")
+            Log.d("Test23", gdrive)
         }
         Gdrivelinks.forEach {
             fun Document.getFormUrl(): String {

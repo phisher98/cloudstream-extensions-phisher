@@ -4,34 +4,24 @@ package com.likdev256
 import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URI
 
 
-class TopMovies : MainAPI() {
-    override var mainUrl = "https://topmovies.asia"
-    override var name = "Topmovies"
+class BMovies : MainAPI() {
+    override var mainUrl = "https://bmovies.vip"
+    override var name = "BMovies"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
-
-    override val mainPage =
-        mainPageOf(
-            "" to "Latest",
-            "web-series/tv-shows-by-network/netflix" to "Netflix",
-
-            )
+    override val mainPage = mainPageOf(
+        "country/india" to "Bollywood",
+    )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page").document
-        // Log.d("Mandik","$document")
-        val home =
-            document.select(
-                "div.post-cards > article"
-            )
-                .mapNotNull { it.toSearchResult() }
+        val document = app.get("$mainUrl/${request.data}/$page").document
+        Log.d("Mandik","$document")
+        val home =document.select("div.movies-list.movies-list-full > div.ml-item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list = HomePageList(name = request.name, list = home, isHorizontalImages = false),
@@ -40,9 +30,10 @@ class TopMovies : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = this.select("a").attr("title").toString()
-        val href = this.select("a").attr("href")
-        val posterUrl = fixUrlNull(this.selectFirst("div.post-cards > article > a > div > img")?.attr("src"))
+        val title = this.select("div.ml-item > div > a > img").attr("title")
+        val href = this.select("div.ml-item > div > a").attr("href")
+        val posterUrl = fixUrlNull(this.selectFirst("div.ml-item > div > a > img")?.attr("data-original"))
+        Log.d("url","$posterUrl")
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
     }
 
@@ -112,57 +103,7 @@ class TopMovies : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val driveurls = mutableListOf<String>()
-        val Gdrivelinks = mutableListOf<String>()
-        val document = app.get(data).document
-        document.select("a.maxbutton-1").forEach {
-            val drive=it.attr("href")
-            driveurls.add(drive)
-            //Log.d("Test23","$drive")
-        }
-        driveurls.forEach {
-            val doc= app.get(it).document
-            val gdrive=doc.select("a.maxbutton-5").attr("href")
-            Gdrivelinks.add(gdrive)
-            Log.d("Test23","$gdrive")
-        }
-        Gdrivelinks.forEach {
-            fun Document.getFormUrl(): String {
-                return this.select("form#landing").attr("action")
-            }
 
-            fun Document.getFormData(): Map<String, String> {
-                return this.select("form#landing input").associate { it.attr("name") to it.attr("value") }
-            }
-
-            fun getBaseUrl(url: String): String {
-                return URI(url).let {
-                    "${it.scheme}://${it.host}"
-                }
-            }
-
-            val host = getBaseUrl(it)
-            var res = app.get(it).document
-            var formUrl = res.getFormUrl()
-            var formData = res.getFormData()
-
-            res = app.post(formUrl, data = formData).document
-            formUrl = res.getFormUrl()
-            formData = res.getFormData()
-
-            res = app.post(formUrl, data = formData).document
-            //Log.d("Test445","$res")
-            val script=res.selectFirst("script:containsData(verify_button)").data().toString().trim().replace(" ","")
-            Log.d("Test1234","$script")
-            val regex = Regex("""s_343\('([^']+)'.+?,\s*'([^']+)'.+?\);""")
-            val matchResult = regex.find("$script")
-            if (matchResult != null) {
-                val (cookieName, cookieValue) = matchResult.destructured
-                println("$cookieName=$cookieValue")
-            } else {
-                println("Cookie not found in the script.")
-            }
-        }
         return true
     }
 }

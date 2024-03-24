@@ -1,11 +1,12 @@
-package com.HDMovie2
+package com.likdev256
 
+import android.annotation.SuppressLint
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class movierulz : MainAPI() {
+class Movierulz : MainAPI() {
     override var mainUrl = "https://6movierulz.cc"
     override var name = "6movierulz"
     override val hasMainPage = true
@@ -97,6 +98,7 @@ class movierulz : MainAPI() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -130,9 +132,9 @@ class movierulz : MainAPI() {
                 links?.forEach { link -> callback.invoke(link) }
             }
             else
-            Log.d("Test", url)
-                Log.d("Testelse", url)
-                loadExtractor(url, subtitleCallback, callback)
+                Log.d("Test", url)
+            Log.d("Testelse", url)
+            loadExtractor(url, subtitleCallback, callback)
         }
         return true
     }
