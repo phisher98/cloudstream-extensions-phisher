@@ -1,4 +1,4 @@
-package com.likdev256
+package com.HDMovie2
 
 import android.util.Log
 import org.jsoup.nodes.Element
@@ -14,8 +14,14 @@ class movierulz : MainAPI() {
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override val mainPage = mainPageOf(
-        "home" to "Trending",
+        "movies?sort=featured&ref=home-latest-movies" to "Featured Movies",
+        "movies?sort=latest&ref=home-latest-movies" to "Movies",
+        "category/hollywood-featured" to "Hollywood",
         "category/bollywood-featured" to "Bollywood",
+        "category/telugu-featured" to "Telugu Dubbed",
+        "category/tamil-featured" to "Tamil Dubbed",
+        "web-series?ref=home-latest-movies" to "Web Series",
+        "tv?sort=featured&ref=home-latest-tv-series" to "TV Series",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -119,7 +125,7 @@ class movierulz : MainAPI() {
             {
                 Log.d("Testdood", url)
                 val links =
-                    DoodStream()
+                    DoodReExtractor()
                         .getUrl(
                             url,""
                         ) // hardcoding the referer to test

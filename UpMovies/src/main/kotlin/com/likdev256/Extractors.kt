@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
-import android.util.Log
 import com.lagradost.cloudstream3.utils.JsUnpacker
 
 
@@ -37,7 +36,7 @@ open class DoodReExtractor : DoodLaExtractor() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response0 =
-                app.get(url.replace("watch", "com"))
+                app.get(url.replace("doodstream", "d000d"))
                         .text // html of DoodStream page to look for /pass_md5/...
         val md5 =
                 mainUrl +
@@ -67,39 +66,9 @@ open class DoodReExtractor : DoodLaExtractor() {
     }
 }
 
-
 open class DoodmainExtractor : ExtractorApi() {
     override var name = "DoodStream"
     override var mainUrl = "https://d000d.com"
-    override val requiresReferer = true
-
-    override fun getExtractorUrl(id: String): String {
-        return "$mainUrl/d/$id"
-    }
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response0 = app.get(url).text // html of DoodStream page to look for /pass_md5/...
-        val md5 =mainUrl+(Regex("/pass_md5/[^']*").find(response0)?.value ?: return null)  // get https://dood.ws/pass_md5/...
-        val trueUrl = app.get(md5, referer = url).text + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")   //direct link to extract  (zUEJeL3mUN is random)
-        val quality = Regex("\\d{3,4}p").find(response0.substringAfter("<title>").substringBefore("</title>"))?.groupValues?.get(0)
-        return listOf(
-            ExtractorLink(
-                this.name,
-                this.name,
-                trueUrl,
-                mainUrl,
-                getQualityFromName(quality),
-                false
-            )
-        ) // links are valid in 8h
-
-    }
-}
-
-
-open class DoodStream : ExtractorApi() {
-    override var name = "DoodStream"
-    override var mainUrl = "https://DoodStream.com"
     override val requiresReferer = true
 
     override fun getExtractorUrl(id: String): String {
@@ -155,38 +124,7 @@ open class vtbe : ExtractorApi() {
     }
 }
 
-class ShaveTape : StreamTape(){
-    override var mainUrl = "https://shavetape.cash"
-}
 
-open class StreamTape : ExtractorApi() {
-    override var name = "StreamTape"
-    override var mainUrl = "https://streamtape.com"
-    override val requiresReferer = false
-
-    private val linkRegex =
-        Regex("""'robotlink'\)\.innerHTML = '(.+?)'\+ \('(.+?)'\)""")
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        with(app.get(url)) {
-            linkRegex.find(this.text)?.let {
-                val extractedUrl =
-                    "https:${it.groups[1]!!.value + it.groups[2]!!.value.substring(3)}"
-                Log.d("Testttt",extractedUrl)
-                return listOf(
-                    ExtractorLink(
-                        name,
-                        name,
-                        extractedUrl,
-                        url,
-                        Qualities.Unknown.value,
-                    )
-                )
-            }
-        }
-        return null
-    }
-}
 
 
 

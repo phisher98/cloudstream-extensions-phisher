@@ -1,4 +1,4 @@
-package com.likdev256
+package com.HDMovie2
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
