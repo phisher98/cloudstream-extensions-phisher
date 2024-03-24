@@ -65,10 +65,12 @@ class movierulz : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
 
-        for (i in 1..5) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query&id=5036").document
+        for (i in 1..3) {
+            val previouspage = i - 1
+            val multipliedPage = previouspage * 16
+            val document = app.get("${mainUrl}/search_movies/page/$query/$multipliedPage").document
 
-            val results = document.select("article").mapNotNull { it.toSearchResult() }
+            val results = document.select("div.content.home_style > ul > li").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
