@@ -87,12 +87,9 @@ class movierulz : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title =
-            document.selectFirst("div.entry-content > img")?.attr("alt")?.trim().toString()
-        val poster =
-            document.selectFirst("div.entry-content > img")?.attr("src")?.trim().toString()
-        val description =
-            document.selectFirst("div.entry-content > p:nth-child(6)").text().trim()
+        val title =document.selectFirst("div.entry-content > img")?.attr("alt")?.trim().toString()
+        val poster =document.selectFirst("div.entry-content > img")?.attr("src")?.trim().toString()
+        val description =document.selectFirst("div.entry-content > p:nth-child(6)").text().trim()
         //Log.d("Tesy12","$poster")
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = poster
