@@ -41,7 +41,7 @@ class Hdmovie : MainAPI() {
         val href = this.select("div.data > h3 > a").attr("href")
         val imageurl = this.selectFirst("div.poster > img")?.attr("src")
         val posterUrl = "$mainUrl$imageurl"
-        return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = "$posterUrl" }
+        return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {

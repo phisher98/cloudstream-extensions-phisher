@@ -4,7 +4,6 @@ import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import androidx.annotation.RequiresApi
 
 class movierulz : MainAPI() {
     override var mainUrl = "https://6movierulz.cc"
