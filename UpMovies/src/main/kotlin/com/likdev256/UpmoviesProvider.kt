@@ -209,7 +209,7 @@ class UpmoviesProvider : MainAPI() {
                     links?.forEach { link -> callback.invoke(link) }
                 } else
                     if (url.contains("filelion")) {
-                        Log.d("Test9873", url)
+                        //Log.d("Test9873", url)
                         val links =
                             Filelion()
                                 .getUrl(
@@ -231,7 +231,6 @@ class UpmoviesProvider : MainAPI() {
                 loadExtractor(url, subtitleCallback, callback)
             }
             }
-        // Calling loadExtractor function with extracted links
         return true
     }
     @RequiresApi(Build.VERSION_CODES.O)

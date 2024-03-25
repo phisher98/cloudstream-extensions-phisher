@@ -197,9 +197,9 @@ open class Filelion : ExtractorApi() {
         val response =app.get(url).document
         //val response = app.get(url, referer = referer)
         val script = response.selectFirst("script:containsData(sources)")?.data().toString()
-        Log.d("Test9871",script)
+        //Log.d("Test9871",script)
             Regex("sources:.\\[.file:\"(.*)\".*").find(script)?.groupValues?.get(1)?.let { link ->
-                Log.d("Test9876",link)
+                //Log.d("Test9876",link)
                 if (link.contains("m3u8"))
                     return listOf(
                         ExtractorLink(
