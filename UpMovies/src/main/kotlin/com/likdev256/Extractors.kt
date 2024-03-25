@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 
 
 open class EPlayExtractor : ExtractorApi() {
@@ -125,31 +126,33 @@ open class vtbe : ExtractorApi() {
 
 open class Filemoon : ExtractorApi() {
     override val name = "filemoon"
-    override val mainUrl = "filemoon.to"
+    override val mainUrl = "https://filemoon.to"
     override val requiresReferer = true
 
     override suspend fun getUrl(
         url: String,
         referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val response =app.get(url.replace("sx", "to")).text
+    ): List<ExtractorLink>? {
+        val replaceurl=url.replace("sx", "to")
+        val response =app.get(replaceurl).document
         //val response = app.get(url, referer = referer)
-        val script = if (!getPacked(response.text).isNullOrEmpty()) {
-            getAndUnpack(response.text)
-        } else {
-            response.document.selectFirst("script:containsData(sources:)")?.data()
+        val script = response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        JsUnpacker(script).unpack()?.let { unPacked ->
+            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
+                return listOf(
+                    ExtractorLink(
+                        this.name,
+                        this.name,
+                        link,
+                        referer ?: "",
+                        Qualities.Unknown.value,
+                        URI(link).path.endsWith(".m3u8")
+                    )
+                )
+            }
         }
-        val m3u8 =
-            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
-        generateM3u8(
-            name,
-            m3u8 ?: return,
-            mainUrl
-        ).forEach(callback)
+        return null
     }
-
 }
 
 
