@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 
 
 open class EPlayExtractor : ExtractorApi() {
@@ -125,7 +124,7 @@ open class vtbe : ExtractorApi() {
 
 
 open class Filemoon : ExtractorApi() {
-    override val name = "filemoon"
+    override val name = "Filemoon"
     override val mainUrl = "https://filemoon.to"
     override val requiresReferer = true
 
@@ -138,6 +137,7 @@ open class Filemoon : ExtractorApi() {
         //val response = app.get(url, referer = referer)
         val script = response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         JsUnpacker(script).unpack()?.let { unPacked ->
+            val Quality =Regex("""qualityLabels'\\s*:\\s*{\\s*\"\\d+\"\\s*:\\s*\"([^\"]+)""").find(unPacked)?.groupValues?.get(1)
             Regex("file:\\s*\"(.*?m3u8.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                 return listOf(
                     ExtractorLink(
@@ -145,7 +145,7 @@ open class Filemoon : ExtractorApi() {
                         this.name,
                         link,
                         referer ?: "",
-                        Qualities.Unknown.value,
+                        getQualityFromName(Quality),
                         URI(link).path.endsWith(".m3u8")
                     )
                 )
