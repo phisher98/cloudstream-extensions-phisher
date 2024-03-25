@@ -162,6 +162,15 @@ class UpmoviesProvider : MainAPI() {
                                     ) // hardcoding the referer to test
                             links?.forEach { link -> callback.invoke(link) }
                         } else
+                    if (url.contains("filemoon")) {
+                            val links =
+                                vtbe()
+                                    .getUrl(
+                                        url,
+                                        "https://filemoon.to"
+                                    ) // hardcoding the referer to test
+                            links?.forEach { link -> callback.invoke(link) }
+                        } else
                         if (url.contains("eplay")) {
                         val links =
                                 EPlayExtractor()
