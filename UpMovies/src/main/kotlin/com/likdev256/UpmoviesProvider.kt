@@ -164,7 +164,7 @@ class UpmoviesProvider : MainAPI() {
                         } else
                     if (url.contains("filemoon")) {
                             val links =
-                                vtbe()
+                                Filemoon()
                                     .getUrl(
                                         url,
                                         "https://filemoon.to"
