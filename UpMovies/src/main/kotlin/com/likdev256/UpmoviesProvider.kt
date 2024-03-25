@@ -5,7 +5,6 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.*
 import java.util.Base64
 import org.jsoup.nodes.Element
@@ -123,14 +122,39 @@ class UpmoviesProvider : MainAPI() {
             callback: (ExtractorLink) -> Unit
     ): Boolean {
         val sources = mutableListOf<String>()
+        val decodedsources = mutableListOf<String>()
+        val urlsources = mutableListOf<String>()
         val document = app.get(data).document
         document.select("#total_version > div > p.server_servername > a").forEach { element ->
-            //(element.text().contains("VTubeTo"))
             sources.add(element.attr("href").trim())
         }
         println(sources)
+
+        sources.forEach {
+            @Suppress("NAME_SHADOWING") val document = app.get(it).document
+            //println(document)
+            val extractbase64 =document.selectFirst("div.player-iframe.animation > script:containsData(Base64.decode)")?.data().toString()
+            // Extracting Base64 encoded string using regex
+            val pattern = "Base64.decode\\(\"([^\"]*)\"\\)".toRegex()
+            val matchResult = pattern.find(extractbase64)
+            val encodedString = matchResult?.groups?.get(1)?.value ?: ""
+            val decodedstrings = encodedString.decodeBase64()
+            decodedsources.add(decodedstrings).toString()
+        }
+        decodedsources.forEach {
+            val urlPattern = """src\s*=\s*["'](\bhttps://\S+\b)["']""".toRegex()
+            val matchResult = urlPattern.find(it)
+            val urlString = matchResult?.groups?.get(1)?.value ?: ""
+            if (urlString.contains("streamwish"))
+            {
+                Log.d("Giving Loading time","")
+            }
+            else
+            urlsources.add(urlString)
+        }
+        Log.d("Test9871", "$urlsources")
         // Iterate over each URL in sources
-        sources.forEach { url ->
+     /*   sources.forEach { url ->
             val document = app.get(url).document
             //println(document)
             val extractbase64 =document.selectFirst("script:containsData(Base64.decode)")?.data().toString()
@@ -141,51 +165,72 @@ class UpmoviesProvider : MainAPI() {
             val decodedstrings = encodedString.decodeBase64()
             println(decodedstrings)
             val urlPattern = """src\s*=\s*["'](\bhttps:\/\/\S+\b)["']""".toRegex()
+
+
             urlPattern.findAll(decodedstrings).forEach { matchResult ->
                 val url = matchResult.groups[1]?.value
-                if (url != null) {
-                    if (url.contains("dood")) {
+                */
+        urlsources.forEach { url->
+            if (url.contains("dood")) {
+                val links =
+                    DoodmainExtractor()
+                                .getUrl(
+                                        url,
+                                        "https://dood.re"
+                                ) // hardcoding the referer to test
+                links?.forEach { link -> callback.invoke(link) }
+            } else
+                if (url.contains("vtbe")) {
+                    val links =
+                        vtbe()
+                            .getUrl(
+                                url,
+                                "https://vtbe.to/"
+                            ) // hardcoding the referer to test
+                    links?.forEach { link -> callback.invoke(link) }
+                } else
+            if (url.contains("filemoon")) {
+                Log.d("Test9872",url)
+                    val links =
+                        Filemoon()
+                            .getUrl(
+                                url,
+                                "https://filemoon.to"
+                            ) // hardcoding the referer to test
+                    links?.forEach { link -> callback.invoke(link) }
+                } else
+                if (url.contains("StreamWish")) {
+                    val links =
+                        StreamWishExtractor()
+                            .getUrl(
+                                url,
+                                ""
+                            ) // hardcoding the referer to test
+                    links?.forEach { link -> callback.invoke(link) }
+                } else
+                    if (url.contains("filelion")) {
+                        Log.d("Test9873", url)
                         val links =
-                            DoodmainExtractor()
-                                        .getUrl(
-                                                url,
-                                                "https://dood.re"
-                                        ) // hardcoding the referer to test
+                            Filelion()
+                                .getUrl(
+                                    url,
+                                    ""
+                                ) // hardcoding the referer to test
                         links?.forEach { link -> callback.invoke(link) }
                     } else
-                        if (url.contains("vtbe")) {
-                            val links =
-                                vtbe()
-                                    .getUrl(
+                if (url.contains("eplay")) {
+                val links =
+                        EPlayExtractor()
+                                .getUrl(
                                         url,
-                                        "https://vtbe.to/"
-                                    ) // hardcoding the referer to test
-                            links?.forEach { link -> callback.invoke(link) }
-                        } else
-                    if (url.contains("filemoon")) {
-                            val links =
-                                Filemoon()
-                                    .getUrl(
-                                        url,
-                                        "https://filemoon.to"
-                                    ) // hardcoding the referer to test
-                            links?.forEach { link -> callback.invoke(link) }
-                        } else
-                        if (url.contains("eplay")) {
-                        val links =
-                                EPlayExtractor()
-                                        .getUrl(
-                                                url,
-                                                "https://eplayvid.net/"
-                                        ) // hardcoding the referer to test
-                        links?.forEach { link -> callback.invoke(link) }
-                    } else { // we will try default extractor first rto see why it is not wrking
-                        Log.d("Test123", url)
-                        loadExtractor(url, subtitleCallback, callback)
-                    }
-                }
+                                        "https://eplayvid.net/"
+                                ) // hardcoding the referer to test
+                links?.forEach { link -> callback.invoke(link) }
+            } else { // we will try default extractor first rto see why it is not wrking
+                Log.d("Test123", url)
+                loadExtractor(url, subtitleCallback, callback)
             }
-        }
+            }
         // Calling loadExtractor function with extracted links
         return true
     }
