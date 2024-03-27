@@ -1,6 +1,6 @@
 package com.javdoe
 
-import android.util.Log
+//import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -29,7 +29,7 @@ class Javdoe : MainAPI() {
             //Log.d("Test","$document")
             val home = document.select("#content > div > div > div > ul > li")
                 .mapNotNull { it.toSearchResult() }
-            Log.d("Test", "$home")
+            //Log.d("Test", "$home")
             return newHomePageResponse(
                 list = HomePageList(
                     name = request.name,
@@ -44,7 +44,7 @@ class Javdoe : MainAPI() {
             //Log.d("Test","$document")
             val home = document.select("#content > div > div > div > ul > li")
                 .mapNotNull { it.toSearchResult() }
-            Log.d("Test", "$home")
+            //Log.d("Test", "$home")
             return newHomePageResponse(
                 list = HomePageList(
                     name = request.name,
@@ -102,8 +102,6 @@ class Javdoe : MainAPI() {
                     this.posterUrl = recomposter
                 }
             }
-        Log.d("Testrecom","$description")
-        Log.d("Testrecom","$recommendations")
         //println(poster)
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
@@ -118,7 +116,7 @@ class Javdoe : MainAPI() {
         val sourcelist = mutableListOf<String>()
         val onclickValue = document.select(".button_choice_server").attr("onclick")
         val playEmbedContent = Regex("'(.*?)'").find(onclickValue)?.groupValues?.get(1)
-        Log.d("Testlink","$playEmbedContent")
+        //Log.d("Testlink","$playEmbedContent")
         val sources= app.get(playEmbedContent.toString()).document
         val liElements = sources.select("li.button_choice_server")
         for (liElement in liElements) {
