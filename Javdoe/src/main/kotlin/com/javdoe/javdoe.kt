@@ -70,7 +70,7 @@ class Javdoe : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..5) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query&id=5036").document
+            val document = app.get("${mainUrl}/search/video/?s=$query&page=$i").document
 
             val results = document.select("#content > div > div > div > ul > li").mapNotNull { it.toSearchResult() }
 
