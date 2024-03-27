@@ -98,7 +98,7 @@ class Javdoe : MainAPI() {
                 val recomhref = it.selectFirst("div.video > a")?.attr("href").toString()
                 val recomposterUrl = it.select("div.video > a > div > img").attr("src")
                 val recomposter="https://javdoe.sh$recomposterUrl"
-                newAnimeSearchResponse(recomtitle, recomhref, TvType.Movie) {
+                newAnimeSearchResponse(recomtitle, recomhref, TvType.NSFW) {
                     this.posterUrl = recomposter
                 }
             }
