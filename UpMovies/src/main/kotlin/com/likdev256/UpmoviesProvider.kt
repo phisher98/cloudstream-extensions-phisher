@@ -57,7 +57,7 @@ class UpmoviesProvider : MainAPI() {
             val document = app.get("${mainUrl}/search-movies/$query/page-$i.html").document
 
             val results =
-                    document.select("div.shortItem.listItem").mapNotNull { it.toSearchResult() }
+                    document.select("div.list-cate-detail > div.shortItem.listItem,div.category > div.shortItem.listItem > div > div.div-flex").mapNotNull { it.toSearchResult() }
 
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
