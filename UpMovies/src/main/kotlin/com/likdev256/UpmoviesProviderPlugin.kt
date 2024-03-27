@@ -14,8 +14,7 @@ class UpmoviesProviderPlugin: Plugin() {
         registerMainAPI(UpmoviesProvider())
         registerMainAPI(Movierulz())
         registerExtractorAPI(EPlayExtractor())
-        registerExtractorAPI(StreamWishExtractor())
-        registerExtractorAPI(StreamWishExtractor())
+        registerExtractorAPI(Streamwish())
         registerExtractorAPI(Filelion())
         registerExtractorAPI(DoodmainExtractor())
         registerExtractorAPI(DoodReExtractor())
@@ -23,7 +22,6 @@ class UpmoviesProviderPlugin: Plugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(Streamplay())
         registerExtractorAPI(Filemoon())
-        registerExtractorAPI(StreamWishExtractor())
         registerExtractorAPI(Vidmoly())
     }
 }

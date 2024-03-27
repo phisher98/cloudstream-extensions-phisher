@@ -1,10 +1,10 @@
 package com.likdev256
 
 import android.annotation.SuppressLint
+import android.util.Log
 //import android.util.Log
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
@@ -158,28 +158,41 @@ open class Filemoon : ExtractorApi() {
     }
 }
 
-open class StreamWishExtractor : ExtractorApi() {
-    override var name = "StreamWish"
+open class Streamwish : ExtractorApi() {
+    override var name = "Streamwish"
     override var mainUrl = "https://streamwish.to"
     override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(
-            url, referer = referer ?: "$mainUrl/", interceptor = WebViewResolver(
-                Regex("""master\.m3u8""")
+        val responsecode=app.get(url)
+        if (responsecode.code==200) {
+            val serverRes = responsecode.document
+            //Log.d("Test12","$serverRes")
+            val script = serverRes.selectFirst("script:containsData(sources)")?.data().toString()
+            //Log.d("Test12","$script")
+            val headers = mapOf(
+                "Accept" to "*/*",
+                "Connection" to "keep-alive",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "cross-site",
+                "Origin" to url,
             )
-        )
-        if (response.url.contains("m3u8"))
-            return listOf(
-                ExtractorLink(
-                    source = name,
-                    name = name,
-                    url = response.url,
-                    referer = referer ?: "$mainUrl/",
-                    quality = Qualities.Unknown.value,
-                    isM3u8 = true
+            Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
+                Log.d("Test9876", link)
+                return listOf(
+                    ExtractorLink(
+                        this.name,
+                        this.name,
+                        link,
+                        referer ?: "",
+                        getQualityFromName(""),
+                        URI(link).path.endsWith(".m3u8"),
+                        headers
+                    )
                 )
-            )
+            }
+        }
         return null
     }
 }
