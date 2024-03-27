@@ -20,15 +20,12 @@ class UpmoviesProvider : MainAPI() {
     override val mainPage =
             mainPageOf(
                     "new-released" to "New Released",
-                    "movies-countries/india" to "India",
+                    "cinema-movies" to "Cinema Movies",
+                    "movies-countries/india" to "Bollywood",
                     "tv-series" to "TV Series",
                     "asian-drama" to "Asian Dramas",
                     "anime-series" to "Anime",
                     "cartoon" to "Cartoon",
-                    "movies-genres/sci-fi" to "Sci-Fi",
-                    "movies-genres/comedy" to "Comedy",
-                    "movies-genres/action" to "Action",
-
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -36,7 +33,7 @@ class UpmoviesProvider : MainAPI() {
         // Log.d("Mandik","$document")
         val home =
                 document.select(
-                                "div.list-cate-detail > div.shortItem.listItem,div.category > div.shortItem.listItem"
+                                "div.list-cate-detail > div.shortItem.listItem,div.category > div.shortItem.listItem > div > div.div-flex"
                         )
                         .mapNotNull { it.toSearchResult() }
 
