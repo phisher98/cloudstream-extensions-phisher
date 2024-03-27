@@ -147,6 +147,13 @@ class UpmoviesProvider : MainAPI() {
             Log.d("Test9871", "$urlsources")
         }
             urlsources.forEach { url ->
+                if (url.contains("dood"))
+                {
+                    val links=
+                    DoodWatchExtractor().getUrl(url,"https://d000d.com")
+                    links?.forEach { link -> callback.invoke(link) }
+                }
+                else
                     loadExtractor(url, referer = url, subtitleCallback, callback)
             }
         return true

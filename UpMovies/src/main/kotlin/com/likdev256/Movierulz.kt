@@ -1,7 +1,7 @@
 package com.likdev256
 
 import android.annotation.SuppressLint
-import android.util.Log
+//import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -90,7 +90,7 @@ class Movierulz : MainAPI() {
 
         val title =document.selectFirst("div.entry-content > img")?.attr("alt")?.trim().toString()
         val poster =document.selectFirst("div.entry-content > img")?.attr("src")?.trim().toString()
-        val description =document.selectFirst("div.entry-content > p:nth-child(6)").text().trim()
+        val description = document.selectFirst("div.entry-content > p:nth-child(6)")?.text()!!.trim()
         //Log.d("Tesy12","$poster")
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = poster
@@ -121,20 +121,7 @@ class Movierulz : MainAPI() {
         //Log.d("Test1244", "$matches")
         //Log.d("Test12494", "$extractedUrls")
         extractedUrls.forEach { url->
-            if (url.contains("dood"))
-            {
-                Log.d("Testdood", url)
-                val links =
-                    DoodReExtractor()
-                        .getUrl(
-                            url,""
-                        ) // hardcoding the referer to test
-                links?.forEach { link -> callback.invoke(link) }
-            }
-            else
-                Log.d("Test", url)
-            Log.d("Testelse", url)
-            loadExtractor(url, subtitleCallback, callback)
+            loadExtractor(url,referer = url, subtitleCallback, callback)
         }
         return true
     }
