@@ -36,7 +36,7 @@ open class EPlayExtractor : ExtractorApi() {
 open class DoodWatchExtractor : ExtractorApi() {
     override var name = "DoodStream"
     override var mainUrl = "https://d000d.com"
-    override val requiresReferer = false
+    override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val changedurl=url.replace("dood.watch","d000d.com")
