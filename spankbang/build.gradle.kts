@@ -2,7 +2,7 @@ version = 7
 
 cloudstream {
     authors     = listOf("HindiProvider")
-    language    = "hi"
+    language    = "en"
     description = "Spankbang"
 
     /**

@@ -2,7 +2,7 @@ version = 5
 
 cloudstream {
     authors     = listOf("Hindi Provider")
-    language    = "hi"
+    language    = "en"
     description = "NSFW Search Videos"
 
     /**
