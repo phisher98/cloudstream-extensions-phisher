@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import me.xdrop.fuzzywuzzy.FuzzySearch
@@ -427,24 +428,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             sources.add(streamsb)
             Log.d("Test124","$sources")
             sources.forEach { url->
-                if (url.contains("wish"))
-                {
-                    //Log.d("Test Stream","$url")
-                    val links=Streamwish().getUrl(url)
-                    links?.forEach { link -> callback.invoke(link) }
-                }
-                if (url.contains("filelion"))
-                {
-                    //Log.d("Test file","$url")
-                    val links=Filelion().getUrl(url)
-                    links?.forEach { link -> callback.invoke(link) }
-                }
-                if (url.contains("ruby"))
-                {
-                    //Log.d("Test file","$url")
-                    val links=StreamRuby().getUrl(url,"https://streamruby.com")
-                    links?.forEach { link -> callback.invoke(link) }
-                }
+             loadExtractor(url,subtitleCallback,callback)
             }
         }
         return true
