@@ -2,13 +2,14 @@ package com.likdev256
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.*
+import com.fasterxml.jackson.module.kotlin.*
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import me.xdrop.fuzzywuzzy.FuzzySearch
@@ -20,7 +21,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     override var mainUrl = "https://showflix.lol"
     override var name = "ShowFlix"
     override val hasMainPage = true
-    override var lang = "hi"
+    override var lang = "ta"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -387,9 +388,9 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             }
             // Log.d("TVResult", recommendations.toString())
 
-           // val seasonDataList = listOf(TVit.Seasons.Seasons,
-            //    TVit.streamwish.Seasons, TVit.filelions.Seasons, TVit.streamruby.Seasons, TVit.streamhide.Seasons)
-           // val combinedSeasons = mutableMapOf<String, MutableMap<Int, List<String?>>>()
+            val seasonDataList = listOf(TVit.Seasons.Seasons,
+                TVit.streamwish.Seasons, TVit.filelions.Seasons, TVit.streamruby.Seasons, TVit.streamhide.Seasons)
+            val combinedSeasons = mutableMapOf<String, MutableMap<Int, List<String?>>>()
             val episodes = TVit.Seasons.Seasons.map { (seasonName, episodes) ->
                 val seasonNum = Regex("\\d+").find(seasonName)?.value?.toInt()
 
@@ -514,8 +515,105 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         }
     }
 
+    private suspend fun loadStreamHide(
+        main: String,
+        id: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
 
+        val url = "https://$main$id.html"
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Connection" to "keep-alive",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Origin" to main,
+        )
+        val response = app.get(url, referer = url).document
+        response.select("body > script[type=text/javascript]").map { script ->
+            if (script.data().contains(Regex("eval\\(function\\(p,a,c,k,e,[rd]"))) {
+                val unpackedscript = getAndUnpack(script.data())
+                val m3u8Regex = Regex("file.\"(.*?m3u8.*?)\"")
+                val m3u8 = m3u8Regex.find(unpackedscript)?.destructured?.component1() ?: ""
+                val cleanMain = main.replace(Regex("/.*"), "")
+                if (m3u8.isNotEmpty()) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "$name-$cleanMain",
+                            "$name-$cleanMain",
+                            m3u8,
+                            "https://$cleanMain",
+                            Qualities.Unknown.value,
+                            true,
+                            headers
+                        )
+                    )
+                }
+            }
+        }
+    }
 
+    private suspend fun loadShareDisk(
+        id: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
+
+        val main = "https://us-central1-affiliate2apk.cloudfunctions.net/get_data?shortid="
+        val link = parseJson<GetShareDiskDl>(
+            app.get("$main$id").text
+        ).videoUrl.toString()
+        //Log.d("mybadlink", link)
+
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    name + "-ShareDisk",
+                    name + "-ShareDisk",
+                    link,
+                    "",
+                    Qualities.Unknown.value,
+                    false
+                )
+            )
+        }
+
+    }
+
+    private suspend fun loadStreamWish(
+        main: String,
+        id: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
+
+        val url = "https://$main/e/$id"
+        val doc = app.get(url).text
+        val linkRegex = Regex("sources:.\\[\\{file:\"(.*?)\"")
+        val link = linkRegex.find(doc)?.groups?.get(1)?.value.toString()
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Connection" to "keep-alive",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Origin" to main,
+        )
+
+        safeApiCall {
+            callback.invoke(
+                ExtractorLink(
+                    "$name-$main",
+                    "$name-$main",
+                    link,
+                    "https://$main/",
+                    Qualities.Unknown.value,
+                    true,
+                    headers
+                )
+            )
+        }
+
+    }
 
     override suspend fun loadLinks(
         data: String,
@@ -523,24 +621,25 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        println(data)
         if (data.contains("sharedisk")) {
             val m = parseJson<MovieLinks>(data)
-            val sources = mutableListOf<String>()
-            println(m)
-            val streamwish=m.streamwish
-            val streamruby=m.streamruby
-            val filemoon =m.filelions
-            val filemoonfinal="https://filelions.to/v/$filemoon"
-            val streamrubyfinal="https://streamruby.com/e/$streamruby"
-            val streamwishfinal="https://streamwish.to/e/$streamwish"
-            sources.add(filemoonfinal)
-            sources.add(streamrubyfinal)
-            sources.add(streamwishfinal)
-            sources.forEach {
-                loadExtractor(it,subtitleCallback,callback)
+            //load links in a forEach so it doesn't fail iof one of the links are empty
+            m.streamsb?.let   { it1 -> loadStreamSB(it1, subtitleCallback, callback) }
+            m.streamwish?.let { it1 -> loadStreamWish("streamwish.to", it1, subtitleCallback, callback) }
+            m.streamruby?.let { it1 -> loadStreamWish("streamruby.com", it1, subtitleCallback, callback) }
+            m.streamhide?.let { it1 -> loadStreamHide("streamhide.com/e/", it1,  subtitleCallback, callback) }
+            m.filelions?.let  { it1 -> loadStreamHide("filelions.to/v/", it1, subtitleCallback, callback) }
+            m.sharedisk?.let  { it1 -> loadShareDisk(it1, subtitleCallback, callback) }
+
+        } else {
+            val (main, id) = splitUrl(data)
+            if (data.contains("filelions")) {
+                loadStreamHide("$main/v/", id, subtitleCallback, callback)
+            } else {
+                loadStreamWish(main, id, subtitleCallback, callback)
             }
         }
+
         return true
     }
 }
