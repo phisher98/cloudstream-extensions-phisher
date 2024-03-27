@@ -92,14 +92,14 @@ class UpmoviesProvider : MainAPI() {
             val episodes =
                     document.select("#cont_player > #details > a").mapNotNull {
                         val href = it.selectFirst("a.episode.episode_series_link")!!.attr("href")
-                        Log.d("href episodes", href)
+                        //Log.d("href episodes", href)
                         // val description = document.selectFirst("div.film-detail >
                         // div.textSpoiler").text().trim()
                         val episode = it.select("#details > a").text().toString()
                         val fullepisode="Episode"+ episode
                         Episode(href, fullepisode)
                     }
-            Log.d("Phisher Epe", "$episodes")
+            //Log.d("Phisher Epe", "$episodes")
 
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
