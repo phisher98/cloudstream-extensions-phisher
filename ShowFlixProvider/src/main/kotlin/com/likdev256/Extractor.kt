@@ -15,7 +15,6 @@ open class Streamwish : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val responsecode=app.get(url)
-        if (responsecode.code==200) {
             val serverRes = responsecode.document
             //Log.d("Test12","$serverRes")
             val script = serverRes.selectFirst("script:containsData(sources)")?.data().toString()
@@ -42,7 +41,6 @@ open class Streamwish : ExtractorApi() {
                     )
                 )
             }
-        }
         return null
     }
 }
@@ -59,7 +57,6 @@ open class Filelion : ExtractorApi() {
     ): List<ExtractorLink>? {
         val responsecode=app.get(url)
         //Log.d("Test12","$responsecode")
-        if (responsecode.code==200) {
             val response = responsecode.document
             Log.d("Test12","$response")
             //val response = app.get(url, referer = referer)
@@ -78,7 +75,6 @@ open class Filelion : ExtractorApi() {
                     )
                 )
             }
-        }
         return null
     }
 }
@@ -95,7 +91,6 @@ open class StreamRuby : ExtractorApi() {
     ): List<ExtractorLink>? {
 
         val responsecode=app.get(url)
-        if (responsecode.code==200) {
             val response = responsecode.document
             //Log.d("Test12","$response")
             //val response = app.get(url, referer = referer)
@@ -112,7 +107,7 @@ open class StreamRuby : ExtractorApi() {
 
 
             Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
-                Log.d("Test9876", link)
+                //Log.d("Test9876", link)
                 return listOf(
                     ExtractorLink(
                         this.name,
@@ -125,7 +120,6 @@ open class StreamRuby : ExtractorApi() {
                     )
                 )
             }
-        }
         return null
     }
 }
