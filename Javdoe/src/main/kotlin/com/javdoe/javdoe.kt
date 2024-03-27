@@ -92,10 +92,23 @@ class Javdoe : MainAPI() {
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
         val poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim().toString()
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
+        val recommendations =
+            document.select("ul.videos.related >  li").map {
+                val recomtitle = it.selectFirst("div.video > a")?.attr("title")?.trim().toString()
+                val recomhref = it.selectFirst("div.video > a")?.attr("href").toString()
+                val recomposterUrl = it.select("div.video > a > div > img").attr("src")
+                val recomposter="https://javdoe.sh$recomposterUrl"
+                newAnimeSearchResponse(recomtitle, recomhref, TvType.Movie) {
+                    this.posterUrl = recomposter
+                }
+            }
+        Log.d("Testrecom","$description")
+        Log.d("Testrecom","$recommendations")
         //println(poster)
         return newMovieLoadResponse(title, url, TvType.NSFW, url) {
             this.posterUrl = poster
             this.plot      = description
+            this.recommendations=recommendations
         }
     }
 
