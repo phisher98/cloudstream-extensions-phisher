@@ -109,16 +109,16 @@ class DramacoolProvider : MainAPI() {
             if (url.contains("asian"))
             {
                 val doc= app.get(url).document
-                val links=doc.select("ul > li.linkserver")
-                val regex="data-video=\"".toRegex()
+                val links=doc.select("ul > li.linkserver").toString()
+                val regex="data-video=\"(.*)\\?c".toRegex()
                 //Log.d("Test12", links.toString())
-                val allservers = regex.findAll(links.toString()).map {
+                val allservers = regex.findAll(links).map {
                     it.groupValues[1]
                 }.toList()
                 Log.d("Test12", allservers.toString())
                 allservers.forEach{
                     Log.d("Test12",it)
-                    loadExtractor(url, subtitleCallback, callback)
+                    loadExtractor(it, subtitleCallback, callback)
                 }
             }else
             {
