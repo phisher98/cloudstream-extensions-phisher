@@ -2,7 +2,7 @@ package com.likdev256
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.util.Log
+//import android.util.Log
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -15,7 +15,7 @@ class UpmoviesProvider : MainAPI() {
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries,TvType.AsianDrama,TvType.Anime)
 
     override val mainPage =
             mainPageOf(
@@ -30,7 +30,6 @@ class UpmoviesProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/page-$page.html").document
-        // Log.d("Mandik","$document")
         val home =
                 document.select(
                                 "div.list-cate-detail > div.shortItem.listItem,div.category > div.shortItem.listItem > div > div.div-flex"
@@ -96,8 +95,6 @@ class UpmoviesProvider : MainAPI() {
                         val fullepisode="Episode"+ episode
                         Episode(href, fullepisode)
                     }
-            //Log.d("Phisher Epe", "$episodes")
-
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.plot = description
@@ -125,11 +122,8 @@ class UpmoviesProvider : MainAPI() {
         document.select("#total_version > div > p.server_servername > a").forEach { element ->
             sources.add(element.attr("href").trim())
         }
-        //println(sources)
-
         sources.forEach {
             @Suppress("NAME_SHADOWING") val document = app.get(it).document
-            //println(document)
             val extractbase64 =document.selectFirst("div.player-iframe.animation > script:containsData(Base64.decode)")?.data().toString()
             // Extracting Base64 encoded string using regex
             val pattern = "Base64.decode\\(\"([^\"]*)\"\\)".toRegex()
@@ -143,8 +137,10 @@ class UpmoviesProvider : MainAPI() {
             val matchResult = urlPattern.find(it)
             val urlString = matchResult?.groups?.get(1)?.value ?: ""
             val newurl=urlString.replace("https:///","https://")
+            //This is the line to create or test Extractors
+            //if (newurl.contains("drop"))
             urlsources.add(newurl)
-            Log.d("Test9871", "$urlsources")
+            //Log.d("Test9871", "$urlsources")
         }
             urlsources.forEach { url ->
                 if (url.contains("dood"))

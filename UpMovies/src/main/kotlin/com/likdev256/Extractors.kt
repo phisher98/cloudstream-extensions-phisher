@@ -193,5 +193,33 @@ open class Filelion : ExtractorApi() {
 
 
 
-
+open class Dropload : ExtractorApi() {
+    override val name = "Dropload"
+    override val mainUrl = "https://dropload.io"
+    override val requiresReferer = false
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+    ): List<ExtractorLink>? {
+        val response = app.get(url).document
+        val script =
+            response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        JsUnpacker(script).unpack()?.let { unPacked ->
+            val Quality =Regex("""qualityLabels'\\s*:\\s*\{\\s*"\\d+"\\s*:\\s*"([^"]+)""").find(unPacked)?.groupValues?.get(1)
+            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
+                return listOf(
+                    ExtractorLink(
+                        this.name,
+                        this.name,
+                        link,
+                        referer ?: "",
+                        getQualityFromName(Quality),
+                        URI(link).path.endsWith(".m3u8")
+                    )
+                )
+            }
+        }
+        return null
+    }
+}
 
