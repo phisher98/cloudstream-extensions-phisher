@@ -57,19 +57,31 @@ class DramacoolProvider : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=$query"
-        val document = app.get(url, referer = "$mainUrl/").document
+        val searchResponse = mutableListOf<SearchResponse>()
+        for (i in 1..5) {
+            val document = app.get("${mainUrl}/discover/page/$i/?keyword=$query").document
 
-        val items = document.select(".list-thumb li").mapNotNull {
-            val a = it.selectFirst("a") ?: return@mapNotNull null
-            val name = it.selectFirst("h2")?.text() ?: return@mapNotNull null
-            val posterUrl = fixUrlNull(it.selectFirst("img")?.attr("src"))
-            val href = a.attr("href")
-            newMovieSearchResponse(name, LoadUrl(href, posterUrl).toJson()) {
-                this.posterUrl = posterUrl
+            val results =
+                document.select(".list-thumb li").mapNotNull {
+                    val a = it.selectFirst("a") ?: return@mapNotNull null
+                    val name = it.selectFirst("h2")?.text() ?: return@mapNotNull null
+                    val posterUrl = fixUrlNull(it.selectFirst("img")?.attr("src"))
+                    val href = a.attr("href")
+                    newMovieSearchResponse(name, LoadUrl(href, posterUrl).toJson()) {
+                        this.posterUrl = posterUrl
+                    }
+                }
+
+            if (!searchResponse.containsAll(results)) {
+                searchResponse.addAll(results)
+            } else {
+                break
             }
+
+            if (results.isEmpty()) break
         }
-        return items
+
+        return searchResponse
     }
 
     override suspend fun load(url: String): LoadResponse? {
