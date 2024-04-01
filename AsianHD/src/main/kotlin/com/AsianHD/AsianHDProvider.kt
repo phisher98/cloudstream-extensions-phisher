@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.extractors.StreamTape
 @CloudstreamPlugin
 class AsianHDProvider: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(DramacoolPA())
         registerMainAPI(DramacoolProvider())
         registerExtractorAPI(embedwish())
         registerExtractorAPI(dwish())

@@ -44,7 +44,7 @@ class actionviewphotography : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = fixTitle(this.select("div.i_info > div.title").text())
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.selectFirst("a >div> img").attr("data-src").trim())
+        val posterUrl = fixUrlNull(this.selectFirst("a >div> img")?.attr("data-src")!!.trim())
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
