@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 2
+version = 3
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "InternetChicks"
+    description = "Kdramas"
     language    = "en"
     authors = listOf("HindiProviders")
 
@@ -21,5 +21,7 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("NSFW")
+    tvTypes = listOf("TvSeries,AsianDrama")
+
+    iconUrl = "https://play-lh.googleusercontent.com/IaCb2JXII0OV611MQ-wSA8v_SAs9XF6E3TMDiuxGGXo4wp9bI60GtDASIqdERSTO5XU"
 }
