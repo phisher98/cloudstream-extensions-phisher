@@ -125,22 +125,39 @@ class Kissasian : MainAPI() {
                     .parsedSafe<APISourceresponse>()
             val fstream=apiRes?.link.toString()
             val response = app.get(fstream,referer = mainUrl, headers = xmlHeader, interceptor = WebViewResolver(Regex("""ajax/getSources""")))
-            Log.d("Test","$response")
+            val test=response.text.replace("\": ","\":")
             val regex = """"file":"(.*?)""""
-            val matchResult = regex.toRegex().find(response.toString())
+            val matchResult = regex.toRegex().find(test)
             val fileUrl = matchResult?.groups?.get(1)?.value
             if (fileUrl!=null)
             {
-                callback.invoke(
-                ExtractorLink(
-                    source = name,
-                    name = name,
-                    url = fileUrl,
-                    referer = "$mainUrl/",
-                    quality = Qualities.Unknown.value,
-                    isM3u8 = true
-                )
-                )
+                if (fileUrl.contains("mp4"))
+                {
+                    Log.d("Test5",fileUrl)
+                    callback.invoke(
+                        ExtractorLink(
+                            source = name,
+                            name = name,
+                            url = fileUrl,
+                            referer = "$mainUrl/",
+                            quality = Qualities.Unknown.value,
+                            isM3u8 = false
+                        )
+                    )
+                }
+                else {
+                    Log.d("Test6",fileUrl)
+                    callback.invoke(
+                        ExtractorLink(
+                            source = name,
+                            name = name,
+                            url = fileUrl,
+                            referer = "$mainUrl/",
+                            quality = Qualities.Unknown.value,
+                            isM3u8 = true
+                        )
+                    )
+                }
             }
         }
         return true
