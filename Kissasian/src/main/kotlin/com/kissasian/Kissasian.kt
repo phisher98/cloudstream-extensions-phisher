@@ -1,4 +1,4 @@
-package com.kissasian
+9package com.kissasian
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -16,7 +16,7 @@ class Kissasian : MainAPI() {
     override val hasMainPage          = true
     override var lang                 = "en"
     override val hasDownloadSupport   = true
-    override val supportedTypes       = setOf(TvType.TvSeries,TvType.Movie)
+    override val supportedTypes       = setOf(TvType.AsianDrama,TvType.Movie)
 
     companion object {
         val xmlHeader = mapOf("X-Requested-With" to "XMLHttpRequest")
