@@ -56,9 +56,11 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val documentTata = app.get("$mainUrl/").document
         val documentAirtel = app.get("https://madplay.live/hls/airtel").document
+        val documentJiotv = app.get("https://madstream.one/pages/jiotvplus.php").document
         val mergedDocument = Document.createShell("")
         mergedDocument.body().append(documentTata.body().html())
         mergedDocument.body().append(documentAirtel.body().html())
+        mergedDocument.body().append(documentJiotv.body().html())
 
             return mergedDocument.select("div#listContainer div.box1:contains($query), div#listContainer div.box1:contains($query)")
                 .mapNotNull {
