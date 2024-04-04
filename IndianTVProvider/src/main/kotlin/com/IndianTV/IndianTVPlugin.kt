@@ -26,6 +26,7 @@ class IndianTVPlugin : MainAPI() {
     override val mainPage = mainPageOf(
         "$mainUrl/" to "TATA",
         "https://madplay.live/hls/airtel" to "Airtel",
+        "https://madstream.one/pages/jiotvplus.php" to "Jio TV",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -66,6 +67,17 @@ class IndianTVPlugin : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        if (url.contains("jio"))
+        {
+            val title ="JioTV"
+            val poster ="https://i0.wp.com/www.smartprix.com/bytes/wp-content/uploads/2021/08/JioTV-on-smart-TV.png?fit=1200%2C675&ssl=1"
+            val showname ="JioTV"
+
+            return newMovieLoadResponse(title, url, TvType.Live, url) {
+                this.posterUrl = poster
+                this.plot = showname
+            }
+        }
             val document = app.get(url).document
             val title =document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
             val poster =fixUrl(document.select("div.program-info > img").attr("src").toString())
@@ -87,16 +99,30 @@ class IndianTVPlugin : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        val scripts = document.select("script")
-        var globalArgument: Any? = null
-        // List to hold all the extracted links
+        if (data.contains("jio")) {
+            val file =document.select("script:containsData(file)").toString().substringAfter("file\": \"").substringBefore("\",")
+            Log.d("Test",file)
+            callback.invoke(
+                ExtractorLink(
+                    source = "TATA SKY",
+                    name = "TATA SKY",
+                    url = file,
+                    referer = "https://madplay.live/",
+                    quality = Qualities.Unknown.value,
+                    isM3u8 = true,
+                )
+            )
+        } else {
+            val scripts = document.select("script")
+            var globalArgument: Any? = null
+            // List to hold all the extracted links
 
-        scripts.map { script ->
-            val finalScriptRaw = script.data().toString()
-            mainWork {
-                if (finalScriptRaw.contains("split")) {
-                    val startJs =
-                        """
+            scripts.map { script ->
+                val finalScriptRaw = script.data().toString()
+                mainWork {
+                    if (finalScriptRaw.contains("split")) {
+                        val startJs =
+                            """
                 var globalArgument = null;
                 function jwplayer() {
                     return {
@@ -107,37 +133,37 @@ class IndianTVPlugin : MainAPI() {
                     };
                 };
                 """
-                    val rhino = getRhinoContext()
-                    val scope: Scriptable = rhino.initSafeStandardObjects()
-                    rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
-                    globalArgument = scope.get("globalArgument", scope)
+                        val rhino = getRhinoContext()
+                        val scope: Scriptable = rhino.initSafeStandardObjects()
+                        rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
+                        globalArgument = scope.get("globalArgument", scope)
+                    }
                 }
-            }
 
-            // Access globalArgument outside mainWork block
-            val rhinout = globalArgument?.toJson() ?: ""
-            Log.d("Rhinoout", rhinout)
+                // Access globalArgument outside mainWork block
+                val rhinout = globalArgument?.toJson() ?: ""
+                Log.d("Rhinoout", rhinout)
 
-            val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-            val matchResult = pattern.find(rhinout)
-            val file: String?
-            val keyId: String?
-            val key: String?
-            if (matchResult != null) {
-                file = matchResult.groupValues[1]
-                keyId = matchResult.groupValues[2]
-                key = matchResult.groupValues[3]
+                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
+                val matchResult = pattern.find(rhinout)
+                val file: String?
+                val keyId: String?
+                val key: String?
+                if (matchResult != null) {
+                    file = matchResult.groupValues[1]
+                    keyId = matchResult.groupValues[2]
+                    key = matchResult.groupValues[3]
 
-                Log.d("Test",key)
-                Log.d("Test",keyId)
+                    Log.d("Test", key)
+                    Log.d("Test", keyId)
                     val newkeyId = keyId.toString()
                     val newkey = key.toString()
 
                     val link = file.toString()
                     val finalkey = decodeHex(newkey)
                     val finalkeyid = decodeHex(newkeyId)
-                Log.d("Test",finalkey)
-                Log.d("Test",finalkeyid)
+                    Log.d("Test", finalkey)
+                    Log.d("Test", finalkeyid)
 
                     callback.invoke(
                         DrmExtractorLink(
@@ -151,6 +177,7 @@ class IndianTVPlugin : MainAPI() {
                             key = finalkey,
                         )
                     )
+                }
             }
         }
         return true
