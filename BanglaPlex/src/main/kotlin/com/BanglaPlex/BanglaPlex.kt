@@ -23,19 +23,34 @@ class Banglaplex : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val newpagenumber=page*12
-        val document = app.get("$mainUrl/${request.data}/$newpagenumber.html").document
-        val home = document.select("div.movie-container > div.col-md-2")
-            .mapNotNull { it.toSearchResult() }
+        if (page == 1) {
+            val document = app.get("$mainUrl/${request.data}.html").document
+            val home = document.select("div.movie-container > div.col-md-2")
+                .mapNotNull { it.toSearchResult() }
 
-        return newHomePageResponse(
-            list = HomePageList(
-                name = request.name,
-                list = home,
-                isHorizontalImages = false
-            ),
-            hasNext = true
-        )
+            return newHomePageResponse(
+                list = HomePageList(
+                    name = request.name,
+                    list = home,
+                    isHorizontalImages = false
+                ),
+                hasNext = true
+            )
+        } else {
+            val newpagenumber = page * 12
+            val document = app.get("$mainUrl/${request.data}/$newpagenumber.html").document
+            val home = document.select("div.movie-container > div.col-md-2")
+                .mapNotNull { it.toSearchResult() }
+
+            return newHomePageResponse(
+                list = HomePageList(
+                    name = request.name,
+                    list = home,
+                    isHorizontalImages = false
+                ),
+                hasNext = true
+            )
+        }
     }
 
     private fun Element.toSearchResult(): SearchResponse {
