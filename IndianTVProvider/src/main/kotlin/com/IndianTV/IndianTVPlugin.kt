@@ -1,5 +1,6 @@
 package com.IndianTV
 
+import android.annotation.SuppressLint
 import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -95,6 +96,7 @@ class IndianTVPlugin : MainAPI() {
 
     // Define a nullable global variable to store globalArgument
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
