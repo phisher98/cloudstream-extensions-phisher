@@ -1,4 +1,4 @@
-package com.AsianHD
+package com.kissasian
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
-class DramacoolProvider : MainAPI() {
+class Dramacool : MainAPI() {
     override val supportedTypes = setOf(
         TvType.AsianDrama
     )
