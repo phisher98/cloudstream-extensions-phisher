@@ -41,7 +41,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-    - name: Access Secrets
+      - name: Access Secrets
         env:
           TMDB_API: ${{ secrets.TMDB_API }}
           DUMP_API: ${{ secrets.DUMP_API }}
