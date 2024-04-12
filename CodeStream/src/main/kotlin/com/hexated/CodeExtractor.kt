@@ -115,11 +115,10 @@ object CodeExtractor : CodeStream() {
         }
                val iframedoc =
             app.get(url).document.select("iframe#player_iframe").attr("src").let { httpsify(it) }
-        val doc = app.get(iframedoc, referer = url).document
+        val doc = app.get(iframedoc, referer = "https://vidsrc.stream/").document
         val index = doc.select("body").attr("data-i")
         val hash = doc.select("div#hidden").attr("data-h")
         val srcrcp = deobfstr(hash, index)
-
         val script = app.get(
             httpsify(srcrcp),
             referer = iframedoc
@@ -860,9 +859,10 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
+        Log.d("Test",url)
         val mediaId = app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id")
             ?: return
-
+        Log.d("Test",mediaId)
         app.get(
             "$vidsrctoAPI/ajax/embed/episode/$mediaId/sources", headers = mapOf(
                 "X-Requested-With" to "XMLHttpRequest"
@@ -870,6 +870,7 @@ object CodeExtractor : CodeStream() {
         ).parsedSafe<VidsrctoSources>()?.result?.apmap {
             val encUrl = app.get("$vidsrctoAPI/ajax/embed/source/${it.id}")
                 .parsedSafe<VidsrctoResponse>()?.result?.url
+            Log.d("Test",encUrl.toString())
             loadExtractor(
                 vidsrctoDecrypt(
                     encUrl

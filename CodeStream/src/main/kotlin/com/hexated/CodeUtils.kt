@@ -1110,6 +1110,7 @@ fun vidsrctoDecrypt(text: String): String {
         SecretKeySpec("8z5Ag5wgagfsOuhz".toByteArray(), "RC4"),
         cipher.parameters
     )
+    Log.d("Test Decr",decode(cipher.doFinal(parse).toString(Charsets.UTF_8)))
     return decode(cipher.doFinal(parse).toString(Charsets.UTF_8))
 }
 
