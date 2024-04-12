@@ -5,7 +5,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "IPL"
+    description = "Cricket Streams"
     language    = "hi"
     authors = listOf("HindiProviders")
 
