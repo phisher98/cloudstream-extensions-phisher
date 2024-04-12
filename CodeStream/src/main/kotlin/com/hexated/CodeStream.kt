@@ -46,6 +46,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeVidsrcto
 import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
 import com.KillerDogeEmpire.CodeExtractor.invokeMoflix
 import com.KillerDogeEmpire.CodeExtractor.invokeGhostx
+import com.KillerDogeEmpire.CodeExtractor.invokeMoviehubAPI
 import com.KillerDogeEmpire.CodeExtractor.invokeNepu
 import com.KillerDogeEmpire.CodeExtractor.invokeTopMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeWatchCartoon
@@ -91,6 +92,7 @@ open class CodeStream : TmdbProvider() {
         const val dreamfilmAPI = "https://dreamfilmsw.net"
         const val noverseAPI = "https://www.thenollyverse.com"
         const val filmxyAPI = "https://www.filmxy.pw"
+        const val MOVIE_API = BuildConfig.MOVIE_API
         const val kimcartoonAPI = "https://kimcartoon.li"
         const val hianimeAPI = "https://hianime.to"
         const val aniwaveAPI = "https://aniwave.to"
@@ -591,6 +593,16 @@ open class CodeStream : TmdbProvider() {
             },
             {
                 if (!res.isAnime) invokeRidomovies(
+                    res.id,
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeMoviehubAPI(
                     res.id,
                     res.imdbId,
                     res.season,

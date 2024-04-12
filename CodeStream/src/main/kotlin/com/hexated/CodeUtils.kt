@@ -258,6 +258,11 @@ suspend fun extractDirectDl(url: String): String? {
     return tryParseJson<DirectDl>(json)?.download_url
 }
 
+suspend fun extractMovieAPIlinks(serverid: String,movieid: String,MOVIE_API: String): String? {
+    val link=app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").document.toString().substringAfter("link\":\"").substringBefore("\",")
+    return link
+}
+
 suspend fun extractDrivebot(url: String): String? {
     val iframeDrivebot =
         app.get(url).document.selectFirst("li.flex.flex-col.py-6 a:contains(Drivebot)")
@@ -1110,7 +1115,6 @@ fun vidsrctoDecrypt(text: String): String {
         SecretKeySpec("8z5Ag5wgagfsOuhz".toByteArray(), "RC4"),
         cipher.parameters
     )
-    Log.d("Test Decr",decode(cipher.doFinal(parse).toString(Charsets.UTF_8)))
     return decode(cipher.doFinal(parse).toString(Charsets.UTF_8))
 }
 

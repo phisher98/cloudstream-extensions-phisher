@@ -847,6 +847,31 @@ object CodeExtractor : CodeStream() {
         }
     }
 
+    suspend fun invokeMoviehubAPI(
+        id: Int? = null,
+        imdbId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$MOVIE_API/embed/$id"
+        } else {
+            "$MOVIE_API/embed/$id/$season/$episode"
+        }
+        val movieid = app.get(url).document.selectFirst("#embed-player")?.attr("data-movie-id")
+            ?: return
+        app.get(url).document.select("a.server.dropdown-item").forEach {
+            val dataid=it.attr("data-id")
+            val link=extractMovieAPIlinks(dataid,movieid,MOVIE_API).toString()
+            if (link.contains("bestx.stream")) {
+                Log.d("Test link",link)
+                loadExtractor(link, subtitleCallback, callback)
+            }
+        }
+    }
+
     suspend fun invokeVidsrcto(
         imdbId: String?,
         season: Int?,
@@ -859,10 +884,8 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
-        Log.d("Test",url)
         val mediaId = app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id")
             ?: return
-        Log.d("Test",mediaId)
         app.get(
             "$vidsrctoAPI/ajax/embed/episode/$mediaId/sources", headers = mapOf(
                 "X-Requested-With" to "XMLHttpRequest"
@@ -870,7 +893,6 @@ object CodeExtractor : CodeStream() {
         ).parsedSafe<VidsrctoSources>()?.result?.apmap {
             val encUrl = app.get("$vidsrctoAPI/ajax/embed/source/${it.id}")
                 .parsedSafe<VidsrctoResponse>()?.result?.url
-            Log.d("Test",encUrl.toString())
             loadExtractor(
                 vidsrctoDecrypt(
                     encUrl
