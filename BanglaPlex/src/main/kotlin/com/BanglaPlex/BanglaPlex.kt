@@ -22,35 +22,39 @@ class Banglaplex : MainAPI() {
         "genre/korean-web-series" to "Korean Web Series",
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        if (page == 1) {
-            val document = app.get("$mainUrl/${request.data}.html").document
-            val home = document.select("div.movie-container > div.col-md-2")
-                .mapNotNull { it.toSearchResult() }
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
+        val res=app.get("$mainUrl/${request.data}.html")
+        if (res.code==200) {
+            if (page == 1) {
+                val document = app.get("$mainUrl/${request.data}.html").document
+                val home = document.select("div.movie-container > div.col-md-2")
+                    .mapNotNull { it.toSearchResult() }
 
-            return newHomePageResponse(
-                list = HomePageList(
-                    name = request.name,
-                    list = home,
-                    isHorizontalImages = false
-                ),
-                hasNext = true
-            )
-        } else {
-            val newpagenumber = page * 12
-            val document = app.get("$mainUrl/${request.data}/$newpagenumber.html").document
-            val home = document.select("div.movie-container > div.col-md-2")
-                .mapNotNull { it.toSearchResult() }
+                return newHomePageResponse(
+                    list = HomePageList(
+                        name = request.name,
+                        list = home,
+                        isHorizontalImages = false
+                    ),
+                    hasNext = true
+                )
+            } else {
+                val newpagenumber = page * 12
+                val document = app.get("$mainUrl/${request.data}/$newpagenumber.html").document
+                val home = document.select("div.movie-container > div.col-md-2")
+                    .mapNotNull { it.toSearchResult() }
 
-            return newHomePageResponse(
-                list = HomePageList(
-                    name = request.name,
-                    list = home,
-                    isHorizontalImages = false
-                ),
-                hasNext = true
-            )
+                return newHomePageResponse(
+                    list = HomePageList(
+                        name = request.name,
+                        list = home,
+                        isHorizontalImages = false
+                    ),
+                    hasNext = true
+                )
+            }
         }
+        return null
     }
 
     private fun Element.toSearchResult(): SearchResponse {

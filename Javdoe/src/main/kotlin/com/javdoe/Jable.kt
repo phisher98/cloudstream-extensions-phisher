@@ -1,13 +1,16 @@
 package com.javdoe
 
 //import android.util.Log
+import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.utils.*
 
-class Javdoe : MainAPI() {
-    override var mainUrl              = "https://javdoe.sh"
-    override var name                 = "Javdoe"
+class Jable : MainAPI() {
+    override var mainUrl              = "https://javgg.net/"
+    override var name                 = "Javgg"
     override val hasMainPage          = true
     override var lang                 = "en"
     override val hasQuickSearch       = false
@@ -16,18 +19,15 @@ class Javdoe : MainAPI() {
     override val vpnStatus            = VPNStatus.MightBeNeeded
 
     override val mainPage = mainPageOf(
-        "recent" to "Latest",
-        "releaseday" to "New Release",
-        "english-subtitle" to "English Subtitle",
-        "asian" to "Asian",
-        "tag/uncensored" to "Uncensored",
+        "trending" to "Trending",
+        "genre/stepmother" to "Stepmother",
+        "genre/married-woman" to "Married Woman",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        if (page == 1) {
-            val document = app.get("$mainUrl/${request.data}/").document
+            val document = app.get("$mainUrl/${request.data}/page/$page").document
             //Log.d("Test","$document")
-            val home = document.select("#content > div > div > div > ul > li")
+            val home = document.select("div.items.normal > article")
                 .mapNotNull { it.toSearchResult() }
             //Log.d("Test", "$home")
             return newHomePageResponse(
@@ -38,30 +38,14 @@ class Javdoe : MainAPI() {
                 ),
                 hasNext = true
             )
-        }
-        else {
-            val document = app.get("$mainUrl/${request.data}/$page/").document
-            //Log.d("Test","$document")
-            val home = document.select("#content > div > div > div > ul > li")
-                .mapNotNull { it.toSearchResult() }
-            //Log.d("Test", "$home")
-            return newHomePageResponse(
-                list = HomePageList(
-                    name = request.name,
-                    list = home,
-                    isHorizontalImages = false
-                ),
-                hasNext = true
-            )
-        }
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = this.select("div.video > a").attr("title").trim()
-        val href      = fixUrl(this.select("div.video > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.video > a > div > img").attr("src"))
+        val title     = this.select("div.poster > a").attr("title")
+        val href      = fixUrl(this.select("div.poster > a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("div.poster > img").attr("data-src"))
         //Log.d("Test","$posterUrl")
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
             this.posterUrl = posterUrl
         }
     }
@@ -113,21 +97,34 @@ class Javdoe : MainAPI() {
     @Suppress("NAME_SHADOWING")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val sourcelist = mutableListOf<String>()
-        val onclickValue = document.select(".button_choice_server").attr("onclick")
-        val playEmbedContent = Regex("'(.*?)'").find(onclickValue)?.groupValues?.get(1)
-        //Log.d("Testlink","$playEmbedContent")
-        val sources= app.get(playEmbedContent.toString()).document
-        val liElements = sources.select("li.button_choice_server")
-        for (liElement in liElements) {
-            val onclickValue = liElement.attr("onclick")
-            val url = onclickValue.substringAfter("playEmbed('").substringBefore("')")
-            println("${liElement.text()}: $url")
-            sourcelist.add(url)
+        val sourcenumber = mutableListOf<String>()
+        val datapost = document.selectFirst("#playeroptions > ul > li")?.attr("data-post") ?:""
+        document.selectFirst("#playeroptions > ul > li").let {
+            sourcenumber.add(it.toString())
         }
-        sourcelist.forEach {
-            loadExtractor(it,subtitleCallback,callback)
-        }
+        sourcenumber.forEach {
+            val doc=app.get("${mainUrl}/wp-json/dooplayer/v2/$datapost/movie/$it").parsedSafe<Root>()
+            val serverurl=doc?.embedUrl.toString()
+            if (serverurl.contains("javggvideo.xyz"))
+            {
+                val url=app.get(serverurl).toString().substringAfter("urlPlay = '").substringBefore("';")
+                Log.d("Test",url)
+                loadExtractor(serverurl,subtitleCallback,callback)
+            }
+            loadExtractor(serverurl,subtitleCallback,callback)
+            }
+
         return true
+    }
+
+    data class Root(
+        @JsonProperty("embed_url")
+        val embedUrl: String,
+        val type: String,
+    )
+
+    class Yipsu : Voe() {
+        override val name = "Yipsu"
+        override var mainUrl = "https://yip.su"
     }
 }
