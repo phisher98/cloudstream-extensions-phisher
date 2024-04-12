@@ -1,15 +1,11 @@
 package com.coxju
 
 import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import okhttp3.FormBody
-import org.jsoup.Jsoup
 
 class Porn11 : MainAPI() {
     override var mainUrl              = "https://pornken.com"
