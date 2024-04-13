@@ -118,6 +118,7 @@ class AnimeDekhoProvider : MainAPI() {
             ?: throw ErrorLoadingException("error decrypting")
         //val vidFinal = Regex("""file:\s*"(https:[^"]+)"""").find(decrypt)!!.groupValues[1]
         val vidFinal=Extractvidlink(decrypt)
+        val subtitle=Extractvidsub(decrypt)
         val headers =
             mapOf(
                 "accept" to "*/*",
@@ -143,11 +144,22 @@ class AnimeDekhoProvider : MainAPI() {
                 headers = headers,
             ),
         )
+        subtitleCallback.invoke(
+            SubtitleFile(
+                "eng",
+                subtitle
+            )
+        )
         return true
     }
 
     fun Extractvidlink(url: String): String {
         val file=url.substringAfter("sources: [{\"file\":\"").substringBefore("\",\"")
+        return file
+    }
+
+    fun Extractvidsub(url: String): String {
+        val file=url.substringAfter("tracks: [{\"file\":\"").substringAfter("file\":\"").substringBefore("\",\"")
         return file
     }
 
