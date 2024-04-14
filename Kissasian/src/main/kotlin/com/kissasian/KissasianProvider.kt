@@ -7,13 +7,15 @@ import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamTape
 
 @CloudstreamPlugin
-class MydesiProvider: Plugin() {
+class KissasianProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Kissasian())
+        registerMainAPI(Kissasianv2())
         registerMainAPI(Dramacool())
         registerExtractorAPI(embedwish())
         registerExtractorAPI(dwish())
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(MixDrop())
+        registerExtractorAPI(Kswplayer())
     }
 }
