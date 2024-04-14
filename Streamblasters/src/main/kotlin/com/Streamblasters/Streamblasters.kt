@@ -1,5 +1,6 @@
 package com.Streamblasters
 
+//import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -81,16 +82,31 @@ class Streamblasters : MainAPI() {
                 it.select("div.ac-di-content > div.post-img > span > img").attr("src")
             )
         }
-
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
-            this.posterUrl = poster.ifEmpty {
-                ({
-                    posterUrl="https://www.streamblasters.link/wp-content/uploads/2022/05/cropped-png12.png"
-                }).toString()
+        val tvType=if (document.select("div.series-listing").isEmpty()) TvType.Movie else TvType.TvSeries
+        return if (tvType == TvType.TvSeries) {
+            val episodes =
+                document.select("div.series-listing > a").mapNotNull {
+                    val href = it.attr("href")
+                    val episode = it.select("span").text().toString()
+                    Episode(href, episode)
+                }
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = poster
+                this.plot = description
             }
-            this.plot      = description
-            addTrailer(trailer)
-            addActors(actors)
+        }
+        else {
+            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.posterUrl = poster.ifEmpty {
+                    ({
+                        posterUrl =
+                            "https://www.streamblasters.link/wp-content/uploads/2022/05/cropped-png12.png"
+                    }).toString()
+                }
+                this.plot = description
+                addTrailer(trailer)
+                addActors(actors)
+            }
         }
     }
 

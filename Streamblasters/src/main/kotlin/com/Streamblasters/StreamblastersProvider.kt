@@ -9,6 +9,8 @@ class StreamblastersProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Streamblasters())
         registerExtractorAPI(D000d())
+        registerExtractorAPI(jodwish())
+        registerExtractorAPI(asnwish())
         registerExtractorAPI(vidhidevip())
     }
 }
