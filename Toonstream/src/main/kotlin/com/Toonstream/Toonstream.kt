@@ -1,6 +1,7 @@
 package com.Toonstream
 
 //import android.util.Log
+import android.annotation.SuppressLint
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -80,6 +81,7 @@ class Toonstream : MainAPI() {
         return searchResponse
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
@@ -103,7 +105,8 @@ class Toonstream : MainAPI() {
                         val posterRaw=it.selectFirst("article > div.post-thumbnail > figure > img")?.attr("src")
                         @Suppress("NAME_SHADOWING") val poster="https:$posterRaw"
                         val episode = it.select("article > header.entry-header > h2").text().toString()
-                        episodes.add(Episode(href, episode, posterUrl = poster))
+                        val seasonnumber=season.toString().substringAfter("<span class=\"num-epi\">").substringBefore("x").toIntOrNull()
+                        episodes.add(Episode(href, episode, posterUrl = poster, season = seasonnumber))
                     }
             }
             newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {

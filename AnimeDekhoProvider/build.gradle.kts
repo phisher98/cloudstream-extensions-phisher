@@ -1,9 +1,9 @@
-version = 4
+version = 5
 
 cloudstream {
     language = "hi"
     authors = listOf("anon")
-
+    description = "YOU HAVE SKIP ADS on the SITE each 24 hours, Hindi dubbed cartoons if No Links Error"
     /**
      * Status int as the following:
      * 0: Down
@@ -13,7 +13,6 @@ cloudstream {
      * */
     status = 1 // will be 3 if unspecified
     tvTypes = listOf(
-        "TvSeries",
         "Movie",
         "Anime",
         "Cartoon"

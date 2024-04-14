@@ -85,10 +85,13 @@ class AnimeDekhoProvider : MainAPI() {
                 this.year = year
             }
         } else {
-            val episodes = document.select("ul.seasons-lst li").mapNotNull {
+            @Suppress("NAME_SHADOWING") val episodes = document.select("ul.seasons-lst li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.text() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                Episode(Media(href, mediaType = 2).toJson(), name)
+                val poster=it.selectFirst("div > div > figure > img")?.attr("src")
+                val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
+                val season=seasonnumber.toIntOrNull()
+                Episode(Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -111,12 +114,10 @@ class AnimeDekhoProvider : MainAPI() {
         val vidLink = app.get(embededurl)
             .document.selectFirst("iframe")?.attr("src")
             ?: throw ErrorLoadingException("no iframe found")
-
         val doc = app.get(vidLink).text
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
         val decrypt = cryptoAESHandler(master, "a7igbpIApajDyNe".toByteArray(), false)?.replace("\\", "")
             ?: throw ErrorLoadingException("error decrypting")
-        //val vidFinal = Regex("""file:\s*"(https:[^"]+)"""").find(decrypt)!!.groupValues[1]
         val vidFinal=Extractvidlink(decrypt)
         val subtitle=Extractvidsub(decrypt)
         val headers =
