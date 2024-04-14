@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 2
+version = 3
 
 
 cloudstream {
@@ -22,4 +22,6 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie,TvSeries")
+
+    iconUrl="https://www.streamblasters.link/wp-content/uploads/2022/05/cropped-png12.png"
 }

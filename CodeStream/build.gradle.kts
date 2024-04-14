@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 228
+version = 229
 
 android {
     defaultConfig {
@@ -43,5 +43,5 @@ cloudstream {
         "Movie",
     )
 
-    iconUrl = "https://cdn.discordapp.com/attachments/1109266606292488297/1193122096159674448/2-modified.png?ex=65ec2a0a&is=65d9b50a&hm=f1e0b0165e71101e5440b47592d9e15727a6c00cdeb3512108067bfbdbef1af7&"
+    iconUrl = "https://www.google.com/s2/favicons?domain=uncutmaza.cc&sz=%size%"
 }

@@ -1,6 +1,6 @@
 // use an integer for version numbers
 
-version = 1
+version = 2
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -22,4 +22,5 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Live")
+    iconUrl="https://www.jagranimages.com/images/newimg/21082020/21_08_2020-ipl_logo_20650553.jpg"
 }

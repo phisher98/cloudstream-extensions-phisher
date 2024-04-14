@@ -1,4 +1,4 @@
-version = 7
+version = 8
 
 cloudstream {
     authors     = listOf("HindiProvider")
@@ -14,5 +14,5 @@ cloudstream {
     **/
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("NSFW")
-    iconUrl = "https://www.google.com/s2/favicons?domain=uncutmaza.cc&sz=%size%"
+    iconUrl = "https://logos-world.net/wp-content/uploads/2023/01/SpankBang-Logo.png"
 }
