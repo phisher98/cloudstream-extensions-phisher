@@ -1,4 +1,3 @@
-
 package com.hexated
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -12,8 +11,8 @@ class MovierulzhdPlugin: Plugin() {
         registerMainAPI(Movierulzhd())
         registerMainAPI(Hdmovie2())
         registerMainAPI(Animesaga())
-        registerExtractorAPI(Sbnmp())
-        registerExtractorAPI(Vidsrc())
+        registerExtractorAPI(FMHD())
+        registerExtractorAPI(VidSrcTo())
         registerExtractorAPI(Akamaicdn())
         registerExtractorAPI(AnimesagaStream())
     }
