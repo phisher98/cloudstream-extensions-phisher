@@ -2,7 +2,7 @@ package com.likdev256
 
 import android.annotation.SuppressLint
 import android.os.Build
-//import android.util.Log
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -149,8 +149,9 @@ class UpmoviesProvider : MainAPI() {
                     DoodWatchExtractor().getUrl(url,"https://d000d.com")
                     links?.forEach { link -> callback.invoke(link) }
                 }
-                else
+                else {
                     loadExtractor(url, referer = url, subtitleCallback, callback)
+                }
             }
         return true
     }

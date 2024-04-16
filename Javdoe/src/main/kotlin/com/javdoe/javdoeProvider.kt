@@ -8,8 +8,12 @@ import android.content.Context
 class JavdoeProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Javdoe())
-        registerMainAPI(Jable())
+        //registerMainAPI(Jable())
+        registerMainAPI(Javguru())
         registerExtractorAPI(DoodJav())
+        registerExtractorAPI(javclan())
+        registerExtractorAPI(Maxstream())
+        registerExtractorAPI(Ds2Play())
         registerExtractorAPI(Streamwish())
         registerExtractorAPI(Vidhidepro())
     }
