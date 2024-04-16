@@ -198,6 +198,22 @@ open class Movierulzhd : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        if (data.startsWith("{")) {
+            val loadData = AppUtils.tryParseJson<LinkData>(data)
+            val source = app.post(
+                url = "$directUrl/wp-admin/admin-ajax.php",
+                data = mapOf(
+                    "action" to "doo_player_ajax",
+                    "post" to "${loadData?.post}",
+                    "nume" to "${loadData?.nume}",
+                    "type" to "${loadData?.type}"
+                ),
+                referer = data,
+                headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+            ).parsed<ResponseHash>().embed_url
+            if (!source.contains("youtube")) loadCustomExtractor(source, "$directUrl/", subtitleCallback, callback)
+        }
+        else {
             val document = app.get(data).document
             document.select("ul#playeroptionsul > li").map {
                 Triple(
@@ -218,13 +234,14 @@ open class Movierulzhd : MainAPI() {
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
                 when {
-                    !source.contains("youtube") ->
-                    {
-                            loadExtractor(source, subtitleCallback, callback)
+                    !source.contains("youtube") -> {
+                        loadExtractor(source, subtitleCallback, callback)
                     }
+
                     else -> return@apmap
                 }
             }
+        }
         return true
     }
 
@@ -234,6 +251,33 @@ open class Movierulzhd : MainAPI() {
             this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")
             this.hasAttr("srcset") -> this.attr("abs:srcset").substringBefore(" ")
             else -> this.attr("abs:src")
+        }
+    }
+    private suspend fun loadCustomExtractor(
+        url: String,
+        referer: String? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        quality: Int? = null,
+    ) {
+        loadExtractor(url, referer, subtitleCallback) { link ->
+            if(link.quality == Qualities.Unknown.value) {
+                callback.invoke(
+                    ExtractorLink(
+                        link.source,
+                        link.name,
+                        link.url,
+                        link.referer,
+                        when (link.type) {
+                            ExtractorLinkType.M3U8 -> link.quality
+                            else -> quality ?: link.quality
+                        },
+                        link.type,
+                        link.headers,
+                        link.extractorData
+                    )
+                )
+            }
         }
     }
 
