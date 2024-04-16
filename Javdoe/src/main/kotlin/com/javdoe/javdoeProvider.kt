@@ -12,6 +12,7 @@ class JavdoeProvider: Plugin() {
         registerMainAPI(Javguru())
         registerExtractorAPI(DoodJav())
         registerExtractorAPI(javclan())
+        registerExtractorAPI(Maxstream())
         registerExtractorAPI(Ds2Play())
         registerExtractorAPI(Streamwish())
         registerExtractorAPI(Vidhidepro())

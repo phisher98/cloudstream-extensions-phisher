@@ -2,10 +2,8 @@ package com.javdoe
 
 import android.util.Base64
 //import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.utils.*
 
 class Javguru : MainAPI() {
@@ -120,16 +118,5 @@ class Javguru : MainAPI() {
             x--
         }
         return edoceD
-    }
-
-    data class Root(
-        @JsonProperty("embed_url")
-        val embedUrl: String,
-        val type: String,
-    )
-
-    class Yipsu : Voe() {
-        override val name = "Yipsu"
-        override var mainUrl = "https://yip.su"
     }
 }
