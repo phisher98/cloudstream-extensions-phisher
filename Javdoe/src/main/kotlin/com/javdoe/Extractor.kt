@@ -2,6 +2,7 @@ package com.javdoe
 
 import android.util.Log
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
@@ -30,6 +31,43 @@ open class DoodJav : ExtractorApi() {
             )
         ) // links are valid in 8h
 
+    }
+}
+
+open class javclan : ExtractorApi() {
+    override var name = "Streamwish"
+    override var mainUrl = "https://javclan.com"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val responsecode=app.get(url,referer=referer)
+        if (responsecode.code==200) {
+            val serverRes = responsecode.document
+            val script = serverRes.selectFirst("script:containsData(sources)")?.data().toString()
+            val headers = mapOf(
+                "Accept" to "*/*",
+                "Connection" to "keep-alive",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "cross-site",
+                "Origin" to url,
+            )
+            Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
+                Log.d("Test9876", link)
+                return listOf(
+                    ExtractorLink(
+                        this.name,
+                        this.name,
+                        link,
+                        referer ?: "",
+                        getQualityFromName(""),
+                        URI(link).path.endsWith(".m3u8"),
+                        headers
+                    )
+                )
+            }
+        }
+        return null
     }
 }
 
@@ -101,4 +139,8 @@ open class Vidhidepro : ExtractorApi() {
         }
         return null
     }
+}
+
+class Ds2Play : DoodLaExtractor() {
+    override var mainUrl = "https://ds2play.com"
 }
