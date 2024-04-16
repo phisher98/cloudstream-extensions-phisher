@@ -1,7 +1,7 @@
-package com.hexated
+package com.KillerDogeEmpire
 
 import android.util.Base64
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.apmap
@@ -24,27 +24,27 @@ class VidSrcTo : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ) {
         val mediaId =
-                app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id") ?: return
+            app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id") ?: return
         val res =
-                app.get("$mainUrl/ajax/embed/episode/$mediaId/sources")
-                        .parsedSafe<VidsrctoEpisodeSources>()
+            app.get("$mainUrl/ajax/embed/episode/$mediaId/sources")
+                .parsedSafe<VidsrctoEpisodeSources>()
         if (res?.status == 200) {
             res.result?.apmap { source ->
                 val embedRes =
-                        app.get("$mainUrl/ajax/embed/source/${source.id}")
-                                .parsedSafe<VidsrctoEmbedSource>()
+                    app.get("$mainUrl/ajax/embed/source/${source.id}")
+                        .parsedSafe<VidsrctoEmbedSource>()
                 val finalUrl = DecryptUrl(embedRes?.result?.encUrl ?: "")
-                Log.d("rowdyTest", source.title + ": " + finalUrl)
+                //Log.d("rowdyTest", source.title + ": " + finalUrl)
                 when (source.title) {
                     "Vidplay" ->
-                            AnyVidplay(finalUrl.substringBefore("/e/"))
-                                    .getUrl(finalUrl, referer, subtitleCallback, callback)
+                        AnyVidplay(finalUrl.substringBefore("/e/"))
+                            .getUrl(finalUrl, referer, subtitleCallback, callback)
                     "Filemoon" -> FileMoon().getUrl(finalUrl, referer, subtitleCallback, callback)
                     else -> {}
                 }
@@ -62,18 +62,18 @@ class VidSrcTo : ExtractorApi() {
         return URLDecoder.decode(data.toString(Charsets.UTF_8), "utf-8")
     }
     data class VidsrctoEpisodeSources(
-            @JsonProperty("status") val status: Int,
-            @JsonProperty("result") val result: List<VidsrctoResult>?
+        @JsonProperty("status") val status: Int,
+        @JsonProperty("result") val result: List<VidsrctoResult>?
     )
 
     data class VidsrctoResult(
-            @JsonProperty("id") val id: String,
-            @JsonProperty("title") val title: String
+        @JsonProperty("id") val id: String,
+        @JsonProperty("title") val title: String
     )
 
     data class VidsrctoEmbedSource(
-            @JsonProperty("status") val status: Int,
-            @JsonProperty("result") val result: VidsrctoUrl
+        @JsonProperty("status") val status: Int,
+        @JsonProperty("result") val result: VidsrctoUrl
     )
 
     data class VidsrctoUrl(@JsonProperty("url") val encUrl: String)

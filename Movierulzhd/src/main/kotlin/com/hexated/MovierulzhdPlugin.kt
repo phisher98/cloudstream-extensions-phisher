@@ -13,6 +13,7 @@ class MovierulzhdPlugin: Plugin() {
         registerMainAPI(Animesaga())
         registerExtractorAPI(FMHD())
         registerExtractorAPI(VidSrcTo())
+        registerExtractorAPI(AnyVidplay(""))
         registerExtractorAPI(Akamaicdn())
         registerExtractorAPI(AnimesagaStream())
     }

@@ -1,6 +1,6 @@
 package com.hexated
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -198,21 +198,6 @@ open class Movierulzhd : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.startsWith("{")) {
-            val loadData = AppUtils.tryParseJson<LinkData>(data)
-            val source = app.post(
-                url = "$directUrl/wp-admin/admin-ajax.php",
-                data = mapOf(
-                    "action" to "doo_player_ajax",
-                    "post" to "${loadData?.post}",
-                    "nume" to "${loadData?.nume}",
-                    "type" to "${loadData?.type}"
-                ),
-                referer = data,
-                headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-            ).parsed<ResponseHash>().embed_url
-            if (!source.contains("youtube")) loadCustomExtractor(source, "$directUrl/", subtitleCallback, callback)
-        } else {
             val document = app.get(data).document
             document.select("ul#playeroptionsul > li").map {
                 Triple(
@@ -235,13 +220,11 @@ open class Movierulzhd : MainAPI() {
                 when {
                     !source.contains("youtube") ->
                     {
-                        Log.d("Test JSon",source)
-                        loadExtractor(source, subtitleCallback, callback)
+                            loadExtractor(source, subtitleCallback, callback)
                     }
                     else -> return@apmap
                 }
             }
-        }
         return true
     }
 
@@ -253,51 +236,6 @@ open class Movierulzhd : MainAPI() {
             else -> this.attr("abs:src")
         }
     }
-
-    private suspend fun loadCustomExtractor(
-        url: String,
-        referer: String? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-        quality: Int? = null,
-    ) {
-        Log.d("Test",url)
-        loadExtractor(url, referer, subtitleCallback) { link ->
-            if(link.quality == Qualities.Unknown.value) {
-                callback.invoke(
-                    ExtractorLink(
-                        link.source,
-                        link.name,
-                        link.url,
-                        link.referer,
-                        when (link.type) {
-                            ExtractorLinkType.M3U8 -> link.quality
-                            else -> quality ?: link.quality
-                        },
-                        link.type,
-                        link.headers,
-                        link.extractorData
-                    )
-                )
-            }
-        }
-    }
-
- /*   suspend fun Extractmainurl(url: String): String? {
-    val document=app.get(url).document
-        Log.d("Test main",url)
-        Log.d("Test main",document.toString())
-        val dataid=document.select("ul.episodes > li > a").attr("data-id").toString()
-        Log.d("Test main",dataid)
-        val sources= app.get("$directUrl/ajax/embed/episode/$dataid/sources").parsedSafe<Responsevidsrc>()?.id
-        Log.d("Test main",sources.toString())
-        sources.let {
-            Log.d("Test main",it.toString())
-        }
-    return null
-    }
-
-  */
 
     data class LinkData(
         val tag: String? = null,
