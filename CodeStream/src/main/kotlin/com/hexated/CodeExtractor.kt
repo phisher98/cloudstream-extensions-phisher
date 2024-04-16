@@ -884,28 +884,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
-        val mediaId = app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id")
-            ?: return
-        app.get(
-            "$vidsrctoAPI/ajax/embed/episode/$mediaId/sources", headers = mapOf(
-                "X-Requested-With" to "XMLHttpRequest"
-            )
-        ).parsedSafe<VidsrctoSources>()?.result?.apmap {
-            val encUrl = app.get("$vidsrctoAPI/ajax/embed/source/${it.id}")
-                .parsedSafe<VidsrctoResponse>()?.result?.url
-            loadExtractor(
-                vidsrctoDecrypt(
-                    encUrl
-                        ?: return@apmap
-                ), "$vidsrctoAPI/", subtitleCallback, callback
-            )
-        }
-
-        val subtitles = app.get("$vidsrctoAPI/ajax/embed/episode/$mediaId/subtitles").text
-        tryParseJson<List<VidsrctoSubtitles>>(subtitles)?.map {
-            subtitleCallback.invoke(SubtitleFile(it.label ?: "", it.file ?: return@map))
-        }
-
+        loadExtractor(url,subtitleCallback, callback)
     }
 
     suspend fun invokeKisskh(

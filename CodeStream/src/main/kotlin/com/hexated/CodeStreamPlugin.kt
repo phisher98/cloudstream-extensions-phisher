@@ -21,6 +21,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Mwish())
         registerExtractorAPI(TravelR())
         registerExtractorAPI(Playm4u())
+        registerExtractorAPI(VidSrcTo())
         registerExtractorAPI(VCloud())
         registerExtractorAPI(Bestx())
         registerExtractorAPI(Snolaxstream())
