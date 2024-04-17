@@ -836,12 +836,19 @@ object CodeExtractor : CodeStream() {
                             data.select("td:nth-child(2)").attr("data-order").split("<br>")
                                 .map { it }
                         val iframe = data.select("a[href*=https://]").map { it.attr("href") }
+                        iframe.forEach {
+                            if (it.contains("pixel"))
+                            {
+                                loadExtractor(it,subtitleCallback, callback)
+                            }
+                            return@forEach
+                        }
                         qualities.zip(iframe).map {
                             Triple(it.first.getQuality(), it.first.getTag(), it.second)
                         }
                     }
 
-                    servers.filter { it.first == "720p" || it.first == "1080p" }.apmap {
+                    servers.apmap {
                         val server =
                             if (it.third.startsWith("https://ouo")) bypassOuo(it.third) else it.third
                         loadCustomTagExtractor(
