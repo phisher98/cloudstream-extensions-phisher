@@ -5,8 +5,10 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
+import com.lagradost.cloudstream3.extractors.FileMoon
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.extractors.Vidplay
 
 @CloudstreamPlugin
 class CodeStreamPlugin: Plugin() {
@@ -21,7 +23,10 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Mwish())
         registerExtractorAPI(TravelR())
         registerExtractorAPI(Playm4u())
+        registerExtractorAPI(VidSrcTo())
+        registerExtractorAPI(Vidplay())
         registerExtractorAPI(VCloud())
+        registerExtractorAPI(FileMoon())
         registerExtractorAPI(Bestx())
         registerExtractorAPI(Snolaxstream())
         registerExtractorAPI(Pixeldra())

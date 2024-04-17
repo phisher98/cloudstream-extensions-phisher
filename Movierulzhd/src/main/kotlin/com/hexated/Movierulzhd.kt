@@ -1,6 +1,6 @@
 package com.hexated
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -213,7 +213,8 @@ open class Movierulzhd : MainAPI() {
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
             ).parsed<ResponseHash>().embed_url
             if (!source.contains("youtube")) loadCustomExtractor(source, "$directUrl/", subtitleCallback, callback)
-        } else {
+        }
+        else {
             val document = app.get(data).document
             document.select("ul#playeroptionsul > li").map {
                 Triple(
@@ -234,11 +235,10 @@ open class Movierulzhd : MainAPI() {
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
                 when {
-                    !source.contains("youtube") ->
-                    {
-                        Log.d("Test JSon",source)
+                    !source.contains("youtube") -> {
                         loadExtractor(source, subtitleCallback, callback)
                     }
+
                     else -> return@apmap
                 }
             }
@@ -254,7 +254,6 @@ open class Movierulzhd : MainAPI() {
             else -> this.attr("abs:src")
         }
     }
-
     private suspend fun loadCustomExtractor(
         url: String,
         referer: String? = null,
@@ -262,7 +261,6 @@ open class Movierulzhd : MainAPI() {
         callback: (ExtractorLink) -> Unit,
         quality: Int? = null,
     ) {
-        Log.d("Test",url)
         loadExtractor(url, referer, subtitleCallback) { link ->
             if(link.quality == Qualities.Unknown.value) {
                 callback.invoke(
@@ -283,22 +281,6 @@ open class Movierulzhd : MainAPI() {
             }
         }
     }
-
- /*   suspend fun Extractmainurl(url: String): String? {
-    val document=app.get(url).document
-        Log.d("Test main",url)
-        Log.d("Test main",document.toString())
-        val dataid=document.select("ul.episodes > li > a").attr("data-id").toString()
-        Log.d("Test main",dataid)
-        val sources= app.get("$directUrl/ajax/embed/episode/$dataid/sources").parsedSafe<Responsevidsrc>()?.id
-        Log.d("Test main",sources.toString())
-        sources.let {
-            Log.d("Test main",it.toString())
-        }
-    return null
-    }
-
-  */
 
     data class LinkData(
         val tag: String? = null,

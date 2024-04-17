@@ -5,6 +5,9 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Chillx
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
+import android.util.Log
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
 
 class FMHD : Filesim() {
     override val name = "FMHD"
@@ -18,28 +21,25 @@ open class Akamaicdn : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ) {
         val res = app.get(url, referer = referer).document
-        val mappers =
-                res.selectFirst("script:containsData(sniff\\()")
-                        ?.data()
-                        ?.substringAfter("sniff(")
-                        ?.substringBefore(");")
-                        ?: return
+        Log.d("Test Extracyor",url)
+        val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
+            ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
         callback.invoke(
-                ExtractorLink(
-                        this.name,
-                        this.name,
-                        "$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1",
-                        url,
-                        Qualities.Unknown.value,
-                        isM3u8 = true,
-                )
+            ExtractorLink(
+                this.name,
+                this.name,
+                "$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1",
+                url,
+                Qualities.Unknown.value,
+                isM3u8 = true,
+            )
         )
     }
 }
@@ -49,11 +49,4 @@ class AnimesagaStream : Chillx() {
     override val mainUrl = "https://stream.anplay.in"
 }
 
-fun deobfstr(hash: String, index: String): String {
-    var result = ""
-    for (i in hash.indices step 2) {
-        val j = hash.substring(i, i + 2)
-        result += (j.toInt(16) xor index[(i / 2) % index.length].code).toChar()
-    }
-    return result
-}
+

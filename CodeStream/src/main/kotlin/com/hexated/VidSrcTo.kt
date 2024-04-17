@@ -1,7 +1,7 @@
-package com.hexated
+package com.KillerDogeEmpire
 
 import android.util.Base64
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.apmap
@@ -17,6 +17,7 @@ import javax.crypto.spec.SecretKeySpec
 class AnyVidplay(hostUrl: String) : Vidplay() {
     override val mainUrl = hostUrl
 }
+
 class VidSrcTo : ExtractorApi() {
     override val name = "VidSrcTo"
     override val mainUrl = "https://vidsrc.to"
@@ -28,7 +29,6 @@ class VidSrcTo : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("test url",url)
         val mediaId =
             app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id") ?: return
         val res =
@@ -40,7 +40,7 @@ class VidSrcTo : ExtractorApi() {
                     app.get("$mainUrl/ajax/embed/source/${source.id}")
                         .parsedSafe<VidsrctoEmbedSource>()
                 val finalUrl = DecryptUrl(embedRes?.result?.encUrl ?: "")
-                Log.d("rowdyTest", source.title + ": " + finalUrl)
+                //Log.d("rowdyTest", source.title + ": " + finalUrl)
                 when (source.title) {
                     "Vidplay" ->
                         AnyVidplay(finalUrl.substringBefore("/e/"))

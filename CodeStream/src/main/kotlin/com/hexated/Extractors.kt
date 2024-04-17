@@ -564,6 +564,7 @@ open class Chillx : ExtractorApi() {
     override val requiresReferer = true
     private var key: String? = null
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -573,7 +574,7 @@ open class Chillx : ExtractorApi() {
         val master = Regex("\\s*=\\s*'([^']+)").find(
             app.get(
                 url,
-                referer = mainUrl ?: "",
+                referer = mainUrl,
                 headers = mapOf(
                     "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                     "Accept-Language" to "en-US,en;q=0.5",
@@ -585,7 +586,7 @@ open class Chillx : ExtractorApi() {
         val source = Regex(""""?file"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
 
         val subtitles = Regex("""subtitle"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
-        val subtitlePattern = """\[(.*?)\](https?://[^\s,]+)""".toRegex()
+        val subtitlePattern = """\[(.*?)](https?://[^\s,]+)""".toRegex()
         val matches = subtitlePattern.findAll(subtitles ?: "")
         val languageUrlPairs = matches.map { matchResult ->
             val (language, url) = matchResult.destructured
