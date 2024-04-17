@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class Bolly2TollyProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://www.bolly2tolly.desi"
+    override var mainUrl = "https://www.bolly2tolly.tax"
     override var name = "Bolly2Tolly"
     override val hasMainPage = true
     override var lang = "hi"
