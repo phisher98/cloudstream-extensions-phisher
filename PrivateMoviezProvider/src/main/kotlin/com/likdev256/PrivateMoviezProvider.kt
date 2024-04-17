@@ -12,7 +12,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class PrivateMoviezProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://privatemoviez.monster"
+    override var mainUrl = "https://privatemoviez.xyz"
     override var name = "PrivateMoviez"
     override val hasMainPage = true
     override var lang = "hi"
