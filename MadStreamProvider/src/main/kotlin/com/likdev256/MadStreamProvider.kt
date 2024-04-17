@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
 class MovieHUBProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://madstream.live"
+    override var mainUrl = "https://madstream.one"
     override var name = "MadStream"
     override val hasMainPage = true
     override var lang = "ta"
@@ -22,10 +22,10 @@ class MovieHUBProvider : MainAPI() { // all providers must be an instance of Mai
 
     override val mainPage = mainPageOf(
         "$mainUrl/" to "LiveStreams",
-        "$mainUrl/index.php" to "JioTv",
-        "$mainUrl/epic/index.php" to "Epic",
-        "$mainUrl/sports.php" to "Sports",
-        "$mainUrl/sony.php" to "Sony"
+        "$mainUrl/pages/jiotvplus.php" to "JioTv",
+        "$mainUrl/pages/samsungtv.php" to "SamsungTv",
+        "$mainUrl/sports/" to "Sports",
+        "$mainUrl/cinema.php" to "Movies"
     )
 
     data class LiveStreamLinks (
