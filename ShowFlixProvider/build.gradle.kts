@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 4
+version = 29
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "HD Provider for all Indian Languages"
-    language = "hi"
+    language = "ta"
     authors = listOf("LikDev-256")
 
     /**
