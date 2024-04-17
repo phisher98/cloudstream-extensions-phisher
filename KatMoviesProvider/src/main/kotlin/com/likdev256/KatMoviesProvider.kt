@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
 
 class KatMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://katmoviehd.tf"
+    override var mainUrl = "https://katmoviehd.boo"
     override var name = "KatMovies"
     override val hasMainPage = true
     override var lang = "ta"
