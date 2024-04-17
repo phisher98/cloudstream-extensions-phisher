@@ -22,7 +22,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 class OlaMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://olamovies.cyou"
+    override var mainUrl = "https://olamovies.icu"
     override var name = "OlaMovies"
     override val hasMainPage = true
     override var lang = "ta"
