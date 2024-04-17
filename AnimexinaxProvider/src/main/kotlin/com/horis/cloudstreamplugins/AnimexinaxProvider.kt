@@ -13,7 +13,7 @@ class AnimexinaxProvider : MainAPI() {
     )
     override var lang = "en"
 
-    override var mainUrl = "https://animexinax.com"
+    override var mainUrl = "https://animexin.vip"
     override var name = "Animexinax"
 
     override val hasMainPage = true
