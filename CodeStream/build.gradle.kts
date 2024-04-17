@@ -1,7 +1,9 @@
+@file:Suppress("UnstableApiUsage")
+
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 231
+version = 10
 
 android {
     defaultConfig {
