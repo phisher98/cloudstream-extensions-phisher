@@ -78,10 +78,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 open class CodeStream : TmdbProvider() {
@@ -396,8 +394,7 @@ open class CodeStream : TmdbProvider() {
         val res = parseJson<LinkData>(data)
         Log.d("Test1", "$res")
         println(res)
-        GlobalScope.launch {
-            argamap(
+        val functions = listOf<suspend () -> Unit>(
                 {
                     invokeDumpStream(
                         res.title,
@@ -806,10 +803,16 @@ open class CodeStream : TmdbProvider() {
                     )
                 }
             )
+        val jobs = functions.map { function ->
+            GlobalScope.launch {
+                try {
+                    function()
+                } catch (e: Exception) {
+                    println("Error executing function: ${e.message}")
+                }
+            }
         }
-        withContext(Dispatchers.IO) {
-            Thread.sleep(1000L)
-        }
+        jobs.forEach { it.join() }
         return true
     }
 
