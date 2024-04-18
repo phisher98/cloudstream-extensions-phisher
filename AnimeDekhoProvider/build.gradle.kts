@@ -1,9 +1,9 @@
-version = 5
+version = 6
 
 cloudstream {
     language = "hi"
-    authors = listOf("anon")
-    description = "YOU HAVE SKIP ADS on the SITE each 24 hours, Hindi dubbed cartoons if No Links Error"
+    authors = listOf("Hindi Provider")
+    description = "Anime Dekho and Animedekho 2 (if 1st one didn't work second need to go to website to bypass ad to work for 24 hrs after that)"
     /**
      * Status int as the following:
      * 0: Down
