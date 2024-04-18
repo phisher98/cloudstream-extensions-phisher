@@ -30,7 +30,7 @@ class VidSrcTo : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val mediaId =
-            app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id") ?: return
+            app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id")
         val res =
             app.get("$mainUrl/ajax/embed/episode/$mediaId/sources")
                 .parsedSafe<VidsrctoEpisodeSources>()
