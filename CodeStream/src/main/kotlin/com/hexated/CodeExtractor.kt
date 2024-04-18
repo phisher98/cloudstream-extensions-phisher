@@ -126,20 +126,9 @@ object CodeExtractor : CodeStream() {
                         "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
                     }
                     val iframedoc = app.get(url).document
-                    iframedoc.select("div.serversList > div.server").forEach { server ->
-                        val servername = server.selectFirst("div.server")?.text().toString()
-                        val serverhash = server.selectFirst("div.server")?.attr("data-hash").toString()
+                        val serverhash = iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
                         val link = Extractvidsrcnetservers(serverhash)
-                        Log.d("Test servername",servername)
-                        Log.d("Test link",link)
-                            if (link.isNotEmpty()) {
-                                when (servername) {
-                                    "VidSrc PRO" -> {
-                                        val URI =
-                                            app.get(
-                                                link,
-                                                referer = "https://vidsrc.net/"
-                                            ).document.selectFirst("script:containsData(Playerjs)")
+                        val URI =app.get(link,referer = "https://vidsrc.net/").document.selectFirst("script:containsData(Playerjs)")
                                                 ?.data()
                                                 ?.substringAfter("file:\"#9")?.substringBefore("\"")
                                                 ?.replace(Regex("/@#@\\S+?=?="), "")
@@ -151,39 +140,12 @@ object CodeExtractor : CodeStream() {
                                             subtitleCallback,
                                             callback
                                         )
-                                    }
-                                    "2Embed" -> {
-                                        Log.d("Test URI", "I'm here'")
-                                    }
-                                    "Superembed" -> {
-                                        val URI =app.get(link,referer = "https://vidsrc.net/").document.selectFirst("script:containsData(split)")?.data().toString()
-                                        var globalArgument: Any? = null
-                                        if (URI.contains("split")) {
-                                            val startJs =
-                                                """
-                var globalArgument = null;
-                function Playerjs({
-                    return 
-                        id: null,
-                        globalArgument = file;
-                    
-                });
-                """
-                                            val rhino = getRhinoContext()
-                                            val scope: Scriptable = rhino.initSafeStandardObjects()
-                                            rhino.evaluateString(scope, startJs + URI, "JavaScript", 1, null)
-                                            globalArgument = scope.get("globalArgument", scope)
-                                        }
-                                        Log.d("Test Rhino", globalArgument.toString())
-                                    }
-                            }
                         }
-                    }
-                }
 
     suspend fun Extractvidsrcnetservers(url: String): String {
-        val rcp=app.get("https://vidsrc.stream/rcp/$url", referer = "https://vidsrc.net/").document
+        val rcp=app.get("https://vidsrc.stream/rcp/$url", referer = "https://vidsrc.net/", headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0")).document
         val link = rcp.selectFirst("script:containsData(player_iframe)")?.data()?.substringAfter("src: '")?.substringBefore("',")
+        Log.d("Test",link.toString())
         return "http:$link".toString()
     }
     suspend fun Extracttruevidsrcneturl(url: String,servername :String)  {
