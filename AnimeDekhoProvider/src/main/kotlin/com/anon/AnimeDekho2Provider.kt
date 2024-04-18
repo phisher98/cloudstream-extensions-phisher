@@ -1,5 +1,6 @@
 package com.anon
 
+//import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.*
@@ -7,9 +8,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
-class AnimeDekho2Provider : MainAPI() {
+class AnimeDekhoProvider : MainAPI() {
     override var mainUrl = "https://animedekho.com"
-    override var name = "Anime Dekho"
+    override var name = "Anime Dekho 2"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
@@ -84,10 +85,13 @@ class AnimeDekho2Provider : MainAPI() {
                 this.year = year
             }
         } else {
-            val episodes = document.select("ul.seasons-lst li").mapNotNull {
+            @Suppress("NAME_SHADOWING") val episodes = document.select("ul.seasons-lst li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.text() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                Episode(Media(href, mediaType = 2).toJson(), name)
+                val poster=it.selectFirst("div > div > figure > img")?.attr("src")
+                val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
+                val season=seasonnumber.toIntOrNull()
+                Episode(Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -104,18 +108,18 @@ class AnimeDekho2Provider : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         val media = parseJson<Media>(data)
-        val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
-        val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
-        val vidLink = app.get("$mainUrl/?trembed=0&trid=$term&trtype=${media.mediaType}")
+        //val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
+        val embededurl=app.get(media.url).document.selectFirst("div.fg1.video-options > div > iframe")?.attr("src") ?:""
+        //val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
+        val vidLink = app.get(embededurl)
             .document.selectFirst("iframe")?.attr("src")
             ?: throw ErrorLoadingException("no iframe found")
-
         val doc = app.get(vidLink).text
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
         val decrypt = cryptoAESHandler(master, "a7igbpIApajDyNe".toByteArray(), false)?.replace("\\", "")
             ?: throw ErrorLoadingException("error decrypting")
-        val vidFinal = Regex("""file:\s*"(https:[^"]+)"""").find(decrypt)!!.groupValues[1]
-
+        val vidFinal=Extractvidlink(decrypt)
+        val subtitle=Extractvidsub(decrypt)
         val headers =
             mapOf(
                 "accept" to "*/*",
@@ -141,7 +145,23 @@ class AnimeDekho2Provider : MainAPI() {
                 headers = headers,
             ),
         )
+        subtitleCallback.invoke(
+            SubtitleFile(
+                "eng",
+                subtitle
+            )
+        )
         return true
+    }
+
+    fun Extractvidlink(url: String): String {
+        val file=url.substringAfter("sources: [{\"file\":\"").substringBefore("\",\"")
+        return file
+    }
+
+    fun Extractvidsub(url: String): String {
+        val file=url.substringAfter("tracks: [{\"file\":\"").substringAfter("file\":\"").substringBefore("\",\"")
+        return file
     }
 
     data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
