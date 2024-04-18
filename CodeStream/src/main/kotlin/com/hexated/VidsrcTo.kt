@@ -1,7 +1,6 @@
-package com.KillerDogeEmpire
+package com.hexated
 
 import android.util.Base64
-//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.apmap
@@ -18,7 +17,8 @@ class AnyVidplay(hostUrl: String) : Vidplay() {
     override val mainUrl = hostUrl
 }
 
-class VidSrcTo : ExtractorApi() {
+
+class VidsrcTo : ExtractorApi() {
     override val name = "VidSrcTo"
     override val mainUrl = "https://vidsrc.to"
     override val requiresReferer = true
@@ -29,7 +29,7 @@ class VidSrcTo : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val mediaId =app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id")
+        val mediaId = app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id")
         val res =
             app.get("$mainUrl/ajax/embed/episode/$mediaId/sources")
                 .parsedSafe<VidsrctoEpisodeSources>()

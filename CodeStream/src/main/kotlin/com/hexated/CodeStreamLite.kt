@@ -94,7 +94,7 @@ class CodeStreamLite : CodeStream() {
                 )
             },
             {
-                invokeVidSrc(res.id, res.season, res.episode, callback)
+                invokeVidSrc(res.id, res.season, res.episode, subtitleCallback,callback)
             },
             {
                 if (!res.isAnime && res.isCartoon) invokeWatchCartoon(

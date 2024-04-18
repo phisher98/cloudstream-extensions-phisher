@@ -65,7 +65,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -417,7 +416,7 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    invokeVidSrc(res.id, res.season, res.episode, callback)
+                    invokeVidSrc(res.id, res.season, res.episode, subtitleCallback,callback)
                 },
                 {
                     if (!res.isAnime) invokeAoneroom(

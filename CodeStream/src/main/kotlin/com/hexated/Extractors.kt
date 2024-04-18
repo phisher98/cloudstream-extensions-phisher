@@ -1,5 +1,6 @@
 package com.KillerDogeEmpire
 
+//import android.util.Log
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
@@ -632,9 +633,4 @@ open class Chillx : ExtractorApi() {
         return app.get("https://raw.githubusercontent.com/Sofie99/Resources/main/chillix_key.json").parsed()
     }
 
-    data class Tracks(
-        @JsonProperty("file") val file: String? = null,
-        @JsonProperty("label") val label: String? = null,
-        @JsonProperty("kind") val kind: String? = null,
-    )
 }

@@ -3,6 +3,7 @@ package com.KillerDogeEmpire
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
+import com.hexated.VidsrcTo
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
 import com.lagradost.cloudstream3.extractors.MixDrop
@@ -17,8 +18,8 @@ class CodeStreamPlugin: Plugin() {
         registerMainAPI(CodeStreamLite())
         registerExtractorAPI(Animefever())
         registerExtractorAPI(Multimovies())
-        registerExtractorAPI(VidSrcTo())
         registerExtractorAPI(MultimoviesSB())
+        registerExtractorAPI(VidsrcTo())
         registerExtractorAPI(Yipsu())
         registerExtractorAPI(Mwish())
         registerExtractorAPI(TravelR())

@@ -159,6 +159,7 @@ suspend fun extractDirectUHD(url: String, niceResponse: NiceResponse): String? {
 
 }
 
+
 suspend fun extractBackupUHD(url: String): String? {
     val resumeDoc = app.get(url)
 
@@ -197,7 +198,7 @@ suspend fun extractResumeUHD(url: String): String? {
     }
 }
 
-suspend fun extractResumeTop(url: String): String? {
+suspend fun extractResumeTop(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         val link = it.selectFirst("a.btn.btn-success")?.attr("href").toString()
         return link
@@ -258,7 +259,7 @@ suspend fun extractDirectDl(url: String): String? {
     return tryParseJson<DirectDl>(json)?.download_url
 }
 
-suspend fun extractMovieAPIlinks(serverid: String,movieid: String,MOVIE_API: String): String? {
+suspend fun extractMovieAPIlinks(serverid: String,movieid: String,MOVIE_API: String): String {
     val link=app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").document.toString().substringAfter("link\":\"").substringBefore("\",")
     return link
 }

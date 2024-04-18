@@ -17,6 +17,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
+import com.lagradost.cloudstream3.getRhinoContext
+import org.mozilla.javascript.Scriptable
 
 val session = Session(Requests().baseClient)
 
@@ -115,6 +117,7 @@ object CodeExtractor : CodeStream() {
                     id: Int? = null,
                     season: Int? = null,
                     episode: Int? = null,
+                    subtitleCallback: (SubtitleFile) -> Unit,
                     callback: (ExtractorLink) -> Unit
                 ) {
                     val url = if (season == null) {
@@ -122,31 +125,82 @@ object CodeExtractor : CodeStream() {
                     } else {
                         "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
                     }
-                    val iframedoc =
-                        app.get(url).document.select("iframe#player_iframe").attr("src")
-                            .let { httpsify(it) }
-                    val doc = app.get(iframedoc, referer = "https://vidsrc.stream/").document
-                    val index = doc.select("body").attr("data-i")
-                    val hash = doc.select("div#hidden").attr("data-h")
-                    val srcrcp = deobfstr(hash, index)
-                    val script = app.get(
-                        httpsify(srcrcp),
-                        referer = iframedoc
-                    ).document.selectFirst("script:containsData(Playerjs)")?.data()
-                    val video = script?.substringAfter("file:\"#9")?.substringBefore("\"")
-                        ?.replace(Regex("/@#@\\S+?=?="), "")?.let { base64Decode(it) }
-                    callback.invoke(
-                        ExtractorLink(
-                            "Vidsrc",
-                            "Vidsrc",
-                            video
-                                ?: return,
-                            "https://vidsrc.stream/",
-                            Qualities.P1080.value,
-                            INFER_TYPE
-                        )
-                    )
+                    val iframedoc = app.get(url).document
+                    iframedoc.select("div.serversList > div.server").forEach { server ->
+                        val servername = server.selectFirst("div.server")?.text().toString()
+                        val serverhash = server.selectFirst("div.server")?.attr("data-hash").toString()
+                        val link = Extractvidsrcnetservers(serverhash)
+                        Log.d("Test servername",servername)
+                        Log.d("Test link",link)
+                            if (link.isNotEmpty()) {
+                                when (servername) {
+                                    "VidSrc PRO" -> {
+                                        val URI =
+                                            app.get(
+                                                link,
+                                                referer = "https://vidsrc.net/"
+                                            ).document.selectFirst("script:containsData(Playerjs)")
+                                                ?.data()
+                                                ?.substringAfter("file:\"#9")?.substringBefore("\"")
+                                                ?.replace(Regex("/@#@\\S+?=?="), "")
+                                                ?.let { base64Decode(it) }
+                                                .toString()
+                                        loadExtractor(
+                                            URI,
+                                            referer = "https://vidsrc.net/",
+                                            subtitleCallback,
+                                            callback
+                                        )
+                                    }
+                                    "2Embed" -> {
+                                        Log.d("Test URI", "I'm here'")
+                                    }
+                                    "Superembed" -> {
+                                        val URI =app.get(link,referer = "https://vidsrc.net/").document.selectFirst("script:containsData(split)")?.data().toString()
+                                        var globalArgument: Any? = null
+                                        if (URI.contains("split")) {
+                                            val startJs =
+                                                """
+                var globalArgument = null;
+                function Playerjs({
+                    return 
+                        id: null,
+                        globalArgument = file;
+                    
+                });
+                """
+                                            val rhino = getRhinoContext()
+                                            val scope: Scriptable = rhino.initSafeStandardObjects()
+                                            rhino.evaluateString(scope, startJs + URI, "JavaScript", 1, null)
+                                            globalArgument = scope.get("globalArgument", scope)
+                                        }
+                                        Log.d("Test Rhino", globalArgument.toString())
+                                    }
+                            }
+                        }
+                    }
                 }
+
+    suspend fun Extractvidsrcnetservers(url: String): String {
+        val rcp=app.get("https://vidsrc.stream/rcp/$url", referer = "https://vidsrc.net/").document
+        val link = rcp.selectFirst("script:containsData(player_iframe)")?.data()?.substringAfter("src: '")?.substringBefore("',")
+        return "http:$link".toString()
+    }
+    suspend fun Extracttruevidsrcneturl(url: String,servername :String)  {
+        //Log.d("Test vid",url)
+        if (url.isNotEmpty()) {
+            when (servername) {
+                "VidSrc PRO" -> {
+                    val URI =
+                        app.get(url, referer = "https://vidsrc.net/").document.selectFirst("script:containsData(Playerjs)")?.data()
+                            ?.substringAfter("file:\"#9")?.substringBefore("\"")
+                            ?.replace(Regex("/@#@\\S+?=?="), "")?.let { base64Decode(it) }
+                            .toString()
+                    VidSrcNetExtractorServers().getUrl(URI)
+                }
+            }
+        }
+    }
 
                 suspend fun invokeDreamfilm(
                     title: String? = null,
