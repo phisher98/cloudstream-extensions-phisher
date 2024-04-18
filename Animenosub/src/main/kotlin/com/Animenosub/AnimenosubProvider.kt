@@ -11,6 +11,7 @@ class AnimenosubProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Animenosub())
         registerExtractorAPI(Vtbe())
+        registerExtractorAPI(waaw())
         registerExtractorAPI(Vidmoly())
         registerExtractorAPI(FileMoonSx())
         registerExtractorAPI(wishfast())

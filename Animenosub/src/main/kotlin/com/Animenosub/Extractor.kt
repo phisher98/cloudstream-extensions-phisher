@@ -1,6 +1,8 @@
 package com.Animenosub
 
+//import android.util.Log
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -37,4 +39,8 @@ open class Vtbe : ExtractorApi() {
 class wishfast : StreamWishExtractor() {
     override var mainUrl = "https://wishfast.top"
     override var name = "StreamWish"
+}
+
+class waaw : StreamSB() {
+    override var mainUrl = "https://waaw.to"
 }
