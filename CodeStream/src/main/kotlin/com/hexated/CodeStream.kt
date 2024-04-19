@@ -28,6 +28,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeLing
 import com.KillerDogeEmpire.CodeExtractor.invokeM4uhd
 import com.KillerDogeEmpire.CodeExtractor.invokeMoflix
 import com.KillerDogeEmpire.CodeExtractor.invokeMoviehubAPI
+import com.KillerDogeEmpire.CodeExtractor.invokeMultiEmbed
 import com.KillerDogeEmpire.CodeExtractor.invokeMultimovies
 import com.KillerDogeEmpire.CodeExtractor.invokeNepu
 import com.KillerDogeEmpire.CodeExtractor.invokeNetmovies
@@ -116,6 +117,7 @@ open class CodeStream : TmdbProvider() {
         const val kimcartoonAPI = "https://kimcartoon.li"
         const val hianimeAPI = "https://hianime.to"
         const val aniwaveAPI = "https://aniwave.to"
+        const val MultiEmbedAPI = "https://multiembed.mov"
         const val crunchyrollAPI = "https://beta-api.crunchyroll.com"
         const val kissKhAPI = "https://kisskh.co"
         const val lingAPI = "https://ling-online.info"
@@ -642,6 +644,15 @@ open class CodeStream : TmdbProvider() {
                         res.season,
                         res.episode,
                         callback
+                    )
+                },
+                {
+                if (!res.isAnime) invokeMultiEmbed(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
                     )
                 },
                 {

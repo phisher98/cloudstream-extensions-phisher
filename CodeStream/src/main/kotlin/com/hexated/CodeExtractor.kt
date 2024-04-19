@@ -18,6 +18,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.getRhinoContext
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 
 val session = Session(Requests().baseClient)
@@ -194,8 +195,50 @@ object CodeExtractor : CodeStream() {
                         )
                     }
                 }
+    suspend fun invokeMultiEmbed(
+        imdbId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$MultiEmbedAPI/directstream.php?video_id=$imdbId"
+        } else {
+            "$MultiEmbedAPI/directstream.php?video_id=$imdbId&s=$season&e=$episode"
+        }
+        val res = app.get(url, referer = url).document
+        val script=res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data().toString()
+        if (script.isNotEmpty()) {
+            val firstJS =
+                """
+        var globalArgument = null;
+        function Playerjs(arg) {
+        globalArgument = arg;
+        };
+        """.trimIndent()
+            val rhino = org.mozilla.javascript.Context.enter()
+            rhino.optimizationLevel = -1
+            val scope: Scriptable = rhino.initSafeStandardObjects()
+            rhino.evaluateString(scope, firstJS+script, "JavaScript", 1, null)
+            val file=(scope.get("globalArgument", scope).toJson()).toString().substringAfter("file\":\"").substringBefore("\",")
+            Log.d("Test",file
+            )
+            callback.invoke(
+                ExtractorLink(
+                    source = "MultiEmbeded API",
+                    name = "MultiEmbeded API",
+                    url = file,
+                    referer = "",
+                    quality = Qualities.Unknown.value,
+                    type = INFER_TYPE
+                )
+            )
 
-                suspend fun invokeAsianHD(
+        }
+    }
+
+    suspend fun invokeAsianHD(
                     title: String? = null,
                     year: Int? = null,
                     season: Int? = null,
