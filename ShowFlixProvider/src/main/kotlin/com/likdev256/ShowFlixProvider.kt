@@ -418,7 +418,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         if (data.contains("sharedisk")) {
             val sources = mutableListOf<String>()
             val m = parseJson<MovieLinks>(data)
-            //val streamsb = m.streamsb.toString()
+            Log.d("Test555",m.toString())
             val filelions = "https://filelions.to/v/" + m.filelions
             val streamwish = "https://streamwish.to/e/" + m.streamwish
             val streamruby = "https://streamruby.com/" + m.streamruby
@@ -428,6 +428,11 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             //sources.add(streamsb)
             Log.d("Test124","$sources")
             sources.forEach { url->
+                if (url.contains("ruby"))
+                {
+                    StreamRuby().getUrl(url)
+                }
+                else
              loadExtractor(url,subtitleCallback,callback)
             }
         }

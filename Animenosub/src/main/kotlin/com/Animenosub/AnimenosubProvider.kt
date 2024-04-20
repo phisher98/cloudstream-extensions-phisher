@@ -3,8 +3,6 @@ package com.Animenosub
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
-import com.lagradost.cloudstream3.extractors.FileMoonSx
-import com.lagradost.cloudstream3.extractors.Vidmoly
 
 @CloudstreamPlugin
 class AnimenosubProvider: Plugin() {
@@ -12,8 +10,7 @@ class AnimenosubProvider: Plugin() {
         registerMainAPI(Animenosub())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())
-        registerExtractorAPI(Vidmoly())
-        registerExtractorAPI(FileMoonSx())
+        registerExtractorAPI(Filemoonsxx())
         registerExtractorAPI(wishfast())
     }
 }
