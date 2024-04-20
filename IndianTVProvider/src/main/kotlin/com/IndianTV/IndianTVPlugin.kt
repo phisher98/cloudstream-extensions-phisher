@@ -15,24 +15,29 @@ import org.jsoup.nodes.Document
 import java.nio.charset.StandardCharsets
 
 class IndianTVPlugin : MainAPI() {
-    override var mainUrl = "https://madplay.live/hls/tata"
     override var name = "Indian TV"
     override val hasMainPage = true
     override var lang = "hi"
-    override val hasQuickSearch = false
-    override val hasDownloadSupport = false
-    override val hasChromecastSupport = true
     override val supportedTypes = setOf(TvType.Live)
 
     override val mainPage = mainPageOf(
-        "$mainUrl/" to "TATA",
-        "https://madplay.live/hls/airtel" to "Airtel",
-        "https://madstream.one/pages/jiotvplus.php" to "Jio TV",
+        INDIANTATAAPI to "TATA",
+        INDIANAirtelAPI to "Airtel",
+        INDIANJIOAPI to "Jio TV",
+        INDIANDiscoveryAPI to "Discovery"
     )
 
+    companion object {
+        const val INDIANJIOAPI = BuildConfig.INDIANTV_JIO_API
+        const val INDIANTATAAPI = BuildConfig.INDIANTV_TATA_API
+        const val INDIANDiscoveryAPI = BuildConfig.INDIANTV_Discovery_API
+        const val INDIANAirtelAPI = BuildConfig.INDIANTV_Airtel_API
+
+        val Useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
+    }
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-           //val document = app.get(request.data).document
-        val document = app.get(request.data).document
+        val document = app.get(request.data,headers = mapOf("User-Agent" to Useragent)).document
             val home =
                 document.select("div#listContainer > div.box1").mapNotNull { it.toSearchResult() }
             return newHomePageResponse(
@@ -55,11 +60,13 @@ class IndianTVPlugin : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val documentTata = app.get("$mainUrl/").document
-        val documentAirtel = app.get("https://madplay.live/hls/airtel").document
-        val documentJiotv = app.get("https://madstream.one/pages/jiotvplus.php").document
+        val documentTata = app.get(INDIANTATAAPI,headers = mapOf("User-Agent" to Useragent)).document
+        val documentAirtel = app.get(INDIANAirtelAPI,headers = mapOf("User-Agent" to Useragent)).document
+        val documentJiotv = app.get(INDIANJIOAPI,headers = mapOf("User-Agent" to Useragent)).document
+        val documentdiscovery = app.get(INDIANDiscoveryAPI,headers = mapOf("User-Agent" to Useragent)).document
         val mergedDocument = Document.createShell("")
         mergedDocument.body().append(documentTata.body().html())
+        mergedDocument.body().append(documentdiscovery.body().html())
         mergedDocument.body().append(documentAirtel.body().html())
         mergedDocument.body().append(documentJiotv.body().html())
 
@@ -82,9 +89,9 @@ class IndianTVPlugin : MainAPI() {
                 this.plot = showname
             }
         }
-            val document = app.get(url).document
+            val document = app.get(url, headers = mapOf("User-Agent" to Useragent)).document
             val title =document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
-            val poster =fixUrl(document.select("div.program-info > img").attr("src").toString())
+            val poster ="https://cdn.mos.cms.futurecdn.net/iYdoTcTScdApk3JV5GfEAT-1920-80.jpg"
             val showname =document.selectFirst("div.program-info > div.program-name")?.text()?.trim().toString()
             //val description = document.selectFirst("div.program-info > div.program-description")?.text()?.trim().toString()
 
@@ -103,7 +110,7 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data,headers = mapOf("User-Agent" to Useragent)).document
         if (data.contains("jio")) {
             val scripts = document.select("script")
             var globalArgument: Any? = null
@@ -136,10 +143,10 @@ class IndianTVPlugin : MainAPI() {
                 val link=rhinout.substringAfter("file\":\"").substringBefore("\",")
                     callback.invoke(
                         ExtractorLink(
-                            source = "TATA SKY",
-                            name = "TATA SKY",
+                            source = "INDIANTV",
+                            name = "INDIANTV",
                             url = link,
-                            referer = "https://madplay.live/",
+                            referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
                         )
@@ -200,10 +207,10 @@ class IndianTVPlugin : MainAPI() {
 
                     callback.invoke(
                         DrmExtractorLink(
-                            source = "TATA SKY",
-                            name = "TATA SKY",
+                            source = "INDIANTV",
+                            name = "INDIANTV",
                             url = link,
-                            referer = "madplay.live",
+                            referer = "",
                             quality = Qualities.Unknown.value,
                             type = INFER_TYPE,
                             kid = finalkeyid,
