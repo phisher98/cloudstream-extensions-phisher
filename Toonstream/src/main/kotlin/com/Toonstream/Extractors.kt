@@ -1,13 +1,19 @@
 package com.Toonstream
 
+import android.util.Log
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamSB
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.helper.AesHelper
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 
 class StreamSB8 : StreamSB() {
@@ -69,8 +75,66 @@ open class Vidstreaming : ExtractorApi() {
     }
 
     fun Extractvidsub(url: String): String {
+        Log.d("Test",url)
         val file=url.substringAfter("tracks: [{\"file\":\"").substringAfter("file\":\"").substringBefore("\",\"")
+        Log.d("Test",file)
         return file
     }
+}
 
+open class Streamruby : ExtractorApi() {
+    override var name = "Streamruby"
+    override var mainUrl = "streamruby.com"
+    override val requiresReferer = false
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        if (url.contains("/e/"))
+        {
+            val newurl=url.replace("/e","")
+            val txt = app.get(newurl).text
+            val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(txt)?.groupValues?.getOrNull(1).toString()
+            return listOf(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    m3u8,
+                    mainUrl,
+                    Qualities.Unknown.value,
+                    type = INFER_TYPE
+                )
+            )
+        }
+        else
+        {
+            val txt = app.get(url).text
+            val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(txt)?.groupValues?.getOrNull(1).toString()
+            return listOf(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    m3u8,
+                    mainUrl,
+                    Qualities.Unknown.value,
+                    type = INFER_TYPE
+                )
+            )
+        }
+    }
+}
+
+class Cdnwish : StreamWishExtractor() {
+    override var mainUrl = "https://cdnwish.com"
+}
+
+class vidhidevip : VidhideExtractor() {
+    override var mainUrl = "https://vidhidevip.com"
+}
+
+class D000d : DoodLaExtractor() {
+    override var mainUrl = "https://d000d.com"
+}
+
+
+class FileMoonnl : Filesim() {
+    override val mainUrl = "https://filemoon.nl"
+    override val name = "FileMoon"
 }

@@ -12,5 +12,10 @@ class ToonstreamProvider: Plugin() {
         registerExtractorAPI(StreamSB8())
         registerExtractorAPI(Vidmolyme())
         registerExtractorAPI(Vidstreaming())
+        registerExtractorAPI(Streamruby())
+        registerExtractorAPI(D000d())
+        registerExtractorAPI(vidhidevip())
+        registerExtractorAPI(Cdnwish())
+        registerExtractorAPI(FileMoonnl())
     }
 }

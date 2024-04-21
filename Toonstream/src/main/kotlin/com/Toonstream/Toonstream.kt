@@ -121,12 +121,36 @@ class Toonstream : MainAPI() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select("#aa-options > div > iframe").forEach {
             val serverlink=it.attr("data-src")
+            if (serverlink.contains("gdmirrorbot"))
+            {
+                val links=GDmirrorbot(serverlink)
+                links.forEach { url->
+                    loadExtractor(url,subtitleCallback, callback)
+                }
+            }
+            else
             loadExtractor(serverlink,subtitleCallback, callback)
         }
         return true
+    }
+
+
+    suspend fun GDmirrorbot(url: String): MutableList<String> {
+        val urllist= mutableListOf<String>()
+        val links= app.get(url).text
+        val pattern="data-link='(.*?)'".toRegex()
+        val matches=pattern.findAll(links)
+        matches.forEach { matchResult ->
+            val link = matchResult.groups[1]?.value
+            link?.let {
+                urllist.add(it)
+            }
+        }
+        return urllist
     }
 }
