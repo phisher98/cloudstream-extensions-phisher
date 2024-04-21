@@ -30,6 +30,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Bestx())
         registerExtractorAPI(Snolaxstream())
         registerExtractorAPI(Pixeldra())
+        registerExtractorAPI(Graceaddresscommunity())
         registerExtractorAPI(M4ufree())
         registerExtractorAPI(Streamruby())
         registerExtractorAPI(Streamwish())

@@ -575,13 +575,13 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    if (!res.isAnime) invokeSmashyStream(
-                        res.id,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
+          //          if (!res.isAnime) invokeSmashyStream(
+           //             res.id,
+             //           res.season,
+               //         res.episode,
+                 //       subtitleCallback,
+                   //     callback
+                    // )
                 },
                 {
                     if (!res.isAnime) invokeWatchsomuch(

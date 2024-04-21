@@ -1,0 +1,96 @@
+package com.Supercartoons
+
+import android.annotation.SuppressLint
+import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
+
+class Supercartoons : MainAPI() {
+    override var mainUrl              = "https://www.supercartoons.net"
+    override var name                 = "Supercartoons"
+    override val hasMainPage          = true
+    override var lang                 = "en"
+    override val hasDownloadSupport   = true
+    override val supportedTypes       = setOf(TvType.Cartoon)
+
+    override val mainPage = mainPageOf(
+        "serie/popeye-the-sailor" to " Popeye the Sailor",
+        "serie/the-pink-panther-show" to "The Pink Panther Show",
+        "serie/tom-and-jerry" to "Tom and Jerry",
+        "serie/disney" to "Disney",
+        "serie/looney-tunes" to "Looney Tunes",
+        "serie/merrie-melodies" to "Merrie Melodies",
+    )
+
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val document = app.get("$mainUrl/${request.data}/?page=$page").document
+        val home     = document.select("section > div.item").mapNotNull { it.toSearchResult() }
+
+        return newHomePageResponse(
+            list    = HomePageList(
+                name               = request.name,
+                list               = home,
+                isHorizontalImages = true
+            ),
+            hasNext = true
+        )
+    }
+
+    private fun Element.toSearchResult(): SearchResponse {
+        val title     = this.select("a > img").attr("alt")
+        val href      = fixUrl(this.select("a").attr("href"))
+        val posterUrl = fixUrlNull(this.select("a > img").attr("src").toString())
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+            this.posterUrl = posterUrl
+        }
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchResponse = mutableListOf<SearchResponse>()
+
+        for (i in 1..3) {
+            val document = app.get("${mainUrl}/?s=$query&paged=$i").document
+
+            val results = document.select("#movies-a > ul > li").mapNotNull { it.toSearchResult() }
+
+            if (!searchResponse.containsAll(results)) {
+                searchResponse.addAll(results)
+            } else {
+                break
+            }
+
+            if (results.isEmpty()) break
+        }
+
+        return searchResponse
+    }
+
+    @SuppressLint("SuspiciousIndentation")
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url, referer = url).document
+        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
+        val poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim().toString()
+        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim().toString()
+            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.posterUrl = poster
+                this.plot = description
+            }
+    }
+
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        val document = app.get(data).document
+        val file=document.selectFirst("script:containsData(file)")?.data().toString().substringAfter("file: \"").substringBefore("\"")
+
+        callback.invoke(
+            ExtractorLink(
+            name=name,
+            source = name,
+            url = file,
+            referer = "",
+            quality = getQualityFromName(""),
+            type = INFER_TYPE
+            )
+        )
+        return true
+    }
+}

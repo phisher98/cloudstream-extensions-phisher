@@ -626,11 +626,14 @@ open class Chillx : ExtractorApi() {
             it.groupValues[1].toInt(16).toChar().toString()
         }
     }
-
     suspend fun getKey() = key ?: fetchKey().also { key = it }
 
     private suspend fun fetchKey(): String {
         return app.get("https://raw.githubusercontent.com/Sofie99/Resources/main/chillix_key.json").parsed()
     }
 
+}
+
+class Graceaddresscommunity : Voe() {
+    override var mainUrl = "https://graceaddresscommunity.com"
 }

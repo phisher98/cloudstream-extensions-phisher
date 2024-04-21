@@ -1,5 +1,6 @@
 package com.KillerDogeEmpire
 
+import android.annotation.SuppressLint
 import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -114,6 +115,7 @@ object CodeExtractor : CodeStream() {
                     }
                 }
 
+                @SuppressLint("SuspiciousIndentation")
                 suspend fun invokeVidSrc(
                     id: Int? = null,
                     season: Int? = null,
@@ -668,11 +670,15 @@ object CodeExtractor : CodeStream() {
                                 it.attr("data-type")
                             )
                         }.apmap { (id, nume, type) ->
+                            Log.d("Test doo",id.toString())
+                            Log.d("Test doo",nume.toString())
+                            Log.d("Test doo",type.toString())
                             val source = app.get(
                                 "$host/wp-json/dooplayer/v2/${id}/${type}/${nume}",
                                 headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                                 referer = "$host/"
                             ).parsed<ResponseHash>().embed_url
+                            Log.d("Test doo",source.toString())
                             if (!source.contains("youtube")) {
                                 if (source.startsWith("https://voe.sx")) {
                                     val req = app.get(source, referer = "$host/")
@@ -683,6 +689,7 @@ object CodeExtractor : CodeStream() {
                                         tryParseJson<Map<String, String>>(base64Decode(script))?.get(
                                             "file"
                                         )
+                                    Log.d("Test doo",video.toString())
                                     M3u8Helper.generateM3u8(
                                         "Voe",
                                         video ?: return@apmap,
@@ -2049,36 +2056,29 @@ object CodeExtractor : CodeStream() {
                     callback: (ExtractorLink) -> Unit,
                 ) {
                     val url = if (season == null) {
-                        "$smashyStreamAPI/playere.php?tmdb=$tmdbId"
+                        "$smashyStreamAPI/data.php?tmdb=$tmdbId"
                     } else {
-                        "$smashyStreamAPI/playere.php?tmdb=$tmdbId&season=$season&episode=$episode"
+                        "$smashyStreamAPI/data.php?tmdb=$tmdbId&season=$season&episode=$episode"
                     }
-
-                    app.get(
+                    Log.d("Test json",url.toString())
+                    val document= app.get(url, referer = "https://smashystream.xyz/").document
+                    val json=app.get(
                         url,
                         referer = "https://smashystream.xyz/"
-                    ).document.select("div#_default-servers a.server").map {
-                        it.attr("data-url") to it.text()
-                    }.apmap {
-                        when (it.second) {
-                            "Player F" -> {
-                                invokeSmashyFfix(
-                                    it.second,
-                                    it.first,
-                                    url,
-                                    subtitleCallback,
-                                    callback
-                                )
-                            }
-
-                            "Player SU" -> {
-                                invokeSmashySu(it.second, it.first, url, callback)
-                            }
-
-                            else -> return@apmap
-                        }
+                    ).parsedSafe<SmashyRoot>()
+                    val link=json?.urlArray
+                    val urls = link?.map { it.url }
+                    Log.d("Test json",urls.toString())
+                    urls?.map { links->
+                        Log.d("Test json",links)
+                        val doc= app.get(links, referer = "https://smashystream.xyz/").document
+                        val string=doc.toString().substringAfter("#2").substringBefore("\"")
+                            .replace(Regex("//.{16}"), "")
+                            .let { base64Decode(it) }
+                            .toString()
+                        Log.d("Test json",string)
+                        Log.d("Test json",doc.toString())
                     }
-
                 }
 
                 suspend fun invokeNepu(
