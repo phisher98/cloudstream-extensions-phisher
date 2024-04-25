@@ -1,6 +1,7 @@
 package com.hexated
 
 import android.util.Base64
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.apmap
@@ -39,7 +40,7 @@ class VidsrcTo : ExtractorApi() {
                     app.get("$mainUrl/ajax/embed/source/${source.id}")
                         .parsedSafe<VidsrctoEmbedSource>()
                 val finalUrl = DecryptUrl(embedRes?.result?.encUrl ?: "")
-                //Log.d("rowdyTest", source.title + ": " + finalUrl)
+                Log.d("rowdyTest", source.title + ": " + finalUrl)
                 when (source.title) {
                     "Vidplay" ->
                         AnyVidplay(finalUrl.substringBefore("/e/"))

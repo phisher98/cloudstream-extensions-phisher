@@ -151,21 +151,6 @@ object CodeExtractor : CodeStream() {
         Log.d("Test",link.toString())
         return "http:$link".toString()
     }
-    suspend fun Extracttruevidsrcneturl(url: String,servername :String)  {
-        //Log.d("Test vid",url)
-        if (url.isNotEmpty()) {
-            when (servername) {
-                "VidSrc PRO" -> {
-                    val URI =
-                        app.get(url, referer = "https://vidsrc.net/").document.selectFirst("script:containsData(Playerjs)")?.data()
-                            ?.substringAfter("file:\"#9")?.substringBefore("\"")
-                            ?.replace(Regex("/@#@\\S+?=?="), "")?.let { base64Decode(it) }
-                            .toString()
-                    VidSrcNetExtractorServers().getUrl(URI)
-                }
-            }
-        }
-    }
 
                 suspend fun invokeDreamfilm(
                     title: String? = null,
@@ -224,8 +209,7 @@ object CodeExtractor : CodeStream() {
             val scope: Scriptable = rhino.initSafeStandardObjects()
             rhino.evaluateString(scope, firstJS+script, "JavaScript", 1, null)
             val file=(scope.get("globalArgument", scope).toJson()).toString().substringAfter("file\":\"").substringBefore("\",")
-            Log.d("Test",file
-            )
+            //Log.d("Test",file)
             callback.invoke(
                 ExtractorLink(
                     source = "MultiEmbeded API",
@@ -1030,6 +1014,7 @@ object CodeExtractor : CodeStream() {
                     } else {
                         "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
                     }
+                    Log.d("test vidsrc",url)
                     loadExtractor(url, subtitleCallback, callback)
                 }
 
@@ -2060,7 +2045,7 @@ object CodeExtractor : CodeStream() {
                     } else {
                         "$smashyStreamAPI/data.php?tmdb=$tmdbId&season=$season&episode=$episode"
                     }
-                    Log.d("Test json",url.toString())
+                    //Log.d("Test json",url.toString())
                     val document= app.get(url, referer = "https://smashystream.xyz/").document
                     val json=app.get(
                         url,
@@ -2068,7 +2053,7 @@ object CodeExtractor : CodeStream() {
                     ).parsedSafe<SmashyRoot>()
                     val link=json?.urlArray
                     val urls = link?.map { it.url }
-                    Log.d("Test json",urls.toString())
+                    //Log.d("Test json",urls.toString())
                     urls?.map { links->
                         Log.d("Test json",links)
                         val doc= app.get(links, referer = "https://smashystream.xyz/").document
@@ -2076,8 +2061,8 @@ object CodeExtractor : CodeStream() {
                             .replace(Regex("//.{16}"), "")
                             .let { base64Decode(it) }
                             .toString()
-                        Log.d("Test json",string)
-                        Log.d("Test json",doc.toString())
+                        //Log.d("Test json",string)
+                        //Log.d("Test json",doc.toString())
                     }
                 }
 
