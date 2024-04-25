@@ -198,6 +198,16 @@ suspend fun extractResumeUHD(url: String): String? {
     }
 }
 
+suspend fun extractPixeldrainUHD(url: String): String? {
+    Log.d("Test iselector frame",url.toString())
+    app.get("https://driveleech.org$url").document.let {
+        Log.d("Test iselector frame",it.toString())
+        val url = it.selectFirst("a.btn.btn-outline-info:contains(pixel)")?.attr("href").toString()
+        Log.d("Test iselector frame",url)
+        return url
+    }
+}
+
 suspend fun extractResumeTop(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         val link = it.selectFirst("a.btn.btn-success")?.attr("href").toString()

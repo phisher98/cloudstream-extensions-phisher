@@ -1,7 +1,7 @@
 package com.IndianTV
 
 import android.annotation.SuppressLint
-//import android.util.Log
+import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -111,6 +111,7 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val document = app.get(data,headers = mapOf("User-Agent" to Useragent)).document
         if (data.contains("jio")) {
+            Log.d("Rhinoout", data)
             val scripts = document.select("script")
             var globalArgument: Any? = null
 
@@ -153,6 +154,7 @@ class IndianTVPlugin : MainAPI() {
             }
         } else
             if (data.contains("tata")) {
+                Log.d("Rhinoout", data)
             val scripts = document.select("script")
             var globalArgument: Any? = null
             // List to hold all the extracted links
@@ -200,7 +202,6 @@ class IndianTVPlugin : MainAPI() {
                     val link = file.toString()
                     val finalkey = decodeHex(newkey)
                     val finalkeyid = decodeHex(newkeyId)
-
                     callback.invoke(
                         DrmExtractorLink(
                             source = "INDIAN TV",

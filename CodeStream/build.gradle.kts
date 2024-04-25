@@ -3,7 +3,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 17
+version = 18
 
 android {
     defaultConfig {
