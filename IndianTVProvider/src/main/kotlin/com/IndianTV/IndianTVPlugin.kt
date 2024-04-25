@@ -1,7 +1,7 @@
 package com.IndianTV
 
 import android.annotation.SuppressLint
-import android.util.Log
+//import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -79,7 +79,6 @@ class IndianTVPlugin : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         if (url.contains("m3u8"))
         {
-            Log.d("Test",url)
             val title ="JioTV"
             val poster ="https://i0.wp.com/www.smartprix.com/bytes/wp-content/uploads/2021/08/JioTV-on-smart-TV.png?fit=1200%2C675&ssl=1"
             val showname ="JioTV"
@@ -143,8 +142,8 @@ class IndianTVPlugin : MainAPI() {
                 val link=rhinout.substringAfter("file\":\"").substringBefore("\",")
                     callback.invoke(
                         ExtractorLink(
-                            source = "INDIANTV",
-                            name = "INDIANTV",
+                            source = "INDIAN TV",
+                            name = "INDIAN TV",
                             url = link,
                             referer = "",
                             quality = Qualities.Unknown.value,
@@ -152,7 +151,8 @@ class IndianTVPlugin : MainAPI() {
                         )
                     )
             }
-        } else {
+        } else
+            if (data.contains("tata")) {
             val scripts = document.select("script")
             var globalArgument: Any? = null
             // List to hold all the extracted links
@@ -194,21 +194,17 @@ class IndianTVPlugin : MainAPI() {
                     keyId = matchResult.groupValues[2]
                     key = matchResult.groupValues[3]
 
-                    Log.d("Test", key)
-                    Log.d("Test", keyId)
                     val newkeyId = keyId.toString()
                     val newkey = key.toString()
 
                     val link = file.toString()
                     val finalkey = decodeHex(newkey)
                     val finalkeyid = decodeHex(newkeyId)
-                    Log.d("Test", finalkey)
-                    Log.d("Test", finalkeyid)
 
                     callback.invoke(
                         DrmExtractorLink(
-                            source = "INDIANTV",
-                            name = "INDIANTV",
+                            source = "INDIAN TV",
+                            name = "INDIAN TV",
                             url = link,
                             referer = "",
                             quality = Qualities.Unknown.value,
@@ -220,6 +216,20 @@ class IndianTVPlugin : MainAPI() {
                 }
             }
         }
+        else if (data.contains("discovery"))
+            {
+                val link=data.substringAfter("jwplayer.php?")
+                callback.invoke(
+                    ExtractorLink(
+                        source = "INDIAN TV",
+                        name = "INDIAN TV",
+                        url = link,
+                        referer = "",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
+                    )
+                )
+            }
         return true
     }
 
