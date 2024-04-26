@@ -929,7 +929,7 @@ object CodeExtractor : CodeStream() {
                             it.attr("href").contains(Regex("(?i)Episode-0*$episode"))
                         }?.attr("href")
                     } ?: return
-                    Log.d("Test iSelector",iframe.toString())
+                    //Log.d("Test iSelector",iframe.toString())
                     val servers =
                         app.get(
                             fixUrl(
@@ -938,7 +938,7 @@ object CodeExtractor : CodeStream() {
                             )
                         ).document.select("#selectServer > option")
                             .map { fixUrl(it.attr("value"), kimcartoonAPI) }
-                    Log.d("Test iSelector",servers.toString())
+                    //Log.d("Test iSelector",servers.toString())
                     servers.apmap {
                         app.get(it).document.select("#my_video_1").attr("src").let { iframe ->
                             if (iframe.isNotEmpty()) {
@@ -947,6 +947,37 @@ object CodeExtractor : CodeStream() {
                         }
                     }
                 }
+
+
+                 suspend fun invokeazseries(
+                        title: String? = null,
+                        season: Int? = null,
+                        episode: Int? = null,
+                        subtitleCallback: (SubtitleFile) -> Unit,
+                        callback: (ExtractorLink) -> Unit
+                    ) {
+                     val fixTitle = title.createSlug()
+                        val url = if (season == null) {
+                            "$azseriesAPI/embed/$fixTitle"
+                        } else {
+                            "$azseriesAPI/episodes/$fixTitle-season-$season-episode-$episode"
+                        }
+                     Log.d("Test",url.toString())
+                     val res= app.get(url)
+                     if (res.code==200)
+                     {
+                         val document=res.document
+                         val id=document.selectFirst("#show_player_lazy")?.attr("movie-id").toString()
+                         Log.d("Test",id.toString())
+                         val server_doc= app.post("$azseriesAPI/wp--admin/admin-ajax.php", data = mapOf(
+                             "action" to "lazy_player",
+                             "movieID" to id,
+                         )).document
+                         val server_list= mutableListOf<String>()
+                         val servers_url=server_doc.select("#playeroptions")
+                         Log.d("Test",servers_url.toString())
+                     }
+                 }
 
                 suspend fun invokeDumpStream(
                     title: String? = null,

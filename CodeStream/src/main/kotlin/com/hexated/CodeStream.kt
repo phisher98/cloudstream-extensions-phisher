@@ -16,6 +16,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeDramaday
 import com.KillerDogeEmpire.CodeExtractor.invokeDreamfilm
 import com.KillerDogeEmpire.CodeExtractor.invokeDumpStream
 import com.KillerDogeEmpire.CodeExtractor.invokeEmovies
+import com.KillerDogeEmpire.CodeExtractor.invokeazseries
 import com.KillerDogeEmpire.CodeExtractor.invokeFDMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeFilmxy
 import com.KillerDogeEmpire.CodeExtractor.invokeFlixon
@@ -127,6 +128,7 @@ open class CodeStream : TmdbProvider() {
         const val m4uhdAPI = "https://ww1.streamm4u.ws"
         const val rStreamAPI = "https://remotestream.cc"
         const val flixonAPI = "https://myflixer.lol"
+        const val azseriesAPI = "https://azseries.org"
         const val smashyStreamAPI = "https://embed.smashystream.com"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
@@ -488,7 +490,7 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    if (res.isAsian || res.isAnime) invokeKisskh(
+                    invokeKisskh(
                         res.title,
                         res.season,
                         res.episode,
@@ -497,6 +499,15 @@ open class CodeStream : TmdbProvider() {
                         subtitleCallback,
                         callback
                     )
+                },
+                {
+                    if (!res.isAnime) invokeazseries(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
                 },
                 {
                     //         if (res.isAsian) invokeWatchasian(
