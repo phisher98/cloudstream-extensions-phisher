@@ -10,7 +10,7 @@ class AnimenosubProvider: Plugin() {
         registerMainAPI(Animenosub())
         registerExtractorAPI(Vtbe())
         registerExtractorAPI(waaw())
-        registerExtractorAPI(Filemoonsxx())
         registerExtractorAPI(wishfast())
+        registerExtractorAPI(FileMoonSx())
     }
 }

@@ -1,6 +1,6 @@
 package com.Animenosub
 
-import android.util.Log
+//import android.util.Log
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -112,14 +112,23 @@ class Animenosub : MainAPI() {
         val document = app.get(data).document
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
-            //Log.d("test decoded",base64)
-            val urltest=base64.decodeBase64()
-            Log.d("test decoded",urltest)
-            val url=base64.decodeBase64().substringAfter("https:").substringBefore("\"")
-            //Log.d("test decoded",url)
-                val link="http:$url"
-                Log.d("test decoded",link)
-                loadExtractor(link,referer = link,subtitleCallback, callback)
+            val url=base64.decodeBase64()
+            if (url.contains("vidmoly"))
+            {
+                val newurl=url.substringAfter("=\"").substringBefore("\"")
+                val link= "http:$newurl"
+                loadExtractor(link,referer = url,subtitleCallback, callback)
+            }
+            else {
+                val link = url.substringAfter("src=\"").substringBefore("\"")
+                if (!link.contains("http"))
+                {
+                    @Suppress("NAME_SHADOWING") val link = url.substringAfter("SRC=\"").substringBefore("\"")
+                    loadExtractor(link, referer = link, subtitleCallback, callback)
+                }
+                else
+                loadExtractor(link, referer = link, subtitleCallback, callback)
+            }
         }
         return true
     }
