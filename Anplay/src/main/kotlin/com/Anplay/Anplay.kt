@@ -1,12 +1,11 @@
 package com.Anplay
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -220,40 +219,6 @@ open class Anplay : MainAPI() {
             else -> this.attr("abs:src")
         }
     }
-    private suspend fun loadCustomExtractor(
-        url: String,
-        referer: String? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-        quality: Int? = null,
-    ) {
-        loadExtractor(url, referer, subtitleCallback) { link ->
-            if(link.quality == Qualities.Unknown.value) {
-                callback.invoke(
-                    ExtractorLink(
-                        link.source,
-                        link.name,
-                        link.url,
-                        link.referer,
-                        when (link.type) {
-                            ExtractorLinkType.M3U8 -> link.quality
-                            else -> quality ?: link.quality
-                        },
-                        link.type,
-                        link.headers,
-                        link.extractorData
-                    )
-                )
-            }
-        }
-    }
-
-    data class LinkData(
-        val tag: String? = null,
-        val type: String? = null,
-        val post: String? = null,
-        val nume: String? = null,
-    )
 
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,
