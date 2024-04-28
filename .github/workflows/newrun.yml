@@ -65,6 +65,7 @@ jobs:
           INDIANTV_Discovery_API: ${{ secrets.INDIANTV_Discovery_API }}
           INDIANTV_Airtel_API: ${{ secrets.INDIANTV_Airtel_API }}
           INDIANTV_JIO_API: ${{ secrets.INDIANTV_JIO_API }}
+          INDIANTV_Voot_API: ${{ secrets.INDIANTV_Voot_API }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -89,6 +90,7 @@ jobs:
           echo INDIANTV_Discovery_API=$INDIANTV_Discovery_API >> local.properties
           echo INDIANTV_Airtel_API=$INDIANTV_Airtel_API >> local.properties
           echo INDIANTV_JIO_API=$INDIANTV_JIO_API >> local.properties
+          echo INDIANTV_Voot_API=$INDIANTV_Voot_API >> local.properties
 
       - name: Build Plugins
         run: |
