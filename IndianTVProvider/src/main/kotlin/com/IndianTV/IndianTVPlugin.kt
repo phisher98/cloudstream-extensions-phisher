@@ -22,9 +22,10 @@ class IndianTVPlugin : MainAPI() {
 
     override val mainPage = mainPageOf(
         INDIANTATAAPI to "TATA",
-        INDIANAirtelAPI to "Airtel",
         INDIANJIOAPI to "Jio TV",
-        INDIANDiscoveryAPI to "Discovery"
+        INDIANDiscoveryAPI to "Discovery",
+        INDIANTVVootAPI to "Voot",
+        INDIANAirtelAPI to "Airtel"
     )
 
     companion object {
@@ -32,6 +33,7 @@ class IndianTVPlugin : MainAPI() {
         const val INDIANTATAAPI = BuildConfig.INDIANTV_TATA_API
         const val INDIANDiscoveryAPI = BuildConfig.INDIANTV_Discovery_API
         const val INDIANAirtelAPI = BuildConfig.INDIANTV_Airtel_API
+        const val INDIANTVVootAPI = BuildConfig.INDIANTV_Voot_API
 
         val Useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
     }
@@ -109,8 +111,9 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Test",data)
         val document = app.get(data,headers = mapOf("User-Agent" to Useragent)).document
-        if (data.contains("jio")) {
+        if (data.contains("jiotv.php")) {
             Log.d("Rhinoout", data)
             val scripts = document.select("script")
             var globalArgument: Any? = null
@@ -217,7 +220,7 @@ class IndianTVPlugin : MainAPI() {
                 }
             }
         }
-        else if (data.contains("discovery"))
+        else if (data.contains("jwplayer.php?"))
             {
                 val link=data.substringAfter("jwplayer.php?")
                 callback.invoke(

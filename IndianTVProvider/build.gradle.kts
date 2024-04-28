@@ -3,7 +3,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 22
+version = 23
 
 
 android {
@@ -14,6 +14,7 @@ android {
         buildConfigField("String", "INDIANTV_JIO_API", "\"${properties.getProperty("INDIANTV_JIO_API")}\"")
         buildConfigField("String", "INDIANTV_Discovery_API", "\"${properties.getProperty("INDIANTV_Discovery_API")}\"")
         buildConfigField("String", "INDIANTV_Airtel_API", "\"${properties.getProperty("INDIANTV_Airtel_API")}\"")
+        buildConfigField("String", "INDIANTV_Voot_API", "\"${properties.getProperty("INDIANTV_Voot_API")}\"")
     }
 }
 
