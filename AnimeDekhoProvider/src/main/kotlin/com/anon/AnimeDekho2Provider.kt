@@ -1,11 +1,12 @@
 package com.anon
 
-import android.util.Log
+//import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import okio.ByteString.Companion.decodeBase64
 import org.jsoup.nodes.Element
 
 class AnimeDekhoProvider : MainAPI() {
@@ -14,6 +15,7 @@ class AnimeDekhoProvider : MainAPI() {
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
+    private val serverUrl = "https://vidxstream.xyz"
 
     override val supportedTypes =
         setOf(
@@ -107,23 +109,66 @@ class AnimeDekhoProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         val media = parseJson<Media>(data)
-        val doc=app.get(media.url).document
-        doc.select("div.player.movie a").map {
-            val base64=it.attr("data-src")
-            val link=base64.decodeBase64().toString().substringAfter("=").substringBefore("]")
-            Log.d("Test",link)
-            val url=Extractvidlink(link)
-            Log.d("Test",url)
-            loadExtractor(url,subtitleCallback, callback)
-        }
+        //val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
+        val embededurl=app.get(media.url).document.selectFirst("div.fg1.video-options > div > iframe")?.attr("src") ?:""
+        //val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
+        val vidLink = app.get(embededurl)
+            .document.selectFirst("iframe")?.attr("src")
+            ?: throw ErrorLoadingException("no iframe found")
+        val doc = app.get(vidLink).text
+        val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
+        val key = app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
+        val decrypt = cryptoAESHandler(master, key.toByteArray(), false)?.replace("\\", "")
+            ?: throw ErrorLoadingException("error decrypting")
+        val vidFinal=Extractvidlink(decrypt)
+        val subtitle=Extractvidsub(decrypt)
+        val headers =
+            mapOf(
+                "accept" to "*/*",
+                "accept-language" to "en-US,en;q=0.5",
+                "Origin" to serverUrl,
+                "Accept-Encoding" to "gzip, deflate, br",
+                "Connection" to "keep-alive",
+                // "Referer" to "https://vidxstream.xyz/",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "cross-site",
+                "user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
+            )
+
+        callback.invoke(
+            ExtractorLink(
+                source = "Toon",
+                name = "Toon",
+                url = vidFinal,
+                referer = "$serverUrl/",
+                quality = Qualities.Unknown.value,
+                isM3u8 = true,
+                headers = headers,
+            ),
+        )
+        subtitleCallback.invoke(
+            SubtitleFile(
+                "eng",
+                subtitle
+            )
+        )
         return true
     }
 
-    suspend fun Extractvidlink(url: String): String {
-        val doc=app.get(url).text
-        val file=doc.substringAfter("src=\"").substringBefore("\"")
+    fun Extractvidlink(url: String): String {
+        val file=url.substringAfter("sources: [{\"file\":\"").substringBefore("\",\"")
+        return file
+    }
+
+    fun Extractvidsub(url: String): String {
+        val file=url.substringAfter("tracks: [{\"file\":\"").substringAfter("file\":\"").substringBefore("\",\"")
         return file
     }
 
     data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
+
+    data class Keys(
+        @JsonProperty("chillx") val key: List<String>
+    )
 }

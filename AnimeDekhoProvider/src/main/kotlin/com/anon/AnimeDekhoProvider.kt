@@ -1,5 +1,7 @@
 package com.anon
 
+import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.*
@@ -64,7 +66,7 @@ class AnimeDekho2Provider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
 
-        val media = parseJson<Media>(url)
+        val media = parseJson<AnimeDekhoProvider.Media>(url)
         val document = app.get(media.url).document
 
         val title = document.selectFirst("h1.entry-title")?.text()?.trim()
@@ -78,16 +80,22 @@ class AnimeDekho2Provider : MainAPI() {
         val lst = document.select("ul.seasons-lst li")
 
         return if (lst.isEmpty()) {
-            newMovieLoadResponse(title, url, TvType.Movie, Media(media.url, mediaType = 1).toJson()) {
+            newMovieLoadResponse(title, url, TvType.Movie, AnimeDekhoProvider.Media(
+                media.url,
+                mediaType = 1
+            ).toJson()) {
                 this.posterUrl = poster
                 this.plot = plot
                 this.year = year
             }
         } else {
-            val episodes = document.select("ul.seasons-lst li").mapNotNull {
+            @Suppress("NAME_SHADOWING") val episodes = document.select("ul.seasons-lst li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.text() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                Episode(Media(href, mediaType = 2).toJson(), name)
+                val poster=it.selectFirst("div > div > figure > img")?.attr("src")
+                val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
+                val season=seasonnumber.toIntOrNull()
+                Episode(AnimeDekhoProvider.Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -112,7 +120,8 @@ class AnimeDekho2Provider : MainAPI() {
 
         val doc = app.get(vidLink).text
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
-        val decrypt = cryptoAESHandler(master, "a7igbpIApajDyNe".toByteArray(), false)?.replace("\\", "")
+        val key = app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
+        val decrypt = cryptoAESHandler(master, key.toByteArray(), false)?.replace("\\", "")
             ?: throw ErrorLoadingException("error decrypting")
         val vidFinal = Regex("""file:\s*"(https:[^"]+)"""").find(decrypt)!!.groupValues[1]
 
@@ -145,4 +154,8 @@ class AnimeDekho2Provider : MainAPI() {
     }
 
     data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
+    data class Keys(
+        @JsonProperty("chillx") val key: List<String>
+    )
+
 }
