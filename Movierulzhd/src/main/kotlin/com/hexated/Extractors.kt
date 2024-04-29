@@ -2,10 +2,8 @@ package com.hexated
 
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.Chillx
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
-import android.util.Log
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
@@ -27,7 +25,6 @@ open class Akamaicdn : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val res = app.get(url, referer = referer).document
-        Log.d("Test Extracyor",url)
         val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
@@ -42,11 +39,6 @@ open class Akamaicdn : ExtractorApi() {
             )
         )
     }
-}
-
-class AnimesagaStream : Chillx() {
-    override val name = "AnimesagaStream"
-    override val mainUrl = "https://stream.anplay.in"
 }
 
 

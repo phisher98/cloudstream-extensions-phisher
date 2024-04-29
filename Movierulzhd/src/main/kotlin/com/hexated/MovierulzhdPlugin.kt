@@ -10,10 +10,8 @@ class MovierulzhdPlugin: Plugin() {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Movierulzhd())
         registerMainAPI(Hdmovie2())
-        registerMainAPI(Animesaga())
         registerExtractorAPI(FMHD())
         registerExtractorAPI(VidSrcTo())
         registerExtractorAPI(Akamaicdn())
-        registerExtractorAPI(AnimesagaStream())
     }
 }
