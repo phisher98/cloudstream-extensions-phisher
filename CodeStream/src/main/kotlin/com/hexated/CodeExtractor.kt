@@ -379,25 +379,32 @@ object CodeExtractor : CodeStream() {
                     } else {
                         "$apiUrl/episodes/$fixTitle-${season}x${episode}"
                     }
-                    val req = app.get(url)
-                    val directUrl = getBaseUrl(req.url)
-                    val iframe =
-                        req.document.selectFirst("div.pframe iframe")?.attr("src") ?: return
-                    if (!iframe.contains("youtube")) {
-                        loadExtractor(iframe, "$directUrl/", subtitleCallback) { link ->
-                            if (link.quality == Qualities.Unknown.value) {
-                                callback.invoke(
-                                    ExtractorLink(
-                                        link.source,
-                                        link.name,
-                                        link.url,
-                                        link.referer,
-                                        Qualities.P1080.value,
-                                        link.type,
-                                        link.headers,
-                                        link.extractorData
-                                    )
-                                )
+                    val req = app.get(url).document
+                    req.select("ul#playeroptionsul li").map {
+                        Triple(
+                            it.attr("data-post"),
+                            it.attr("data-nume"),
+                            it.attr("data-type")
+                        )
+                    }.apmap { (id, nume, type) ->
+                        if (!nume.contains("trailer")) {
+                            val source = app.post(
+                                url = "$apiUrl/wp-admin/admin-ajax.php",
+                                data = mapOf(
+                                    "action" to "doo_player_ajax",
+                                    "post" to id,
+                                    "nume" to nume,
+                                    "type" to type
+                                ),
+                                referer = url,
+                                headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                            ).parsed<ResponseHash>().embed_url
+                            val link=source.substringAfter("\"").substringBefore("\"")
+                            when {
+                                !link.contains("youtube") -> {
+                                    loadExtractor(link, referer = apiUrl, subtitleCallback, callback)
+                                }
+                                else -> return@apmap
                             }
                         }
                     }
@@ -533,30 +540,6 @@ object CodeExtractor : CodeStream() {
                         "$zshowAPI/episode/$fixTitle-season-$season-episode-$episode"
                     }
                     invokeWpmovies("ZShow", url, subtitleCallback, callback, encrypt = true)
-                }
-
-                suspend fun invokeMMovies(
-                    title: String? = null,
-                    season: Int? = null,
-                    episode: Int? = null,
-                    subtitleCallback: (SubtitleFile) -> Unit,
-                    callback: (ExtractorLink) -> Unit
-                ) {
-                    val fixTitle = title.createSlug()
-                    val url = if (season == null) {
-                        "$mMoviesAPI/movies/$fixTitle"
-                    } else {
-                        "$mMoviesAPI/episodes/$fixTitle-${season}x${episode}"
-                    }
-
-                    invokeWpmovies(
-                        null,
-                        url,
-                        subtitleCallback,
-                        callback,
-                        true,
-                        hasCloudflare = true,
-                    )
                 }
 
                 private suspend fun invokeWpmovies(

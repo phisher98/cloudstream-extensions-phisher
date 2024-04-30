@@ -138,7 +138,7 @@ open class CodeStream : TmdbProvider() {
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = "https://multimovies.top"
+        const val multimoviesAPI = "https://multimovies.space"
         const val multimovies2API = "https://multimovies.click"
         const val netmoviesAPI = "https://netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
@@ -148,7 +148,6 @@ open class CodeStream : TmdbProvider() {
         const val animetoshoAPI = "https://animetosho.org"
         const val showflixAPI = "https://showflix.xyz"
         const val aoneroomAPI = "https://api3.aoneroom.com"
-        const val mMoviesAPI = "https://multimovies.space"
         const val watchCartoonAPI = "https://www1.watchcartoononline.bz"
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
