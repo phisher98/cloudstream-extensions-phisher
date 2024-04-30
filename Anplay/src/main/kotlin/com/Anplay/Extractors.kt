@@ -1,28 +1,12 @@
 package com.Anplay
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-
-class Moviesapi : Chillx() {
-    override val name = "Moviesapi"
-    override val mainUrl = "https://w1.moviesapi.club"
-}
-
-class Bestx : Chillx() {
-    override val name = "Bestx"
-    override val mainUrl = "https://bestx.stream"
-}
-
-class Watchx : Chillx() {
-    override val name = "Watchx"
-    override val mainUrl = "https://watchx.top"
-}
-
 
 class AnimesagaStream : Chillx() {
     override val name = "AnimesagaStream"

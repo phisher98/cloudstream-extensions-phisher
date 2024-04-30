@@ -18,7 +18,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
-import com.lagradost.cloudstream3.getRhinoContext
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 
@@ -948,7 +947,7 @@ object CodeExtractor : CodeStream() {
                     }
                 }
 
-
+//still needs work Azseries
                  suspend fun invokeazseries(
                         title: String? = null,
                         season: Int? = null,
@@ -968,14 +967,18 @@ object CodeExtractor : CodeStream() {
                      {
                          val document=res.document
                          val id=document.selectFirst("#show_player_lazy")?.attr("movie-id").toString()
-                         Log.d("Test",id.toString())
-                         val server_doc= app.post("$azseriesAPI/wp--admin/admin-ajax.php", data = mapOf(
+                         val server_doc= app.post(url="$azseriesAPI/wp-admin/admin-ajax.php",data = mapOf(
                              "action" to "lazy_player",
-                             "movieID" to id,
-                         )).document
+                             "movieID" to id
+                         ), headers = mapOf("X-Requested-With" to "XMLHttpRequest")).document
                          val server_list= mutableListOf<String>()
-                         val servers_url=server_doc.select("#playeroptions")
-                         Log.d("Test",servers_url.toString())
+                         Log.d("Test doc",server_doc.toString())
+                         val servers_url=server_doc.select("div#playeroptions > ul > li ").map {
+                             val href=it.attr("data-vs")
+                             Log.d("Test",href.toString())
+                         }.amap { href->
+                             Log.d("Test",href.toString())
+                         }
                      }
                  }
 
@@ -2934,8 +2937,11 @@ object CodeExtractor : CodeStream() {
                     season: Int? = null,
                     episode: Int? = null,
                     callback: (ExtractorLink) -> Unit,
-                    host: String = "https://zativertz295huk.com",
+                    host: String = "",
                 ) {
+                    val doc= app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
+                    val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
+                    val host = domainRegex.find(doc)?.groups?.get(1)?.value.toString()
                     val res = app.get(
                         "$host/play/$imdbId",
                         referer = "$allmovielandAPI/"
@@ -2972,6 +2978,7 @@ object CodeExtractor : CodeStream() {
                             headers = headers,
                             referer = "$allmovielandAPI/"
                         ).text
+                        Log.d("Test",path)
                         M3u8Helper.generateM3u8("Allmovieland [$lang]", path, "$allmovielandAPI/")
                             .forEach(callback)
                     }

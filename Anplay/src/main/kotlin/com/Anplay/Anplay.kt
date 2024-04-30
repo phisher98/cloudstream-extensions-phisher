@@ -204,7 +204,6 @@ open class Anplay : MainAPI() {
                 !source.contains("youtube") -> {
                     loadExtractor(source, subtitleCallback, callback)
                 }
-
                 else -> return@apmap
             }
         }

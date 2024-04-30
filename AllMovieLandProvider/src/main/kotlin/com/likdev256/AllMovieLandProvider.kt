@@ -1,6 +1,6 @@
 package com.HindiProvider
 
-//import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -169,17 +169,17 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
-        //Log.d("Doc", doc.toString())
+        Log.d("Doc", doc.toString())
         val title = doc.selectFirst("h1.fs__title")?.text()?.toString()?.trim()
             ?: return null
-        //Log.d("title", title)
+        Log.d("title", title)
         val poster = fixUrlNull(mainUrl + doc.selectFirst("img.fs__poster-img")?.attr("src"))
-        //Log.d("poster", poster.toString())
+        Log.d("poster", poster.toString())
         val tags = doc.select("div.xfs__item--value[itemprop=genre] > a").map { it.text() }
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(title)?.value
             ?.toIntOrNull()
-        //Log.d("year", year.toString())
+        Log.d("year", year.toString())
         val description = doc.select("div.fs__descr--text > p").joinToString {
             it.text().trim()
         }
@@ -213,12 +213,11 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         val idRegex = Regex("(src:.')+(\\D.*\\d)")
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
         // Automating awful player domain changes
-        val playerScript = "https:" + doc.select("div.tabs__content > script:nth-child(3)").attr("src")
+        val playerScript = doc.select("script:containsData(AwsIndStreamDomain)").toString()
         val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
-        playerDomain = domainRegex.find(app.get(playerScript).toString())?.groups?.get(1)?.value
+        playerDomain = domainRegex.find(playerScript)?.groups?.get(1)?.value
         val embedLink = "$playerDomain/play/$id"
         val jsonReceive = getDlJson(embedLink, url)
-
         var episodes: List<Episode> = listOf()
         var data = ""
         if (type == TvType.TvSeries) {
