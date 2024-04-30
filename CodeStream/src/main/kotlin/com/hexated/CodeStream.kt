@@ -138,8 +138,7 @@ open class CodeStream : TmdbProvider() {
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = "https://multimovies.space"
-        const val multimovies2API = "https://multimovies.click"
+        const val multimoviesAPI = BuildConfig.MultiMovies_API
         const val netmoviesAPI = "https://netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val doomoviesAPI = "https://doomovies.net"
@@ -698,18 +697,8 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    if (res.isBollywood) invokeMultimovies(
+                    invokeMultimovies(
                         multimoviesAPI,
-                        res.title,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (res.isBollywood) invokeMultimovies(
-                        multimovies2API,
                         res.title,
                         res.season,
                         res.episode,

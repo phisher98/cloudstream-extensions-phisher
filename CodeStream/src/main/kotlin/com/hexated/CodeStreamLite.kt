@@ -243,18 +243,8 @@ class CodeStreamLite : CodeStream() {
                 )
             },
             {
-                if (res.isBollywood) invokeMultimovies(
+                invokeMultimovies(
                     multimoviesAPI,
-                    res.title,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (res.isBollywood) invokeMultimovies(
-                    multimovies2API,
                     res.title,
                     res.season,
                     res.episode,
