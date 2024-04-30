@@ -196,7 +196,7 @@ open class M4ufree : ExtractorApi() {
 
 open class VCloud : ExtractorApi() {
     override val name: String = "V-Cloud"
-    override val mainUrl: String = "https://v-cloud.bio"
+    override val mainUrl: String = "https://vcloud.lol"
     override val requiresReferer = true
 
     override suspend fun getUrl(

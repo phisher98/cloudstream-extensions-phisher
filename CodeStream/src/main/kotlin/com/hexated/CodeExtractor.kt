@@ -1664,7 +1664,6 @@ object CodeExtractor : CodeStream() {
                             href ?: return@apmap, interceptor = wpRedisInterceptor
                         ).document.selectFirst("div.entry-content > $selector")
                             ?.attr("href") ?: return@apmap
-
                         loadCustomTagExtractor(
                             tags,
                             server,
