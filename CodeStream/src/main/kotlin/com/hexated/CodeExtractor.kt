@@ -374,14 +374,12 @@ object CodeExtractor : CodeStream() {
                     callback: (ExtractorLink) -> Unit
                 ) {
                     val fixTitle = title.createSlug()
-                    Log.d("Mandik",fixTitle.toString())
                     val url = if (season == null) {
                         "$apiUrl/movies/$fixTitle"
                     } else {
                         "$apiUrl/episodes/$fixTitle-${season}x${episode}"
                     }
                     val req = app.get(url).document
-                    Log.d("Mandik",req.toString())
                     req.select("ul#playeroptionsul li").map {
                         Triple(
                             it.attr("data-post"),
@@ -402,7 +400,6 @@ object CodeExtractor : CodeStream() {
                                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                             ).parsed<ResponseHash>().embed_url
                             val link=source.substringAfter("\"").substringBefore("\"")
-                            Log.d("Mandik",link)
                             when {
                                 !link.contains("youtube") -> {
                                     loadExtractor(link, referer = apiUrl, subtitleCallback, callback)
