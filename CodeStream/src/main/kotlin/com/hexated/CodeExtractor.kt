@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.nicehttp.RequestBodyTypes
 import kotlinx.coroutines.delay
@@ -63,7 +64,6 @@ object CodeExtractor : CodeStream() {
                                 lastSeasonMedia == lastSeason && url?.contains("/series/") == true
                             })
                         } ?: return
-
                     val serversId = if (season == null) {
                         val movieId = app.get(
                             fixUrl(
@@ -104,9 +104,8 @@ object CodeExtractor : CodeStream() {
                             )
                                 .parsedSafe<GokuServer>()?.data?.link
                                 ?: return@apmap
-                        loadCustomExtractor(
-                            name,
-                            iframe,
+                        loadExtractor(
+                             iframe.substringBefore("?"),
                             "$gokuAPI/",
                             subtitleCallback,
                             callback,
@@ -206,7 +205,6 @@ object CodeExtractor : CodeStream() {
             val scope: Scriptable = rhino.initSafeStandardObjects()
             rhino.evaluateString(scope, firstJS+script, "JavaScript", 1, null)
             val file=(scope.get("globalArgument", scope).toJson()).toString().substringAfter("file\":\"").substringBefore("\",")
-            //Log.d("Test",file)
             callback.invoke(
                 ExtractorLink(
                     source = "MultiEmbeded API",
@@ -2937,7 +2935,6 @@ object CodeExtractor : CodeStream() {
                     season: Int? = null,
                     episode: Int? = null,
                     callback: (ExtractorLink) -> Unit,
-                    host: String = "",
                 ) {
                     val doc= app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
                     val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
@@ -2950,7 +2947,6 @@ object CodeExtractor : CodeStream() {
                         ?.substringBefore(";")?.substringBefore(")")
                     val json = tryParseJson<AllMovielandPlaylist>("{${res ?: return}")
                     val headers = mapOf("X-CSRF-TOKEN" to "${json?.key}")
-
                     val serverRes = app.get(
                         fixUrl(
                             json?.file
@@ -2978,9 +2974,18 @@ object CodeExtractor : CodeStream() {
                             headers = headers,
                             referer = "$allmovielandAPI/"
                         ).text
-                        Log.d("Test",path)
-                        M3u8Helper.generateM3u8("Allmovieland [$lang]", path, "$allmovielandAPI/")
-                            .forEach(callback)
+                        safeApiCall {
+                            callback.invoke(
+                                ExtractorLink(
+                                    "AllMovieLand-${lang}",
+                                    "AllMovieLand-${lang}",
+                                    path,
+                                    allmovielandAPI,
+                                    Qualities.Unknown.value,
+                                    true
+                                )
+                            )
+                        }
                     }
 
                 }

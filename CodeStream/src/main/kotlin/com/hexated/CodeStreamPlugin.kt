@@ -7,6 +7,7 @@ import com.hexated.VidsrcTo
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
 import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.Vidmolyme
 import com.lagradost.cloudstream3.extractors.Vidplay
@@ -55,5 +56,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(FilemoonNl())
         registerExtractorAPI(Alions())
         registerExtractorAPI(Vidmolyme())
+        registerExtractorAPI(Rabbitstream())
     }
 }

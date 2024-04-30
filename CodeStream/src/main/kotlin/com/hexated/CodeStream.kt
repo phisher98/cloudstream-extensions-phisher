@@ -21,7 +21,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeFDMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeFilmxy
 import com.KillerDogeEmpire.CodeExtractor.invokeFlixon
 import com.KillerDogeEmpire.CodeExtractor.invokeGhostx
-import com.KillerDogeEmpire.CodeExtractor.invokeGoku
+//import com.KillerDogeEmpire.CodeExtractor.invokeGoku
 import com.KillerDogeEmpire.CodeExtractor.invokeHdmovies4u
 import com.KillerDogeEmpire.CodeExtractor.invokeKimcartoon
 import com.KillerDogeEmpire.CodeExtractor.invokeKisskh
@@ -38,7 +38,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeNoverse
 import com.KillerDogeEmpire.CodeExtractor.invokeNowTv
 import com.KillerDogeEmpire.CodeExtractor.invokeRidomovies
 import com.KillerDogeEmpire.CodeExtractor.invokeShowflix
-import com.KillerDogeEmpire.CodeExtractor.invokeSmashyStream
+//import com.KillerDogeEmpire.CodeExtractor.invokeSmashyStream
 import com.KillerDogeEmpire.CodeExtractor.invokeTopMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeTvMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeUhdmovies
@@ -409,15 +409,15 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    invokeGoku(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.lastSeason,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
+             //       invokeGoku(
+               //         res.title,
+                 //       res.year,
+                   //     res.season,
+                     //   res.lastSeason,
+                       // res.episode,
+                        //subtitleCallback,
+                        //callback
+                   // )
                 },
                 {
                     invokeVidSrc(res.id, res.season, res.episode, subtitleCallback,callback)
