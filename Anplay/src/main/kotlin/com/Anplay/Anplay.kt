@@ -33,7 +33,7 @@ open class Anplay : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url, headers = mapOf("cookie" to "wssplashuid=38594d6be692b822c55fb0719b32ad5e6148987e.1714381103.1; _ga_5T78T87Z0Q=GS1.1.1714377505.1.1.1714377526.0.0.0; _ga=GA1.1.292658552.1714377506")).document
+        val document = app.get(url).document
         val home =
             document.select("div#archive-content article,div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -74,7 +74,7 @@ open class Anplay : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search/$query", headers = mapOf("cookie" to "wssplashuid=38594d6be692b822c55fb0719b32ad5e6148987e.1714381103.1; _ga_5T78T87Z0Q=GS1.1.1714377505.1.1.1714377526.0.0.0; _ga=GA1.1.292658552.1714377506")).document
+        val document = app.get("$mainUrl/search/$query").document
         return document.select("div.result-item").map {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
@@ -87,7 +87,7 @@ open class Anplay : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val request = app.get(url, headers = mapOf("cookie" to "wssplashuid=38594d6be692b822c55fb0719b32ad5e6148987e.1714381103.1; _ga_5T78T87Z0Q=GS1.1.1714377505.1.1.1714377526.0.0.0; _ga=GA1.1.292658552.1714377506"))
+        val request = app.get(url)
         val document = request.document
         directUrl = getBaseUrl(request.url)
         val title =
@@ -181,7 +181,7 @@ open class Anplay : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data, headers = mapOf("cookie" to "wssplashuid=38594d6be692b822c55fb0719b32ad5e6148987e.1714381103.1; _ga_5T78T87Z0Q=GS1.1.1714377505.1.1.1714377526.0.0.0; _ga=GA1.1.292658552.1714377506")).document
+        val document = app.get(data).document
         document.select("ul#playeroptionsul > li").map {
             Triple(
                 it.attr("data-post"),
@@ -198,7 +198,7 @@ open class Anplay : MainAPI() {
                     "type" to type
                 ),
                 referer = data,
-                headers = mapOf("X-Requested-With" to "XMLHttpRequest","cookie" to "wssplashuid=38594d6be692b822c55fb0719b32ad5e6148987e.1714381103.1; _ga_5T78T87Z0Q=GS1.1.1714377505.1.1.1714377526.0.0.0; _ga=GA1.1.292658552.1714377506")
+                headers = mapOf("X-Requested-With" to "XMLHttpRequest")
             ).parsed<ResponseHash>().embed_url
             when {
                 !source.contains("youtube") -> {
