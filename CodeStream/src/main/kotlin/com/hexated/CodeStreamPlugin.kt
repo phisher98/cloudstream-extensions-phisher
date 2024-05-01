@@ -58,5 +58,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Vidmolyme())
         registerExtractorAPI(Rabbitstream())
         registerExtractorAPI(AllinoneDownloader())
+        registerExtractorAPI(Tellygossips())
+        registerExtractorAPI(Tvlogy())
     }
 }

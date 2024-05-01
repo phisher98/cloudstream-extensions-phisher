@@ -27,13 +27,18 @@ open class Anplay : MainAPI() {
         "genre/hindi-dub" to "Hindi Dub",
         "genre/crunchyroll" to "Crunchyroll",
     )
+    
+    companion object
+    {
+        val cookies = mapOf("cookie" to "starstruck_9c69a16370994b12750cec9b9594d3dd=5f54c7d4d56c84e5db8bb1f0c87adcdc; ays_show_popup_only_once_2=Access%20Authorisation%20for%20user; wssplashuid=9ba9ec7c3e6edab87a19e41d7c933ae890472793.1714380994.1; _subid=3u11m7a80ju; c3807=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wic3RyZWFtc1wiOntcIjNcIjoxNzE0NDk2MDQ0fSxcImNhbXBhaWduc1wiOntcIjFcIjoxNzE0NDk2MDQ0fSxcInRpbWVcIjoxNzE0NDk2MDQ0fSJ9.HovdzGc23r6_CJ4f6Gcr88ddjK_KTp4VUOPZrSQ0PMU; PHPSESSID=6vqkgujr8vrug7va18r13micme")
+    }
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url).document
+        val document = app.get(url, cookies=cookies).document
         val home =
             document.select("div#archive-content article,div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -87,7 +92,7 @@ open class Anplay : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val request = app.get(url)
+        val request = app.get(url, cookies=cookies)
         val document = request.document
         directUrl = getBaseUrl(request.url)
         val title =
@@ -181,7 +186,7 @@ open class Anplay : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data, cookies=cookies).document
         document.select("ul#playeroptionsul > li").map {
             Triple(
                 it.attr("data-post"),
@@ -198,7 +203,8 @@ open class Anplay : MainAPI() {
                     "type" to type
                 ),
                 referer = data,
-                headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
+                cookies = cookies
             ).parsed<ResponseHash>().embed_url
             when {
                 !source.contains("youtube") -> {

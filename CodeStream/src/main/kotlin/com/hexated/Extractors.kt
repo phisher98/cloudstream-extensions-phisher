@@ -686,35 +686,63 @@ class Tellygossips : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url, referer = this.referer).document
-        val configStr = doc.select("script")
-            .map { it.data() }
-            .firstOrNull { it.contains("var config = ") }
-            ?.let { configRegex.find(it.trim())?.groupValues?.get(1) } ?: return
-        val config = tryParseJson<Config>(configStr) ?: return
-        for (link in config.sources) {
-            callback(
-                ExtractorLink(
-                    name,
-                    "$name ${link.label}",
-                    link.file ?: link.src ?: continue,
-                    "",
-                    Qualities.Unknown.value,
-                    true,
-                    headers
-                )
+        val doc = app.get(url, referer = this.referer).text
+        val link = doc.substringAfter("src\":\"").substringBefore("\",")
+        callback(
+            ExtractorLink(
+                name,
+                name,
+                link,
+                url,
+                Qualities.Unknown.value,
+                type = INFER_TYPE
             )
-        }
+        )
+
     }
-    data class Config(
-        val sources: List<VideoLink>,
-    )
 
     data class VideoLink(
         val file: String?,
         val src: String?,
         val label: String,
         val type: String,
+    )
+}
+
+class Tvlogy : ExtractorApi() {
+    override val mainUrl = "https://hls.tvlogy.to"
+    override val name = "Tvlogy"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val id = url.substringAfter("data=")
+        val data = mapOf(
+            "hash" to id,
+            "r" to "http%3A%2F%2Ftellygossips.net%2F"
+        )
+        val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+        val meta = app.post("$url&do=getVideo", headers = headers, referer = url, data = data)
+            .parsedSafe<MetaData>() ?: return
+        callback(
+            ExtractorLink(
+                name,
+                name,
+                meta.videoSource,
+                url,
+                Qualities.Unknown.value,
+                meta.hls
+            )
+        )
+    }
+
+    data class MetaData(
+        val hls: Boolean,
+        val videoSource: String
     )
 
 }

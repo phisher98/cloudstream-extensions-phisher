@@ -3076,7 +3076,6 @@ object CodeExtractor : CodeStream() {
                         )
                     )
     }
-//Still in Progress need to do more on this 
               suspend fun invokePlaydesi(
                     title: String? = null,
                     season: Int? = null,
@@ -3093,7 +3092,8 @@ object CodeExtractor : CodeStream() {
                     val document = app.get(url).document
                 document.select("div.entry-content > p a").forEach {
                     val link=it.attr("href")
-                    loadExtractor(link, subtitleCallback, callback)
+                    val trueurl=app.get((link)).document.selectFirst("iframe")?.attr("src").toString()
+                    loadExtractor(trueurl, subtitleCallback, callback)
                 }  
             }
 }
