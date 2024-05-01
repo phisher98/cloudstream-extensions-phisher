@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -694,7 +695,7 @@ class Tellygossips : ExtractorApi() {
         for (link in config.sources) {
             callback(
                 ExtractorLink(
-                    source,
+                    name,
                     "$name ${link.label}",
                     link.file ?: link.src ?: continue,
                     "",
