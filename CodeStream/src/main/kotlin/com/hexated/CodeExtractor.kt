@@ -3091,8 +3091,7 @@ object CodeExtractor : CodeStream() {
                         "$PlaydesiAPI/$fixTitle-season-$season-episode-$episode-watch-online"
                     }
                     val document = app.get(url).document
-                document.select("div.entry-content > p a").forEach
-                {
+                document.select("div.entry-content > p a").forEach {
                     val link=it.attr("href")
                     loadExtractor(link, subtitleCallback, callback)
                 }  
