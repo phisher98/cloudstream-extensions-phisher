@@ -3086,7 +3086,7 @@ object CodeExtractor : CodeStream() {
                 ) {
                     val fixTitle = title.createSlug()
                     val url = if (season == null) {
-                        "$PlaydesiAPI/$fixTitle-$year"
+                        "$PlaydesiAPI/$fixTitle"
                     } else {
                         "$PlaydesiAPI/$fixTitle-season-$season-episode-$episode-watch-online"
                     }
