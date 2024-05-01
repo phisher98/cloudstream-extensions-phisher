@@ -488,7 +488,7 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    invokeKisskh(
+                   if (res.isAsian) invokeKisskh(
                         res.title,
                         res.season,
                         res.episode,
