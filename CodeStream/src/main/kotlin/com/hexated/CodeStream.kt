@@ -399,7 +399,6 @@ open class CodeStream : TmdbProvider() {
         val res = parseJson<LinkData>(data)
         Log.d("Test1", "$res")
         println(res)
-        val functions = listOf<suspend () -> Unit>(
                 {
                     invokeDumpStream(
                         res.title,
@@ -832,19 +831,6 @@ open class CodeStream : TmdbProvider() {
                     callback
                 )
             }
-            )
-        val jobs = functions.map { function ->
-            GlobalScope.launch {
-                try {
-                    function()
-                } catch (e: Exception) {
-                    println("Error executing function: ${e.message}")
-                }
-            }
-        }
-        jobs.forEach { it.join() }
-        return true
-    }
 
     data class LinkData(
         val id: Int? = null,
