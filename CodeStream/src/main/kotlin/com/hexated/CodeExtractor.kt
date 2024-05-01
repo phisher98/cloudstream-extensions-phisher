@@ -3096,5 +3096,24 @@ object CodeExtractor : CodeStream() {
                     loadExtractor(trueurl, subtitleCallback, callback)
                 }  
             }
+
+    suspend fun invokeMoviesdrive(
+        title: String? = null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val fixTitle = title.createSlug()
+        val url = "$MoviesdriveAPI/$fixTitle-$year"
+        val document = app.get(url).document
+        document.select("h5 > a").map {
+            val link=it.attr("href")
+            val urls=ExtractMdrive(link)
+            urls.forEach { urls->
+                Log.d("Phisher URLS",urls)
+                loadExtractor(urls,subtitleCallback, callback)
+            }
+        }
+    }
 }
 

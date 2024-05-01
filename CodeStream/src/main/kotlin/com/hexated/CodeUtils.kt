@@ -200,8 +200,7 @@ suspend fun extractResumeUHD(url: String): String? {
 
 suspend fun extractPixeldrainUHD(url: String): String? {
     app.get("https://driveleech.org$url").document.let {
-        val url = it.selectFirst("a.btn.btn-outline-info:contains(pixel)")?.attr("href").toString()
-        return url
+        return it.selectFirst("a.btn.btn-outline-info:contains(pixel)")?.attr("href").toString()
     }
 }
 
@@ -1174,6 +1173,28 @@ fun getIndexQuality(str: String?): Int {
 
 fun getIndexSize(str: String?): String? {
     return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
+}
+
+suspend fun ExtractMdrive(url: String): MutableList<String> {
+    val doc= app.get(url).document
+    val linklist= mutableListOf(String())
+    doc.select("h5 > a").forEach {
+        val link=it.attr("href").replace("lol","day")
+        if (!link.contains("gdtot"))
+        {
+            val mainpage= app.get(link).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
+            if (!mainpage.contains("https://"))
+            {
+                val newlink= "https://hubcloud.day$mainpage"
+                linklist.add(newlink)
+            }
+            else
+            {
+                linklist.add(mainpage)
+            }
+        }
+    }
+    return linklist
 }
 
 fun getQuality(str: String): Int {

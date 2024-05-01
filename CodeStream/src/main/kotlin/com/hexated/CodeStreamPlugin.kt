@@ -6,6 +6,7 @@ import android.content.Context
 import com.hexated.VidsrcTo
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
+import com.lagradost.cloudstream3.extractors.Gofile
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamTape
@@ -60,5 +61,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(AllinoneDownloader())
         registerExtractorAPI(Tellygossips())
         registerExtractorAPI(Tvlogy())
+        registerExtractorAPI(Mdrive())
+        registerExtractorAPI(Gofile())
     }
 }

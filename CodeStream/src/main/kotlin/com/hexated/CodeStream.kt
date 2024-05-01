@@ -5,6 +5,7 @@ import android.util.Log
 import com.KillerDogeEmpire.CodeExtractor.invoke2embed
 import com.KillerDogeEmpire.CodeExtractor.invokeAllMovieland
 import com.KillerDogeEmpire.CodeExtractor.invokeAnimes
+import com.KillerDogeEmpire.CodeExtractor.invokeMoviesdrive
 import com.KillerDogeEmpire.CodeExtractor.invokeAoneroom
 import com.KillerDogeEmpire.CodeExtractor.invokeAsianHD
 import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
@@ -162,6 +163,7 @@ open class CodeStream : TmdbProvider() {
         const val dotmoviesAPI = "https://luxmovies.org"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
+        const val MoviesdriveAPI= "https://moviesdrive.buzz"
 
         fun getType(t: String?): TvType {
             return when (t) {
@@ -821,7 +823,15 @@ open class CodeStream : TmdbProvider() {
                         subtitleCallback,
                         callback
                     )
-                }
+                },
+            {
+                if (!res.isAnime) invokeMoviesdrive(
+                    res.title,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                )
+            }
             )
         val jobs = functions.map { function ->
             GlobalScope.launch {

@@ -25,7 +25,6 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -677,8 +676,6 @@ class Tellygossips : ExtractorApi() {
     override val name = "Tellygossips"
     override val requiresReferer = false
     private val referer = "http://tellygossips.net/"
-    private val configRegex = "var config = ([\\s\\S]*?);".toRegex()
-    private val headers = mapOf("Referer" to "$mainUrl/")
 
     override suspend fun getUrl(
         url: String,
@@ -700,13 +697,6 @@ class Tellygossips : ExtractorApi() {
         )
 
     }
-
-    data class VideoLink(
-        val file: String?,
-        val src: String?,
-        val label: String,
-        val type: String,
-    )
 }
 
 class Tvlogy : ExtractorApi() {
@@ -745,4 +735,48 @@ class Tvlogy : ExtractorApi() {
         val videoSource: String
     )
 
+}
+
+open class Mdrive : ExtractorApi() {
+    override val name: String = "Mdrive"
+    override val mainUrl: String = "https://hubcloud.day"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(url).document
+        val links = doc.select("div.card-body > h2 > a").attr("href")
+        if (!links.contains("workers.dev")) {
+            loadExtractor(links, subtitleCallback, callback)
+        } else if (links.contains("pixeldrain"))
+        {
+            callback.invoke(
+                ExtractorLink(
+                    "MovieDrive",
+                    "PixelDrain",
+                    links,
+                    referer = "",
+                    quality = getQualityFromName(""),
+                    type = INFER_TYPE
+                )
+            )
+        }
+        else {
+            val qualitystring = links.substringAfter("]-").substringBefore(".[")
+            callback.invoke(
+                ExtractorLink(
+                    "MovieDrive",
+                    "MovieDrive $qualitystring",
+                    links,
+                    referer = "",
+                    quality = getQualityFromName(qualitystring),
+                    type = INFER_TYPE
+                )
+            )
+        }
+    }
 }
