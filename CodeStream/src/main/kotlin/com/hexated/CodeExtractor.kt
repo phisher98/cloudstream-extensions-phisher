@@ -3076,5 +3076,21 @@ object CodeExtractor : CodeStream() {
                         )
                     )
     }
+//Still in Progress need to do more on this 
+              suspend fun invokePlaydesi(
+                    title: String? = null,
+                    season: Int? = null,
+                    episode: Int? = null,
+                    subtitleCallback: (SubtitleFile) -> Unit,
+                    callback: (ExtractorLink) -> Unit
+                ) {
+                    val fixTitle = title.createSlug()
+                    val url = if (season == null) {
+                        "$PlaydesiAPI/$fixTitle-$year"
+                    } else {
+                        "$PlaydesiAPI/$fixTitle-season-$season-episode-$episode-watch-online"
+                    }
+                    val document = app.get(url).document
+                }
 }
 
