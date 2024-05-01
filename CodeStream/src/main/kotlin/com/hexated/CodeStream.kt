@@ -50,6 +50,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeWatchsomuch
 import com.KillerDogeEmpire.CodeExtractor.invokeZoechip
 import com.KillerDogeEmpire.CodeExtractor.invokeZshow
 import com.KillerDogeEmpire.CodeExtractor.invokekissasian
+import com.KillerDogeEmpire.CodeExtractor.invokePlaydesi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -129,6 +130,7 @@ open class CodeStream : TmdbProvider() {
         const val rStreamAPI = "https://remotestream.cc"
         const val flixonAPI = "https://myflixer.lol"
         const val azseriesAPI = "https://azseries.org"
+        const val PlaydesiAPI = "https://playdesi.net"
         const val smashyStreamAPI = "https://embed.smashystream.com"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
@@ -808,6 +810,15 @@ open class CodeStream : TmdbProvider() {
                         res.airedYear ?: res.year,
                         res.season,
                         res.episode,
+                        callback
+                    )
+                },
+                {
+                    if (!res.isAnime) invokePlaydesi(
+                        res.title,
+                        res.season,
+                        res.episode,
+                        subtitleCallback,
                         callback
                     )
                 }
