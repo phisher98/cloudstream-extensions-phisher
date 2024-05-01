@@ -69,6 +69,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -399,7 +400,7 @@ open class CodeStream : TmdbProvider() {
         val res = parseJson<LinkData>(data)
         Log.d("Test1", "$res")
         println(res)
-                {
+        argamap({
                     invokeDumpStream(
                         res.title,
                         res.year,
@@ -831,6 +832,9 @@ open class CodeStream : TmdbProvider() {
                     callback
                 )
             }
+        )
+        return true
+    }
 
     data class LinkData(
         val id: Int? = null,
