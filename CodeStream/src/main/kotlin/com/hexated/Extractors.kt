@@ -829,7 +829,6 @@ open class Unblockedgames : ExtractorApi() {
                 .substringBefore("\",\"name")
                 .replace("\\/", "/")
         val Servers = listOf(finaldownloadlink, resumelink)
-        Log.d("Phisher Test",Servers.toString())
         Servers.forEach { urls ->
             if (urls.contains("googleusercontent")) {
                 callback.invoke(

@@ -23,7 +23,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeFilmxy
 import com.KillerDogeEmpire.CodeExtractor.invokeFlixon
 import com.KillerDogeEmpire.CodeExtractor.invokeGhostx
 //import com.KillerDogeEmpire.CodeExtractor.invokeGoku
-import com.KillerDogeEmpire.CodeExtractor.invokeHdmovies4u
+//import com.KillerDogeEmpire.CodeExtractor.invokeHdmovies4u
 import com.KillerDogeEmpire.CodeExtractor.invokeKimcartoon
 import com.KillerDogeEmpire.CodeExtractor.invokeKisskh
 import com.KillerDogeEmpire.CodeExtractor.invokeLing
@@ -32,7 +32,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeMoflix
 import com.KillerDogeEmpire.CodeExtractor.invokeMoviehubAPI
 import com.KillerDogeEmpire.CodeExtractor.invokeMultiEmbed
 import com.KillerDogeEmpire.CodeExtractor.invokeMultimovies
-import com.KillerDogeEmpire.CodeExtractor.invokeNepu
+//import com.KillerDogeEmpire.CodeExtractor.invokeNepu
 import com.KillerDogeEmpire.CodeExtractor.invokeNetmovies
 import com.KillerDogeEmpire.CodeExtractor.invokeNinetv
 import com.KillerDogeEmpire.CodeExtractor.invokeNoverse
@@ -133,7 +133,7 @@ open class CodeStream : TmdbProvider() {
         const val flixonAPI = "https://myflixer.lol"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
-        const val smashyStreamAPI = "https://embed.smashystream.com"
+//        const val smashyStreamAPI = "https://embed.smashystream.com"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
         const val nineTvAPI = "https://moviesapi.club"
@@ -154,17 +154,16 @@ open class CodeStream : TmdbProvider() {
         const val watchCartoonAPI = "https://www1.watchcartoononline.bz"
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
-        const val nepuAPI = "https://nepu.to"
+//        const val nepuAPI = "https://nepu.to"
         const val DramacoolAPI = "https://dramacool.city"
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.fans"
         const val topmoviesAPI = "https://topmovies.fans"
-        const val hdmovies4uAPI = "https://hdmovies4u.eu"
+//        const val hdmovies4uAPI = "https://hdmovies4u.eu"
         const val vegaMoviesAPI = "https://vegamovies.earth"
         const val dotmoviesAPI = "https://luxmovies.org"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
-        const val dahmerMoviesAPI2="https://worker-little-bread-2c2f.wqwmiuvxws.workers.dev"
         const val MoviesdriveAPI= "https://moviesdrive.buzz"
 
         fun getType(t: String?): TvType {
@@ -619,9 +618,6 @@ open class CodeStream : TmdbProvider() {
                     invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
                 },
                 {
-                    invokeDahmerMovies(dahmerMoviesAPI2,res.title, res.year, res.season, res.episode, callback)
-                },
-                {
                     invokeCinemaTv(
                         res.imdbId, res.title, res.airedYear
                             ?: res.year, res.season, res.episode, subtitleCallback, callback
@@ -751,7 +747,7 @@ open class CodeStream : TmdbProvider() {
                         callback
                     )
                 },
-                {
+          /*      {
                     if (!res.isAnime) invokeHdmovies4u(
                         res.title,
                         res.imdbId,
@@ -761,6 +757,8 @@ open class CodeStream : TmdbProvider() {
                         callback
                     )
                 },
+
+           */
                 {
                     if (res.isAsian) invokeAsianHD(
                         res.title,
@@ -811,7 +809,7 @@ open class CodeStream : TmdbProvider() {
                         callback
                     )
                 },
-                {
+            /*    {
                     if (!res.isAnime) invokeNepu(
                         res.title,
                         res.airedYear ?: res.year,
@@ -820,6 +818,8 @@ open class CodeStream : TmdbProvider() {
                         callback
                     )
                 },
+
+             */
                 {
                     if (!res.isAnime) invokePlaydesi(
                         res.title,

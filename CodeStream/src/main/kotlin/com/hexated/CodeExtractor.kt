@@ -1622,7 +1622,7 @@ object CodeExtractor : CodeStream() {
                     }
                 }
 
-                suspend fun invokeHdmovies4u(
+   /*             suspend fun invokeHdmovies4u(
                     title: String? = null,
                     imdbId: String? = null,
                     season: Int? = null,
@@ -1668,6 +1668,9 @@ object CodeExtractor : CodeStream() {
                             )
                         }
                 }
+
+    */
+
 
                 suspend fun invokeFDMovies(
                     title: String? = null,
@@ -1987,7 +1990,7 @@ object CodeExtractor : CodeStream() {
 
                 }
 
-                suspend fun invokeSmashyStream(
+        /*        suspend fun invokeSmashyStream(
                     tmdbId: Int? = null,
                     season: Int? = null,
                     episode: Int? = null,
@@ -2020,7 +2023,9 @@ object CodeExtractor : CodeStream() {
                     }
                 }
 
-                suspend fun invokeNepu(
+         */
+
+       /*         suspend fun invokeNepu(
                     title: String? = null,
                     year: Int? = null,
                     season: Int? = null,
@@ -2078,6 +2083,8 @@ object CodeExtractor : CodeStream() {
                     )
 
                 }
+
+        */
 
                 suspend fun invokeMoflix(
                     tmdbId: Int? = null,
