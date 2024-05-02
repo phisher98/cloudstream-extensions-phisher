@@ -491,7 +491,7 @@ open class StreamWishExtractor : ExtractorApi() {
                     name = name,
                     url = response.url,
                     referer = referer ?: "$mainUrl/",
-                    quality = Qualities.Unknown.value,
+                    quality = getQualityFromName("1080p"),
                     isM3u8 = true
                 )
             )
