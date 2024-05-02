@@ -157,7 +157,7 @@ open class CodeStream : TmdbProvider() {
         const val nepuAPI = "https://nepu.to"
         const val DramacoolAPI = "https://dramacool.city"
         const val fdMoviesAPI = "https://freedrivemovie.com"
-        const val uhdmoviesAPI = "https://uhdmovies.eu"
+        const val uhdmoviesAPI = "https://uhdmovies.fans"
         const val topmoviesAPI = "https://topmovies.day"
         const val hdmovies4uAPI = "https://hdmovies4u.eu"
         const val vegaMoviesAPI = "https://vegamovies.earth"

@@ -12,7 +12,7 @@ import java.net.URI
 
 open class Movierulzhd : MainAPI() {
 
-    override var mainUrl = "https://movierulzhd.digital"
+    override var mainUrl = "https://movierulzhd.green"
     var directUrl = ""
     override var name = "Movierulzhd"
     override val hasMainPage = true

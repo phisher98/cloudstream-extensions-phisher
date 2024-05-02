@@ -637,22 +637,6 @@ object CodeExtractor : CodeStream() {
                                 referer = "$host/"
                             ).parsed<ResponseHash>().embed_url
                             if (!source.contains("youtube")) {
-                                if (source.startsWith("https://voe.sx")) {
-                                    val req = app.get(source, referer = "$host/")
-                                    val server = getBaseUrl(req.url)
-                                    val script =
-                                        req.text.substringAfter("wc0 = '").substringBefore("'")
-                                    val video =
-                                        tryParseJson<Map<String, String>>(base64Decode(script))?.get(
-                                            "file"
-                                        )
-                                    M3u8Helper.generateM3u8(
-                                        "Voe",
-                                        video ?: return@apmap,
-                                        "$server/",
-                                        headers = mapOf("Origin" to server)
-                                    ).forEach(callback)
-                                } else {
                                     loadExtractor(source, "$host/", subtitleCallback, callback)
                                 }
                             }

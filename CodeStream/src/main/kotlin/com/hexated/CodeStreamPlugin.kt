@@ -61,6 +61,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(AllinoneDownloader())
         registerExtractorAPI(Tellygossips())
         registerExtractorAPI(Tvlogy())
+        registerExtractorAPI(Voe())
         registerExtractorAPI(Mdrive())
         registerExtractorAPI(Gofile())
     }
