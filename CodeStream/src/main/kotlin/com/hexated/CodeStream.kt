@@ -164,6 +164,7 @@ open class CodeStream : TmdbProvider() {
         const val dotmoviesAPI = "https://luxmovies.org"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
+        const val dahmerMoviesAPI2="https://worker-little-bread-2c2f.wqwmiuvxws.workers.dev"
         const val MoviesdriveAPI= "https://moviesdrive.buzz"
 
         fun getType(t: String?): TvType {
@@ -614,7 +615,10 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    invokeDahmerMovies(res.title, res.year, res.season, res.episode, callback)
+                    invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
+                },
+                {
+                    invokeDahmerMovies(dahmerMoviesAPI2,res.title, res.year, res.season, res.episode, callback)
                 },
                 {
                     invokeCinemaTv(

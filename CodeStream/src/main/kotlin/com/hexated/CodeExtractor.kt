@@ -2418,6 +2418,7 @@ object CodeExtractor : CodeStream() {
                 }
 
                 suspend fun invokeDahmerMovies(
+                    apiurl:String?=null,
                     title: String? = null,
                     year: Int? = null,
                     season: Int? = null,
@@ -2425,9 +2426,9 @@ object CodeExtractor : CodeStream() {
                     callback: (ExtractorLink) -> Unit,
                 ) {
                     val url = if (season == null) {
-                        "$dahmerMoviesAPI/movies/${title?.replace(":", "")} ($year)/"
+                        "$apiurl/movies/${title?.replace(":", "")} ($year)/"
                     } else {
-                        "$dahmerMoviesAPI/tvs/${title?.replace(":", " -")}/Season $season/"
+                        "$apiurl/tvs/${title?.replace(":", " -")}/Season $season/"
                     }
 
                     val request = app.get(url, timeout = 60L)
