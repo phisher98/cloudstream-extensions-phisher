@@ -636,10 +636,8 @@ object CodeExtractor : CodeStream() {
                                 headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                                 referer = "$host/"
                             ).parsed<ResponseHash>().embed_url
-                            if (!source.contains("youtube")) {
-                                    loadExtractor(source, "$host/", subtitleCallback, callback)
-                                }
-                            }
+                            if (!source.contains("youtube")) { 
+                                   loadExtractor(source, "$host/", subtitleCallback, callback)
                         }
                     }
                 }
