@@ -18,7 +18,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeNinetv
 import com.KillerDogeEmpire.CodeExtractor.invokeNowTv
 import com.KillerDogeEmpire.CodeExtractor.invokeRStream
 import com.KillerDogeEmpire.CodeExtractor.invokeRidomovies
-import com.KillerDogeEmpire.CodeExtractor.invokeSmashyStream
+//import com.KillerDogeEmpire.CodeExtractor.invokeSmashyStream
 import com.KillerDogeEmpire.CodeExtractor.invokeDumpStream
 import com.KillerDogeEmpire.CodeExtractor.invokeEmovies
 import com.KillerDogeEmpire.CodeExtractor.invokeMultimovies
@@ -29,7 +29,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeVidsrcto
 import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
 import com.KillerDogeEmpire.CodeExtractor.invokeMoflix
 import com.KillerDogeEmpire.CodeExtractor.invokeGhostx
-import com.KillerDogeEmpire.CodeExtractor.invokeNepu
+//import com.KillerDogeEmpire.CodeExtractor.invokeNepu
 import com.KillerDogeEmpire.CodeExtractor.invokeWatchCartoon
 import com.KillerDogeEmpire.CodeExtractor.invokeWatchsomuch
 import com.KillerDogeEmpire.CodeExtractor.invokeZoechip
@@ -154,7 +154,7 @@ class CodeStreamLite : CodeStream() {
                     callback
                 )
             },
-            {
+        /*    {
                 if (!res.isAnime) invokeSmashyStream(
                     res.id,
                     res.season,
@@ -163,6 +163,7 @@ class CodeStreamLite : CodeStream() {
                     callback
                 )
             },
+         */
             {
                 if (!res.isAnime) invokeVidsrcto(
                     res.imdbId,
@@ -320,7 +321,7 @@ class CodeStreamLite : CodeStream() {
                     callback
                 )
             },
-            {
+            /*{
                 if (!res.isAnime) invokeNepu(
                     res.title,
                     res.airedYear ?: res.year,
@@ -329,8 +330,9 @@ class CodeStreamLite : CodeStream() {
                     callback
                 )
             }
-        )
 
+             */
+        )
         return true
     }
 

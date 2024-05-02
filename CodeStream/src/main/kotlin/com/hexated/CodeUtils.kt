@@ -7,7 +7,7 @@ import com.KillerDogeEmpire.CodeStream.Companion.anilistAPI
 import com.KillerDogeEmpire.CodeStream.Companion.crunchyrollAPI
 import com.KillerDogeEmpire.CodeStream.Companion.filmxyAPI
 import com.KillerDogeEmpire.CodeStream.Companion.gdbot
-import com.KillerDogeEmpire.CodeStream.Companion.hdmovies4uAPI
+//import com.KillerDogeEmpire.CodeStream.Companion.hdmovies4uAPI
 import com.KillerDogeEmpire.CodeStream.Companion.malsyncAPI
 import com.KillerDogeEmpire.CodeStream.Companion.tvMoviesAPI
 import com.lagradost.cloudstream3.*
@@ -534,7 +534,7 @@ suspend fun fetchDumpEpisodes(id: String, type: String, episode: Int?): EpisodeV
     }
 }
 
-suspend fun invokeDrivetot(
+/*suspend fun invokeDrivetot(
     url: String,
     tags: String? = null,
     size: String? = null,
@@ -564,6 +564,8 @@ suspend fun invokeDrivetot(
             }
         }
 }
+
+ */
 
 suspend fun bypassBqrecipes(url: String): String? {
     var res = app.get(url)
