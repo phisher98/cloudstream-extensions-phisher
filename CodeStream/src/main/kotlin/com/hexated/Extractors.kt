@@ -1,6 +1,6 @@
 package com.KillerDogeEmpire
 
-import android.util.Log
+//import android.util.Log
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
@@ -764,15 +764,14 @@ open class Mdrive : ExtractorApi() {
                 )
             )
         }else
-        if (!links.contains("workers.dev")) {
+        if (links.contains("gofile")) {
             loadExtractor(links, subtitleCallback, callback)
         }
         else {
-            val qualitystring = links.substringAfter("]-").substringBefore(".[")
             callback.invoke(
                 ExtractorLink(
                     "MovieDrive",
-                    "MovieDrive $qualitystring",
+                    "MovieDrive",
                     links,
                     referer = "",
                     quality = getIndexQuality(header),
