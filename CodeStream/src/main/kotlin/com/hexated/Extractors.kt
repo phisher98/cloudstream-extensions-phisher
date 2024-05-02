@@ -1,6 +1,6 @@
 package com.KillerDogeEmpire
 
-//import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
@@ -750,20 +750,22 @@ open class Mdrive : ExtractorApi() {
     ) {
         val doc = app.get(url).document
         val links = doc.select("div.card-body > h2 > a").attr("href")
-        if (!links.contains("workers.dev")) {
-            loadExtractor(links, subtitleCallback, callback)
-        } else if (links.contains("pixeldrain"))
+        val header = doc.selectFirst("div.card-header")?.text()
+        if (links.contains("pixeldrain"))
         {
             callback.invoke(
                 ExtractorLink(
                     "MovieDrive",
                     "PixelDrain",
                     links,
-                    referer = "",
-                    quality = getQualityFromName(""),
+                    referer = links,
+                    quality = getIndexQuality(header),
                     type = INFER_TYPE
                 )
             )
+        }else
+        if (!links.contains("workers.dev")) {
+            loadExtractor(links, subtitleCallback, callback)
         }
         else {
             val qualitystring = links.substringAfter("]-").substringBefore(".[")
@@ -773,7 +775,7 @@ open class Mdrive : ExtractorApi() {
                     "MovieDrive $qualitystring",
                     links,
                     referer = "",
-                    quality = getQualityFromName(qualitystring),
+                    quality = getIndexQuality(header),
                     type = INFER_TYPE
                 )
             )

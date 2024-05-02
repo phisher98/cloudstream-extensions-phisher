@@ -3110,7 +3110,6 @@ object CodeExtractor : CodeStream() {
             val link=it.attr("href")
             val urls=ExtractMdrive(link)
             urls.forEach { urls->
-                Log.d("Phisher URLS",urls)
                 loadExtractor(urls,subtitleCallback, callback)
             }
         }
