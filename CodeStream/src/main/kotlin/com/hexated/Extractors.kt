@@ -1,6 +1,7 @@
 package com.KillerDogeEmpire
 
 //import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
@@ -499,6 +500,8 @@ open class StreamWishExtractor : ExtractorApi() {
     }
 }
 
+
+
 class Alions : Ridoo() {
     override val name = "Alions"
     override var mainUrl = "https://alions.pro"
@@ -571,6 +574,11 @@ class dwish : Filesim() {
 class dlions : VidhideExtractor() {
     override var name = "Dlions"
     override var mainUrl = "https://dlions.pro"
+}
+
+class Animezia : VidhideExtractor() {
+    override var name = "Animezia"
+    override var mainUrl = "https://animezia.cloud"
 }
 
 class Filelion : Filesim() {
@@ -780,4 +788,72 @@ open class Mdrive : ExtractorApi() {
             )
         }
     }
+}
+
+open class Unblockedgames : ExtractorApi() {
+    override val name = "Unblockedgames"
+    override val mainUrl = "https://tech.unblockedgames.world"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        link: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val driveLink = bypassHrefli(link)
+        getBaseUrl(driveLink ?: return)
+        val driveReq = app.get(driveLink)
+        val driveRes = driveReq.document
+        val header = driveRes.selectFirst("div.mb-4")?.text()
+        val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
+        val resume =
+            driveRes.select("a.btn.btn-warning").attr("href").toString()
+        val resumelink = when {
+            resume.isNotEmpty() -> extractResumeTop(resume)
+            else -> {
+                ""
+            }
+        }
+        val token = finallink?.substringAfter("https://video-leech.xyz/?url=")
+        val downloadlink = app.post(
+            url = "https://video-leech.xyz/api",
+            data = mapOf(
+                "keys" to "$token"
+            ),
+            referer = finallink,
+            headers = mapOf("x-token" to "video-leech.xyz")
+        )
+        val finaldownloadlink =
+            downloadlink.toString().substringAfter("url\":\"")
+                .substringBefore("\",\"name")
+                .replace("\\/", "/")
+        val Servers = listOf(finaldownloadlink, resumelink)
+        Log.d("Phisher Test",Servers.toString())
+        Servers.forEach { urls ->
+            if (urls.contains("googleusercontent")) {
+                callback.invoke(
+                    ExtractorLink(
+                        "TopMovies",
+                        "TopMovies",
+                        url = urls,
+                        "${CodeStream.topmoviesAPI}/",
+                        getIndexQuality(header)
+                    )
+                )
+            } else {
+                callback.invoke(
+                    ExtractorLink(
+                        "TopMoviesR",
+                        "TopMoviesR",
+                        url = urls,
+                        "${CodeStream.topmoviesAPI}/",
+                        getIndexQuality(header)
+                    )
+                )
+            }
+        }
+
+    }
+
 }

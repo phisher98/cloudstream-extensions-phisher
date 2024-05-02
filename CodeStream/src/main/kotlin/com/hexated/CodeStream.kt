@@ -561,6 +561,7 @@ open class CodeStream : TmdbProvider() {
                         res.year,
                         res.season,
                         res.episode,
+                        subtitleCallback,
                         callback
                     )
                 },

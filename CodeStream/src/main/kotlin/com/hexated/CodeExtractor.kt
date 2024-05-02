@@ -1500,6 +1500,7 @@ object CodeExtractor : CodeStream() {
                     year: Int? = null,
                     season: Int? = null,
                     episode: Int? = null,
+                    subtitleCallback: (SubtitleFile) -> Unit,
                     callback: (ExtractorLink) -> Unit
                 ) {
                     val fixTitle = title.createSlug()
@@ -1514,116 +1515,14 @@ object CodeExtractor : CodeStream() {
                             val urls = it.attr("href")
                             val docu = app.get(urls).document
                             val link = docu.select("a.maxbutton-5").attr("href")
-                            val driveLink = bypassHrefli(link ?: return@forEach)
-                            getBaseUrl(driveLink ?: return@forEach)
-                            val driveReq = app.get(driveLink)
-                            val driveRes = driveReq.document
-                            val header = driveRes.selectFirst("div.mb-4")?.text()
-                            val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
-                            val resume =
-                                driveRes.select("a.btn.btn-warning").attr("href").toString()
-                            val resumelink = when {
-                                resume.isNotEmpty() -> extractResumeTop(resume)
-                                else -> {
-                                    ""
-                                }
-                            }
-                            val token = finallink?.substringAfter("https://video-leech.xyz/?url=")
-                            val downloadlink = app.post(
-                                url = "https://video-leech.xyz/api",
-                                data = mapOf(
-                                    "keys" to "$token"
-                                ),
-                                referer = finallink,
-                                headers = mapOf("x-token" to "video-leech.xyz")
-                            )
-                            val finaldownloadlink =
-                                downloadlink.toString().substringAfter("url\":\"")
-                                    .substringBefore("\",\"name")
-                                    .replace("\\/", "/")
-                            val Servers = listOf(finaldownloadlink, resumelink)
-                            Servers.forEach { urls ->
-                                if (urls.contains("googleusercontent")) {
-                                    callback.invoke(
-                                        ExtractorLink(
-                                            "TopMovies",
-                                            "TopMovies",
-                                            url = urls,
-                                            "$topmoviesAPI/",
-                                            getIndexQuality(header)
-                                        )
-                                    )
-                                } else {
-                                    callback.invoke(
-                                        ExtractorLink(
-                                            "TopMoviesR",
-                                            "TopMoviesR",
-                                            url = urls,
-                                            "$topmoviesAPI/",
-                                            getIndexQuality(header)
-                                        )
-                                    )
-                                }
-                            }
+                            loadExtractor(link,subtitleCallback,callback)
                         }
                     } else {
                         doc.select("a.maxbutton-6").forEach { it ->
                             val urls = it.attr("href")
                             val docu = app.get(urls).document
                             val link = docu.select("h3 a:contains($episode)").attr("href")
-                            val driveLink = bypassHrefli(link ?: return@forEach)
-                            getBaseUrl(driveLink ?: return@forEach)
-                            val driveReq = app.get(driveLink)
-                            val driveRes = driveReq.document
-                            val header = driveRes.selectFirst("div.mb-4")?.text()
-                            val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
-                            val resume =
-                                driveRes.select("a.btn.btn-warning").attr("href").toString()
-                            val resumelink = when {
-                                resume.isNotEmpty() -> extractResumeTop(resume)
-                                else -> {
-                                    ""
-                                }
-                            }
-                            val token = finallink?.substringAfter("https://video-leech.xyz/?url=")
-                            val downloadlink = app.post(
-                                url = "https://video-leech.xyz/api",
-                                data = mapOf(
-                                    "keys" to "$token"
-                                ),
-                                referer = finallink,
-                                headers = mapOf("x-token" to "video-leech.xyz")
-                            )
-                            val finaldownloadlink =
-                                downloadlink.toString().substringAfter("url\":\"")
-                                    .substringBefore("\",\"name")
-                                    .replace("\\/", "/")
-                            if (resumelink != null) {
-                                var Servers = listOf(finaldownloadlink, resumelink)
-                                Servers.forEach { urls ->
-                                    if (urls.contains("googleusercontent")) {
-                                        callback.invoke(
-                                            ExtractorLink(
-                                                "TopMovies",
-                                                "TopMovies",
-                                                url = urls,
-                                                "$topmoviesAPI/",
-                                                getIndexQuality(header)
-                                            )
-                                        )
-                                    } else {
-                                        callback.invoke(
-                                            ExtractorLink(
-                                                "TopMoviesR",
-                                                "TopMoviesR",
-                                                url = urls,
-                                                "$topmoviesAPI/",
-                                                getIndexQuality(header)
-                                            )
-                                        )
-                                    }
-                                }
-                            }
+                            loadExtractor(link,subtitleCallback,callback)
                         }
                     }
                 }

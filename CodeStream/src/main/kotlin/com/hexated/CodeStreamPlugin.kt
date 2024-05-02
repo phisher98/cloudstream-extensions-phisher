@@ -65,5 +65,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Voe())
         registerExtractorAPI(Mdrive())
         registerExtractorAPI(Gofile())
+        registerExtractorAPI(Unblockedgames())
+        registerExtractorAPI(Animezia())
     }
 }
