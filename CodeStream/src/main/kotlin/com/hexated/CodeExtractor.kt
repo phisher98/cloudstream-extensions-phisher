@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.Requests
@@ -1156,45 +1157,44 @@ object CodeExtractor : CodeStream() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url ?: return).document
-        val id = res.select("div#watch-main").attr("data-id")
-        val episodeId =
-            app.get("$aniwaveAPI/ajax/episode/list/$id?${AniwaveUtils.vrfEncrypt(id)}", headers = mapOf("X-Requested-With" to "XMLHttpRequest"))
-                .parsedSafe<AniwaveResponse>()?.asJsoup()
-                ?.selectFirst("ul.ep-range li a[data-num=${episode ?: 1}]")
-                ?.attr("data-ids")
-                ?: return
-        val servers =
-            app.get(
-                "$aniwaveAPI/ajax/server/list/$episodeId?${
-                    AniwaveUtils.vrfEncrypt(
-                        episodeId
-                    )
-                }"
+        // Fetch the main document
+        val mainDocument = app.get(url ?: return).document
+        val id = mainDocument.select("div#watch-main").attr("data-id")
+
+        // Fetch episode ID
+        val episodeId = fetchEpisodeId(id, episode) ?: return
+
+        // Fetch servers
+        val servers = fetchServers(episodeId) ?: return
+
+        // Process servers
+        servers.forEach { serverElement ->
+            val linkId = serverElement.attr("data-link-id")
+            val iframe = fetchServerIframe(linkId) ?: return@forEach
+            val audio = if (serverElement.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
+            loadCustomExtractor(
+                "Aniwave ${serverElement.text()} [$audio]",
+                iframe,
+                "$aniwaveAPI/",
+                subtitleCallback,
+                callback
             )
-                .parsedSafe<AniwaveResponse>()?.asJsoup()
-                ?.select("div.servers > div[data-type!=sub] ul li") ?: return
-            servers.apmap {
-                val linkId = it.attr("data-link-id")
-                val iframe =
-                    app.get(
-                        "$aniwaveAPI/ajax/server/$linkId?${
-                            AniwaveUtils.vrfEncrypt(
-                                linkId
-                            )
-                        }"
-                    )
-                        .parsedSafe<AniwaveServer>()?.result?.decrypt()
-                val audio =
-                    if (it.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
-                 loadCustomExtractor(
-                        "Aniwave ${it.text()} [$audio]",
-                        iframe ?: return@apmap,
-                        "$aniwaveAPI/",
-                        subtitleCallback,
-                        callback,
-                    )
-            }
+        }
+    }
+
+    private suspend fun fetchEpisodeId(id: String, episode: Int?): String? {
+        val response = app.get("$aniwaveAPI/ajax/episode/list/$id?${AniwaveUtils.vrfEncrypt(id)}", headers = mapOf("X-Requested-With" to "XMLHttpRequest")).parsedSafe<AniwaveResponse>()?.asJsoup()
+        return response?.selectFirst("ul.ep-range li a[data-num=${episode ?: 1}]")?.attr("data-ids")
+    }
+
+    private suspend fun fetchServers(episodeId: String): Elements? {
+        val response = app.get("$aniwaveAPI/ajax/server/list/$episodeId?${AniwaveUtils.vrfEncrypt(episodeId)}").parsedSafe<AniwaveResponse>()?.asJsoup()
+        return response?.select("div.servers > div[data-type!=sub] ul li")
+    }
+
+    private suspend fun fetchServerIframe(linkId: String): String? {
+        val response = app.get("$aniwaveAPI/ajax/server/$linkId?${AniwaveUtils.vrfEncrypt(linkId)}").parsedSafe<AniwaveServer>()?.result?.decrypt()
+        return response
     }
 
 
