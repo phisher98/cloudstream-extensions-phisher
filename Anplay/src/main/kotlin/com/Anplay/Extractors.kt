@@ -30,8 +30,7 @@ open class Chillx : ExtractorApi() {
                 referer = url,
             ).text
         )?.groupValues?.get(1)
-        val key = app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
-        val decrypt = cryptoAESHandler(master ?: "",key.toByteArray(), false)?.replace("\\", "") ?: throw ErrorLoadingException("failed to decrypt")
+        val decrypt = cryptoAESHandler(master ?: "",fetchKey().toByteArray(), false)?.replace("\\", "") ?: throw ErrorLoadingException("failed to decrypt")
         val source = Regex(""""?file"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
         val subtitles = Regex("""subtitle"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
         val subtitlePattern = """\[(.*?)](https?://[^\s,]+)""".toRegex()
@@ -72,6 +71,10 @@ open class Chillx : ExtractorApi() {
         return regex.replace(input) {
             it.groupValues[1].toInt(16).toChar().toString()
         }
+    }
+
+    private suspend fun fetchKey(): String {
+        return app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
     }
 
     data class Keys(

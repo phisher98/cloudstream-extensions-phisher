@@ -2,7 +2,6 @@ package com.KillerDogeEmpire
 
 import android.annotation.SuppressLint
 import android.util.Log
-import com.github.mezhevikin.httprequest.urlEncoded
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.utils.*
@@ -17,7 +16,7 @@ import kotlinx.coroutines.delay
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.jsoup.Jsoup
+import org.jsoup.*
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -144,7 +143,7 @@ object CodeExtractor : CodeStream() {
                                         )
                         }
 
-    suspend fun Extractvidsrcnetservers(url: String): String {
+   private suspend fun Extractvidsrcnetservers(url: String): String {
         val rcp=app.get("https://vidsrc.stream/rcp/$url", referer = "https://vidsrc.net/", headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0")).document
         val link = rcp.selectFirst("script:containsData(player_iframe)")?.data()?.substringAfter("src: '")?.substringBefore("',")
         return "http:$link"    }
@@ -1124,7 +1123,6 @@ object CodeExtractor : CodeStream() {
 
                     val zoroIds = malsync?.zoro?.keys?.map { it }
                     val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
-
                     argamap(
                         {
                             invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
@@ -1152,55 +1150,56 @@ object CodeExtractor : CodeStream() {
                     )
                 }
 
-                private suspend fun invokeAniwave(
-                    url: String? = null,
-                    episode: Int? = null,
-                    subtitleCallback: (SubtitleFile) -> Unit,
-                    callback: (ExtractorLink) -> Unit
-                ) {
-                    val res = app.get(url ?: return).document
-                    val id = res.select("div#watch-main").attr("data-id")
-                    val episodeId =
-                        app.get("$aniwaveAPI/ajax/episode/list/$id?vrf=${AniwaveUtils.encodeVrf(id)}")
-                            .parsedSafe<AniwaveResponse>()?.asJsoup()
-                            ?.selectFirst("ul.ep-range li a[data-num=${episode ?: 1}]")
-                            ?.attr("data-ids")
-                            ?: return
-                    val servers =
-                        app.get(
-                            "$aniwaveAPI/ajax/server/list/$episodeId?vrf=${
-                                AniwaveUtils.encodeVrf(
-                                    episodeId
-                                )
-                            }"
-                        )
-                            .parsedSafe<AniwaveResponse>()?.asJsoup()
-                            ?.select("div.servers > div[data-type!=sub] ul li") ?: return
-
-                    servers.apmap {
-                        val linkId = it.attr("data-link-id")
-                        val iframe =
-                            app.get(
-                                "$aniwaveAPI/ajax/server/$linkId?vrf=${
-                                    AniwaveUtils.encodeVrf(
-                                        linkId
-                                    )
-                                }"
+    private suspend fun invokeAniwave(
+        url: String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val res = app.get(url ?: return).document
+        val id = res.select("div#watch-main").attr("data-id")
+        val episodeId =
+            app.get("$aniwaveAPI/ajax/episode/list/$id?${AniwaveUtils.vrfEncrypt(id)}", headers = mapOf("X-Requested-With" to "XMLHttpRequest"))
+                .parsedSafe<AniwaveResponse>()?.asJsoup()
+                ?.selectFirst("ul.ep-range li a[data-num=${episode ?: 1}]")
+                ?.attr("data-ids")
+                ?: return
+        val servers =
+            app.get(
+                "$aniwaveAPI/ajax/server/list/$episodeId?${
+                    AniwaveUtils.vrfEncrypt(
+                        episodeId
+                    )
+                }"
+            )
+                .parsedSafe<AniwaveResponse>()?.asJsoup()
+                ?.select("div.servers > div[data-type!=sub] ul li") ?: return
+            servers.apmap {
+                val linkId = it.attr("data-link-id")
+                val iframe =
+                    app.get(
+                        "$aniwaveAPI/ajax/server/$linkId?${
+                            AniwaveUtils.vrfEncrypt(
+                                linkId
                             )
-                                .parsedSafe<AniwaveServer>()?.result?.decrypt()
-                        val audio =
-                            if (it.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
-                        loadCustomExtractor(
-                            "${it.text()} [$audio]",
-                            iframe ?: return@apmap,
-                            "$aniwaveAPI/",
-                            subtitleCallback,
-                            callback,
-                        )
-                    }
-                }
+                        }"
+                    )
+                        .parsedSafe<AniwaveServer>()?.result?.decrypt()
+                val audio =
+                    if (it.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
+                 loadCustomExtractor(
+                        "Aniwave ${it.text()} [$audio]",
+                        iframe ?: return@apmap,
+                        "$aniwaveAPI/",
+                        subtitleCallback,
+                        callback,
+                    )
+            }
+    }
 
-                private suspend fun invokeAnimetosho(
+
+
+    private suspend fun invokeAnimetosho(
                     malId: Int? = null,
                     season: Int? = null,
                     episode: Int? = null,
@@ -1291,8 +1290,9 @@ object CodeExtractor : CodeStream() {
                             ).parsedSafe<HianimeResponses>()?.link
                                 ?: return@servers
                             val audio = if (server.third == "sub") "Raw" else "English Dub"
+                            //Log.d("Phisher Test",iframe)
                             loadCustomExtractor(
-                                "${server.first} [$audio]",
+                                "HiAnime ${server.first} [$audio]",
                                 iframe,
                                 "$hianimeAPI/",
                                 subtitleCallback,
@@ -1341,7 +1341,7 @@ object CodeExtractor : CodeStream() {
                                 ?: return@servers
                             val audio = if (server.third == "sub") "Raw" else "English Dub"
                             loadCustomExtractor(
-                                "${server.first} [$audio]",
+                                "Genoanime ${server.first} [$audio]",
                                 iframe,
                                 "$hianimeAPI/",
                                 subtitleCallback,

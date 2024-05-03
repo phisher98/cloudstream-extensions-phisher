@@ -42,7 +42,7 @@ data class AniwaveServer(
         val url: String
     ) {
         fun decrypt(): String {
-            return AniwaveUtils.decodeVrf(url)
+            return AniwaveUtils.vrfDecrypt(url)
         }
     }
 }

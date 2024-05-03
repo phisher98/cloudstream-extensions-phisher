@@ -1262,6 +1262,7 @@ fun getBaseUrl(url: String): String {
     }
 }
 
+
 fun String.getHost(): String {
     return fixTitle(URI(this).host.substringBeforeLast(".").substringAfterLast("."))
 }
@@ -1337,32 +1338,34 @@ private enum class Symbol(val decimalValue: Int) {
     }
 }
 
-// steal from https://github.com/aniyomiorg/aniyomi-extensions/blob/master/src/en/aniwave/src/eu/kanade/tachiyomi/animeextension/en/nineanime/AniwaveUtils.kt
-// credits to @samfundev
 object AniwaveUtils {
 
-    fun encodeVrf(input: String): String {
+    fun vrfEncrypt(input: String): String {
         val rc4Key = SecretKeySpec("tGn6kIpVXBEUmqjD".toByteArray(), "RC4")
         val cipher = Cipher.getInstance("RC4")
         cipher.init(Cipher.DECRYPT_MODE, rc4Key, cipher.parameters)
+
         var vrf = cipher.doFinal(input.toByteArray())
         vrf = Base64.encode(vrf, Base64.URL_SAFE or Base64.NO_WRAP)
         vrf = Base64.encode(vrf, Base64.DEFAULT or Base64.NO_WRAP)
         vrf = vrfShift(vrf)
-        vrf = Base64.encode(vrf, Base64.DEFAULT)
-        vrf = rot13(vrf)
+        // vrf = rot13(vrf)
+        vrf = vrf.reversed().toByteArray()
+        vrf = Base64.encode(vrf, Base64.URL_SAFE or Base64.NO_WRAP)
         val stringVrf = vrf.toString(Charsets.UTF_8)
-        return encode(stringVrf)
+        return "vrf=${java.net.URLEncoder.encode(stringVrf, "utf-8")}"
     }
 
-    fun decodeVrf(input: String): String {
+    fun vrfDecrypt(input: String): String {
         var vrf = input.toByteArray()
         vrf = Base64.decode(vrf, Base64.URL_SAFE)
+
         val rc4Key = SecretKeySpec("LUyDrL4qIxtIxOGs".toByteArray(), "RC4")
         val cipher = Cipher.getInstance("RC4")
         cipher.init(Cipher.DECRYPT_MODE, rc4Key, cipher.parameters)
         vrf = cipher.doFinal(vrf)
-        return decode(vrf.toString(Charsets.UTF_8))
+
+        return URLDecoder.decode(vrf.toString(Charsets.UTF_8), "utf-8")
     }
 
     private fun rot13(vrf: ByteArray): ByteArray {

@@ -1,4 +1,4 @@
-package com.hexated
+package com.KillerDogeEmpire
 
 import android.util.Base64
 import android.util.Log
