@@ -577,7 +577,7 @@ class dlions : VidhideExtractor() {
 }
 
 class Animezia : VidhideExtractor() {
-    override var name = "Animezia"
+    override var name = "MultiMovies API"
     override var mainUrl = "https://animezia.cloud"
 }
 
