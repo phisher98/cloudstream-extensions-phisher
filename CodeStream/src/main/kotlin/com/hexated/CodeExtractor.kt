@@ -1177,16 +1177,13 @@ object CodeExtractor : CodeStream() {
                loadExtractor(iframe,subtitleCallback,callback)
              }
              else
-            callback.invoke(
-              ExtractorLink(
-                name,
+            loadCustomExtractor(
                 "Aniwave ${serverElement.text()} [$audio]",
                 iframe,
                 "$aniwaveAPI/",
                 subtitleCallback,
                 callback
-            )
-           )
+                )
         }
     }
 
