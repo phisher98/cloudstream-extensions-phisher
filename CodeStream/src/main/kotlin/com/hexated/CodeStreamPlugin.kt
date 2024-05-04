@@ -22,7 +22,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Animefever())
         registerExtractorAPI(Multimovies())
         registerExtractorAPI(MultimoviesSB())
-        registerExtractorAPI(VidsrcTo())
         registerExtractorAPI(Yipsu())
         registerExtractorAPI(Mwish())
         registerExtractorAPI(TravelR())
@@ -66,5 +65,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Gofile())
         registerExtractorAPI(Unblockedgames())
         registerExtractorAPI(Animezia())
+        registerExtractorAPI(Moviesapi())
     }
 }

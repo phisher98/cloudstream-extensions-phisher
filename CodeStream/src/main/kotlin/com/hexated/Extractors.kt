@@ -467,6 +467,11 @@ class FilemoonNl : Ridoo() {
     override val defaulQuality = Qualities.Unknown.value
 }
 
+class Moviesapi : Chillx() {
+    override val name = "Moviesapi"
+    override val mainUrl = "https://w1.moviesapi.club"
+}
+
 class AllinoneDownloader : StreamWishExtractor() {
     override var name = "MultiMovies API"
     override var mainUrl = "https://allinonedownloader.fun"
