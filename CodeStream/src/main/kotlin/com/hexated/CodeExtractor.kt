@@ -1172,13 +1172,21 @@ object CodeExtractor : CodeStream() {
             val linkId = serverElement.attr("data-link-id")
             val iframe = fetchServerIframe(linkId) ?: return@forEach
             val audio = if (serverElement.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
-            loadCustomExtractor(
+          if(iframe.contains(".site")
+             {
+               loadExtractor(iframe,subtitleCallback,callback)
+             }
+             else
+            callback.invoke(
+              ExtractorLink(
+                name,
                 "Aniwave ${serverElement.text()} [$audio]",
                 iframe,
                 "$aniwaveAPI/",
                 subtitleCallback,
                 callback
             )
+           )
         }
     }
 
