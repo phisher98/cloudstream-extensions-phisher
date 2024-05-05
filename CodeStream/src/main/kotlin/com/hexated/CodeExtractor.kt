@@ -3109,8 +3109,6 @@ object CodeExtractor : CodeStream() {
                         linklist.forEach { url ->
                             val links = ExtractMdriveSeries(url)
                             links.forEach { link ->
-                                Log.d("Phisher Test links", link)
-                                if (link.isNullOrEmpty())
                                 loadExtractor(link, subtitleCallback, callback)
                             }
                         }

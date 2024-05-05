@@ -1209,6 +1209,7 @@ suspend fun ExtractMdriveSeries(url: String): MutableList<String> {
             } else {
                 linklist.add(mainpage)
             }
+    Log.d("Phisher Test Links",linklist.toString())
     return linklist
 }
 
