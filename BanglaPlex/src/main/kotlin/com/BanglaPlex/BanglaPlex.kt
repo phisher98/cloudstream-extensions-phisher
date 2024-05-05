@@ -104,7 +104,8 @@ class Banglaplex : MainAPI() {
         val document = app.get(data).document
         val iframeurl=document.select("div.video-embed-container > iframe").attr("src")
         val link=iframeurl.replace("https://vectorx.top","https://bestx.stream")
-        loadExtractor(link, referer = link,subtitleCallback,callback)
+        Log.d("Phisher Test",link)
+        loadExtractor(link,subtitleCallback, callback)
         return true
     }
 }
