@@ -1,6 +1,7 @@
 package com.KillerDogeEmpire
 
 //import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
