@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
 import com.lagradost.cloudstream3.extractors.Gofile
 import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.Moviesapi
+import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.Vidmolyme
@@ -66,5 +68,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Unblockedgames())
         registerExtractorAPI(Animezia())
         registerExtractorAPI(Moviesapi())
+        registerExtractorAPI(PixelDrain())
     }
 }

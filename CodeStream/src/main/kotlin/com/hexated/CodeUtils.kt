@@ -1188,6 +1188,7 @@ suspend fun ExtractMdrive(url: String): MutableList<String> {
             if (!mainpage.contains("https://"))
             {
                 val newlink= "https://hubcloud.day$mainpage"
+                Log.d("Phisher Test", newlink)
                 linklist.add(newlink)
             }
             else
@@ -1198,6 +1199,19 @@ suspend fun ExtractMdrive(url: String): MutableList<String> {
     }
     return linklist
 }
+
+suspend fun ExtractMdriveSeries(url: String): MutableList<String> {
+            val linklist= mutableListOf(String())
+            val mainpage = app.get(url.replace("lol","day")).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
+            if (!mainpage.contains("https://")) {
+                val newlink = "https://hubcloud.day$mainpage"
+                linklist.add(newlink)
+            } else {
+                linklist.add(mainpage)
+            }
+    return linklist
+}
+
 
 fun getQuality(str: String): Int {
     return when (str) {

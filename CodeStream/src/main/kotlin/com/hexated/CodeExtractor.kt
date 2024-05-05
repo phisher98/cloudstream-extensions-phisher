@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
-import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.Requests
@@ -2796,9 +2795,7 @@ object CodeExtractor : CodeStream() {
                 referer = "https://pressplay.top/"
             ).document.selectFirst("iframe")
                 ?.attr("src")
-
         loadExtractor(iframe ?: return, "$nineTvAPI/", subtitleCallback, callback)
-
     }
 
     suspend fun invokeNowTv(
@@ -3068,8 +3065,8 @@ object CodeExtractor : CodeStream() {
 
     suspend fun invokeMoviesdrive(
         title: String? = null,
-        season: Int?=null,
-        episode: Int?=null,
+        season: Int? = null,
+        episode: Int? = null,
         year: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
@@ -3077,37 +3074,41 @@ object CodeExtractor : CodeStream() {
         val fixTitle = title.createSlug()
         val url = "$MovieDrive_API/$fixTitle-$year"
         val document = app.get(url).document
-        if (season==null)
-        {
+        if (season == null) {
             document.select("h5 > a").map {
                 val link = it.attr("href")
                 val urls = ExtractMdrive(link)
-                urls.forEach { urls ->
-                    loadExtractor(urls, subtitleCallback, callback)
+                Log.d("Phisher Test", url)
+                urls.forEach { servers ->
+                    loadExtractor(servers, subtitleCallback, callback)
                 }
             }
-        }
-        else
-        {
-            val stag="Season $season"
-            val sep="Ep$episode"
-            val entries =document.select("h5:matches((?i)$stag)")
-                    .filter { element -> !element.text().contains("720", true) }
-            entries.apmap { it ->
-                val href=it.nextElementSibling()?.selectFirst("a")?.attr("href") ?:""
-                val doc= app.get(href).document
-                doc.select("h5:matches((?i)$sep)").apmap {
-                    val linklist= mutableListOf(String())
-                    it.nextElementSibling()?.let {
-                        val mainlink=it.select("h5 > a").attr("href")
-                        linklist.add(mainlink)
-                    }
-                    it.nextElementSibling()?.nextElementSibling()?.let {
-                        val mainlink=it.select("h5 > a").attr("href")
-                        linklist.add(mainlink)
-                    }
-                    linklist.forEach { urls ->
-                        loadExtractor(urls, subtitleCallback, callback)
+        } else {
+            val stag = "Season $season"
+            val sep = "Ep$episode"
+            val entries = document.select("h5:matches((?i)$stag)")
+                .filter { element -> !element.text().contains("720", true) }
+            entries.forEach { entry ->
+                val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
+                if (href.isNotBlank()) {
+                    val doc = app.get(href).document
+                    doc.select("h5:matches((?i)$sep)").forEach { epElement ->
+                        val linklist = mutableListOf<String>()
+                        epElement.nextElementSibling()?.let { sibling ->
+                            sibling.selectFirst("h5 > a")?.let { linklist.add(it.attr("href")) }
+                            sibling.nextElementSibling()?.let { nextSibling ->
+                                nextSibling.selectFirst("h5 > a")
+                                    ?.let { linklist.add(it.attr("href")) }
+                            }
+                        }
+                        linklist.forEach { url ->
+                            val links = ExtractMdriveSeries(url)
+                            links.forEach { link ->
+                                Log.d("Phisher Test links", link)
+                                if (link.isNullOrEmpty())
+                                loadExtractor(link, subtitleCallback, callback)
+                            }
+                        }
                     }
                 }
             }

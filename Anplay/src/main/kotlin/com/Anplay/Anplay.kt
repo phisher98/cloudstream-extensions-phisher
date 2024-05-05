@@ -2,6 +2,7 @@ package com.Anplay
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -186,6 +187,7 @@ open class Anplay : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val document = app.get(data, cookies=cookies).document
         document.select("ul#playeroptionsul > li").map {
             Triple(
@@ -206,8 +208,10 @@ open class Anplay : MainAPI() {
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                 cookies = cookies
             ).parsed<ResponseHash>().embed_url
+            Log.d(" Phisher source",source)
             when {
                 !source.contains("youtube") -> {
+                    Log.d("Phisher",source)
                     loadExtractor(source, subtitleCallback, callback)
                 }
                 else -> return@apmap

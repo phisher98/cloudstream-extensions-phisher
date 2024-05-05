@@ -8,7 +8,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeAnimes
 import com.KillerDogeEmpire.CodeExtractor.invokeMoviesdrive
 import com.KillerDogeEmpire.CodeExtractor.invokeAoneroom
 import com.KillerDogeEmpire.CodeExtractor.invokeAsianHD
-import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
+//import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
 import com.KillerDogeEmpire.CodeExtractor.invokeDahmerMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeDoomovies
 import com.KillerDogeEmpire.CodeExtractor.invokeDotmovies
@@ -82,8 +82,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 open class CodeStream : TmdbProvider() {
@@ -617,12 +615,13 @@ open class CodeStream : TmdbProvider() {
                 {
                     invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
                 },
-                {
+            /*    {
                     invokeCinemaTv(
                         res.imdbId, res.title, res.airedYear
                             ?: res.year, res.season, res.episode, subtitleCallback, callback
                     )
                 },
+             */
                 {
                     if (!res.isAnime) invokeNowTv(
                         res.id,
