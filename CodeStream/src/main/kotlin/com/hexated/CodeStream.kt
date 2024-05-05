@@ -8,6 +8,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeAnimes
 import com.KillerDogeEmpire.CodeExtractor.invokeMoviesdrive
 import com.KillerDogeEmpire.CodeExtractor.invokeAoneroom
 import com.KillerDogeEmpire.CodeExtractor.invokeAsianHD
+import com.KillerDogeEmpire.CodeExtractor.invokeAsiandrama
 //import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
 import com.KillerDogeEmpire.CodeExtractor.invokeDahmerMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeDoomovies
@@ -163,6 +164,7 @@ open class CodeStream : TmdbProvider() {
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
         const val MovieDrive_API=BuildConfig.MovieDrive_API
+        const val Asiandrama_API=BuildConfig.AsianDrama_API
 
         fun getType(t: String?): TvType {
             return when (t) {
@@ -830,6 +832,16 @@ open class CodeStream : TmdbProvider() {
                 },
             {
                 if (!res.isAnime) invokeMoviesdrive(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeAsiandrama(
                     res.title,
                     res.season,
                     res.episode,

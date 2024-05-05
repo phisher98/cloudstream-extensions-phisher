@@ -130,7 +130,7 @@ object CodeExtractor : CodeStream() {
         val serverhash =
             iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
         val link = Extractvidsrcnetservers(serverhash)
-        Log.d("Phisher TEst Visrc",link)
+        Log.d("Phisher TEst Visrc", link)
         val URI = app.get(
             link,
             referer = "https://vidsrc.net/"
@@ -3114,6 +3114,27 @@ object CodeExtractor : CodeStream() {
                     }
                 }
             }
+        }
+    }
+
+    suspend fun invokeAsiandrama(
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val fixTitle = title.createSlug()
+        val url = if (season == null) {
+            "$Asiandrama_API/streaming.php?slug=$fixTitle-$year-episode-1"
+        } else {
+            "$Asiandrama_API/streaming.php?slug=$fixTitle-$year-episode-$episode"
+        }
+        val document = app.get(url).document
+        document.select("ul.list-server-items > li").map {
+            val server = it.attr("data-video")
+           loadExtractor(server,subtitleCallback, callback)
         }
     }
 }
