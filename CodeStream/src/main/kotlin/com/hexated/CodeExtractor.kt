@@ -3092,7 +3092,6 @@ object CodeExtractor : CodeStream() {
             val stag = "Season $season"
             val sep = "Ep$episode"
             val entries = document.select("h5:matches((?i)$stag)")
-                .filter { element -> !element.text().contains("720", true) }
             entries.apmap { entry ->
                 val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
                 if (href.isNotBlank()) {
