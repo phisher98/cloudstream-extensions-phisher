@@ -34,6 +34,7 @@ import com.KillerDogeEmpire.CodeExtractor.invokeWatchCartoon
 import com.KillerDogeEmpire.CodeExtractor.invokeWatchsomuch
 import com.KillerDogeEmpire.CodeExtractor.invokeZoechip
 import com.KillerDogeEmpire.CodeExtractor.invokeZshow
+import com.KillerDogeEmpire.CodeExtractor.invokeMoviesdrive
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -332,6 +333,16 @@ class CodeStreamLite : CodeStream() {
             }
 
              */
+            {
+                if (!res.isAnime) invokeMoviesdrive(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                )
+            },
         )
         return true
     }
