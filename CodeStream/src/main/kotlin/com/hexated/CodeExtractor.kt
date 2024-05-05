@@ -130,6 +130,7 @@ object CodeExtractor : CodeStream() {
         val serverhash =
             iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
         val link = Extractvidsrcnetservers(serverhash)
+        Log.d("Phisher TEst Visrc",link)
         val URI = app.get(
             link,
             referer = "https://vidsrc.net/"
@@ -139,11 +140,15 @@ object CodeExtractor : CodeStream() {
             ?.replace(Regex("/@#@\\S+?=?="), "")
             ?.let { base64Decode(it) }
             .toString()
-        loadExtractor(
-            URI,
-            referer = "https://vidsrc.net/",
-            subtitleCallback,
-            callback
+        callback.invoke(
+            ExtractorLink(
+                source = "Vidsrc API",
+                name = "Vidsrc API",
+                url = URI,
+                referer = "",
+                quality = Qualities.P1080.value,
+                type = INFER_TYPE
+            )
         )
     }
 

@@ -111,7 +111,7 @@ open class CodeStream : TmdbProvider() {
 
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
-        const val vidSrcAPI = "https://vidsrc.net"
+        const val vidSrcAPI = "https://vidsrc.me"
         const val dreamfilmAPI = "https://dreamfilmsw.info"
         const val noverseAPI = "https://www.thenollyverse.com"
         const val filmxyAPI = "https://www.filmxy.online"
