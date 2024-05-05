@@ -3093,7 +3093,7 @@ object CodeExtractor : CodeStream() {
             val sep = "Ep$episode"
             val entries = document.select("h5:matches((?i)$stag)")
                 .filter { element -> !element.text().contains("720", true) }
-            entries.forEach { entry ->
+            entries.apmap { entry ->
                 val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
                 if (href.isNotBlank()) {
                     val doc = app.get(href).document
@@ -3106,7 +3106,7 @@ object CodeExtractor : CodeStream() {
                                     ?.let { linklist.add(it.attr("href")) }
                             }
                         }
-                        linklist.forEach { url ->
+                        linklist.apmap { url ->
                             val links = ExtractMdriveSeries(url)
                             links.forEach { link ->
                                 loadExtractor(link, subtitleCallback, callback)
