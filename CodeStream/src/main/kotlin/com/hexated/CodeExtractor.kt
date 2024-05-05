@@ -1607,7 +1607,7 @@ object CodeExtractor : CodeStream() {
         val media =
             res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
-
+        Log.d("Phisher Test",media.toString())
         res = app.get(media ?: return).document
         val hTag = if (season == null) "h5" else "h3"
         val aTag = if (season == null) "Download Now" else "V-Cloud"
@@ -1624,10 +1624,12 @@ object CodeExtractor : CodeStream() {
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
             val selector =
                 if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) + p a:contains(V-Cloud)"
+            Log.d("Phisher Test",selector.toString())
             val server = app.get(
                 href ?: return@apmap, interceptor = wpRedisInterceptor
             ).document.selectFirst("div.entry-content > $selector")
                 ?.attr("href") ?: return@apmap
+            Log.d("Phisher Test",server.toString())
             loadCustomTagExtractor(
                 tags,
                 server,
