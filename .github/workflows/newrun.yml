@@ -89,7 +89,7 @@ jobs:
           echo SUPERSTREAM_FOURTH_API=$SUPERSTREAM_FOURTH_API >> local.properties
           echo MOVIE_API=$MOVIE_API >> local.properties
           echo MultiMovies_API=$MultiMovies_API >> local.properties
-          echo MovieDrive_API=MovieDrive_API >> local.properties
+          echo MovieDrive_API=$MovieDrive_API >> local.properties
           echo INDIANTV_TATA_API=$INDIANTV_TATA_API >> local.properties
           echo INDIANTV_Discovery_API=$INDIANTV_Discovery_API >> local.properties
           echo INDIANTV_Airtel_API=$INDIANTV_Airtel_API >> local.properties
