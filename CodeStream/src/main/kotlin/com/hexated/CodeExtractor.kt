@@ -130,7 +130,6 @@ object CodeExtractor : CodeStream() {
         val serverhash =
             iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
         val link = Extractvidsrcnetservers(serverhash)
-        Log.d("Phisher TEst Visrc", link)
         val URI = app.get(
             link,
             referer = "https://vidsrc.net/"
@@ -1307,7 +1306,6 @@ object CodeExtractor : CodeStream() {
                 ).parsedSafe<HianimeResponses>()?.link
                     ?: return@servers
                 val audio = if (server.third == "sub") "Raw" else "English Dub"
-                //Log.d("Phisher Test",iframe)
                 loadCustomExtractor(
                     "HiAnime ${server.first} [$audio]",
                     iframe,
@@ -1607,7 +1605,6 @@ object CodeExtractor : CodeStream() {
         val media =
             res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
-        Log.d("Phisher Test",media.toString())
         res = app.get(media ?: return).document
         val hTag = if (season == null) "h5" else "h3"
         val aTag = if (season == null) "Download Now" else "V-Cloud"
@@ -1624,12 +1621,10 @@ object CodeExtractor : CodeStream() {
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
             val selector =
                 if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) + p a:contains(V-Cloud)"
-            Log.d("Phisher Test",selector.toString())
             val server = app.get(
                 href ?: return@apmap, interceptor = wpRedisInterceptor
             ).document.selectFirst("div.entry-content > $selector")
                 ?.attr("href") ?: return@apmap
-            Log.d("Phisher Test",server.toString())
             loadCustomTagExtractor(
                 tags,
                 server,
@@ -3098,22 +3093,23 @@ object CodeExtractor : CodeStream() {
                     val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
                     if (href.isNotBlank()) {
                         val doc = app.get(href).document
-                        doc.select("h5:matches((?i)$sep)").forEach { epElement ->
-                            val linklist = mutableListOf<String>()
-                            epElement.nextElementSibling()?.let { sibling ->
-                                sibling.selectFirst("h5 > a")?.let { linklist.add(it.attr("href")) }
-                                sibling.nextElementSibling()?.let { nextSibling ->
-                                    nextSibling.selectFirst("h5 > a")
+                            doc.select("h5:matches((?i)$sep)").forEach { epElement ->
+                                val linklist = mutableListOf<String>()
+                                epElement.nextElementSibling()?.let { sibling ->
+                                    sibling.selectFirst("h5 > a")
                                         ?.let { linklist.add(it.attr("href")) }
+                                    sibling.nextElementSibling()?.let { nextSibling ->
+                                        nextSibling.selectFirst("h5 > a")
+                                            ?.let { linklist.add(it.attr("href")) }
+                                    }
+                                }
+                                linklist.forEach { url ->
+                                    val links = ExtractMdriveSeries(url)
+                                    links.forEach { link ->
+                                        loadExtractor(link, subtitleCallback, callback)
+                                    }
                                 }
                             }
-                            linklist.forEach { url ->
-                                val links = ExtractMdriveSeries(url)
-                                links.forEach { link ->
-                                    loadExtractor(link, subtitleCallback, callback)
-                                }
-                            }
-                        }
                     }
                 }
             }
