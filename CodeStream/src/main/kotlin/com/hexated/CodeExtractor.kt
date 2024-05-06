@@ -3078,44 +3078,49 @@ object CodeExtractor : CodeStream() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title.createSlug()
-        val url = "$MovieDrive_API/$fixTitle-$year"
-        val document = app.get(url).document
-        if (season == null) {
-            document.select("h5 > a").map {
-                val link = it.attr("href")
-                val urls = ExtractMdrive(link)
-                Log.d("Phisher Test", url)
-                urls.forEach { servers ->
-                    loadExtractor(servers, subtitleCallback, callback)
+        try {
+            val fixTitle = title.createSlug()
+            val url = "$MovieDrive_API/$fixTitle-$year"
+            val document = app.get(url).document
+            if (season == null) {
+                document.select("h5 > a").map {
+                    val link = it.attr("href")
+                    val urls = ExtractMdrive(link)
+                    urls.forEach { servers ->
+                        loadExtractor(servers, subtitleCallback, callback)
+                    }
                 }
-            }
-        } else {
-            val stag = "Season $season"
-            val sep = "Ep$episode"
-            val entries = document.select("h5:matches((?i)$stag)")
-            entries.apmap { entry ->
-                val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
-                if (href.isNotBlank()) {
-                    val doc = app.get(href).document
-                    doc.select("h5:matches((?i)$sep)").forEach { epElement ->
-                        val linklist = mutableListOf<String>()
-                        epElement.nextElementSibling()?.let { sibling ->
-                            sibling.selectFirst("h5 > a")?.let { linklist.add(it.attr("href")) }
-                            sibling.nextElementSibling()?.let { nextSibling ->
-                                nextSibling.selectFirst("h5 > a")
-                                    ?.let { linklist.add(it.attr("href")) }
+            } else {
+                val stag = "Season $season"
+                val sep = "Ep$episode"
+                val entries = document.select("h5:matches((?i)$stag)")
+                entries.apmap { entry ->
+                    val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
+                    if (href.isNotBlank()) {
+                        val doc = app.get(href).document
+                        doc.select("h5:matches((?i)$sep)").forEach { epElement ->
+                            val linklist = mutableListOf<String>()
+                            epElement.nextElementSibling()?.let { sibling ->
+                                sibling.selectFirst("h5 > a")?.let { linklist.add(it.attr("href")) }
+                                sibling.nextElementSibling()?.let { nextSibling ->
+                                    nextSibling.selectFirst("h5 > a")
+                                        ?.let { linklist.add(it.attr("href")) }
+                                }
                             }
-                        }
-                        linklist.apmap { url ->
-                            val links = ExtractMdriveSeries(url)
-                            links.forEach { link ->
-                                loadExtractor(link, subtitleCallback, callback)
+                            linklist.forEach { url ->
+                                val links = ExtractMdriveSeries(url)
+                                links.forEach { link ->
+                                    loadExtractor(link, subtitleCallback, callback)
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+        catch (e: Exception)
+        {
+            Log.e("Exception Error", e.toString())
         }
     }
 
