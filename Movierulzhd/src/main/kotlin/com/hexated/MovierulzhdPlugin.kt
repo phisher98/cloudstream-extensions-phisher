@@ -3,6 +3,7 @@ package com.hexated
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
+import com.lagradost.cloudstream3.extractors.VidSrcTo
 
 @CloudstreamPlugin
 class MovierulzhdPlugin: Plugin() {

@@ -70,7 +70,12 @@ open class Movierulzhd : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("h3 > a")?.text() ?: return null
         val href = getProperLink(fixUrl(this.selectFirst("h3 > a")!!.attr("href")))
-        val posterUrl = fixUrlNull(this.select("div.poster img").last()?.getImageAttr())
+        var posterUrl = this.select("div.poster img").last()?.getImageAttr()
+        if (posterUrl != null) {
+            if (posterUrl.contains(".gif")) {
+                posterUrl = fixUrlNull(this.select("div.poster img").attr("data-wpfc-original-src"))
+            }
+        }
         val quality = getQualityFromString(this.select("span.quality").text())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
@@ -98,9 +103,13 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        val poster = fixUrlNull(document.selectFirst("div.poster img:last-child")?.getImageAttr())
+        var posterUrl = fixUrlNull(document.selectFirst("div.poster img:last-child")?.getImageAttr())
+        if (posterUrl != null) {
+            if (posterUrl.contains(".gif")) {
+                posterUrl = fixUrlNull(document.select("div.poster img:last-child").attr("data-wpfc-original-src"))
+            }
+        }
         val tags = document.select("div.sgeneros > a").map { it.text() }
-
         val year = Regex(",\\s?(\\d+)").find(
             document.select("span.date").text().trim()
         )?.groupValues?.get(1).toString().toIntOrNull()
@@ -164,7 +173,7 @@ open class Movierulzhd : MainAPI() {
                 }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
+                this.posterUrl = posterUrl
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -175,7 +184,7 @@ open class Movierulzhd : MainAPI() {
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = poster
+                this.posterUrl = posterUrl
                 this.year = year
                 this.plot = description
                 this.tags = tags
