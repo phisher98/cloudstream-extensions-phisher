@@ -466,7 +466,8 @@ class FilemoonNl : Ridoo() {
     override var mainUrl = "https://filemoon.nl"
     override val defaulQuality = Qualities.Unknown.value
 }
-class AllinoneDownloader : StreamWishExtractor() {
+
+class AllinoneDownloader : Filesim() {
     override var name = "MultiMovies API"
     override var mainUrl = "https://allinonedownloader.fun"
 }
