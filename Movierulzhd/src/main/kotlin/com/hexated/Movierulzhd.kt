@@ -103,10 +103,10 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        var posterUrl = fixUrlNull(document.selectFirst("div.poster img:last-child")?.getImageAttr())
-        if (posterUrl != null) {
-            if (posterUrl.contains(".gif")) {
-                posterUrl = fixUrlNull(document.select("div.poster img:last-child").attr("data-wpfc-original-src"))
+        var posterUrl = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("data-wpfc-original-src"))
+        if (posterUrl.isNullOrEmpty()) {
+            if (url.contains("movierulzhd")) {
+                posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
             }
         }
         val tags = document.select("div.sgeneros > a").map { it.text() }
