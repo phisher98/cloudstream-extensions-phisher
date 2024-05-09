@@ -1532,10 +1532,12 @@ object CodeExtractor : CodeStream() {
         val media =
             res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
+        Log.d("Phisher Test href",media.toString())
         res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
             res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p))").filter { element -> !element.text().contains("Batch/Zip", true) }
                 .takeLast(2)
+        Log.d("Phisher Test entries",entries.toString())
         entries.map {
             val tags =
                 """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -1642,17 +1644,18 @@ object CodeExtractor : CodeStream() {
         val media =
             res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
-        Log.d("Phisher Test media",media.toString())
-
         res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
-            res.select("div.thecontent > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+            res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+        Log.d("Phisher Test media",entries.toString())
+
         entries.apmap {
                 val tags =
                     """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                         ?.trim()
                 val href =
                     it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+            Log.d("Phisher Test link",href.toString())
                 val selector =
                     if (season == null) "p a.maxbutton:contains(Server)" else "h3:contains(Episode $episode) a"
                 val server = app.get(
@@ -1661,7 +1664,6 @@ object CodeExtractor : CodeStream() {
                     ?.attr("href") ?: ""
             server.let {
                 val link = Unblockedlinks(it)
-                Log.d("Phisher Test link",link.toString())
                 loadCustomTagExtractor(
                     tags,
                     link ?:"",
@@ -1734,7 +1736,6 @@ object CodeExtractor : CodeStream() {
             1 -> "Season 1"
             else -> "Season 1 – $lastSeason"
         }
-        Log.d("Phisher Test",match.toString())
         val media =
             res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
@@ -1748,7 +1749,7 @@ object CodeExtractor : CodeStream() {
                 .takeLast(2)
         entries.apmap {
             val tags =
-                """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
+                """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                     ?.trim()
             val href =
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
