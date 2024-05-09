@@ -4,12 +4,14 @@ package com.KillerDogeEmpire
 import android.util.Log
 import com.KillerDogeEmpire.CodeExtractor.invoke2embed
 import com.KillerDogeEmpire.CodeExtractor.invokeAllMovieland
+import com.KillerDogeEmpire.CodeExtractor.invokeAnimeflix
 import com.KillerDogeEmpire.CodeExtractor.invokeAnimes
 import com.KillerDogeEmpire.CodeExtractor.invokeMoviesdrive
 import com.KillerDogeEmpire.CodeExtractor.invokeAoneroom
 import com.KillerDogeEmpire.CodeExtractor.invokeAsianHD
 import com.KillerDogeEmpire.CodeExtractor.invokeAsiandrama
 //import com.KillerDogeEmpire.CodeExtractor.invokeCinemaTv
+import com.KillerDogeEmpire.CodeExtractor.invokeMoviesmod
 import com.KillerDogeEmpire.CodeExtractor.invokeDahmerMovies
 import com.KillerDogeEmpire.CodeExtractor.invokeDoomovies
 import com.KillerDogeEmpire.CodeExtractor.invokeDotmovies
@@ -158,6 +160,8 @@ open class CodeStream : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.fans"
         const val topmoviesAPI = "https://topmovies.fans"
+        const val MoviesmodAPI= "https://moviesmod.info"
+        const val AnimeflixAPI= "https://animeflix.co.in"
 //        const val hdmovies4uAPI = "https://hdmovies4u.eu"
         const val vegaMoviesAPI = "https://vegamovies.cash"
         const val dotmoviesAPI = "https://luxmovies.org"
@@ -555,133 +559,7 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    if (!res.isAnime) invokeTopMovies(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeFDMovies(res.title, res.season, res.episode, callback)
-                },
-                {
-                    if (!res.isAnime) invokeM4uhd(
-                        res.title, res.airedYear
-                            ?: res.year, res.season, res.episode, subtitleCallback, callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeTvMovies(res.title, res.season, res.episode, callback)
-                },
-                {
-                    //          if (!res.isAnime) invokeRStream(res.id, res.season, res.episode, callback)
-                },
-                {
-                    if (!res.isAnime) invokeFlixon(
-                        res.id,
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        callback
-                    )
-                },
-                {
-          //          if (!res.isAnime) invokeSmashyStream(
-           //             res.id,
-             //           res.season,
-               //         res.episode,
-                 //       subtitleCallback,
-                   //     callback
-                    // )
-                },
-                {
-                    if (!res.isAnime) invokeWatchsomuch(
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        subtitleCallback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeNinetv(
-                        res.id,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
-                },
-            /*    {
-                    invokeCinemaTv(
-                        res.imdbId, res.title, res.airedYear
-                            ?: res.year, res.season, res.episode, subtitleCallback, callback
-                    )
-                },
-             */
-                {
-                    if (!res.isAnime) invokeNowTv(
-                        res.id,
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeRidomovies(
-                        res.id,
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeMoviehubAPI(
-                        res.id,
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeAllMovieland(
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        callback
-                    )
-                },
-                {
-                if (!res.isAnime) invokeMultiEmbed(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeEmovies(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeVegamovies(
+                    if (!res.isAnime && res.isBollywood) invokeTopMovies(
                         res.title,
                         res.year,
                         res.season,
@@ -692,325 +570,475 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-                    if (!res.isAnime && res.isBollywood) invokeDotmovies(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.lastSeason,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    invokeMultimovies(
-                        multimoviesAPI,
-                        res.title,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    invokeNetmovies(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime && res.season == null) invokeDoomovies(
-                        res.title,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (res.isAsian) invokeDramaday(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invoke2embed(
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-          /*      {
-                    if (!res.isAnime) invokeHdmovies4u(
-                        res.title,
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-
-           */
-                {
-                    if (res.isAsian) invokeAsianHD(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (res.isAsian) invokekissasian(
-                        res.title,
-                        res.year,
-                        res.episode,
-                        callback
-                    )
-                },
-                {
-                    invokeZshow(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeShowflix(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
-                    if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
-                },
-                {
-                    if (!res.isAnime) invokeZoechip(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        callback
-                    )
-                },
-            /*    {
-                    if (!res.isAnime) invokeNepu(
-                        res.title,
-                        res.airedYear ?: res.year,
-                        res.season,
-                        res.episode,
-                        callback
-                    )
-                },
-
-             */
-                {
-                    if (!res.isAnime) invokePlaydesi(
-                        res.title,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-            {
-                if (!res.isAnime) invokeMoviesdrive(
+                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                     res.title,
-                    res.season,
-                    res.episode,
                     res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
                     subtitleCallback,
                     callback
                 )
             },
             {
-                if (!res.isAnime) invokeAsiandrama(
+                if (res.isAnime) invokeAnimeflix(
                     res.title,
-                    res.season,
-                    res.episode,
                     res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
                     subtitleCallback,
                     callback
                 )
-            }
+            },
+    {
+        if (!res.isAnime) invokeFDMovies(res.title, res.season, res.episode, callback)
+    },
+    {
+        if (!res.isAnime) invokeM4uhd(
+            res.title, res.airedYear
+                ?: res.year, res.season, res.episode, subtitleCallback, callback
         )
-        return true
-    }
+    },
+    {
+        if (!res.isAnime) invokeTvMovies(res.title, res.season, res.episode, callback)
+    },
+    {
+        //          if (!res.isAnime) invokeRStream(res.id, res.season, res.episode, callback)
+    },
+    {
+        if (!res.isAnime) invokeFlixon(
+            res.id,
+            res.imdbId,
+            res.season,
+            res.episode,
+            callback
+        )
+    },
+    {
+//          if (!res.isAnime) invokeSmashyStream(
+//             res.id,
+ //           res.season,
+   //         res.episode,
+     //       subtitleCallback,
+       //     callback
+        // )
+    },
+    {
+        if (!res.isAnime) invokeWatchsomuch(
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback
+        )
+    },
+    {
+        if (!res.isAnime) invokeNinetv(
+            res.id,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
+    },
+/*    {
+        invokeCinemaTv(
+            res.imdbId, res.title, res.airedYear
+                ?: res.year, res.season, res.episode, subtitleCallback, callback
+        )
+    },
+ */
+    {
+        if (!res.isAnime) invokeNowTv(
+            res.id,
+            res.imdbId,
+            res.season,
+            res.episode,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeRidomovies(
+            res.id,
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeMoviehubAPI(
+            res.id,
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeAllMovieland(
+            res.imdbId,
+            res.season,
+            res.episode,
+            callback
+        )
+    },
+    {
+    if (!res.isAnime) invokeMultiEmbed(
+        res.imdbId,
+        res.season,
+        res.episode,
+        subtitleCallback,
+        callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeEmovies(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeVegamovies(
+            res.title,
+            res.year,
+            res.season,
+            res.lastSeason,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime && res.isBollywood) invokeDotmovies(
+            res.title,
+            res.year,
+            res.season,
+            res.lastSeason,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        invokeMultimovies(
+            multimoviesAPI,
+            res.title,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        invokeNetmovies(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime && res.season == null) invokeDoomovies(
+            res.title,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (res.isAsian) invokeDramaday(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invoke2embed(
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+/*      {
+        if (!res.isAnime) invokeHdmovies4u(
+            res.title,
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
 
-    data class LinkData(
-        val id: Int? = null,
-        val imdbId: String? = null,
-        val tvdbId: Int? = null,
-        val type: String? = null,
-        val season: Int? = null,
-        val episode: Int? = null,
-        val aniId: String? = null,
-        val animeId: String? = null,
-        val title: String? = null,
-        val year: Int? = null,
-        val orgTitle: String? = null,
-        val isAnime: Boolean = false,
-        val airedYear: Int? = null,
-        val lastSeason: Int? = null,
-        val epsTitle: String? = null,
-        val jpTitle: String? = null,
-        val date: String? = null,
-        val airedDate: String? = null,
-        val isAsian: Boolean = false,
-        val isBollywood: Boolean = false,
-        val isCartoon: Boolean = false,
-    )
+*/
+    {
+        if (res.isAsian) invokeAsianHD(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (res.isAsian) invokekissasian(
+            res.title,
+            res.year,
+            res.episode,
+            callback
+        )
+    },
+    {
+        invokeZshow(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeShowflix(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+    {
+        if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
+    },
+    {
+        if (!res.isAnime) invokeZoechip(
+            res.title,
+            res.year,
+            res.season,
+            res.episode,
+            callback
+        )
+    },
+/*    {
+        if (!res.isAnime) invokeNepu(
+            res.title,
+            res.airedYear ?: res.year,
+            res.season,
+            res.episode,
+            callback
+        )
+    },
 
-    data class Data(
-        val id: Int? = null,
-        val type: String? = null,
-        val aniId: String? = null,
-        val malId: Int? = null,
+ */
+    {
+        if (!res.isAnime) invokePlaydesi(
+            res.title,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
+    },
+{
+    if (!res.isAnime) invokeMoviesdrive(
+        res.title,
+        res.season,
+        res.episode,
+        res.year,
+        subtitleCallback,
+        callback
     )
+},
+{
+    if (!res.isAnime) invokeAsiandrama(
+        res.title,
+        res.season,
+        res.episode,
+        res.year,
+        subtitleCallback,
+        callback
+    )
+}
 
-    data class Results(
-        @JsonProperty("results") val results: ArrayList<Media>? = arrayListOf(),
-    )
+)
+return true
+}
 
-    data class Media(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("original_title") val originalTitle: String? = null,
-        @JsonProperty("media_type") val mediaType: String? = null,
-        @JsonProperty("poster_path") val posterPath: String? = null,
-    )
+data class LinkData(
+val id: Int? = null,
+val imdbId: String? = null,
+val tvdbId: Int? = null,
+val type: String? = null,
+val season: Int? = null,
+val episode: Int? = null,
+val aniId: String? = null,
+val animeId: String? = null,
+val title: String? = null,
+val year: Int? = null,
+val orgTitle: String? = null,
+val isAnime: Boolean = false,
+val airedYear: Int? = null,
+val lastSeason: Int? = null,
+val epsTitle: String? = null,
+val jpTitle: String? = null,
+val date: String? = null,
+val airedDate: String? = null,
+val isAsian: Boolean = false,
+val isBollywood: Boolean = false,
+val isCartoon: Boolean = false,
+)
 
-    data class Genres(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-    )
+data class Data(
+val id: Int? = null,
+val type: String? = null,
+val aniId: String? = null,
+val malId: Int? = null,
+)
 
-    data class Keywords(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-    )
+data class Results(
+@JsonProperty("results") val results: ArrayList<Media>? = arrayListOf(),
+)
 
-    data class KeywordResults(
-        @JsonProperty("results") val results: ArrayList<Keywords>? = arrayListOf(),
-        @JsonProperty("keywords") val keywords: ArrayList<Keywords>? = arrayListOf(),
-    )
+data class Media(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("name") val name: String? = null,
+@JsonProperty("title") val title: String? = null,
+@JsonProperty("original_title") val originalTitle: String? = null,
+@JsonProperty("media_type") val mediaType: String? = null,
+@JsonProperty("poster_path") val posterPath: String? = null,
+)
 
-    data class Seasons(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("season_number") val seasonNumber: Int? = null,
-        @JsonProperty("air_date") val airDate: String? = null,
-    )
+data class Genres(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("name") val name: String? = null,
+)
 
-    data class Cast(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("original_name") val originalName: String? = null,
-        @JsonProperty("character") val character: String? = null,
-        @JsonProperty("known_for_department") val knownForDepartment: String? = null,
-        @JsonProperty("profile_path") val profilePath: String? = null,
-    )
+data class Keywords(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("name") val name: String? = null,
+)
 
-    data class Episodes(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("air_date") val airDate: String? = null,
-        @JsonProperty("still_path") val stillPath: String? = null,
-        @JsonProperty("vote_average") val voteAverage: Double? = null,
-        @JsonProperty("episode_number") val episodeNumber: Int? = null,
-        @JsonProperty("season_number") val seasonNumber: Int? = null,
-    )
+data class KeywordResults(
+@JsonProperty("results") val results: ArrayList<Keywords>? = arrayListOf(),
+@JsonProperty("keywords") val keywords: ArrayList<Keywords>? = arrayListOf(),
+)
 
-    data class MediaDetailEpisodes(
-        @JsonProperty("episodes") val episodes: ArrayList<Episodes>? = arrayListOf(),
-    )
+data class Seasons(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("name") val name: String? = null,
+@JsonProperty("season_number") val seasonNumber: Int? = null,
+@JsonProperty("air_date") val airDate: String? = null,
+)
 
-    data class Trailers(
-        @JsonProperty("key") val key: String? = null,
-        @JsonProperty("type") val type: String? = null,
-    )
+data class Cast(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("name") val name: String? = null,
+@JsonProperty("original_name") val originalName: String? = null,
+@JsonProperty("character") val character: String? = null,
+@JsonProperty("known_for_department") val knownForDepartment: String? = null,
+@JsonProperty("profile_path") val profilePath: String? = null,
+)
 
-    data class ResultsTrailer(
-        @JsonProperty("results") val results: ArrayList<Trailers>? = arrayListOf(),
-    )
+data class Episodes(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("name") val name: String? = null,
+@JsonProperty("overview") val overview: String? = null,
+@JsonProperty("air_date") val airDate: String? = null,
+@JsonProperty("still_path") val stillPath: String? = null,
+@JsonProperty("vote_average") val voteAverage: Double? = null,
+@JsonProperty("episode_number") val episodeNumber: Int? = null,
+@JsonProperty("season_number") val seasonNumber: Int? = null,
+)
 
-    data class AltTitles(
-        @JsonProperty("iso_3166_1") val iso_3166_1: String? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("type") val type: String? = null,
-    )
+data class MediaDetailEpisodes(
+@JsonProperty("episodes") val episodes: ArrayList<Episodes>? = arrayListOf(),
+)
 
-    data class ResultsAltTitles(
-        @JsonProperty("results") val results: ArrayList<AltTitles>? = arrayListOf(),
-    )
+data class Trailers(
+@JsonProperty("key") val key: String? = null,
+@JsonProperty("type") val type: String? = null,
+)
 
-    data class ExternalIds(
-        @JsonProperty("imdb_id") val imdb_id: String? = null,
-        @JsonProperty("tvdb_id") val tvdb_id: Int? = null,
-    )
+data class ResultsTrailer(
+@JsonProperty("results") val results: ArrayList<Trailers>? = arrayListOf(),
+)
 
-    data class Credits(
-        @JsonProperty("cast") val cast: ArrayList<Cast>? = arrayListOf(),
-    )
+data class AltTitles(
+@JsonProperty("iso_3166_1") val iso_3166_1: String? = null,
+@JsonProperty("title") val title: String? = null,
+@JsonProperty("type") val type: String? = null,
+)
 
-    data class ResultsRecommendations(
-        @JsonProperty("results") val results: ArrayList<Media>? = arrayListOf(),
-    )
+data class ResultsAltTitles(
+@JsonProperty("results") val results: ArrayList<AltTitles>? = arrayListOf(),
+)
 
-    data class LastEpisodeToAir(
-        @JsonProperty("episode_number") val episode_number: Int? = null,
-        @JsonProperty("season_number") val season_number: Int? = null,
-    )
+data class ExternalIds(
+@JsonProperty("imdb_id") val imdb_id: String? = null,
+@JsonProperty("tvdb_id") val tvdb_id: Int? = null,
+)
 
-    data class ProductionCountries(
-        @JsonProperty("name") val name: String? = null,
-    )
+data class Credits(
+@JsonProperty("cast") val cast: ArrayList<Cast>? = arrayListOf(),
+)
 
-    data class MediaDetail(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("imdb_id") val imdbId: String? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("original_title") val originalTitle: String? = null,
-        @JsonProperty("original_name") val originalName: String? = null,
-        @JsonProperty("poster_path") val posterPath: String? = null,
-        @JsonProperty("backdrop_path") val backdropPath: String? = null,
-        @JsonProperty("release_date") val releaseDate: String? = null,
-        @JsonProperty("first_air_date") val firstAirDate: String? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("runtime") val runtime: Int? = null,
-        @JsonProperty("vote_average") val vote_average: Any? = null,
-        @JsonProperty("original_language") val original_language: String? = null,
-        @JsonProperty("status") val status: String? = null,
-        @JsonProperty("genres") val genres: ArrayList<Genres>? = arrayListOf(),
-        @JsonProperty("keywords") val keywords: KeywordResults? = null,
-        @JsonProperty("last_episode_to_air") val last_episode_to_air: LastEpisodeToAir? = null,
-        @JsonProperty("seasons") val seasons: ArrayList<Seasons>? = arrayListOf(),
-        @JsonProperty("videos") val videos: ResultsTrailer? = null,
-        @JsonProperty("external_ids") val external_ids: ExternalIds? = null,
-        @JsonProperty("credits") val credits: Credits? = null,
-        @JsonProperty("recommendations") val recommendations: ResultsRecommendations? = null,
-        @JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
-        @JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
-    )
+data class ResultsRecommendations(
+@JsonProperty("results") val results: ArrayList<Media>? = arrayListOf(),
+)
+
+data class LastEpisodeToAir(
+@JsonProperty("episode_number") val episode_number: Int? = null,
+@JsonProperty("season_number") val season_number: Int? = null,
+)
+
+data class ProductionCountries(
+@JsonProperty("name") val name: String? = null,
+)
+
+data class MediaDetail(
+@JsonProperty("id") val id: Int? = null,
+@JsonProperty("imdb_id") val imdbId: String? = null,
+@JsonProperty("title") val title: String? = null,
+@JsonProperty("name") val name: String? = null,
+@JsonProperty("original_title") val originalTitle: String? = null,
+@JsonProperty("original_name") val originalName: String? = null,
+@JsonProperty("poster_path") val posterPath: String? = null,
+@JsonProperty("backdrop_path") val backdropPath: String? = null,
+@JsonProperty("release_date") val releaseDate: String? = null,
+@JsonProperty("first_air_date") val firstAirDate: String? = null,
+@JsonProperty("overview") val overview: String? = null,
+@JsonProperty("runtime") val runtime: Int? = null,
+@JsonProperty("vote_average") val vote_average: Any? = null,
+@JsonProperty("original_language") val original_language: String? = null,
+@JsonProperty("status") val status: String? = null,
+@JsonProperty("genres") val genres: ArrayList<Genres>? = arrayListOf(),
+@JsonProperty("keywords") val keywords: KeywordResults? = null,
+@JsonProperty("last_episode_to_air") val last_episode_to_air: LastEpisodeToAir? = null,
+@JsonProperty("seasons") val seasons: ArrayList<Seasons>? = arrayListOf(),
+@JsonProperty("videos") val videos: ResultsTrailer? = null,
+@JsonProperty("external_ids") val external_ids: ExternalIds? = null,
+@JsonProperty("credits") val credits: Credits? = null,
+@JsonProperty("recommendations") val recommendations: ResultsRecommendations? = null,
+@JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
+@JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
+)
 
 }

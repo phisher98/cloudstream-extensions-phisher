@@ -1514,33 +1514,165 @@ object CodeExtractor : CodeStream() {
         title: String? = null,
         year: Int? = null,
         season: Int? = null,
+        lastSeason: Int?,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title.createSlug()
-        val url = if (season == null) {
-            "$topmoviesAPI/download-$fixTitle-$year"
-        } else {
-            "$topmoviesAPI/download-$fixTitle-$year-season-$season"
+        val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+        var res = app.get("$topmoviesAPI/search/$title",).document
+        val match = when (season) {
+            null -> "$year"
+            1 -> "Season 1"
+            else -> "Season 1 – $lastSeason"
         }
-        val doc = app.get(url).document
-        if (season == null) {
-            doc.select("a.maxbutton-1").forEach { it ->
-                val urls = it.attr("href")
-                val docu = app.get(urls).document
-                val link = docu.select("a.maxbutton-5").attr("href")
-                loadExtractor(link, subtitleCallback, callback)
-            }
-        } else {
-            doc.select("a.maxbutton-6").forEach { it ->
-                val urls = it.attr("href")
-                val docu = app.get(urls).document
-                val link = docu.select("h3 a:contains($episode)").attr("href")
-                loadExtractor(link, subtitleCallback, callback)
+        val hTag = if (season == null) "h3" else "h3"
+        val aTag = if (season == null) "Download" else "G-Drive"
+        val sTag = if (season == null) "" else "(Season $season)"
+        val media =
+            res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")
+                ?.attr("href")
+        res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
+        val entries =
+            res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p))").filter { element -> !element.text().contains("Batch/Zip", true) }
+                .takeLast(2)
+        entries.map {
+            val tags =
+                """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
+                    ?.trim()
+            val href =
+                it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+            Log.d("Phisher Test href",href.toString())
+            val selector =
+                if (season == null) "a.maxbutton-5:contains(Server)" else "h3:matches(Episode $episode) a"
+            val server = app.get(
+                href ?: "",headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor
+            ).document.selectFirst(selector)
+                ?.attr("href") ?: ""
+            server.let {
+                val link= bypasstopoviesunblocked(it)
+                link.forEach { urls ->
+                    if (urls.contains("googleusercontent")) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "TopMovies",
+                                "TopMovies",
+                                url = urls,
+                                "",
+                                getIndexQuality(tags)
+                            )
+                        )
+                    } else {
+                        callback.invoke(
+                            ExtractorLink(
+                                "TopMovies R",
+                                "TopMovies R",
+                                url = urls,
+                                "",
+                                getIndexQuality(tags)
+                            )
+                        )
+                    }
+                }
             }
         }
     }
+
+     suspend fun invokeMoviesmod(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int?,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        invokeModflix(
+            title,
+            year,
+            season,
+            lastSeason,
+            episode,
+            subtitleCallback,
+            callback,
+            MoviesmodAPI
+        )
+    }
+
+    suspend fun invokeAnimeflix(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int?,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        invokeModflix(
+            title,
+            year,
+            season,
+            lastSeason,
+            episode,
+            subtitleCallback,
+            callback,
+            AnimeflixAPI
+        )
+    }
+    suspend fun invokeModflix(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        api: String
+    ) {
+        val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+        var res = app.get("$api/search/$title",).document
+        val match = when (season) {
+            null -> "$year"
+            1 -> "Season 1"
+            else -> "Season 1 – $lastSeason"
+        }
+        val hTag = if (season == null) "h4" else "h3"
+        val aTag = if (season == null) "Download" else "Episode"
+        val sTag = if (season == null) "" else "(Season $season)"
+        val media =
+            res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")
+                ?.attr("href")
+        Log.d("Phisher Test media",media.toString())
+
+        res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
+        val entries =
+            res.select("div.thecontent > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+        entries.apmap {
+                val tags =
+                    """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
+                        ?.trim()
+                val href =
+                    it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+                val selector =
+                    if (season == null) "p a.maxbutton:contains(Server)" else "h3:contains(Episode $episode) a"
+                val server = app.get(
+                    href ?: "",headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor
+                ).document.selectFirst(selector)
+                    ?.attr("href") ?: ""
+            server.let {
+                val link = Unblockedlinks(it)
+                Log.d("Phisher Test link",link.toString())
+                loadCustomTagExtractor(
+                    tags,
+                    link ?:"",
+                    "",
+                    subtitleCallback,
+                    callback,
+                    getQualityFromName(tags)
+                )
+            }
+            }
+        }
 
 
     suspend fun invokeDotmovies(
@@ -1602,6 +1734,7 @@ object CodeExtractor : CodeStream() {
             1 -> "Season 1"
             else -> "Season 1 – $lastSeason"
         }
+        Log.d("Phisher Test",match.toString())
         val media =
             res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
@@ -1610,7 +1743,7 @@ object CodeExtractor : CodeStream() {
         val aTag = if (season == null) "Download Now" else "V-Cloud"
         val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
         val entries =
-            res.select("div.entry-content > $hTag:matches((?i)$sTag.*(1080p|2160p))")
+            res.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
                 .filter { element -> !element.text().contains("Download", true) }
                 .takeLast(2)
         entries.apmap {
@@ -3065,6 +3198,7 @@ object CodeExtractor : CodeStream() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     suspend fun invokeMoviesdrive(
         title: String? = null,
         season: Int? = null,

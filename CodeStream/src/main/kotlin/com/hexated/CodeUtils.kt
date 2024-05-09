@@ -660,36 +660,39 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-suspend fun bypasstopmovies(url: String): String? {
-    fun Document.getFormUrl(): String {
-        return this.select("form#landing").attr("action")
-    }
-
-    fun Document.getFormData(): Map<String, String> {
-        return this.select("form#landing input").associate { it.attr("name") to it.attr("value") }
-    }
-
+suspend fun bypasstopoviesunblocked(url: String): List<String> {
+    val driveLink = bypassHrefli(url) ?:""
+    val driveReq = app.get(driveLink)
+    val driveRes = driveReq.document
     val host = getBaseUrl(url)
-    var res = app.get(url).document
-    var formUrl = res.getFormUrl()
-    var formData = res.getFormData()
-
-    res = app.post(formUrl, data = formData).document
-    formUrl = res.getFormUrl()
-    formData = res.getFormData()
-
-    res = app.post(formUrl, data = formData).document
-    val skToken = res.selectFirst("script:containsData(?go=)")?.data()?.substringAfter("?go=")
-        ?.substringBefore("\"") ?: return null
-    val driveUrl = app.get(
-        "$host?go=$skToken", cookies = mapOf(
-            skToken to "${formData["_wp_http2"]}"
-        )
-    ).document.selectFirst("meta[http-equiv=refresh]")?.attr("content")?.substringAfter("url=")
-    val path = app.get(driveUrl ?: return null).text.substringAfter("replace(\"")
-        .substringBefore("\")")
-    if (path == "/404") return null
-    return fixUrl(path, getBaseUrl(driveUrl))
+    val header = driveRes.selectFirst("div.mb-4")?.text()
+    Log.d("Phisher finallink",host.toString())
+    val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
+    Log.d("Phisher finallink",finallink.toString())
+    val resume =
+        driveRes.select("a.btn.btn-warning").attr("href").toString()
+    val resumelink = when {
+        resume.isNotEmpty() -> extractResumeTop(resume)
+        else -> {
+            ""
+        }
+    }
+    val token = finallink?.substringAfter("https://video-leech.xyz/?url=")
+    val downloadlink = app.post(
+        url = "https://video-leech.xyz/api",
+        data = mapOf(
+            "keys" to "$token"
+        ),
+        referer = finallink,
+        headers = mapOf("x-token" to "video-leech.xyz","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0")
+    )
+    Log.d("Phisher downloadlink",downloadlink.toString())
+    val finaldownloadlink =
+        downloadlink.toString().substringAfter("url\":\"")
+            .substringBefore("\",\"name")
+            .replace("\\/", "/")
+    val Servers = listOf(finaldownloadlink, resumelink)
+    return Servers
 }
 
 suspend fun getTvMoviesServer(url: String, season: Int?, episode: Int?): Pair<String, String?>? {

@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.nicehttp.NiceResponse
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -717,68 +718,52 @@ open class Mdrive : ExtractorApi() {
     }
 }
 
-open class Unblockedgames : ExtractorApi() {
-    override val name = "Unblockedgames"
-    override val mainUrl = "https://tech.unblockedgames.world"
-    override val requiresReferer = false
+suspend fun Unblockedlinks(url: String): String? {
+    val driveLink = bypassHrefli(url) ?:""
+    val driveReq = app.get(driveLink)
+    val driveRes = driveReq.document
+    val host = getBaseUrl(url)
+    val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
+    return finallink
+}
+
+open class Modflix : ExtractorApi() {
+    override val name: String = "Modflix"
+    override val mainUrl: String = "https://video-seed.xyz"
+    override val requiresReferer = true
 
     override suspend fun getUrl(
-        url: String,
+        finallink: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val driveLink = bypassHrefli(url)
-        getBaseUrl(driveLink ?: return)
-        val driveReq = app.get(driveLink)
-        val driveRes = driveReq.document
-        val header = driveRes.selectFirst("div.mb-4")?.text()
-        val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
-        val resume =
-            driveRes.select("a.btn.btn-warning").attr("href").toString()
-        val resumelink = when {
-            resume.isNotEmpty() -> extractResumeTop(resume)
-            else -> {
-                ""
-            }
-        }
-        val token = finallink?.substringAfter("https://video-leech.xyz/?url=")
+        val token = finallink.substringAfter("https://video-seed.xyz/?url=")
         val downloadlink = app.post(
-            url = "https://video-leech.xyz/api",
+            url = "https://video-seed.xyz/api",
             data = mapOf(
-                "keys" to "$token"
+                "keys" to token
             ),
             referer = finallink,
-            headers = mapOf("x-token" to "video-leech.xyz")
+            headers = mapOf(
+                "x-token" to "video-seed.xyz",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
+            )
         )
+        Log.d("Phisher downloadlink", downloadlink.toString())
         val finaldownloadlink =
             downloadlink.toString().substringAfter("url\":\"")
                 .substringBefore("\",\"name")
                 .replace("\\/", "/")
-        val Servers = listOf(finaldownloadlink, resumelink)
-        Servers.forEach { urls ->
-            if (urls.contains("googleusercontent")) {
-                callback.invoke(
-                    ExtractorLink(
-                        "TopMovies",
-                        "TopMovies",
-                        url = urls,
-                        "${CodeStream.topmoviesAPI}/",
-                        getIndexQuality(header)
-                    )
-                )
-            } else {
-                callback.invoke(
-                    ExtractorLink(
-                        "TopMoviesR",
-                        "TopMoviesR",
-                        url = urls,
-                        "${CodeStream.topmoviesAPI}/",
-                        getIndexQuality(header)
-                    )
-                )
-            }
-        }
-
+        val link = finaldownloadlink
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                url = link,
+                "",
+                getQualityFromName("")
+            )
+        )
     }
 }
