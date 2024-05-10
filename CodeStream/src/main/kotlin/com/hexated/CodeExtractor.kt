@@ -1454,7 +1454,6 @@ object CodeExtractor : CodeStream() {
         } else {
             "div.entry-content p:has(:matches((?i)(?:S\\s*$seasonSlug|Season\\s*$seasonSlug)))"
         }
-        //Log.d("Test iSelector",iSelector.toString())
         val iframeList = detailDoc.select(iSelector).mapNotNull {
             if (season == null) {
                 it.text() to it.nextElementSibling()?.select("a")?.attr("href")
@@ -1464,10 +1463,9 @@ object CodeExtractor : CodeStream() {
                 }?.attr("href")
             }
         }.filter { it.first.contains(Regex("(2160p)|(1080p)")) }.reversed().takeLast(3)
-        //Log.d("Test iSelector",iframeList.toString())
-        iframeList.apmap { (quality, link) ->
-            val driveLink = bypassHrefli(link ?: return@apmap)
-            val base = getBaseUrl(driveLink ?: return@apmap)
+        iframeList.map { (quality, link) ->
+            val driveLink = bypassHrefli(link ?: "") ?:""
+            val base = getBaseUrl(driveLink)
             val driveReq = app.get(driveLink)
             val driveRes = driveReq.document
             val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
@@ -1481,13 +1479,11 @@ object CodeExtractor : CodeStream() {
                     driveLink,
                     driveReq
                 )
-
                 bitLink.isNullOrEmpty() -> {
                     val backupIframe =
                         driveRes.select("a.btn.btn-outline-warning").attr("href")
-                    extractBackupUHD(backupIframe ?: return@apmap)
+                    extractBackupUHD(backupIframe ?:"")
                 }
-
                 else -> {
                     extractMirrorUHD(bitLink, base)
                 }
@@ -1495,7 +1491,6 @@ object CodeExtractor : CodeStream() {
             val resume = extractResumeUHD(bitLink)
             val pixeldrain = extractPixeldrainUHD(bitLink)
             val serverslist = listOf(downloadLink, resume, pixeldrain)
-            //Log.d("Test iSelector",serverslist.toString())
             val tags = getUhdTags(quality)
             val qualities = getIndexQuality(quality)
             val size = getIndexSize(quality)
@@ -1503,7 +1498,7 @@ object CodeExtractor : CodeStream() {
                 callback.invoke(
                     ExtractorLink(
                         "UHDMovies", "UHDMovies $tags [$size]", it
-                            ?: return@apmap, "", qualities
+                            ?: "", "", qualities
                     )
                 )
             }

@@ -750,7 +750,6 @@ open class Modflix : ExtractorApi() {
                 "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
             )
         )
-        Log.d("Phisher downloadlink", downloadlink.toString())
         val finaldownloadlink =
             downloadlink.toString().substringAfter("url\":\"")
                 .substringBefore("\",\"name")
