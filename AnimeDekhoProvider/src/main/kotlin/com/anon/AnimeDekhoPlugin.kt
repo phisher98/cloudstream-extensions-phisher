@@ -10,5 +10,9 @@ class AnimeDekhoPlugin: Plugin() {
         registerMainAPI(AnimeDekhoProvider())
         registerMainAPI(AnimeDekho2Provider())
         registerExtractorAPI(Streamruby())
+        registerExtractorAPI(VidStream())
+        registerExtractorAPI(Vidmolynet())
+        registerExtractorAPI(GDMirrorbot())
+        registerExtractorAPI(Cdnwish())
     }
 }

@@ -66,7 +66,7 @@ class AnimeDekho2Provider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
 
-        val media = parseJson<AnimeDekhoProvider.Media>(url)
+        val media = parseJson<Media>(url)
         val document = app.get(media.url).document
 
         val title = document.selectFirst("h1.entry-title")?.text()?.trim()
@@ -80,7 +80,7 @@ class AnimeDekho2Provider : MainAPI() {
         val lst = document.select("ul.seasons-lst li")
 
         return if (lst.isEmpty()) {
-            newMovieLoadResponse(title, url, TvType.Movie, AnimeDekhoProvider.Media(
+            newMovieLoadResponse(title, url, TvType.Movie, Media(
                 media.url,
                 mediaType = 1
             ).toJson()) {
@@ -95,7 +95,7 @@ class AnimeDekho2Provider : MainAPI() {
                 val poster=it.selectFirst("div > div > figure > img")?.attr("src")
                 val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
                 val season=seasonnumber.toIntOrNull()
-                Episode(AnimeDekhoProvider.Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
+                Episode(Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -114,48 +114,16 @@ class AnimeDekho2Provider : MainAPI() {
         val media = parseJson<Media>(data)
         val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
-        val vidLink = app.get("$mainUrl/?trembed=0&trid=$term&trtype=${media.mediaType}")
-            .document.selectFirst("iframe")?.attr("src")
-            ?: throw ErrorLoadingException("no iframe found")
-
-        val doc = app.get(vidLink).text
-        val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
-        val key = app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
-        val decrypt = cryptoAESHandler(master, key.toByteArray(), false)?.replace("\\", "")
-            ?: throw ErrorLoadingException("error decrypting")
-        val vidFinal = Regex("""file:\s*"(https:[^"]+)"""").find(decrypt)!!.groupValues[1]
-
-        val headers =
-            mapOf(
-                "accept" to "*/*",
-                "accept-language" to "en-US,en;q=0.5",
-                "Origin" to serverUrl,
-                "Accept-Encoding" to "gzip, deflate, br",
-                "Connection" to "keep-alive",
-                // "Referer" to "https://vidxstream.xyz/",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "cross-site",
-                "user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
-            )
-
-        callback.invoke(
-            ExtractorLink(
-                source = "Toon",
-                name = "Toon",
-                url = vidFinal,
-                referer = "$serverUrl/",
-                quality = Qualities.Unknown.value,
-                isM3u8 = true,
-                headers = headers,
-            ),
-        )
+        Log.d("Phisher Test ID",term)
+        for (i in 0..4) {
+            val link = app.get("$mainUrl/?trembed=$i&trid=$term&trtype=${media.mediaType}")
+                .document.selectFirst("iframe")?.attr("src")
+                ?: throw ErrorLoadingException("no iframe found")
+            loadExtractor(link,subtitleCallback, callback)
+        }
         return true
     }
 
     data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
-    data class Keys(
-        @JsonProperty("chillx") val key: List<String>
-    )
 
 }
