@@ -7,8 +7,8 @@ import android.content.Context
 @CloudstreamPlugin
 class AnimeDekhoPlugin: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(AnimeDekhoProvider())
-        //registerMainAPI(AnimeDekho2Provider())
+        //registerMainAPI(AnimeDekhoProvider())
+        registerMainAPI(AnimeDekho2Provider())
         registerExtractorAPI(Streamruby())
         registerExtractorAPI(VidStream())
         registerExtractorAPI(Vidmolynet())
