@@ -111,7 +111,6 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Test",data)
         val document = app.get(data,headers = mapOf("User-Agent" to Useragent)).document
         if (data.contains("jiotv.php")) {
             Log.d("Rhinoout", data)
