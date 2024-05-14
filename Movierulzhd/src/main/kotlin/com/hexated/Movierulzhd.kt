@@ -103,7 +103,7 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        var posterUrl = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("data-wpfc-original-src"))
+        var posterUrl = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
         if (posterUrl.isNullOrEmpty()) {
             if (url.contains("movierulzhd")) {
                 posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
