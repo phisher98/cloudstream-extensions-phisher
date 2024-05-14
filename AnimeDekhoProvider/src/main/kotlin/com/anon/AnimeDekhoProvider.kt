@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
-class AnimeDekho2Provider : MainAPI() {
+class AnimeDekhoProvider : MainAPI() {
     override var mainUrl = "https://animedekho.com"
     override var name = "Anime Dekho"
     override val hasMainPage = true
@@ -119,6 +119,7 @@ class AnimeDekho2Provider : MainAPI() {
             val link = app.get("$mainUrl/?trembed=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
+            Log.d("Phisher Test ID",link)
             loadExtractor(link,subtitleCallback, callback)
         }
         return true

@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import okio.ByteString.Companion.decodeBase64
 import org.jsoup.nodes.Element
 
-class AnimeDekhoProvider : MainAPI() {
+class AnimeDekho2Provider : MainAPI() {
     override var mainUrl = "https://animedekho.com"
     override var name = "Anime Dekho 2"
     override val hasMainPage = true

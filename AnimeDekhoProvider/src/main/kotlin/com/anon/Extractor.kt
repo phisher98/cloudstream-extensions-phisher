@@ -1,6 +1,7 @@
 package com.anon
 
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
@@ -75,6 +76,10 @@ open class VidStream : ExtractorApi() {
             AesHelper.cryptoAESHandler(master, key.toByteArray(), false)?.replace("\\", "")
                 ?: throw ErrorLoadingException("error decrypting")
         val vidFinal = Extractvidlink(decrypt)
+        Log.d("Phisher Test key",key)
+        Log.d("Phisher Test master",master)
+        Log.d("Phisher Test vidFinal",vidFinal)
+        Log.d("Phisher Test decrypt",decrypt)
         val subtitle = Extractvidsub(decrypt)
         val headers =
             mapOf(
@@ -87,7 +92,7 @@ open class VidStream : ExtractorApi() {
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
                 "Sec-Fetch-Site" to "cross-site",
-                "user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
+                "user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
             )
 
         callback.invoke(
@@ -137,8 +142,9 @@ open class GDMirrorbot : ExtractorApi() {
 
 
 fun Extractvidlink(url: String): String {
-        val file=url.substringAfter("sources: [{\"file\":\"").substringBefore("\",\"")
-        return file
+    Log.d("Phisher Test url",url)
+    val file=Regex("""file: "(.*?)"""").find(url)!!.groupValues[1]
+    return file
 }
 
 fun Extractvidsub(url: String): String {
