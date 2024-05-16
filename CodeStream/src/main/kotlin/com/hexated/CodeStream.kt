@@ -163,8 +163,8 @@ open class CodeStream : TmdbProvider() {
         const val MoviesmodAPI= "https://moviesmod.info"
         const val AnimeflixAPI= "https://animeflix.co.in"
 //        const val hdmovies4uAPI = "https://hdmovies4u.eu"
-        const val vegaMoviesAPI = "https://vegamovies.cash"
-        const val dotmoviesAPI = "https://luxmovies.org"
+        const val vegaMoviesAPI = "https://vegamovies.yt"
+        const val dotmoviesAPI = "https://luxmovies.lat"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
         const val MovieDrive_API=BuildConfig.MovieDrive_API
