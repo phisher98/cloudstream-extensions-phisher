@@ -1739,12 +1739,11 @@ object CodeExtractor : CodeStream() {
         val aTag = if (season == null) "Download Now" else "V-Cloud"
         val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
         val entries =
-            res.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+            res.select("div.entry-content > $hTag:matches((?i)$sTag.*(1080p|2160p))")
                 .filter { element -> !element.text().contains("Download", true) }
-                .takeLast(2)
         entries.apmap {
             val tags =
-                """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
+                """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                     ?.trim()
             val href =
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")

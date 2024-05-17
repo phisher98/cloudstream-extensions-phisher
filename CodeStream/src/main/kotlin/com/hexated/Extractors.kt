@@ -675,7 +675,7 @@ class Tvlogy : ExtractorApi() {
 
 open class Mdrive : ExtractorApi() {
     override val name: String = "Mdrive"
-    override val mainUrl: String = "https://hubcloud.day"
+    override val mainUrl: String = "https://gamerxyt.com"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -684,7 +684,11 @@ open class Mdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
+        val host=url.substringAfter("?").substringBefore("&")
+        val id=url.substringAfter("id=").substringBefore("&")
+        val token=url.substringAfter("token=").substringBefore("&")
+        val Cookie="$host; hostid=$id; hosttoken=$token"
+        val doc = app.get("$mainUrl/games/",headers = mapOf("Cookie" to Cookie)).document
         val links = doc.select("div.card-body > h2 > a").attr("href")
         val header = doc.selectFirst("div.card-header")?.text()
         if (links.contains("pixeldrain"))
