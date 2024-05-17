@@ -1605,16 +1605,34 @@ object CodeExtractor : CodeStream() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        invokeModflix(
-            title,
-            year,
-            season,
-            lastSeason,
-            episode,
-            subtitleCallback,
-            callback,
-            AnimeflixAPI
-        )
+        val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+        val fixTitle = title.createSlug()
+        val url = "$AnimeflixAPI/download-$fixTitle-$year"
+        val hTag = if (season == null) "h4" else "h3"
+        val aTag = if (season == null) "Gdrive" else "Gdrive"
+        val sTag = if (season == null) "" else ""
+        // val media =res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")?.attr("href")
+        val res = app.get(url ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
+        val entries =
+            res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+        entries.apmap {
+            val tags =
+                """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
+                    ?.trim()
+            val href =
+                it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+            val selector =
+                if (season == null) "p a.maxbutton:contains(Server)" else "h3:contains(Episode $episode) a"
+            val server = app.get(
+                href ?: "",headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor
+            ).document.selectFirst(selector)
+                ?.attr("href") ?: ""
+            server.let {
+                val link = Extractanimeflixlinks(it)
+                loadExtractor(link,subtitleCallback, callback)
+                //need more work
+            }
+        }
     }
     suspend fun invokeModflix(
         title: String? = null,
@@ -1627,7 +1645,9 @@ object CodeExtractor : CodeStream() {
         api: String
     ) {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
-        var res = app.get("$api/search/$title",).document
+        val fixTitle = title.createSlug()
+        val url = "$MoviesmodAPI/download-$fixTitle-$year"
+        //var res = app.get("$api/search/$title",).document
         val match = when (season) {
             null -> "$year"
             1 -> "Season 1"
@@ -1636,21 +1656,19 @@ object CodeExtractor : CodeStream() {
         val hTag = if (season == null) "h4" else "h3"
         val aTag = if (season == null) "Download" else "Episode"
         val sTag = if (season == null) "" else "(Season $season)"
-        val media =
-            res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")
-                ?.attr("href")
-        res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
+       // val media =res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")?.attr("href")
+        val res = app.get(url ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
             res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
-        Log.d("Phisher Test media",entries.toString())
-
         entries.apmap {
                 val tags =
                     """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                         ?.trim()
+            val quality =
+                """(?:720p|1080p|2160p)""".toRegex().find(it.text())?.groupValues?.get(0)
+                    ?.trim()
                 val href =
                     it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
-            Log.d("Phisher Test link",href.toString())
                 val selector =
                     if (season == null) "p a.maxbutton:contains(Server)" else "h3:contains(Episode $episode) a"
                 val server = app.get(
@@ -1662,10 +1680,10 @@ object CodeExtractor : CodeStream() {
                 loadCustomTagExtractor(
                     tags,
                     link ?:"",
-                    "",
+                    quality,
                     subtitleCallback,
                     callback,
-                    getQualityFromName(tags)
+                    getQualityFromName(quality)
                 )
             }
             }

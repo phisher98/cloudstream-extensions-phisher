@@ -731,6 +731,15 @@ suspend fun Unblockedlinks(url: String): String? {
     return finallink
 }
 
+suspend fun Extractanimeflixlinks(url: String): String {
+    val driveReq = app.get(url)
+    val driveRes = driveReq.document
+    val link = driveRes.selectFirst("a.button-24")?.attr("href") ?:""
+    val truelink = app.get(link).text.substringAfter("replace(\"").substringBefore("\"")
+    val finallink = app.get("https://driveleech.org$truelink").document.selectFirst("a.btn.btn-danger")?.attr("href") ?:""
+    return finallink
+}
+
 open class Modflix : ExtractorApi() {
     override val name: String = "Modflix"
     override val mainUrl: String = "https://video-seed.xyz"
@@ -738,7 +747,7 @@ open class Modflix : ExtractorApi() {
 
     override suspend fun getUrl(
         finallink: String,
-        referer: String?,
+        quality: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
@@ -765,7 +774,7 @@ open class Modflix : ExtractorApi() {
                 name,
                 url = link,
                 "",
-                getQualityFromName("")
+                getQualityFromName(quality)
             )
         )
     }
