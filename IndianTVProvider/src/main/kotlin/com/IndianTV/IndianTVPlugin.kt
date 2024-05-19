@@ -111,7 +111,7 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data,headers = mapOf("User-Agent" to Useragent)).document
+        val document = app.get(data, headers = mapOf("User-Agent" to Useragent)).document
         if (data.contains("jiotv.php")) {
             Log.d("Rhinoout", data)
             val scripts = document.select("script")
@@ -142,83 +142,43 @@ class IndianTVPlugin : MainAPI() {
 
                 // Access globalArgument outside mainWork block
                 val rhinout = globalArgument?.toJson() ?: ""
-                val link=rhinout.substringAfter("file\":\"").substringBefore("\",")
-                    callback.invoke(
-                        ExtractorLink(
-                            source = "INDIAN TV",
-                            name = "INDIAN TV",
-                            url = link,
-                            referer = "",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                        )
+                val link = rhinout.substringAfter("file\":\"").substringBefore("\",")
+                callback.invoke(
+                    ExtractorLink(
+                        source = "INDIAN TV",
+                        name = "INDIAN TV",
+                        url = link,
+                        referer = "",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
                     )
+                )
             }
         } else
             if (data.contains("tata")) {
                 Log.d("Rhinoout", data)
-            val scripts = document.select("script")
-            var globalArgument: Any? = null
-            // List to hold all the extracted links
-
-            scripts.map { script ->
-                val finalScriptRaw = script.data().toString()
-                mainWork {
-                    if (finalScriptRaw.contains("split")) {
-                        val startJs =
-                            """
-                var globalArgument = null;
-                function jwplayer() {
-                    return {
-                        id: null,
-                        setup: function(arg) {
-                            globalArgument = arg;
-                        }
-                    };
-                };
-                """
-                        val rhino = getRhinoContext()
-                        val scope: Scriptable = rhino.initSafeStandardObjects()
-                        rhino.evaluateString(scope, startJs + finalScriptRaw, "JavaScript", 1, null)
-                        globalArgument = scope.get("globalArgument", scope)
-                    }
-                }
-
-                // Access globalArgument outside mainWork block
-                val rhinout = globalArgument?.toJson() ?: ""
-                //Log.d("Rhinoout", rhinout)
-
-                val pattern = """"file":"(.*?)".*?"keyId":"(.*?)".*?"key":"(.*?)"""".toRegex()
-                val matchResult = pattern.find(rhinout)
-                val file: String?
-                val keyId: String?
-                val key: String?
-                if (matchResult != null) {
-                    file = matchResult.groupValues[1]
-                    keyId = matchResult.groupValues[2]
-                    key = matchResult.groupValues[3]
-
-                    val newkeyId = keyId.toString()
-                    val newkey = key.toString()
-
-                    val link = file.toString()
-                    val finalkey = decodeHex(newkey)
-                    val finalkeyid = decodeHex(newkeyId)
-                    callback.invoke(
-                        DrmExtractorLink(
-                            source = "INDIAN TV",
-                            name = "INDIAN TV",
-                            url = link,
-                            referer = "",
-                            quality = Qualities.Unknown.value,
-                            type = INFER_TYPE,
-                            kid = finalkeyid,
-                            key = finalkey,
-                        )
+                val doc=app.get(data).text
+                val link=doc.substringAfter("file: \"").substringBefore("\"")
+                val newkeyId=doc.substringAfter("keyId\":\"").substringBefore("\"")
+                val newkey=doc.substringAfter("key\":\"").substringBefore("\"")
+                val finalkey = decodeHex(newkey)
+                val finalkeyid = decodeHex(newkeyId)
+                Log.d("Rhinoout link", link)
+                Log.d("Rhinoout newkeyId", newkeyId)
+                Log.d("Rhinoout newkey", newkey)
+                callback.invoke(
+                    DrmExtractorLink(
+                        source = "INDIAN TV",
+                        name = "INDIAN TV",
+                        url = link,
+                        referer = "",
+                        quality = Qualities.Unknown.value,
+                        type = INFER_TYPE,
+                        kid = finalkeyid,
+                        key = finalkey,
                     )
-                }
+                )
             }
-        }
         else if (data.contains("jwplayer.php?"))
             {
                 val link=data.substringAfter("jwplayer.php?")
