@@ -1,4 +1,4 @@
-package com.KillerDogeEmpire
+package com.HindiProviders
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -69,5 +69,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Moviesapi())
         registerExtractorAPI(PixelDrain())
         registerExtractorAPI(Modflix())
+        registerExtractorAPI(Vectorx())
+        registerExtractorAPI(Sethniceletter())
     }
 }

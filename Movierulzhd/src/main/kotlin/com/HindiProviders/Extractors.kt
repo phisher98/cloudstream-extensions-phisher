@@ -1,4 +1,4 @@
-package com.hexated
+package com.HindiProviders
 
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app

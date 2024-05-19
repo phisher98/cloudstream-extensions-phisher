@@ -87,6 +87,7 @@ subprojects {
         implementation("com.github.mezhevikin:http-request-kotlin:0.0.5")
         implementation("com.google.code.gson:gson:2.10")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
+        implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
     }
 }
 

@@ -1,15 +1,15 @@
-package com.KillerDogeEmpire
+package com.HindiProviders
 
 import android.util.Base64
 import android.util.Log
-import com.KillerDogeEmpire.DumpUtils.queryApi
-import com.KillerDogeEmpire.CodeStream.Companion.anilistAPI
-import com.KillerDogeEmpire.CodeStream.Companion.crunchyrollAPI
-import com.KillerDogeEmpire.CodeStream.Companion.filmxyAPI
-import com.KillerDogeEmpire.CodeStream.Companion.gdbot
-//import com.KillerDogeEmpire.CodeStream.Companion.hdmovies4uAPI
-import com.KillerDogeEmpire.CodeStream.Companion.malsyncAPI
-import com.KillerDogeEmpire.CodeStream.Companion.tvMoviesAPI
+import com.HindiProviders.DumpUtils.queryApi
+import com.HindiProviders.CodeStream.Companion.anilistAPI
+import com.HindiProviders.CodeStream.Companion.crunchyrollAPI
+import com.HindiProviders.CodeStream.Companion.filmxyAPI
+import com.HindiProviders.CodeStream.Companion.gdbot
+//import com.HindiProviders.CodeStream.Companion.hdmovies4uAPI
+import com.HindiProviders.CodeStream.Companion.malsyncAPI
+import com.HindiProviders.CodeStream.Companion.tvMoviesAPI
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS

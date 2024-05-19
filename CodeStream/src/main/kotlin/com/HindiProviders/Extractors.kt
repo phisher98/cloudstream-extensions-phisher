@@ -1,4 +1,4 @@
-package com.KillerDogeEmpire
+package com.HindiProviders
 
 //import android.util.Log
 import android.util.Log
@@ -602,10 +602,20 @@ class Bestx : Chillx() {
     override val mainUrl = "https://bestx.stream"
 }
 
+class Vectorx : Chillx() {
+    override val name = "Vectorx"
+    override val mainUrl = "https://vectorx.top"
+}
+
 
 class Graceaddresscommunity : Voe() {
     override var mainUrl = "https://graceaddresscommunity.com"
 }
+
+class Sethniceletter : Voe() {
+    override var mainUrl = "https://sethniceletter.com"
+}
+
 
 class Tellygossips : ExtractorApi() {
     override val mainUrl = "https://flow.tellygossips.net"

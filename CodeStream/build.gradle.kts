@@ -3,7 +3,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 16
+version = 17
 
 android {
     defaultConfig {
@@ -31,7 +31,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
      description = "#1 best extention based on MultiAPI"
-     authors = listOf("KillerDogeEmpire", "Code")
+     authors = listOf("HindiProviders", "Hexated")
 
     /**
      * Status int as the following:

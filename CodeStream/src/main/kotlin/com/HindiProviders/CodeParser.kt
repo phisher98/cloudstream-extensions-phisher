@@ -1,4 +1,4 @@
-package com.KillerDogeEmpire
+package com.HindiProviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup

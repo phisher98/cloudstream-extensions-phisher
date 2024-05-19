@@ -1,4 +1,4 @@
-package com.KillerDogeEmpire
+package com.HindiProviders
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -178,14 +178,14 @@ object CodeExtractor : CodeStream() {
         }
 
         val doc = app.get(url).document
-        doc.select("div#videosen a").apmap {
+        doc.select("div#videosen a").map {
             val iframe =
                 app.get(it.attr("href")).document.selectFirst("div.card-video iframe")
                     ?.attr("data-src")
             loadCustomExtractor(
-                null,
+                "Dreamfilm",
                 iframe
-                    ?: return@apmap,
+                    ?: "",
                 "$dreamfilmAPI/",
                 subtitleCallback,
                 callback,
@@ -657,7 +657,7 @@ object CodeExtractor : CodeStream() {
                     referer = "$host/"
                 ).parsed<ResponseHash>().embed_url
                 if (!source.contains("youtube")) {
-                    loadExtractor(source, "$host/", subtitleCallback, callback)
+                    loadCustomExtractor("DooMovies",source, "", subtitleCallback, callback)
                 }
             }
     }
@@ -1006,10 +1006,14 @@ object CodeExtractor : CodeStream() {
                 ?: return
         app.get(url).document.select("a.server.dropdown-item").forEach {
             val dataid = it.attr("data-id")
-            val link = extractMovieAPIlinks(dataid, movieid, MOVIE_API).toString()
-            if (link.contains("bestx.stream")) {
-                loadExtractor(link, subtitleCallback, callback)
-            }
+            val link = extractMovieAPIlinks(dataid, movieid, MOVIE_API)
+            loadCustomExtractor(
+                "MovieHub",
+                link,
+                referer = "",
+                subtitleCallback,
+                callback
+            )
         }
     }
 
@@ -2604,14 +2608,12 @@ object CodeExtractor : CodeStream() {
         } else {
             "$twoEmbedAPI/embedtv/$imdbId&s=$season&e=$episode"
         }
-
         val framesrc =
             app.get(url).document.selectFirst("iframe#iframesrc")?.attr("data-src")
                 ?: return
         val ref = getBaseUrl(framesrc)
         val id = framesrc.substringAfter("id=").substringBefore("&")
         loadExtractor("https://uqloads.xyz/e/$id", "$ref/", subtitleCallback, callback)
-
     }
 
     suspend fun invokeGhostx(
