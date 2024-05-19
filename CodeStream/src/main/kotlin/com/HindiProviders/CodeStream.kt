@@ -708,7 +708,7 @@ open class CodeStream : TmdbProvider() {
         )
     },
     {
-        if (!res.isAnime) invokeVegamovies(
+        invokeVegamovies(
             res.title,
             res.year,
             res.season,
