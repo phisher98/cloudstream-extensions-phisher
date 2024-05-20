@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 
 class Streamblasters : MainAPI() {
-    override var mainUrl              = "https://www.streamblasters.link"
+    override var mainUrl              = "https://www.streamblasters.fans"
     override var name                 = "Streamblasters"
     override val hasMainPage          = true
     override var lang                 = "hi"
