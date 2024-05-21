@@ -1,16 +1,13 @@
-package com.likdev256
+package com.HindiProviders
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class ShowFlixProviderPlugin: Plugin() {
+class MultiMoviesProviderPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(ShowFlixProvider())
-        registerExtractorAPI(Streamwish())
-        registerExtractorAPI(Filelion())
-        registerExtractorAPI(StreamRuby())
+        registerMainAPI(MultiMoviesProvider())
     }
 }

@@ -1,4 +1,4 @@
-package com.likdev256
+package com.HindiProviders
 
 import com.lagradost.cloudstream3.mvvm.logError
 import java.util.regex.Pattern

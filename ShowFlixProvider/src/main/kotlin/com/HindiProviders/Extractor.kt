@@ -1,4 +1,4 @@
-package com.likdev256
+package com.HindiProviders
 
 //import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
