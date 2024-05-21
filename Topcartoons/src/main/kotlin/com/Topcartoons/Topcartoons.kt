@@ -1,5 +1,6 @@
 package com.Topcartoons
 
+import android.annotation.SuppressLint
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -45,6 +46,7 @@ class Topcartoons : MainAPI() {
             return results
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
         val document = request.document
