@@ -5,7 +5,7 @@ version = 6
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "ToonStream Multi Language"
+    description = "Anplay Hindi Animes"
     language    = "hi"
     authors = listOf("HindiProviders")
 
