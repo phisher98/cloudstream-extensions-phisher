@@ -5,7 +5,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Super Cartoon"
+    description = "Top Cartoon"
     language    = "hi"
     authors = listOf("HindiProviders")
 
@@ -22,5 +22,5 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Cartoon")
-    iconUrl="https://www.supercartoons.net/wp-content/themes/supercartoons/images/logo.png"
+    iconUrl="https://www.topcartoons.tv/wp-content/uploads/logo.png"
 }
