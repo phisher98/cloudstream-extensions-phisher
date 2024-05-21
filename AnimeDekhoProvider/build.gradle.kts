@@ -1,9 +1,9 @@
-version = 10
+version = 11
 
 cloudstream {
     language = "hi"
     authors = listOf("Hindi Provider")
-    description = "Anime Dekho and Animedekho 2 (if 1st one didn't work second need to go to website to bypass ad to work for 24 hrs after that)"
+    description = "Anime Dekho"
     /**
      * Status int as the following:
      * 0: Down

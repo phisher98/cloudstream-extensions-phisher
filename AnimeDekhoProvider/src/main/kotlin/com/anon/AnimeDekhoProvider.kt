@@ -1,21 +1,18 @@
 package com.anon
 
 import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
 class AnimeDekhoProvider : MainAPI() {
-    override var mainUrl = "https://animedekho.com"
+    override var mainUrl = "https://animedekho.net"
     override var name = "Anime Dekho"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
-    private val serverUrl = "https://vidxstream.xyz"
 
     override val supportedTypes =
         setOf(
@@ -114,7 +111,6 @@ class AnimeDekhoProvider : MainAPI() {
         val media = parseJson<Media>(data)
         val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
-        Log.d("Phisher Test ID",term)
         for (i in 0..4) {
             val link = app.get("$mainUrl/?trembed=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
