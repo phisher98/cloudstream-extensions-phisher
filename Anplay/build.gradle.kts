@@ -22,5 +22,5 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie,Anime,Cartoon")
-    iconUrl="https://toonstream.net/wp-content/uploads/2024/01/TOONSTREAM.png"
+    iconUrl="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFFWqooQh6c2ojQl0JG9DOzExN3rZMwncShzuvzAUA9A&s"
 }
