@@ -169,7 +169,6 @@ open class CodeStream : TmdbProvider() {
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
         const val MovieDrive_API=BuildConfig.MovieDrive_API
         const val Asiandrama_API=BuildConfig.AsianDrama_API
-
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -785,9 +784,7 @@ open class CodeStream : TmdbProvider() {
             callback
         )
     },
-
-*/
-    {
+*/ {
         if (res.isAsian) invokeAsianHD(
             res.title,
             res.year,

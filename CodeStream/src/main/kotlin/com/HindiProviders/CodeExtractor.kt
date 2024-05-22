@@ -1143,7 +1143,8 @@ object CodeExtractor : CodeStream() {
 
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
-
+        Log.d("Phisher Test",malsync.toString())
+        Log.d("Phisher Test","$malsyncAPI/mal/anime/${malId ?: return}")
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
         argamap(
@@ -1186,6 +1187,7 @@ object CodeExtractor : CodeStream() {
         servers.forEach { serverElement ->
             val linkId = serverElement.attr("data-link-id")
             val iframe = fetchServerIframe(linkId) ?: return@forEach
+            Log.d("Phisher Test iframe",iframe)
             val audio =
                 if (serverElement.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
             loadCustomExtractor(
