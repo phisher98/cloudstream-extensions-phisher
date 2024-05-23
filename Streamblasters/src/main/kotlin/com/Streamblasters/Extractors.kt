@@ -9,6 +9,10 @@ class D000d : DoodLaExtractor() {
     override var mainUrl = "https://d000d.com"
 }
 
+class swhoi : StreamWishExtractor() {
+    override var mainUrl = "https://swhoi.com"
+}
+
 class vidhidevip : VidhideExtractor() {
     override var mainUrl = "https://vidhidevip.com"
 }

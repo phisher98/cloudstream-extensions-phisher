@@ -33,7 +33,7 @@ open class Vidstreaming : ExtractorApi() {
     ) {
         val doc = app.get(url).text
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
-        val decrypt = AesHelper.cryptoAESHandler(master, "a7igbpIApajDyNe".toByteArray(), false)
+        val decrypt = AesHelper.cryptoAESHandler(master, "H&5+Tx_nQcdK{U,.".toByteArray(), false)
             ?.replace("\\", "")
             ?: throw ErrorLoadingException("error decrypting")
         val vidFinal = Extractvidlink(decrypt)

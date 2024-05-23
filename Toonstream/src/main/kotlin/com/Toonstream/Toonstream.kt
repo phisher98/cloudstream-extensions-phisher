@@ -7,11 +7,10 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class Toonstream : MainAPI() {
-    override var mainUrl              = "https://www.tooniboy.com"
+    override var mainUrl              = "https://toonstream.day"
     override var name                 = "Toonstream"
     override val hasMainPage          = true
     override var lang                 = "hi"
-    override val hasQuickSearch       = true
     override val hasDownloadSupport   = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.Cartoon)
 
@@ -126,15 +125,16 @@ class Toonstream : MainAPI() {
         val document = app.get(data).document
         document.select("#aa-options > div > iframe").forEach {
             val serverlink=it.attr("data-src")
-            if (serverlink.contains("gdmirrorbot"))
+            val truelink= app.get(serverlink).document.selectFirst("iframe")?.attr("src") ?:""
+            if (truelink.contains("gdmirrorbot"))
             {
-                val links=GDmirrorbot(serverlink)
+                val links=GDmirrorbot(truelink)
                 links.forEach { url->
                     loadExtractor(url,subtitleCallback, callback)
                 }
             }
             else
-            loadExtractor(serverlink,subtitleCallback, callback)
+            loadExtractor(truelink,subtitleCallback, callback)
         }
         return true
     }

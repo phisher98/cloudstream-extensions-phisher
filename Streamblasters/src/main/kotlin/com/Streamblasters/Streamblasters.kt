@@ -1,6 +1,7 @@
 package com.Streamblasters
 
 //import android.util.Log
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -73,7 +74,11 @@ class Streamblasters : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
-        val poster = document.select("header.entry-header > header").attr("style").substringAfter("background-image:url(").substringBefore(");").trim()
+        var poster = document.select("header.entry-header > header").attr("style").substringAfter("background-image:url(").substringBefore(");").trim()
+        if (poster.isEmpty())
+        {
+            poster="https://img.freepik.com/free-photo/assortment-cinema-elements-red-background-with-copy-space_23-2148457848.jpg?size=626&ext=jpg&ga=GA1.1.2082370165.1716422400&semt=ais_user"
+        }
         val description = document.selectFirst("div.actor-element > p")?.text()?.trim()
         val trailer = document.selectFirst("div.tmdb-trailer > iframe")?.attr("src")
         val actors = document.select("div.ac-di-content").map {
@@ -113,6 +118,7 @@ class Streamblasters : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val server=document.selectFirst("#player-api-control > iframe")?.attr("src") ?:""
+        Log.d("Phisher test",server)
         loadExtractor(server,subtitleCallback, callback)
         return true
     }
