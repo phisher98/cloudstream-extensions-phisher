@@ -66,7 +66,7 @@ class AnimeDekhoProvider : MainAPI() {
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
 
-        val title = document.selectFirst("h1.entry-title")?.text()?.trim()
+        val title = document.selectFirst("h1.entry-title,head > title")?.text()?.trim()?.substringBefore(" – ")
             ?: document.selectFirst("meta[property=og:image:alt]")?.attr("content") ?: "No Title"
         val poster = fixUrlNull(document.selectFirst("div.post-thumbnail figure img")?.attr("src") ?: media.poster)
         val plot = document.selectFirst("div.entry-content p")?.text()?.trim()
@@ -112,10 +112,9 @@ class AnimeDekhoProvider : MainAPI() {
         val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
         for (i in 0..4) {
-            val link = app.get("$mainUrl/?trembed=$i&trid=$term&trtype=${media.mediaType}")
+            val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
-            Log.d("Phisher Test ID",link)
             loadExtractor(link,subtitleCallback, callback)
         }
         return true
