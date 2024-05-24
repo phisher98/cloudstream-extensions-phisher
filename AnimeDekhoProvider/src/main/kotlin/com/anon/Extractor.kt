@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.extractors.helper.AesHelper
@@ -115,7 +114,7 @@ class Vidmolynet : Vidmoly() {
     override val mainUrl = "https://vidmoly.net"
 }
 
-class Cdnwish : Filesim() {
+class Cdnwish : StreamWishExtractor() {
     override var name = "Streamwish"
     override var mainUrl = "https://cdnwish.com"
 }
