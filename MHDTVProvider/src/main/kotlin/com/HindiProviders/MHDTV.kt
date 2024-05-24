@@ -9,7 +9,10 @@ import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
+import okhttp3.AsyncDns
+import okhttp3.Callback
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.nio.charset.StandardCharsets
@@ -236,6 +239,53 @@ class MHDTV : MainAPI() { // all providers must be an instance of MainAPI
         else if (data.startsWith("https://mhdmaxtv.me")) {
             val source=data.substringAfter("https://mhdmaxtv.me/play.php?c=")
             loadExtractor(source,subtitleCallback, callback)
+        }
+        else if (data.startsWith("https://colorsscreen.com")) {
+            val regex="""source:.'(.*?)'""".toRegex()
+            val url =regex.find(document.toString())?.groupValues?.get(1) ?:""
+            val trueurl="https://colorsscreen.com$url"
+            val source=trueurl.replace("php","m3u8")
+            callback.invoke(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    source,
+                    referer = data,
+                    quality = getQualityFromName(""),
+                    isM3u8 = true
+                )
+            )
+        }
+        else if (data.startsWith("https://mhdtvweb.com/jc/play.php")) {
+            val regex="""source:.'(.*?)'""".toRegex()
+            val url =regex.find(document.toString())?.groupValues?.get(1) ?:""
+            val trueurl="https://mhdtvweb.com$url"
+            val source=trueurl.replace("php","m3u8")
+            callback.invoke(
+                ExtractorLink(
+                    "Mhdtvweb",
+                    this.name,
+                    source,
+                    referer = data,
+                    quality = getQualityFromName(""),
+                    isM3u8 = true
+                )
+            )
+        }
+        else if (data.startsWith("https://keralamaxtv.com")) {
+            val regex="""source:.'(.*?)'""".toRegex()
+            val url =regex.find(document.toString())?.groupValues?.get(1) ?:""
+            val source="https://keralamaxtv.com/$url"
+            callback.invoke(
+                ExtractorLink(
+                    "Mhdtvweb",
+                    this.name,
+                    source,
+                    referer = data,
+                    quality = getQualityFromName(""),
+                    isM3u8 = true
+                )
+            )
         }
         return true
     }

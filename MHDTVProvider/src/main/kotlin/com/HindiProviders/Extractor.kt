@@ -39,3 +39,29 @@ open class Mhdmaxtv : ExtractorApi() {
         )
     }
 }
+
+open class colorsscreen : ExtractorApi() {
+    override val name = "Colorsscreen"
+    override val mainUrl = "https://colorsscreen.com"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0")
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                url,
+                referer?:"",
+                Qualities.Unknown.value,
+                isM3u8 = true,
+                headers=headers
+            )
+        )
+    }
+}
