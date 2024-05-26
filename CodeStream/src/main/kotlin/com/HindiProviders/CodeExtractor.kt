@@ -1187,9 +1187,9 @@ object CodeExtractor : CodeStream() {
         servers.forEach { serverElement ->
             val linkId = serverElement.attr("data-link-id")
             val iframe = fetchServerIframe(linkId) ?: return@forEach
-            Log.d("Phisher Test iframe",iframe)
             val audio =
                 if (serverElement.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
+            Log.d("Phisher Test iframe",iframe)
             loadCustomExtractor(
                 "Aniwave ${serverElement.text()} [$audio]",
                 iframe,
@@ -1305,7 +1305,7 @@ object CodeExtractor : CodeStream() {
                     )
                 }
 
-            servers?.apmap servers@{ server ->
+            servers?.map servers@{ server ->
                 val iframe = app.get(
                     "$hianimeAPI/ajax/v2/episode/sources?id=${server.second ?: return@servers}",
                     headers = headers
@@ -1533,19 +1533,16 @@ object CodeExtractor : CodeStream() {
         val media =
             res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
-        Log.d("Phisher Test href",media.toString())
         res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
             res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p))").filter { element -> !element.text().contains("Batch/Zip", true) }
                 .takeLast(2)
-        Log.d("Phisher Test entries",entries.toString())
         entries.map {
             val tags =
                 """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                     ?.trim()
             val href =
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
-            Log.d("Phisher Test href",href.toString())
             val selector =
                 if (season == null) "a.maxbutton-5:contains(Server)" else "h3:matches(Episode $episode) a"
             val server = app.get(
