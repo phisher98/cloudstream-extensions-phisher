@@ -86,7 +86,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlin.math.roundToInt
-
+import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.DubStatus
+import com.lagradost.cloudstream3.newAnimeLoadResponse
 open class CodeStream : TmdbProvider() {
     override var name = "CodeStream"
     override val hasMainPage = true
@@ -294,7 +296,7 @@ open class CodeStream : TmdbProvider() {
         val trailer = res.videos?.results?.filter { it.type == "Trailer" }?.map { "https://www.youtube.com/watch?v=${it.key}" }?.reversed().orEmpty()
             .ifEmpty { res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } }
 
-        return if (type == TvType.TvSeries) {
+        if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
@@ -333,28 +335,42 @@ open class CodeStream : TmdbProvider() {
                         }
                     }
             }?.flatten() ?: listOf()
-            newTvSeriesLoadResponse(
-                title,
-                url,
-                if (isAnime) TvType.Anime else TvType.TvSeries,
-                episodes
-            ) {
-                this.posterUrl = poster
-                this.backgroundPosterUrl = bgPoster
-                this.year = year
-                this.plot = res.overview
-                this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
-                this.rating = rating
-                this.showStatus = getStatus(res.status)
-                this.recommendations = recommendations
-                this.actors = actors
-                this.contentRating = fetchContentRating(data.id, "US")
-                addTrailer(trailer)
-                addTMDbId(data.id.toString())
-                addImdbId(res.external_ids?.imdb_id)
+            if (isAnime) {
+                return newAnimeLoadResponse(title, url, TvType.Anime) {
+                    addEpisodes(DubStatus.Subbed, episodes)
+                    this.posterUrl = poster
+                    this.backgroundPosterUrl = bgPoster
+                    this.year = year
+                    this.plot = res.overview
+                    this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                    this.rating = rating
+                    this.showStatus = getStatus(res.status)
+                    this.recommendations = recommendations
+                    this.actors = actors
+                    this.contentRating = fetchContentRating(data.id, "US")
+                    addTrailer(trailer)
+                    addTMDbId(data.id.toString())
+                    addImdbId(res.external_ids?.imdb_id)
+                }
+            } else {
+                return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                    this.posterUrl = poster
+                    this.backgroundPosterUrl = bgPoster
+                    this.year = year
+                    this.plot = res.overview
+                    this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                    this.rating = rating
+                    this.showStatus = getStatus(res.status)
+                    this.recommendations = recommendations
+                    this.actors = actors
+                    this.contentRating = fetchContentRating(data.id, "US")
+                    addTrailer(trailer)
+                    addTMDbId(data.id.toString())
+                    addImdbId(res.external_ids?.imdb_id)
+                }
             }
         } else {
-            newMovieLoadResponse(
+            return newMovieLoadResponse(
                 title,
                 url,
                 TvType.Movie,
