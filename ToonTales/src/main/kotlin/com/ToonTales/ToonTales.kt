@@ -1,13 +1,13 @@
-package com.Supercartoons
+package com.ToonTales
 
 import android.annotation.SuppressLint
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class Supercartoons : MainAPI() {
-    override var mainUrl              = "https://www.supercartoons.net"
-    override var name                 = "Supercartoons"
+class ToonTales : MainAPI() {
+    override var mainUrl              = "https://www.toontales.net"
+    override var name                 = "ToonTales"
     override val hasMainPage          = true
     override var lang                 = "en"
     override val hasDownloadSupport   = true
