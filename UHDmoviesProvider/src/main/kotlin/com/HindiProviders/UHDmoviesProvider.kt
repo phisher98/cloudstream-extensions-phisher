@@ -115,7 +115,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
         val type = if (tvTags.contains("Season")) TvType.TvSeries else TvType.Movie
-        val iframeRegex = Regex("""\[.*\]""")
+        val iframeRegex = Regex("""\[.*]""")
         val iframe = doc.select("""div.entry-content > p""").mapNotNull{ it }.filter{
             iframeRegex.find(it.toString()) != null
         }
@@ -126,32 +126,20 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 doc.select("div.entry-content > p > span > span > a").attr("href")
             )
         }
-        val seasonnumber=doc.select("pre span strong").text().substringAfter("Season ")
         val episodes = mutableListOf<Episode>()
-        /*doc.select(".entry-content > p:nth-child(6)").forEach { me ->
-            val seasonNum = me.select("p strong").text()
-            val pattern = """Season\s(\d)""".toRegex()
-            val season = pattern.find(seasonNum)?.groupValues?.get(1)?.toInt()
-            val selectseason=doc.select("div.entry-content p:has(S0$seasonnumber)")
-            Log.d("Phsher Next ",seasonnumber.toString())
-            Log.d("Phsher Next ",season.toString())
-            Log.d("Phsher Next ",selectseason.toString())
+        doc.select("p a.maxbutton").forEach { me ->
             //Log.d("Phsher Next ",me.nextElementSibling().toString())
-            me.nextElementSibling()?.let { doc->
-                val episode = doc.select("p a.maxbutton span").text().substringAfter("Episode ").toInt()
-                episodes.add(
-                    Episode(
-                        data = doc.select("p a.maxbutton").attr("href"),
-                        name = doc.select("p a.maxbutton span").text(),
-                        posterUrl = poster,
-                        season = season,
-                        episode = episode
-                    )
+            val episode=me.select("span").text().substringAfter("Episode").toIntOrNull()
+            //Log.d("Phisher Next ",tedata)
+            episodes.add(
+                Episode(
+                    data = me.attr("href"),
+                    name = me.select("span").text(),
+                    posterUrl = poster,
+                    episode = episode
                 )
-            }
+            )
         }
-
-         */
 
         return if (type == TvType.TvSeries) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
@@ -166,13 +154,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 this.tags = tags
             }
         }
-    }
-
-    private fun String.containsAnyOfIgnoreCase(keywords: List<String>): Boolean {
-        for (keyword in keywords) {
-            if (this.contains(keyword, true)) return true
-        }
-        return false
     }
 
     private fun getBaseUrl(url: String): String {
@@ -198,72 +179,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             }
             return "$domain/$url"
         }
-    }
-
-    suspend fun bypassTechmny(url: String): String? {
-        val postUrl = url.substringBefore("?id=").substringAfter("/?")
-        var res = app.post(
-            postUrl, data = mapOf(
-                "_wp_http_c" to url.substringAfter("?id=")
-            )
-        )
-        val (longC, catC, _) = getTechmnyCookies(res.text)
-        var headers = mapOf("Cookie" to "$longC; $catC")
-        var formLink = res.document.selectFirst("center a")?.attr("href")
-
-        res = app.get(formLink ?: return null, headers = headers)
-        val (longC2, _, postC) = getTechmnyCookies(res.text)
-        headers = mapOf("Cookie" to "$catC; $longC2; $postC")
-        formLink = res.document.selectFirst("center a")?.attr("href")
-
-        res = app.get(formLink ?: return null, headers = headers)
-        val goToken = res.text.substringAfter("?go=").substringBefore("\"")
-        val tokenUrl = "$postUrl?go=$goToken"
-        val newLongC = "$goToken=" + longC2.substringAfter("=")
-        headers = mapOf("Cookie" to "$catC; rdst_post=; $newLongC")
-
-        val driveUrl =
-            app.get(tokenUrl, headers = headers).document.selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")?.substringAfter("url=")
-        val path = app.get(driveUrl ?: return null).text.substringAfter("replace(\"")
-            .substringBefore("\")")
-        if (path == "/404") return null
-        return fixUrl(path, getBaseUrl(driveUrl))
-    }
-
-    suspend fun bypassDriveleech(url: String): String? {
-        val path = app.get(url).text.substringAfter("replace(\"")
-            .substringBefore("\")")
-        if (path == "/404") return null
-        return fixUrl(path, getBaseUrl(url))
-    }
-
-    private fun getTechmnyCookies(page: String): Triple<String, String, String> {
-        val cat = "rdst_cat"
-        val post = "rdst_post"
-        val longC = page.substringAfter(".setTime")
-            .substringAfter("document.cookie = \"")
-            .substringBefore("\"")
-            .substringBefore(";")
-        val catC = if (page.contains("$cat=")) {
-            page.substringAfterLast("$cat=")
-                .substringBefore(";").let {
-                    "$cat=$it"
-                }
-        } else {
-            ""
-        }
-
-        val postC = if (page.contains("$post=")) {
-            page.substringAfterLast("$post=")
-                .substringBefore(";").let {
-                    "$post=$it"
-                }
-        } else {
-            ""
-        }
-
-        return Triple(longC, catC, postC)
     }
 
     fun Document.getMirrorLink(): String? {
@@ -333,48 +248,92 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher Test", data)
-        val sources = parseJson<ArrayList<UHDLinks>>(data)
-        Log.d("Phisher Test driveLink ", sources.toString())
-        sources.map { me ->
-            val name = me.sourceName
-            val link = me.sourceLink
-            val driveLink = bypassHrefli(link ?: "") ?: ""
-            val base = getBaseUrl(driveLink)
-            val driveReq = app.get(driveLink)
-            val driveRes = driveReq.document
-            val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
-            val insLink =
-                driveRes.select("a.btn.btn-danger:contains(Instant Download)")
-                    .attr("href")
-            val downloadLink = when {
-                insLink.isNotEmpty() -> extractInstantUHD(insLink)
-                driveRes.select("button.btn.btn-success").text()
-                    .contains("Direct Download", true) -> extractDirectUHD(
-                    driveLink,
-                    driveReq
-                )
+        //Log.d("Phisher Test 2", data)
+        if (data.startsWith("https://"))
+        {
+            data.let { me ->
+                val link = me
+                val driveLink = bypassHrefli(link) ?: ""
+                Log.d("Phisher 2 driveLink", driveLink)
+                val base = getBaseUrl(driveLink)
+                val driveReq = app.get(driveLink)
+                val driveRes = driveReq.document
+                val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
+                val insLink =
+                    driveRes.select("a.btn.btn-danger:contains(Instant Download)")
+                        .attr("href")
+                val downloadLink = when {
+                    insLink.isNotEmpty() -> extractInstantUHD(insLink)
+                    driveRes.select("button.btn.btn-success").text()
+                        .contains("Direct Download", true) -> extractDirectUHD(
+                        driveLink,
+                        driveReq
+                    )
 
-                bitLink.isNullOrEmpty() -> {
-                    val backupIframe =
-                        driveRes.select("a.btn.btn-outline-warning").attr("href")
-                    extractBackupUHD(backupIframe ?: "")
+                    bitLink.isNullOrEmpty() -> {
+                        val backupIframe =
+                            driveRes.select("a.btn.btn-outline-warning").attr("href")
+                        extractBackupUHD(backupIframe ?: "")
+                    }
+
+                    else -> {
+                        extractMirrorUHD(bitLink, base)
+                    }
                 }
-
-                else -> {
-                    extractMirrorUHD(bitLink, base)
+                val resume = extractResumeUHD(bitLink)
+                val pixeldrain = extractPixeldrainUHD(bitLink)
+                val serverslist = listOf(downloadLink, resume, pixeldrain)
+                serverslist.forEach {
+                    callback.invoke(
+                        ExtractorLink(
+                            "UHDMovies", "UHDMovies", it
+                                ?: "", "", getQualityFromName("")
+                        )
+                    )
                 }
             }
-            val resume = extractResumeUHD(bitLink)
-            val pixeldrain = extractPixeldrainUHD(bitLink)
-            val serverslist = listOf(downloadLink, resume, pixeldrain)
-            serverslist.forEach {
-                callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies", it
-                            ?: "", "", getQualityFromName("")
+        }
+        else {
+            val sources = parseJson<ArrayList<UHDLinks>>(data)
+            sources.apmap { me ->
+                val link = me.sourceLink
+                val driveLink = bypassHrefli(link) ?: ""
+                val base = getBaseUrl(driveLink)
+                val driveReq = app.get(driveLink)
+                val driveRes = driveReq.document
+                val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
+                val insLink =
+                    driveRes.select("a.btn.btn-danger:contains(Instant Download)")
+                        .attr("href")
+                val downloadLink = when {
+                    insLink.isNotEmpty() -> extractInstantUHD(insLink)
+                    driveRes.select("button.btn.btn-success").text()
+                        .contains("Direct Download", true) -> extractDirectUHD(
+                        driveLink,
+                        driveReq
                     )
-                )
+
+                    bitLink.isNullOrEmpty() -> {
+                        val backupIframe =
+                            driveRes.select("a.btn.btn-outline-warning").attr("href")
+                        extractBackupUHD(backupIframe ?: "")
+                    }
+
+                    else -> {
+                        extractMirrorUHD(bitLink, base)
+                    }
+                }
+                val resume = extractResumeUHD(bitLink)
+                val pixeldrain = extractPixeldrainUHD(bitLink)
+                val serverslist = listOf(downloadLink, resume, pixeldrain)
+                serverslist.forEach {
+                    callback.invoke(
+                        ExtractorLink(
+                            "UHDMovies", "UHDMovies", it
+                                ?: "", "", getQualityFromName("")
+                        )
+                    )
+                }
             }
         }
         return true
