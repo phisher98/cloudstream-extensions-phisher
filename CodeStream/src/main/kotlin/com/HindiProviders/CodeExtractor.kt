@@ -2564,7 +2564,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$apiurl/tvs/${title?.replace(":", " -")}/Season $season/"
         }
-
+        Log.d("Phisher DahmerMovie",url)
         val request = app.get(url, timeout = 60L)
         if (!request.isSuccessful) return
         val paths = request.document.select("a").map {
@@ -2577,7 +2577,7 @@ object CodeExtractor : CodeStream() {
                 it.first.contains(Regex("(?i)S${seasonSlug}E${episodeSlug}"))
             }
         }.ifEmpty { return }
-
+        fun decode(input: String): String = java.net.URLDecoder.decode(input, "utf-8")
         paths.map {
             val quality = getIndexQuality(it.first)
             val tags = getIndexQualityTags(it.first)
@@ -2585,7 +2585,7 @@ object CodeExtractor : CodeStream() {
                 ExtractorLink(
                     "DahmerMovies",
                     "DahmerMovies $tags",
-                    (url + it.second).encodeUrl(),
+                    decode((url + it.second).encodeUrl()),
                     "",
                     quality,
                 )
