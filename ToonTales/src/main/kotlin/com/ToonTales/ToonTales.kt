@@ -14,12 +14,12 @@ class ToonTales : MainAPI() {
     override val supportedTypes       = setOf(TvType.Cartoon)
 
     override val mainPage = mainPageOf(
-        "serie/popeye-the-sailor" to " Popeye the Sailor",
-        "serie/the-pink-panther-show" to "The Pink Panther Show",
-        "serie/tom-and-jerry" to "Tom and Jerry",
-        "serie/disney" to "Disney",
-        "serie/looney-tunes" to "Looney Tunes",
-        "serie/merrie-melodies" to "Merrie Melodies",
+        "series/popeye-the-sailor/" to " Popeye the Sailor",
+        "series/the-pink-panther-show" to "The Pink Panther Show",
+        "series/tom-and-jerry" to "Tom and Jerry",
+        "series/disney" to "Disney",
+        "series/looney-tunes" to "Looney Tunes",
+        "series/merrie-melodies" to "Merrie Melodies",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
