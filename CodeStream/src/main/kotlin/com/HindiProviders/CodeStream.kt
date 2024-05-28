@@ -4,7 +4,6 @@ package com.HindiProviders
 import android.util.Log
 import com.HindiProviders.CodeExtractor.invoke2embed
 import com.HindiProviders.CodeExtractor.invokeAllMovieland
-import com.HindiProviders.CodeExtractor.invokeAnimeflix
 import com.HindiProviders.CodeExtractor.invokeAnimes
 import com.HindiProviders.CodeExtractor.invokeMoviesdrive
 import com.HindiProviders.CodeExtractor.invokeAoneroom
@@ -25,7 +24,7 @@ import com.HindiProviders.CodeExtractor.invokeFDMovies
 import com.HindiProviders.CodeExtractor.invokeFilmxy
 import com.HindiProviders.CodeExtractor.invokeFlixon
 import com.HindiProviders.CodeExtractor.invokeGhostx
-//import com.HindiProviders.CodeExtractor.invokeGoku
+import com.HindiProviders.CodeExtractor.invokeGoku
 //import com.HindiProviders.CodeExtractor.invokeHdmovies4u
 import com.HindiProviders.CodeExtractor.invokeKimcartoon
 import com.HindiProviders.CodeExtractor.invokeKisskh
@@ -162,8 +161,7 @@ open class CodeStream : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.fans"
         const val topmoviesAPI = "https://topmovies.fans"
-        const val MoviesmodAPI= "https://moviesmod.info"
-        const val AnimeflixAPI= "https://animeflix.co.in"
+        const val MoviesmodAPI= "https://moviesmod.lol"
 //        const val hdmovies4uAPI = "https://hdmovies4u.eu"
         const val vegaMoviesAPI = "https://vegamovies.yt"
         const val dotmoviesAPI = "https://luxmovies.lat"
@@ -430,15 +428,15 @@ open class CodeStream : TmdbProvider() {
                     )
                 },
                 {
-             //       invokeGoku(
-               //         res.title,
-                 //       res.year,
-                   //     res.season,
-                     //   res.lastSeason,
-                       // res.episode,
-                        //subtitleCallback,
-                        //callback
-                   // )
+                   invokeGoku(
+                       res.title,
+                       res.year,
+                        res.season,
+                        res.lastSeason,
+                        res.episode,
+                        subtitleCallback,
+                        callback
+                   )
                 },
                 {
                     invokeVidSrc(res.id, res.season, res.episode, subtitleCallback,callback)
@@ -586,17 +584,6 @@ open class CodeStream : TmdbProvider() {
                 },
                 {
                 if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (res.isAnime) invokeAnimeflix(
                     res.title,
                     res.year,
                     res.season,

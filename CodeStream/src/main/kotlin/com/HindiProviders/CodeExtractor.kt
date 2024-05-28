@@ -95,7 +95,6 @@ object CodeExtractor : CodeStream() {
                 headers = headers
             ).document.getServers()
         }
-
         serversId.apmap { (id, name) ->
             val iframe =
                 app.get(
@@ -944,7 +943,6 @@ object CodeExtractor : CodeStream() {
         } else {
             "$azseriesAPI/episodes/$fixTitle-season-$season-episode-$episode"
         }
-        Log.d("Test", url.toString())
         val res = app.get(url)
         if (res.code == 200) {
             val document = res.document
@@ -958,9 +956,7 @@ object CodeExtractor : CodeStream() {
             val server_list = mutableListOf<String>()
             val servers_url = server_doc.select("div#playeroptions > ul > li ").map {
                 val href = it.attr("data-vs")
-                Log.d("Test", href.toString())
             }.amap { href ->
-                Log.d("Test", href.toString())
             }
         }
     }
@@ -1143,8 +1139,6 @@ object CodeExtractor : CodeStream() {
 
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
-        Log.d("Phisher Test",malsync.toString())
-        Log.d("Phisher Test","$malsyncAPI/mal/anime/${malId ?: return}")
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
         argamap(
@@ -1189,14 +1183,13 @@ object CodeExtractor : CodeStream() {
             val iframe = fetchServerIframe(linkId) ?: return@forEach
             val audio =
                 if (serverElement.attr("data-cmid").endsWith("softsub")) "Raw" else "English Dub"
-            Log.d("Phisher Test iframe",iframe)
-            loadCustomExtractor(
-                "Aniwave ${serverElement.text()} [$audio]",
-                iframe,
-                "$aniwaveAPI/",
-                subtitleCallback,
-                callback
-            )
+                loadCustomExtractor(
+                    "Aniwave ${serverElement.text()} [$audio]",
+                    iframe,
+                    "$aniwaveAPI/",
+                    subtitleCallback,
+                    callback
+                )
         }
     }
 
@@ -1597,45 +1590,6 @@ object CodeExtractor : CodeStream() {
             callback,
             MoviesmodAPI
         )
-    }
-
-    suspend fun invokeAnimeflix(
-        title: String? = null,
-        year: Int? = null,
-        season: Int? = null,
-        lastSeason: Int?,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
-        val fixTitle = title.createSlug()
-        val url = "$AnimeflixAPI/download-$fixTitle-$year"
-        val hTag = if (season == null) "h4" else "h3"
-        val aTag = if (season == null) "Gdrive" else "Gdrive"
-        val sTag = if (season == null) "" else ""
-        // val media =res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")?.attr("href")
-        val res = app.get(url ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
-        val entries =
-            res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
-        entries.apmap {
-            val tags =
-                """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
-                    ?.trim()
-            val href =
-                it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
-            val selector =
-                if (season == null) "p a.maxbutton:contains(Server)" else "h3:contains(Episode $episode) a"
-            val server = app.get(
-                href ?: "",headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor
-            ).document.selectFirst(selector)
-                ?.attr("href") ?: ""
-            server.let {
-                val link = Extractanimeflixlinks(it)
-                loadExtractor(link,subtitleCallback, callback)
-                //need more work
-            }
-        }
     }
     suspend fun invokeModflix(
         title: String? = null,
@@ -2564,7 +2518,6 @@ object CodeExtractor : CodeStream() {
         } else {
             "$apiurl/tvs/${title?.replace(":", " -")}/Season $season/"
         }
-        Log.d("Phisher DahmerMovie",url)
         val request = app.get(url, timeout = 60L)
         if (!request.isSuccessful) return
         val paths = request.document.select("a").map {
