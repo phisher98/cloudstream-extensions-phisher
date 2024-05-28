@@ -13,3 +13,8 @@ class Animezia : VidhideExtractor() {
     override var name = "Animezia"
     override var mainUrl = "https://animezia.cloud"
 }
+
+class server2 : VidhideExtractor() {
+    override var name = "Multimovies Vidhide"
+    override var mainUrl = "https://server2.shop"
+}

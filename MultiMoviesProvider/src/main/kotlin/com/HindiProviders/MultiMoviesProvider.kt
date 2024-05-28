@@ -50,7 +50,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         val document = if (page == 1) {
             app.get(request.data).document
         } else {
-            app.get(request.data + "/page/$page/").document
+            app.get(request.data + "page/$page/").document
         }
 
         //Log.d("Document", request.data)
