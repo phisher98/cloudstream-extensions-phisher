@@ -1,6 +1,5 @@
 package com.anon
 
-import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -66,8 +65,8 @@ class AnimeDekhoProvider : MainAPI() {
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
 
-        val title = document.selectFirst("h1.entry-title,head > title")?.text()?.trim()?.substringBefore(" – ")
-            ?: document.selectFirst("meta[property=og:image:alt]")?.attr("content") ?: "No Title"
+        val title = document.selectFirst("h1.entry-title")?.text()?.trim()?.substringAfter("Watch Online ")
+            ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.substringAfter("Watch Online ")?.substringBefore(" Movie in Hindi Dubbed Free") ?: "No Title"
         val poster = fixUrlNull(document.selectFirst("div.post-thumbnail figure img")?.attr("src") ?: media.poster)
         val plot = document.selectFirst("div.entry-content p")?.text()?.trim()
             ?: document.selectFirst("meta[name=twitter:description]")?.attr("content")
