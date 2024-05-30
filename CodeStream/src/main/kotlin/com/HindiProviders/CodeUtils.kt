@@ -666,9 +666,7 @@ suspend fun bypasstopoviesunblocked(url: String): List<String> {
     val driveRes = driveReq.document
     val host = getBaseUrl(url)
     val header = driveRes.selectFirst("div.mb-4")?.text()
-    Log.d("Phisher finallink",host.toString())
     val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
-    Log.d("Phisher finallink",finallink.toString())
     val resume =
         driveRes.select("a.btn.btn-warning").attr("href").toString()
     val resumelink = when {
@@ -686,7 +684,6 @@ suspend fun bypasstopoviesunblocked(url: String): List<String> {
         referer = finallink,
         headers = mapOf("x-token" to "video-leech.xyz","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0")
     )
-    Log.d("Phisher downloadlink",downloadlink.toString())
     val finaldownloadlink =
         downloadlink.toString().substringAfter("url\":\"")
             .substringBefore("\",\"name")
@@ -1671,3 +1668,13 @@ object AESGCM {
         return dateFormat.format(Date())
     }
 }
+
+suspend fun extractbollytag(url:String): String {
+    val tagdoc= app.get(url).text
+    val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?:""
+    return tags
+}
+
+data class Bollyflixparse(
+    val url: String,
+)

@@ -2243,7 +2243,7 @@ object CodeExtractor : CodeStream() {
                     doc
                 }
                 val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(
-                    script ?: return@apmap
+                    script
                 )?.groupValues?.getOrNull(1)
                 if (m3u8?.haveDub("$host/") == false) return@apmap
                 callback.invoke(
@@ -3241,5 +3241,51 @@ object CodeExtractor : CodeStream() {
            loadExtractor(server,subtitleCallback, callback)
         }
     }
+
+    suspend fun invokeBollyflix(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+        var res = app.get("$bollyflixAPI/search/$title").document
+        Log.d("Phisher url","$bollyflixAPI/search/$title".toString())
+        val match = when (season) {
+            null -> "$year"
+            1 -> "Season 1"
+            else -> "Season 1 – $lastSeason"
+        }
+        val media =
+            res.selectFirst("#content_box article:has(h2.title:matches((?i)$title.*$match)) a")
+                ?.attr("href")
+        Log.d("Phisher media",media.toString())
+        res = app.get(media ?: return).document
+        val hTag = if (season == null) "h5" else "h4"
+        val aTag = if (season == null) "" else ""
+        val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
+        val entries =
+            res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(1080p|2160p))")
+                .filter { element -> !element.text().contains("Nothing", true) }
+        Log.d("Phisher media entries",entries.toString())
+        entries.map {
+            val href =it.nextElementSibling()?.select("p a")?.attr("href")
+            //Log.d("Phisher media entries",href.toString())
+            val token = href?.substringAfter("id=")
+            val encodedurl = app.get("https://web.sidexfee.com/?id=$token").text.substringAfter("link\":\"").substringBefore("\"};")
+            val decodedurl= base64Decode(encodedurl)
+            if (decodedurl.startsWith("https://fxlinks.lol"))
+            {
+                val link=app.get(decodedurl).document.select("h3 a:contains(Episode 0$episode)").attr("href")
+                loadExtractor(link,subtitleCallback, callback)
+            }
+            else
+            loadExtractor(decodedurl,subtitleCallback, callback)
+        }
+    }
+
 }
 

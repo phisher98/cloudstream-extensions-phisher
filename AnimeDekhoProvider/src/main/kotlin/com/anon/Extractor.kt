@@ -1,7 +1,8 @@
-package com.anon
+package com.HindiProvider
 
 
 //import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
@@ -137,7 +138,7 @@ open class GDMirrorbot : ExtractorApi() {
 
 
 fun Extractvidlink(url: String): String {
-    val file=Regex("""file: "(.*?)"""").find(url)!!.groupValues[1]
+    val file=url.substringAfter("sources: [{\"file\":\"").substringBefore("\",\"")
     return file
 }
 

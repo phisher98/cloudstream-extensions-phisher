@@ -1,5 +1,6 @@
-package com.anon
+package com.HindiProvider
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -114,6 +115,7 @@ class AnimeDekhoProvider : MainAPI() {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
+            Log.d("Phisher",link)
             loadExtractor(link,subtitleCallback, callback)
         }
         return true

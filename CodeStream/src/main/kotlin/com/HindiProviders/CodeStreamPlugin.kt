@@ -71,5 +71,7 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Modflix())
         registerExtractorAPI(Vectorx())
         registerExtractorAPI(Sethniceletter())
+        registerExtractorAPI(Bollyflix())
+        registerExtractorAPI(fastdlserver())
     }
 }

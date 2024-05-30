@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -27,6 +28,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.base64Encode
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
@@ -792,3 +794,66 @@ open class Modflix : ExtractorApi() {
         )
     }
 }
+
+class fastdlserver : Bollyflix() {
+    override var mainUrl = "https://fastdlserver.online"
+}
+
+open class Bollyflix : ExtractorApi() {
+    override val name: String = "Bollyflix"
+    override val mainUrl: String = "https://new2.gdflix.cfd"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        Log.d("Phisher url url",url)
+        var url=url
+        val tags=extractbollytag(url)
+        if (url.startsWith("https://new2.gdflix.cfd/goto/token/"))
+        {
+            val partialurl=app.get(url).text.substringAfter("replace(\"").substringBefore("\")")
+            url=mainUrl+partialurl
+        }
+        else
+        {
+            url=url
+            Log.d("Phisher else url",url)
+        }
+        app.get(url).document.select("div.text-center a").forEach {
+            Log.d("Phisher it url",it.toString())
+            if (it.select("a").text().contains("FAST CLOUD DOWNLOAD"))
+            {
+                val link=it.attr("href")
+                val trueurl=app.get("https://new2.gdflix.cfd$link").document.selectFirst("a.btn-success")?.attr("href") ?:""
+                callback.invoke(
+                    ExtractorLink(
+                        "Bollyflix", "Bollyflix $tags", trueurl
+                            ?: "", "", getQualityFromName(tags)
+                    )
+                )
+            }
+            else
+            if (it.select("a").text().contains("DRIVEBOT DOWNLOAD"))
+            {
+                val link=it.attr("href")
+                Log.d("Phisher index index",link.toString())
+                val token=link.substringAfter("id=")
+                Log.d("Phisher index index",link.toString())
+                app.get(link).document.select("button").forEach {
+                    val onclick=it.attr("onclick").substringAfter("('").substringBefore("')")
+                    val index=app.post("$onclick/?id=$token").parsedSafe<Bollyflixparse>()?.url ?:""
+                    Log.d("Phisher index index",index.toString())
+                }
+            }
+            else
+            {
+                val link=it.attr("href")
+            }
+        }
+    }
+}
+

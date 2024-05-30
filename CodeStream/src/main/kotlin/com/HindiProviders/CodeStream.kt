@@ -54,6 +54,7 @@ import com.HindiProviders.CodeExtractor.invokeZoechip
 import com.HindiProviders.CodeExtractor.invokeZshow
 import com.HindiProviders.CodeExtractor.invokekissasian
 import com.HindiProviders.CodeExtractor.invokePlaydesi
+import com.HindiProviders.CodeExtractor.invokeBollyflix
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -161,7 +162,7 @@ open class CodeStream : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.fans"
         const val topmoviesAPI = "https://topmovies.fans"
-        const val MoviesmodAPI= "https://moviesmod.lol"
+        const val MoviesmodAPI= "https://moviesmod.info"
 //        const val hdmovies4uAPI = "https://hdmovies4u.eu"
         const val vegaMoviesAPI = "https://vegamovies.yt"
         const val dotmoviesAPI = "https://luxmovies.lat"
@@ -169,6 +170,7 @@ open class CodeStream : TmdbProvider() {
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
         const val MovieDrive_API=BuildConfig.MovieDrive_API
         const val Asiandrama_API=BuildConfig.AsianDrama_API
+        const val bollyflixAPI = "https://bollyflix.cat"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -584,6 +586,17 @@ open class CodeStream : TmdbProvider() {
                 },
                 {
                 if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                invokeBollyflix(
                     res.title,
                     res.year,
                     res.season,
