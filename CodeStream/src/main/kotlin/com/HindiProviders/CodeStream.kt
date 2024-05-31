@@ -41,7 +41,7 @@ import com.HindiProviders.CodeExtractor.invokeNoverse
 import com.HindiProviders.CodeExtractor.invokeNowTv
 import com.HindiProviders.CodeExtractor.invokeRidomovies
 import com.HindiProviders.CodeExtractor.invokeShowflix
-//import com.HindiProviders.CodeExtractor.invokeSmashyStream
+import com.HindiProviders.CodeExtractor.invokeSmashyStream
 import com.HindiProviders.CodeExtractor.invokeTopMovies
 import com.HindiProviders.CodeExtractor.invokeTvMovies
 import com.HindiProviders.CodeExtractor.invokeUhdmovies
@@ -136,7 +136,7 @@ open class CodeStream : TmdbProvider() {
         const val flixonAPI = "https://myflixer.lol"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
-//        const val smashyStreamAPI = "https://embed.smashystream.com"
+        const val smashyStreamAPI = "https://embed.smashystream.com"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
         const val nineTvAPI = "https://moviesapi.club"
@@ -631,13 +631,13 @@ open class CodeStream : TmdbProvider() {
         )
     },
     {
-//          if (!res.isAnime) invokeSmashyStream(
-//             res.id,
- //           res.season,
-   //         res.episode,
-     //       subtitleCallback,
-       //     callback
-        // )
+          if (!res.isAnime) invokeSmashyStream(
+            res.id,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        )
     },
     {
         if (!res.isAnime) invokeWatchsomuch(

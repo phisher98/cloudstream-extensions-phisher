@@ -537,3 +537,6 @@ data class NepuSearch(
         @JsonProperty("type") val type: String? = null,
     )
 }
+data class Bollyflixparse(
+    val url: String,
+)

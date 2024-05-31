@@ -20,6 +20,7 @@ import org.jsoup.*
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import okio.ByteString.Companion.decodeBase64
 import org.mozilla.javascript.Scriptable
 
 val session = Session(Requests().baseClient)
@@ -2107,40 +2108,39 @@ object CodeExtractor : CodeStream() {
 
     }
 
-    /*        suspend fun invokeSmashyStream(
-                    tmdbId: Int? = null,
-                    season: Int? = null,
-                    episode: Int? = null,
-                    subtitleCallback: (SubtitleFile) -> Unit,
-                    callback: (ExtractorLink) -> Unit,
-                ) {
-                    val url = if (season == null) {
-                        "$smashyStreamAPI/data.php?tmdb=$tmdbId"
-                    } else {
-                        "$smashyStreamAPI/data.php?tmdb=$tmdbId&season=$season&episode=$episode"
-                    }
-                    //Log.d("Test json",url.toString())
-                    val document= app.get(url, referer = "https://smashystream.xyz/").document
-                    val json=app.get(
-                        url,
-                        referer = "https://smashystream.xyz/"
-                    ).parsedSafe<SmashyRoot>()
-                    val link=json?.urlArray
-                    val urls = link?.map { it.url }
-                    //Log.d("Test json",urls.toString())
-                    urls?.map { links->
-                        Log.d("Test json",links)
-                        val doc= app.get(links, referer = "https://smashystream.xyz/").document
-                        val string=doc.toString().substringAfter("#2").substringBefore("\"")
-                            .replace(Regex("//.{16}"), "")
-                            .let { base64Decode(it) }
-                            .toString()
-                        //Log.d("Test json",string)
-                        //Log.d("Test json",doc.toString())
-                    }
+    suspend fun invokeSmashyStream(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$smashyStreamAPI/playere.php?tmdb=$tmdbId"
+        } else {
+            "$smashyStreamAPI/playere.php?tmdb=$tmdbId&season=$season&episode=$episode"
+        }
+
+        app.get(
+            url,
+            referer = "https://smashystream.xyz/"
+        ).document.select("div#_default-servers a.server").map {
+            it.attr("data-url") to it.text()
+        }.apmap {
+            when (it.second) {
+                "Player F" -> {
+                    invokeSmashyFfix(it.second, it.first, url, subtitleCallback, callback)
                 }
 
-         */
+                "Player SU" -> {
+                    invokeSmashySu(it.second, it.first, url, callback)
+                }
+
+                else -> return@apmap
+            }
+        }
+
+    }
 
     /*         suspend fun invokeNepu(
                     title: String? = null,
@@ -3265,7 +3265,7 @@ object CodeExtractor : CodeStream() {
         Log.d("Phisher media",media.toString())
         res = app.get(media ?: return).document
         val hTag = if (season == null) "h5" else "h4"
-        val aTag = if (season == null) "" else ""
+        //val aTag = if (season == null) "" else ""
         val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
         val entries =
             res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(1080p|2160p))")

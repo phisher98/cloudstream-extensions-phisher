@@ -25,6 +25,7 @@ import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import okio.ByteString.Companion.decodeBase64
 import org.jsoup.nodes.Document
 import java.math.BigInteger
 import java.net.*
@@ -1675,6 +1676,16 @@ suspend fun extractbollytag(url:String): String {
     return tags
 }
 
-data class Bollyflixparse(
-    val url: String,
-)
+suspend fun decodesmashy(url:String): String {
+    val doc= app.get(url, referer = "https://smashystream.xyz/").document
+    val string=doc.toString().substringAfter("#2").substringBefore("\"").replace(Regex("//.{16}"), "").let { DecodeBase64(it) }
+    Log.d("Phisher Em",string)
+    return string
+}
+
+fun DecodeBase64(encodedString: String): String {
+    // Decode the Base64 encoded string into a byte array
+    val decodedBytes = Base64.decode(encodedString, Base64.DEFAULT)
+    // Convert the byte array into a string
+    return String(decodedBytes)
+}

@@ -831,7 +831,7 @@ open class Bollyflix : ExtractorApi() {
                 val trueurl=app.get("https://new2.gdflix.cfd$link").document.selectFirst("a.btn-success")?.attr("href") ?:""
                 callback.invoke(
                     ExtractorLink(
-                        "Bollyflix", "Bollyflix $tags", trueurl
+                        "Bollyflix", "Bollyflix", trueurl
                             ?: "", "", getQualityFromName(tags)
                     )
                 )
