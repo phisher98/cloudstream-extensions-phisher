@@ -126,6 +126,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
         }
+        //Log.d("Phisher ID",url)
         val iframedoc = app.get(url).document
         val serverhash =
             iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
@@ -1027,6 +1028,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
+        //Log.d("Phisher ID",url)
         loadExtractor(url, subtitleCallback, callback)
     }
 
@@ -1519,6 +1521,8 @@ object CodeExtractor : CodeStream() {
         val match = when (season) {
             null -> "$year"
             1 -> "Season 1"
+            2 -> "Season 2"
+            3 -> "Season 3"
             else -> "Season 1 – $lastSeason"
         }
         val hTag = if (season == null) "h3" else "h3"
@@ -1529,20 +1533,16 @@ object CodeExtractor : CodeStream() {
                 ?.attr("href")
         res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
-            res.select("$hTag:matches((?i)$sTag.*(1080p|2160p|4K))").filter { element -> !element.text().contains("Batch/Zip", true) }
-                .takeLast(3)
-        Log.d("Phisher Top entries",entries.toString())
+            res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p|4K))").filter { element -> !element.text().contains("Batch/Zip", true) }.takeLast(2)
         entries.map {
             val href =
-                it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
-            Log.d("Phisher Top href",href.toString())
+                it.nextElementSibling()?.select("a.maxbutton:contains($aTag)")?.attr("href")
             val selector =
                 if (season == null) "a.maxbutton-5:contains(Server)" else "h3:matches(Episode $episode) a"
             val server = app.get(
                 href ?: "",headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor
             ).document.selectFirst(selector)
                 ?.attr("href") ?: ""
-            Log.d("Phisher Top",server)
             server.let {
                 val link= bypasstopoviesunblocked(it)
                 Log.d("Phisher Top it",link)

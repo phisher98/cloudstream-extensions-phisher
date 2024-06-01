@@ -1655,12 +1655,12 @@ suspend fun extractbollytag2(url:String): String {
     return tags
 }
 
-suspend fun extracttopmoviestag(url:String): String {
+suspend fun extracttopmoviestag(url:String): String? {
     val tagdoc= app.get(url).text
     val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?:""
     return tags
 }
-suspend fun extracttopmoviestag2(url:String): String {
+suspend fun extracttopmoviestag2(url:String): String? {
     val tagdoc= app.get(url).text
     val tags ="""\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?:""
     return tags

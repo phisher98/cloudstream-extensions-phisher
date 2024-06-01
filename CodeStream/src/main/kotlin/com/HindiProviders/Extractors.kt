@@ -832,7 +832,7 @@ open class Bollyflix : ExtractorApi() {
             url=url
             //Log.d("Phisher else url",url)
         }
-        //Log.d("Phisher domain",url)
+        Log.d("Phisher domain",url)
         app.get(url).document.select("div.text-center a").forEach {
             Log.d("Phisher it url",it.toString())
             if (it.select("a").text().contains("FAST CLOUD DOWNLOAD"))
@@ -849,15 +849,21 @@ open class Bollyflix : ExtractorApi() {
             else
             if (it.select("a").text().contains("DRIVEBOT DOWNLOAD"))
             {
+                /*
                 val link=it.attr("href")
                 //Log.d("Phisher index index",link.toString())
                 val token=link.substringAfter("id=")
-                //Log.d("Phisher index index",link.toString())
+                Log.d("Phisher index index",link.toString())
                 app.get(link).document.select("button").forEach {
-                    val onclick=it.attr("onclick").substringAfter("('").substringBefore("')")
-                    val index=app.post("$onclick/?id=$token").parsedSafe<Bollyflixparse>()?.url ?:""
-                    Log.d("Phisher index index",index.toString())
+                    Log.d("Phisher index index",it.toString())
+                    val onclick=it.attr("onclick").substringAfter("('").substringBefore("',")
+                    Log.d("Phisher index index",onclick.toString())
+                    val posttoken=app.get("$onclick?id=$token").text.substringAfter("token', '").substringBefore("'")
+                    val index=app.post("$onclick?id=$token", data = mapOf("token" to posttoken)).parsedSafe<Bollyflixparse>()?.url ?:""
+                    Log.d("Phisher index index","$onclick?id=$token")
+                    Log.d("Phisher index index",index)
                 }
+                 */
             }
             else
             if (it.select("a").text().contains("Instant Download"))
