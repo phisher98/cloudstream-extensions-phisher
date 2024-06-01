@@ -1529,43 +1529,68 @@ object CodeExtractor : CodeStream() {
                 ?.attr("href")
         res = app.get(media ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
-            res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p))").filter { element -> !element.text().contains("Batch/Zip", true) }
-                .takeLast(2)
+            res.select("$hTag:matches((?i)$sTag.*(1080p|2160p|4K))").filter { element -> !element.text().contains("Batch/Zip", true) }
+                .takeLast(3)
+        Log.d("Phisher Top entries",entries.toString())
         entries.map {
-            val tags =
-                """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
-                    ?.trim()
             val href =
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+            Log.d("Phisher Top href",href.toString())
             val selector =
                 if (season == null) "a.maxbutton-5:contains(Server)" else "h3:matches(Episode $episode) a"
             val server = app.get(
                 href ?: "",headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor
             ).document.selectFirst(selector)
                 ?.attr("href") ?: ""
+            Log.d("Phisher Top",server)
             server.let {
                 val link= bypasstopoviesunblocked(it)
-                link.forEach { urls ->
-                    if (urls.contains("googleusercontent")) {
+                Log.d("Phisher Top it",link)
+                val tags=extracttopmoviestag(link)
+                val tagquality= extracttopmoviestag2(link)
+                app.get(link).document.select("a.btn").forEach {
+                    if (it.text().contains("Instant Download"))
+                    {
+                        val finallink=it.attr("href")
+                        val token = finallink.substringAfter("https://video-leech.xyz/?url=")
+                        val downloadlink = app.post(
+                            url = "https://video-leech.xyz/api",
+                            data = mapOf(
+                                "keys" to token
+                            ),
+                            referer = finallink,
+                            headers = mapOf("x-token" to "video-leech.xyz","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0")
+                        )
+                        val trueurl =
+                            downloadlink.toString().substringAfter("url\":\"")
+                                .substringBefore("\",\"name")
+                                .replace("\\/", "/")
                         callback.invoke(
                             ExtractorLink(
-                                "TopMovies",
-                                "TopMovies",
-                                url = urls,
-                                "",
-                                getIndexQuality(tags)
+                                "TopMovies", "TopMovies $tagquality", trueurl
+                                    ?: "", "", getQualityFromName(tags)
                             )
                         )
-                    } else {
+                    }
+                    if (it.text().contains("Resume Cloud"))
+                    {
+                        val resume=it.attr("href")
+                        val resumelink = when {
+                            resume.isNotEmpty() -> extractResumeTop(resume)
+                            else -> {
+                                ""
+                            }
+                        }
                         callback.invoke(
                             ExtractorLink(
-                                "TopMovies R",
-                                "TopMovies R",
-                                url = urls,
-                                "",
-                                getIndexQuality(tags)
+                                "TopMovies", "TopMoviesR $tagquality", resumelink
+                                , "", getQualityFromName(tags)
                             )
                         )
+                    }
+                    else
+                    {
+                        Log.d("No TopMovies Link Found","")
                     }
                 }
             }
@@ -2116,32 +2141,30 @@ object CodeExtractor : CodeStream() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
-            "$smashyStreamAPI/playere.php?tmdb=$tmdbId"
+            "$smashyStreamAPI/dataa.php?tmdb=$tmdbId"
         } else {
-            "$smashyStreamAPI/playere.php?tmdb=$tmdbId&season=$season&episode=$episode"
+            "$smashyStreamAPI/dataa.php?tmdb=$tmdbId&season=$season&episode=$episode"
         }
-
-        app.get(
+        //Log.d("Phisher it url", url.toString())
+        val json = app.get(
             url,
             referer = "https://smashystream.xyz/"
-        ).document.select("div#_default-servers a.server").map {
-            it.attr("data-url") to it.text()
-        }.apmap {
-            when (it.second) {
-                "Player F" -> {
-                    invokeSmashyFfix(it.second, it.first, url, subtitleCallback, callback)
-                }
-
-                "Player SU" -> {
-                    invokeSmashySu(it.second, it.first, url, callback)
-                }
-
-                else -> return@apmap
+        ).parsedSafe<SmashyRoot>()?.urlArray?.toList()
+        //Log.d("Phisher it url", json.toString())
+        val urlAndNames = json?.let { getUrlAndNames(it) }
+        //Log.d("Phisher it url", urlAndNames.toString())
+        if (urlAndNames != null) {
+            for ((url, name) in urlAndNames) {
+                val link=app.get(url).parsedSafe<SmashySources>()?.sourceUrls
+                if (link!=null)
+                Log.d("Phisher it url", urlAndNames.toString())
             }
         }
-
     }
 
+fun getUrlAndNames(urlArray: List<SmashyUrlArray>): List<Pair<String, String>> {
+    return urlArray.map { it.url to it.name }
+}
     /*         suspend fun invokeNepu(
                     title: String? = null,
                     year: Int? = null,

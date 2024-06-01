@@ -818,9 +818,10 @@ open class Bollyflix : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher url url",url)
+        //Log.d("Phisher url url",url)
         var url=url
         val tags=extractbollytag(url)
+        val tagquality= extractbollytag2(url)
         if (url.startsWith("https://new2.gdflix.cfd/goto/token/"))
         {
             val partialurl=app.get(url).text.substringAfter("replace(\"").substringBefore("\")")
@@ -829,8 +830,9 @@ open class Bollyflix : ExtractorApi() {
         else
         {
             url=url
-            Log.d("Phisher else url",url)
+            //Log.d("Phisher else url",url)
         }
+        //Log.d("Phisher domain",url)
         app.get(url).document.select("div.text-center a").forEach {
             Log.d("Phisher it url",it.toString())
             if (it.select("a").text().contains("FAST CLOUD DOWNLOAD"))
@@ -839,7 +841,7 @@ open class Bollyflix : ExtractorApi() {
                 val trueurl=app.get("https://new2.gdflix.cfd$link").document.selectFirst("a.btn-success")?.attr("href") ?:""
                 callback.invoke(
                     ExtractorLink(
-                        "Bollyflix", "Bollyflix", trueurl
+                        "Bollyflix", "Bollyflix $tagquality", trueurl
                             ?: "", "", getQualityFromName(tags)
                     )
                 )
@@ -848,14 +850,49 @@ open class Bollyflix : ExtractorApi() {
             if (it.select("a").text().contains("DRIVEBOT DOWNLOAD"))
             {
                 val link=it.attr("href")
-                Log.d("Phisher index index",link.toString())
+                //Log.d("Phisher index index",link.toString())
                 val token=link.substringAfter("id=")
-                Log.d("Phisher index index",link.toString())
+                //Log.d("Phisher index index",link.toString())
                 app.get(link).document.select("button").forEach {
                     val onclick=it.attr("onclick").substringAfter("('").substringBefore("')")
                     val index=app.post("$onclick/?id=$token").parsedSafe<Bollyflixparse>()?.url ?:""
                     Log.d("Phisher index index",index.toString())
                 }
+            }
+            else
+            if (it.select("a").text().contains("Instant Download"))
+            {
+                val Instant_link=it.attr("href")
+                val token = Instant_link.substringAfter("url=")
+                val domain= getBaseUrl(Instant_link)
+                Log.d("Phisher domain",Instant_link)
+                Log.d("Phisher domain",domain)
+                val downloadlink = app.post(
+                    url = "$domain/api",
+                    data = mapOf(
+                        "keys" to token
+                    ),
+                    referer = Instant_link,
+                    headers = mapOf(
+                        "x-token" to "direct.zencloud.lol",
+                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
+                    )
+                )
+                Log.d("Phisher domain", Instant_link.toString())
+                val finaldownloadlink =
+                    downloadlink.toString().substringAfter("url\":\"")
+                        .substringBefore("\",\"name")
+                        .replace("\\/", "/")
+                val link = finaldownloadlink
+                callback.invoke(
+                    ExtractorLink(
+                        "Bollyflix",
+                        "Bollyflix $tagquality",
+                        url = link,
+                        "",
+                        getQualityFromName(tags)
+                    )
+                )
             }
             else
             {

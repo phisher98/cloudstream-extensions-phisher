@@ -661,36 +661,9 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-suspend fun bypasstopoviesunblocked(url: String): List<String> {
+suspend fun bypasstopoviesunblocked(url: String): String {
     val driveLink = bypassHrefli(url) ?:""
-    val driveReq = app.get(driveLink)
-    val driveRes = driveReq.document
-    val host = getBaseUrl(url)
-    val header = driveRes.selectFirst("div.mb-4")?.text()
-    val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
-    val resume =
-        driveRes.select("a.btn.btn-warning").attr("href").toString()
-    val resumelink = when {
-        resume.isNotEmpty() -> extractResumeTop(resume)
-        else -> {
-            ""
-        }
-    }
-    val token = finallink?.substringAfter("https://video-leech.xyz/?url=")
-    val downloadlink = app.post(
-        url = "https://video-leech.xyz/api",
-        data = mapOf(
-            "keys" to "$token"
-        ),
-        referer = finallink,
-        headers = mapOf("x-token" to "video-leech.xyz","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0")
-    )
-    val finaldownloadlink =
-        downloadlink.toString().substringAfter("url\":\"")
-            .substringBefore("\",\"name")
-            .replace("\\/", "/")
-    val Servers = listOf(finaldownloadlink, resumelink)
-    return Servers
+    return driveLink
 }
 
 suspend fun getTvMoviesServer(url: String, season: Int?, episode: Int?): Pair<String, String?>? {
@@ -1673,6 +1646,23 @@ object AESGCM {
 suspend fun extractbollytag(url:String): String {
     val tagdoc= app.get(url).text
     val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?:""
+    return tags
+}
+
+suspend fun extractbollytag2(url:String): String {
+    val tagdoc= app.get(url).text
+    val tags ="""\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?:""
+    return tags
+}
+
+suspend fun extracttopmoviestag(url:String): String {
+    val tagdoc= app.get(url).text
+    val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?:""
+    return tags
+}
+suspend fun extracttopmoviestag2(url:String): String {
+    val tagdoc= app.get(url).text
+    val tags ="""\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?:""
     return tags
 }
 
