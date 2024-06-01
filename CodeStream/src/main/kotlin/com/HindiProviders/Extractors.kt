@@ -795,8 +795,16 @@ open class Modflix : ExtractorApi() {
     }
 }
 
+class furher : Filesim() {
+    override val name: String = "AZSeries"
+    override var mainUrl = "https://furher.in"
+}
 class fastdlserver : Bollyflix() {
     override var mainUrl = "https://fastdlserver.online"
+}
+
+class Streamhide : StreamWishExtractor() {
+    override var mainUrl = "https://streamwish.to"
 }
 
 open class Bollyflix : ExtractorApi() {

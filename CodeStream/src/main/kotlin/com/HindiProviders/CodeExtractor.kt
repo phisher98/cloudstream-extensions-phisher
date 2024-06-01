@@ -930,7 +930,6 @@ object CodeExtractor : CodeStream() {
         }
     }
 
-    //still needs work Azseries
     suspend fun invokeazseries(
         title: String? = null,
         season: Int? = null,
@@ -944,7 +943,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$azseriesAPI/episodes/$fixTitle-season-$season-episode-$episode"
         }
-        val res = app.get(url)
+        val res = app.get(url,referer = azseriesAPI)
         if (res.code == 200) {
             val document = res.document
             val id = document.selectFirst("#show_player_lazy")?.attr("movie-id").toString()
@@ -952,12 +951,14 @@ object CodeExtractor : CodeStream() {
                 url = "$azseriesAPI/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "lazy_player",
                     "movieID" to id
-                ), headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                ), headers = mapOf("X-Requested-With" to "XMLHttpRequest"),referer = azseriesAPI
             ).document
-            val server_list = mutableListOf<String>()
-            val servers_url = server_doc.select("div#playeroptions > ul > li ").map {
-                val href = it.attr("data-vs")
-            }.amap { href ->
+            server_doc.select("div#playeroptions > ul > li").forEach {
+                it.attr("data-vs").let { href->
+                    val response=app.get(href, referer = azseriesAPI, allowRedirects = false).headers["Location"] ?:""
+                    Log.d("AZSeries",response)
+                    loadExtractor(response,subtitleCallback, callback)
+                }
             }
         }
     }
@@ -1026,7 +1027,6 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
-        //Log.d("test vidsrc",url)
         loadExtractor(url, subtitleCallback, callback)
     }
 
@@ -3253,7 +3253,7 @@ object CodeExtractor : CodeStream() {
     ) {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         var res = app.get("$bollyflixAPI/search/$title").document
-        Log.d("Phisher url","$bollyflixAPI/search/$title".toString())
+        //Log.d("Phisher url","$bollyflixAPI/search/$title".toString())
         val match = when (season) {
             null -> "$year"
             1 -> "Season 1"
@@ -3262,7 +3262,6 @@ object CodeExtractor : CodeStream() {
         val media =
             res.selectFirst("#content_box article:has(h2.title:matches((?i)$title.*$match)) a")
                 ?.attr("href")
-        Log.d("Phisher media",media.toString())
         res = app.get(media ?: return).document
         val hTag = if (season == null) "h5" else "h4"
         //val aTag = if (season == null) "" else ""
@@ -3270,7 +3269,7 @@ object CodeExtractor : CodeStream() {
         val entries =
             res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(1080p|2160p))")
                 .filter { element -> !element.text().contains("Nothing", true) }
-        Log.d("Phisher media entries",entries.toString())
+        //Log.d("Phisher media entries",entries.toString())
         entries.map {
             val href =it.nextElementSibling()?.select("p a")?.attr("href")
             //Log.d("Phisher media entries",href.toString())

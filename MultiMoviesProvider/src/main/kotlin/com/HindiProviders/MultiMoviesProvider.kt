@@ -23,6 +23,10 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         TvType.AnimeMovie,
     )
 
+    companion object
+    {
+        val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0", "X-Requested-With" to "XMLHttpRequest")
+    }
     override val mainPage = mainPageOf(
         "$mainUrl/trending/" to "Trending",
         "$mainUrl/genre/bollywood-movies/" to "Bollywood Movies",
@@ -50,7 +54,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         val document = if (page == 1) {
             app.get(request.data).document
         } else {
-            app.get(request.data + "page/$page/").document
+            app.get(request.data + "page/$page/", headers=headers).document
         }
 
         //Log.d("Document", request.data)
@@ -93,7 +97,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query", headers=headers).document
         //Log.d("document", document.toString())
 
         return document.select("div.result-item").mapNotNull {
@@ -148,7 +152,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     )
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
+        val doc = app.get(url, headers=headers).document
         //Log.d("Doc", doc.toString())
         val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.toString()?.trim()
             ?: return null
@@ -253,7 +257,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val req = app.get(data).document
+        val req = app.get(data, headers=headers).document
         Log.d("Phisher Test Load url", data)
         req.select("ul#playeroptionsul li").map {
             Triple(
