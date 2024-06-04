@@ -1000,6 +1000,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$MOVIE_API/embed/$id/$season/$episode"
         }
+        Log.d("Phisher ID",url)
         val movieid =
             app.get(url).document.selectFirst("#embed-player")?.attr("data-movie-id")
                 ?: return
@@ -1028,7 +1029,7 @@ object CodeExtractor : CodeStream() {
         } else {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
-        //Log.d("Phisher ID",url)
+        Log.d("Phisher ID",url)
         loadExtractor(url, subtitleCallback, callback)
     }
 
@@ -1765,7 +1766,7 @@ object CodeExtractor : CodeStream() {
         }
     }
 
-    /*             suspend fun invokeHdmovies4u(
+          suspend fun invokeHdmovies4u(
                     title: String? = null,
                     imdbId: String? = null,
                     season: Int? = null,
@@ -1783,6 +1784,7 @@ object CodeExtractor : CodeStream() {
                                 if (season == null) "a" else "a:matches((?i)$title.*Season $season)"
                             it.selectFirst("div.gridxw.gridxe $selector")?.attr("href")
                         }
+              Log.d("Phisher HD",media.toString())
                     val selector =
                         if (season == null) "1080p|2160p" else "(?i)Episode.*(?:1080p|2160p)"
                     app.get(media ?: return).document.select("section h4:matches($selector)")
@@ -1793,6 +1795,7 @@ object CodeExtractor : CodeStream() {
                             val link = ele.nextElementSibling()?.select("a:contains(DriveTOT)")
                                 ?.attr("href")
                             val iframe = bypassBqrecipes(link?.decodeLink() ?: return@apmap).let {
+                                Log.d("Phisher HD",it.toString())
                                 if (it?.contains("/pack/") == true) {
                                     val href =
                                         app.get(it).document.select("table tbody tr:contains(S${seasonSlug}E${episodeSlug}) a")
@@ -1811,8 +1814,6 @@ object CodeExtractor : CodeStream() {
                             )
                         }
                 }
-
-    */
 
 
     suspend fun invokeFDMovies(

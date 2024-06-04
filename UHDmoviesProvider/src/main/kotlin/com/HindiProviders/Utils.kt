@@ -175,6 +175,45 @@ suspend fun extractDirectUHD(url: String, niceResponse: NiceResponse): String? {
 
 }
 
+open class UHDMovies : ExtractorApi() {
+    override val name: String = "UHDMovies"
+    override val mainUrl: String = "https://video-seed.xyz"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        finallink: String,
+        quality: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val token = finallink.substringAfter("https://video-seed.xyz/?url=")
+        val downloadlink = app.post(
+            url = "https://video-seed.xyz/api",
+            data = mapOf(
+                "keys" to token
+            ),
+            referer = finallink,
+            headers = mapOf(
+                "x-token" to "video-seed.xyz",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
+            )
+        )
+        val finaldownloadlink =
+            downloadlink.toString().substringAfter("url\":\"")
+                .substringBefore("\",\"name")
+                .replace("\\/", "/")
+        val link = finaldownloadlink
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                url = link,
+                "",
+                getQualityFromName(quality)
+            )
+        )
+    }
+}
 
 
 

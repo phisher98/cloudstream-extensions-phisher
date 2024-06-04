@@ -7,6 +7,7 @@ import com.HindiProviders.CodeStream.Companion.anilistAPI
 import com.HindiProviders.CodeStream.Companion.crunchyrollAPI
 import com.HindiProviders.CodeStream.Companion.filmxyAPI
 import com.HindiProviders.CodeStream.Companion.gdbot
+import com.HindiProviders.CodeStream.Companion.hdmovies4uAPI
 //import com.HindiProviders.CodeStream.Companion.hdmovies4uAPI
 import com.HindiProviders.CodeStream.Companion.malsyncAPI
 import com.HindiProviders.CodeStream.Companion.tvMoviesAPI
@@ -535,7 +536,7 @@ suspend fun fetchDumpEpisodes(id: String, type: String, episode: Int?): EpisodeV
     }
 }
 
-/*suspend fun invokeDrivetot(
+suspend fun invokeDrivetot(
     url: String,
     tags: String? = null,
     size: String? = null,
@@ -565,8 +566,6 @@ suspend fun fetchDumpEpisodes(id: String, type: String, episode: Int?): EpisodeV
             }
         }
 }
-
- */
 
 suspend fun bypassBqrecipes(url: String): String? {
     var res = app.get(url)

@@ -248,13 +248,12 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        //Log.d("Phisher Test 2", data)
+        Log.d("Phisher Test 2", data)
         if (data.startsWith("https://"))
         {
             data.let { me ->
                 val link = me
                 val driveLink = bypassHrefli(link) ?: ""
-                Log.d("Phisher 2 driveLink", driveLink)
                 val base = getBaseUrl(driveLink)
                 val driveReq = app.get(driveLink)
                 val driveRes = driveReq.document
@@ -284,12 +283,17 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val pixeldrain = extractPixeldrainUHD(bitLink)
                 val serverslist = listOf(downloadLink, resume, pixeldrain)
                 serverslist.forEach {
-                    callback.invoke(
-                        ExtractorLink(
-                            "UHDMovies", "UHDMovies", it
-                                ?: "", "", getQualityFromName("")
-                        )
-                    )
+                    if (it != null) {
+                        if (it.contains("https://video-leech.xyz")) {
+                            loadExtractor(it,subtitleCallback,callback)
+                        } else
+                            callback.invoke(
+                                ExtractorLink(
+                                    "UHDMovies", "UHDMovies", it
+                                        ?: "", "", getQualityFromName("")
+                                )
+                            )
+                    }
                 }
             }
         }
@@ -325,14 +329,19 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 }
                 val resume = extractResumeUHD(bitLink)
                 val pixeldrain = extractPixeldrainUHD(bitLink)
-                val serverslist = listOf(downloadLink, resume, pixeldrain)
+                val serverslist = listOf(downloadLink, resume, pixeldrain,insLink)
                 serverslist.forEach {
-                    callback.invoke(
-                        ExtractorLink(
-                            "UHDMovies", "UHDMovies", it
-                                ?: "", "", getQualityFromName("")
-                        )
-                    )
+                    if (it != null) {
+                        if (it.contains("https://video-leech.xyz")) {
+                                loadExtractor(it,subtitleCallback,callback)
+                        } else
+                            callback.invoke(
+                                ExtractorLink(
+                                    "UHDMovies", "UHDMovies", it
+                                        ?: "", "", getQualityFromName("")
+                                )
+                            )
+                    }
                 }
             }
         }

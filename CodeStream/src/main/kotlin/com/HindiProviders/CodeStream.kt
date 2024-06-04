@@ -25,7 +25,7 @@ import com.HindiProviders.CodeExtractor.invokeFilmxy
 import com.HindiProviders.CodeExtractor.invokeFlixon
 import com.HindiProviders.CodeExtractor.invokeGhostx
 import com.HindiProviders.CodeExtractor.invokeGoku
-//import com.HindiProviders.CodeExtractor.invokeHdmovies4u
+import com.HindiProviders.CodeExtractor.invokeHdmovies4u
 import com.HindiProviders.CodeExtractor.invokeKimcartoon
 import com.HindiProviders.CodeExtractor.invokeKisskh
 import com.HindiProviders.CodeExtractor.invokeLing
@@ -163,7 +163,7 @@ open class CodeStream : TmdbProvider() {
         const val uhdmoviesAPI = "https://uhdmovies.foo"
         const val topmoviesAPI = "https://topmovies.foo"
         const val MoviesmodAPI= "https://moviesmod.life"
-//        const val hdmovies4uAPI = "https://hdmovies4u.eu"
+        const val hdmovies4uAPI = "https://hdmovies4u.fans"
         const val vegaMoviesAPI = "https://vegamovies.ist"
         const val dotmoviesAPI = "https://luxmovies.vip"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
@@ -723,7 +723,7 @@ open class CodeStream : TmdbProvider() {
         )
     },
     {
-        invokeVegamovies(
+        if (!res.isAnime) invokeVegamovies(
             res.title,
             res.year,
             res.season,
@@ -790,7 +790,7 @@ open class CodeStream : TmdbProvider() {
             callback
         )
     },
-/*      {
+      {
         if (!res.isAnime) invokeHdmovies4u(
             res.title,
             res.imdbId,
@@ -800,7 +800,7 @@ open class CodeStream : TmdbProvider() {
             callback
         )
     },
-*/ {
+ {
         if (res.isAsian) invokeAsianHD(
             res.title,
             res.year,
