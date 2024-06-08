@@ -1,6 +1,7 @@
 package com.Toonstream
 
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -32,8 +33,12 @@ open class Vidstreaming : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val doc = app.get(url).text
+        val key =
+            app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json")
+                .parsedSafe<Keys>()?.key?.get(0)
+                ?: throw ErrorLoadingException("Unable to get key")
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
-        val decrypt = AesHelper.cryptoAESHandler(master, "H&5+Tx_nQcdK{U,.".toByteArray(), false)
+        val decrypt = AesHelper.cryptoAESHandler(master, key.toByteArray(), false)
             ?.replace("\\", "")
             ?: throw ErrorLoadingException("error decrypting")
         val vidFinal = Extractvidlink(decrypt)
@@ -138,3 +143,7 @@ class FileMoonnl : Filesim() {
     override val mainUrl = "https://filemoon.nl"
     override val name = "FileMoon"
 }
+
+data class Keys(
+    @JsonProperty("chillx") val key: List<String>
+)
