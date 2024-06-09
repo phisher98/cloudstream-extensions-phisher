@@ -88,9 +88,7 @@ class Dramacool : MainAPI() {
         val d = tryParseJson<LoadUrl>(url) ?: return null
         val document = app.get(d.url, referer = "$mainUrl/").document
         val title = document.selectFirst("h1")?.text()?.trim() ?: return null
-        val poster = document.selectFirst(".film-poster img")?.attr("src") ?: return null
-        val description = document.selectFirst(".text_above_player > p")?.text()
-        
+        val poster = "https://miro.medium.com/v2/resize:fit:1400/1*0VnqMRcnyXuKawhsQHE2pg.png"
         val episodes = document.select("#all-episodes ul li").mapNotNull { el ->
             el.select("a").mapNotNull {
                 val href = fixUrl(it.attr("data-source"))
@@ -100,9 +98,8 @@ class Dramacool : MainAPI() {
             }
         }.flatten()
 
-
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-            posterUrl = d.posterUrl
+            posterUrl=poster
         }
     }
 
