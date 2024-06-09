@@ -48,7 +48,7 @@ class Dramacool : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse? {
         val title = selectFirst("h3")?.text()?.trim() ?: return null
         val href = fixUrlNull(selectFirst("a")?.attr("href")) ?: return null
-        val posterUrl = fixUrlNull(selectFirst("img")?.attr("data-src"))
+        val posterUrl = fixUrlNull(selectFirst("img")?.attr("src"))
 
         return newAnimeSearchResponse(title, LoadUrl(href, posterUrl).toJson()) {
             this.posterUrl = posterUrl
@@ -88,7 +88,9 @@ class Dramacool : MainAPI() {
         val d = tryParseJson<LoadUrl>(url) ?: return null
         val document = app.get(d.url, referer = "$mainUrl/").document
         val title = document.selectFirst("h1")?.text()?.trim() ?: return null
-
+        val poster = document.selectFirst(".film-poster img")?.attr("src") ?: return null
+        val description = document.selectFirst(".text_above_player > p")?.text()
+        
         val episodes = document.select("#all-episodes ul li").mapNotNull { el ->
             el.select("a").mapNotNull {
                 val href = fixUrl(it.attr("data-source"))
