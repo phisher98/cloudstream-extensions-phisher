@@ -587,6 +587,11 @@ class Animezia : VidhideExtractor() {
     override var mainUrl = "https://animezia.cloud"
 }
 
+class Servertwo : VidhideExtractor() {
+    override var name = "MultiMovies Vidhide"
+    override var mainUrl = "https://server2.shop"
+}
+
 class Filelion : Filesim() {
     override val name = "Filelion"
     override var mainUrl = "https://filelions.to"

@@ -78,5 +78,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(VidSrcExtractor())
         registerExtractorAPI(vidsrcme())
         registerExtractorAPI(vidsrc())
+        registerExtractorAPI(Servertwo())
     }
 }

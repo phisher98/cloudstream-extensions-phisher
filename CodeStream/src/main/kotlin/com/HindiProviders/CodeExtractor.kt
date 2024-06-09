@@ -231,7 +231,7 @@ object CodeExtractor : CodeStream() {
                     name = "MultiEmbeded API",
                     url = file,
                     referer = "",
-                    quality = Qualities.Unknown.value,
+                    quality = Qualities.P1080.value,
                     type = INFER_TYPE
                 )
             )
