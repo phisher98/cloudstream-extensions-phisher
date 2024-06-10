@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.Vidmolyme
+import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.Voe
 
 @CloudstreamPlugin
@@ -76,8 +77,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(furher())
         registerExtractorAPI(Streamhide())
         registerExtractorAPI(VidSrcExtractor())
-        registerExtractorAPI(vidsrcme())
-        registerExtractorAPI(vidsrc())
         registerExtractorAPI(Servertwo())
     }
 }
