@@ -164,13 +164,13 @@ open class CodeStream : TmdbProvider() {
         const val topmoviesAPI = "https://topmovies.foo"
         const val MoviesmodAPI= "https://moviesmod.life"
         const val hdmovies4uAPI = "https://hdmovies4u.fans"
-        const val vegaMoviesAPI = "https://vegamovies.ist"
+        const val vegaMoviesAPI = "https://vegamovies.mex.com"
         const val dotmoviesAPI = "https://luxmovies.vip"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
         const val MovieDrive_API=BuildConfig.MovieDrive_API
         const val Asiandrama_API=BuildConfig.AsianDrama_API
-        const val bollyflixAPI = "https://bollyflix.cat"
+        const val bollyflixAPI = "https://bollyflix.city"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
