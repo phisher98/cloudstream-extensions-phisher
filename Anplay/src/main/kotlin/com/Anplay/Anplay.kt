@@ -11,7 +11,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 open class Anplay : MainAPI() {
-    override var mainUrl = "https://anplay.in"
+    override var mainUrl = "https://backup.anplay.in"
     override var name = "Anplay"
     override val hasMainPage = true
     override var lang = "hi"
