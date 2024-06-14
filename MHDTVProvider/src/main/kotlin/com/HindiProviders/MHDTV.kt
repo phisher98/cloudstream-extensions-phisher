@@ -11,15 +11,13 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
-import okhttp3.AsyncDns
-import okhttp3.Callback
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.nio.charset.StandardCharsets
 
 class MHDTV : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://nowmetv.com"
-    override var name = "MHDTVMaxTV"
+    override var mainUrl = "https://nowmaxtv.com"
+    override var name = "MHDTV"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = false
