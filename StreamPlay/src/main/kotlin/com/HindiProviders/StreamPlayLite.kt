@@ -1,49 +1,49 @@
 package com.HindiProviders
 
-import com.HindiProviders.CodeExtractor.invoke2embed
-import com.HindiProviders.CodeExtractor.invokeAllMovieland
-import com.HindiProviders.CodeExtractor.invokeAnimes
-import com.HindiProviders.CodeExtractor.invokeAoneroom
-import com.HindiProviders.CodeExtractor.invokeDoomovies
-import com.HindiProviders.CodeExtractor.invokeDramaday
-import com.HindiProviders.CodeExtractor.invokeDreamfilm
-import com.HindiProviders.CodeExtractor.invokeFilmxy
-import com.HindiProviders.CodeExtractor.invokeFlixon
-import com.HindiProviders.CodeExtractor.invokeGoku
-import com.HindiProviders.CodeExtractor.invokeKimcartoon
-import com.HindiProviders.CodeExtractor.invokeKisskh
-import com.HindiProviders.CodeExtractor.invokeLing
-import com.HindiProviders.CodeExtractor.invokeM4uhd
-import com.HindiProviders.CodeExtractor.invokeNinetv
-import com.HindiProviders.CodeExtractor.invokeNowTv
-import com.HindiProviders.CodeExtractor.invokeRStream
-import com.HindiProviders.CodeExtractor.invokeRidomovies
-//import com.HindiProviders.CodeExtractor.invokeSmashyStream
-import com.HindiProviders.CodeExtractor.invokeDumpStream
-import com.HindiProviders.CodeExtractor.invokeEmovies
-import com.HindiProviders.CodeExtractor.invokeMultimovies
-import com.HindiProviders.CodeExtractor.invokeNetmovies
-import com.HindiProviders.CodeExtractor.invokeShowflix
-import com.HindiProviders.CodeExtractor.invokeVidSrc
-import com.HindiProviders.CodeExtractor.invokeVidsrcto
-import com.HindiProviders.CodeExtractor.invokeCinemaTv
-import com.HindiProviders.CodeExtractor.invokeMoflix
-import com.HindiProviders.CodeExtractor.invokeGhostx
-//import com.HindiProviders.CodeExtractor.invokeNepu
-import com.HindiProviders.CodeExtractor.invokeWatchCartoon
-import com.HindiProviders.CodeExtractor.invokeWatchsomuch
-import com.HindiProviders.CodeExtractor.invokeZoechip
-import com.HindiProviders.CodeExtractor.invokeZshow
-import com.HindiProviders.CodeExtractor.invokeMoviesdrive
-import com.HindiProviders.CodeExtractor.invokeVegamovies
-import com.HindiProviders.CodeExtractor.invokeDotmovies
+import com.HindiProviders.StreamPlayExtractor.invoke2embed
+import com.HindiProviders.StreamPlayExtractor.invokeAllMovieland
+import com.HindiProviders.StreamPlayExtractor.invokeAnimes
+import com.HindiProviders.StreamPlayExtractor.invokeAoneroom
+import com.HindiProviders.StreamPlayExtractor.invokeDoomovies
+import com.HindiProviders.StreamPlayExtractor.invokeDramaday
+import com.HindiProviders.StreamPlayExtractor.invokeDreamfilm
+import com.HindiProviders.StreamPlayExtractor.invokeFilmxy
+import com.HindiProviders.StreamPlayExtractor.invokeFlixon
+import com.HindiProviders.StreamPlayExtractor.invokeGoku
+import com.HindiProviders.StreamPlayExtractor.invokeKimcartoon
+import com.HindiProviders.StreamPlayExtractor.invokeKisskh
+import com.HindiProviders.StreamPlayExtractor.invokeLing
+import com.HindiProviders.StreamPlayExtractor.invokeM4uhd
+import com.HindiProviders.StreamPlayExtractor.invokeNinetv
+import com.HindiProviders.StreamPlayExtractor.invokeNowTv
+import com.HindiProviders.StreamPlayExtractor.invokeRStream
+import com.HindiProviders.StreamPlayExtractor.invokeRidomovies
+//import com.HindiProviders.StreamPlayExtractor.invokeSmashyStream
+import com.HindiProviders.StreamPlayExtractor.invokeDumpStream
+import com.HindiProviders.StreamPlayExtractor.invokeEmovies
+import com.HindiProviders.StreamPlayExtractor.invokeMultimovies
+import com.HindiProviders.StreamPlayExtractor.invokeNetmovies
+import com.HindiProviders.StreamPlayExtractor.invokeShowflix
+import com.HindiProviders.StreamPlayExtractor.invokeVidSrc
+import com.HindiProviders.StreamPlayExtractor.invokeVidsrcto
+import com.HindiProviders.StreamPlayExtractor.invokeCinemaTv
+import com.HindiProviders.StreamPlayExtractor.invokeMoflix
+import com.HindiProviders.StreamPlayExtractor.invokeGhostx
+//import com.HindiProviders.StreamPlayExtractor.invokeNepu
+import com.HindiProviders.StreamPlayExtractor.invokeWatchCartoon
+import com.HindiProviders.StreamPlayExtractor.invokeWatchsomuch
+import com.HindiProviders.StreamPlayExtractor.invokeZoechip
+import com.HindiProviders.StreamPlayExtractor.invokeZshow
+import com.HindiProviders.StreamPlayExtractor.invokeMoviesdrive
+import com.HindiProviders.StreamPlayExtractor.invokeVegamovies
+import com.HindiProviders.StreamPlayExtractor.invokeDotmovies
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
-class CodeStreamLite : CodeStream() {
-    override var name = "CodeStream-Lite"
+class StreamPlayLite : StreamPlay() {
+    override var name = "StreamPlay-Lite"
 
     override suspend fun loadLinks(
         data: String,

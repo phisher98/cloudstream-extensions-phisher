@@ -20,12 +20,11 @@ import org.jsoup.*
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import okio.ByteString.Companion.decodeBase64
 import org.mozilla.javascript.Scriptable
 
 val session = Session(Requests().baseClient)
 
-object CodeExtractor : CodeStream() {
+object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeGoku(
         title: String? = null,
