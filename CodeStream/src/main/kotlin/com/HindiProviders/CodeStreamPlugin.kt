@@ -78,5 +78,6 @@ class CodeStreamPlugin: Plugin() {
         registerExtractorAPI(Streamhide())
         registerExtractorAPI(VidSrcExtractor())
         registerExtractorAPI(Servertwo())
+        registerExtractorAPI(MultimoviesAIO())
     }
 }

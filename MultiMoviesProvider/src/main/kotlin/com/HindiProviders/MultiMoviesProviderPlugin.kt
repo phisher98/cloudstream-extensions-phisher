@@ -18,5 +18,6 @@ class MultiMoviesProviderPlugin: Plugin() {
         registerExtractorAPI(DoodLaExtractor())
         registerExtractorAPI(Animezia())
         registerExtractorAPI(server2())
+        registerExtractorAPI(MultimoviesAIO())
     }
 }

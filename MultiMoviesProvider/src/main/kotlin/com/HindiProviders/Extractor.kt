@@ -9,6 +9,11 @@ class Multimovies : StreamWishExtractor() {
     override var mainUrl = "https://multimovies.cloud"
 }
 
+class MultimoviesAIO: StreamWishExtractor() {
+    override var name = "Multimovies Cloud AIO"
+    override var mainUrl = "https://allinonedownloader.fun"
+}
+
 class Animezia : VidhideExtractor() {
     override var name = "Animezia"
     override var mainUrl = "https://animezia.cloud"

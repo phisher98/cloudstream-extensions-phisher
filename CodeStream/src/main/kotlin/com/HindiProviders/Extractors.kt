@@ -8,9 +8,7 @@ import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.Voe
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
-import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -27,10 +25,6 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.cloudstream3.base64Encode
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -595,6 +589,11 @@ class Servertwo : VidhideExtractor() {
 class Filelion : Filesim() {
     override val name = "Filelion"
     override var mainUrl = "https://filelions.to"
+}
+
+class MultimoviesAIO: com.lagradost.cloudstream3.extractors.StreamWishExtractor() {
+    override var name = "Multimovies Cloud AIO"
+    override var mainUrl = "https://allinonedownloader.fun"
 }
 
 class Flaswish : Ridoo() {
