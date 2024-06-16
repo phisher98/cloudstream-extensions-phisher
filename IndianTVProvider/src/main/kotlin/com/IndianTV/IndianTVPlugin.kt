@@ -6,11 +6,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.getRhinoContext
-import org.mozilla.javascript.Scriptable
 import android.util.Base64
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.Coroutines.mainWork
 import org.jsoup.nodes.Document
 import java.nio.charset.StandardCharsets
 
@@ -79,7 +75,7 @@ class IndianTVPlugin : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        if (url.contains("m3u8"))
+        if (url.contains("jiotv"))
         {
             val title ="JioTV"
             val poster ="https://i0.wp.com/www.smartprix.com/bytes/wp-content/uploads/2021/08/JioTV-on-smart-TV.png?fit=1200%2C675&ssl=1"
@@ -90,6 +86,18 @@ class IndianTVPlugin : MainAPI() {
                 this.plot = showname
             }
         }
+        else
+            if (url.contains("tata"))
+            {
+                val title ="TATA"
+                val poster ="https://cdn.mos.cms.futurecdn.net/iYdoTcTScdApk3JV5GfEAT-1920-80.jpg"
+                val showname ="TATA"
+
+                return newMovieLoadResponse(title, url, TvType.Live, url) {
+                    this.posterUrl = poster
+                    this.plot = showname
+                }
+            }
             val document = app.get(url, headers = mapOf("User-Agent" to Useragent)).document
             val title =document.selectFirst("div.program-info > span.channel-name")?.text()?.trim().toString()
             val poster ="https://cdn.mos.cms.futurecdn.net/iYdoTcTScdApk3JV5GfEAT-1920-80.jpg"
@@ -111,7 +119,24 @@ class IndianTVPlugin : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data, headers = mapOf("User-Agent" to Useragent)).document
+        //val document = app.get(data, headers = mapOf("User-Agent" to Useragent)).document
+        Log.d("Phisher",data)
+        if (data.contains("jiotv"))
+        {
+            val channelID=data.substringAfter("=")
+            val link="https://madplay.live/hls/jiotv/stream.php?id=$channelID&e=.m3u8"
+            callback.invoke(
+                ExtractorLink(
+                    source = "INDIAN TV",
+                    name = "INDIAN TV",
+                    url = link,
+                    referer = "",
+                    quality = Qualities.Unknown.value,
+                    isM3u8 = true,
+                )
+            )
+        }
+        /*
         if (data.contains("jiotv.php")) {
             Log.d("Rhinoout", data)
             val scripts = document.select("script")
@@ -154,7 +179,8 @@ class IndianTVPlugin : MainAPI() {
                     )
                 )
             }
-        } else
+        } */
+        else
             if (data.contains("tata")) {
                 Log.d("Rhinoout", data)
                 val doc=app.get(data).text
@@ -165,7 +191,9 @@ class IndianTVPlugin : MainAPI() {
                 val finalkeyid = decodeHex(newkeyId)
                 Log.d("Rhinoout link", link)
                 Log.d("Rhinoout newkeyId", newkeyId)
+                Log.d("Rhinoout newkeyId", finalkeyid)
                 Log.d("Rhinoout newkey", newkey)
+                Log.d("Rhinoout newkeyId", finalkey)
                 callback.invoke(
                     DrmExtractorLink(
                         source = "INDIAN TV",
