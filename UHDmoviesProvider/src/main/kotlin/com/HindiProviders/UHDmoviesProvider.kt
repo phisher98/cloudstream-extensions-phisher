@@ -279,6 +279,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         extractMirrorUHD(bitLink, base)
                     }
                 }
+                Log.d("Phisher bitLink",bitLink)
+                Log.d("Phisher downloadLink",downloadLink.toString())
                 val resume = extractResumeUHD(bitLink)
                 val pixeldrain = extractPixeldrainUHD(bitLink)
                 val serverslist = listOf(downloadLink, resume, pixeldrain)
@@ -299,6 +301,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         }
         else {
             val sources = parseJson<ArrayList<UHDLinks>>(data)
+            Log.d("Phisher sources",sources.toString())
             sources.apmap { me ->
                 val link = me.sourceLink
                 val driveLink = bypassHrefli(link) ?: ""
@@ -327,6 +330,9 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         extractMirrorUHD(bitLink, base)
                     }
                 }
+                val rawtag=sources.apmap { it.sourceName }.toString()
+                val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)?.substringBefore(",")
+                val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1)
                 val resume = extractResumeUHD(bitLink)
                 val pixeldrain = extractPixeldrainUHD(bitLink)
                 val serverslist = listOf(downloadLink, resume, pixeldrain,insLink)
@@ -337,8 +343,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         } else
                             callback.invoke(
                                 ExtractorLink(
-                                    "UHDMovies", "UHDMovies", it
-                                        ?: "", "", getQualityFromName("")
+                                    "UHDMovies", "UHDMovies $tag", it
+                                        ?: "", "", getQualityFromName(quality)
                                 )
                             )
                     }
