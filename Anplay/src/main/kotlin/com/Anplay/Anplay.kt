@@ -85,7 +85,9 @@ open class Anplay : MainAPI() {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
             val href = getProperLink(it.selectFirst("div.title > a")!!.attr("href"))
-            val posterUrl = it.selectFirst("img")!!.attr("src").toString()
+            val posterlink=app.get(href).document.select("div.poster img").attr("src")
+            val posterUrl = posterlink
+                //it.selectFirst("img")!!.attr("src").toString()
             newMovieSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
