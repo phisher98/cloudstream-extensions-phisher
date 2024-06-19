@@ -109,8 +109,8 @@ class MPDPlayer : MainAPI() {
                     referer = "",
                     quality = Qualities.Unknown.value,
                     type = INFER_TYPE,
-                    kid = loadData.keyid,
-                    key = loadData.key,
+                    kid = loadData.keyid.trim(),
+                    key = loadData.key.trim(),
                 )
             )
         }

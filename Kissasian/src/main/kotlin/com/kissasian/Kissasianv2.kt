@@ -1,5 +1,6 @@
 package com.kissasian
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
@@ -109,13 +110,13 @@ open class Kissasianv2 : MainAPI() {
         val server = document.selectFirst("select#selectServer option")?.attr("value")
         val iframe = app.get(httpsify(server ?: return false))
         val iframeDoc = iframe.document
-
         argamap({
             iframeDoc.select(".list-server-items > .linkserver")
                 .forEach { element ->
                     val status = element.attr("data-status") ?: return@forEach
                     if (status != "1") return@forEach
                     val extractorData = element.attr("data-video") ?: return@forEach
+                    Log.d("Phisher Server",iframe.url)
                     loadExtractor(extractorData, iframe.url, subtitleCallback, callback)
                 }
         }, {

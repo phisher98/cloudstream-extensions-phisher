@@ -23,11 +23,17 @@ class Kissasian : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
+        "drama-list/ongoing.html" to "Drama Ongoing",
         "recently-updated" to "Recently Updated",
         "recently-added" to "Recently Added",
         "filter?type=1&status=2&country=2&sort=updated?page=" to "Japanese",
         "filter?type=1&status=2&country=5&sort=updated?page=" to "Chinese",
-        "movie" to "Movies",
+        "filter?type=1&status=2&country=1&sort=updated?page=" to "Korean Drama",
+        "filter?type=2&status=2&country=1&sort=updated?page=" to "Korean Movies",
+        "filter?type=1&status=2&country=2&sort=updated?page=" to "Japanese Drama",
+        "filter?type=2&status=2&country=2&sort=updated?page=" to "Japanese Movies",
+        "filter?type=1&status=2&country=5&sort=updated?page=" to "Chinese Drama",
+        "filter?type=2&status=2&country=5&sort=updated?page=" to "Chinese Movies",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -111,6 +117,7 @@ class Kissasian : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        Log.d("Phisher Data",data)
         val parts = data.split("?ep=")
         val showname = parts[0].substringAfterLast("/")
         val ep = parts[1]
@@ -121,46 +128,27 @@ class Kissasian : MainAPI() {
                 ).text
             ).html
         ).select("div.ps__-list > div.item.server-item").forEach {
+            val servername=it.text()
             val serverid=it.attr("data-id")
             val apiRes =
                 app.get("$mainUrl/ajax/v2/episode/sources?id=$serverid")
                     .parsedSafe<APISourceresponse>()
             val fstream=apiRes?.link.toString()
             val response = app.get(fstream,referer = mainUrl, headers = xmlHeader, interceptor = WebViewResolver(Regex("""ajax/getSources""")))
-            val test=response.text.replace("\": ","\":")
+            val extractdata=response.text.replace("\": ","\":")
             val regex = """"file":"(.*?)""""
-            val matchResult = regex.toRegex().find(test)
-            val fileUrl = matchResult?.groups?.get(1)?.value
-            if (fileUrl!=null)
-            {
-                if (fileUrl.contains("mp4"))
-                {
-                    Log.d("Test5",fileUrl)
+            val matchResult = regex.toRegex().find(extractdata)
+            val source = matchResult?.groups?.get(1)?.value ?:""
                     callback.invoke(
                         ExtractorLink(
                             source = name,
-                            name = name,
-                            url = fileUrl,
+                            name = "$name $servername",
+                            url = source,
                             referer = "$mainUrl/",
-                            quality = Qualities.Unknown.value,
-                            isM3u8 = false
+                            quality = Qualities.P1080.value,
+                            type = INFER_TYPE
                         )
                     )
-                }
-                else {
-                    Log.d("Test6",fileUrl)
-                    callback.invoke(
-                        ExtractorLink(
-                            source = name,
-                            name = name,
-                            url = fileUrl,
-                            referer = "$mainUrl/",
-                            quality = Qualities.Unknown.value,
-                            isM3u8 = true
-                        )
-                    )
-                }
-            }
         }
         return true
     }
@@ -174,4 +162,10 @@ class Kissasian : MainAPI() {
         @JsonProperty("type") val type: String,
         @JsonProperty("link") val link: String? = null,
     )
+
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
+        }
+    }
 }
