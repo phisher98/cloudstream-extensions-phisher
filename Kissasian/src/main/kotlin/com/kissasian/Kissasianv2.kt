@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 open class Kissasianv2 : MainAPI() {
-    override var mainUrl = "https://kissasiantv.la"
+    override var mainUrl = "https://kissasiantv.to"
     override var name = "Kissasian V2"
     override val hasMainPage = true
     override val hasDownloadSupport = true
@@ -36,7 +36,7 @@ open class Kissasianv2 : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}$page").document
-        val home = document.select("div.list-drama div.item").mapNotNull {
+        val home = document.select("div.item,div.flw-item").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
@@ -44,8 +44,8 @@ open class Kissasianv2 : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse? {
         val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
-        val title = this.selectFirst("span.title")?.text()?.trim() ?: return null
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        val title = this.selectFirst("span.title")?.text()?.trim() ?:""
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src")) ?:""
         return newTvSeriesSearchResponse(title, href, TvType.AsianDrama) {
             this.posterUrl = posterUrl
         }
