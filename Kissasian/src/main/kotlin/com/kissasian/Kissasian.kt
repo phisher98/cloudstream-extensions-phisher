@@ -24,10 +24,7 @@ class Kissasian : MainAPI() {
 
     override val mainPage = mainPageOf(
         "drama-list/ongoing.html" to "Drama Ongoing",
-        "recently-updated" to "Recently Updated",
         "recently-added" to "Recently Added",
-        "filter?type=1&status=2&country=2&sort=updated?page=" to "Japanese",
-        "filter?type=1&status=2&country=5&sort=updated?page=" to "Chinese",
         "filter?type=1&status=2&country=1&sort=updated?page=" to "Korean Drama",
         "filter?type=2&status=2&country=1&sort=updated?page=" to "Korean Movies",
         "filter?type=1&status=2&country=2&sort=updated?page=" to "Japanese Drama",
@@ -162,10 +159,4 @@ class Kissasian : MainAPI() {
         @JsonProperty("type") val type: String,
         @JsonProperty("link") val link: String? = null,
     )
-
-    private fun getBaseUrl(url: String): String {
-        return URI(url).let {
-            "${it.scheme}://${it.host}"
-        }
-    }
 }

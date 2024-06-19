@@ -114,18 +114,32 @@ class MPDPlayer : MainAPI() {
                 )
             )
         }
+            else
+        if(loadData.url.endsWith("&e=.m3u8"))
+            {
+            callback.invoke(
+                ExtractorLink(
+                    this.name,
+                    loadData.title,
+                    loadData.url,
+                    "",
+                    Qualities.Unknown.value,
+                    isM3u8 = true,
+                )
+            )
+            }
         else
         {
-        callback.invoke(
-            ExtractorLink(
+            callback.invoke(
+                ExtractorLink(
                 this.name,
                 loadData.title,
                 loadData.url,
                 "",
                 Qualities.Unknown.value,
                 type = INFER_TYPE,
+                )
             )
-        )
         }
         return true
     }
