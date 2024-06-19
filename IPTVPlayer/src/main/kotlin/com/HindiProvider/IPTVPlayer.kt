@@ -1,16 +1,19 @@
-package com.lagradost
+package com.HindiProvider
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import java.io.InputStream
 
-class FreeTVProvider : MainAPI() {
-    override var lang = "en"
+class MPDPlayer : MainAPI() {
+    override var lang = "hi"
     override var mainUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/15APR2024.m3u"
-    override var name = "Free-TV"
+    override var name = "IPTV Player"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(
@@ -29,10 +32,12 @@ class FreeTVProvider : MainAPI() {
                 val channelname = channel.title.toString()
                 val posterurl = channel.attributes["tvg-logo"].toString()
                 val nation = channel.attributes["group-title"].toString()
+                val key=channel.attributes["key"].toString()
+                val keyid=channel.attributes["keyid"].toString()
                 LiveSearchResponse(
                     channelname,
-                    LoadData(streamurl, channelname, posterurl, nation).toJson(),
-                    this@FreeTVProvider.name,
+                    LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
+                    this@MPDPlayer.name,
                     TvType.Live,
                     posterurl,
                     lang = channel.attributes["group-title"]
@@ -54,10 +59,12 @@ class FreeTVProvider : MainAPI() {
                 val channelname = channel.attributes["tvg-id"].toString()
                 val posterurl = channel.attributes["tvg-logo"].toString()
                 val nation = channel.attributes["group-title"].toString()
+                val key=channel.attributes["key"].toString()
+                val keyid=channel.attributes["keyid"].toString()
                 LiveSearchResponse(
                     channelname,
-                    LoadData(streamurl, channelname, posterurl, nation).toJson(),
-                    this@FreeTVProvider.name,
+                    LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
+                    this@MPDPlayer.name,
                     TvType.Live,
                     posterurl,
                 )
@@ -66,21 +73,23 @@ class FreeTVProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val data = parseJson<LoadData>(url)
+        Log.d("Phisher data",url)
         return LiveStreamLoadResponse(
             data.title,
             data.url,
             this.name,
             url,
             data.poster,
-            plot = data.nation
+            plot = data.nation,
         )
     }
     data class LoadData(
         val url: String,
         val title: String,
         val poster: String,
-        val nation: String
-
+        val nation: String,
+        val key: String,
+        val keyid: String,
     )
     override suspend fun loadLinks(
         data: String,
@@ -88,7 +97,25 @@ class FreeTVProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher data",data)
         val loadData = parseJson<LoadData>(data)
+        if (loadData.url.contains("mpd"))
+        {
+            callback.invoke(
+                DrmExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = loadData.url,
+                    referer = "",
+                    quality = Qualities.Unknown.value,
+                    type = INFER_TYPE,
+                    kid = loadData.keyid,
+                    key = loadData.key,
+                )
+            )
+        }
+        else
+        {
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -96,9 +123,10 @@ class FreeTVProvider : MainAPI() {
                 loadData.url,
                 "",
                 Qualities.Unknown.value,
-                isM3u8 = true
+                type = INFER_TYPE,
             )
         )
+        }
         return true
     }
 }
@@ -114,6 +142,8 @@ data class PlaylistItem(
     val headers: Map<String, String> = emptyMap(),
     val url: String? = null,
     val userAgent: String? = null,
+    val key: String? = null,
+    val keyid: String? = null,
 )
 
 
@@ -170,6 +200,8 @@ class IptvPlaylistParser {
                         val url = line.getUrl()
                         val userAgent = line.getUrlParameter("user-agent")
                         val referrer = line.getUrlParameter("referer")
+                        val key = line.getUrlParameter("key")
+                        val keyid = line.getUrlParameter("keyid")
                         val urlHeaders = if (referrer != null) {
                             item.headers + mapOf("referrer" to referrer)
                         } else item.headers
@@ -177,7 +209,9 @@ class IptvPlaylistParser {
                             item.copy(
                                 url = url,
                                 headers = item.headers + urlHeaders,
-                                userAgent = userAgent
+                                userAgent = userAgent,
+                                key=key,
+                                keyid=keyid
                             )
                         currentIndex++
                     }

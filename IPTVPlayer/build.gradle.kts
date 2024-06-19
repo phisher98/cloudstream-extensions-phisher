@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 2
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
-    language = "en"
-    // description = "Lorem Ipsum"
+    language = "hi"
+    description = "IPTV Player"
     authors = listOf("HindiProviders")
 
     /**

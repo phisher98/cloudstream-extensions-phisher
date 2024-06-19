@@ -200,7 +200,7 @@ class IndianTVPlugin : MainAPI() {
                         name = "INDIAN TV",
                         url = link,
                         referer = "",
-                        quality = Qualities.Unknown.value,
+                        quality = Qualities.P1080.value,
                         type = INFER_TYPE,
                         kid = finalkeyid,
                         key = finalkey,
