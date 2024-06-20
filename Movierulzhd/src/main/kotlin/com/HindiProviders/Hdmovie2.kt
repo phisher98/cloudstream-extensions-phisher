@@ -2,6 +2,7 @@ package com.HindiProviders
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
@@ -30,6 +31,7 @@ class Hdmovie2 : Movierulzhd() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         if (data.startsWith("{")) {
             val loadData = tryParseJson<LinkData>(data)
             val source = app.post(
@@ -45,9 +47,8 @@ class Hdmovie2 : Movierulzhd() {
             )
         } else {
             val document = app.get(data).document
-            val id = document.select("meta#dooplay-ajax-counter").attr("data-postid")
+            val id = document.select("ul#playeroptionsul > li").attr("data-post")
             val type = if (data.contains("/movies/")) "movie" else "tv"
-
             document.select("ul#playeroptionsul > li").map {
                 it.attr("data-nume")
             }.apmap { nume ->
@@ -56,6 +57,7 @@ class Hdmovie2 : Movierulzhd() {
                         "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
                     ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url.getIframe()
+                Log.d("Phisher",source)
                 when {
                     !source.contains("youtube") -> loadExtractor(
                         source,
