@@ -1,4 +1,4 @@
-version = 1
+version = 2
 
 
 cloudstream {
@@ -6,7 +6,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Anime/Cartoon in Hindi"
-    authors = listOf("HindiProviderss")
+    authors = listOf("HindiProviders, RowdyRushya")
 
     /**
      * Status int as the following:

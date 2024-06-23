@@ -1,3 +1,21 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "[kotlin]": {
+    "editor.defaultFormatter": "fwcd.kotlin"
+  },
+  "[xml]": {
+    "editor.defaultFormatter": "redhat.vscode-xml"
+  },
+  "terminal.integrated.profiles.windows": {
+    "CS3 Log": {
+      "overrideName": true,
+      "source": "PowerShell",
+      "args": [
+        "adb logcat -b all -c; adb logcat --pid=$(adb shell pidof -s com.lagradost.cloudstream3.prerelease)"
+      ]
+    }
+  },
+  "editor.detectIndentation": false,
+  "editor.indentSize": "tabSize",
+  "editor.tabSize": 4
 }
