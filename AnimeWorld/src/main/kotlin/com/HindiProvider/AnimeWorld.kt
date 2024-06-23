@@ -88,12 +88,13 @@ class AnimeWorld : MainAPI() {
         val poster = fixUrlNull(document.selectFirst("main div.bg-cover")?.attr("data-bg"))
         val tags = document.select(".genres a").map { it.text() }
         val year = document.select(".year").text().trim().toIntOrNull()
-        val tvType = if (url.contains("movie")) TvType.Movie else TvType.TvSeries
+        val tvType = if (document.selectFirst("ul.flex:nth-child(3) > li:nth-child(3) > a:nth-child(1)")!!
+                .text().contains("Movie")) TvType.Movie else TvType.TvSeries
         val description = document.selectFirst("main section span.block.w-full")?.text()?.trim()
         val trailer = fixUrlNull(document.select("iframe").attr("src"))
         // val actors = document.select("#cast > div:nth-child(4)").map { it.text() }
         val recommendations = document.select("article").mapNotNull { it.toSearchResult() }
-        var seasonNames = mutableListOf<String>()
+        val seasonNames = mutableListOf<String>()
 
         return if (tvType == TvType.TvSeries) {
             val episodes: MutableList<Episode> = mutableListOf()
