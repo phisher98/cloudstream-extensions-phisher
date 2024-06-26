@@ -1,5 +1,6 @@
 package com.HindiProviders
 
+import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
@@ -28,6 +29,8 @@ open class Akamaicdn : ExtractorApi() {
         val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
+        Log.d("Phisher",url)
+        val header= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0","Accept" to "*/*","Referer" to url,"X-Requested-With" to "XMLHttpRequest")
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -35,7 +38,8 @@ open class Akamaicdn : ExtractorApi() {
                 "$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1",
                 url,
                 Qualities.Unknown.value,
-                isM3u8 = true,
+                type = INFER_TYPE,
+                headers = header
             )
         )
     }

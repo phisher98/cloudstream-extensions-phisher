@@ -242,17 +242,29 @@ class MHDTV : MainAPI() { // all providers must be an instance of MainAPI
             val regex="""source:.'(.*?)'""".toRegex()
             val url =regex.find(document.toString())?.groupValues?.get(1) ?:""
             val trueurl="https://colorsscreen.com$url"
-            val source=trueurl.replace("php","m3u8")
-            callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    source,
-                    referer = data,
-                    quality = getQualityFromName(""),
-                    isM3u8 = true
+                val source = trueurl.replace("php", "m3u8")
+                callback.invoke(
+                    ExtractorLink(
+                        this.name,
+                        this.name,
+                        source,
+                        referer = data,
+                        quality = getQualityFromName(""),
+                        isM3u8 = true
+                    )
                 )
-            )
+                val id = data.substringAfter("c=")
+                val link = "https://colorsscreen.com/sonyliv/master.m3u8?id=$id"
+                callback.invoke(
+                    ExtractorLink(
+                        "Mhdtvweb",
+                        this.name,
+                        link,
+                        referer = data,
+                        quality = getQualityFromName(""),
+                        isM3u8 = true
+                    )
+                )
         }
         else if (data.startsWith("https://mhdtvweb.com/jc/play.php")) {
             val regex="""source:.'(.*?)'""".toRegex()
