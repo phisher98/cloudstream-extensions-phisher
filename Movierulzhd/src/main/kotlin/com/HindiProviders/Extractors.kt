@@ -30,7 +30,7 @@ open class Akamaicdn : ExtractorApi() {
             ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
         Log.d("Phisher",url)
-        val header= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0","Accept" to "*/*","Referer" to url,"X-Requested-With" to "XMLHttpRequest")
+        val header= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0","Accept" to "*/*","Referer" to url)
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -38,7 +38,7 @@ open class Akamaicdn : ExtractorApi() {
                 "$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1",
                 url,
                 Qualities.Unknown.value,
-                type = INFER_TYPE,
+                type = ExtractorLinkType.M3U8,
                 headers = header
             )
         )

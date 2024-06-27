@@ -57,7 +57,16 @@ class Hdmovie2 : Movierulzhd() {
                         "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
                     ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url.getIframe()
-                Log.d("Phisher",source)
+                if(source.contains("ok.ru"))
+                {
+                    loadExtractor(
+                        "https:$source",
+                        "$directUrl/",
+                        subtitleCallback,
+                        callback
+                    )
+                }
+                else
                 when {
                     !source.contains("youtube") -> loadExtractor(
                         source,
