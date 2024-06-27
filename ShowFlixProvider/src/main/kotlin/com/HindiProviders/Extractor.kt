@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
 
@@ -18,9 +19,7 @@ open class Streamwish : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val responsecode=app.get(url)
             val serverRes = responsecode.document
-            //Log.d("Test12","$serverRes")
             val script = serverRes.selectFirst("script:containsData(sources)")?.data().toString()
-            //Log.d("Test12","$script")
             val headers = mapOf(
                 "Accept" to "*/*",
                 "Connection" to "keep-alive",
@@ -36,7 +35,7 @@ open class Streamwish : ExtractorApi() {
                         this.name,
                         link,
                         referer ?: "",
-                        getQualityFromName(""),
+                        Qualities.P1080.value,
                         type = INFER_TYPE,
                         headers
                     )
@@ -57,11 +56,8 @@ open class Filelion : ExtractorApi() {
         referer: String?,
     ): List<ExtractorLink>? {
         val responsecode=app.get(url)
-        //Log.d("Test12","$responsecode")
             val response = responsecode.document
-            //val response = app.get(url, referer = referer)
             val script = response.selectFirst("script:containsData(sources)")?.data().toString()
-            //Log.d("Test9871",script)
             Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
                 return listOf(
                     ExtractorLink(
@@ -91,8 +87,6 @@ open class StreamRuby : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val response=app.get(url,referer=url, headers = mapOf("X-Requested-With" to "XMLHttpRequest")).document
-            //Log.d("Test12","$response")
-            //val response = app.get(url, referer = referer)
             val script = response.selectFirst("script:containsData(vplayer)")?.data().toString()
             val headers = mapOf(
                 "Accept" to "*/*",
@@ -103,7 +97,6 @@ open class StreamRuby : ExtractorApi() {
                 "Origin" to url,
             )
 
-
             Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
                 callback.invoke(
                     ExtractorLink(
@@ -111,7 +104,7 @@ open class StreamRuby : ExtractorApi() {
                         this.name,
                         link,
                         "https://rubystm.com",
-                        getQualityFromName(""),
+                        Qualities.P1080.value,
                         type = INFER_TYPE,
                         headers
                     )

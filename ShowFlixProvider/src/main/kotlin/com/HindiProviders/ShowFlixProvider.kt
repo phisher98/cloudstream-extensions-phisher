@@ -96,8 +96,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("count") var count: Int
     )*/
 
-    private val MovieapiUrl = "https://parse.showflix.online/parse/classes/movies"
-    private val TVapiUrl    = "https://parse.showflix.online/parse/classes/series"
+    private val MovieapiUrl = "https://parse.showflix.shop/parse/classes/movies"
+    private val TVapiUrl    = "https://parse.showflix.shop/parse/classes/series"
 
     private suspend fun queryMovieApi(skip: Int, query: String): NiceResponse {
         val req =
@@ -377,14 +377,13 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 val seasonNum = Regex("\\d+").find(seasonName)?.value?.toInt()
 
                 episodes.mapIndexed { epNum, data ->
-                    //Log.d("Episodedata", data.toString())
-                    //Log.d("EpisodeNum", epNum.toString())
+
                     Episode(
                         data = data.toString(),
                         season = seasonNum,
                         episode = epNum,
                         posterUrl = backdrop,
-                    ) //Map<String, List<String>> = mapOf()
+                    )
                 }
             }.flatten()
 
@@ -414,7 +413,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        //Log.d("Test124","$data")
         if (data.contains("sharedisk")) {
             val sources = mutableListOf<String>()
             val m = parseJson<MovieLinks>(data)
@@ -426,13 +424,8 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             sources.add(streamwish)
             sources.add(streamruby)
             //sources.add(streamsb)
-            Log.d("Test124","$sources")
+            Log.d("Phisher",sources.toString())
             sources.forEach { url->
-                if (url.contains("ruby"))
-                {
-                    StreamRuby().getUrl(url)
-                }
-                else
              loadExtractor(url,subtitleCallback,callback)
             }
         }
