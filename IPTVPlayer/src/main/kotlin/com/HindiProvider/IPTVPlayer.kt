@@ -115,7 +115,7 @@ class MPDPlayer : MainAPI() {
             )
         }
             else
-        if(loadData.url.endsWith("&e=.m3u8"))
+        if(loadData.url.contains("&e=.m3u"))
             {
             callback.invoke(
                 ExtractorLink(
