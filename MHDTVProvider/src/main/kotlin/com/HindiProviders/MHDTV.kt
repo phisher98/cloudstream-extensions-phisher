@@ -16,7 +16,7 @@ import org.jsoup.nodes.Element
 import java.nio.charset.StandardCharsets
 
 class MHDTV : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://nowmaxtv.com"
+    override var mainUrl = "https://nowmetv.net"
     override var name = "MHDTV"
     override val hasMainPage = true
     override var lang = "hi"
