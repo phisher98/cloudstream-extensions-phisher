@@ -84,7 +84,7 @@ class Toonstream : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
-        val posterraw = document.select("div.bghd > img").attr("data-src")
+        val posterraw = document.select("div.bghd > img").attr("src")
         val poster="https:$posterraw"
         val description = document.selectFirst("div.description > p")?.text()?.trim()
         val tvtag=if (url.contains("series")) TvType.TvSeries else TvType.Movie
