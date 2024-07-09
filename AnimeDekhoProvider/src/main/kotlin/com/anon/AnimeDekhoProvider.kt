@@ -87,7 +87,7 @@ class AnimeDekhoProvider : MainAPI() {
             }
         } else {
             @Suppress("NAME_SHADOWING") val episodes = document.select("ul.seasons-lst li").mapNotNull {
-                val name = it.selectFirst("h3.title")?.text() ?: "null"
+                val name = it.selectFirst("h3.title")?.ownText() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
                 val poster=it.selectFirst("div > div > figure > img")?.attr("src")
                 val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
