@@ -45,7 +45,7 @@ class Tooniboy : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("figure > img").attr("data-src").toString())
+        val posterUrl = fixUrlNull(this.select("figure > img").attr("src").toString())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -83,7 +83,7 @@ class Tooniboy : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title= document.selectFirst("#site header h2.title")?.text()?.trim().toString().replace("Watch Online","")
-        val poster = document.select("figure.im.brd1 img").attr("data-src")
+        val poster = document.select("figure.im.brd1 img").attr("src")
         val description = document.selectFirst("#site article p")?.text()?.trim()
         val tags = document.select("div.rght.fg1 > a").map { it.text() }
         val tvtag=if (url.contains("series")) TvType.TvSeries else TvType.Movie
