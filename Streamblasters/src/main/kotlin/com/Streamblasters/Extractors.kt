@@ -13,6 +13,10 @@ class swhoi : StreamWishExtractor() {
     override var mainUrl = "https://swhoi.com"
 }
 
+class strwish : StreamWishExtractor() {
+    override var mainUrl = "https://strwish.com"
+}
+
 class vidhidevip : VidhideExtractor() {
     override var mainUrl = "https://vidhidevip.com"
 }
