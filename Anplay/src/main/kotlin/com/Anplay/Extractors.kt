@@ -40,7 +40,7 @@ open class Chillx : ExtractorApi() {
             return if (key != null) {
                 key!!
             } else {
-                val fetch = app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
+                val fetch = app.get("https://rowdy-avocado.github.io/multi-keys").parsedSafe<Keys>()?.key?.get(0) ?: throw ErrorLoadingException("Unable to get key")
                 key = fetch
                 key!!
             }
