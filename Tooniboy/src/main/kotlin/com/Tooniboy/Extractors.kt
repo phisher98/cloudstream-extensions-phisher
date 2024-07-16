@@ -34,7 +34,7 @@ open class Vidstreaming : ExtractorApi() {
     ) {
         val doc = app.get(url).text
         val key =
-            app.get("https://raw.githubusercontent.com/rushi-chavan/multi-keys/keys/keys.json")
+            app.get("https://rowdy-avocado.github.io/multi-keys")
                 .parsedSafe<Keys>()?.key?.get(0)
                 ?: throw ErrorLoadingException("Unable to get key")
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
