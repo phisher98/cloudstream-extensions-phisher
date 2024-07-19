@@ -194,10 +194,11 @@ open class M4ufree : ExtractorApi() {
 
 }
 
+    
 class VCloud : ExtractorApi() {
     override val name: String = "V-Cloud"
     override val mainUrl: String = "https://vcloud.lol"
-    override val requiresReferer = true
+    override val requiresReferer = false
 
     override suspend fun getUrl(
         url: String,
@@ -205,41 +206,55 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url)
-        val doc = res.document
-        val changedLink = doc.selectFirst("script:containsData(url =)")?.data()?.let {
-            val regex = """url\s*=\s*['"](.*)['"];""".toRegex()
-            val doc2 = app.get(regex.find(it)?.groupValues?.get(1) ?: return).text
-            regex.find(doc2)?.groupValues?.get(1)?.substringAfter("r=")
-        }
-        val header = doc.selectFirst("div.card-header")?.text()
-        app.get(
-            base64Decode(changedLink ?: return), cookies = res.cookies, headers = mapOf(
-                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
-            )
-        ).document.select("p.text-success ~ a").apmap {
+        val doc = app.get(url).document
+        val scriptTag = doc.selectFirst("script:containsData(url)").toString()
+        val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
+        val document = app.get(urlValue).document
+
+        val size = document.selectFirst("i#size") ?. text()
+        val div = document.selectFirst("div.card-body")
+        val header = document.selectFirst("div.card-header") ?. text()
+        div.select("a").apmap {
             val link = it.attr("href")
-            if (link.contains("workers.dev") || it.text().contains("[Server : 1]") || link.contains(
-                    "/dl.php?"
-                )
-            ) {
+            if (link.contains("pixeldra")) {
                 callback.invoke(
                     ExtractorLink(
-                        this.name,
-                        this.name,
+                        "Pixeldrain",
+                        "Pixeldrain $size",
                         link,
                         "",
                         getIndexQuality(header),
-                        INFER_TYPE
                     )
                 )
-            } else {
-                val direct = if (link.contains("gofile.io")) app.get(link).url else link
-                loadExtractor(direct, referer, subtitleCallback, callback)
+            }
+            else if(link.contains("dl.php")) {
+                callback.invoke(
+                    ExtractorLink(
+                        "V-Cloud[Download]",
+                        "V-Cloud[Download] $size",
+                        link,
+                        "",
+                        getIndexQuality(header),
+                    )
+                )
+            }
+            else if(link.contains(".dev")) {
+                callback.invoke(
+                    ExtractorLink(
+                        "V-Cloud",
+                        "V-Cloud $size",
+                        link,
+                        "",
+                        getIndexQuality(header),
+                    )
+                )
+            }
+            else {
+                loadExtractor(link, subtitleCallback, callback)
             }
         }
-
     }
+
 
     private fun getIndexQuality(str: String?): Int {
         return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
