@@ -1030,7 +1030,8 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
         Log.d("Phisher ID",url)
-        AnyVidplay(url).getUrl(url, url, subtitleCallback, callback)
+        val host = getBaseUrl(url)
+        AnyVidplay(host).getUrl(url, "", subtitleCallback, callback)
     }
 
     suspend fun invokeKisskh(
