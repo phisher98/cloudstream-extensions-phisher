@@ -1029,7 +1029,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
         Log.d("Phisher ID",url)
-        loadExtractor(url, subtitleCallback, callback)
+        AnyVidplay(host).getUrl(url, host, subtitleCallback, callback)
     }
 
     suspend fun invokeKisskh(
