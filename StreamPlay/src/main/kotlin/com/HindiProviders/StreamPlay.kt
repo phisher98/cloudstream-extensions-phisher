@@ -145,7 +145,7 @@ open class StreamPlay : TmdbProvider() {
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = BuildConfig.MultiMovies_API
+        const val multimoviesAPI = "https://multimovies.online"
         const val netmoviesAPI = "https://netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val doomoviesAPI = "https://doomovies.net"
