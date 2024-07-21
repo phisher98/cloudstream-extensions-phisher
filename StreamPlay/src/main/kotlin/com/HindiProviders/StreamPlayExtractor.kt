@@ -1031,7 +1031,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
         Log.d("Phisher ID",url)
         val host = getBaseUrl(url)
-        AnyVidplay(host).getUrl(url, "", subtitleCallback, callback)
+        AnyVidplay(host).getUrl(url, host, subtitleCallback, callback)
     }
 
     suspend fun invokeKisskh(
