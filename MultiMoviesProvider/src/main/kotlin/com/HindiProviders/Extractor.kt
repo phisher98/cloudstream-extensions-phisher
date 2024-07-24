@@ -2,7 +2,8 @@ package com.HindiProviders
 
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
-
+import com.lagradost.cloudstream3.*
+//For Time being
 
 class Multimovies : StreamWishExtractor() {
     override var name = "Multimovies Cloud"
