@@ -24,7 +24,7 @@ class server2 : VidhideExtractor() {
     override var mainUrl = "https://server2.shop"
 }
 
-class GDMirrorbot : ExtractorApi() {
+open class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
     override val requiresReferer = false
