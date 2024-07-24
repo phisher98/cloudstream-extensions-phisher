@@ -23,3 +23,19 @@ class server2 : VidhideExtractor() {
     override var name = "Multimovies Vidhide"
     override var mainUrl = "https://server2.shop"
 }
+
+class GDMirrorbot : ExtractorApi() {
+    override var name = "GDMirrorbot"
+    override var mainUrl = "https://gdmirrorbot.nl"
+    override val requiresReferer = false
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit) {
+        app.get(url).document.select("ul#videoLinks li").map {
+            val link=it.attr("data-link")
+            loadExtractor(link,subtitleCallback, callback)
+        }
+    }
+}
