@@ -2,7 +2,6 @@ package com.Tooniboy
 
 //import android.util.Log
 import android.os.Build
-import androidx.annotation.RequiresApi
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -110,7 +109,6 @@ class Tooniboy : MainAPI() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select("div.op-srv.brd1").forEach {
@@ -151,7 +149,6 @@ class Tooniboy : MainAPI() {
         return urllist
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun base64ToUtf8(base64String: String): String? {
         return try {
             val decodedBytes = Base64.getDecoder().decode(base64String)
