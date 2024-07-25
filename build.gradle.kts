@@ -76,6 +76,7 @@ subprojects {
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
         implementation("com.faendir.rhino:rhino-android:1.6.0")
+        implementation("me.xdrop:fuzzywuzzy:1.4.0")
     }
 }
 
