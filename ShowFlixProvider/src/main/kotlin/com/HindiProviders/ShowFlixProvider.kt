@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
-//import me.xdrop.fuzzywuzzy.FuzzySearch
+import me.xdrop.fuzzywuzzy.FuzzySearch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.random.Random
@@ -255,13 +255,12 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 this.quality = SearchQuality.HD
             }
         }
-    /*    val merge = Movies + TVSeries
+        val merge = Movies + TVSeries
         // merge.map {
             // Log.d("myname", it.name.replace("(\\()+(.*)+(\\))".toRegex(), "").lowercase())
             // Log.d("myquery", query)
         // }
         return merge.sortedBy { -FuzzySearch.partialRatio(it.name.replace("(\\()+(.*)+(\\))".toRegex(), "").lowercase(), query.lowercase()) }
-        */
     }
 
     override suspend fun load(url: String): LoadResponse {
