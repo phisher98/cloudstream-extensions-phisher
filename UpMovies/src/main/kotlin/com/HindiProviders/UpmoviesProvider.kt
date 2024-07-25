@@ -2,7 +2,6 @@ package com.HindiProviders
 
 import android.annotation.SuppressLint
 import android.os.Build
-import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.Base64
@@ -107,7 +106,6 @@ class UpmoviesProvider : MainAPI() {
     }
 
     @SuppressLint("SuspiciousIndentation")
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
             data: String,
             isCasting: Boolean,
@@ -154,7 +152,6 @@ class UpmoviesProvider : MainAPI() {
             }
         return true
     }
-    @RequiresApi(Build.VERSION_CODES.O)
     fun String.decodeBase64(): String {
         val decodedBytes = Base64.getDecoder().decode(this)
         return String(decodedBytes, Charsets.UTF_8)
