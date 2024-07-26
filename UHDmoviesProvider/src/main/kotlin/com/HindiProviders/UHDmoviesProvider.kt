@@ -115,41 +115,62 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
         val type = if (tvTags.contains("Season")) TvType.TvSeries else TvType.Movie
-        val iframeRegex = Regex("""\[.*]""")
-        val iframe = doc.select("""div.entry-content > p""").mapNotNull{ it }.filter{
-            iframeRegex.find(it.toString()) != null
-        }
-        //Log.d("iframe", iframe.toString())
-        val data = iframe.map {
-            UHDLinks(
-                it.text(),
-                doc.select("div.entry-content > p > span > span > a").attr("href")
-            )
-        }
-        val episodes = mutableListOf<Episode>()
-        doc.select("p a.maxbutton").forEach { me ->
-            //Log.d("Phsher Next ",me.nextElementSibling().toString())
-            val episode=me.select("span").text().substringAfter("Episode").toIntOrNull()
-            //Log.d("Phisher Next ",tedata)
-            episodes.add(
-                Episode(
-                    data = me.attr("href"),
-                    name = me.select("span").text(),
-                    posterUrl = poster,
-                    episode = episode
-                )
-            )
-        }
 
         return if (type == TvType.TvSeries) {
+            val episodes = mutableListOf<Episode>()
+
+            val pTags = doc.select("p:has(a:contains(Episode))")
+            val seasonList = mutableListOf<Pair<String, Int>>()
+            var season = 1
+            pTags.mapNotNull { pTag ->
+                val prevPtag = pTag.previousElementSibling()
+                val details = prevPtag ?. text() ?: ""
+                val realSeason = Regex("""(?:Season |S)(\d+)""").find(details) ?. groupValues
+                    ?. get(1) ?: ""
+                val qualityRegex = """(1080p|720p|480p|2160p|4K|[0-9]*0p)""".toRegex(RegexOption.IGNORE_CASE)
+                val quality = qualityRegex.find(details) ?. groupValues ?. get(1) ?: ""
+                if(realSeason.isNotEmpty() && quality.isNotEmpty()) {
+                    val sizeRegex = Regex("""\d+(?:\.\d+)?\s*(?:MB|GB)\b""")
+                    val size = sizeRegex.find(details) ?. value ?: ""
+                    seasonList.add("S$realSeason $quality $size" to season)
+                }
+                else {
+                    seasonList.add("$details" to season)
+                }
+                val aTags = pTag.select("a:contains(Episode)")
+                aTags.mapNotNull { aTag ->
+                    val aTagText = aTag.text()
+                    val link = aTag.attr("href")
+                    episodes.add(
+                        Episode(
+                            data = link,
+                            name = aTagText,
+                            season = season,
+                            episode = aTags.indexOf(aTag) + 1
+                        )
+                    )
+                }
+                season++
+            }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster?.trim()
+                this.posterUrl = poster ?. trim()
                 this.year = year
                 this.tags = tags
+                this.seasonNames = seasonList.map {(name, int) -> SeasonData(int, name)}
             }
         } else {
+            val iframeRegex = Regex("""\[.*]""")
+            val iframe = doc.select("""div.entry-content > p""").mapNotNull{ it }.filter{
+                iframeRegex.find(it.toString()) != null
+            }
+            val data = iframe.map {
+                UHDLinks(
+                    it.text(),
+                    doc.select("div.entry-content > p > span > span > a").attr("href")
+                )
+            }
             newMovieLoadResponse(title, url, TvType.Movie, data) {
-                this.posterUrl = poster?.trim()
+                this.posterUrl = poster ?. trim()
                 this.year = year
                 this.tags = tags
             }

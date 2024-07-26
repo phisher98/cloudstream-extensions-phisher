@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import okhttp3.FormBody
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -228,11 +229,13 @@ class VCloud : ExtractorApi() {
                 )
             }
             else if(link.contains("dl.php")) {
+                val response = app.get(link, allowRedirects = false)
+                val downloadLink = response.headers["location"].toString().split("link=").getOrNull(1) ?: link
                 callback.invoke(
                     ExtractorLink(
                         "V-Cloud[Download]",
                         "V-Cloud[Download] $size",
-                        link,
+                        downloadLink,
                         "",
                         getIndexQuality(header),
                     )
@@ -868,21 +871,51 @@ open class Bollyflix : ExtractorApi() {
             else
             if (it.select("a").text().contains("DRIVEBOT DOWNLOAD"))
             {
-                /*
-                val link=it.attr("href")
-                //Log.d("Phisher index index",link.toString())
-                val token=link.substringAfter("id=")
-                Log.d("Phisher index index",link.toString())
-                app.get(link).document.select("button").forEach {
-                    Log.d("Phisher index index",it.toString())
-                    val onclick=it.attr("onclick").substringAfter("('").substringBefore("',")
-                    Log.d("Phisher index index",onclick.toString())
-                    val posttoken=app.get("$onclick?id=$token").text.substringAfter("token', '").substringBefore("'")
-                    val index=app.post("$onclick?id=$token", data = mapOf("token" to posttoken)).parsedSafe<Bollyflixparse>()?.url ?:""
-                    Log.d("Phisher index index","$onclick?id=$token")
-                    Log.d("Phisher index index",index)
+                val driveLink = it.attr("href")
+                val id = driveLink.substringAfter("id=").substringBefore("&")
+                val doId = driveLink.substringAfter("do=").substringBefore("==")
+                val indexbotlink = "https://indexbot.lol/download?id=${id}&do=${doId}"
+                val indexbotresponse = app.get(indexbotlink, timeout = 60L)
+                if(indexbotresponse.isSuccessful) {
+                    val cookiesSSID = indexbotresponse.cookies["PHPSESSID"]
+                    val indexbotDoc = indexbotresponse.document
+                    val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""").find(indexbotDoc.toString()) ?. groupValues ?. get(1) ?: "token"
+                    val postId = Regex("""fetch\('\/download\?id=([a-zA-Z0-9\/+]+)'""").find(indexbotDoc.toString()) ?. groupValues ?. get(1) ?: "postId"
+
+                    val requestBody = FormBody.Builder()
+                        .add("token", token)
+                        .build()
+
+                    val headers = mapOf(
+                        "Referer" to indexbotlink
+                    )
+
+                    val cookies = mapOf(
+                        "PHPSESSID" to "$cookiesSSID",
+                    )
+
+                    val response = app.post(
+                        "https://indexbot.lol/download?id=${postId}",
+                        requestBody = requestBody,
+                        headers = headers,
+                        cookies = cookies,
+                        timeout = 60L
+                    ).toString()
+
+                    var downloadlink = Regex("url\":\"(.*?)\"").find(response) ?. groupValues ?. get(1) ?: ""
+
+                    downloadlink = downloadlink.replace("\\", "")
+
+                    callback.invoke(
+                        ExtractorLink(
+                            "Bollyflix[IndexBot]",
+                            "Bollyflix[IndexBot] $tagquality",
+                            downloadlink,
+                            "https://indexbot.lol/",
+                            getQualityFromName(tags)
+                        )
+                    )
                 }
-                 */
             }
             else
             if (it.select("a").text().contains("Instant Download"))
