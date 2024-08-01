@@ -46,7 +46,7 @@ class Toonstream : MainAPI() {
     private fun Element.toSearch(): SearchResponse {
         val title     = this.select("article  > header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("article  > a").attr("href"))
-        val posterUrlRaw = this.select("article  > div.post-thumbnail > figure > img").attr("src").toString()
+        val posterUrlRaw = this.select("article  > div.post-thumbnail > figure > img").attr("data-src").toString()
         return if (posterUrlRaw.contains("http")) {
             val posterUrl=posterUrlRaw
             newMovieSearchResponse(title, href, TvType.Movie) {
@@ -84,7 +84,7 @@ class Toonstream : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
-        val posterraw = document.select("div.bghd > img").attr("src")
+        val posterraw = document.select("div.bghd > img").attr("data-src")
         val poster="https:$posterraw"
         val description = document.selectFirst("div.description > p")?.text()?.trim()
         val tvtag=if (url.contains("series")) TvType.TvSeries else TvType.Movie
