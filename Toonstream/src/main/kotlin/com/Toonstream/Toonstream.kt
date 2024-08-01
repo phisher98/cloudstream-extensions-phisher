@@ -46,7 +46,7 @@ class Toonstream : MainAPI() {
     private fun Element.toSearch(): SearchResponse {
         val title     = this.select("article  > header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("article  > a").attr("href"))
-        val posterUrlRaw = this.select("article  > div.post-thumbnail > figure > img").attr("data-src").toString()
+        val posterUrlRaw = this.select("article figure img").attr("src").toString()
         return if (posterUrlRaw.contains("http")) {
             val posterUrl=posterUrlRaw
             newMovieSearchResponse(title, href, TvType.Movie) {
