@@ -168,7 +168,7 @@ open class StreamPlay : TmdbProvider() {
         const val dotmoviesAPI = "https://luxmovies.live"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-mute-fog-66ae.ihrqljobdq.workers.dev"
-        const val MovieDrive_API=BuildConfig.MovieDrive_API
+        const val MovieDrive_API="https://moviesdrive.website"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
         const val bollyflixAPI = "https://bollyflix.band"
         fun getType(t: String?): TvType {
