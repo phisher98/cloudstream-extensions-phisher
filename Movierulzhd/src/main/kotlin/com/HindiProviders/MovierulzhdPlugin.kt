@@ -14,5 +14,7 @@ class MovierulzhdPlugin: Plugin() {
         registerExtractorAPI(FMHD())
         registerExtractorAPI(VidSrcTo())
         registerExtractorAPI(Akamaicdn())
+        registerExtractorAPI(Luluvdo())
+        registerExtractorAPI(FMX())
     }
 }
