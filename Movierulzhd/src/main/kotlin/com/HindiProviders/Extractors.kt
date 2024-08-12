@@ -7,11 +7,43 @@ import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 
 class FMHD : Filesim() {
     override val name = "FMHD"
     override var mainUrl = "https://fmhd.bar/"
     override val requiresReferer = true
+}
+
+class Luluvdo : StreamWishExtractor() {
+    override val mainUrl = "https://luluvdo.com"
+}
+
+
+open class FMX : ExtractorApi() {
+    override var name = "FMX"
+    override var mainUrl = "https://fmx.lol"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val response = app.get(url,referer=mainUrl).document
+        val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+            JsUnpacker(extractedpack).unpack()?.let { unPacked ->
+                Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
+                    return listOf(
+                        ExtractorLink(
+                            this.name,
+                            this.name,
+                            link,
+                            referer ?: "",
+                            Qualities.Unknown.value,
+                            URI(link).contains("m3u8")
+                        )
+                    )
+                }
+            }
+            return null
+    }
 }
 
 open class Akamaicdn : ExtractorApi() {
