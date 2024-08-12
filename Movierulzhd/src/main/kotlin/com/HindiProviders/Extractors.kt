@@ -40,7 +40,7 @@ open class FMX : ExtractorApi() {
                             link,
                             referer ?: "",
                             Qualities.Unknown.value,
-                            URI(link).contains("m3u8")
+                            type = INFER_TYPE
                         )
                     )
                 }
