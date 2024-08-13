@@ -1,6 +1,7 @@
 package com.HindiProviders
 
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -8,12 +9,6 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.SubtitleFile
-
-
-class Multimovies : StreamWishExtractor() {
-    override var name = "Multimovies Cloud"
-    override var mainUrl = "https://multimovies.cloud"
-}
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -46,9 +41,9 @@ open class GDMirrorbot : ExtractorApi() {
     }
 }
 
-class StreamWishExtractor : ExtractorApi() {
-    override var name = "StreamWish"
-    override val mainUrl = "https://streamwish.to"
+class Multimovies : ExtractorApi() {
+    override var name = "Multimovies Cloud"
+    override val mainUrl = "https://multimovies.cloud"
     override val requiresReferer = true
 
     override suspend fun getUrl(
@@ -59,8 +54,7 @@ class StreamWishExtractor : ExtractorApi() {
     ) {
         val doc = app.get(
             url,
-            referer = referer,
-            allowRedirects = false
+            referer = "https://multimovies.sbs"
         ).document
         var script = doc.select("script").find {
             it.html().contains("jwplayer(\"vplayer\").setup(")
