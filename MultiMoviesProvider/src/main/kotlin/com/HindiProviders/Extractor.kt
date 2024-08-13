@@ -8,12 +8,17 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.Subtitle
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
     override var mainUrl = "https://allinonedownloader.fun"
+}
+
+class Multimovies: StreamWishExtractor() {
+    override var name = "Multimovies Cloud"
+    override var mainUrl = "https://multimovies.cloud"
+    override var requiresReferer = true
 }
 
 class Animezia : VidhideExtractor() {
@@ -41,38 +46,3 @@ open class GDMirrorbot : ExtractorApi() {
         }
     }
 }
-
-class Multimovies : ExtractorApi() {
-    override var name = "Multimovies Cloud"
-    override val mainUrl = "https://multimovies.cloud"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val doc = app.get(
-            url,
-            referer = "https://multimovies.sbs"
-        ).document
-        var script = doc.select("script").find {
-            it.html().contains("jwplayer(\"vplayer\").setup(")
-        }
-        var scriptContent = script?.html()
-        val extractedurl = Regex("""sources: \[\{file:"(.*?)"""").find(scriptContent ?: "")?.groupValues?.get(1)
-        if (!extractedurl.isNullOrBlank()) {
-            callback(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    extractedurl,
-                    referer ?: "$mainUrl/",
-                    getQualityFromName(""),
-                    extractedurl.contains("m3u8")
-                )
-            )
-        }
-    }
-                                 }
