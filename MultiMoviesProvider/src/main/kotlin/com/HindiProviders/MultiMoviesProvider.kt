@@ -11,7 +11,7 @@ import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.online"
+    override var mainUrl = "https://multimovies.sbs"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
