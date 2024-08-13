@@ -1,6 +1,5 @@
 package com.HindiProviders
 
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -46,3 +45,39 @@ open class GDMirrorbot : ExtractorApi() {
         }
     }
 }
+
+class StreamWishExtractor : ExtractorApi() {
+    override var name = "StreamWish"
+    override val mainUrl = "https://streamwish.to"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(
+            url,
+            referer = referer,
+            allowRedirects = false
+        ).document
+        var script = doc.select("script").find {
+            it.html().contains("jwplayer(\"vplayer\").setup(")
+        }
+        var scriptContent = script?.html()
+        val extractedurl = Regex("""sources: \[\{file:"(.*?)"""").find(scriptContent ?: "")?.groupValues?.get(1)
+        if (!extractedurl.isNullOrBlank()) {
+            callback(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    extractedurl,
+                    referer ?: "$mainUrl/",
+                    getQualityFromName(""),
+                    extractedurl.contains("m3u8")
+                )
+            )
+        }
+    }
+                                 }
