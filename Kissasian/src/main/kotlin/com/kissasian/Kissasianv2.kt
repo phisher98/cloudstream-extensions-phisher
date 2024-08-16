@@ -140,8 +140,3 @@ open class Kissasianv2 : MainAPI() {
     }
 
 }
-
-class Kswplayer : Filesim() {
-    override val name = "Kswplayer"
-    override var mainUrl = "https://kswplayer.info"
-}
