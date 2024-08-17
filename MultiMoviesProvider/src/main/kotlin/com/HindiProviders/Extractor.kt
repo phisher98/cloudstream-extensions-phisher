@@ -1,6 +1,5 @@
 package com.HindiProviders
 
-import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -34,7 +33,7 @@ class server2 : VidhideExtractor() {
     override var requiresReferer = true
 }
 
-open class GDMirrorbot : ExtractorApi() {
+class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
     override val requiresReferer = false
@@ -47,5 +46,32 @@ open class GDMirrorbot : ExtractorApi() {
             val link=it.attr("data-link")
             loadExtractor(link,subtitleCallback, callback)
         }
+    }
+}
+
+class VidhideExtractor : ExtractorApi() {
+    override var name = "VidHide"
+    override var mainUrl = "https://vidhide.com"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val response = app.get(
+            url, referer = referer ?: "$mainUrl/", interceptor = WebViewResolver(
+                Regex("""master\.m3u8""")
+            )
+        )
+        val sources = mutableListOf<ExtractorLink>()
+        if (response.url.contains("m3u8"))
+            sources.add(
+                ExtractorLink(
+                    source = name,
+                    name = name,
+                    url = response.url,
+                    referer = referer ?: "$mainUrl/",
+                    quality = Qualities.Unknown.value,
+                    isM3u8 = true
+                )
+            )
+        return sources
     }
 }
