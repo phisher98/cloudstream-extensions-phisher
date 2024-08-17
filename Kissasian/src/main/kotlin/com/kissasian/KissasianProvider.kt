@@ -19,10 +19,5 @@ class KissasianProvider: Plugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(MixDrop())
         registerExtractorAPI(Kswplayer())
-        addExtractor(Vidstream2("https://asianembed.io"))
-    }
-    private fun addExtractor(element: ExtractorApi) {
-        element.sourcePlugin = __filename
-        extractorApis.add(0, element)
     }
 }
