@@ -14,6 +14,6 @@ class StreamblastersProvider: Plugin() {
         registerExtractorAPI(vidhidevip())
         registerExtractorAPI(vidhidepre())
         registerExtractorAPI(swhoi())
-        registerExtractorAPI(strwish())
+        registerExtractorAPI(wishonly())
     }
 }
