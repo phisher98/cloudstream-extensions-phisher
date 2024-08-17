@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.extractors.VidhideExtractor
 
 
 class D000d : DoodLaExtractor() {
-    override var mainUrl = "https://d000d.com"
+    override var mainUrl = "https://dood.li"
 }
 
 class swhoi : StreamWishExtractor() {
