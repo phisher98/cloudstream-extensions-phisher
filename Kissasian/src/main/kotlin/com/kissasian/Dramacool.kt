@@ -1,6 +1,5 @@
 package com.kissasian
 
-import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -13,36 +12,32 @@ class Dramacool : MainAPI() {
         TvType.AsianDrama
     )
     override var lang = "en"
+
     override var mainUrl = "https://dramacool.city"
     override var name = "Dramacool"
+
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        "dramas" to "Drama",
-        "movies" to "Movies",
-        "k-shows" to "KShow",
-        "most-watched" to "Popular Dramas",
+        "${mainUrl}/dramas/" to "Drama",
+        "${mainUrl}/movies/" to "Movies",
+        "${mainUrl}/k-shows/" to "KShow",
+        "${mainUrl}/most-watched/" to "Popular Dramas",
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        if (page==1)
-        {
-            val document = app.get("$mainUrl/${request.data}").document
-            val items = document.select(".box > li").mapNotNull {
-                it.toSearchResult()
-            }
-            return newHomePageResponse(request.name, items)
-        }
-        else
-        {
-            val document = app.get("$mainUrl/${request.data}/page/$page").document
-            val items = document.select(".box > li").mapNotNull {
-                it.toSearchResult()
-            }
-
-            return newHomePageResponse(request.name, items)
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
+        val url = if (page == 1) {
+            request.data
+        } else {
+            "${request.data}/page/$page/"
         }
 
+        val document = app.get(url, referer = "$mainUrl/").document
+        val items = document.select(".box > li").mapNotNull {
+            it.toSearchResult()
+        }
+
+        return newHomePageResponse(request.name, items)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
@@ -57,38 +52,26 @@ class Dramacool : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-        for (i in 1..5) {
-            val document = app.get("${mainUrl}/discover/page/$i/?keyword=$query").document
+        val url = "$mainUrl/?s=$query"
+        val document = app.get(url, referer = "$mainUrl/").document
 
-            val results =
-                document.select(".list-thumb li").mapNotNull {
-                    val a = it.selectFirst("a") ?: return@mapNotNull null
-                    val name = it.selectFirst("h2")?.text() ?: return@mapNotNull null
-                    val posterUrl = fixUrlNull(it.selectFirst("img")?.attr("src"))
-                    val href = a.attr("href")
-                    newMovieSearchResponse(name, LoadUrl(href, posterUrl).toJson()) {
-                        this.posterUrl = posterUrl
-                    }
-                }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
+        val items = document.select(".list-thumb li").mapNotNull {
+            val a = it.selectFirst("a") ?: return@mapNotNull null
+            val name = it.selectFirst("h2")?.text() ?: return@mapNotNull null
+            val posterUrl = fixUrlNull(it.selectFirst("img")?.attr("src"))
+            val href = a.attr("href")
+            newMovieSearchResponse(name, LoadUrl(href, posterUrl).toJson()) {
+                this.posterUrl = posterUrl
             }
-
-            if (results.isEmpty()) break
         }
-
-        return searchResponse
+        return items
     }
 
     override suspend fun load(url: String): LoadResponse? {
         val d = tryParseJson<LoadUrl>(url) ?: return null
         val document = app.get(d.url, referer = "$mainUrl/").document
         val title = document.selectFirst("h1")?.text()?.trim() ?: return null
-        val poster = "https://miro.medium.com/v2/resize:fit:1400/1*0VnqMRcnyXuKawhsQHE2pg.png"
+
         val episodes = document.select("#all-episodes ul li").mapNotNull { el ->
             el.select("a").mapNotNull {
                 val href = fixUrl(it.attr("data-source"))
@@ -98,8 +81,9 @@ class Dramacool : MainAPI() {
             }
         }.flatten()
 
+
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-            posterUrl=poster
+            posterUrl = d.posterUrl
         }
     }
 
@@ -115,28 +99,10 @@ class Dramacool : MainAPI() {
         val servers = linksRegex.findAll(json).map {
             it.groupValues[1].replace("\\/", "/")
         }.toList()
-        Log.d("Test12","$servers")
-        servers.forEach{ url->
-            if (url.contains("asian"))
-            {
-                val doc= app.get(url).document
-                val links=doc.select("ul > li.linkserver").toString()
-                val regex="data-video=\"(.*)\\?c".toRegex()
-                //Log.d("Test12", links.toString())
-                val allservers = regex.findAll(links).map {
-                    it.groupValues[1]
-                }.toList()
-                Log.d("Test12", allservers.toString())
-                allservers.forEach{
-                    Log.d("Test12",it)
-                    loadExtractor(it, subtitleCallback, callback)
-                }
-            }else
-            {
-                loadExtractor(url, subtitleCallback, callback)
-            }
-        }
 
+        servers.amap {
+            loadExtractor(it, subtitleCallback, callback)
+        }
         return true
     }
 
