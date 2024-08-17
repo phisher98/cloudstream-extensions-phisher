@@ -6,19 +6,23 @@ import com.lagradost.cloudstream3.extractors.VidhideExtractor
 
 
 class D000d : DoodLaExtractor() {
-    override var mainUrl = "https://d000d.com"
+    override var mainUrl = "https://dood.li"
 }
 
 class swhoi : StreamWishExtractor() {
     override var mainUrl = "https://swhoi.com"
 }
 
-class strwish : StreamWishExtractor() {
-    override var mainUrl = "https://strwish.com"
+class wishonly : StreamWishExtractor() {
+    override var mainUrl = "https://wishonly.site"
 }
 
 class vidhidevip : VidhideExtractor() {
     override var mainUrl = "https://vidhidevip.com"
+}
+
+class vidhidepre : VidhideExtractor() {
+    override var mainUrl = "https://vidhidepre.com"
 }
 
 class jodwish : StreamWishExtractor() {
