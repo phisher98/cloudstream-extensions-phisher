@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.network.WebViewResolver
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -49,7 +50,7 @@ class GDMirrorbot : ExtractorApi() {
     }
 }
 
-class VidhideExtractor : ExtractorApi() {
+open class VidhideExtractor : ExtractorApi() {
     override var name = "VidHide"
     override var mainUrl = "https://vidhide.com"
     override val requiresReferer = false
