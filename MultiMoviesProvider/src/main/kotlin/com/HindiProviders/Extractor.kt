@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
     override var mainUrl = "https://allinonedownloader.fun"
+    override var requiresReferer = true
 }
 
 class Multimovies: StreamWishExtractor() {
@@ -24,11 +25,13 @@ class Multimovies: StreamWishExtractor() {
 class Animezia : VidhideExtractor() {
     override var name = "Animezia"
     override var mainUrl = "https://animezia.cloud"
+    override var requiresReferer = true
 }
 
 class server2 : VidhideExtractor() {
     override var name = "Multimovies Vidhide"
     override var mainUrl = "https://server2.shop"
+    override var requiresReferer = true
 }
 
 open class GDMirrorbot : ExtractorApi() {
