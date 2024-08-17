@@ -21,6 +21,10 @@ class vidhidevip : VidhideExtractor() {
     override var mainUrl = "https://vidhidevip.com"
 }
 
+class vidhidepre : VidhideExtractor() {
+    override var mainUrl = "https://vidhidepre.com"
+}
+
 class jodwish : StreamWishExtractor() {
     override var mainUrl = "https://jodwish.com"
 }
