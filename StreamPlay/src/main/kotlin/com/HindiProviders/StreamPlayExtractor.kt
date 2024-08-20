@@ -1031,7 +1031,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
         Log.d("Phisher ID",url)
-        AnyVidSrcTo(url).getUrl(iFrameUrl, url, subtitleCallback, callback)
+        AnyVidSrcTo(url).getUrl(url, url, subtitleCallback, callback)
         //val host = getBaseUrl(url)
         //AnyVidplay(host).getUrl(url, host, subtitleCallback, callback)
     }
