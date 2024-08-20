@@ -130,7 +130,7 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
         }
-        VidSrcExtractor().getUrl(iFrameUrl, url, subtitleCallback, callback)
+        VidSrcExtractor().getUrl(url, url, subtitleCallback, callback)
     }
 
     private suspend fun Extractvidsrcnetservers(url: String): String {
@@ -1011,12 +1011,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
         Log.d("Phisher ID",url)
-        AnyVidSrcTo(url).getUrl(url, url, subtitleCallback, callback)
-
-	 class AnyVidSrcTo(domain: String) : VidSrcTo() {
-		override val mainUrl = domain
-    }
-	 
+        VidSrcTo().getUrl(url, url, subtitleCallback, callback) 
     }
 
     suspend fun invokeKisskh(
