@@ -23,6 +23,8 @@ import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
+import com.lagradost.cloudstream3.extractors.VidSrcExtractor
+
 
 
 val session = Session(Requests().baseClient)
@@ -128,30 +130,7 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
         }
-        //Log.d("Phisher ID",url)
-        val iframedoc = app.get(url).document
-        val serverhash =
-            iframedoc.selectFirst("div.serversList > div.server")?.attr("data-hash").toString()
-        val link = Extractvidsrcnetservers(serverhash)
-        val URI = app.get(
-            link,
-            referer = "https://vidsrc.net/"
-        ).document.selectFirst("script:containsData(Playerjs)")
-            ?.data()
-            ?.substringAfter("file:\"#9")?.substringBefore("\"")
-            ?.replace(Regex("/@#@\\S+?=?="), "")
-            ?.let { base64Decode(it) }
-            .toString()
-        callback.invoke(
-            ExtractorLink(
-                source = "Vidsrc API",
-                name = "Vidsrc API",
-                url = URI,
-                referer = "",
-                quality = Qualities.P1080.value,
-                type = INFER_TYPE
-            )
-        )
+        VidSrcExtractor().getUrl(iFrameUrl, url, subtitleCallback, callback)
     }
 
     private suspend fun Extractvidsrcnetservers(url: String): String {
@@ -1033,12 +1012,11 @@ object StreamPlayExtractor : StreamPlay() {
         }
         Log.d("Phisher ID",url)
         AnyVidSrcTo(url).getUrl(url, url, subtitleCallback, callback)
-        //val host = getBaseUrl(url)
-        //AnyVidplay(host).getUrl(url, host, subtitleCallback, callback)
-    }
 
-    class AnyVidSrcTo(domain: String) : VidSrcTo() {
+	 class AnyVidSrcTo(domain: String) : VidSrcTo() {
 		override val mainUrl = domain
+    }
+	 
     }
 
     suspend fun invokeKisskh(
