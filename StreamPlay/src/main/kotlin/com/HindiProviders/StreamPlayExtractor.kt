@@ -22,6 +22,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
+import com.lagradost.cloudstream3.extractors.VidSrcTo
+
 
 val session = Session(Requests().baseClient)
 
