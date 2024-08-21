@@ -3,6 +3,7 @@ package com.HindiProvider
 
 //import android.util.Log
 import android.util.Log
+import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
@@ -15,6 +16,10 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
+import java.net.URI
+import com.lagradost.cloudstream3.fixTitle
+
 
 open class Streamruby : ExtractorApi() {
     override var name = "Streamruby"
