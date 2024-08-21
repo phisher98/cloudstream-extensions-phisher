@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 
-class Tvlogy(val source: String) : ExtractorApi() {
+class Tvlogy : ExtractorApi() {
     override val mainUrl = "https://hls.tvlogy.to"
     override val name = "Tvlogy"
     override val requiresReferer = false
