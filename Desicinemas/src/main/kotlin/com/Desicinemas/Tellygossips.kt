@@ -20,9 +20,9 @@ open class Tellygossips : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url, referer = $mainUrl).document
+        val doc=app.get(url,referer=$mainUrl).document
         val iframeembed=doc.selectFirst("div.video-player > iframe")!!.attr("src") ?:""
-        val iframe=app.get(iframeembed)?.text()
+        val iframe=app.get(iframeembed)?.text
             Regex(""""src":"(.*)","label""").find(iframe)?.groupValues?.get(1)?.let { link ->
                     ExtractorLink(
                         "Tellygossips",
