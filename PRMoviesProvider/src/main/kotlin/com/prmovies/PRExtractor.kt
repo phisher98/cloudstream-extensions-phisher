@@ -33,7 +33,6 @@ open class Minoplres : ExtractorApi() {
                         "",
                         Qualities.P1080.value,
                         type = INFER_TYPE,
-                        headers
                     )
                 )
             }
