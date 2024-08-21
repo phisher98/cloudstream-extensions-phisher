@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.*
 class Tellygossips : ExtractorApi() {
 override val mainUrl = "https://tellygossips.net"
 override val name = "Tellygossips"
-override val requiresReferer = false
+override val requiresReferer = true
 
     override suspend fun getUrl(
         url: String,
@@ -19,9 +19,9 @@ override val requiresReferer = false
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url, referer = this.referer).document
-        doc.selectFirst("div.video-player > iframe")?.attr("src").map{
-        val iframe=app.get(it)?.text()
+        val doc = app.get(url, referer = $mainUrl).document
+        val iframeembed=doc.selectFirst("div.video-player > iframe")!!.attr("src")
+        val iframe=app.get(iiframeembedt)?.text()
         val source = Regex(""""src":"(.*)","label""").find(iframe)?.groupValues?.get(1)
         callback.invoke(
             ExtractorLink(
@@ -33,7 +33,6 @@ override val requiresReferer = false
 				INFER_TYPE,
             )
         )
-        }
         
     }
 }
