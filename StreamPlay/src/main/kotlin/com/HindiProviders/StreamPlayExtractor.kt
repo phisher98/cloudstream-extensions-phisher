@@ -1011,7 +1011,12 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
         Log.d("Phisher ID",url)
-        VidSrcTo().getUrl(url, url, subtitleCallback, callback) 
+        AnyVidSrcTo(url).getUrl(iFrameUrl, url, subtitleCallback, callback)
+
+        class AnyVidSrcTo(domain: String) : VidSrcTo() {
+		override val mainUrl = domain
+	}
+        
     }
 
     suspend fun invokeKisskh(
