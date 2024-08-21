@@ -8,5 +8,7 @@ import android.content.Context
 class PRMoviesPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(PRMoviesProvider())
+        registerExtractorAPI(Waaw())
+        registerExtractorAPI(Minoplres())
     }
 }
