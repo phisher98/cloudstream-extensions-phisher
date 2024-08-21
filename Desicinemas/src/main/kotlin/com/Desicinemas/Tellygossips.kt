@@ -8,11 +8,12 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.*
 
 
-class Tellygossips : ExtractorApi() {
-override val mainUrl = "https://tellygossips.net"
-override val name = "Tellygossips"
-override val requiresReferer = true
+open class Tellygossips : ExtractorApi() {
+    override val name = "Tellygossips"
+    override val mainUrl = "https://tellygossips.net"
+    override val requiresReferer = true
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -20,19 +21,18 @@ override val requiresReferer = true
         callback: (ExtractorLink) -> Unit
     ) {
         val doc = app.get(url, referer = $mainUrl).document
-        val iframeembed=doc.selectFirst("div.video-player > iframe")!!.attr("src")
-        val iframe=app.get(iiframeembedt)?.text()
-        val source = Regex(""""src":"(.*)","label""").find(iframe)?.groupValues?.get(1)
-        callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                url = source ?: return,
-                referer = "$mainUrl/",
-                quality = "",
-				INFER_TYPE,
-            )
-        )
-        
+        val iframeembed=doc.selectFirst("div.video-player > iframe")!!.attr("src") ?:""
+        val iframe=app.get(iframeembed)?.text()
+            Regex(""""src":"(.*)","label""").find(iframe)?.groupValues?.get(1)?.let { link ->
+                    ExtractorLink(
+                        "Tellygossips",
+                        "Tellygossips",
+                        link,
+                        referer ?: "",
+                        getQualityFromName(""),
+                        type = INFER_TYPE
+                )
+            }
+        return null
     }
 }
