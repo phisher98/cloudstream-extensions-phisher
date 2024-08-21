@@ -39,12 +39,7 @@ class Moviesapi : Chillx() {
 }
 
 class AnimesagaStream : Chillx() {
-    override val name = "Animesaga"
-    override val mainUrl = "https://stream.animesaga.in"
-}
-
-class Anplay : Chillx() {
-    override val name = "Anplay"
+    override val name = "AnimesagaStream"
     override val mainUrl = "https://stream.anplay.in"
 }
 
