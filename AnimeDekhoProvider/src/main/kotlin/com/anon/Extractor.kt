@@ -68,10 +68,10 @@ open class VidStream : ExtractorApi() {
         callback: (ExtractorLink) -> Unit) {
         val doc = app.get(url).text
         val master = Regex("""JScript[\w+]?\s*=\s*'([^']+)""").find(doc)!!.groupValues[1]
-        val key =
-            app.get("https://rowdy-avocado.github.io/multi-keys")
-                .parsedSafe<Keys>()?.key?.get(0)
-                ?: throw ErrorLoadingException("Unable to get key")
+        val key = "1FHuaQhhcsKgpTRB"
+           // app.get("https://rowdy-avocado.github.io/multi-keys")
+             //   .parsedSafe<Keys>()?.key?.get(0)
+            //    ?: throw ErrorLoadingException("Unable to get key")
         val decrypt =
             AesHelper.cryptoAESHandler(master, key.toByteArray(), false)?.replace("\\", "")
                 ?: throw ErrorLoadingException("error decrypting")
