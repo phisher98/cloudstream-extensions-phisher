@@ -127,8 +127,8 @@ open class VidStream : ExtractorApi() {
 
 		callback.invoke(
             ExtractorLink(
-                name,
-                name,
+                "VidStream",
+                "VidStream",
                 url = source ?: return,
                 referer = "$mainUrl/",
                 quality = Qualities.Unknown.value,
