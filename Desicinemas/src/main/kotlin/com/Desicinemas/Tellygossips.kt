@@ -4,14 +4,15 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 
-class Tellygossips(val source:String) : ExtractorApi() {
-    override val mainUrl = "https://flow.tellygossips.net"
-    override val name = "Tellygossips"
-    override val requiresReferer = false
-    private val referer = "http://tellygossips.net/"
-    private val configRegex = "var config = ([\\s\\S]*?);".toRegex()
-    private val headers = mapOf("Referer" to "$mainUrl/")
+
+class Tellygossips : ExtractorApi() {
+override val mainUrl = "https://tellygossips.net"
+override val name = "Tellygossips"
+override val requiresReferer = false
+private val referer = "https://tellygossips.net"
+private val headers = mapOf("Referer" to "$mainUrl/")
 
     override suspend fun getUrl(
         url: String,
@@ -20,35 +21,19 @@ class Tellygossips(val source:String) : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val doc = app.get(url, referer = this.referer).document
-        val configStr = doc.select("script")
-            .map { it.data() }
-            .firstOrNull { it.contains("var config = ") }
-            ?.let { configRegex.find(it.trim())?.groupValues?.get(1) } ?: return
-        val config = tryParseJson<Config>(configStr) ?: return
-        for (link in config.sources) {
-            callback(
-                ExtractorLink(
-                    source,
-                    "$name ${link.label}",
-                    link.file ?: link.src ?: continue,
-                    "",
-                    Qualities.Unknown.value,
-                    true,
-                    headers
-                )
+        val iframe=doc.selectfirst("div.video-player > iframe")?.attr("src")
+        val iframetext=app.get(iframe).text()
+        val source = Regex(""""src":"(.*)","label""").find(iframetext)?.groupValues?.get(1)
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                url = source ?: return,
+                referer = "$mainUrl/",
+                quality = Qualities.Unknown.value,
+				INFER_TYPE,
+                headers=headers
             )
-        }
-    }
-
-    data class Config(
-        val sources: List<VideoLink>,
-    )
-
-    data class VideoLink(
-        val file: String?,
-        val src: String?,
-        val label: String,
-        val type: String,
-    )
+        )
 
 }
