@@ -11,8 +11,6 @@ class Tellygossips : ExtractorApi() {
 override val mainUrl = "https://tellygossips.net"
 override val name = "Tellygossips"
 override val requiresReferer = false
-private val referer = "https://tellygossips.net"
-private val headers = mapOf("Referer" to "$mainUrl/")
 
     override suspend fun getUrl(
         url: String,
@@ -21,7 +19,7 @@ private val headers = mapOf("Referer" to "$mainUrl/")
         callback: (ExtractorLink) -> Unit
     ) {
         val doc = app.get(url, referer = this.referer).document
-        val iframe=doc.selectfirst("div.video-player > iframe")?.attr("src")
+        val iframe=doc.selectFirst("div.video-player > iframe")?.attr("src")
         val iframetext=app.get(iframe).text()
         val source = Regex(""""src":"(.*)","label""").find(iframetext)?.groupValues?.get(1)
         callback.invoke(
@@ -35,5 +33,5 @@ private val headers = mapOf("Referer" to "$mainUrl/")
                 headers=headers
             )
         )
-
+    }
 }
