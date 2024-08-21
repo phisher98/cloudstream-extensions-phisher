@@ -13,7 +13,7 @@ class DesicinemasPlugin: Plugin() {
         val provider = DesicinemasProvider()
         registerMainAPI(provider)
         registerMainAPI(BollyzoneProvider())
-        registerExtractorAPI(Tellygossips2())
+        registerExtractorAPI(Tellygossips())
         addExtractor(Tvlogy(provider.name))
         addExtractor(Tellygossips(provider.name))
     }

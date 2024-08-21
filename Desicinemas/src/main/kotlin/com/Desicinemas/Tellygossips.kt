@@ -20,9 +20,9 @@ override val requiresReferer = false
         callback: (ExtractorLink) -> Unit
     ) {
         val doc = app.get(url, referer = this.referer).document
-        val iframe=doc.selectFirst("div.video-player > iframe")?.attr("src").map{
-        val iframetext=app.get(iframe)?.text()
-        val source = Regex(""""src":"(.*)","label""").find(iframetext)?.groupValues?.get(1)
+        doc.selectFirst("div.video-player > iframe")?.attr("src").map{
+        val iframe=app.get(it)?.text()
+        val source = Regex(""""src":"(.*)","label""").find(iframe)?.groupValues?.get(1)
         callback.invoke(
             ExtractorLink(
                 name,
