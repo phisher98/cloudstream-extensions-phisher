@@ -12,7 +12,6 @@ class DesicinemasPlugin: Plugin() {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(BollyzoneProvider())
         registerMainAPI(DesicinemasProvider())
-        registerExtractorAPI(Tellygossips())
         registerExtractorAPI(Tvlogy())
     
     }
