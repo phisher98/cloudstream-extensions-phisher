@@ -26,7 +26,7 @@ class Tvlogy : ExtractorApi() {
             .parsedSafe<MetaData>() ?: return
         callback(
             ExtractorLink(
-                source,
+                "",
                 name,
                 meta.videoSource,
                 url,
