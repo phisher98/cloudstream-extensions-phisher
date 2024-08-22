@@ -22,6 +22,9 @@ class Luluvdo : StreamWishExtractor() {
     override val mainUrl = "https://luluvdo.com"
 }
 
+class Lulust : StreamWishExtractor() {
+    override val mainUrl = "https://lulu.st"
+    }
 
 open class FMX : ExtractorApi() {
     override var name = "FMX"
