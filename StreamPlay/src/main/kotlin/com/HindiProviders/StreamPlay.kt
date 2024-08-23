@@ -146,10 +146,10 @@ open class StreamPlay : TmdbProvider() {
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
         const val multimoviesAPI = "https://multimovies.online"
-        const val netmoviesAPI = "https://netmovies.to"
+        const val netmoviesAPI = "https://web.netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val doomoviesAPI = "https://doomovies.net"
-        const val vidsrctoAPI = "https://vidsrc.to"
+        const val vidsrctoAPI = "https://vidsrc.cc"
         const val dramadayAPI = "https://dramaday.me"
         const val animetoshoAPI = "https://animetosho.org"
         const val showflixAPI = "https://showflix.xyz"
@@ -163,14 +163,14 @@ open class StreamPlay : TmdbProvider() {
         const val uhdmoviesAPI = "https://uhdmovies.dad"
         const val topmoviesAPI = "https://topmovies.dad"
         const val MoviesmodAPI= "https://moviesmod.win"
-        const val hdmovies4uAPI = "https://hdmovies4u.rsvp"
-        const val vegaMoviesAPI = "https://vegamovies.gs"
-        const val dotmoviesAPI = "https://luxmovies.live"
+        const val hdmovies4uAPI = "https://hdmovies4u.boston"
+        const val vegaMoviesAPI = "https://vegamovies.nu"
+        const val dotmoviesAPI = "https://luxmovies.lol"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://worker-square-heart-580a.uieafpvtgl.workers.dev"
         const val MovieDrive_API="https://moviesdrive.world"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
-        const val bollyflixAPI = "https://bollyflix.band"
+        const val bollyflixAPI = "https://bollyflix.how"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

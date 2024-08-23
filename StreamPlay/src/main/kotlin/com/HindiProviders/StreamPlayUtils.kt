@@ -1160,7 +1160,7 @@ suspend fun ExtractMdrive(url: String): MutableList<String> {
             val mainpage= app.get(link).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
             if (!mainpage.contains("https://"))
             {
-                val newlink= "https://hubcloud.day$mainpage"
+                val newlink= "https://hubcloud.art$mainpage"
                 linklist.add(newlink)
             }
             else
@@ -1174,9 +1174,9 @@ suspend fun ExtractMdrive(url: String): MutableList<String> {
 
 suspend fun ExtractMdriveSeries(url: String): MutableList<String> {
             val linklist= mutableListOf(String())
-            val mainpage = app.get(url.replace("lol","day")).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
+            val mainpage = app.get(url).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
             if (!mainpage.contains("https://")) {
-                val newlink = "https://hubcloud.day$mainpage"
+                val newlink = "https://hubcloud.art$mainpage"
                 linklist.add(newlink)
             } else {
                 linklist.add(mainpage)
