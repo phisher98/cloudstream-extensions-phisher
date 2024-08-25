@@ -21,6 +21,12 @@ class StreamSB8 : StreamSB() {
     override var mainUrl = "https://streamsb.net"
 }
 
+class Vidstreamxyz : Chillx() {
+    override val name = "Vidstream"
+        override val mainUrl = "https://vidstreaming.xyz"
+        }
+
+
 open class Vidstreaming : ExtractorApi() {
     override var name = "Vidstreaming"
     override var mainUrl = "https://vidstreaming.xyz"

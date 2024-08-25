@@ -17,5 +17,6 @@ class ToonstreamProvider: Plugin() {
         registerExtractorAPI(vidhidevip())
         registerExtractorAPI(Cdnwish())
         registerExtractorAPI(FileMoonnl())
+        registerExtractorAPI(Vidstreamxyz())
     }
 }
