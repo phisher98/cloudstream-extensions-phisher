@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.extractors.VidHidePro
+import android.util.Log
 
 
 class MultimoviesAIO: StreamWishExtractor() {
@@ -58,7 +59,7 @@ class GDMirrorbot : ExtractorApi() {
         callback: (ExtractorLink) -> Unit) {
         app.get(url).document.select("ul#videoLinks li").map {
             val link=it.attr("data-link")
-            Log.d("Phisher",$link)
+            Log.d("Phisher","$link")
             loadExtractor(link,subtitleCallback, callback)
         }
     }
