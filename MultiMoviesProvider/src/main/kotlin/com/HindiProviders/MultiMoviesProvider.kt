@@ -283,6 +283,16 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 Log.d("Phisher Test Load url link",link)
                 when {
                     !link.contains("youtube") -> {
+                        Log.d("Phisher url link","$link")
+                        if(link.contains("gdmirrorbot.nl"))
+                            {
+                            app.get(link).document.select("ul#videoLinks li").map {
+                            val link=it.attr("data-link")
+                            Log.d("Phisher url link 2","$link")
+                            loadExtractor(link,referer = mainUrl,subtitleCallback, callback)
+                            }
+                        }
+                        else
                         loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
                     }
                     else -> return@apmap
