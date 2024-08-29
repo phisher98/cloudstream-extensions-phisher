@@ -1,6 +1,6 @@
 package com.HindiProviders
 
-import android.util.Log
+//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -258,7 +258,6 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val req = app.get(data).document
-        Log.d("Phisher Test Load url", data)
         req.select("ul#playeroptionsul li").map {
             Triple(
                 it.attr("data-post"),
@@ -278,17 +277,13 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                Log.d("Phisher Test Load url source",source)
                 val link = source.substringAfter("\"").substringBefore("\"")
-                Log.d("Phisher Test Load url link",link)
                 when {
                     !link.contains("youtube") -> {
-                        Log.d("Phisher url link","$link")
                         if(link.contains("gdmirrorbot.nl"))
                             {
                             app.get(link).document.select("ul#videoLinks li").map {
-                            val link=it.attr("data-link")
-                            Log.d("Phisher url link 2","$link")
+                            @Suppress("NAME_SHADOWING") val link=it.attr("data-link")
                             loadExtractor(link,referer = mainUrl,subtitleCallback, callback)
                             }
                         }
