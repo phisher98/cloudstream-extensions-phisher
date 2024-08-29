@@ -34,6 +34,12 @@ class server2 : VidhideExtractor() {
     override var requiresReferer = true
 }
 
+class Asnwish : StreamWishExtractor() {
+    override val name = "Asnwish"
+    override val mainUrl = "https://asnwish.com"
+    override val requiresReferer = true
+}
+
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
