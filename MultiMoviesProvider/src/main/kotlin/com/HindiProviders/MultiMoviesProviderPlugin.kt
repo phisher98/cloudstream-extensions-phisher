@@ -24,7 +24,8 @@ class MultiMoviesProviderPlugin: Plugin() {
         registerExtractorAPI(VidhideExtractor())
         registerExtractorAPI(CdnwishCom())
         registerExtractorAPI(Asnwish())
-        registerExtractorAPI(VidHidePro())
+        registerExtractorAPI(cdnwish())
+        registerExtractorAPI(VidHidePro1())
 
     }
 }
