@@ -43,7 +43,7 @@ class Asnwish : StreamWishExtractor() {
 }
 
 class VidHidePro : VidHidePro() {
-    override var mainUrl = "https://vidhidevip.com
+    override var mainUrl = "https://vidhidevip.com"
     override val requiresReferer = true
     }
 
