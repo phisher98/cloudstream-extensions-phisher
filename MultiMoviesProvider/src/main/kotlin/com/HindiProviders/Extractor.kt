@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import android.util.Log
 
+val mainUrl="https://multimovies.sbs"
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -38,15 +39,16 @@ class server2 : VidhideExtractor() {
 }
 
 class Asnwish : StreamWishExtractor() {
-    override val name = "Asnwish"
+    override val name = "Streanwish Asn"
     override val mainUrl = "https://asnwish.com"
     override val requiresReferer = true
 }
 
-class VidHidePro : VidHidePro() {
-    override var mainUrl = "https://vidhidevip.com"
+class CdnwishCom : StreamWishExtractor() {
+    override val name = "Cdnwish"
+    override val mainUrl = "https://cdnwish.com"
     override val requiresReferer = true
-    }
+}
 
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
@@ -59,10 +61,9 @@ class GDMirrorbot : ExtractorApi() {
         callback: (ExtractorLink) -> Unit) {
         Log.d("Phisher url","$url")
         app.get(url).document.select("ul#videoLinks li").map {
-            Log.d("Phisher url",it.toString())
             val link=it.attr("data-link")
             Log.d("Phisher url","$link")
-            loadExtractor(link,subtitleCallback, callback)
+            loadExtractor(link,$mainurl,subtitleCallback, callback)
         }
     }
 }
