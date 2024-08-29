@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 
-class Tvlogy : ExtractorApi() {
+class Tvlogy(val source:String) : ExtractorApi() {
     override val mainUrl = "https://hls.tvlogy.to"
     override val name = "Tvlogy"
     override val requiresReferer = false
@@ -26,7 +26,7 @@ class Tvlogy : ExtractorApi() {
             .parsedSafe<MetaData>() ?: return
         callback(
             ExtractorLink(
-                "",
+                source,
                 name,
                 meta.videoSource,
                 url,

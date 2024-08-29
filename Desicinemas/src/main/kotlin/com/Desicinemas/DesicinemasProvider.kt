@@ -1,5 +1,6 @@
 package com.Desicinemas
 
+//import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import okhttp3.Interceptor
@@ -108,15 +109,11 @@ open class DesicinemasProvider : MainAPI() {
     ): Boolean {
         val doc = app.get(data, referer = "$mainUrl/").document
         doc.select(".MovieList .OptionBx").amap {
+            val name=it.select("p.AAIco-dns").text()
             val link = it.select("a").attr("href")
-            val name = it.select(".AAIco-dns, .AAIco-equalizer").text()
-            var doc2 = app.get(link, referer = "$mainUrl/").document
-            doc2.selectFirst("meta[HTTP-EQUIV=refresh]")?.let {
-                val url = it.attr("content").substringAfter("URL=")
-                doc2 = app.get(url, referer = data).document
-            }
+            val doc2 = app.get(link).document
             val src = doc2.select("iframe").attr("src")
-            loadExtractor(src, subtitleCallback, callback, name)
+            loadExtractor(src, subtitleCallback, callback,name)
         }
         return true
     }

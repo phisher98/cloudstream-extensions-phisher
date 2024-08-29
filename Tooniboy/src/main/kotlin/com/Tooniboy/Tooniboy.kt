@@ -1,7 +1,7 @@
 package com.Tooniboy
 
 //import android.util.Log
-import android.os.Build
+import android.annotation.SuppressLint
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -79,6 +79,7 @@ class Tooniboy : MainAPI() {
         return searchResponse
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title= document.selectFirst("#site header h2.title")?.text()?.trim().toString().replace("Watch Online","")
@@ -149,6 +150,7 @@ class Tooniboy : MainAPI() {
         return urllist
     }
 
+    @SuppressLint("NewApi")
     fun base64ToUtf8(base64String: String): String? {
         return try {
             val decodedBytes = Base64.getDecoder().decode(base64String)
