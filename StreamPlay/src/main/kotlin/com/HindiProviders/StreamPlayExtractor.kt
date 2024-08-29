@@ -24,7 +24,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
-
+import okio.ByteString.Companion.decodeBase64
 
 
 val session = Session(Requests().baseClient)
@@ -1613,6 +1613,7 @@ object StreamPlayExtractor : StreamPlay() {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val fixTitle = title.createSlug()
         val url = "$MoviesmodAPI/download-$fixTitle-$year"
+        Log.d("Phisher1 url",url.toString())
         //var res = app.get("$api/search/$title",).document
         val match = when (season) {
             null -> "$year"
@@ -1621,11 +1622,14 @@ object StreamPlayExtractor : StreamPlay() {
         }
         val hTag = if (season == null) "h4" else "h3"
         val aTag = if (season == null) "Download" else "Episode"
+        Log.d("Phisher1 entries",aTag.toString())
         val sTag = if (season == null) "" else "(Season $season)"
+        Log.d("Phisher1 entries",sTag.toString())
        // val media =res.selectFirst("div.post-cards article:has(h2.title.front-view-title:matches((?i)$title.*$match)) a")?.attr("href")
         val res = app.get(url ?: return,headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),interceptor = wpRedisInterceptor).document
         val entries =
             res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+        Log.d("Phisher1 entries",entries.toString())
         entries.apmap {
                 val tags =
                     """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -1633,8 +1637,9 @@ object StreamPlayExtractor : StreamPlay() {
             val quality =
                 """(?:720p|1080p|2160p)""".toRegex().find(it.text())?.groupValues?.get(0)
                     ?.trim()
-                val href =
-                    it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+                var href=
+                    it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")?.substringAfter("=") ?:""
+                  href=base64Decode(href)
                 val selector =
                     if (season == null) "p a.maxbutton:contains(Server)" else "h3:contains(Episode $episode) a"
                 val server = app.get(
@@ -1643,6 +1648,7 @@ object StreamPlayExtractor : StreamPlay() {
                     ?.attr("href") ?: ""
             server.let {
                 val link = Unblockedlinks(it)
+                Log.d("Phisher1 link",link.toString())
                 loadCustomTagExtractor(
                     tags,
                     link ?:"",
@@ -3185,7 +3191,7 @@ fun getUrlAndNames(urlArray: List<SmashyUrlArray>): List<Pair<String, String>> {
             val url = "$MovieDrive_API/$fixTitle-$year"
             val document = app.get(url).document
             if (season == null) {
-                document.select("h5 > a").map {
+                document.select("h5 > a").apmap {
                     val link = it.attr("href")
                     val urls = ExtractMdrive(link)
                     urls.forEach { servers ->

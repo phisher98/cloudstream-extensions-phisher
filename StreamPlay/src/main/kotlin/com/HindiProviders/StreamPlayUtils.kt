@@ -1154,10 +1154,13 @@ suspend fun ExtractMdrive(url: String): MutableList<String> {
     val doc= app.get(url).document
     val linklist= mutableListOf(String())
     doc.select("h5 > a").forEach {
+        Log.d("Phisher1 it",it.toString())
         val link=it.attr("href").replace("lol","day")
         if (!link.contains("gdtot"))
         {
-            val mainpage= app.get(link).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
+            Log.d("Phisher1 it",link.toString())
+            val mainpage= link
+            Log.d("Phisher1 it",mainpage.toString())
             if (!mainpage.contains("https://"))
             {
                 val newlink= "https://hubcloud.art$mainpage"

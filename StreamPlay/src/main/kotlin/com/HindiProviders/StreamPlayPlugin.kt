@@ -79,5 +79,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(VidSrcExtractor())
         registerExtractorAPI(Servertwo())
         registerExtractorAPI(MultimoviesAIO())
+        registerExtractorAPI(HubCloud())
     }
 }
