@@ -57,9 +57,11 @@ class GDMirrorbot : ExtractorApi() {
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit) {
+        Log.d("Phisher url","$url")
         app.get(url).document.select("ul#videoLinks li").map {
+            Log.d("Phisher url",it)
             val link=it.attr("data-link")
-            Log.d("Phisher","$link")
+            Log.d("Phisher url","$link")
             loadExtractor(link,subtitleCallback, callback)
         }
     }
