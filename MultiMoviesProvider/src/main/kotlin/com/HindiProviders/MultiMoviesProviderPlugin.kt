@@ -13,6 +13,8 @@ class MultiMoviesProviderPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(MultiMoviesProvider())
+        registerExtractorAPI(Cdnwish())
+        registerExtractorAPI(VidHideProMulti())
         registerExtractorAPI(MixDrop())
         registerExtractorAPI(Multimovies())
         registerExtractorAPI(XStreamCdn())
@@ -24,8 +26,5 @@ class MultiMoviesProviderPlugin: Plugin() {
         registerExtractorAPI(VidhideExtractor())
         registerExtractorAPI(CdnwishCom())
         registerExtractorAPI(Asnwish())
-        registerExtractorAPI(Cdnwish())
-        registerExtractorAPI(VidHideProMulti())
-
-    }
+            }
 }
