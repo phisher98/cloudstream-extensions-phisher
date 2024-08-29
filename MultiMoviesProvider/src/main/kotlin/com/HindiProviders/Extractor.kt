@@ -50,7 +50,7 @@ class VidHidePro : VidHidePro() {
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
-    override val requiresReferer = false
+    override val requiresReferer = true
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -58,6 +58,7 @@ class GDMirrorbot : ExtractorApi() {
         callback: (ExtractorLink) -> Unit) {
         app.get(url).document.select("ul#videoLinks li").map {
             val link=it.attr("data-link")
+            Log.d("Phisher",$link)
             loadExtractor(link,subtitleCallback, callback)
         }
     }
