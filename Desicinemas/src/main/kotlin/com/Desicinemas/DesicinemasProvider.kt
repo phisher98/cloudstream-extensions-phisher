@@ -94,7 +94,7 @@ open class DesicinemasProvider : MainAPI() {
             name = title
         })
 
-        return newMovieLoadResponse(title, url, TvType.Movie, episodes) {
+        return newTvSeriesLoadResponse(title, url, TvType.Movie, episodes) {
             this.posterUrl = fixUrlNull(posterUrl)
             plot = doc.selectFirst(".Description p")?.text()
             tags = doc.select(".Genre a").map { it.text() }
