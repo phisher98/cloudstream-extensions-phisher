@@ -278,9 +278,9 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                Log.d("Phisher Test Load url source",$source)
+                Log.d("Phisher Test Load url source",source)
                 val link = source.substringAfter("\"").substringBefore("\"")
-                Log.d("Phisher Test Load url link",$link)
+                Log.d("Phisher Test Load url link",link)
                 when {
                     !link.contains("youtube") -> {
                         loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
