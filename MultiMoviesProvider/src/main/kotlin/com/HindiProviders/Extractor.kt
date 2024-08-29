@@ -12,8 +12,6 @@ import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import android.util.Log
 
-val mainUrl="https://multimovies.sbs"
-
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
     override var mainUrl = "https://allinonedownloader.fun"
@@ -63,7 +61,7 @@ class GDMirrorbot : ExtractorApi() {
         app.get(url).document.select("ul#videoLinks li").map {
             val link=it.attr("data-link")
             Log.d("Phisher url","$link")
-            loadExtractor(link,mainurl,subtitleCallback, callback)
+            loadExtractor(link,"https://multimovies.sbs",subtitleCallback, callback)
         }
     }
 }
