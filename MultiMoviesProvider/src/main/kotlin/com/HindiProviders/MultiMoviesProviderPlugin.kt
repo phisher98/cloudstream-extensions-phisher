@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.extractors.VidHidePro5
-import com.HindiProviders.Extractors.CdnwishCom
+import com.HindiProviders.Extractor.CdnwishCom
 
 @CloudstreamPlugin
 class MultiMoviesProviderPlugin: Plugin() {
