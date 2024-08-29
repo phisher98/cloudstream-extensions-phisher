@@ -7,13 +7,13 @@ import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.extractors.VidHidePro5
+import com.HindiProviders.Extractors.CdnwishCom
 
 @CloudstreamPlugin
 class MultiMoviesProviderPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(MultiMoviesProvider())
-        registerExtractorAPI(Cdnwish())
         registerExtractorAPI(VidHidePro5())
         registerExtractorAPI(MixDrop())
         registerExtractorAPI(Multimovies())
