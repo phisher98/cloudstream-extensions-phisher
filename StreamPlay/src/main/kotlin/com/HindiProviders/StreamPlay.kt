@@ -145,7 +145,7 @@ open class StreamPlay : TmdbProvider() {
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = "https://multimovies.online"
+        const val multimoviesAPI = "https://multimovies.sbs"
         const val netmoviesAPI = "https://web.netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val doomoviesAPI = "https://doomovies.net"
@@ -170,7 +170,7 @@ open class StreamPlay : TmdbProvider() {
         const val dahmerMoviesAPI="https://worker-square-heart-580a.uieafpvtgl.workers.dev"
         const val MovieDrive_API="https://moviesdrive.world"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
-        const val bollyflixAPI = "https://bollyflix.how"
+        const val bollyflixAPI = "https://bollyflix.tube"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
