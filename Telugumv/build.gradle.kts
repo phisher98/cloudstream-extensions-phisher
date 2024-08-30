@@ -1,21 +1,20 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
-version = 18
+version = 1
 
 
 android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
-        buildConfigField("String", "MultiMovies_API", "\"${properties.getProperty("MultiMovies_API")}\"")
     }
 }
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian Multi-language HD Provider"
-    language = "hi"
+    description = "Telugu Movies and TV Series"
+    language = "te"
     authors = listOf("HindiProviders")
 
     /**
@@ -33,7 +32,6 @@ cloudstream {
     tvTypes = listOf(
         "Movie",
         "TvSeries",
-        "Anime",
     )
-    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/MultiMoviesProvider/icon.png"
+    iconUrl = "https://telugumv.xyz/wp-content/uploads/2024/05/20240509_195734-e1715265186634.png"
 }

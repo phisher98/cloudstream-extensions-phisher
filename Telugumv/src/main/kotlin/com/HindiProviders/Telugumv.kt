@@ -2,6 +2,7 @@ package com.HindiProviders
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
@@ -10,11 +11,11 @@ import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
-class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.sbs"
-    override var name = "MultiMovies"
+class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
+    override var mainUrl = "https://telugumv.xyz"
+    override var name = "Telugumv"
     override val hasMainPage = true
-    override var lang = "hi"
+    override var lang = "te"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -28,23 +29,8 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         //val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0", "X-Requested-With" to "XMLHttpRequest")
     }
     override val mainPage = mainPageOf(
-        "$mainUrl/trending/" to "Trending",
-        "$mainUrl/genre/bollywood-movies/" to "Bollywood Movies",
-        "$mainUrl/genre/hollywood/" to "Hollywood Movies",
-        "$mainUrl/genre/south-indian/" to "South Indian Movies",
-        "$mainUrl/genre/punjabi/" to "Punjabi Movies",
-        "$mainUrl/genre/amazon-prime/" to "Amazon Prime",
-        "$mainUrl/genre/disney-hotstar/" to "Disney Hotstar",
-        "$mainUrl/genre/jio-ott/" to "Jio OTT",
-        "$mainUrl/genre/netflix/" to "Netfilx",
-        "$mainUrl/genre/sony-liv/" to "Sony Live",
-        "$mainUrl/genre/k-drama/" to "KDrama",
-        "$mainUrl/genre/zee-5/" to "Zee5",
-        "$mainUrl/genre/anime-hindi/" to "Anime Series",
-        "$mainUrl/genre/anime-movies/" to "Anime Movies",
-        "$mainUrl/genre/cartoon-network/" to "Cartoon Network",
-        "$mainUrl/genre/disney-channel/" to "Disney Channel",
-        "$mainUrl/genre/hungama/" to "Hungama",
+        "$mainUrl/movies/" to "Movies",
+        "$mainUrl/tvshows/" to "Tvshows",
     )
 
     override suspend fun getMainPage(
@@ -257,6 +243,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val req = app.get(data).document
         req.select("ul#playeroptionsul li").map {
             Triple(
@@ -277,7 +264,8 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                val link = source.substringAfter("\"").substringBefore("\"")
+                Log.d("Phisher",source)
+                val link = source.substringBeforeLast("1")
                 when {
                     !link.contains("youtube") -> {
                         if(link.contains("gdmirrorbot.nl"))
@@ -287,14 +275,6 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                             loadExtractor(link,referer = mainUrl,subtitleCallback, callback)
                             }
                         }
-                        else
-                            if (link.contains("deaddrive.xyz"))
-                            {
-                                app.get(link).document.select("ul.list-server-items > li").map {
-                                    val server = it.attr("data-video")
-                                    loadExtractor(server,referer = mainUrl,subtitleCallback, callback)
-                                }
-                            }
                         else
                         loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
                     }

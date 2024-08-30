@@ -4,13 +4,8 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.extractors.VidHidePro
-import android.util.Log
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -47,7 +42,7 @@ class CdnwishCom : StreamWishExtractor() {
     override val mainUrl = "https://cdnwish.com"
     override val requiresReferer = true
 }
-
+/*
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
@@ -65,6 +60,14 @@ class GDMirrorbot : ExtractorApi() {
         }
     }
 }
+ */
+class Strwishcom : StreamWishExtractor() {
+    override val name = "Strwish"
+    override val mainUrl = "https://strwish.com"
+    override val requiresReferer = true
+}
+
+
 
 open class VidhideExtractor : ExtractorApi() {
     override var name = "VidHide"
