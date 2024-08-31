@@ -126,7 +126,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val details = prevPtag ?. text() ?: ""
                 val realSeason = Regex("""(?:Season |S)(\d+)""").find(details) ?. groupValues
                     ?. get(1) ?: ""
-                val qualityRegex = """(1080p|2160p|4K|[0-9]*0p)""".toRegex(RegexOption.IGNORE_CASE)
+                val qualityRegex = """(1080p|720p|480p|2160p|4K|[0-9]*0p)""".toRegex(RegexOption.IGNORE_CASE)
                 val quality = qualityRegex.find(details) ?. groupValues ?. get(1) ?: ""
                 if(realSeason.isNotEmpty() && quality.isNotEmpty()) {
                     val sizeRegex = Regex("""\d+(?:\.\d+)?\s*(?:MB|GB)\b""")
@@ -272,13 +272,12 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         Log.d("Phisher Test 2", data)
-            val sources = parseJson<ArrayList<UHDLinks>>(data)
-            Log.d("Phisher sources",sources.toString())
-            sources.apmap { me ->
-                val link = me.sourceLink
-                Log.d("Phisher sources me",me.sourceName)
+        if (data.startsWith("https://"))
+        {
+            data.let { me ->
+                val link = me
                 val driveLink = bypassHrefli(link) ?: ""
-                Log.d("Phisher driveLink",driveLink)
+                Log.d("Phisher Test 2", driveLink)
                 val base = getBaseUrl(driveLink)
                 val driveReq = app.get(driveLink)
                 val driveRes = driveReq.document
@@ -304,8 +303,78 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         extractMirrorUHD(bitLink, base)
                     }
                 }
-                val rawtag=sources.apmap { it.sourceName }.toString()
-                val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)?.substringBefore(",")
+                val resume = extractResumeUHD(bitLink)
+                callback.invoke(
+                    ExtractorLink(
+                        "UHDMovies", "UHDMovies Resume", resume
+                            ?: "", "", getQualityFromName("")
+                    )
+                )
+                val DirectLink =
+                    driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
+                Log.d("Phisher Directlink", DirectLink.toString())
+                val CFExtract = extractCFUHD(DirectLink)
+                CFExtract.forEach { CFlinks ->
+                    callback.invoke(
+                        ExtractorLink(
+                            "UHDMovies", "UHDMovies CF Worker", CFlinks
+                                ?: "", "", getQualityFromName("")
+                        )
+                    )
+                }
+                val pixeldrain = extractPixeldrainUHD(bitLink)
+                val serverslist = listOf(downloadLink, resume, pixeldrain)
+                serverslist.forEach {
+                    if (it != null) {
+                        if (it.contains("https://video-leech.xyz")) {
+                            loadExtractor(it,subtitleCallback,callback)
+                        } else
+                            callback.invoke(
+                                ExtractorLink(
+                                    "UHDMovies", "UHDMovies", it
+                                        ?: "", "", getQualityFromName("")
+                                )
+                            )
+                    }
+                }
+            }
+        }
+        else {
+            val sources = parseJson<ArrayList<UHDLinks>>(data)
+            Log.d("Phisher sources", sources.toString())
+            sources.apmap { me ->
+                val link = me.sourceLink
+                Log.d("Phisher sources me", me.sourceName)
+                val driveLink = bypassHrefli(link) ?: ""
+                Log.d("Phisher driveLink", driveLink)
+                val base = getBaseUrl(driveLink)
+                val driveReq = app.get(driveLink)
+                val driveRes = driveReq.document
+                val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
+                val insLink =
+                    driveRes.select("a.btn.btn-danger:contains(Instant Download)")
+                        .attr("href")
+                val downloadLink = when {
+                    insLink.isNotEmpty() -> extractInstantUHD(insLink)
+                    driveRes.select("button.btn.btn-success").text()
+                        .contains("Direct Download", true) -> extractDirectUHD(
+                        driveLink,
+                        driveReq
+                    )
+
+                    bitLink.isNullOrEmpty() -> {
+                        val backupIframe =
+                            driveRes.select("a.btn.btn-outline-warning").attr("href")
+                        extractBackupUHD(backupIframe ?: "")
+                    }
+
+                    else -> {
+                        extractMirrorUHD(bitLink, base)
+                    }
+                }
+                val rawtag = sources.apmap { it.sourceName }.toString()
+                val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)
+                    ?.substringBefore(",")
                 val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1)
                 val resume = extractResumeUHD(bitLink)
                 callback.invoke(
@@ -314,10 +383,11 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                             ?: "", "", getQualityFromName(quality)
                     )
                 )
-                val DirectLink =driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
+                val DirectLink =
+                    driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
                 Log.d("Phisher Directlink", DirectLink.toString())
-                val CFExtract=extractCFUHD(DirectLink)
-                CFExtract.forEach{ CFlinks->
+                val CFExtract = extractCFUHD(DirectLink)
+                CFExtract.forEach { CFlinks ->
                     callback.invoke(
                         ExtractorLink(
                             "UHDMovies", "UHDMovies $tag CF Worker", CFlinks
@@ -326,21 +396,22 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     )
                 }
                 val pixeldrain = extractPixeldrainUHD(bitLink)
-                val serverslist = listOf(downloadLink, resume, pixeldrain,insLink)
+                val serverslist = listOf(downloadLink, resume, pixeldrain, insLink)
                 serverslist.forEach {
                     if (it != null) {
                         if (it.contains("https://video-leech.xyz")) {
-                                loadExtractor(it,subtitleCallback,callback)
+                            loadExtractor(it, subtitleCallback, callback)
                         } else
                             callback.invoke(
                                 ExtractorLink(
                                     "UHDMovies", "UHDMovies $tag", it
-                                        ?: "", "", getQualityFromName(quality)
+                                        , "", getQualityFromName(quality)
                                 )
                             )
                     }
                 }
             }
+        }
         return true
     }
 }
