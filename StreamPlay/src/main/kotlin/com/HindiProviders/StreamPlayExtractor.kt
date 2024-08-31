@@ -1528,6 +1528,7 @@ object StreamPlayExtractor : StreamPlay() {
                 ?.attr("href") ?: ""
             server.let {
                 val link= bypasstopoviesunblocked(it)
+                loadExtractor(link,subtitleCallback, callback)
                 Log.d("Phisher Top it",link)
                 val tags=extracttopmoviestag(link)
                 val tagquality= extracttopmoviestag2(link)
@@ -1647,7 +1648,8 @@ object StreamPlayExtractor : StreamPlay() {
                 ).document.selectFirst(selector)
                     ?.attr("href") ?: ""
             server.let {
-                val link = Unblockedlinks(it)
+                val link = Unblockedlinks(it) ?:""
+                loadExtractor(link,subtitleCallback, callback)
                 Log.d("Phisher1 link",link.toString())
                 loadCustomTagExtractor(
                     tags,
