@@ -14,7 +14,6 @@ data class Series(
         @JsonProperty("post_author") val postAuthor: String,
         @JsonProperty("post_date") val postDate: String,
         @JsonProperty("post_date_gmt") val postDateGmt: String,
-        @JsonProperty("post_content") val postContent: String,
         @JsonProperty("post_title") val postTitle: String,
         @JsonProperty("post_excerpt") val postExcerpt: String,
         @JsonProperty("post_status") val postStatus: String,

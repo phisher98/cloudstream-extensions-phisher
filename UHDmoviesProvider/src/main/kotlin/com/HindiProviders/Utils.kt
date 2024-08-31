@@ -43,18 +43,29 @@ suspend fun extractBackupUHD(url: String): String? {
 }
 
 @Suppress("NAME_SHADOWING")
-suspend fun extractResumeUHD(url: String): String? {
+suspend fun extractResumeUHD(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         val url = it.selectFirst("a.btn.btn-success")?.attr("href").toString()
         return url
     }
 }
 
-suspend fun extractPixeldrainUHD(url: String): String? {
+suspend fun extractPixeldrainUHD(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         return it.selectFirst("a.btn.btn-outline-info:contains(pixel)")?.attr("href").toString()
     }
 }
+
+suspend fun extractCFUHD(url: String): MutableList<String> {
+    val CFlinks= mutableListOf<String>()
+    app.get("https://driveleech.org$url?type=1").document.let {
+            CFlinks+=it.select("div.mb-4 a").attr("href")
+        }
+    app.get("https://driveleech.org$url?type=2").document.let {
+        CFlinks+=it.select("div.mb-4 a").attr("href")
+    }
+        return CFlinks
+    }
 
 
 fun getBaseUrl(url: String): String {
