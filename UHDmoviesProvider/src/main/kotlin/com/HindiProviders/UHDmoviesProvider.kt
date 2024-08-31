@@ -277,6 +277,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             data.let { me ->
                 val link = me
                 val driveLink = bypassHrefli(link) ?: ""
+                loadExtractor(driveLink,subtitleCallback, callback)
                 Log.d("Phisher Test 2", driveLink)
                 val base = getBaseUrl(driveLink)
                 val driveReq = app.get(driveLink)
@@ -346,7 +347,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val link = me.sourceLink
                 Log.d("Phisher sources me", me.sourceName)
                 val driveLink = bypassHrefli(link) ?: ""
-                Log.d("Phisher driveLink", driveLink)
+                loadExtractor(driveLink,subtitleCallback, callback)
                 val base = getBaseUrl(driveLink)
                 val driveReq = app.get(driveLink)
                 val driveRes = driveReq.document
