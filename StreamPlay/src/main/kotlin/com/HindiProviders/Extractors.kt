@@ -832,7 +832,7 @@ class Streamhide : StreamWishExtractor() {
 open class Bollyflix : ExtractorApi() {
     override val name: String = "Bollyflix"
     override val mainUrl: String = "https://new2.gdflix.cfd"
-    override val requiresReferer = true
+    override val requiresReferer = false
 
     override suspend fun getUrl(
         url: String,
@@ -855,27 +855,27 @@ open class Bollyflix : ExtractorApi() {
             //Log.d("Phisher else url",url)
         }
         Log.d("Phisher domain",url)
-        app.get(url).document.select("div.text-center a").forEach {
+        app.get(url).document.select("div.text-center a").amap {
             Log.d("Phisher it url",it.toString())
-            if (it.select("a").text().contains("FAST CLOUD DOWNLOAD"))
+            if (it.select("a").text().contains("FAST CLOUD DL"))
             {
                 val link=it.attr("href")
                 val trueurl=app.get("https://new2.gdflix.cfd$link").document.selectFirst("a.btn-success")?.attr("href") ?:""
                 callback.invoke(
                     ExtractorLink(
-                        "Bollyflix", "Bollyflix $tagquality", trueurl
+                        "Bollyflix[Fast Cloud]", "Bollyflix[Fast Cloud] $tagquality", trueurl
                             ?: "", "", getQualityFromName(tags)
                     )
                 )
             }
             else
-            if (it.select("a").text().contains("DRIVEBOT DOWNLOAD"))
+            if (it.select("a").text().contains("DRIVEBOT LINK"))
             {
                 val driveLink = it.attr("href")
                 val id = driveLink.substringAfter("id=").substringBefore("&")
                 val doId = driveLink.substringAfter("do=").substringBefore("==")
                 val indexbotlink = "https://indexbot.lol/download?id=${id}&do=${doId}"
-                val indexbotresponse = app.get(indexbotlink, timeout = 60L)
+                val indexbotresponse = app.get(indexbotlink, timeout = 30L)
                 if(indexbotresponse.isSuccessful) {
                     val cookiesSSID = indexbotresponse.cookies["PHPSESSID"]
                     val indexbotDoc = indexbotresponse.document
@@ -899,7 +899,7 @@ open class Bollyflix : ExtractorApi() {
                         requestBody = requestBody,
                         headers = headers,
                         cookies = cookies,
-                        timeout = 60L
+                        timeout = 30L
                     ).toString()
 
                     var downloadlink = Regex("url\":\"(.*?)\"").find(response) ?. groupValues ?. get(1) ?: ""
@@ -918,7 +918,7 @@ open class Bollyflix : ExtractorApi() {
                 }
             }
             else
-            if (it.select("a").text().contains("Instant Download"))
+            if (it.select("a").text().contains("Instant DL"))
             {
                 val Instant_link=it.attr("href")
                 val token = Instant_link.substringAfter("url=")
@@ -944,8 +944,8 @@ open class Bollyflix : ExtractorApi() {
                 val link = finaldownloadlink
                 callback.invoke(
                     ExtractorLink(
-                        "Bollyflix",
-                        "Bollyflix $tagquality",
+                        "Bollyflix[Instant DL]",
+                        "Bollyflix[Instant DL] $tagquality",
                         url = link,
                         "",
                         getQualityFromName(tags)
