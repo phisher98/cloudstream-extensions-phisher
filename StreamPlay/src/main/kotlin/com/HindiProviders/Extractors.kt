@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.extractors.Voe
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
@@ -215,7 +216,7 @@ class VCloud : ExtractorApi() {
         val size = document.selectFirst("i#size") ?. text()
         val div = document.selectFirst("div.card-body")
         val header = document.selectFirst("div.card-header") ?. text()
-        div.select("a").apmap {
+        div?.select("a")?.apmap {
             val link = it.attr("href")
             if (link.contains("pixeldra")) {
                 callback.invoke(
@@ -227,8 +228,7 @@ class VCloud : ExtractorApi() {
                         getIndexQuality(header),
                     )
                 )
-            }
-            else if(link.contains("dl.php")) {
+            } else if(link.contains("dl.php")) {
                 val response = app.get(link, allowRedirects = false)
                 val downloadLink = response.headers["location"].toString().split("link=").getOrNull(1) ?: link
                 callback.invoke(
@@ -240,8 +240,7 @@ class VCloud : ExtractorApi() {
                         getIndexQuality(header),
                     )
                 )
-            }
-            else if(link.contains(".dev")) {
+            } else if(link.contains(".dev")) {
                 callback.invoke(
                     ExtractorLink(
                         "V-Cloud",
@@ -251,8 +250,7 @@ class VCloud : ExtractorApi() {
                         getIndexQuality(header),
                     )
                 )
-            }
-            else {
+            } else {
                 loadExtractor(link, subtitleCallback, callback)
             }
         }
@@ -854,9 +852,7 @@ open class Bollyflix : ExtractorApi() {
             url=url
             //Log.d("Phisher else url",url)
         }
-        Log.d("Phisher domain",url)
-        app.get(url).document.select("div.text-center a").forEach {
-            Log.d("Phisher it url",it.toString())
+        app.get(url).document.select("div.text-center a").amap {
             if (it.select("a").text().contains("FAST CLOUD DOWNLOAD"))
             {
                 val link=it.attr("href")
