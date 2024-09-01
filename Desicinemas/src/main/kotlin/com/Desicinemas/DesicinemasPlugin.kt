@@ -13,6 +13,7 @@ class DesicinemasPlugin: Plugin() {
         registerMainAPI(BollyzoneProvider())
         registerExtractorAPI(Tvlogy((provider.name)))
         registerExtractorAPI(Tellygossips((provider.name)))
+        registerExtractorAPI(Tvlogyflow((provider.name)))
     }
 }
 

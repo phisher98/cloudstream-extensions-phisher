@@ -1,13 +1,19 @@
 package com.Desicinemas
 
+import android.os.Build
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
+import java.util.Base64
 
-class Tvlogy(val source:String) : ExtractorApi() {
-    override val mainUrl = "https://hls.tvlogy.to"
+class Tvlogyflow(val source:String) : ExtractorApi() {
+    override val mainUrl = "https://flow.tvlogy.to"
     override val name = "Tvlogy"
+    private val privatereferer = "https://skillsmagnet.com"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -16,14 +22,68 @@ class Tvlogy(val source:String) : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val doc=app.get(url, referer = privatereferer).text
+        if (doc.contains(".m3u8"))
+        {
+            Regex("\"src\":\"(.*?)\",\"").find(doc)?.groupValues?.get(1)?.let {
+                callback(
+                    ExtractorLink(
+                        source,
+                        name,
+                        it,
+                        url,
+                        Qualities.Unknown.value,
+                        INFER_TYPE
+                    )
+                )
+            }
+        }
+        else {
+            val script =
+                doc.substringAfter("JuicyCodes.Run(\"").substringBefore("\");").replace("\"+\"", "").decodeBase64()
+                val unpacked= JsUnpacker(script).unpack().toString()
+            Log.d("Phisher scrit",script)
+            Log.d("Phisher scrit unpacked",unpacked)
+            Regex("file\":.*?\"(.*.m3u8)\"").find(unpacked)?.groupValues?.get(1)?.let {
+                callback(
+                    ExtractorLink(
+                        source,
+                        name,
+                        it,
+                        url,
+                        Qualities.Unknown.value,
+                        INFER_TYPE
+                    )
+                )
+            }
+        }
+    }
+}
+
+
+
+class Tvlogy(private val source:String) : ExtractorApi() {
+    override val mainUrl = "https://tvlogy.to"
+    override val name = "Tvlogy"
+    override val requiresReferer = true
+
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+
         val id = url.substringAfter("data=")
         val data = mapOf(
             "hash" to id,
             "r" to "http%3A%2F%2Ftellygossips.net%2F"
         )
         val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        val meta = app.post("$url&do=getVideo", headers = headers, referer = url, data = data)
+        val meta = app.post("$url&do=getVideo", headers = headers, referer = referer, data = data)
             .parsedSafe<MetaData>() ?: return
+
         callback(
             ExtractorLink(
                 source,
@@ -41,4 +101,13 @@ class Tvlogy(val source:String) : ExtractorApi() {
         val videoSource: String
     )
 
+}
+
+fun String.decodeBase64(): String {
+    val decodedBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Base64.getDecoder().decode(this)
+    } else {
+        TODO("VERSION.SDK_INT < O")
+    }
+    return String(decodedBytes, Charsets.UTF_8)
 }

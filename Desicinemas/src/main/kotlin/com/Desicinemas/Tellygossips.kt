@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 
-class Tellygossips(val source:String) : ExtractorApi() {
+class Tellygossips(private val source:String) : ExtractorApi() {
     override val mainUrl = "https://flow.tellygossips.net"
     override val name = "Tellygossips"
     override val requiresReferer = false
