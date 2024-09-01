@@ -1,16 +1,13 @@
 package com.HindiProviders
 
+import android.annotation.SuppressLint
 import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.ExtractorApi
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.Qualities
-import java.net.URI
 
 class FMHD : Filesim() {
     override val name = "FMHD"
@@ -31,6 +28,7 @@ open class FMX : ExtractorApi() {
     override var mainUrl = "https://fmx.lol"
     override val requiresReferer = true
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response = app.get(url,referer=mainUrl).document
         val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
@@ -82,5 +80,3 @@ open class Akamaicdn : ExtractorApi() {
         )
     }
 }
-
-

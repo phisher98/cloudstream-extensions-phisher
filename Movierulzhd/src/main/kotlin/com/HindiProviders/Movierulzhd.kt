@@ -2,6 +2,7 @@ package com.HindiProviders
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -12,7 +13,7 @@ import java.net.URI
 
 open class Movierulzhd : MainAPI() {
 
-    override var mainUrl = "https://movierulzhd.rocks"
+    override var mainUrl = "https://movierulzhd.taxi"
     var directUrl = ""
     override var name = "Movierulzhd"
     override val hasMainPage = true
@@ -208,6 +209,7 @@ open class Movierulzhd : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher repolink",data)
         if (data.startsWith("{")) {
             val loadData = AppUtils.tryParseJson<LinkData>(data)
             val source = app.post(
@@ -221,6 +223,7 @@ open class Movierulzhd : MainAPI() {
                 referer = data,
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
             ).parsed<ResponseHash>().embed_url
+            Log.d("Phisher repolink",source)
             if (!source.contains("youtube")) loadCustomExtractor(source, "$directUrl/", subtitleCallback, callback)
         }
         else {
@@ -240,9 +243,9 @@ open class Movierulzhd : MainAPI() {
                         "nume" to nume,
                         "type" to type
                     ),
-                    referer = data,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                    referer = data, headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
+
                 when {
                     !source.contains("youtube") -> {
                         loadExtractor(source, subtitleCallback, callback)

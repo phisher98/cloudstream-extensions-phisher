@@ -25,7 +25,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import java.net.URI
 import org.jsoup.nodes.Element
 
-@OptIn(kotlin.ExperimentalStdlibApi::class)
+@OptIn(ExperimentalStdlibApi::class)
 class AnimeWorld : MainAPI() {
     override var mainUrl = "https://anime-world.in"
     override var name = "AnimeWorld"
@@ -78,7 +78,6 @@ class AnimeWorld : MainAPI() {
                         ?.data()
                         ?.substringAfter("= ")
                         ?.substringBeforeLast(";")
-                        ?.substringBefore("var")
                         ?.trim()
                         ?: throw NotImplementedError("Unable to collect JSON data")
         val root = parseJson<Array<Root>>(script)
@@ -133,7 +132,6 @@ class AnimeWorld : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
@@ -143,7 +141,6 @@ class AnimeWorld : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
