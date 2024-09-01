@@ -68,11 +68,12 @@ subprojects {
         val implementation by configurations
 
         // Stubs for all Cloudstream classes
+        //noinspection GradleDeprecatedConfiguration
         apk("com.lagradost:cloudstream3:pre-release")
         implementation(kotlin("stdlib")) // adds standard kotlin features, like listOf, mapOf etc
         implementation("com.github.Blatzar:NiceHttp:0.4.11") // http library
         implementation("org.jsoup:jsoup:1.18.1") // html parser
-        implementation("com.android.tools:desugar_jdk_libs:2.0.4")
+        implementation("com.android.tools:desugar_jdk_libs:2.1.1")
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
         implementation("com.faendir.rhino:rhino-android:1.6.0")

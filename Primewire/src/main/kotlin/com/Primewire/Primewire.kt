@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 
+
 class Primewire : MainAPI() {
     override var mainUrl              = "https://www.primewire.tf"
     override var name                 = "Primewire"
@@ -126,8 +127,9 @@ class Primewire : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
-        Log.d("Phisher test",data)
+        val document = app.get(data) .document
+        val test=document.select("span.movie_version_link a")
+
         document.select("span.movie_version_link a").map {
             val partialhref=it.attr("data-wp-menu")
             if (partialhref.isEmpty())

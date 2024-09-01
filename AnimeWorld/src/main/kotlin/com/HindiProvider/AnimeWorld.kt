@@ -1,6 +1,7 @@
 package com.HindiProviders
 
 // import android.util.Log
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -73,31 +74,32 @@ class AnimeWorld : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val script =
-                document.selectFirst("script:containsData(season_list)")
-                        ?.data()
-                        ?.substringAfter("= ")
-                        ?.substringBeforeLast(";")
-                        ?.trim()
-                        ?: throw NotImplementedError("Unable to collect JSON data")
-        val root = parseJson<Array<Root>>(script)
-        val title =
-                document.selectFirst("main h2")?.text()
-                        ?: throw NotImplementedError("Unable to find title")
+        val script =document.selectFirst("script:containsData(season_list)")?.data()?: throw NotImplementedError("Unable to collect JSON data")
+        val json=Regex("""season_list.=.(.*);""").find(script)?.groupValues?.get(1).toString()
+        val root = parseJson<Array<Root>>(json)
+        val title =document.selectFirst("main h2")?.text()?: throw NotImplementedError("Unable to find title")
         val poster = fixUrlNull(document.selectFirst("main div.bg-cover")?.attr("data-bg"))
         val tags = document.select(".genres a").map { it.text() }
         val year = document.select(".year").text().trim().toIntOrNull()
         val tvType = if (document.selectFirst("ul.flex:nth-child(3) > li:nth-child(3) > a:nth-child(1)")!!
                 .text().contains("Movie")) TvType.Movie else TvType.TvSeries
+        var movieid= ""
+        if (tvType==TvType.Movie)
+        {
+            root.forEachIndexed { _, it->
+                it.episodes.all.forEach {
+                    val href=it.id.toString()
+                    movieid += href
+                }
+            }
+        }
         val description = document.selectFirst("main section span.block.w-full")?.text()?.trim()
         val trailer = fixUrlNull(document.select("iframe").attr("src"))
         // val actors = document.select("#cast > div:nth-child(4)").map { it.text() }
         val recommendations = document.select("article").mapNotNull { it.toSearchResult() }
         val seasonNames = mutableListOf<String>()
-
         return if (tvType == TvType.TvSeries) {
             val episodes: MutableList<Episode> = mutableListOf()
-
             root.forEachIndexed { counter, season ->
                 seasonNames.plus(season.name)
                 season.episodes.all.forEach {
@@ -125,7 +127,6 @@ class AnimeWorld : MainAPI() {
                             )
                 }
             }
-
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.addSeasonNames(seasonNames)
@@ -136,7 +137,7 @@ class AnimeWorld : MainAPI() {
                 addTrailer(trailer)
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
+            newMovieLoadResponse(title, url, TvType.Movie, movieid) {
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
