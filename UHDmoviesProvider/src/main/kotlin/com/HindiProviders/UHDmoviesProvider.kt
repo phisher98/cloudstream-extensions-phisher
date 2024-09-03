@@ -57,8 +57,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
         //Log.d("Document", document.toString())
         val home = document.select("article.gridlove-post").mapNotNull {
-                it.toSearchResult()
-            }
+            it.toSearchResult()
+        }
 
         return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
@@ -159,18 +159,16 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             }
         } else {
             val iframeRegex = Regex("""\[.*]""")
-            val iframe1 = doc.select("""div.entry-content > p""").apmap{ it }
-            Log.d("phisher test iframe1",iframe1.toString())
             val iframe = doc.select("""div.entry-content > p""").apmap{ it }.filter{
                 iframeRegex.find(it.toString()) != null
             }
             val data = iframe.amap {
                 UHDLinks(
                     it.text().substringBefore("Download"),
-                    doc.select("div.entry-content > p > span > span a").attr("href")
+                    it.nextElementSibling()?.select("a.maxbutton-1")?.attr("href") ?: ""
                 )
             }
-            //Log.d("phisher data",data.toString())
+            Log.d("phisher maxbutton",data.toString())
             newMovieLoadResponse(title, url, TvType.Movie, data) {
                 this.posterUrl = poster ?. trim()
                 this.year = year
@@ -205,8 +203,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     fun Document.getMirrorLink(): String? {
-    return this.select("div.mb-4 a").randomOrNull()
-        ?.attr("href")
+        return this.select("div.mb-4 a").randomOrNull()
+            ?.attr("href")
     }
 
     fun Document.getMirrorServer(server: Int): String {
@@ -230,6 +228,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             ) ?: return null
         )
     }
+
 
     suspend fun extractBackupUHD(url: String): String? {
         val resumeDoc = app.get(url)
@@ -272,13 +271,10 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         Log.d("Phisher Test 2", data)
-        if (data.startsWith("https://"))
-        {
+        if (data.startsWith("https://")) {
             data.let { me ->
-                val link = me
-                val driveLink = bypassHrefli(link) ?: ""
-                loadExtractor(driveLink,subtitleCallback, callback)
-                Log.d("Phisher Test 2", driveLink)
+                val driveLink = bypassHrefli(me) ?: ""
+                //loadExtractor(driveLink, subtitleCallback, callback)
                 val base = getBaseUrl(driveLink)
                 val driveReq = app.get(driveLink)
                 val driveRes = driveReq.document
@@ -305,12 +301,14 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     }
                 }
                 val resume = extractResumeUHD(bitLink)
-                callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies Resume", resume
-                            ?: "", "", getQualityFromName("")
+                if (resume.isNotEmpty()) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "UHDMovies", "UHDMovies Resume", resume
+                                , "", getQualityFromName("")
+                        )
                     )
-                )
+                }
                 val DirectLink =
                     driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
                 Log.d("Phisher Directlink", DirectLink.toString())
@@ -319,7 +317,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     callback.invoke(
                         ExtractorLink(
                             "UHDMovies", "UHDMovies CF Worker", CFlinks
-                                ?: "", "", getQualityFromName("")
+                                , "", getQualityFromName("")
                         )
                     )
                 }
@@ -333,7 +331,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                             callback.invoke(
                                 ExtractorLink(
                                     "UHDMovies", "UHDMovies", it
-                                        ?: "", "", getQualityFromName("")
+                                        , "", getQualityFromName("")
                                 )
                             )
                     }
@@ -345,9 +343,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             Log.d("Phisher sources", sources.toString())
             sources.apmap { me ->
                 val link = me.sourceLink
-                Log.d("Phisher sources me", me.sourceName)
                 val driveLink = bypassHrefli(link) ?: ""
-                loadExtractor(driveLink,subtitleCallback, callback)
+                //loadExtractor(driveLink, subtitleCallback, callback)
                 val base = getBaseUrl(driveLink)
                 val driveReq = app.get(driveLink)
                 val driveRes = driveReq.document
@@ -373,29 +370,56 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         extractMirrorUHD(bitLink, base)
                     }
                 }
-                val rawtag = sources.apmap { it.sourceName }.toString()
+                val rawtag = me.sourceName
+                Log.d("Phisher rawtag",rawtag)
                 val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)
-                    ?.substringBefore(",")
-                val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1)
+                    ?.substringBefore(",") ?: ""
+                val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1) ?:""
                 val resume = extractResumeUHD(bitLink)
+                if (resume.isNotEmpty())
+                {
                 callback.invoke(
                     ExtractorLink(
                         "UHDMovies", "UHDMovies $tag Resume", resume
-                            ?: "", "", getQualityFromName(quality)
+                            , "", getQualityFromName(quality)
                     )
                 )
+                    }
                 val DirectLink =
                     driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
                 Log.d("Phisher Directlink", DirectLink.toString())
                 val CFExtract = extractCFUHD(DirectLink)
                 CFExtract.forEach { CFlinks ->
+                    if (CFlinks.isNotEmpty()) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "UHDMovies", "UHDMovies $tag CF Worker", CFlinks
+                                 , "", getQualityFromName(quality)
+                            )
+                        )
+                    }
+                }
+                if (insLink.isNotEmpty())
+                {
                     callback.invoke(
                         ExtractorLink(
-                            "UHDMovies", "UHDMovies $tag CF Worker", CFlinks
-                                ?: "", "", getQualityFromName(quality)
+                            "UHDMovies", "UHDMovies VLC $tag", insLink
+                            , "", getQualityFromName(quality)
                         )
                     )
                 }
+                if (downloadLink != null) {
+                    if (downloadLink.isNotEmpty()) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "UHDMovies", "UHDMovies $tag Instant Download", downloadLink
+                                    , "", getQualityFromName(quality)
+                            )
+                        )
+                    }
+                }
+
+                /*
                 val pixeldrain = extractPixeldrainUHD(bitLink)
                 val serverslist = listOf(downloadLink, resume, pixeldrain, insLink)
                 serverslist.forEach {
@@ -406,11 +430,12 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                             callback.invoke(
                                 ExtractorLink(
                                     "UHDMovies", "UHDMovies $tag", it
-                                        , "", getQualityFromName(quality)
+                                    , "", getQualityFromName(quality)
                                 )
                             )
                     }
                 }
+                 */
             }
         }
         return true
