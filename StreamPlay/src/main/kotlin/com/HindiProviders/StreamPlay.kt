@@ -132,7 +132,6 @@ open class StreamPlay : TmdbProvider() {
         const val KissasianAPI= "https://ww2.kissasian.vip"
         const val WatchasinAPI = "https://watchasia.to"
         const val m4uhdAPI = "https://ww1.streamm4u.ws"
-        const val rStreamAPI = "https://remotestream.cc"
         const val flixonAPI = "https://myflixer.lol"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
@@ -170,7 +169,7 @@ open class StreamPlay : TmdbProvider() {
         const val dahmerMoviesAPI="https://worker-square-heart-580a.uieafpvtgl.workers.dev"
         const val MovieDrive_API="https://moviesdrive.world"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
-        const val bollyflixAPI = "https://bollyflix.tech"
+        const val bollyflixAPI = "https://bollyflix.wales"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -616,9 +615,6 @@ open class StreamPlay : TmdbProvider() {
     },
     {
         if (!res.isAnime) invokeTvMovies(res.title, res.season, res.episode, callback)
-    },
-    {
-        //          if (!res.isAnime) invokeRStream(res.id, res.season, res.episode, callback)
     },
     {
         if (!res.isAnime) invokeFlixon(

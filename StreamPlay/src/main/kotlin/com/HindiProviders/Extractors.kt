@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
+import java.net.URI
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -819,7 +820,7 @@ class furher : Filesim() {
     override val name: String = "AZSeries"
     override var mainUrl = "https://furher.in"
 }
-class fastdlserver : Bollyflix() {
+class fastdlserver : GDFlix() {
     override var mainUrl = "https://fastdlserver.online"
 }
 
@@ -827,10 +828,37 @@ class Streamhide : StreamWishExtractor() {
     override var mainUrl = "https://streamwish.to"
 }
 
-open class Bollyflix : ExtractorApi() {
-    override val name: String = "Bollyflix"
+
+class GDFlix1 : GDFlix() {
+    override val mainUrl: String = "https://new3.gdflix.cfd"
+}
+
+class GDFlix2 : GDFlix() {
     override val mainUrl: String = "https://new2.gdflix.cfd"
-    override val requiresReferer = true
+}
+
+open class GDFlix : ExtractorApi() {
+    override val name: String = "GDFlix"
+    override val mainUrl: String = "https://new4.gdflix.cfd"
+    override val requiresReferer = false
+
+    private suspend fun extractbollytag(url:String): String {
+        val tagdoc= app.get(url).text
+        val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc) ?. value ?. trim() ?:""
+        return tags
+    }
+
+    private suspend fun extractbollytag2(url:String): String {
+        val tagdoc= app.get(url).text
+        val tags ="""\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc) ?. groupValues ?. get(1) ?. trim() ?:""
+        return tags
+    }
+
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
+        }
+    }
 
     override suspend fun getUrl(
         url: String,
@@ -838,40 +866,36 @@ open class Bollyflix : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        //Log.d("Phisher url url",url)
-        var url=url
-        val tags=extractbollytag(url)
-        val tagquality= extractbollytag2(url)
-        if (url.startsWith("https://new2.gdflix.cfd/goto/token/"))
-        {
-            val partialurl=app.get(url).text.substringAfter("replace(\"").substringBefore("\")")
-            url=mainUrl+partialurl
+        var originalUrl = url
+        val tags = extractbollytag(originalUrl)
+        val tagquality = extractbollytag2(originalUrl)
+
+        if (originalUrl.startsWith("https://new2.gdflix.cfd/goto/token/")) {
+            val partialurl = app.get(originalUrl).text.substringAfter("replace(\"").substringBefore("\")")
+            originalUrl = mainUrl + partialurl
         }
-        else
-        {
-            url=url
-            //Log.d("Phisher else url",url)
-        }
-        app.get(url).document.select("div.text-center a").amap {
-            if (it.select("a").text().contains("FAST CLOUD DOWNLOAD"))
+        app.get(originalUrl).document.select("div.text-center a").amap {
+            if (it.select("a").text().contains("FAST CLOUD DL"))
             {
                 val link=it.attr("href")
-                val trueurl=app.get("https://new2.gdflix.cfd$link").document.selectFirst("a.btn-success")?.attr("href") ?:""
+                val trueurl=app.get("https://new2.gdflix.cfd$link", timeout = 30L).document.selectFirst("a.btn-success")?.attr("href") ?:""
                 callback.invoke(
                     ExtractorLink(
-                        "Bollyflix", "Bollyflix $tagquality", trueurl
-                            ?: "", "", getQualityFromName(tags)
+                        "GDFlix[Fast Cloud]",
+                        "GDFLix[Fast Cloud] $tagquality",
+                        trueurl,
+                        "",
+                        getQualityFromName(tags)
                     )
                 )
             }
-            else
-            if (it.select("a").text().contains("DRIVEBOT DOWNLOAD"))
+            else if (it.select("a").text().contains("DRIVEBOT LINK"))
             {
                 val driveLink = it.attr("href")
                 val id = driveLink.substringAfter("id=").substringBefore("&")
                 val doId = driveLink.substringAfter("do=").substringBefore("==")
                 val indexbotlink = "https://indexbot.lol/download?id=${id}&do=${doId}"
-                val indexbotresponse = app.get(indexbotlink, timeout = 60L)
+                val indexbotresponse = app.get(indexbotlink, timeout = 30L)
                 if(indexbotresponse.isSuccessful) {
                     val cookiesSSID = indexbotresponse.cookies["PHPSESSID"]
                     val indexbotDoc = indexbotresponse.document
@@ -895,7 +919,7 @@ open class Bollyflix : ExtractorApi() {
                         requestBody = requestBody,
                         headers = headers,
                         cookies = cookies,
-                        timeout = 60L
+                        timeout = 30L
                     ).toString()
 
                     var downloadlink = Regex("url\":\"(.*?)\"").find(response) ?. groupValues ?. get(1) ?: ""
@@ -904,8 +928,8 @@ open class Bollyflix : ExtractorApi() {
 
                     callback.invoke(
                         ExtractorLink(
-                            "Bollyflix[IndexBot]",
-                            "Bollyflix[IndexBot] $tagquality",
+                            "GDFlix[IndexBot]",
+                            "GDFlix[IndexBot] $tagquality",
                             downloadlink,
                             "https://indexbot.lol/",
                             getQualityFromName(tags)
@@ -913,14 +937,11 @@ open class Bollyflix : ExtractorApi() {
                     )
                 }
             }
-            else
-            if (it.select("a").text().contains("Instant Download"))
+            else if (it.select("a").text().contains("Instant DL"))
             {
                 val Instant_link=it.attr("href")
                 val token = Instant_link.substringAfter("url=")
                 val domain= getBaseUrl(Instant_link)
-                Log.d("Phisher domain",Instant_link)
-                Log.d("Phisher domain",domain)
                 val downloadlink = app.post(
                     url = "$domain/api",
                     data = mapOf(
@@ -930,9 +951,9 @@ open class Bollyflix : ExtractorApi() {
                     headers = mapOf(
                         "x-token" to "direct.zencloud.lol",
                         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
-                    )
+                    ),
+                    timeout = 30L,
                 )
-                Log.d("Phisher domain", Instant_link.toString())
                 val finaldownloadlink =
                     downloadlink.toString().substringAfter("url\":\"")
                         .substringBefore("\",\"name")
@@ -940,8 +961,8 @@ open class Bollyflix : ExtractorApi() {
                 val link = finaldownloadlink
                 callback.invoke(
                     ExtractorLink(
-                        "Bollyflix",
-                        "Bollyflix $tagquality",
+                        "GDFlix[Instant Download]",
+                        "GDFlix[Instant Download] $tagquality",
                         url = link,
                         "",
                         getQualityFromName(tags)
@@ -950,7 +971,7 @@ open class Bollyflix : ExtractorApi() {
             }
             else
             {
-                val link=it.attr("href")
+
             }
         }
     }

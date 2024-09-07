@@ -4,6 +4,7 @@ import com.HindiProviders.StreamPlayExtractor.invoke2embed
 import com.HindiProviders.StreamPlayExtractor.invokeAllMovieland
 import com.HindiProviders.StreamPlayExtractor.invokeAnimes
 import com.HindiProviders.StreamPlayExtractor.invokeAoneroom
+import com.HindiProviders.StreamPlayExtractor.invokeBollyflix
 import com.HindiProviders.StreamPlayExtractor.invokeDoomovies
 import com.HindiProviders.StreamPlayExtractor.invokeDramaday
 import com.HindiProviders.StreamPlayExtractor.invokeDreamfilm
@@ -16,7 +17,6 @@ import com.HindiProviders.StreamPlayExtractor.invokeLing
 import com.HindiProviders.StreamPlayExtractor.invokeM4uhd
 import com.HindiProviders.StreamPlayExtractor.invokeNinetv
 import com.HindiProviders.StreamPlayExtractor.invokeNowTv
-import com.HindiProviders.StreamPlayExtractor.invokeRStream
 import com.HindiProviders.StreamPlayExtractor.invokeRidomovies
 //import com.HindiProviders.StreamPlayExtractor.invokeSmashyStream
 import com.HindiProviders.StreamPlayExtractor.invokeDumpStream
@@ -55,16 +55,11 @@ class StreamPlayLite : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-            {
-                if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
-            },
-            {
-                if (!res.isAnime) invokeWatchsomuch(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback
-                )
+                { if (!res.isAnime)
+                invokeM4uhd(res.title, res.airedYear?: res.year, res.season, res.episode,subtitleCallback,callback)
+                invokeBollyflix(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
+                invokeMoflix(res.id, res.season, res.episode, callback)
+                invokeWatchsomuch(res.imdbId,res.season,res.episode,subtitleCallback)
             },
             {
                 invokeDumpStream(
@@ -193,15 +188,13 @@ class StreamPlayLite : StreamPlay() {
                         ?: res.year, res.season, res.episode, subtitleCallback, callback
                 )
             },
-            {
+            /*{
                 if (!res.isAnime) invokeM4uhd(
                     res.title, res.airedYear
                         ?: res.year, res.season, res.episode, subtitleCallback, callback
                 )
             },
-            {
-                if (!res.isAnime) invokeRStream(res.id, res.season, res.episode, callback)
-            },
+             */
             {
                 if (!res.isAnime) invokeFlixon(
                     res.id,
