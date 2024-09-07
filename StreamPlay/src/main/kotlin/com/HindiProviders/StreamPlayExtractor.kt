@@ -68,6 +68,7 @@ object StreamPlayExtractor : StreamPlay() {
                     lastSeasonMedia == lastSeason && url?.contains("/series/") == true
                 })
             } ?: return
+        Log.d("Phisher goku serversId", media.toString())
         val serversId = if (season == null) {
             val movieId = app.get(
                 fixUrl(
@@ -107,12 +108,8 @@ object StreamPlayExtractor : StreamPlay() {
                 )
                     .parsedSafe<GokuServer>()?.data?.link
                     ?: return@apmap
-            loadExtractor(
-                iframe.substringBefore("?"),
-                "$gokuAPI/",
-                subtitleCallback,
-                callback,
-            )
+            Log.d("Phisher goku",iframe)
+            loadExtractor(iframe,subtitleCallback, callback)
         }
     }
 
@@ -1737,8 +1734,13 @@ object StreamPlayExtractor : StreamPlay() {
         api: String
     ) {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+        val fixtitle=title?.substringBefore("-").createSlug()
         var res = app.get("$api/search/$title").document
-        Log.d("Phisher url", "$api/search/$title")
+        if (res.toString().contains("Cloudflare"))
+        {
+            res = app.get("$api/download-$fixtitle-$year").document
+        }
+        Log.d("Phisher url", "$res")
         val match = when (season) {
             null -> "$year"
             1 -> "Season 1"
@@ -3217,14 +3219,16 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         try {
-            val fixTitle = title.createSlug()
-            val url = "$MovieDrive_API/$fixTitle-$year"
+            val fixTitle = title?.substringBefore("-").createSlug()
+            var url = "$MovieDrive_API/$fixTitle"
+            //Log.d("Phisher Moviedrive","$MovieDrive_API/$fixTitle")
             val document = app.get(url).document
             if (season == null) {
                 document.select("h5 > a").apmap {
                     val link = it.attr("href")
                     val urls = ExtractMdrive(link)
                     urls.forEach { servers ->
+                        Log.d("Phisher Moviedrive",servers)
                         loadExtractor(servers, subtitleCallback, callback)
                     }
                 }
@@ -3282,6 +3286,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     suspend fun invokeBollyflix(
         title: String? = null,
         year: Int? = null,
@@ -3315,7 +3320,6 @@ object StreamPlayExtractor : StreamPlay() {
             val decodedurl = base64Decode(encodedurl)
             Log.d("Phisher media decoded",decodedurl.toString())
             val source = app.get(decodedurl, allowRedirects = false).headers["location"].toString()
-                Log.d("Phisher media source",source.toString())
                 loadExtractor(source, subtitleCallback, callback)
         }
     }

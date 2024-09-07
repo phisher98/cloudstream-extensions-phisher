@@ -60,6 +60,15 @@ class StreamPlayLite : StreamPlay() {
                 invokeBollyflix(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
                 invokeMoflix(res.id, res.season, res.episode, callback)
                 invokeWatchsomuch(res.imdbId,res.season,res.episode,subtitleCallback)
+                //invokeGoku(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
+                    invokeMoviesdrive(
+                        res.title,
+                        res.season,
+                        res.episode,
+                        res.year,
+                        subtitleCallback,
+                        callback
+                    )
             },
             {
                 invokeDumpStream(
@@ -75,17 +84,6 @@ class StreamPlayLite : StreamPlay() {
                 if (!res.isAnime) invokeNinetv(
                     res.id,
                     res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                invokeGoku(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback

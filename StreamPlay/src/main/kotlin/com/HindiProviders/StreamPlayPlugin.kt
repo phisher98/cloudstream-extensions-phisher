@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.extractors.Gofile
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.Moviesapi
 import com.lagradost.cloudstream3.extractors.PixelDrain
-import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.Vidmolyme
@@ -59,7 +58,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(FilemoonNl())
         registerExtractorAPI(Alions())
         registerExtractorAPI(Vidmolyme())
-        registerExtractorAPI(Rabbitstream())
         registerExtractorAPI(AllinoneDownloader())
         registerExtractorAPI(Tellygossips())
         registerExtractorAPI(Tvlogy())
