@@ -18,7 +18,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     override var mainUrl = "https://uhdmovies.dad"
     override var name = "UHDmovies"
     override val hasMainPage = true
-    override var lang = "hi"
+    override var lang = "en"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
