@@ -37,6 +37,7 @@ import com.HindiProviders.StreamPlayExtractor.invokeZshow
 import com.HindiProviders.StreamPlayExtractor.invokeMoviesdrive
 import com.HindiProviders.StreamPlayExtractor.invokeVegamovies
 import com.HindiProviders.StreamPlayExtractor.invokeDotmovies
+import com.HindiProviders.StreamPlayExtractor.invokeTopMovies
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -61,14 +62,8 @@ class StreamPlayLite : StreamPlay() {
                 invokeMoflix(res.id, res.season, res.episode, callback)
                 invokeWatchsomuch(res.imdbId,res.season,res.episode,subtitleCallback)
                 //invokeGoku(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
-                    invokeMoviesdrive(
-                        res.title,
-                        res.season,
-                        res.episode,
-                        res.year,
-                        subtitleCallback,
-                        callback
-                    )
+                invokeMoviesdrive(res.title,res.season,res.episode,res.year,subtitleCallback,callback)
+                invokeTopMovies(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
             },
             {
                 invokeDumpStream(
