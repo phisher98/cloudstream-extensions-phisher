@@ -246,24 +246,21 @@ data class VidsrctoSubtitles(
     @JsonProperty("file") val file: String? = null,
 )
 
+
 data class SmashyRoot(
-    val tmdb: Long,
-    val imdb: String,
-    val title: String,
-    val year: String,
-    val type: String,
-    val season: Any?,
-    val episode: Any?,
-    val poster: String,
-    @JsonProperty("url_array")
-    val urlArray: List<SmashyUrlArray>,
+    val data: SmashyData,
+    val success: Boolean,
 )
 
-data class SmashyUrlArray(
-    val url: String,
-    val name: String,
-    val type: String,
+data class SmashyData(
+    val sources: List<Source>,
+    val tracks: String,
 )
+
+data class Source(
+    val file: String,
+)
+
 
 
 data class AnilistExternalLinks(

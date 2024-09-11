@@ -135,7 +135,7 @@ open class StreamPlay : TmdbProvider() {
         const val flixonAPI = "https://myflixer.lol"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
-        const val smashyStreamAPI = "https://embed.smashystream.com"
+        const val smashyStreamAPI = "https://api.smashystream.top"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
         const val nineTvAPI = "https://moviesapi.club"

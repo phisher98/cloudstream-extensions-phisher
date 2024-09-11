@@ -23,7 +23,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import java.util.Base64
 
 
 val session = Session(Requests().baseClient)
@@ -1734,44 +1736,38 @@ object StreamPlayExtractor : StreamPlay() {
         api: String
     ) {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
-        val fixtitle=title?.substringBefore("-").createSlug()
-        var res = app.get("$api/search/$title").document
-        if (res.toString().contains("Cloudflare"))
-        {
-            res = app.get("$api/download-$fixtitle-$year").document
-        }
-        Log.d("Phisher url", "$res")
+        val cfInterceptor = CloudflareKiller()
+        val fixtitle=title?.substringBefore("-")
+        //var res = app.get("$api/search/$title").document
+        //Log.d("Phisher url veg", "$api/search/$title")
         val match = when (season) {
             null -> "$year"
             1 -> "Season 1"
             else -> "Season 1 – $lastSeason"
         }
-        val media =
-            res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")
-                ?.attr("href")
-        res = app.get(media ?: return).document
+        //val media =res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")?.attr("href")
+        var res1 =
+            app.get("$api/search/$title", interceptor = cfInterceptor).document
+        val hrefpattern =Regex("""<a\s+href="([^"]+)"[^>]*?>[^<]*?$title""").find(res1.toString())?.groupValues?.get(1)
+        val res = hrefpattern?.let { app.get(it,interceptor = cfInterceptor).document }
         val hTag = if (season == null) "h5" else "h3"
         val aTag = if (season == null) "Download Now" else "V-Cloud"
         val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
         val entries =
-            res.select("div.entry-content > $hTag:matches((?i)$sTag.*(1080p|2160p))")
-                .filter { element -> !element.text().contains("Download", true) }
-        entries.apmap {
+            res?.select("div.entry-content > $hTag:matches((?i)$sTag.*(1080p|2160p))")
+                ?.filter { element -> !element.text().contains("Download", true) }
+        entries?.apmap {
             val tags =
                 """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                     ?.trim()
             val href =
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
-            if (href != null) {
-                Log.d("Phisher url veg", href)
-            }
             val selector =
                 if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) + p a:contains(V-Cloud)"
             val server = app.get(
                 href ?: return@apmap, interceptor = wpRedisInterceptor
             ).document.selectFirst("div.entry-content > $selector")
                 ?.attr("href") ?: return@apmap
-            Log.d("Phisher url veg", server)
             loadCustomTagExtractor(
                 tags,
                 server,
@@ -2160,31 +2156,27 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
+        //Log.d("Phisher it url", "Inside Smashy")
         val url = if (season == null) {
-            "$smashyStreamAPI/dataa.php?tmdb=$tmdbId"
+            "$smashyStreamAPI/api/v1/videoflx/$tmdbId?token=3de0RPi5w90iubA0WyDwgVya9BRCErNUh4Da.ZJkSG5iMPgYjZbjJocYnkw.1725989195"
         } else {
             "$smashyStreamAPI/dataa.php?tmdb=$tmdbId&season=$season&episode=$episode"
         }
         //Log.d("Phisher it url", url.toString())
         val json = app.get(
             url,
-            referer = "https://smashystream.xyz/"
-        ).parsedSafe<SmashyRoot>()?.urlArray?.toList()
-        //Log.d("Phisher it url", json.toString())
-        val urlAndNames = json?.let { getUrlAndNames(it) }
-        //Log.d("Phisher it url", urlAndNames.toString())
-        if (urlAndNames != null) {
-            for ((url, name) in urlAndNames) {
-                val link = app.get(url).parsedSafe<SmashySources>()?.sourceUrls
-                if (link != null)
-                    Log.d("Phisher it url", urlAndNames.toString())
-            }
+            referer = "https://player.smashy.stream/"
+        ).parsedSafe<SmashyRoot>()?.data?.sources?.map { it ->
+            val file=it.file
+            val extractm3u8= file
+                .substringAfter("#5")
+            .substringBefore("\"")
+            .replace(Regex("///.*?="), "")  // Remove specific pattern
+            .let { base64Decode(it) }
+            //Log.d("Phisher it url", extractm3u8.toString())
         }
     }
 
-    fun getUrlAndNames(urlArray: List<SmashyUrlArray>): List<Pair<String, String>> {
-        return urlArray.map { it.url to it.name }
-    }
     /*         suspend fun invokeNepu(
                     title: String? = null,
                     year: Int? = null,
@@ -3221,40 +3213,50 @@ object StreamPlayExtractor : StreamPlay() {
         try {
             val fixTitle = title?.substringBefore("-").createSlug()
             var url = "$MovieDrive_API/$fixTitle"
-            //Log.d("Phisher Moviedrive","$MovieDrive_API/$fixTitle")
+            Log.d("Phisher Moviedrive","$MovieDrive_API/$fixTitle")
             val document = app.get(url).document
             if (season == null) {
                 document.select("h5 > a").apmap {
                     val link = it.attr("href")
+                    //Log.d("Phisher Moviedrive", link)
                     val urls = ExtractMdrive(link)
                     urls.forEach { servers ->
-                        Log.d("Phisher Moviedrive",servers)
+                        //Log.d("Phisher Moviedrive",servers)
                         loadExtractor(servers, subtitleCallback, callback)
                     }
                 }
             } else {
                 val stag = "Season $season"
-                val sep = "Ep$episode"
+                val sep = "Ep0$episode"
                 val entries = document.select("h5:matches((?i)$stag)")
+                //Log.d("Phisher Moviedrive", entries.toString())
                 entries.apmap { entry ->
                     val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
+                    Log.d("Phisher Moviedrive", href)
                     if (href.isNotBlank()) {
                         val doc = app.get(href).document
                         doc.select("h5:matches((?i)$sep)").forEach { epElement ->
                             val linklist = mutableListOf<String>()
                             epElement.nextElementSibling()?.let { sibling ->
+                                Log.d("Phisher Moviedrive1", sibling.toString())
                                 sibling.selectFirst("h5 > a")
                                     ?.let { linklist.add(it.attr("href")) }
                                 sibling.nextElementSibling()?.let { nextSibling ->
+                                    Log.d("Phisher Moviedrive2", nextSibling.toString())
                                     nextSibling.selectFirst("h5 > a")
                                         ?.let { linklist.add(it.attr("href")) }
                                 }
+                                Log.d("Phisher linklist", linklist.toString())
                             }
                             linklist.forEach { url ->
+                                loadExtractor(url, subtitleCallback, callback)
+                                /*
                                 val links = ExtractMdriveSeries(url)
                                 links.forEach { link ->
+                                    Log.d("Phisher Moviedrive link", link.toString())
                                     loadExtractor(link, subtitleCallback, callback)
                                 }
+                                 */
                             }
                         }
                     }

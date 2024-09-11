@@ -959,7 +959,11 @@ open class GDFlix : ExtractorApi() {
     }
 }
 
-class HubCloud : ExtractorApi() {
+class HubCloudClub : HubCloud() {
+    override var mainUrl = "https://hubcloud.club"
+}
+
+open class HubCloud : ExtractorApi() {
     override val name: String = "Hub-Cloud"
     override val mainUrl: String = "https://hubcloud.art"
     override val requiresReferer = false

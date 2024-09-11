@@ -1,5 +1,6 @@
 package com.HindiProviders
 
+import android.annotation.SuppressLint
 import android.util.Base64
 import android.util.Log
 import com.HindiProviders.DumpUtils.queryApi
@@ -1153,7 +1154,7 @@ fun getIndexSize(str: String?): String? {
 suspend fun ExtractMdrive(url: String): MutableList<String> {
     val doc= app.get(url).document
     val linklist= mutableListOf(String())
-    doc.select("h5 > a").forEach {
+    doc.select("h3 > a").forEach {
         Log.d("Phisher1 it",it.toString())
         val link=it.attr("href").replace("lol","day")
         if (!link.contains("gdtot"))
@@ -1163,7 +1164,7 @@ suspend fun ExtractMdrive(url: String): MutableList<String> {
             Log.d("Phisher1 it",mainpage.toString())
             if (!mainpage.contains("https://"))
             {
-                val newlink= "https://hubcloud.art$mainpage"
+                val newlink= "https://hubcloud.club$mainpage"
                 linklist.add(newlink)
             }
             else
@@ -1179,7 +1180,7 @@ suspend fun ExtractMdriveSeries(url: String): MutableList<String> {
             val linklist= mutableListOf(String())
             val mainpage = app.get(url).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
             if (!mainpage.contains("https://")) {
-                val newlink = "https://hubcloud.art$mainpage"
+                val newlink = "https://hubcloud.club$mainpage"
                 linklist.add(newlink)
             } else {
                 linklist.add(mainpage)

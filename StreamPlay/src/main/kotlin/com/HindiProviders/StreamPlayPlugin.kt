@@ -80,6 +80,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Servertwo())
         registerExtractorAPI(MultimoviesAIO())
         registerExtractorAPI(HubCloud())
+        registerExtractorAPI(HubCloudClub())
         registerExtractorAPI(Driveseed())
     }
 }
