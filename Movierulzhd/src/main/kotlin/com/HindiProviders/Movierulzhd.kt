@@ -245,7 +245,7 @@ open class Movierulzhd : MainAPI() {
                     ),
                     referer = data, headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-
+                Log.d("Phisher repolink",source)
                 when {
                     !source.contains("youtube") -> {
                         loadExtractor(source, subtitleCallback, callback)
