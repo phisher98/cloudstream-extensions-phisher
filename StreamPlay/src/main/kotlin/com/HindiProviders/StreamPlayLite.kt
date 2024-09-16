@@ -10,7 +10,6 @@ import com.HindiProviders.StreamPlayExtractor.invokeDramaday
 import com.HindiProviders.StreamPlayExtractor.invokeDreamfilm
 import com.HindiProviders.StreamPlayExtractor.invokeFilmxy
 import com.HindiProviders.StreamPlayExtractor.invokeFlixon
-import com.HindiProviders.StreamPlayExtractor.invokeGoku
 import com.HindiProviders.StreamPlayExtractor.invokeKimcartoon
 import com.HindiProviders.StreamPlayExtractor.invokeKisskh
 import com.HindiProviders.StreamPlayExtractor.invokeLing
