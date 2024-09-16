@@ -14,7 +14,7 @@ import org.jsoup.Jsoup
 
 class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.id"
+    override var mainUrl = "https://hdmovie2.fm"
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
         "trending" to "Trending",
@@ -23,6 +23,8 @@ class Hdmovie2 : Movierulzhd() {
         "genre/netflix" to "Netflix",
         "genre/zee5" to "Zee5",
         "genre/hindi-dubbed" to "Hindi Dubbed",
+        "genre/comedy" to "Comedy",
+        "genre/science-fiction" to "Science Fiction"
     )
 
     override suspend fun loadLinks(

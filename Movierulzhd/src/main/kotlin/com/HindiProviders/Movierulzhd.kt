@@ -13,7 +13,7 @@ import java.net.URI
 
 open class Movierulzhd : MainAPI() {
 
-    override var mainUrl = "https://movierulzhd.taxi"
+    override var mainUrl = "https://1movierulzhd.fun"
     var directUrl = ""
     override var name = "Movierulzhd"
     override val hasMainPage = true
@@ -169,7 +169,7 @@ open class Movierulzhd : MainAPI() {
                     val nume = it.attr("data-nume")
                     Episode(
                         LinkData(name, type, post, nume).toJson(),
-                        name,
+                        name
                     )
                 }
             }
@@ -245,7 +245,7 @@ open class Movierulzhd : MainAPI() {
                     ),
                     referer = data, headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-
+                Log.d("Phisher repolink",source)
                 when {
                     !source.contains("youtube") -> {
                         loadExtractor(source, subtitleCallback, callback)

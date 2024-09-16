@@ -24,8 +24,6 @@ import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.network.CloudflareKiller
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import java.util.Base64
 
 
 val session = Session(Requests().baseClient)
@@ -1652,7 +1650,7 @@ object StreamPlayExtractor : StreamPlay() {
                 """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                     ?.trim()
             val quality =
-                """(?:720p|1080p|2160p)""".toRegex().find(it.text())?.groupValues?.get(0)
+                """720p|1080p|2160p""".toRegex().find(it.text())?.groupValues?.get(0)
                     ?.trim()
             var href =
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
@@ -3201,8 +3199,8 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    @SuppressLint("SuspiciousIndentation")
-    suspend fun invokeMoviesdrive(
+
+  suspend fun invokeMoviesdrive(
         title: String? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -3210,7 +3208,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        try {
+
             val fixTitle = title?.substringBefore("-").createSlug()
             var url = "$MovieDrive_API/$fixTitle"
             Log.d("Phisher Moviedrive","$MovieDrive_API/$fixTitle")
@@ -3230,7 +3228,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val sep = "Ep0$episode"
                 val entries = document.select("h5:matches((?i)$stag)")
                 //Log.d("Phisher Moviedrive", entries.toString())
-                entries.apmap { entry ->
+                entries.amap { entry ->
                     val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
                     Log.d("Phisher Moviedrive", href)
                     if (href.isNotBlank()) {
@@ -3262,9 +3260,6 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             }
-        } catch (e: Exception) {
-            Log.e("Exception Error", e.toString())
-        }
     }
 
     suspend fun invokeAsiandrama(
