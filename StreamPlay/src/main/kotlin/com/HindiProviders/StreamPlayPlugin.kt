@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.Moviesapi
 import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.extractors.VidHidePro6
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.Vidmolyme
 import com.lagradost.cloudstream3.extractors.Vidplay
@@ -84,5 +85,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(HubCloudClub())
         registerExtractorAPI(Driveseed())
         registerExtractorAPI(Driveleech())
+        registerExtractorAPI(VidHidePro6())
     }
 }

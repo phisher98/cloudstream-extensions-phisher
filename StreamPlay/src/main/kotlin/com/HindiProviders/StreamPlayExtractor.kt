@@ -29,7 +29,7 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 val session = Session(Requests().baseClient)
 
 object StreamPlayExtractor : StreamPlay() {
-
+/*
     suspend fun invokeGoku(
         title: String? = null,
         year: Int? = null,
@@ -112,7 +112,7 @@ object StreamPlayExtractor : StreamPlay() {
             loadExtractor(iframe,subtitleCallback, callback)
         }
     }
-
+*/
     @SuppressLint("SuspiciousIndentation")
     suspend fun invokeVidSrc(
         id: Int? = null,
@@ -3319,5 +3319,40 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokemovies4u(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val fixtitle = title?.substringBefore("-")
+        val searchtitle = title?.substringBefore("-").createSlug()
+        var res1 =
+            app.get("$movies4u/search/$fixtitle").document.select("section.site-main article")
+                .toString()
+        val hrefpattern =
+            Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
+        val servers = mutableSetOf<String>()
+        app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a").forEach {
+            servers+=it.attr("href")
+        }
+        servers.forEach { links ->
+            if (links.contains("linkz.wiki"))
+            {
+                app.get(links).document.select("div.download-links-div > div a").map {
+                    val link=it.attr("href")
+                    if (link.contains("hubcloud"))
+                    loadExtractor(link,subtitleCallback, callback)
+                }
+            }
+            else
+                loadExtractor(links,subtitleCallback, callback)
+        }
+    }
 }
+
 
