@@ -1151,29 +1151,12 @@ fun getIndexSize(str: String?): String? {
     return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
 }
 
-suspend fun ExtractMdrive(url: String): MutableList<String> {
+suspend fun extractMdrive(url: String): String {
     val doc= app.get(url).document
-    val linklist= mutableListOf(String())
-    doc.select("h3 > a").forEach {
-        Log.d("Phisher1 it",it.toString())
-        val link=it.attr("href").replace("lol","day")
-        if (!link.contains("gdtot"))
-        {
-            Log.d("Phisher1 it",link.toString())
-            val mainpage= link
-            Log.d("Phisher1 it",mainpage.toString())
-            if (!mainpage.contains("https://"))
-            {
-                val newlink= "https://hubcloud.club$mainpage"
-                linklist.add(newlink)
-            }
-            else
-            {
-                linklist.add(mainpage)
-            }
-        }
-    }
-    return linklist
+    Log.d("Phisher1 it doc",doc.toString())
+    val href=doc.select("h5 > a").attr("href")
+    Log.d("Phisher1 it",href.toString())
+    return href
 }
 
 suspend fun ExtractMdriveSeries(url: String): MutableList<String> {

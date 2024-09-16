@@ -61,7 +61,6 @@ class StreamPlayLite : StreamPlay() {
                 invokeBollyflix(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
                 invokeMoflix(res.id, res.season, res.episode, callback)
                 invokeWatchsomuch(res.imdbId,res.season,res.episode,subtitleCallback)
-                //invokeGoku(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
                 invokeMoviesdrive(res.title,res.season,res.episode,res.year,subtitleCallback,callback)
                 invokeTopMovies(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
             },
@@ -321,16 +320,6 @@ class StreamPlayLite : StreamPlay() {
             }
 
              */
-            {
-                if (!res.isAnime) invokeMoviesdrive(
-                    res.title,
-                    res.season,
-                    res.episode,
-                    res.year,
-                    subtitleCallback,
-                    callback
-                )
-            },
             {
                 if (!res.isAnime) invokeVegamovies(
                     res.title,

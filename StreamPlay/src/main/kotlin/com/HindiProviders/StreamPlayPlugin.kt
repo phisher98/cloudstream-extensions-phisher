@@ -21,6 +21,7 @@ class StreamPlayPlugin: Plugin() {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(StreamPlay())
         registerMainAPI(StreamPlayLite())
+        registerMainAPI(StreamPlayTest())
         registerExtractorAPI(Animefever())
         registerExtractorAPI(Multimovies())
         registerExtractorAPI(MultimoviesSB())
@@ -82,5 +83,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(HubCloud())
         registerExtractorAPI(HubCloudClub())
         registerExtractorAPI(Driveseed())
+        registerExtractorAPI(Driveleech())
     }
 }

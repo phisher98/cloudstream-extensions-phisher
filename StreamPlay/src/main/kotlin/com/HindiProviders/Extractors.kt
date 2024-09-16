@@ -760,11 +760,7 @@ open class Mdrive : ExtractorApi() {
 
 suspend fun Unblockedlinks(url: String): String? {
     val driveLink = bypassHrefli(url) ?:""
-    val driveReq = app.get(driveLink)
-    val driveRes = driveReq.document
-    val host = getBaseUrl(url)
-    val finallink = driveRes.selectFirst("a.btn.btn-danger")?.attr("href")
-    return finallink
+    return driveLink
 }
 
 suspend fun Extractanimeflixlinks(url: String): String {
@@ -980,7 +976,7 @@ open class HubCloud : ExtractorApi() {
         var gamerLink = ""
 
         if(newLink.contains("drive")) {
-            val scriptTag = newDoc.selectFirst("script:containsData(url)").toString()
+            val scriptTag = newDoc.selectFirst("script:containsData(url)")!!.toString()
             gamerLink = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
         }
 
@@ -1045,8 +1041,12 @@ open class HubCloud : ExtractorApi() {
 
 }
 
+class Driveleech : Driveseed() {
+    override val name: String = "Driveleech"
+    override val mainUrl: String = "https://driveleech.org"
+}
 
-class Driveseed : ExtractorApi() {
+open class Driveseed : ExtractorApi() {
     override val name: String = "Driveseed"
     override val mainUrl: String = "https://driveseed.org"
     override val requiresReferer = false
@@ -1056,19 +1056,21 @@ class Driveseed : ExtractorApi() {
             ?: Qualities.Unknown.value
     }
 
-    private suspend fun CFType1(url: String): List<String>? {
+
+    private suspend fun CFType1(url: String): List<String> {
         val cfWorkersLink = url.replace("/file", "/wfile") + "?type=1"
         val document = app.get(cfWorkersLink).document
-        val links = document.select("a.btn-success").mapNotNull { it.attr("href") }
-        return links ?: null
+        val links = document.select("a.btn-success").map { it.attr("href") }
+        return links
     }
 
     private suspend fun resumeCloudLink(url: String): String? {
-        val resumeCloudUrl = "https://driveseed.org" + url
+        val resumeCloudUrl = mainUrl + url
         val document = app.get(resumeCloudUrl).document
-        val link = document.selectFirst("a.btn-success").attr("href")
-        return link ?: null
+        val link = document.selectFirst("a.btn-success")?.attr("href")
+        return link
     }
+
 
     private suspend fun resumeBot(url : String): String? {
         val resumeBotResponse = app.get(url)
@@ -1093,7 +1095,7 @@ class Driveseed : ExtractorApi() {
         ).text
         val jsonObject = JSONObject(jsonResponse)
         val link = jsonObject.getString("url")
-        return link ?: null
+        return link
     }
 
     private suspend fun instantLink(finallink: String): String? {
@@ -1114,8 +1116,8 @@ class Driveseed : ExtractorApi() {
             downloadlink.toString().substringAfter("url\":\"")
                 .substringBefore("\",\"name")
                 .replace("\\/", "/")
-        val link = finaldownloadlink
-        return link ?: null
+
+        return finaldownloadlink
     }
 
 
@@ -1126,63 +1128,73 @@ class Driveseed : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val document = app.get(url).document
-        val quality = document.selectFirst("li.list-group-item:contains(Name)").text()
+        val qualityText = document.selectFirst("li.list-group-item:contains(Name)")?.text()
+        val quality = getIndexQuality(qualityText)
 
-        val instantUrl = document.selectFirst("a.btn-danger").attr("href")
-        val instant = instantLink(instantUrl)
-        if (instant != null) {
-            callback.invoke(
-                ExtractorLink(
-                    "Instant(Download)",
-                    "Instant(Download)",
-                    instant,
-                    "",
-                    getIndexQuality(quality)
-                )
-            )
-        }
-
-        val resumeBotUrl = document.selectFirst("a.btn.btn-light").attr("href")
-        val resumeLink = resumeBot(resumeBotUrl)
-        if (resumeLink != null) {
-            callback.invoke(
-                ExtractorLink(
-                    "ResumeBot",
-                    "ResumeBot(VLC)",
-                    resumeLink,
-                    "",
-                    getIndexQuality(quality)
-                )
-            )
-        }
-
-        val cfType1 = CFType1(url)
-        if (cfType1 != null) {
-            cfType1.forEach {
-                callback.invoke(
-                    ExtractorLink(
-                        "CF Type1",
-                        "CF Type1",
-                        it,
-                        "",
-                        getIndexQuality(quality)
+        document.select("a.btn").amap {
+            val text = it.text()
+            val link = it.attr("href")
+            if(text.contains("Resume Cloud")) {
+                val streamUrl = resumeCloudLink(link)
+                if (streamUrl != null) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "ResumeCloud",
+                            "ResumeCloud",
+                            streamUrl.toString(),
+                            "",
+                            quality
+                        )
                     )
-                )
+                }
             }
-        }
-
-        val resumeCloudUrl = document.selectFirst("a.btn-warning").attr("href")
-        val resumeCloud = resumeCloudLink(resumeCloudUrl)
-        if (resumeCloud != null) {
-            callback.invoke(
-                ExtractorLink(
-                    "ResumeCloud",
-                    "ResumeCloud",
-                    resumeCloud,
-                    "",
-                    getIndexQuality(quality)
-                )
-            )
+            else if(text.contains("Instant Download")) {
+                val streamUrl = instantLink(link)
+                if (streamUrl != null) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "Instant(Download)",
+                            "Instant(Download)",
+                            streamUrl.toString(),
+                            "",
+                            quality
+                        )
+                    )
+                }
+            }
+            else if(text.contains("Resume Worker Bot")) {
+                val streamUrl = resumeBot(link)
+                if (streamUrl != null) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "ResumeBot",
+                            "ResumeBot(VLC)",
+                            streamUrl.toString(),
+                            "",
+                            quality
+                        )
+                    )
+                }
+            }
+            else if(text.contains("Direct Links")) {
+                val cfType1 = CFType1(url)
+                if (cfType1.isNotEmpty()) {
+                    cfType1.forEach {
+                        callback.invoke(
+                            ExtractorLink(
+                                "CF Type1",
+                                "CF Type1",
+                                it.toString(),
+                                "",
+                                quality
+                            )
+                        )
+                    }
+                }
+            }
+            else {
+                //Nothing
+            }
         }
 
     }
