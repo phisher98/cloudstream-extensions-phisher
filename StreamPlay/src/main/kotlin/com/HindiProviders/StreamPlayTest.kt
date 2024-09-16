@@ -1,5 +1,6 @@
 package com.HindiProviders
 
+import com.HindiProviders.StreamPlayExtractor.invokeDotmovies
 import com.HindiProviders.StreamPlayExtractor.invokemovies4u
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -18,16 +19,15 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-            { if (!res.isAnime)
-                invokemovies4u(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
+            { if (!res.isAnime && res.isBollywood) invokeDotmovies(
+                res.title,
+                res.year,
+                res.season,
+                res.lastSeason,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
             }
         )
         return true

@@ -744,7 +744,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        if (!res.isAnime && res.isBollywood) invokeDotmovies(
+        if (!res.isAnime) invokeDotmovies(
             res.title,
             res.year,
             res.season,
