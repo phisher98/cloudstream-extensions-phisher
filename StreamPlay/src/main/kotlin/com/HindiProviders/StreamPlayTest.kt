@@ -19,7 +19,7 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-            { if (!res.isAnime && res.isBollywood) invokeDotmovies(
+            { if (!res.isAnime) invokemovies4u(
                 res.title,
                 res.year,
                 res.season,

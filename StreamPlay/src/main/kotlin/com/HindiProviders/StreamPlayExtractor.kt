@@ -3352,8 +3352,18 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 app.get(links).document.select("div.download-links-div > div a").map {
                     val link=it.attr("href")
-                    if (link.contains("hubcloud"))
-                    loadExtractor(link,subtitleCallback, callback)
+                    Log.d("Phisher",link)
+                    if (link.contains("hubcloud")){
+                        loadExtractor(link,subtitleCallback, callback)
+                    }
+                   else if (link.contains("vcloud"))
+                    {
+                        loadExtractor(link,subtitleCallback, callback)
+                    }
+                    else
+                    {
+                        Log.d("Error:","No Server Found")
+                    }
                 }
             }
             else
