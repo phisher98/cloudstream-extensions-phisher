@@ -15,7 +15,7 @@ import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://uhdmovies.dad"
+    override var mainUrl = "https://uhdmovies.mov"
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "en"
@@ -87,7 +87,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("$mainUrl/?s=$query").document
+        val document = cfKiller("$mainUrl/?s=$query ").document
         //Log.d("document", document.toString())
 
         return document.select("article.gridlove-post").mapNotNull {

@@ -160,8 +160,8 @@ open class StreamPlay : TmdbProvider() {
 //        const val nepuAPI = "https://nepu.to"
         const val DramacoolAPI = "https://dramacool.city"
         const val fdMoviesAPI = "https://freedrivemovie.com"
-        const val uhdmoviesAPI = "https://uhdmovies.dad"
-        const val topmoviesAPI = "https://topmovies.dad"
+        const val uhdmoviesAPI = "https://uhdmovies.mov"
+        const val topmoviesAPI = "https://topmovies.mov"
         const val MoviesmodAPI= "https://moviesmod.fit"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://vegamovies.pet"
@@ -572,7 +572,8 @@ open class StreamPlay : TmdbProvider() {
                         res.year,
                         res.season,
                         res.episode,
-                        callback
+                        callback,
+                        subtitleCallback
                     )
                 },
                 {
