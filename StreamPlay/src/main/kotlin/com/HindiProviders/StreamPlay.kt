@@ -343,7 +343,10 @@ open class StreamPlay : TmdbProvider() {
                     this.backgroundPosterUrl = bgPoster
                     this.year = year
                     this.plot = res.overview
-                    this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                    this.tags = keywords
+                        ?.map { word -> word.replaceFirstChar { it.titlecase() } }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: genres
                     this.rating = rating
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
@@ -359,7 +362,11 @@ open class StreamPlay : TmdbProvider() {
                     this.backgroundPosterUrl = bgPoster
                     this.year = year
                     this.plot = res.overview
-                    this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                    this.tags = keywords
+                        ?.map { word -> word.replaceFirstChar { it.titlecase() } }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: genres
+
                     this.rating = rating
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
@@ -397,7 +404,11 @@ open class StreamPlay : TmdbProvider() {
                 this.year = year
                 this.plot = res.overview
                 this.duration = res.runtime
-                this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                this.tags = keywords
+                    ?.map { word -> word.replaceFirstChar { it.titlecase() } }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: genres
+
                 this.rating = rating
                 this.recommendations = recommendations
                 this.actors = actors
