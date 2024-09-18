@@ -1,11 +1,8 @@
 package com.Tennistream
 
 //import android.util.Log
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import java.net.URI
 
@@ -63,18 +60,13 @@ class Tennistream : MainAPI() {
        document.select("p a").amap {
            it.attr("href").let { href ->
                val link=app.get(href).document.selectFirst("iframe")?.attr("src") ?:""
-               var trueurl=""
-               if (link.contains("/t1.php"))
+               var trueurl=app.get(link).document.selectFirst("iframe")?.attr("src") ?:""
+               if (trueurl.isEmpty())
                {
                    val fid=app.get(link).text.substringAfter("fid=\"").substringBefore("\"")
                    val url="https://freshwaterdell.com/wiki.php?player=desktop&live=$fid"
                    trueurl= httpsify(app.get(url, referer = "https://wikisport.best/").text.substringAfter("return([").substringBefore("].join").replace("\"","").replace(",",""))
                }
-               else
-               {
-                   trueurl=app.get(link).document.selectFirst("iframe")?.attr("src") ?:""
-               }
-               Log.d("Phisher",trueurl)
                if (trueurl.contains("quest4play"))
                {
                    loadExtractor(trueurl,referer = getBaseUrl(link),subtitleCallback, callback)
@@ -92,13 +84,9 @@ class Tennistream : MainAPI() {
                        )
                    )
                }
-               else if (trueurl.contains("vaguedinosaurs"))
-               {
-                   loadExtractor(trueurl,subtitleCallback, callback)
-               }
                else
                {
-
+                   loadExtractor(trueurl,subtitleCallback, callback)
                }
            }
        }

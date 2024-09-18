@@ -35,6 +35,13 @@ open class Quest4play : ExtractorApi() {
     }
 }
 
+class Choosingnothing :Vaguedinosaurs()
+{
+    override var name = "Choosing Nothing"
+    override var mainUrl = "https://choosingnothing.com"
+
+}
+
 open class Vaguedinosaurs : ExtractorApi() {
     override var name = "Vaguedinosaurs"
     override var mainUrl = "https://vaguedinosaurs.com"
@@ -57,7 +64,7 @@ open class Vaguedinosaurs : ExtractorApi() {
                 this.name,
                 this.name,
                 link,
-                "https://vaguedinosaurs.com",
+                mainUrl,
                 Qualities.P1080.value,
                 isM3u8 = true,
             )
