@@ -1718,7 +1718,6 @@ object StreamPlayExtractor : StreamPlay() {
         ).document
         val entries =
             res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))").takeLast(3)
-        Log.d("Phisher1 link", entries.toString())
         entries.apmap { it ->
             val tags =
                 """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -1730,9 +1729,8 @@ object StreamPlayExtractor : StreamPlay() {
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
                     ?.substringAfter("=") ?: ""
             href = base64Decode(href)
-            Log.d("Phisher1 link", href.toString())
             val selector =
-                if (season == null) "p a.maxbutton" else "h3:contains(Episode $episode) a"
+                if (season == null) "p a.maxbutton" else "h3 a:contains(Episode $episode)"
             app.get(
                 href ?: "",
                 headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0")

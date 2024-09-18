@@ -3,6 +3,7 @@ package com.HindiProviders
 import com.HindiProviders.StreamPlayExtractor.invokeDotmovies
 import com.HindiProviders.StreamPlayExtractor.invokeDramacool
 import com.HindiProviders.StreamPlayExtractor.invokeDramaday
+import com.HindiProviders.StreamPlayExtractor.invokeMoviesmod
 import com.HindiProviders.StreamPlayExtractor.invokeTopMovies
 import com.HindiProviders.StreamPlayExtractor.invokeUhdmovies
 import com.HindiProviders.StreamPlayExtractor.invokemovies4u
@@ -23,10 +24,11 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-            { if (res.isAsian) invokeDramaday(
+            { if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                 res.title,
-                res.season,
                 res.year,
+                res.season,
+                res.lastSeason,
                 res.episode,
                 subtitleCallback,
                 callback

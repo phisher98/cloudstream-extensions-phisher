@@ -20,6 +20,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import com.lagradost.cloudstream3.extractors.Chillx
 import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -489,45 +490,10 @@ class AllinoneDownloader : Filesim() {
     override var mainUrl = "https://allinonedownloader.fun"
 }
 
-open class StreamWishExtractor : ExtractorApi() {
-    override var name = "StreamWish"
-    override var mainUrl = "https://streamwish.to"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(
-            url, referer = referer ?: "$mainUrl/", interceptor = WebViewResolver(
-                Regex("""master\.m3u8""")
-            )
-        )
-        val sources = mutableListOf<ExtractorLink>()
-        if (response.url.contains("m3u8"))
-            sources.add(
-                ExtractorLink(
-                    source = name,
-                    name = name,
-                    url = response.url,
-                    referer = referer ?: "$mainUrl/",
-                    quality = Qualities.P1080.value,
-                    isM3u8 = true
-                )
-            )
-        return sources
-    }
-}
-
-
-
-
 class Alions : Ridoo() {
     override val name = "Alions"
     override var mainUrl = "https://alions.pro"
     override val defaulQuality = Qualities.Unknown.value
-}
-
-class Streamwish : Filesim() {
-    override val name = "Streamwish"
-    override var mainUrl = "https://streamwish.to"
 }
 
 class UqloadsXyz : Filesim() {
@@ -583,8 +549,7 @@ class Embedwish : Filesim() {
     override var mainUrl = "https://embedwish.com"
 }
 
-class dwish : Filesim() {
-    override val name = "Dwish"
+class dwish : StreamWishExtractor() {
     override var mainUrl = "https://dwish.pro"
 }
 
@@ -844,11 +809,6 @@ class furher : Filesim() {
 class fastdlserver : GDFlix() {
     override var mainUrl = "https://fastdlserver.online"
 }
-
-class Streamhide : StreamWishExtractor() {
-    override var mainUrl = "https://streamwish.to"
-}
-
 
 class GDFlix1 : GDFlix() {
     override val mainUrl: String = "https://new3.gdflix.cfd"
