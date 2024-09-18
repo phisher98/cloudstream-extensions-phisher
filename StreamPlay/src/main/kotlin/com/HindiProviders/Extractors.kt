@@ -1,7 +1,6 @@
 package com.HindiProviders
 
 //import android.util.Log
-import android.util.Log
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
@@ -20,6 +19,7 @@ import com.lagradost.cloudstream3.utils.*
 import java.math.BigInteger
 import java.security.MessageDigest
 import com.lagradost.cloudstream3.extractors.Chillx
+import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -598,6 +598,10 @@ class Animezia : VidhideExtractor() {
     override var mainUrl = "https://animezia.cloud"
 }
 
+class MixDropSi : MixDrop(){
+    override var mainUrl = "https://mixdrop.si"
+}
+
 class Servertwo : VidhideExtractor() {
     override var name = "MultiMovies Vidhide"
     override var mainUrl = "https://server2.shop"
@@ -811,6 +815,27 @@ open class Modflix : ExtractorApi() {
         )
     }
 }
+
+
+
+open class Asianbxkiun : ExtractorApi() {
+    override val name: String = "Asianbxkiun"
+    override val mainUrl: String = "https://asianbxkiun.pro"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+       app.get(url).document.select("#list-server-more ul li").map {
+           var link=it.attr("data-video")
+           loadExtractor(link,subtitleCallback, callback)
+       }
+    }
+}
+
 
 class furher : Filesim() {
     override val name: String = "AZSeries"

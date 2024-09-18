@@ -158,7 +158,7 @@ open class StreamPlay : TmdbProvider() {
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
 //        const val nepuAPI = "https://nepu.to"
-        const val DramacoolAPI = "https://dramacool.city"
+        const val DramacoolAPI = "https://watchasia.to"
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.mov"
         const val topmoviesAPI = "https://topmovies.mov"
@@ -588,7 +588,7 @@ open class StreamPlay : TmdbProvider() {
                     )
                 },
                 {
-                if (res.isAnime && !res.isBollywood) invokeMoviesmod(
+                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                     res.title,
                     res.year,
                     res.season,

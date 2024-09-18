@@ -332,19 +332,29 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val fixTitle = title.createSlug()
         val url = if (season == null) {
-            "$DramacoolAPI/movies/$fixTitle-$year"
+            "$DramacoolAPI/drama-detail/$fixTitle.html"
         } else {
-            "$DramacoolAPI/movies/$fixTitle-$year?ep=$episode"
+            "$DramacoolAPI/$fixTitle-episode-$episode.html"
         }
+        Log.d("Phisher",url.toString())
         val document = app.get(url).document
-        val link = document.select("div.videoplayer").toString()
-            .substringAfter("data-litespeed-src=\"").substringBefore("\" ")
-            .replace("player", "stream")
-        val json = app.get(link).text
-        val linksRegex = "\"link\":\"(.*?)\"".toRegex()
-        val servers = linksRegex.findAll(json).map {
-            it.groupValues[1].replace("\\/", "/")
-        }.toList()
+        document.select("div.anime_muti_link ul li").map {
+            var link=it.attr("data-video")
+            if (link.startsWith("http"))
+            {
+                loadExtractor(link,subtitleCallback, callback)
+            }
+            else
+            {
+                link="https:$link"
+                link="https:$link"
+                loadExtractor(link,subtitleCallback, callback)
+            }
+
+
+
+        }
+        /*
         servers.forEach { url ->
             if (url.contains("asian")) {
                 val doc = app.get(url).document
@@ -360,6 +370,7 @@ object StreamPlayExtractor : StreamPlay() {
                 loadExtractor(url, subtitleCallback, callback)
             }
         }
+        */
     }
 
     suspend fun invokeMultimovies(
@@ -815,7 +826,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$dramadayAPI/$slug/"
         }
         val res = app.get(url).document
-
+        //Log.d("Phisher",url)
         val servers = if (season == null) {
             val player = res.select("div.tabs__pane p a[href*=https://]").attr("href")
             val ouo = bypassOuo(player)

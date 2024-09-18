@@ -1,5 +1,6 @@
 package com.kissasian
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -22,10 +23,10 @@ class Dramacool : MainAPI() {
         "${mainUrl}/dramas/" to "Drama",
         "${mainUrl}/movies/" to "Movies",
         "${mainUrl}/k-shows/" to "KShow",
-        "${mainUrl}/most-watched/" to "Popular Dramas",
+        "${mainUrl}/most-popular-drama/" to "Popular Dramas",
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page == 1) {
             request.data
         } else {
@@ -93,6 +94,7 @@ class Dramacool : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val id = data.substringAfter("id=")
         val json = app.get("https://dramasb.com/stream?id=$id", verify = false).text
         val linksRegex = "\"link\":\"(.*?)\"".toRegex()
