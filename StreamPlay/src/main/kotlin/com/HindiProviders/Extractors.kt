@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.Voe
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -208,6 +209,11 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        var url=url
+        if (url.contains("api/index.php"))
+        {
+            url=app.get(url).document.selectFirst("div.main h4 a")?.attr("href") ?:""
+        }
         val doc = app.get(url).document
         val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?:""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
@@ -218,6 +224,7 @@ class VCloud : ExtractorApi() {
         val header = document.selectFirst("div.card-header") ?. text()
         div?.select("a")?.apmap {
             val link = it.attr("href")
+            Log.d("Phisher V",link)
             if (link.contains("pixeldra")) {
                 callback.invoke(
                     ExtractorLink(
@@ -250,7 +257,19 @@ class VCloud : ExtractorApi() {
                         getIndexQuality(header),
                     )
                 )
-            } else {
+            } else if (link.contains(".hubcdn.xyz"))
+            {
+                callback.invoke(
+                    ExtractorLink(
+                        "V-Cloud",
+                        "V-Cloud $size",
+                        link,
+                        "",
+                        getIndexQuality(header),
+                    )
+                )
+            }
+            else{
                 loadExtractor(link, subtitleCallback, callback)
             }
         }
