@@ -279,9 +279,14 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val driveReq = app.get(driveLink)
                 val driveRes = driveReq.document
                 val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
+                val rawtag=driveRes.selectFirst("div.mb-4 ul li")?.text() ?:""
+                val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)
+                    ?.substringBefore(",") ?: ""
+                val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1) ?:""
                 val insLink =
                     driveRes.select("a.btn.btn-danger:contains(Instant Download)")
                         .attr("href")
+                Log.d("Phisher Test 2", insLink)
                 val downloadLink = when {
                     insLink.isNotEmpty() -> extractInstantUHD(insLink)
                     driveRes.select("button.btn.btn-success").text()
@@ -309,11 +314,21 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         )
                     )
                 }
+                if (insLink.isNotEmpty())
+                {
+                    callback.invoke(
+                        ExtractorLink(
+                            "UHDMovies", "UHDMovies VLC $tag", insLink
+                            , "", getQualityFromName(quality)
+                        )
+                    )
+                }
                 val DirectLink =
                     driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
                 Log.d("Phisher Directlink", DirectLink.toString())
                 val CFExtract = extractCFUHD(DirectLink)
                 CFExtract.forEach { CFlinks ->
+                    if (CFlinks.isNotEmpty())
                     callback.invoke(
                         ExtractorLink(
                             "UHDMovies", "UHDMovies CF Worker", CFlinks
@@ -324,7 +339,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val pixeldrain = extractPixeldrainUHD(bitLink)
                 val serverslist = listOf(downloadLink, resume, pixeldrain)
                 serverslist.forEach {
-                    if (it != null) {
+                    if (it!!.isNotEmpty()) {
                         if (it.contains("https://video-leech.xyz")) {
                             loadExtractor(it,subtitleCallback,callback)
                         } else
