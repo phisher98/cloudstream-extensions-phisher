@@ -10,7 +10,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 open class YomoviesProvider : MainAPI() {
-    override var mainUrl = "https://yomovies.farm"
+    override var mainUrl = "https://yomovies.onl"
     private var directUrl = ""
     override var name = "YoMovies"
     override val hasMainPage = true
