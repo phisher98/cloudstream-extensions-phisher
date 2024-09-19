@@ -167,7 +167,7 @@ open class StreamPlay : TmdbProvider() {
         const val vegaMoviesAPI = "https://vegamovies.pet"
         const val dotmoviesAPI = "https://luxmovies.lol"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
-        const val dahmerMoviesAPI="https://worker-square-heart-580a.uieafpvtgl.workers.dev"
+        const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.world"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
         const val bollyflixAPI = "https://bollyflix.beer"
@@ -730,7 +730,6 @@ open class StreamPlay : TmdbProvider() {
         res.imdbId,
         res.season,
         res.episode,
-        subtitleCallback,
         callback
         )
     },

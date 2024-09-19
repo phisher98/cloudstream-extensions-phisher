@@ -86,6 +86,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(MultimoviesAIO())
         registerExtractorAPI(HubCloud())
         registerExtractorAPI(HubCloudClub())
+        registerExtractorAPI(HubCloudlol())
         registerExtractorAPI(Driveseed())
         registerExtractorAPI(Driveleech())
         registerExtractorAPI(VidHidePro6())

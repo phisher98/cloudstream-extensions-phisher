@@ -1,6 +1,5 @@
 package com.HindiProviders
 
-import android.annotation.SuppressLint
 import android.util.Base64
 import android.util.Log
 import com.HindiProviders.DumpUtils.queryApi
@@ -27,7 +26,6 @@ import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.ByteString.Companion.decodeBase64
 import org.jsoup.nodes.Document
 import java.math.BigInteger
 import java.net.*
@@ -194,7 +192,7 @@ suspend fun extractBackupUHD(url: String): String? {
 }
 
 @Suppress("NAME_SHADOWING")
-suspend fun extractResumeUHD(url: String): String? {
+suspend fun extractResumeUHD(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         val url = it.selectFirst("a.btn.btn-success")?.attr("href").toString()
         return url
@@ -212,7 +210,7 @@ suspend fun extractCFUHD(url: String): MutableList<String> {
     return CFlinks
 }
 
-suspend fun extractPixeldrainUHD(url: String): String? {
+suspend fun extractPixeldrainUHD(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         return it.selectFirst("a.btn.btn-outline-info:contains(pixel)")?.attr("href").toString()
     }
@@ -1164,9 +1162,8 @@ fun getIndexSize(str: String?): String? {
 
 suspend fun extractMdrive(url: String): String {
     val doc= app.get(url).document
-    Log.d("Phisher1 it doc",doc.toString())
-    val href=doc.select("h5 > a").attr("href")
-    Log.d("Phisher1 it",href.toString())
+    val href=doc.select("h5 > a,h3 > a").attr("href")
+    //Log.d("Phisher1 it",href.toString())
     return href
 }
 

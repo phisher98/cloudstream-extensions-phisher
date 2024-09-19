@@ -17,7 +17,6 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.*
-import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
@@ -129,18 +128,6 @@ object StreamPlayExtractor : StreamPlay() {
         VidSrcExtractor().getUrl(url, url, subtitleCallback, callback)
     }
 
-    private suspend fun Extractvidsrcnetservers(url: String): String {
-        val rcp = app.get(
-            "https://vidsrc.stream/rcp/$url",
-            referer = "https://vidsrc.net/",
-            headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0")
-        ).document
-        val link =
-            rcp.selectFirst("script:containsData(player_iframe)")?.data()?.substringAfter("src: '")
-                ?.substringBefore("',")
-        return "http:$link"
-    }
-
     suspend fun invokeDreamfilm(
         title: String? = null,
         season: Int? = null,
@@ -176,7 +163,6 @@ object StreamPlayExtractor : StreamPlay() {
         imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
@@ -200,7 +186,7 @@ object StreamPlayExtractor : StreamPlay() {
             val scope: Scriptable = rhino.initSafeStandardObjects()
             rhino.evaluateString(scope, firstJS + script, "JavaScript", 1, null)
             val file =
-                (scope.get("globalArgument", scope).toJson()).toString().substringAfter("file\":\"")
+                (scope.get("globalArgument", scope).toJson()).substringAfter("file\":\"")
                     .substringBefore("\",")
             callback.invoke(
                 ExtractorLink(
@@ -336,7 +322,7 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$DramacoolAPI/$fixTitle-episode-$episode.html"
         }
-        Log.d("Phisher",url.toString())
+        //Log.d("Phisher",url)
         val document = app.get(url).document
         document.select("div.anime_muti_link ul li").map {
             var link=it.attr("data-video")
@@ -1704,13 +1690,14 @@ object StreamPlayExtractor : StreamPlay() {
         }
         Log.d("Phisher1 url", url.toString())
         var res1 =
-            app.get(url).document.select("#content_box article")
+            app.get(url, interceptor = wpRedisInterceptor).document.select("#content_box article")
                 .toString()
         val hrefpattern =
             Regex("""(?i)<article[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1)
-        val hTag = if (season == null) "h4|h3" else "h3"
+        Log.d("Phisher1 entries", hrefpattern.toString())
+        val hTag = if (season == null) "h4" else "h3"
         val aTag = if (season == null) "Download" else "Episode"
-        val sTag = if (season == null) "" else "(Season $season|S0$season)"
+        val sTag = if (season == null) "" else "(S0$season)"
         val res = app.get(
             hrefpattern ?: return,
             headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),
@@ -3280,15 +3267,19 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
-            val fixTitle = title?.substringBefore("-").createSlug()
-            var url = "$MovieDrive_API/$fixTitle"
-            Log.d("Phisher Moviedrive","$MovieDrive_API/$fixTitle")
-            val document = app.get(url).document
+            val fixTitle=title?.substringBefore("-")
+            val searchtitle = title?.substringBefore("-").createSlug()
+            var url = "$MovieDrive_API/search/$fixTitle"
+            Log.d("Phisher Moviedrive","$MovieDrive_API/search/$fixTitle")
+            val res1 =
+          app.get(url, interceptor = wpRedisInterceptor).document.select("figure")
+              .toString()
+            val hrefpattern =
+                Regex("""(?i)<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
+            val document = app.get(hrefpattern).document
             if (season == null) {
                 document.select("h5 > a").apmap {
                     val href=it.attr("href")
-                    Log.d("Phisher M href", href)
                     val server=extractMdrive(href)
                     Log.d("Phisher M server", server)
                     loadExtractor(server,subtitleCallback, callback)

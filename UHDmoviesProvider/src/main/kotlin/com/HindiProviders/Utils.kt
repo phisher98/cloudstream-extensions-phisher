@@ -4,42 +4,12 @@ package com.HindiProviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 import org.json.JSONObject
 import java.net.*
 import org.jsoup.nodes.Document
 
-suspend fun extractBackupUHD(url: String): String? {
-    val resumeDoc = app.get(url)
-
-    val script = resumeDoc.document.selectFirst("script:containsData(FormData.)")?.data()
-
-    val ssid = resumeDoc.cookies["PHPSESSID"]
-    val baseIframe = getBaseUrl(url)
-    val fetchLink =
-        script?.substringAfter("fetch('")?.substringBefore("',")?.let { fixUrl(it, baseIframe) }
-    val token = script?.substringAfter("'token', '")?.substringBefore("');")
-
-    val body = FormBody.Builder()
-        .addEncoded("token", "$token")
-        .build()
-    val cookies = mapOf("PHPSESSID" to "$ssid")
-
-    val result = app.post(
-        fetchLink ?: return null,
-        requestBody = body,
-        headers = mapOf(
-            "Accept" to "*/*",
-            "Origin" to baseIframe,
-            "Sec-Fetch-Site" to "same-origin"
-        ),
-        cookies = cookies,
-        referer = url
-    ).text
-    return tryParseJson<UHDBackupUrl>(result)?.url
-}
 
 @Suppress("NAME_SHADOWING")
 suspend fun extractResumeUHD(url: String): String {
@@ -128,23 +98,6 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-
-fun getUhdTags(str: String?): String {
-    return Regex("\\d{3,4}[Pp]\\.?(.*?)\\[").find(str ?: "")?.groupValues?.getOrNull(1)
-        ?.replace(".", " ")?.trim()
-        ?: str ?: ""
-}
-
-
-fun getIndexQuality(str: String?): Int {
-    return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
-        ?: Qualities.Unknown.value
-}
-
-fun getIndexSize(str: String?): String? {
-    return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
-}
-
 suspend fun extractInstantUHD(url: String): String? {
     val host = getBaseUrl(url)
     val body = FormBody.Builder()
@@ -190,6 +143,7 @@ open class UHDMovies : ExtractorApi() {
     override val mainUrl: String = "https://video-seed.xyz"
     override val requiresReferer = true
 
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     override suspend fun getUrl(
         finallink: String,
         quality: String?,
@@ -235,18 +189,25 @@ class Driveseed : ExtractorApi() {
             ?: Qualities.Unknown.value
     }
 
-    private suspend fun CFType1(url: String): List<String>? {
+    private suspend fun CFType1(url: String): List<String> {
         val cfWorkersLink = url.replace("/file", "/wfile") + "?type=1"
         val document = app.get(cfWorkersLink).document
         val links = document.select("a.btn-success").mapNotNull { it.attr("href") }
-        return links ?: null
+        return links
+    }
+
+    private suspend fun CFType2(url: String): List<String> {
+        val cfWorkersLink = url.replace("/file", "/wfile") + "?type=2"
+        val document = app.get(cfWorkersLink).document
+        val links = document.select("a.btn-success").map { it.attr("href") }
+        return links
     }
 
     private suspend fun resumeCloudLink(url: String): String? {
         val resumeCloudUrl = "https://driveseed.org$url"
         val document = app.get(resumeCloudUrl).document
         val link = document.selectFirst("a.btn-success")?.attr("href")
-        return link ?: null
+        return link
     }
 
     private suspend fun resumeBot(url : String): String? {
@@ -254,7 +215,7 @@ class Driveseed : ExtractorApi() {
         val resumeBotDoc = resumeBotResponse.document.toString()
         val ssid = resumeBotResponse.cookies["PHPSESSID"]
         val resumeBotToken = Regex("formData\\.append\\('token', '([a-f0-9]+)'\\)").find(resumeBotDoc)?.groups?.get(1)?.value
-        val resumeBotPath = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/\\+]+)'").find(resumeBotDoc)?.groups?.get(1)?.value
+        val resumeBotPath = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/+]+)'").find(resumeBotDoc)?.groups?.get(1)?.value
         val resumeBotBaseUrl = url.split("/download")[0]
         val requestBody = FormBody.Builder()
             .addEncoded("token", "$resumeBotToken")
@@ -275,7 +236,7 @@ class Driveseed : ExtractorApi() {
         return link ?: null
     }
 
-    private suspend fun instantLink(finallink: String): String? {
+    private suspend fun instantLink(finallink: String): String {
         val url = if(finallink.contains("video-leech")) "video-leech.xyz" else "video-seed.xyz"
         val token = finallink.substringAfter("https://$url/?url=")
         val downloadlink = app.post(
@@ -305,15 +266,15 @@ class Driveseed : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val document = app.get(url).document
-        val quality = document.selectFirst("li.list-group-item:contains(Name)")?.text() ?:""
+        val quality = document.selectFirst("li.list-group-item:contains(Name)")?.text() ?: ""
 
-        val instantUrl = document.selectFirst("a.btn-danger")?.attr("href") ?:""
+        val instantUrl = document.selectFirst("a.btn-danger")?.attr("href") ?: ""
         val instant = instantLink(instantUrl)
-        if (instant != null) {
+        if (instant.isNotEmpty()) {
             callback.invoke(
                 ExtractorLink(
-                    "Instant(Download)",
-                    "Instant(Download)",
+                    "Driveseed Instant(Download)",
+                    "Driveseed Instant(Download)",
                     instant,
                     "",
                     getIndexQuality(quality)
@@ -322,12 +283,12 @@ class Driveseed : ExtractorApi() {
         }
 
         val resumeBotUrl = document.selectFirst("a.btn.btn-light")?.attr("href")
-        val resumeLink = resumeBot(resumeBotUrl ?:"")
+        val resumeLink = resumeBot(resumeBotUrl ?: "")
         if (resumeLink != null) {
             callback.invoke(
                 ExtractorLink(
-                    "ResumeBot",
-                    "ResumeBot(VLC)",
+                    "DriveseedResumeBot",
+                    "Driveseed ResumeBot(VLC)",
                     resumeLink,
                     "",
                     getIndexQuality(quality)
@@ -335,28 +296,36 @@ class Driveseed : ExtractorApi() {
             )
         }
 
-        val cfType1 = CFType1(url)
-        if (cfType1 != null) {
-            cfType1.forEach {
-                callback.invoke(
-                    ExtractorLink(
-                        "CF Type1",
-                        "CF Type1",
-                        it,
-                        "",
-                        getIndexQuality(quality)
-                    )
+        CFType1(url)?.forEach {
+            callback.invoke(
+                ExtractorLink(
+                    "DriveseedCF Type1",
+                    "Driveseed CF Type1",
+                    it,
+                    "",
+                    getIndexQuality(quality)
                 )
-            }
+            )
+        }
+        CFType2(url).forEach {
+            callback.invoke(
+                ExtractorLink(
+                    "DriveseedCF Type2",
+                    "Driveseed CF Type2",
+                    it,
+                    "",
+                    getIndexQuality(quality)
+                )
+            )
         }
 
         val resumeCloudUrl = document.selectFirst("a.btn-warning")?.attr("href")
-        val resumeCloud = resumeCloudLink(resumeCloudUrl ?:"")
+        val resumeCloud = resumeCloudLink(resumeCloudUrl ?: "")
         if (resumeCloud != null) {
             callback.invoke(
                 ExtractorLink(
-                    "ResumeCloud",
-                    "ResumeCloud",
+                    "Driveseed ResumeCloud",
+                    "Driveseed ResumeCloud",
                     resumeCloud,
                     "",
                     getIndexQuality(quality)
