@@ -27,7 +27,7 @@ body:
     attributes:
       label: Source language
       placeholder: |
-        Example: "English"
+        Example: "Hindi"
     validations:
       required: true
 
@@ -49,9 +49,9 @@ body:
           required: true
         - label: I have written a title with source name.
           required: true
-        - label: I have checked that the extension does not already exist on the [website extensions list](https://aniyomi.org/extensions/) or the app.
+        - label: I have checked that the extension does not already exist on the any Dev Repo or Request.
           required: true
-        - label: I have checked that the extension does not already exist by searching the [GitHub repository](https://github.com/aniyomiorg/aniyomi-extensions/) and verified it does not appear in the code base.
+        - label: I have checked that the extension does not already exist by searching on CS and verified it.
           required: true
         - label: I will fill out all of the requested information in this form.
           required: true
