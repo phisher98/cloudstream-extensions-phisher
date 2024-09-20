@@ -10,8 +10,7 @@ body:
     label: Source name
     placeholder: |
       Example: "Not Real Source"
-    validations:
-      required: true
+    required: true  # Moved required to this level
 
 - type: input
   id: link
@@ -19,8 +18,7 @@ body:
     label: Source link
     placeholder: |
       Example: "https://example.com"
-    validations:
-      required: true
+    required: true  # Moved required to this level
 
 - type: input
   id: language
@@ -28,8 +26,7 @@ body:
     label: Site language
     placeholder: |
       Example: "Hindi"
-    validations:
-      required: true
+    required: true  # Moved required to this level
 
 - type: textarea
   id: other-details
