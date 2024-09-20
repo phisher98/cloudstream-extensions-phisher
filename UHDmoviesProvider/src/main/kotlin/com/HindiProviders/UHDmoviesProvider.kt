@@ -102,23 +102,22 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
-        //Log.d("Doc", doc.toString())
+        //Log.d("Phisher Doc", doc.toString())
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
-        //Log.d("title", title)
-        val poster = fixUrlNull(doc.selectFirst("div.entry-content > p > img")?.attr("src"))
-        //Log.d("poster", poster.toString())
+        Log.d("Phisher title", title)
+        val poster = fixUrlNull(doc.selectFirst("div.entry-content  p  img")?.attr("src"))
+        Log.d("Phisher poster", poster.toString())
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(title)?.value?.toIntOrNull()
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
         val type = if (tvTags.contains("Season")) TvType.TvSeries else TvType.Movie
-
         return if (type == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
-
-            val pTags = doc.select("p:has(a:contains(Episode))")
+            val pTags = doc.select("p:has(a:contains(Episode)), div:has(a:contains(Episode))")
+            //Log.d("Phisher UHD", pTags.toString())
             val seasonList = mutableListOf<Pair<String, Int>>()
             var season = 1
             pTags.mapNotNull { pTag ->
