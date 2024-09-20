@@ -1,4 +1,4 @@
-name: ⭐ Site request
+name: ⭐ Source Request {{ name }}
 description: Request a new Source
 labels: [site request]
 assignees: phisher98
