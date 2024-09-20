@@ -1,6 +1,7 @@
 name: 🐞 Issue report
 description: Report a source issue
 labels: [Bug]
+assignees: phisher98
 body:
 
   - type: input
