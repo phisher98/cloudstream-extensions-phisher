@@ -1,32 +1,17 @@
-name: "🌐 Source Request"
-description: Request a New Source
-labels: ["Source request"]
+name: ⭐ Site request
+description: Request a Source
+labels: [site request]
 assignees: phisher98
 body:
-  - type: markdown
+  - type: textarea
+    id: feature-description
     attributes:
-      value: |
-        Please fill out the sections below to properly describe the source you are suggesting.
-  
-  - type: input
-    id: name
-    attributes:
-      label: Source name
-      placeholder: "Example: Not Real Source"
-      required: true
-  
-  - type: input
-    id: link
-    attributes:
-      label: Source link
-      placeholder: "Example: https://example.com"
-      required: true
-  
-  - type: input
-    id: language
-    attributes:
-      label: Site language
-      placeholder: "Example: Hindi"
+      label: Describe your suggested feature
+      description: How can Aniyomi be improved?
+      placeholder: |
+        Example:
+          "It should work like this..."
+    validations:
       required: true
 
   - type: textarea
@@ -35,26 +20,20 @@ body:
       label: Other details
       placeholder: |
         Additional details and attachments.
-        Example: "+18/NSFW = yes"
 
   - type: checkboxes
     id: acknowledgements
     attributes:
       label: Acknowledgements
-      description: Your issue will be closed if you haven't done these steps.
+      description: Read this carefully, we will close and ignore your issue if you skimmed through this.
       options:
         - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open or closed issue.
           required: true
-        - label: I have written a title with the source name.
+        - label: I have written a short but informative title.
           required: true
-        - label: I have checked that the extension does not already exist on the [website extensions list](https://aniyomi.org/extensions/) or the app.
+        - label: If this is a request regarding an extension, I should be opening an issue in the extension's repository.
           required: true
-        - label: I have checked that the extension does not already exist by searching other Devs Repo and verified it does not appear in the code base.
+        - label: I have updated the app to version **[0.16.4.3](https://github.com/aniyomiorg/aniyomi/releases/latest)**.
           required: true
         - label: I will fill out all of the requested information in this form.
           required: true
-
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for your suggestion! Let's work together on it.
