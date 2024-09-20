@@ -12,21 +12,21 @@ body:
     id: name
     attributes:
       label: Source name
-      placeholder: Example: "Not Real Source"
+      placeholder: "Example: Not Real Source"
       required: true
   
   - type: input
     id: link
     attributes:
       label: Source link
-      placeholder: Example: "https://example.com"
+      placeholder: "Example: https://example.com"
       required: true
   
   - type: input
     id: language
     attributes:
       label: Site language
-      placeholder: Example: "Hindi"
+      placeholder: "Example: Hindi"
       required: true
 
   - type: textarea
