@@ -1160,23 +1160,11 @@ fun getIndexSize(str: String?): String? {
     return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
 }
 
-suspend fun extractMdrive(url: String): String {
+suspend fun extractMdrive(url: String): List<String> {
     val doc= app.get(url).document
-    val href=doc.select("h5 > a,h3 > a").attr("href")
-    //Log.d("Phisher1 it",href.toString())
+    val href=doc.select("h5 > a,h3 > a").map { it.attr("href") }
+    Log.d("Phisher1 it",href.toString())
     return href
-}
-
-suspend fun ExtractMdriveSeries(url: String): MutableList<String> {
-            val linklist= mutableListOf(String())
-            val mainpage = app.get(url).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
-            if (!mainpage.contains("https://")) {
-                val newlink = "https://hubcloud.club$mainpage"
-                linklist.add(newlink)
-            } else {
-                linklist.add(mainpage)
-            }
-    return linklist
 }
 
 

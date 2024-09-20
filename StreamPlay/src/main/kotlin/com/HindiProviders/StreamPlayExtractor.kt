@@ -1414,6 +1414,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
+    @SuppressLint("SuspiciousIndentation")
     suspend fun invokeUhdmovies(
         title: String? = null,
         year: Int? = null,
@@ -1483,27 +1484,30 @@ object StreamPlayExtractor : StreamPlay() {
             val tags = getUhdTags(quality)
             val qualities = getIndexQuality(quality)
             val size = getIndexSize(quality)
-            if(resume!!.isNotEmpty())
-            callback.invoke(
-                ExtractorLink(
-                    "UHDMovies", "UHDMovies $tags [$size] Resume", resume
-                        ?: "", "", qualities
+            when {
+                resume.isNotEmpty() -> callback.invoke(
+                    ExtractorLink(
+                        "UHDMovies", "UHDMovies $tags [$size] Resume", resume
+                            ?: "", "", qualities
+                    )
                 )
-            )
-            if(pixeldrain!!.isNotEmpty())
-            callback.invoke(
-                ExtractorLink(
-                    "UHDMovies", "UHDMovies $tags [$size] Pixeldrain", pixeldrain
-                        ?: "", "", qualities
+            }
+            when {
+                pixeldrain.isNotEmpty() -> callback.invoke(
+                    ExtractorLink(
+                        "UHDMovies", "UHDMovies $tags [$size] Pixeldrain", pixeldrain
+                            ?: "", "", qualities
+                    )
                 )
-            )
-            if(downloadLink!!.isNotEmpty())
-            callback.invoke(
-                ExtractorLink(
-                    "UHDMovies", "UHDMovies $tags [$size] Instant(VLC)", downloadLink
-                        ?: "", "", qualities
+            }
+            when {
+                downloadLink!!.isNotEmpty() -> callback.invoke(
+                    ExtractorLink(
+                        "UHDMovies", "UHDMovies $tags [$size] Instant(VLC)", downloadLink
+                            ?: "", "", qualities
+                    )
                 )
-            )
+            }
             DirectLink.forEach {
                 callback.invoke(
                     ExtractorLink(
@@ -3266,9 +3270,9 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-            val fixTitle=title?.substringBefore("-")
+            val fixTitle=title?.substringBefore("-")?.substringBefore(":")?.replace("&"," ")
             val searchtitle = title?.substringBefore("-").createSlug()
-            var url = "$MovieDrive_API/search/$fixTitle"
+            var url = "$MovieDrive_API/search/$fixTitle $year"
             Log.d("Phisher Moviedrive","$MovieDrive_API/search/$fixTitle")
             val res1 =
           app.get(url, interceptor = wpRedisInterceptor).document.select("figure")
@@ -3277,11 +3281,14 @@ object StreamPlayExtractor : StreamPlay() {
                 Regex("""(?i)<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
             val document = app.get(hrefpattern).document
             if (season == null) {
-                document.select("h5 > a").apmap {
+                document.select("h5 > a").amap {
                     val href=it.attr("href")
+                    Log.d("Phisher M href", href)
                     val server=extractMdrive(href)
-                    Log.d("Phisher M server", server)
-                    loadExtractor(server,subtitleCallback, callback)
+                    server.forEach {
+                        Log.d("Phisher M server", it)
+                        loadExtractor(it,subtitleCallback, callback)
+                    }
                 }
             } else {
                 val stag = "Season $season"
@@ -3346,7 +3353,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val fixtitle = title?.substringBefore("-")
+        val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&"," ")
         val searchtitle = title?.substringBefore("-").createSlug()
         //Log.d("Phisher bolly", "$bollyflixAPI/search/$fixtitle")
         var res1 =
@@ -3358,13 +3365,12 @@ object StreamPlayExtractor : StreamPlay() {
         val res = hrefpattern?.let { app.get(it).document }
         val hTag = if (season == null) "h5" else "h4"
         //val aTag = if (season == null) "" else ""
-        val sTag = if (season == null) "" else "(Season $season|S)"
+        val sTag = if (season == null) "" else "Season $season"
         val entries =
             res?.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(1080p|2160p))")
-                ?.filter { element -> !element.text().contains("Nothing", true) }
+                ?.filter { element -> !element.text().contains("Download", true) }?.takeLast(3)
         entries?.map {
-            val href = it.nextElementSibling()?.select("p a")?.attr("href")
-            //Log.d("Phisher media entries",href.toString())
+            val href = it.nextElementSibling()?.select("a")?.attr("href")
             val token = href?.substringAfter("id=")
             val encodedurl =
                 app.get("https://web.sidexfee.com/?id=$token").text.substringAfter("link\":\"")
