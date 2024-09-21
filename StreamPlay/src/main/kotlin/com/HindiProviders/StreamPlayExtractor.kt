@@ -1423,21 +1423,20 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         subtitleCallback: (SubtitleFile) -> Unit
     ) {
-        val fixTitle = title?.replace("-"," ")?.replace(":"," ").createSlug()
+        val fixTitle = title?.replace("-"," ")?.replace(":"," ")
+        val searchtitle=fixTitle.createSlug()
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
-        val url = if (season == null) {
-            "$uhdmoviesAPI/download-$fixTitle-$year"
-        } else {
-            "$uhdmoviesAPI/download-$fixTitle"
-        }
-        //Log.d("Phisher",url)
-        val detailDoc = app.get(url).document
+            app.get("$uhdmoviesAPI/search/$fixTitle $year").document.select("#content article").map {
+        val hrefpattern =
+            Regex("""(?i)<a\s+href="([^"]*?\b$searchtitle\b[^"]*?\b$year\b[^"]*?)"[^>]*>""").find(it.toString())?.groupValues?.get(1)
+        //Log.d("Phisher bolly", "$hrefpattern")
+        val detailDoc = hrefpattern?.let { app.get(it).document }
         val iSelector = if (season == null) {
             "div.entry-content p:has(:matches($year))"
         } else {
             "div.entry-content p:has(:matches((?i)(?:S\\s*$seasonSlug|Season\\s*$seasonSlug)))"
         }
-        val iframeList = detailDoc.select(iSelector).mapNotNull {
+        val iframeList = detailDoc!!.select(iSelector).mapNotNull {
             if (season == null) {
                 it.text() to it.nextElementSibling()?.select("a")?.attr("href")
             } else {
@@ -1445,88 +1444,12 @@ object StreamPlayExtractor : StreamPlay() {
                     child.select("span").text().equals("Episode $episode", true)
                 }?.attr("href")
             }
-        }.filter { it.first.contains(Regex("(2160p)|(1080p)")) }.takeLast(4)
+        }.filter { it.first.contains(Regex("(2160p)|(1080p)")) }.filter { element -> !element.toString().contains("Download", true) }
         iframeList.amap { (quality, link) ->
-            //Log.d("Phisher", link.toString())
+            Log.d("Phisher", link.toString())
             val driveLink = bypassHrefli(link ?: "") ?: ""
             loadExtractor(driveLink, referer = "UHDMovies", subtitleCallback, callback)
-            /*
-            val base = getBaseUrl(driveLink)
-            val driveReq = app.get(driveLink)
-            val driveRes = driveReq.document
-            val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
-            val CFExtract =
-                driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
-            val DirectLink = extractCFUHD(CFExtract)
-            val insLink =
-                driveRes.select("a.btn.btn-danger:contains(Instant Download)")
-                    .attr("href")
-            val downloadLink = when {
-                insLink.isNotEmpty() -> extractInstantUHD(insLink)
-                driveRes.select("button.btn.btn-success").text()
-                    .contains("Direct Download", true) -> extractDirectUHD(
-                    driveLink,
-                    driveReq
-                )
-
-                bitLink.isNullOrEmpty() -> {
-                    val backupIframe =
-                        driveRes.select("a.btn.btn-outline-warning").attr("href")
-                    extractBackupUHD(backupIframe ?: "")
-                }
-
-                else -> {
-                    extractMirrorUHD(bitLink, base)
-                }
-            }
-            val resume = extractResumeUHD(bitLink)
-            val pixeldrain = extractPixeldrainUHD(bitLink)
-            val serverslist = listOf(downloadLink, resume, pixeldrain)
-            val tags = getUhdTags(quality)
-            val qualities = getIndexQuality(quality)
-            val size = getIndexSize(quality)
-            when {
-                resume.isNotEmpty() -> callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies $tags [$size] Resume", resume
-                            ?: "", "", qualities
-                    )
-                )
-            }
-            when {
-                pixeldrain.isNotEmpty() -> callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies $tags [$size] Pixeldrain", pixeldrain
-                            ?: "", "", qualities
-                    )
-                )
-            }
-            when {
-                downloadLink!!.isNotEmpty() -> callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies $tags [$size] Instant(VLC)", downloadLink
-                            ?: "", "", qualities
-                    )
-                )
-            }
-            DirectLink.forEach {
-                callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies $tags CF Worker", it
-                        , "", getQualityFromName(quality)
-                    )
-                )
-            }
-            /*
-            serverslist.forEach {
-                callback.invoke(
-                    ExtractorLink(
-                        "UHDMovies", "UHDMovies $tags [$size]", it
-                            ?: "", "", qualities
-                    )
-                )
-            }*/
-            */
+        }
         }
     }
 
@@ -3361,7 +3284,7 @@ object StreamPlayExtractor : StreamPlay() {
         val searchtitle = title?.substringBefore("-").createSlug()
         //Log.d("Phisher bolly", "$bollyflixAPI/search/$fixtitle")
         var res1 =
-            app.get("$bollyflixAPI/search/$fixtitle").document.select("#content_box article")
+            app.get("$bollyflixAPI/search/$fixtitle $year").document.select("#content_box article")
                 .toString() ?:""
         val hrefpattern =
             Regex("""(?i)<article[^>]*>\s*<a\s+href="([^"]*\b$searchtitle\b[^"]*)""").find(res1)?.groupValues?.get(1)
