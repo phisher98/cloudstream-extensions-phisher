@@ -624,9 +624,6 @@ open class StreamPlay : TmdbProvider() {
                 if (!res.isAnime) invokemovies4u(
                     res.title,
                     res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
                     subtitleCallback,
                     callback
                 )

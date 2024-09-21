@@ -1423,7 +1423,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         subtitleCallback: (SubtitleFile) -> Unit
     ) {
-        val fixTitle = title.createSlug()
+        val fixTitle = title?.replace("-"," ")?.replace(":"," ").createSlug()
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val url = if (season == null) {
             "$uhdmoviesAPI/download-$fixTitle-$year"
@@ -1445,11 +1445,12 @@ object StreamPlayExtractor : StreamPlay() {
                     child.select("span").text().equals("Episode $episode", true)
                 }?.attr("href")
             }
-        }.filter { it.first.contains(Regex("(2160p)|(1080p)")) }.takeLast(3)
+        }.filter { it.first.contains(Regex("(2160p)|(1080p)")) }.takeLast(4)
         iframeList.amap { (quality, link) ->
             //Log.d("Phisher", link.toString())
             val driveLink = bypassHrefli(link ?: "") ?: ""
-            //loadExtractor(driveLink,subtitleCallback, callback)
+            loadExtractor(driveLink, referer = "UHDMovies", subtitleCallback, callback)
+            /*
             val base = getBaseUrl(driveLink)
             val driveReq = app.get(driveLink)
             val driveRes = driveReq.document
@@ -1525,6 +1526,7 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 )
             }*/
+            */
         }
     }
 
@@ -1593,7 +1595,8 @@ object StreamPlayExtractor : StreamPlay() {
             Log.d("Phisher",server)
             server.let {
                 val link = bypasstopoviesunblocked(it)
-                loadExtractor(link, subtitleCallback, callback)
+                loadExtractor(link, referer = "TopMovies", subtitleCallback, callback)
+                /*
                 Log.d("Phisher Top it", link)
                 val tags = extracttopmoviestag(link)
                 val tagquality = extracttopmoviestag2(link)
@@ -1646,7 +1649,9 @@ object StreamPlayExtractor : StreamPlay() {
                         Log.d("No TopMovies Link Found", "")
                     }
                 }
+                 */
             }
+
         }
     }
 
@@ -1730,7 +1735,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val server= Unblockedlinks(link) ?:""
                 if (server.isNotEmpty())
                 {
-                    loadExtractor(server,subtitleCallback, callback)
+                    loadExtractor(server,"MoviesMOD",subtitleCallback, callback)
                 }
             }
         }
@@ -3287,7 +3292,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val server=extractMdrive(href)
                     server.forEach {
                         Log.d("Phisher M server", it)
-                        loadExtractor(it,subtitleCallback, callback)
+                        loadExtractor(it,referer = "MoviesDrive",subtitleCallback, callback)
                     }
                 }
             } else {
@@ -3314,7 +3319,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 Log.d("Phisher linklist", linklist.toString())
                             }
                             linklist.forEach { url ->
-                                loadExtractor(url, subtitleCallback, callback)
+                                loadExtractor(url,referer = "MoviesDrive",subtitleCallback, callback)
                             }
                         }
                     }
@@ -3380,13 +3385,13 @@ object StreamPlayExtractor : StreamPlay() {
             if (season==null)
             {
                 val source = app.get(decodedurl, allowRedirects = false).headers["location"].toString()
-                loadExtractor(source, subtitleCallback, callback)
+                loadExtractor(source,"Bollyflix", subtitleCallback, callback)
             }
             else
             {
                 val link=app.get(decodedurl).document.selectFirst("article h3 a:contains(Episode 0$episode)")!!.attr("href")
                 val source = app.get(link, allowRedirects = false).headers["location"].toString()
-                loadExtractor(source, subtitleCallback, callback)
+                loadExtractor(source,"Bollyflix", subtitleCallback, callback)
             }
         }
     }
@@ -3394,20 +3399,17 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokemovies4u(
         title: String? = null,
         year: Int? = null,
-        season: Int? = null,
-        lastSeason: Int? = null,
-        episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
         val fixtitle = title?.substringBeforeLast("-")
         val searchtitle = title?.substringBeforeLast("-").createSlug()
         var res1 =
-            app.get("$movies4u/search/$fixtitle").document.select("section.site-main article")
+            app.get("$movies4u/search/$fixtitle $year").document.select("section.site-main article")
                 .toString()
         val hrefpattern =
             Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
-        Log.d("Phisher Movies4u", hrefpattern.toString())
+        //Log.d("Phisher Movies4u", hrefpattern.toString())
         val servers = mutableSetOf<String>()
         app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a").forEach {
             servers+=it.attr("href")
@@ -3417,9 +3419,8 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 app.get(links).document.select("div.download-links-div > div a").map {
                     val link=it.attr("href")
-                    //Log.d("Phisher",link)
                     if (link.contains("hubcloud")){
-                        loadExtractor(link,subtitleCallback, callback)
+                        loadExtractor(link,"Movies4u",subtitleCallback, callback)
                     }
                    else if (link.contains("vcloud"))
                     {
@@ -3432,7 +3433,7 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
             else
-                loadExtractor(links,subtitleCallback, callback)
+                loadExtractor(links,"Movies4u",subtitleCallback, callback)
         }
     }
 }

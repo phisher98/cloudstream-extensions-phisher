@@ -1,17 +1,56 @@
----
-name: Site request
-about: Request a source or website to be added
-title: Site Request
-labels: site request
-assignees: phisher98
+name: "🌐 Source Request {{ name }}"
+description: Request a New Source
+labels: [Source request]
+body:
 
----
+- type: input
+  id: name
+  attributes:
+  label: Source name
+  placeholder: |
+  Example: "Not Real Source"
+  validations:
+  required: true
 
-**Title:**  
-<!-- Name of Website -->
+- type: input
+  id: link
+  attributes:
+  label: Source link
+  placeholder: |
+  Example: "https://example.com"
+  validations:
+  required: true
 
-**Description:**  
-<!-- Describe the request in detail -->
+- type: input
+  id: language
+  attributes:
+  label: site request
+  placeholder: |
+  Example: "Hindi"
+  validations:
+  required: true
 
-**Source Language:**  
-<!-- Language -->
+- type: textarea
+  id: other-details
+  attributes:
+  label: Other details
+  placeholder: |
+  Additional details and attachments.
+  Example: "+18/NSFW = yes"
+
+- type: checkboxes
+  id: acknowledgements
+  attributes:
+  label: Acknowledgements
+  description: Your issue will be closed if you haven't done these steps.
+  options:
+  - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open or closed issue.
+  required: true
+  - label: I have written a title with source name.
+  required: true
+  - label: I have checked that the extension does not already exist on the [website extensions list](https://aniyomi.org/extensions/) or the app.
+  required: true
+  - label: I have checked that the extension does not already exist by searching other Devs Repo and verified it does not appear in the code base.
+  required: true
+  - label: I will fill out all of the requested information in this form.
+  required: true
