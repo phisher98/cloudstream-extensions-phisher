@@ -1,0 +1,34 @@
+name: 👀 Other Issue
+description: Any Other Issue
+assignees: phisher98
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Other Issue
+        If you have a any other Issue.
+
+  - type: textarea
+    id: Details
+    attributes:
+      label: Details
+      placeholder: |
+        Additional details and attachments.
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      description: Your issue will be closed if you haven't done these steps.
+      options:
+        - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open or closed issue.
+          required: true
+        - label: I have written a title with source name.
+          required: true
+        - label: I have updated all installed extensions.
+          required: true
+        - label: I have opened WebView and checked that the source website is down.
+          required: true
+        - label: I will fill out all of the requested information in this form.
+          required: true
