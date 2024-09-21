@@ -1797,7 +1797,6 @@ object StreamPlayExtractor : StreamPlay() {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val cfInterceptor = CloudflareKiller()
         val fixtitle=title?.substringBefore("-")
-        //var res = app.get("$api/search/$title").document
         Log.d("Phisher url veg", "$api/search/$fixtitle")
         val match = when (season) {
             null -> "$year"
@@ -1809,7 +1808,7 @@ object StreamPlayExtractor : StreamPlay() {
             app.get("$api/search/$title $year", interceptor = cfInterceptor).document.selectFirst("#main-content article")
                 ?.let {
                     val hrefpattern =
-                        Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?$fixtitle[^<]*?$year""").find(it.toString())?.groupValues?.get(1)
+                        Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b$fixtitle\b[^<]*?\b$year\b""").find(it.toString())?.groupValues?.get(1)
                     Log.d("Phisher url veg", hrefpattern.toString())
                     //val hrefpattern =Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?$fixtitle""").find(res1.toString())?.groupValues?.get(1)
                     val res = hrefpattern?.let { app.get(it).document }
@@ -3283,7 +3282,7 @@ object StreamPlayExtractor : StreamPlay() {
           app.get(url, interceptor = wpRedisInterceptor).document.select("figure")
               .toString()
             val hrefpattern =
-                Regex("""(?i)<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
+                Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
             val document = app.get(hrefpattern).document
             if (season == null) {
                 document.select("h5 > a").amap {
@@ -3365,7 +3364,7 @@ object StreamPlayExtractor : StreamPlay() {
             app.get("$bollyflixAPI/search/$fixtitle").document.select("#content_box article")
                 .toString() ?:""
         val hrefpattern =
-            Regex("""(?i)<article[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1)
+            Regex("""(?i)<article[^>]*>\s*<a\s+href="([^"]*\b$searchtitle\b[^"]*)""").find(res1)?.groupValues?.get(1)
         //Log.d("Phisher bolly", "$hrefpattern")
         val res = hrefpattern?.let { app.get(it).document }
         val hTag = if (season == null) "h5" else "h4"
