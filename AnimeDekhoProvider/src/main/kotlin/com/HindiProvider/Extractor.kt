@@ -2,7 +2,6 @@ package com.HindiProvider
 
 
 //import android.util.Log
-import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -10,16 +9,12 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
-import com.lagradost.cloudstream3.extractors.helper.AesHelper
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
-import java.net.URI
-import com.lagradost.cloudstream3.fixTitle
-
 
 open class Streamruby : ExtractorApi() {
     override var name = "Streamruby"
@@ -65,7 +60,6 @@ open class VidStream : ExtractorApi() {
     override var name = "VidStream"
     override var mainUrl = "https://vidstreamnew.xyz"
     override val requiresReferer = false
-    private val serverUrl = "https://vidxstream.xyz"
 	private var key: String? = null
 
     @Suppress("NAME_SHADOWING")
@@ -93,10 +87,8 @@ open class VidStream : ExtractorApi() {
             ?: throw ErrorLoadingException("failed to decrypt")
 
         val source = Regex(""""?file"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
-        val name = url.getHost()
-
         val subtitles = Regex("""subtitle"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
-        val subtitlePattern = """\[(.*?)\](https?://[^\s,]+)""".toRegex()
+        val subtitlePattern = """\[(.*?)](https?://[^\s,]+)""".toRegex()
         val matches = subtitlePattern.findAll(subtitles ?: "")
         val languageUrlPairs = matches.map { matchResult ->
             val (language, url) = matchResult.destructured
@@ -131,7 +123,7 @@ open class VidStream : ExtractorApi() {
                 "VidStream",
                 url = source ?: return,
                 referer = "$mainUrl/",
-                quality = Qualities.Unknown.value,
+                quality = Qualities.P1080.value,
 				INFER_TYPE,
                 headers = header,
             )
@@ -149,10 +141,6 @@ open class VidStream : ExtractorApi() {
             it.groupValues[1].toInt(16).toChar().toString()
         }
     }
-	
-	private fun String.getHost(): String {
-		return fixTitle(URI(this).host.substringBeforeLast(".").substringAfterLast("."))
-	}
 	
 	data class Keys(
         @JsonProperty("chillx") val key: List<String>
@@ -187,17 +175,4 @@ open class GDMirrorbot : ExtractorApi() {
 }
 
 
-fun Extractvidlink(url: String): String {
-    val file=url.substringAfter("sources: [{\"file\":\"").substringBefore("\",\"")
-    return file
-}
-
-fun Extractvidsub(url: String): String {
-    val file=url.substringAfter("tracks: [{\"file\":\"").substringAfter("file\":\"").substringBefore("\",\"")
-    return file
-}
-
 data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
-data class Keys(
-    @JsonProperty("chillx") val key: List<String>
-)
