@@ -23,13 +23,14 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-            {    invokeUhdmovies(
+            {    if (!res.isAnime) invokeVegamovies(
                 res.title,
                 res.year,
                 res.season,
+                res.lastSeason,
                 res.episode,
-                callback,
-                subtitleCallback
+                subtitleCallback,
+                callback
             )
             }
         )

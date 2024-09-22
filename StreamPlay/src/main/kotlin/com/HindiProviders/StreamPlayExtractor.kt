@@ -1726,13 +1726,10 @@ object StreamPlayExtractor : StreamPlay() {
             1 -> "Season 1"
             else -> "Season 1 – $lastSeason"
         }
-        //val media =res.selectFirst("div.blog-items article:has(h3.entry-title:matches((?i)$title.*$match)) a")?.attr("href")
-        var res1 =
-            app.get("$api/search/$title $year", interceptor = cfInterceptor).document.selectFirst("#main-content article")
+        app.get("$api/search/$title $year", interceptor = cfInterceptor).document.selectFirst("#main-content article")
                 ?.let {
                     val hrefpattern =
                         Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b$fixtitle\b[^<]*?\b$year\b""").find(it.toString())?.groupValues?.get(1)
-                    Log.d("Phisher url veg", hrefpattern.toString())
                     //val hrefpattern =Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?$fixtitle""").find(res1.toString())?.groupValues?.get(1)
                     val res = hrefpattern?.let { app.get(it).document }
                     val hTag = if (season == null) "h5" else "h3"
@@ -1747,9 +1744,9 @@ object StreamPlayExtractor : StreamPlay() {
                                 ?.trim()
                         val href =
                             it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
-                        Log.d("Phisher url veg", href.toString())
+                        Log.d("Phisher url episode", "$episode")
                         val selector =
-                            if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) + p a:contains(V-Cloud)"
+                            if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) ~ p a:contains(V-Cloud)"
                         val server = app.get(
                             href ?: return@apmap, interceptor = wpRedisInterceptor
                         ).document.selectFirst("div.entry-content > $selector")
