@@ -106,9 +106,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
-        Log.d("Phisher title", title)
         val poster = fixUrlNull(doc.selectFirst("div.entry-content  p  img")?.attr("src"))
-        Log.d("Phisher poster", poster.toString())
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(title)?.value?.toIntOrNull()
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
@@ -117,13 +115,12 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         return if (type == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
             val pTags = doc.select("p:has(a:contains(Episode)), div:has(a:contains(Episode))")
-            //Log.d("Phisher UHD", pTags.toString())
             val seasonList = mutableListOf<Pair<String, Int>>()
             var season = 1
             pTags.mapNotNull { pTag ->
                 val prevPtag = pTag.previousElementSibling()
                 val details = prevPtag ?. text() ?: ""
-                val realSeason = Regex("""(?:Season |S)(\d+)""").find(details) ?. groupValues
+                val realSeason = Regex("""(?:Season |S0)(\d+)""").find(details) ?. groupValues
                     ?. get(1) ?: ""
                 val qualityRegex = """(1080p|720p|480p|2160p|4K|[0-9]*0p)""".toRegex(RegexOption.IGNORE_CASE)
                 val quality = qualityRegex.find(details) ?. groupValues ?. get(1) ?: ""
@@ -136,15 +133,17 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     seasonList.add(details to season)
                 }
                 val aTags = pTag.select("a:contains(Episode)")
-                aTags.mapNotNull { aTag ->
+                aTags.amap { aTag ->
                     val aTagText = aTag.text()
+                    val epid = aTag.text().substringAfter("Episode").trim().toInt()
                     val link = aTag.attr("href")
+                    Log.d("Phisher",link)
                     episodes.add(
                         Episode(
                             data = link,
                             name = aTagText,
                             season = season,
-                            episode = aTags.indexOf(aTag) + 1
+                            episode = epid
                         )
                     )
                 }
@@ -167,7 +166,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     it.nextElementSibling()?.select("a.maxbutton-1")?.attr("href") ?: ""
                 )
             }
-            Log.d("phisher maxbutton",data.toString())
+            //Log.d("phisher maxbutton",data.toString())
             newMovieLoadResponse(title, url, TvType.Movie, data) {
                 this.posterUrl = poster ?. trim()
                 this.year = year
@@ -285,7 +284,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val insLink =
                     driveRes.select("a.btn.btn-danger:contains(Instant Download)")
                         .attr("href")
-                Log.d("Phisher Test 2", insLink)
+                //Log.d("Phisher Test 2", insLink)
                 val downloadLink = when {
                     insLink.isNotEmpty() -> extractInstantUHD(insLink)
                     driveRes.select("button.btn.btn-success").text()
