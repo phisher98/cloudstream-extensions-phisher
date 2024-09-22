@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import java.io.InputStream
 
-class MPDPlayer : MainAPI() {
+class IPTVPlayer : MainAPI() {
     override var lang = "hi"
     override var mainUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/15APR2024.m3u"
     override var name = "IPTV Player"
@@ -37,7 +37,7 @@ class MPDPlayer : MainAPI() {
                 LiveSearchResponse(
                     channelname,
                     LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
-                    this@MPDPlayer.name,
+                    this@IPTVPlayer.name,
                     TvType.Live,
                     posterurl,
                     lang = channel.attributes["group-title"]
@@ -53,10 +53,9 @@ class MPDPlayer : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val data = IptvPlaylistParser().parseM3U(app.get(mainUrl).text)
-
-        return data.items.filter { it.attributes["tvg-id"]?.contains(query) ?: false }.map { channel ->
+        return data.items.filter { it.title?.contains(query,ignoreCase = true) ?: false }.map { channel ->
                 val streamurl = channel.url.toString()
-                val channelname = channel.attributes["tvg-id"].toString()
+                val channelname = channel.title.toString()
                 val posterurl = channel.attributes["tvg-logo"].toString()
                 val nation = channel.attributes["group-title"].toString()
                 val key=channel.attributes["key"].toString()
@@ -64,7 +63,7 @@ class MPDPlayer : MainAPI() {
                 LiveSearchResponse(
                     channelname,
                     LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
-                    this@MPDPlayer.name,
+                    this@IPTVPlayer.name,
                     TvType.Live,
                     posterurl,
                 )
@@ -73,7 +72,6 @@ class MPDPlayer : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val data = parseJson<LoadData>(url)
-        Log.d("Phisher data",url)
         return LiveStreamLoadResponse(
             data.title,
             data.url,
@@ -97,7 +95,6 @@ class MPDPlayer : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher data",data)
         val loadData = parseJson<LoadData>(data)
         if (loadData.url.contains("mpd"))
         {
@@ -120,7 +117,7 @@ class MPDPlayer : MainAPI() {
             callback.invoke(
                 ExtractorLink(
                     this.name,
-                    loadData.title,
+                    this.name,
                     loadData.url,
                     "",
                     Qualities.Unknown.value,
