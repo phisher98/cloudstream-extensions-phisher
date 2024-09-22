@@ -3194,15 +3194,16 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-            val fixTitle=title?.substringBefore("-")?.substringBefore(":")?.replace("&"," ")
-            val searchtitle = title?.substringBefore("-").createSlug()
-            var url = "$MovieDrive_API/search/$fixTitle $year"
-            Log.d("Phisher Moviedrive","$MovieDrive_API/search/$fixTitle")
+            val fixTitle=title?.replace("-"," ")?.replace(":"," ")?.replace("&"," ")
+            val searchtitle = title?.replace("-"," ").createSlug()
+            val url = "$MovieDrive_API/search/$fixTitle $year"
+            //Log.d("Phisher Moviedrive","$MovieDrive_API/search/$fixTitle")
             val res1 =
           app.get(url, interceptor = wpRedisInterceptor).document.select("figure")
               .toString()
             val hrefpattern =
                 Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1) ?:""
+            //Log.d("Phisher Moviedrive",hrefpattern)
             val document = app.get(hrefpattern).document
             if (season == null) {
                 document.select("h5 > a").amap {
@@ -3210,32 +3211,32 @@ object StreamPlayExtractor : StreamPlay() {
                     Log.d("Phisher M href", href)
                     val server=extractMdrive(href)
                     server.forEach {
-                        Log.d("Phisher M server", it)
+                        //Log.d("Phisher M server", it)
                         loadExtractor(it,referer = "MoviesDrive",subtitleCallback, callback)
                     }
                 }
             } else {
-                val stag = "Season $season"
-                val sep = "Ep0$episode"
+                val stag = "Season $season|S0$season"
+                val sep = "Ep0$episode|Ep$episode"
                 val entries = document.select("h5:matches((?i)$stag)")
                 //Log.d("Phisher Moviedrive", entries.toString())
                 entries.amap { entry ->
                     val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
-                    Log.d("Phisher Moviedrive", href)
+                    //Log.d("Phisher Moviedrive", href)
                     if (href.isNotBlank()) {
                         val doc = app.get(href).document
                         doc.select("h5:matches((?i)$sep)").forEach { epElement ->
                             val linklist = mutableListOf<String>()
                             epElement.nextElementSibling()?.let { sibling ->
-                                Log.d("Phisher Moviedrive1", sibling.toString())
+                                //Log.d("Phisher Moviedrive1", sibling.toString())
                                 sibling.selectFirst("h5 > a")
                                     ?.let { linklist.add(it.attr("href")) }
                                 sibling.nextElementSibling()?.let { nextSibling ->
-                                    Log.d("Phisher Moviedrive2", nextSibling.toString())
+                                    //Log.d("Phisher Moviedrive2", nextSibling.toString())
                                     nextSibling.selectFirst("h5 > a")
                                         ?.let { linklist.add(it.attr("href")) }
                                 }
-                                Log.d("Phisher linklist", linklist.toString())
+                                //Log.d("Phisher linklist", linklist.toString())
                             }
                             linklist.forEach { url ->
                                 loadExtractor(url,referer = "MoviesDrive",subtitleCallback, callback)
