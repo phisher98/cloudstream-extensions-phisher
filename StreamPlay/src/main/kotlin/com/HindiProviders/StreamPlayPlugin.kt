@@ -35,6 +35,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(FileMoon())
         registerExtractorAPI(VCloud())
         registerExtractorAPI(Bestx())
+        registerExtractorAPI(Filelions())
         registerExtractorAPI(Snolaxstream())
         registerExtractorAPI(Pixeldra())
         registerExtractorAPI(Mp4Upload())
@@ -90,6 +91,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Driveleech())
         registerExtractorAPI(VidHidePro6())
         registerExtractorAPI(MixDropSi())
-
+        registerExtractorAPI(Mp4Upload())
     }
 }

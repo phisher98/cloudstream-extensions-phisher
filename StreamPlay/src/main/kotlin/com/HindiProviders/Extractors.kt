@@ -561,6 +561,13 @@ class Yipsu : Voe() {
     override var mainUrl = "https://yip.su"
 }
 
+class Filelions : VidhideExtractor() {
+    override var name = "Filelions"
+    override var mainUrl = "https://alions.pro"
+    override val requiresReferer = false
+}
+
+
 class Embedwish : Filesim() {
     override val name = "Embedwish"
     override var mainUrl = "https://embedwish.com"
@@ -1063,6 +1070,7 @@ open class HubCloud : ExtractorApi() {
     }
 
 }
+
 
 class Driveleech : Driveseed() {
     override val name: String = "Driveleech"

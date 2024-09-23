@@ -1,5 +1,7 @@
 package com.HindiProviders
 
+import android.util.Log
+import com.HindiProviders.StreamPlayExtractor.invokeAnitaku
 import com.HindiProviders.StreamPlayExtractor.invokeBollyflix
 import com.HindiProviders.StreamPlayExtractor.invokeMoviesmod
 import com.HindiProviders.StreamPlayExtractor.invokeVegamovies
@@ -21,24 +23,26 @@ class StreamPlayTest : StreamPlay() {
     ): Boolean {
 
         val res = AppUtils.parseJson<LinkData>(data)
-
+        Log.d("Test1", "$res")
         argamap(
-            {    if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
+            {   if (res.isAnime) invokeAnitaku(
                 res.title,
+                res.epsTitle,
+                res.date,
                 res.year,
                 res.season,
-                res.lastSeason,
                 res.episode,
                 subtitleCallback,
                 callback
             )
             },
             {
-                if (!res.isAnime) invokeMoviesdrive(
+                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                     res.title,
-                    res.season,
-                    res.episode,
                     res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
                     subtitleCallback,
                     callback
                 )

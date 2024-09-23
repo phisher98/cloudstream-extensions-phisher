@@ -5,6 +5,7 @@ import android.util.Log
 import com.HindiProviders.StreamPlayExtractor.invoke2embed
 import com.HindiProviders.StreamPlayExtractor.invokeAllMovieland
 import com.HindiProviders.StreamPlayExtractor.invokeAnimes
+import com.HindiProviders.StreamPlayExtractor.invokeAnitaku
 import com.HindiProviders.StreamPlayExtractor.invokeMoviesdrive
 import com.HindiProviders.StreamPlayExtractor.invokeAoneroom
 import com.HindiProviders.StreamPlayExtractor.invokeAsianHD
@@ -125,6 +126,7 @@ open class StreamPlay : TmdbProvider() {
         const val kimcartoonAPI = "https://kimcartoon.li"
         const val hianimeAPI = "https://hianime.to"
         const val aniwaveAPI = "https://aniwave.to"
+        const val anitaku = "https://anitaku.pe"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val crunchyrollAPI = "https://beta-api.crunchyroll.com"
         const val kissKhAPI = "https://kisskh.co"
@@ -162,7 +164,7 @@ open class StreamPlay : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.mov"
         const val topmoviesAPI = "https://topmovies.mov"
-        const val MoviesmodAPI= "https://moviesmod.fit"
+        const val MoviesmodAPI= "https://moviesmod.day"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://vegamovies.fans"
         const val dotmoviesAPI = "https://luxmovies.lol"
@@ -472,6 +474,18 @@ open class StreamPlay : TmdbProvider() {
                         res.episode,
                         subtitleCallback,
                         callback
+                    )
+                },
+                {
+                if (res.isAnime) invokeAnitaku(
+                    res.title,
+                    res.epsTitle,
+                    res.date,
+                    res.year,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
                     )
                 },
                 {
