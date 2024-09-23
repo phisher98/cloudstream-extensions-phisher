@@ -3229,9 +3229,15 @@ object StreamPlayExtractor : StreamPlay() {
                 Log.d("Phisher Moviedrive", entries.toString())
                 entries.amap { entry ->
                     val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
-                    Log.d("Phisher Moviedrive", href)
                     if (href.isNotBlank()) {
                         val doc = app.get(href).document
+                        val fEp=doc.selectFirst("h5:matches((?i)$sep)")?.toString()
+                        if (fEp.isNullOrEmpty())
+                        {
+                            val furl=doc.select("h5 a:contains(HubCloud)").attr("href")
+                            loadExtractor(furl,referer = "MoviesDrive",subtitleCallback, callback)
+                        }
+                        else
                         doc.selectFirst("h5:matches((?i)$sep)")?.let { epElement ->
                             val linklist = mutableListOf<String>()
                             val firstHubCloudH5 = epElement.nextElementSibling()
@@ -3286,10 +3292,9 @@ object StreamPlayExtractor : StreamPlay() {
         //Log.d("Phisher bolly", "$bollyflixAPI/search/$fixtitle")
         var res1 =
             app.get("$bollyflixAPI/search/$fixtitle $year").document.select("#content_box article")
-                .toString() ?:""
+                .toString()
         val hrefpattern =
             Regex("""(?i)<article[^>]*>\s*<a\s+href="([^"]*\b$searchtitle\b[^"]*)""").find(res1)?.groupValues?.get(1)
-        //Log.d("Phisher bolly", "$hrefpattern")
         val res = hrefpattern?.let { app.get(it).document }
         val hTag = if (season == null) "h5" else "h4"
         //val aTag = if (season == null) "" else ""
