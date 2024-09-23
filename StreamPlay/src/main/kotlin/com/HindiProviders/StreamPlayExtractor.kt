@@ -1730,7 +1730,6 @@ object StreamPlayExtractor : StreamPlay() {
                 ?.let {
                     val hrefpattern =
                         Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b$fixtitle\b[^<]*?\b$year\b""").find(it.toString())?.groupValues?.get(1)
-                    //val hrefpattern =Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?$fixtitle""").find(res1.toString())?.groupValues?.get(1)
                     val res = hrefpattern?.let { app.get(it).document }
                     val hTag = if (season == null) "h5" else "h3"
                     val aTag = if (season == null) "Download Now" else "V-Cloud"
@@ -3233,7 +3232,7 @@ object StreamPlayExtractor : StreamPlay() {
                     Log.d("Phisher Moviedrive", href)
                     if (href.isNotBlank()) {
                         val doc = app.get(href).document
-                        doc.selectFirst("h5:matches((?i)$sep)").let { epElement ->
+                        doc.selectFirst("h5:matches((?i)$sep)")?.let { epElement ->
                             val linklist = mutableListOf<String>()
                             val firstHubCloudH5 = epElement.nextElementSibling()
                             val secondHubCloudH5 = firstHubCloudH5?.nextElementSibling()
