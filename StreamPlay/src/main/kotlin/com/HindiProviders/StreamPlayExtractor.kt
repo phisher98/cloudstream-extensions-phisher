@@ -1609,9 +1609,9 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         api: String
     ) {
-        val fixTitle = title?.substringBefore("-")
+        val fixTitle = title?.replace("-"," ")?.replace(":"," ")?.replace("&"," ")
         var url =""
-        val searchtitle=title?.substringBefore("-").createSlug()
+        val searchtitle=title?.replace("-"," ")?.replace(":"," ")?.replace("&"," ").createSlug()
         if (season==null)
         {
             url = "$api/search/$fixTitle $year"
@@ -1629,14 +1629,16 @@ object StreamPlayExtractor : StreamPlay() {
         Log.d("Phisher1 entries", hrefpattern.toString())
         val hTag = if (season == null) "h4" else "h3"
         val aTag = if (season == null) "Download" else "Episode"
-        val sTag = if (season == null) "" else "(S0$season)"
+        val sTag = if (season == null) "" else "(S0$season|Season $season)"
         val res = app.get(
             hrefpattern ?: return,
             headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),
             interceptor = wpRedisInterceptor
         ).document
         val entries =
-            res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))").takeLast(3)
+            res.select("div.thecontent $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+                .filter { element -> !element.text().contains("720p 1080p", true) }.takeLast(3)
+        Log.d("Phisher1 entries", entries.toString())
         entries.apmap { it ->
             val tags =
                 """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -1648,16 +1650,16 @@ object StreamPlayExtractor : StreamPlay() {
                 it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
                     ?.substringAfter("=") ?: ""
             href = base64Decode(href)
+            //Log.d("Phisher1 href", href.toString())
             val selector =
-                if (season == null) "p a.maxbutton" else "h3 a:contains(Episode $episode)"
+                if (season == null) "p a.maxbutton" else "h3 a:matches(Episode $episode)"
             app.get(
-                href ?: "",
+                href,
                 headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0")
-            ).document.select(selector).map {
+            ).document.selectFirst(selector)?.let {
                 val link=it.attr("href")
                 val server= Unblockedlinks(link) ?:""
-                if (server.isNotEmpty())
-                {
+                if (server.isNotEmpty()) {
                     loadExtractor(server,"MoviesMOD",subtitleCallback, callback)
                 }
             }

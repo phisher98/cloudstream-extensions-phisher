@@ -23,14 +23,25 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-            {    if (!res.isAnime) invokeMoviesdrive(
+            {    if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                 res.title,
-                res.season,
-                res.episode,
                 res.year,
+                res.season,
+                res.lastSeason,
+                res.episode,
                 subtitleCallback,
                 callback
             )
+            },
+            {
+                if (!res.isAnime) invokeMoviesdrive(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                )
             }
         )
         return true
