@@ -3,6 +3,7 @@ package com.HindiProviders
 import android.util.Log
 import com.HindiProviders.StreamPlayExtractor.invokeAnitaku
 import com.HindiProviders.StreamPlayExtractor.invokeBollyflix
+import com.HindiProviders.StreamPlayExtractor.invokeDotmovies
 import com.HindiProviders.StreamPlayExtractor.invokeMoviesmod
 import com.HindiProviders.StreamPlayExtractor.invokeVegamovies
 import com.HindiProviders.StreamPlayExtractor.invokeMoviesdrive
@@ -37,7 +38,7 @@ class StreamPlayTest : StreamPlay() {
             )
             },
             {
-                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
+                if (!res.isAnime) invokeDotmovies(
                     res.title,
                     res.year,
                     res.season,
