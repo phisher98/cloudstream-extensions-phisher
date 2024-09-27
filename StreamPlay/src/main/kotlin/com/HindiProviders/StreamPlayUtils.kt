@@ -1,16 +1,16 @@
-package com.HindiProviders
+package com.Phisher98
 
 import android.util.Base64
 import android.util.Log
-import com.HindiProviders.DumpUtils.queryApi
-import com.HindiProviders.StreamPlay.Companion.anilistAPI
-import com.HindiProviders.StreamPlay.Companion.crunchyrollAPI
-import com.HindiProviders.StreamPlay.Companion.filmxyAPI
-import com.HindiProviders.StreamPlay.Companion.gdbot
-import com.HindiProviders.StreamPlay.Companion.hdmovies4uAPI
-//import com.HindiProviders.StreamPlay.Companion.hdmovies4uAPI
-import com.HindiProviders.StreamPlay.Companion.malsyncAPI
-import com.HindiProviders.StreamPlay.Companion.tvMoviesAPI
+import com.Phisher98.DumpUtils.queryApi
+import com.Phisher98.StreamPlay.Companion.anilistAPI
+import com.Phisher98.StreamPlay.Companion.crunchyrollAPI
+import com.Phisher98.StreamPlay.Companion.filmxyAPI
+import com.Phisher98.StreamPlay.Companion.gdbot
+import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
+//import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
+import com.Phisher98.StreamPlay.Companion.malsyncAPI
+import com.Phisher98.StreamPlay.Companion.tvMoviesAPI
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS

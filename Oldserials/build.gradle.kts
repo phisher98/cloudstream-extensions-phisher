@@ -5,7 +5,7 @@ cloudstream {
 
     description = "Insian TV Serials/Shows"
     language = "hi"
-    authors = listOf("HindiProviders")
+    authors = listOf("Phisher98")
 
     /**
     * Status int as the following:

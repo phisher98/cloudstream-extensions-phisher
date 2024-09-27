@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element

@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin

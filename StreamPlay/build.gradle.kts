@@ -30,7 +30,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
      description = "#1 best extention based on MultiAPI"
-     authors = listOf("HindiProviders", "Hexated")
+     authors = listOf("Phisher98", "Hexated")
 
     /**
      * Status int as the following:

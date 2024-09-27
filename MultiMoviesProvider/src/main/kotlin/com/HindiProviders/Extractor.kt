@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.app

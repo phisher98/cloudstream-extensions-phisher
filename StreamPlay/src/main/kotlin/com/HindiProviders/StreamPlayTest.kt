@@ -1,14 +1,14 @@
-package com.HindiProviders
+package com.Phisher98
 
 import android.util.Log
-import com.HindiProviders.StreamPlayExtractor.invokeAnitaku
-import com.HindiProviders.StreamPlayExtractor.invokeBollyflix
-import com.HindiProviders.StreamPlayExtractor.invokeDotmovies
-import com.HindiProviders.StreamPlayExtractor.invokeMoviesmod
-import com.HindiProviders.StreamPlayExtractor.invokeVegamovies
-import com.HindiProviders.StreamPlayExtractor.invokeMoviesdrive
-import com.HindiProviders.StreamPlayExtractor.invokeTopMovies
-import com.HindiProviders.StreamPlayExtractor.invokeUhdmovies
+import com.Phisher98.StreamPlayExtractor.invokeAnitaku
+import com.Phisher98.StreamPlayExtractor.invokeBollyflix
+import com.Phisher98.StreamPlayExtractor.invokeDotmovies
+import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
+import com.Phisher98.StreamPlayExtractor.invokeVegamovies
+import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
+import com.Phisher98.StreamPlayExtractor.invokeTopMovies
+import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
