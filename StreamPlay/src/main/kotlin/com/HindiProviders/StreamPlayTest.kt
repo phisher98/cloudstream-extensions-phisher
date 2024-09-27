@@ -27,7 +27,18 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
+                if (!res.isAnime) invokeVegamovies(
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeDotmovies(
                     res.title,
                     res.year,
                     res.season,

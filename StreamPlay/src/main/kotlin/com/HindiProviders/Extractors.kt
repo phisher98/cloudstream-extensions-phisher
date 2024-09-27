@@ -219,9 +219,9 @@ class VCloud : ExtractorApi() {
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
         val document = app.get(urlValue).document
 
-        val size = document.selectFirst("i#size") ?. text()
+        val size = document.selectFirst("i#size") ?. text() ?:""
         val div = document.selectFirst("div.card-body")
-        val header = document.selectFirst("div.card-header") ?. text()
+        val header = document.selectFirst("div.card-header") ?. text() ?:""
         div?.select("h2 a.btn")?.amap {
             val link = it.attr("href")
             if (link.contains("gpdl3."))

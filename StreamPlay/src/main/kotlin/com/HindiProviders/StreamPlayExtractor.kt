@@ -1755,7 +1755,6 @@ object StreamPlayExtractor : StreamPlay() {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val cfInterceptor = CloudflareKiller()
         val fixtitle = title?.replace("-", " ")?.replace(":", " ")?.replace("&", " ")
-        val altertitle = title?.substringBefore(":")
         Log.d("Phisher url veg", "$api/search/$fixtitle")
         val match = when (season) {
             null -> "$year"
@@ -1763,38 +1762,49 @@ object StreamPlayExtractor : StreamPlay() {
             else -> "Season 1 – $lastSeason"
         }
         val url = if (season == null) {
-            "$api/search/$title $year"
+            "$api/search/$fixtitle $year"
         } else {
-            "$api/search/$title $season $year"
+            "$api/search/$fixtitle season $season $year"
         }
+        val domain= api.substringAfter("//").substringBefore(".")
+        Log.d("Phisher url veg", url.toString())
         app.get(url, interceptor = cfInterceptor).document.select("#main-content article")
             .filter { element ->
                 element.text().contains(
                     title.toString(), true
                 )
             }
-            .forEach {
+            .amap {
                 val hrefpattern =
-                    Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($title)\b[^<]*?\b($year)\b""").find(
+                    Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($title)\b[^<]*?""").find(
                         it.toString()
                     )?.groupValues?.get(1)
                 val res = hrefpattern?.let { app.get(it).document }
-                Log.d("Phisher url veg", it.toString())
-                val hTag = if (season == null) "h5" else "h3"
-                val aTag = if (season == null) "Download Now" else "V-Cloud"
+                Log.d("Phisher url veg", hrefpattern.toString())
+                val hTag = if (season == null) "h5" else "h3,h5"
+                val aTag = if (season == null) "Download Now" else "V-Cloud,Download Now"
                 val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
                 val entries =
-                    res?.select("div.entry-content > $hTag:matches((?i)$sTag.*(1080p|2160p))")
-                        ?.filter { element -> !element.text().contains("Series", true) }
+                    res?.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+                        ?.filter { element ->
+                            !element.text().contains("Series", true) &&
+                                    !element.text().contains("Zip", true) &&
+                                    !element.text().contains("[Complete]", true) &&
+                                    !element.text().contains("480p, 720p, 1080p", true) &&
+                                    !element.text().contains(domain, true) &&
+                                    (element.text().contains("Season $season", true) ||
+                                            element.text().contains("S$seasonSlug", true))
+                        }
                 Log.d("Phisher url veg", entries.toString())
                 entries?.apmap {
                     val tags =
                         """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                             ?.trim()
-                    val test =
-                        it.nextElementSibling()
-                    val href =
-                        it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+                    val tagList = aTag.split(",")  // Changed variable name to tagList
+                    val href = it.nextElementSibling()?.select("a")?.find { anchor ->
+                        tagList.any { tag -> anchor.text().contains(tag.trim(), true) }  // Use tagList instead
+                    }?.attr("href") ?:""
+                    Log.d("Phisher veg", href)
                     val selector =
                         if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) ~ p a:contains(V-Cloud)"
                     val server = app.get(
