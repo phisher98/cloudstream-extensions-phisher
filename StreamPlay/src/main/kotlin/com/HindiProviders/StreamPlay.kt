@@ -174,6 +174,7 @@ open class StreamPlay : TmdbProvider() {
         const val Asiandrama_API=BuildConfig.AsianDrama_API
         const val bollyflixAPI = "https://bollyflix.beer"
         const val movies4u = "https://movies4u.poker"
+        const val animepaheAPI = "https://animepahe.ru"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

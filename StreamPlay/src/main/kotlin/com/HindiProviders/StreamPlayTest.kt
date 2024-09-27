@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeAnimes
 import com.Phisher98.StreamPlayExtractor.invokeAnitaku
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
@@ -27,22 +28,12 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokeVegamovies(
+                if (res.isAnime) invokeAnimes(
                     res.title,
-                    res.year,
+                    res.epsTitle,
+                    res.date,
+                    res.airedDate,
                     res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeDotmovies(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback

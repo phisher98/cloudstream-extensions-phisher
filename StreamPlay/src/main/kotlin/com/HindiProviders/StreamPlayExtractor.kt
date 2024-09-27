@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
+import org.json.JSONObject
 
 
 val session = Session(Requests().baseClient)
@@ -1153,8 +1154,11 @@ object StreamPlayExtractor : StreamPlay() {
 
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
+        Log.d("Phisher",malsync.toString())
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
+        val animepahe = malsync?.animepahe?.firstNotNullOf { it.value["url"] }
+        Log.d("Phisher animepahe",animepahe.toString())
         argamap(
             {
                 invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
@@ -1169,6 +1173,9 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
             },
             {
+                invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
+            },
+            {
                 if (season != null) invokeCrunchyroll(
                     aniId,
                     malId,
@@ -1180,6 +1187,26 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
         )
+    }
+
+    private suspend fun invokeAnimepahe(
+        url: String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers=mapOf("Cookie" to "__ddg2_=1234567890")
+        val id= app.get(url ?:"",headers).document.selectFirst("meta[property=og:url]")?.attr("content").toString().substringAfterLast("/")
+        val animeData=app.get("$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1",headers).parsedSafe<animepahe>()?.data
+        val session = animeData?.find { it.episode == episode }?.session ?:""
+        app.get("$animepaheAPI/play/$id/$session",headers).document.select("div.dropup button").map {
+            val tag=it.attr("data-resolution")
+            val href=it.attr("data-src")
+            if (href.contains("kwik.si"))
+            {
+                loadCustomExtractor("Animepahe [Raw] $tag",href,"",subtitleCallback, callback)
+            }
+        }
     }
 
     private suspend fun invokeAniwave(

@@ -318,9 +318,48 @@ data class CrunchyrollSourcesResponses(
     )
 }
 
+//anime animepahe parser
+
+data class animepahe(
+    val total: Long,
+    @JsonProperty("per_page")
+    val perPage: Long,
+    @JsonProperty("current_page")
+    val currentPage: Long,
+    @JsonProperty("last_page")
+    val lastPage: Long,
+    @JsonProperty("next_page_url")
+    val nextPageUrl: Any?,
+    @JsonProperty("prev_page_url")
+    val prevPageUrl: Any?,
+    val from: Long,
+    val to: Long,
+    val data: List<Daum>,
+)
+
+data class Daum(
+    val id: Long,
+    @JsonProperty("anime_id")
+    val animeId: Long,
+    val episode: Int,
+    val episode2: Long,
+    val edition: String,
+    val title: String,
+    val snapshot: String,
+    val disc: String,
+    val audio: String,
+    val duration: String,
+    val session: String,
+    val filler: Long,
+    @JsonProperty("created_at")
+    val createdAt: String,
+)
+
+
 data class MALSyncSites(
     @JsonProperty("Zoro") val zoro: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
     @JsonProperty("9anime") val nineAnime: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
+    @JsonProperty("animepahe") val animepahe: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
 )
 
 data class MALSyncResponses(
