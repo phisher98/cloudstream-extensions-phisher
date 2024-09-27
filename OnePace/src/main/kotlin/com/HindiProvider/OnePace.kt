@@ -1,4 +1,4 @@
-package com.HindiProvider
+package com.Phisher98
 
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.Episode
