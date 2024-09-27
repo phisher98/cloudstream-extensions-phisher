@@ -1,0 +1,8 @@
+{
+    "name": "Phisher Repo",
+    "description": "Phisher Repository",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/builds/plugins.json"
+    ]
+  }
