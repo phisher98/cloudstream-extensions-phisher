@@ -26,19 +26,8 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         Log.d("Test1", "$res")
         argamap(
-            {   if (res.isAnime) invokeAnitaku(
-                res.title,
-                res.epsTitle,
-                res.date,
-                res.year,
-                res.season,
-                res.episode,
-                subtitleCallback,
-                callback
-            )
-            },
             {
-                if (!res.isAnime) invokeDotmovies(
+                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                     res.title,
                     res.year,
                     res.season,

@@ -35,7 +35,7 @@ import com.HindiProviders.StreamPlayExtractor.invokeMoflix
 import com.HindiProviders.StreamPlayExtractor.invokeMoviehubAPI
 import com.HindiProviders.StreamPlayExtractor.invokeMultiEmbed
 import com.HindiProviders.StreamPlayExtractor.invokeMultimovies
-//import com.HindiProviders.StreamPlayExtractor.invokeNepu
+import com.HindiProviders.StreamPlayExtractor.invokeNepu
 import com.HindiProviders.StreamPlayExtractor.invokeNetmovies
 import com.HindiProviders.StreamPlayExtractor.invokeNinetv
 import com.HindiProviders.StreamPlayExtractor.invokeNoverse
@@ -159,7 +159,7 @@ open class StreamPlay : TmdbProvider() {
         const val watchCartoonAPI = "https://www1.watchcartoononline.bz"
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
-//        const val nepuAPI = "https://nepu.to"
+        const val nepuAPI = "https://nepu.to"
         const val DramacoolAPI = "https://watchasia.to"
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.mov"
@@ -882,7 +882,7 @@ open class StreamPlay : TmdbProvider() {
             callback
         )
     },
-/*    {
+   {
         if (!res.isAnime) invokeNepu(
             res.title,
             res.airedYear ?: res.year,
@@ -891,8 +891,6 @@ open class StreamPlay : TmdbProvider() {
             callback
         )
     },
-
- */
     {
         if (!res.isAnime) invokePlaydesi(
             res.title,

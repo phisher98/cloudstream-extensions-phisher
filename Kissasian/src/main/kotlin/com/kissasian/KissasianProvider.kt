@@ -19,5 +19,7 @@ class KissasianProvider: Plugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(MixDrop())
         registerExtractorAPI(Kswplayer())
+        registerExtractorAPI(Plcool1())
+        registerExtractorAPI(MixDropPs())
     }
 }

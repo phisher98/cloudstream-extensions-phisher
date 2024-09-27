@@ -222,9 +222,22 @@ class VCloud : ExtractorApi() {
         val size = document.selectFirst("i#size") ?. text()
         val div = document.selectFirst("div.card-body")
         val header = document.selectFirst("div.card-header") ?. text()
-        div?.select("a")?.apmap {
+        div?.select("h2 a.btn")?.amap {
             val link = it.attr("href")
-            Log.d("Phisher V",link)
+            if (link.contains("gpdl3."))
+            {
+                val href=app.get(link).document.selectFirst("#vd")?.attr("href") ?:""
+                Log.d("Phisher V",href)
+                    callback.invoke(
+                        ExtractorLink(
+                            "V-Cloud 10 Gbps",
+                            "V-Cloud 10 Gbps $size",
+                            href,
+                            "",
+                            getIndexQuality(header),
+                        )
+                    )
+            } else
             if (link.contains("pixeldra")) {
                 callback.invoke(
                     ExtractorLink(
@@ -262,6 +275,17 @@ class VCloud : ExtractorApi() {
                 callback.invoke(
                     ExtractorLink(
                         "V-Cloud",
+                        "V-Cloud $size",
+                        link,
+                        "",
+                        getIndexQuality(header),
+                    )
+                )
+            }else if (link.contains(".lol"))
+            {
+                callback.invoke(
+                    ExtractorLink(
+                        "V-Cloud [FSL]",
                         "V-Cloud $size",
                         link,
                         "",

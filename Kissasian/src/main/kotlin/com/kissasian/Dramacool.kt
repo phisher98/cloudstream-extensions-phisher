@@ -23,7 +23,7 @@ class Dramacool : MainAPI() {
         "${mainUrl}/dramas/" to "Drama",
         "${mainUrl}/movies/" to "Movies",
         "${mainUrl}/k-shows/" to "KShow",
-        "${mainUrl}/most-popular-drama/" to "Popular Dramas",
+        "${mainUrl}/most-watched/" to "Popular Dramas",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -101,8 +101,7 @@ class Dramacool : MainAPI() {
         val servers = linksRegex.findAll(json).map {
             it.groupValues[1].replace("\\/", "/")
         }.toList()
-
-        servers.amap {
+        servers.forEach {
             loadExtractor(it, subtitleCallback, callback)
         }
         return true
