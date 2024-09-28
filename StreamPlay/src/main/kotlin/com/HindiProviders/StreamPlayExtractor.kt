@@ -1167,10 +1167,10 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds, episode, subtitleCallback, callback)
             },
             {
-                invokeGenoanime(zoroIds, episode, subtitleCallback, callback)
+                //invokeGenoanime(zoroIds, episode, subtitleCallback, callback)
             },
             {
-                invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
+                //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
             },
             {
                 invokeAnimepahe(animepahe, episode, subtitleCallback, callback)

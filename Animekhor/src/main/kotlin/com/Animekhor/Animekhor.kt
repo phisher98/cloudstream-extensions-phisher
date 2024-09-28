@@ -19,11 +19,14 @@ class Animekhor : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime)
 
     override val mainPage = mainPageOf(
-        "anime/?status=&type=&order=update" to "Recently Updated",
-        "anime/?status=ongoing&sub=&order=" to "Ongoing",
-        "anime/?status=&sub=&order=" to "All",
-        "anime/?type=comic&sub=&order=update" to "Comic",
-        "anime/?status=&sub=sub" to "Subbed"
+        "anime/?status=ongoing&type=&order=update" to "Recently Updated",
+        "anime/?status=completed&order=update" to "Completed",
+        "anime/?type=comic&order=update" to "Comic Recently Updated",
+        "anime/?type=comic" to "Comic Series",
+        "anime/?status=&type=ona&sub=&order=update" to "Donghua Recently Updated",
+        "anime/?status=&type=ona" to "Donghua Series",
+        "anime/?status=&sub=&order=latest" to "Latest Added",
+        "anime/?status=&type=&order=popular" to "Popular",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
