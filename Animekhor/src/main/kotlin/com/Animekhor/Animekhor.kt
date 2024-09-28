@@ -22,7 +22,7 @@ class Animekhor : MainAPI() {
         "anime/?status=&type=&order=update" to "Recently Updated",
         "anime/?status=ongoing&sub=&order=" to "Ongoing",
         "anime/?status=&sub=&order=" to "All",
-        "anime/?type=comic&sub=&order=" to "Comic",
+        "anime/?type=comic&sub=&order=update" to "Comic",
         "anime/?status=&sub=sub" to "Subbed"
     )
 
