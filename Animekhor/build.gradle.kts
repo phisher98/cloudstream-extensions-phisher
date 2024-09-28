@@ -1,10 +1,12 @@
 // use an integer for version numbers
 version = 1
+
+
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Insian TV Serials/Shows"
-    language = "hi"
+    description = "Anime and Movies"
+    language    = "zh"
     authors = listOf("Phisher98")
 
     /**
@@ -19,6 +21,6 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("TvSeries")
-    iconUrl = "https://animekhor.org/wp-content/uploads/2021/11/AnimeKhor_darkmode.png"
+    tvTypes = listOf("Movie,Anime")
+    iconUrl="https://animenosub.com/wp-content/uploads/2024/02/Animenosub-logo.png"
 }
