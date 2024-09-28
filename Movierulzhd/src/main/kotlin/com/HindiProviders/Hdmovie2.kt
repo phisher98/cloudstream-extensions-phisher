@@ -4,6 +4,7 @@ package com.Phisher98
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
@@ -53,7 +54,7 @@ class Hdmovie2 : Movierulzhd() {
             val type = if (data.contains("/movies/")) "movie" else "tv"
             document.select("ul#playeroptionsul > li").map {
                 it.attr("data-nume")
-            }.apmap { nume ->
+            }.amap { nume ->
                 val source = app.post(
                     url = "$directUrl/wp-admin/admin-ajax.php", data = mapOf(
                         "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
@@ -76,7 +77,7 @@ class Hdmovie2 : Movierulzhd() {
                         subtitleCallback,
                         callback
                     )
-                    else -> return@apmap
+                    else -> ""
                 }
             }
         }

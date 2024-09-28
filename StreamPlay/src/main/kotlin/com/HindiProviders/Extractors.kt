@@ -15,7 +15,6 @@ import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Jeniusplay
-import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.*
 import java.math.BigInteger
@@ -218,17 +217,16 @@ class VCloud : ExtractorApi() {
         val doc = app.get(url).document
         val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?:""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
-        val document = app.get(urlValue).document
-
-        val size = document.selectFirst("i#size") ?. text() ?:""
-        val div = document.selectFirst("div.card-body")
-        val header = document.selectFirst("div.card-header") ?. text() ?:""
-        div?.select("h2 a.btn")?.amap {
-            val link = it.attr("href")
-            if (link.contains("gpdl3."))
-            {
-                val href=app.get(link).document.selectFirst("#vd")?.attr("href") ?:""
-                Log.d("Phisher V",href)
+        if (urlValue.isNotEmpty()) {
+            val document = app.get(urlValue).document
+            val size = document.selectFirst("i#size")?.text() ?: ""
+            val div = document.selectFirst("div.card-body")
+            val header = document.selectFirst("div.card-header")?.text() ?: ""
+            div?.select("h2 a.btn")?.amap {
+                val link = it.attr("href")
+                if (link.contains("gpdl3.")) {
+                    val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
+                    Log.d("Phisher V", href)
                     callback.invoke(
                         ExtractorLink(
                             "V-Cloud 10 Gbps",
@@ -238,64 +236,64 @@ class VCloud : ExtractorApi() {
                             getIndexQuality(header),
                         )
                     )
-            } else
-            if (link.contains("pixeldra")) {
-                callback.invoke(
-                    ExtractorLink(
-                        "Pixeldrain",
-                        "Pixeldrain $size",
-                        link,
-                        "",
-                        getIndexQuality(header),
-                    )
-                )
-            } else if(link.contains("dl.php")) {
-                val response = app.get(link, allowRedirects = false)
-                val downloadLink = response.headers["location"].toString().split("link=").getOrNull(1) ?: link
-                callback.invoke(
-                    ExtractorLink(
-                        "V-Cloud[Download]",
-                        "V-Cloud[Download] $size",
-                        downloadLink,
-                        "",
-                        getIndexQuality(header),
-                    )
-                )
-            } else if(link.contains(".dev")) {
-                callback.invoke(
-                    ExtractorLink(
-                        "V-Cloud",
-                        "V-Cloud $size",
-                        link,
-                        "",
-                        getIndexQuality(header),
-                    )
-                )
-            } else if (link.contains(".hubcdn.xyz"))
-            {
-                callback.invoke(
-                    ExtractorLink(
-                        "V-Cloud",
-                        "V-Cloud $size",
-                        link,
-                        "",
-                        getIndexQuality(header),
-                    )
-                )
-            }else if (link.contains(".lol"))
-            {
-                callback.invoke(
-                    ExtractorLink(
-                        "V-Cloud [FSL]",
-                        "V-Cloud $size",
-                        link,
-                        "",
-                        getIndexQuality(header),
-                    )
-                )
-            }
-            else{
-                loadExtractor(link, subtitleCallback, callback)
+                } else
+                    if (link.contains("pixeldra")) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "Pixeldrain",
+                                "Pixeldrain $size",
+                                link,
+                                "",
+                                getIndexQuality(header),
+                            )
+                        )
+                    } else if (link.contains("dl.php")) {
+                        val response = app.get(link, allowRedirects = false)
+                        val downloadLink =
+                            response.headers["location"].toString().split("link=").getOrNull(1)
+                                ?: link
+                        callback.invoke(
+                            ExtractorLink(
+                                "V-Cloud[Download]",
+                                "V-Cloud[Download] $size",
+                                downloadLink,
+                                "",
+                                getIndexQuality(header),
+                            )
+                        )
+                    } else if (link.contains(".dev")) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "V-Cloud",
+                                "V-Cloud $size",
+                                link,
+                                "",
+                                getIndexQuality(header),
+                            )
+                        )
+                    } else if (link.contains(".hubcdn.xyz")) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "V-Cloud",
+                                "V-Cloud $size",
+                                link,
+                                "",
+                                getIndexQuality(header),
+                            )
+                        )
+                    } else if (link.contains(".lol")) {
+                        callback.invoke(
+                            ExtractorLink(
+                                "V-Cloud [FSL]",
+                                "V-Cloud $size",
+                                link,
+                                "",
+                                getIndexQuality(header),
+                            )
+                        )
+                    } else {
+                        loadExtractor(link, subtitleCallback, callback)
+                    }
             }
         }
     }
@@ -980,7 +978,7 @@ class HubCloudlol : HubCloud() {
     override var mainUrl = "https://hubcloud.lol"
 }
 
-class PixelDrain : ExtractorApi() {
+open class PixelDrain : ExtractorApi() {
     override val name            = "PixelDrain"
     override val mainUrl         = "https://pixeldrain.com"
     override val requiresReferer = true
@@ -1207,11 +1205,9 @@ open class Driveseed : ExtractorApi() {
             val text = it.text()
             //Log.d("Phisher text",text)
             val link = it.attr("href")
-            //Log.d("Phisher link",link)
             if(text.contains("Resume Cloud")) {
                 val streamUrl = resumeCloudLink(link)
-                Log.d("Phisher streamUrl", streamUrl.toString())
-                if (streamUrl != null) {
+                if (streamUrl!= null) {
                     callback.invoke(
                         ExtractorLink(
                             "$source ResumeCloud $qualityname",

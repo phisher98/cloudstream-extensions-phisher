@@ -12,7 +12,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAsianHD
 import com.Phisher98.StreamPlayExtractor.invokeAsiandrama
 //import com.Phisher98.StreamPlayExtractor.invokeCinemaTv
 import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
-import com.Phisher98.StreamPlayExtractor.invokeDahmerMovies
+//import com.Phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.Phisher98.StreamPlayExtractor.invokeDoomovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeDramacool
@@ -603,7 +603,7 @@ open class StreamPlay : TmdbProvider() {
                     )
                 },
                 {
-                    if (!res.isAnime && res.isBollywood) invokeTopMovies(
+                    if (!res.isAnime) invokeTopMovies(
                         res.title,
                         res.year,
                         res.season,
@@ -614,7 +614,7 @@ open class StreamPlay : TmdbProvider() {
                     )
                 },
                 {
-                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
+                if (!res.isAnime) invokeMoviesmod(
                     res.title,
                     res.year,
                     res.season,
@@ -691,7 +691,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
+        //invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
     },
 /*    {
         invokeCinemaTv(

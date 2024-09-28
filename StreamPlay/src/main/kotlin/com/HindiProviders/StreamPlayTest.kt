@@ -28,12 +28,11 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (res.isAnime) invokeAnimes(
+                if (!res.isAnime) invokeMoviesmod(
                     res.title,
-                    res.epsTitle,
-                    res.date,
-                    res.airedDate,
+                    res.year,
                     res.season,
+                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback
