@@ -222,14 +222,14 @@ class VCloud : ExtractorApi() {
             val size = document.selectFirst("i#size")?.text() ?: ""
             val div = document.selectFirst("div.card-body")
             val header = document.selectFirst("div.card-header")?.text() ?: ""
-            div?.select("h2 a.btn")?.amap {
+            div?.select("h2 a.btn")?.apmap {
                 val link = it.attr("href")
                 if (link.contains("gpdl3.")) {
                     val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
                     Log.d("Phisher V", href)
                     callback.invoke(
                         ExtractorLink(
-                            "V-Cloud 10 Gbps",
+                            "V-Cloud 10 Gbps $header",
                             "V-Cloud 10 Gbps $size",
                             href,
                             "",
@@ -240,7 +240,7 @@ class VCloud : ExtractorApi() {
                     if (link.contains("pixeldra")) {
                         callback.invoke(
                             ExtractorLink(
-                                "Pixeldrain",
+                                "Pixeldrain $header",
                                 "Pixeldrain $size",
                                 link,
                                 "",
@@ -264,7 +264,7 @@ class VCloud : ExtractorApi() {
                     } else if (link.contains(".dev")) {
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud",
+                                "V-Cloud $header",
                                 "V-Cloud $size",
                                 link,
                                 "",
@@ -274,7 +274,7 @@ class VCloud : ExtractorApi() {
                     } else if (link.contains(".hubcdn.xyz")) {
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud",
+                                "V-Cloud $header",
                                 "V-Cloud $size",
                                 link,
                                 "",
@@ -284,7 +284,7 @@ class VCloud : ExtractorApi() {
                     } else if (link.contains(".lol")) {
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud [FSL]",
+                                "V-Cloud [FSL] $header",
                                 "V-Cloud $size",
                                 link,
                                 "",
@@ -1189,7 +1189,7 @@ open class Driveseed : ExtractorApi() {
     }
 
 
-    @Suppress("SENSELESS_COMPARISON", "PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     override suspend fun getUrl(
         url: String,
         source: String?,
