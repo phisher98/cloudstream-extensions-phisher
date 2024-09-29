@@ -12,7 +12,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAsianHD
 import com.Phisher98.StreamPlayExtractor.invokeAsiandrama
 //import com.Phisher98.StreamPlayExtractor.invokeCinemaTv
 import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
-//import com.Phisher98.StreamPlayExtractor.invokeDahmerMovies
+import com.Phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.Phisher98.StreamPlayExtractor.invokeDoomovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeDramacool
@@ -169,7 +169,7 @@ open class StreamPlay : TmdbProvider() {
         const val vegaMoviesAPI = "https://vegamovies.fans"
         const val dotmoviesAPI = "https://luxmovies.lol"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
-        const val dahmerMoviesAPI=""
+        const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.world"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
         const val bollyflixAPI = "https://bollyflix.beer"
@@ -423,7 +423,6 @@ open class StreamPlay : TmdbProvider() {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -691,7 +690,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        //invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
+        invokeDahmerMovies(dahmerMoviesAPI,res.title, res.year, res.season, res.episode, callback)
     },
 /*    {
         invokeCinemaTv(

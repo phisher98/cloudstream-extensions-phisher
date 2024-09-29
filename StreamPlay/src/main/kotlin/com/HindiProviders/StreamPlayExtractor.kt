@@ -2575,7 +2575,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
     }
-/*
+
     suspend fun invokeDahmerMovies(
         apiurl: String? = null,
         title: String? = null,
@@ -2619,7 +2619,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
     }
- */
 
     suspend fun invoke2embed(
         imdbId: String?,
