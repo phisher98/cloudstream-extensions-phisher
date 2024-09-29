@@ -36,6 +36,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(VCloud())
         registerExtractorAPI(Kwik())
         registerExtractorAPI(Bestx())
+        registerExtractorAPI(VCloudGDirect())
         registerExtractorAPI(Filelions())
         registerExtractorAPI(Snolaxstream())
         registerExtractorAPI(Pixeldra())

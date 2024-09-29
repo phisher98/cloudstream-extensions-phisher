@@ -383,6 +383,20 @@ data class GokuServer(
     @JsonProperty("data") val data: GokuData? = GokuData(),
 )
 
+//MiruroanimeGogo
+
+data class MiruroanimeGogo(
+    val sources: List<MiruroSource>,
+    val download: String,
+)
+
+data class MiruroSource(
+    val url: String,
+    val isM3U8: Boolean,
+    val quality: String,
+)
+
+
 data class AllMovielandEpisodeFolder(
     @JsonProperty("title") val title: String? = null,
     @JsonProperty("id") val id: String? = null,

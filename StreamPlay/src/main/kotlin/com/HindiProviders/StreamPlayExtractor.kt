@@ -22,9 +22,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
-import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
-import org.json.JSONObject
 
 
 val session = Session(Requests().baseClient)
@@ -378,7 +376,7 @@ object StreamPlayExtractor : StreamPlay() {
                 it.attr("data-nume"),
                 it.attr("data-type")
             )
-        }.apmap { (id, nume, type) ->
+        }.amap { (id, nume, type) ->
             if (!nume.contains("trailer")) {
                 val source = app.post(
                     url = "$apiUrl/wp-admin/admin-ajax.php",
@@ -396,8 +394,7 @@ object StreamPlayExtractor : StreamPlay() {
                     !link.contains("youtube") -> {
                         loadExtractor(link, referer = apiUrl, subtitleCallback, callback)
                     }
-
-                    else -> return@apmap
+                    else -> ""
                 }
             }
         }
@@ -1154,11 +1151,12 @@ object StreamPlayExtractor : StreamPlay() {
 
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
-        Log.d("Phisher", malsync.toString())
+        //Log.d("Phisher", malsync.toString())
         val zoroIds = malsync?.zoro?.keys?.map { it }
-        val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
+        val zoroname = malsync?.nineAnime?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
+        //val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
         val animepahe = malsync?.animepahe?.firstNotNullOf { it.value["url"] }
-        Log.d("Phisher animepahe", animepahe.toString())
+        //Log.d("Phisher", "$zoroIds $zoroname")
         argamap(
             {
                 invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
@@ -1167,7 +1165,10 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds, episode, subtitleCallback, callback)
             },
             {
-                //invokeGenoanime(zoroIds, episode, subtitleCallback, callback)
+                invokeMiruroanimeZoro(zoroIds,zoroname, episode, subtitleCallback, callback)
+            },
+            {
+                invokeMiruroanimeGogo(zoroIds,zoroname, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
@@ -1176,6 +1177,7 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
             },
             {
+                /*
                 if (season != null) invokeCrunchyroll(
                     aniId,
                     malId,
@@ -1185,6 +1187,7 @@ object StreamPlayExtractor : StreamPlay() {
                     subtitleCallback,
                     callback
                 )
+                 */
             }
         )
     }
@@ -1366,50 +1369,51 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private suspend fun invokeGenoanime(
+    private suspend fun invokeMiruroanimeZoro(
         animeIds: List<String?>? = null,
+        title:String? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val headers = mapOf(
-            "X-Requested-With" to "XMLHttpRequest",
-        )
-        animeIds?.apmap { id ->
-            val episodeId = app.get(
-                "$hianimeAPI/ajax/v2/episode/list/${id ?: return@apmap}",
-                headers = headers
-            ).parsedSafe<HianimeResponses>()?.html?.let {
-                Jsoup.parse(it)
-            }?.select("div.ss-list a")
-                ?.find { it.attr("data-number") == "${episode ?: 1}" }
-                ?.attr("data-id")
 
-            val servers = app.get(
-                "$hianimeAPI/ajax/v2/episode/servers?episodeId=${episodeId ?: return@apmap}",
-                headers = headers
-            ).parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
-                ?.select("div.item.server-item")?.map {
-                    Triple(
-                        it.text(),
-                        it.attr("data-id"),
-                        it.attr("data-type"),
-                    )
+    }
+
+    private suspend fun invokeMiruroanimeGogo(
+        animeIds: List<String?>? = null,
+        title:String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val api="https://gamma.miruro.tv/?url=https://api.miruro.tv"
+        val header= mapOf("x-atx" to "12RmYtJexlqnNym38z4ahwy+g1g0la/El8nkkMOVtiQ=")
+        val fixtitle=title.createSlug()
+        Log.d("Phisher Gogo",fixtitle.toString())
+        val sub="$api/meta/anilist/watch/$fixtitle-episode-$episode"
+        val dub="$api/meta/anilist/watch/$fixtitle-dub-episode-$episode"
+        val list = listOf(sub, dub)
+        for(url in list) {
+            val json = app.get(url, header).parsedSafe<MiruroanimeGogo>()?.sources
+            json?.amap {
+                val href = it.url
+                var quality = it.quality
+                if (quality.contains("default"))
+                {
+                    quality="1080p"
                 }
-
-            servers?.apmap servers@{ server ->
-                val iframe = app.get(
-                    "$hianimeAPI/ajax/v2/episode/sources?id=${server.second ?: return@servers}",
-                    headers = headers
-                ).parsedSafe<HianimeResponses>()?.link
-                    ?: return@servers
-                val audio = if (server.third == "sub") "Raw" else "English Dub"
-                loadCustomExtractor(
-                    "Genoanime ${server.first} [$audio]",
-                    iframe,
-                    "$hianimeAPI/",
+                else if (quality.contains("backup"))
+                {
+                    quality="Master"
+                }
+                val type= if (url.contains("-dub-")) "DUB" else "SUB"
+                loadNameExtractor(
+                    "Miruro Gogo [$type] $quality",
+                    href,
+                    "",
                     subtitleCallback,
                     callback,
+                    getQualityFromName(quality)
                 )
             }
         }
@@ -1746,11 +1750,6 @@ object StreamPlayExtractor : StreamPlay() {
         val cfInterceptor = CloudflareKiller()
         val fixtitle = title?.replace("-", " ")?.replace(":", " ")?.replace("&", " ")
         Log.d("Phisher url veg", "$api/search/$fixtitle")
-        val match = when (season) {
-            null -> "$year"
-            1 -> "Season 1"
-            else -> "Season 1 – $lastSeason"
-        }
         val url = if (season == null) {
             "$api/search/$fixtitle $year"
         } else {
@@ -1770,9 +1769,9 @@ object StreamPlayExtractor : StreamPlay() {
                         it.toString()
                     )?.groupValues?.get(1)
                 val res = hrefpattern?.let { app.get(it).document }
-                Log.d("Phisher url veg", hrefpattern.toString())
+                //Log.d("Phisher url veg", hrefpattern.toString())
                 val hTag = if (season == null) "h5" else "h3,h5"
-                val aTag = if (season == null) "Download Now" else "V-Cloud,Download Now"
+                val aTag = if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct"
                 val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
                 val entries =
                     res?.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
@@ -1785,8 +1784,8 @@ object StreamPlayExtractor : StreamPlay() {
                                     (element.text().contains("Season $season", true) ||
                                             element.text().contains("S$seasonSlug", true))
                         }
-                Log.d("Phisher url veg", entries.toString())
-                entries?.amap {
+                //Log.d("Phisher url veg", entries.toString())
+                entries?.amap { it ->
                     val tags =
                         """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                             ?.trim()
@@ -1796,22 +1795,22 @@ object StreamPlayExtractor : StreamPlay() {
                             anchor.text().contains(tag.trim(), true)
                         }
                     }?.attr("href") ?: ""
-                    Log.d("Phisher veg", href)
                     val selector =
-                        if (season == null) "p a:contains(V-Cloud)" else "h4:matches(0?$episode) ~ p a:contains(V-Cloud)"
+                        if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode) ~ p a:matches(V-Cloud|G-Direct)"
                     if (href.isNotEmpty()) {
-                        val server = app.get(
+                       app.get(
                             href, interceptor = wpRedisInterceptor
-                        ).document.selectFirst("div.entry-content > $selector")
-                            ?.attr("href") ?: ""
-                        loadCustomTagExtractor(
-                            tags,
-                            server,
-                            "$api/",
-                            subtitleCallback,
-                            callback,
-                            getIndexQuality(it.text())
-                        )
+                        ).document.select("div.entry-content > $selector").map { sources->
+                            val server=sources.attr("href")
+                            loadCustomTagExtractor(
+                                tags,
+                                server,
+                                "$api/",
+                                subtitleCallback,
+                                callback,
+                                getIndexQuality(it.text())
+                            )
+                        }
                     }
                 }
             }

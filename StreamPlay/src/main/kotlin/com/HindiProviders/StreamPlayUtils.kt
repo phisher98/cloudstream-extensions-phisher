@@ -962,6 +962,26 @@ suspend fun loadCustomTagExtractor(
     }
 }
 
+suspend fun loadNameExtractor(
+    name: String? = null,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+    quality: Int? = null,
+) {
+        callback.invoke(
+            ExtractorLink(
+                name ?: "",
+                name ?: "",
+                url,
+                referer ?: "",
+                getQualityFromName(""),
+                INFER_TYPE,
+            )
+        )
+}
+
 suspend fun loadCustomExtractor(
     name: String? = null,
     url: String,

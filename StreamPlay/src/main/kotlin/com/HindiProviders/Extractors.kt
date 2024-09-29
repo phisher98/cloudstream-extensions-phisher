@@ -197,6 +197,35 @@ open class M4ufree : ExtractorApi() {
 
 }
 
+class VCloudGDirect : ExtractorApi() {
+    override val name: String = "V-Cloud GD"
+    override val mainUrl: String = "https://fastdl.icu"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val source = app.get(url).document.selectFirst("#vd")?.attr("href") ?: ""
+        if (source.isNotEmpty()) {
+            Log.d("Phisher GD",source)
+            callback.invoke(
+                ExtractorLink(
+                    "V-Cloud GD 10 Gbps",
+                    "V-Cloud GD 10 Gbps",
+                    source,
+                    "",
+                    getQualityFromName(""),
+                )
+            )
+        } else {
+            loadExtractor(source, subtitleCallback, callback)
+        }
+    }
+}
+
     
 class VCloud : ExtractorApi() {
     override val name: String = "V-Cloud"
