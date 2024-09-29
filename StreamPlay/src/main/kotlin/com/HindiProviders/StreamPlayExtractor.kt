@@ -1407,13 +1407,14 @@ object StreamPlayExtractor : StreamPlay() {
                     quality="Master"
                 }
                 val type= if (url.contains("-dub-")) "DUB" else "SUB"
+                if (quality!="Master")
                 loadNameExtractor(
                     "Miruro Gogo [$type] $quality",
                     href,
                     "",
                     subtitleCallback,
                     callback,
-                    getQualityFromName(quality)
+                    getIndexQuality(quality)
                 )
             }
         }
@@ -1566,7 +1567,7 @@ object StreamPlayExtractor : StreamPlay() {
         ).document
         val entries = if (season == null) {
             res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p|4K))")
-                .filter { element -> !element.text().contains("Batch/Zip", true) }.takeLast(3)
+                .filter { element -> !element.text().contains("Batch/Zip", true) && !element.text().contains("Info:", true) }.reversed()
         } else {
             res.select("$hTag:matches((?i)$sTag.*(720p|1080p|2160p|4K))")
                 .filter { element -> !element.text().contains("Batch/Zip", true) || !element.text().contains("720p & 480p", true) || !element.text().contains("Series Info", true)}
@@ -1760,16 +1761,16 @@ object StreamPlayExtractor : StreamPlay() {
         app.get(url, interceptor = cfInterceptor).document.select("#main-content article")
             .filter { element ->
                 element.text().contains(
-                    title.toString(), true
+                    fixtitle.toString(), true
                 )
             }
             .amap {
                 val hrefpattern =
-                    Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($title)\b[^<]*?""").find(
+                    Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find(
                         it.toString()
                     )?.groupValues?.get(1)
                 val res = hrefpattern?.let { app.get(it).document }
-                //Log.d("Phisher url veg", hrefpattern.toString())
+                Log.d("Phisher url veg", hrefpattern.toString())
                 val hTag = if (season == null) "h5" else "h3,h5"
                 val aTag = if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct"
                 val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
@@ -1784,7 +1785,6 @@ object StreamPlayExtractor : StreamPlay() {
                                     (element.text().contains("Season $season", true) ||
                                             element.text().contains("S$seasonSlug", true))
                         }
-                //Log.d("Phisher url veg", entries.toString())
                 entries?.amap { it ->
                     val tags =
                         """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -1850,7 +1850,7 @@ object StreamPlayExtractor : StreamPlay() {
             )
         )
     }
-
+/*
     suspend fun invokeHdmovies4u(
         title: String? = null,
         imdbId: String? = null,
@@ -1898,8 +1898,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
     }
-
-
+ */
     suspend fun invokeFDMovies(
         title: String? = null,
         season: Int? = null,
@@ -3267,8 +3266,8 @@ object StreamPlayExtractor : StreamPlay() {
                 val href = it.attr("href")
                 Log.d("Phisher M href", href)
                 val server = extractMdrive(href)
-                server.forEach {
-                    //Log.d("Phisher M server", it)
+                server.amap {
+                    Log.d("Phisher M server", it)
                     loadExtractor(it, referer = "MoviesDrive", subtitleCallback, callback)
                 }
             }
@@ -3395,25 +3394,27 @@ object StreamPlayExtractor : StreamPlay() {
                 1
             ) ?: ""
         //Log.d("Phisher Movies4u", hrefpattern.toString())
-        val servers = mutableSetOf<String>()
-        app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a")
-            .forEach {
-                servers += it.attr("href")
-            }
-        servers.forEach { links ->
-            if (links.contains("linkz.wiki")) {
-                app.get(links).document.select("div.download-links-div > div a").map {
-                    val link = it.attr("href")
-                    if (link.contains("hubcloud")) {
-                        loadExtractor(link, "Movies4u", subtitleCallback, callback)
-                    } else if (link.contains("vcloud")) {
-                        loadExtractor(link, subtitleCallback, callback)
-                    } else {
-                        Log.d("Error:", "No Server Found")
-                    }
+        if (hrefpattern!=null) {
+            val servers = mutableSetOf<String>()
+            app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a")
+                .forEach {
+                    servers += it.attr("href")
                 }
-            } else
-                loadExtractor(links, "Movies4u", subtitleCallback, callback)
+            servers.forEach { links ->
+                if (links.contains("linkz.wiki")) {
+                    app.get(links).document.select("div.download-links-div > div a").map {
+                        val link = it.attr("href")
+                        if (link.contains("hubcloud")) {
+                            loadExtractor(link, "Movies4u", subtitleCallback, callback)
+                        } else if (link.contains("vcloud")) {
+                            loadExtractor(link, subtitleCallback, callback)
+                        } else {
+                            Log.d("Error:", "No Server Found")
+                        }
+                    }
+                } else
+                    loadExtractor(links, "Movies4u", subtitleCallback, callback)
+            }
         }
     }
 }

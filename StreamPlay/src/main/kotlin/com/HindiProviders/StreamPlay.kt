@@ -26,7 +26,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFilmxy
 import com.Phisher98.StreamPlayExtractor.invokeFlixon
 import com.Phisher98.StreamPlayExtractor.invokeGhostx
 //import com.Phisher98.StreamPlayExtractor.invokeGoku
-import com.Phisher98.StreamPlayExtractor.invokeHdmovies4u
+//import com.Phisher98.StreamPlayExtractor.invokeHdmovies4u
 import com.Phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeLing
@@ -823,6 +823,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
       {
+          /*
         if (!res.isAnime) invokeHdmovies4u(
             res.title,
             res.imdbId,
@@ -831,6 +832,7 @@ open class StreamPlay : TmdbProvider() {
             subtitleCallback,
             callback
         )
+           */
     },
  {
         if (res.isAsian) invokeAsianHD(

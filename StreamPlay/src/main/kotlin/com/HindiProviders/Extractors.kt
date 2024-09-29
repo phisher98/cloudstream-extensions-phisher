@@ -28,6 +28,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
+import org.jsoup.nodes.Document
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -238,14 +239,15 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        var url=url
-        if (url.contains("api/index.php"))
+        var href=url
+        if (href.contains("api/index.php"))
         {
-            url=app.get(url).document.selectFirst("div.main h4 a")?.attr("href") ?:""
+            href=app.get(url).document.selectFirst("div.main h4 a")?.attr("href") ?:""
         }
-        val doc = app.get(url).document
+        val doc = app.get(href).document
         val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?:""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
+        Log.d("Phisher Vega",urlValue)
         if (urlValue.isNotEmpty()) {
             val document = app.get(urlValue).document
             val size = document.selectFirst("i#size")?.text() ?: ""
@@ -253,9 +255,8 @@ class VCloud : ExtractorApi() {
             val header = document.selectFirst("div.card-header")?.text() ?: ""
             div?.select("h2 a.btn")?.apmap {
                 val link = it.attr("href")
-                if (link.contains("gpdl3.")) {
-                    val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
-                    Log.d("Phisher V", href)
+                if (link.contains("technorozen.workers.dev")) {
+                    @Suppress("NAME_SHADOWING") val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
                     callback.invoke(
                         ExtractorLink(
                             "V-Cloud 10 Gbps $header",
@@ -1045,72 +1046,69 @@ open class HubCloud : ExtractorApi() {
     override val mainUrl: String = "https://hubcloud.art"
     override val requiresReferer = false
 
-    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     override suspend fun getUrl(
         url: String,
         source: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).text
-        val newLink = doc.substringAfter("url=").substringBefore("\"")
-        val newDoc = app.get(newLink).document
-        val gamerLink: String
-
-        if(newLink.contains("drive")) {
-            val scriptTag = newDoc.selectFirst("script:containsData(url)")!!.toString()
-            gamerLink = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
+        val url=url.replace(".art",".club")
+        val href:String
+        if (url.contains("gamerxyt"))
+        {
+            href=url
         }
-
         else {
-            gamerLink = newDoc.selectFirst("div.vd > center > a") ?. attr("href") ?: ""
+            val doc = app.get(url).text
+            href = Regex("""var\s+url\s*=\s*'(https?://[^']+)';""").find(doc)?.groupValues?.get(1) ?:""
+            if (href.isEmpty()) {
+                Log.d("Error", "Not Found")
+            }
         }
-
-        val document = app.get(gamerLink).document
-
-        val size = document.selectFirst("i#size") ?. text()
-        val div = document.selectFirst("div.card-body")
-        val header = document.selectFirst("div.card-header")?.text()
-        div?.select("a")?.apmap {
-            val link = it.attr("href")
-            val text = it.text()
-            if (link.contains("pixeldra")) {
-                callback.invoke(
-                    ExtractorLink(
-                        "$source Pixeldrain",
-                        "$source Pixeldrain $size",
-                        link,
-                        "",
-                        getIndexQuality(header),
+        if (href.isNotEmpty()) {
+            val document = app.get(href).document
+            val size = document.selectFirst("i#size")?.text()
+            val div = document.selectFirst("div.card-body")
+            val header = document.selectFirst("div.card-header")?.text()
+            div?.select("div.card-body a.btn")?.amap {
+                val link = it.attr("href")
+                val text = it.text()
+                if (link.contains("pixeldra")) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "$source Pixeldrain",
+                            "$source Pixeldrain $size",
+                            link,
+                            "",
+                            getIndexQuality(header),
+                        )
                     )
-                )
-            }
-            else if(text.contains("Download [Server : 10Gbps]")) {
-                val response = app.get(link, allowRedirects = false)
-                val downloadLink = response.headers["location"].toString().split("link=").getOrNull(1) ?: link
-                callback.invoke(
-                    ExtractorLink(
-                        "$source Hub-Cloud[Download]",
-                        "$source Hub-Cloud[Download] $size",
-                        downloadLink,
-                        "",
-                        getIndexQuality(header),
+                } else if (text.contains("Download [Server : 10Gbps]")) {
+                    val response = app.get(link, allowRedirects = false)
+                    val downloadLink =
+                        response.headers["location"].toString().split("link=").getOrNull(1) ?: link
+                    callback.invoke(
+                        ExtractorLink(
+                            "$source Hub-Cloud[Download]",
+                            "$source Hub-Cloud[Download] $size",
+                            downloadLink,
+                            "",
+                            getIndexQuality(header),
+                        )
                     )
-                )
-            }
-            else if(link.contains(".dev")) {
-                callback.invoke(
-                    ExtractorLink(
-                        "$source Hub-Cloud",
-                        "$source Hub-Cloud $size",
-                        link,
-                        "",
-                        getIndexQuality(header),
+                } else if (link.contains(".dev")) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "$source Hub-Cloud",
+                            "$source Hub-Cloud $size",
+                            link,
+                            "",
+                            getIndexQuality(header),
+                        )
                     )
-                )
-            }
-            else {
-                loadExtractor(link, referer = "$source", subtitleCallback, callback)
+                } else {
+                    loadExtractor(link, referer = "$source", subtitleCallback, callback)
+                }
             }
         }
     }
@@ -1121,8 +1119,11 @@ open class HubCloud : ExtractorApi() {
             ?: Qualities.P2160.value
     }
 
-}
+    private suspend fun getTrueUrl(url: String): Document {
+        return app.get(url).document
+    }
 
+}
 
 class Driveleech : Driveseed() {
     override val name: String = "Driveleech"
