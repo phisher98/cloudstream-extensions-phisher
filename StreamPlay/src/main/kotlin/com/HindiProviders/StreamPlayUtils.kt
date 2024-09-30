@@ -968,7 +968,7 @@ suspend fun loadNameExtractor(
     referer: String? = null,
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit,
-    quality: Int? = null,
+    quality: Int,
 ) {
         callback.invoke(
             ExtractorLink(
@@ -976,7 +976,7 @@ suspend fun loadNameExtractor(
                 name ?: "",
                 url,
                 referer ?: "",
-                getQualityFromName(""),
+                quality,
                 INFER_TYPE,
             )
         )

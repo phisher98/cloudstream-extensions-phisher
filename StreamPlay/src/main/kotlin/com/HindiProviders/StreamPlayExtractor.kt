@@ -1207,15 +1207,16 @@ object StreamPlayExtractor : StreamPlay() {
         val session = animeData?.find { it.episode == episode }?.session ?: ""
         app.get("$animepaheAPI/play/$id/$session", headers).document.select("div.dropup button")
             .map {
-                val tag = it.attr("data-resolution")
+                val quality = it.attr("data-resolution")
                 val href = it.attr("data-src")
                 if (href.contains("kwik.si")) {
                     loadCustomExtractor(
-                        "Animepahe [Raw] $tag",
+                        "Animepahe [Raw]",
                         href,
                         "",
                         subtitleCallback,
-                        callback
+                        callback,
+                        getIndexQuality(quality)
                     )
                 }
             }
@@ -1398,18 +1399,14 @@ object StreamPlayExtractor : StreamPlay() {
             json?.amap {
                 val href = it.url
                 var quality = it.quality
-                if (quality.contains("default"))
-                {
-                    quality="1080p"
-                }
-                else if (quality.contains("backup"))
+                if (quality.contains("backup"))
                 {
                     quality="Master"
                 }
                 val type= if (url.contains("-dub-")) "DUB" else "SUB"
                 if (quality!="Master")
                 loadNameExtractor(
-                    "Miruro Gogo [$type] $quality",
+                    "Miruro Gogo [$type]",
                     href,
                     "",
                     subtitleCallback,
@@ -3442,7 +3439,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val entries = doc.select("h4:matches((?i)$sTag)")
                 //Log.d("Phisher",entries.toString())
                 entries.amap {
-                    val href=it.nextElementSibling()?.select("a:matches(Download Links)")?.attr("href") ?:""
+                    val href=it.nextElementSibling()?.select("a:matches(Download Links)")?.attr("href")
                     if (href!=null) {
                         val iframe = app.get(href).document.selectFirst("h5:matches(Episodes: $episode)")?.nextElementSibling()?.select("a:contains(GDFlix)")?.attr("href")
                         if (iframe != null) {
