@@ -1054,18 +1054,21 @@ open class HubCloud : ExtractorApi() {
     ) {
         val url=url.replace(".art",".club")
         val href:String
+        Log.d("Phisher HubCloud url",url)
         if (url.contains("gamerxyt"))
         {
             href=url
         }
         else {
             val doc = app.get(url).text
-            href = Regex("""var\s+url\s*=\s*'(https?://[^']+)';""").find(doc)?.groupValues?.get(1) ?:""
+            val gamerlink=doc.substringAfter("https://gamerxyt.com/").substringBefore("\"")
+            href = "https://gamerxyt.com/$gamerlink"
             if (href.isEmpty()) {
                 Log.d("Error", "Not Found")
             }
         }
         if (href.isNotEmpty()) {
+            Log.d("Phisher HubCloud href",href)
             val document = app.get(href).document
             val size = document.selectFirst("i#size")?.text()
             val div = document.selectFirst("div.card-body")
@@ -1073,6 +1076,7 @@ open class HubCloud : ExtractorApi() {
             div?.select("div.card-body a.btn")?.amap {
                 val link = it.attr("href")
                 val text = it.text()
+
                 if (link.contains("pixeldra")) {
                     callback.invoke(
                         ExtractorLink(

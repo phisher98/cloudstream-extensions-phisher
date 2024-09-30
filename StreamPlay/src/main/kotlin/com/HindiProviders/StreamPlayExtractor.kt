@@ -3380,12 +3380,14 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokemovies4u(
         title: String? = null,
+        episode: Int?= null,
+        season: Int?= null,
         year: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val fixtitle = title?.substringBeforeLast("-")
-        val searchtitle = title?.substringBeforeLast("-").createSlug()
+        val fixtitle = title?.replace(":","")
+        val searchtitle = title?.substringBefore(":")?.replace("-"," ").createSlug()
         var res1 =
             app.get("$movies4u/search/$fixtitle $year").document.select("section.site-main article")
                 .toString()
@@ -3393,27 +3395,51 @@ object StreamPlayExtractor : StreamPlay() {
             Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(
                 1
             ) ?: ""
-        //Log.d("Phisher Movies4u", hrefpattern.toString())
+        Log.d("Phisher","$movies4u/search/$fixtitle $year")
+        Log.d("Phisher",hrefpattern)
+        Log.d("Phisher", searchtitle.toString())
         if (hrefpattern!=null) {
-            val servers = mutableSetOf<String>()
-            app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a")
-                .forEach {
-                    servers += it.attr("href")
+            if (season == null) {
+                val servers = mutableSetOf<String>()
+                app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a")
+                    .forEach {
+                        servers += it.attr("href")
+                    }
+                servers.forEach { links ->
+                    if (links.contains("linkz.wiki")) {
+                        app.get(links).document.select("div.download-links-div > div a").map {
+                            val link = it.attr("href")
+                            Log.d("Phisher", link.toString())
+                            loadCustomExtractor(
+                                "Movies4u",
+                                link,
+                                "",
+                                subtitleCallback,
+                                callback
+                            )
+                        }
+                    } else
+                        loadExtractor(links, "Movies4u", subtitleCallback, callback)
                 }
-            servers.forEach { links ->
-                if (links.contains("linkz.wiki")) {
-                    app.get(links).document.select("div.download-links-div > div a").map {
-                        val link = it.attr("href")
-                        if (link.contains("hubcloud")) {
-                            loadExtractor(link, "Movies4u", subtitleCallback, callback)
-                        } else if (link.contains("vcloud")) {
-                            loadExtractor(link, subtitleCallback, callback)
-                        } else {
-                            Log.d("Error:", "No Server Found")
+            }
+            else
+            {
+                val sTag="Season $season"
+                val eTag="div.download-links-div h5:matches(Episodes: $episode)"
+                val doc=app.get(hrefpattern).document
+                val entries = doc.select("h4:matches((?i)$sTag)")
+                Log.d("Phisher",entries.toString())
+                entries.amap {
+                    val href=it.nextElementSibling()?.select("a:matches(Download Links)")?.attr("href") ?:""
+                    if (href!=null) {
+                        val iframe = app.get(href).document.selectFirst("h5:matches(Episodes: $episode)")?.nextElementSibling()?.select("a:contains(GDFlix)")?.attr("href")
+                        if (iframe != null) {
+                            Log.d("Phisher", iframe.toString())
                         }
                     }
-                } else
-                    loadExtractor(links, "Movies4u", subtitleCallback, callback)
+                }
+
+                //val link=season?.selectFirst("a:contains(GDFlix)") ?: ""
             }
         }
     }

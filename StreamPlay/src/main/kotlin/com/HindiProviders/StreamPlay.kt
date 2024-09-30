@@ -173,7 +173,7 @@ open class StreamPlay : TmdbProvider() {
         const val MovieDrive_API="https://moviesdrive.world"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
         const val bollyflixAPI = "https://bollyflix.beer"
-        const val movies4u = "https://movies4u.poker"
+        const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
         fun getType(t: String?): TvType {
             return when (t) {
@@ -637,6 +637,8 @@ open class StreamPlay : TmdbProvider() {
             {
                 if (!res.isAnime) invokemovies4u(
                     res.title,
+                    res.episode,
+                    res.season,
                     res.year,
                     subtitleCallback,
                     callback

@@ -10,6 +10,7 @@ import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
+import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -40,12 +41,11 @@ class StreamPlayTest : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime) invokeDotmovies(
+                if (!res.isAnime) invokemovies4u(
                     res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
                     res.episode,
+                    res.season,
+                    res.year,
                     subtitleCallback,
                     callback
                 )
