@@ -172,8 +172,8 @@ object StreamPlayExtractor : StreamPlay() {
         }
         val res = app.get(url, referer = url).document
         val script =
-            res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data().toString()
-        if (script.isNotEmpty()) {
+            res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data()
+        if (script!=null) {
             val firstJS =
                 """
         var globalArgument = null;
@@ -3241,8 +3241,8 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title?.replace("-", " ")?.replace(":", " ")?.replace("&", " ")
-        val searchtitle = title?.replace("-", " ").createSlug()
+        val fixTitle = title?.substringBefore("-")?.replace(":", " ")?.replace("&", " ")
+        val searchtitle = title?.substringBefore("-").createSlug()
         val url = if (season == null) {
             "$MovieDrive_API/search/$fixTitle $year"
         } else {
@@ -3383,21 +3383,18 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val fixtitle = title?.replace(":","")
-        val searchtitle = title?.substringBefore(":")?.replace("-"," ").createSlug()
+        val fixtitle = title?.substringBefore("-")?.replace(":","")
+        val searchtitle = title?.substringBefore(":")?.substringBefore("-").createSlug()
         var res1 =
             app.get("$movies4u/search/$fixtitle $year").document.select("section.site-main article")
                 .toString()
         val hrefpattern =
-            Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(
-                1
-            ) ?: ""
-        Log.d("Phisher","$movies4u/search/$fixtitle $year")
-        Log.d("Phisher",hrefpattern)
+            Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1)
+        Log.d("Phisher","$movies4u/search/$searchtitle $year")
+        Log.d("Phisher",hrefpattern ?:"")
         Log.d("Phisher", searchtitle.toString())
         if (hrefpattern!=null) {
             if (season == null) {
-                /*
                 val servers = mutableSetOf<String>()
                 app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a")
                     .forEach {
@@ -3405,32 +3402,28 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 servers.forEach { links ->
                     if (links.contains("linkz.wiki")) {
-                        app.get(links).document.select("div.download-links-div > div a").map {
+                        app.get(links).document.select("div.download-links-div > div a:matches(Hub-Cloud)").amap {
                             val link = it.attr("href")
-                            if (link.contains("vcloud"))
-                            {
-                                Log.d("Phisher Movies4u",link)
-                                loadCustomExtractor(
-                                    "Movies4u",
-                                    link,
-                                    "",
-                                    subtitleCallback,
-                                    callback
-                                )
-                            }
-                            else
                             loadCustomExtractor(
-                                "Movies4u",
+                                "Movies4u Hub-Cloud",
                                 link,
                                 "",
                                 subtitleCallback,
                                 callback
                             )
                         }
-                    } else
-                        loadExtractor(links, "Movies4u", subtitleCallback, callback)
+                    }
+                    else if (links.contains("vidhideplus"))
+                    {
+                        loadCustomExtractor(
+                            "Movies4u Vidhide Hub-Cloud",
+                            links,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
+                    }
                 }
-                 */
             }
             else
             {

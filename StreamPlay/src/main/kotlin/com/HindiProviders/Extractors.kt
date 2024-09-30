@@ -755,7 +755,7 @@ class Tvlogy : ExtractorApi() {
     )
 
 }
-
+/*
 open class Mdrive : ExtractorApi() {
     override val name: String = "Mdrive"
     override val mainUrl: String = "https://gamerxyt.com"
@@ -804,6 +804,7 @@ open class Mdrive : ExtractorApi() {
         }
     }
 }
+ */
 
 suspend fun Unblockedlinks(url: String): String {
     val driveLink = bypassHrefli(url) ?:""
@@ -1061,8 +1062,9 @@ open class HubCloud : ExtractorApi() {
         }
         else {
             val doc = app.get(url).text
-            val gamerlink=doc.substringAfter("https://gamerxyt.com/").substringBefore("\"")
+            val gamerlink=Regex("""https://gamerxyt\.com/([^'"]+)""").find(doc)?.groupValues?.get(1)
             href = "https://gamerxyt.com/$gamerlink"
+            Log.d("Phisher Hub", href)
             if (href.isEmpty()) {
                 Log.d("Error", "Not Found")
             }
@@ -1077,25 +1079,29 @@ open class HubCloud : ExtractorApi() {
                 val link = it.attr("href")
                 val text = it.text()
                 Log.d("Phisher HubCloud href",href)
-                if (link.contains("pixeldra")) {
+                if (link.contains("www-google-com"))
+                {
+                    Log.d("Error:","Not Found")
+                }
+                else
+                if (link.contains("technorozen.workers.dev"))
+                {
+                    val iframe=getGBurl(link)
+                    callback.invoke(
+                        ExtractorLink(
+                            "$source 10GB Server",
+                            "$source 10GB Server $size",
+                            iframe,
+                            "",
+                            getIndexQuality(header),
+                        )
+                    )
+                } else if (link.contains("pixeldra.in")) {
                     callback.invoke(
                         ExtractorLink(
                             "$source Pixeldrain",
                             "$source Pixeldrain $size",
                             link,
-                            "",
-                            getIndexQuality(header),
-                        )
-                    )
-                } else if (text.contains("Download [Server : 10Gbps]")) {
-                    val response = app.get(link, allowRedirects = false)
-                    val downloadLink =
-                        response.headers["location"].toString().split("link=").getOrNull(1) ?: link
-                    callback.invoke(
-                        ExtractorLink(
-                            "$source Hub-Cloud[Download]",
-                            "$source Hub-Cloud[Download] $size",
-                            downloadLink,
                             "",
                             getIndexQuality(header),
                         )
@@ -1110,8 +1116,38 @@ open class HubCloud : ExtractorApi() {
                             getIndexQuality(header),
                         )
                     )
-                } else {
-                    loadExtractor(link, referer = "$source", subtitleCallback, callback)
+                } else if (link.contains("fastdl.lol"))
+                {
+                    callback.invoke(
+                        ExtractorLink(
+                            "$source [FSL] Hub-Cloud",
+                            "$source [FSL] Hub-Cloud $size",
+                            link,
+                            "",
+                            getIndexQuality(header),
+                        )
+                    )
+                } else if (link.contains("hubcdn.xyz"))
+                {
+                callback.invoke(
+                    ExtractorLink(
+                        "$source [File] Hub-Cloud",
+                        "$source [File] Hub-Cloud $size",
+                        link,
+                        "",
+                        getIndexQuality(header),
+                    )
+                )
+                } else if (link.contains("gofile.io"))
+                {
+                    loadCustomExtractor("$source",link,"",subtitleCallback, callback)
+                } else if (link.contains("pixeldrain"))
+                {
+                    loadCustomExtractor("$source",link,"",subtitleCallback, callback)
+                }
+                else
+                {
+                    Log.d("Error:","Not Server Match Found")
                 }
             }
         }
@@ -1123,8 +1159,8 @@ open class HubCloud : ExtractorApi() {
             ?: Qualities.P2160.value
     }
 
-    private suspend fun getTrueUrl(url: String): Document {
-        return app.get(url).document
+    private suspend fun getGBurl(url: String): String {
+        return app.get(url).document.selectFirst("#vd")?.attr("href") ?:""
     }
 
 }

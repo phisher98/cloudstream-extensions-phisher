@@ -69,7 +69,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Tellygossips())
         registerExtractorAPI(Tvlogy())
         registerExtractorAPI(Voe())
-        registerExtractorAPI(Mdrive())
+        //registerExtractorAPI(Mdrive())
         registerExtractorAPI(Gofile())
         registerExtractorAPI(Animezia())
         registerExtractorAPI(Moviesapi())

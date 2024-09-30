@@ -8,6 +8,7 @@ import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
+import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
