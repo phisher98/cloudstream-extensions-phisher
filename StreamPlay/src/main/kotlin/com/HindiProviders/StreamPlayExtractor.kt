@@ -3400,6 +3400,7 @@ object StreamPlayExtractor : StreamPlay() {
         Log.d("Phisher", searchtitle.toString())
         if (hrefpattern!=null) {
             if (season == null) {
+                /*
                 val servers = mutableSetOf<String>()
                 app.get(hrefpattern).document.select("div.watch-links-div a, div.download-links-div a")
                     .forEach {
@@ -3432,6 +3433,7 @@ object StreamPlayExtractor : StreamPlay() {
                     } else
                         loadExtractor(links, "Movies4u", subtitleCallback, callback)
                 }
+                 */
             }
             else
             {
