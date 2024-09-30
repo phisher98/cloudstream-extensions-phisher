@@ -239,6 +239,7 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        Log.d("Phisher Vega",url)
         var href=url
         if (href.contains("api/index.php"))
         {
@@ -1054,7 +1055,6 @@ open class HubCloud : ExtractorApi() {
     ) {
         val url=url.replace(".art",".club")
         val href:String
-        Log.d("Phisher HubCloud url",url)
         if (url.contains("gamerxyt"))
         {
             href=url
@@ -1068,7 +1068,7 @@ open class HubCloud : ExtractorApi() {
             }
         }
         if (href.isNotEmpty()) {
-            Log.d("Phisher HubCloud href",href)
+            Log.d("Phisher HubCloud href 1",href)
             val document = app.get(href).document
             val size = document.selectFirst("i#size")?.text()
             val div = document.selectFirst("div.card-body")
@@ -1076,7 +1076,7 @@ open class HubCloud : ExtractorApi() {
             div?.select("div.card-body a.btn")?.amap {
                 val link = it.attr("href")
                 val text = it.text()
-
+                Log.d("Phisher HubCloud href",href)
                 if (link.contains("pixeldra")) {
                     callback.invoke(
                         ExtractorLink(

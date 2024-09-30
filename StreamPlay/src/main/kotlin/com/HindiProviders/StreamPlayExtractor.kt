@@ -3409,7 +3409,18 @@ object StreamPlayExtractor : StreamPlay() {
                     if (links.contains("linkz.wiki")) {
                         app.get(links).document.select("div.download-links-div > div a").map {
                             val link = it.attr("href")
-                            Log.d("Phisher", link.toString())
+                            if (link.contains("vcloud"))
+                            {
+                                Log.d("Phisher Movies4u",link)
+                                loadCustomExtractor(
+                                    "Movies4u",
+                                    link,
+                                    "",
+                                    subtitleCallback,
+                                    callback
+                                )
+                            }
+                            else
                             loadCustomExtractor(
                                 "Movies4u",
                                 link,
@@ -3425,21 +3436,24 @@ object StreamPlayExtractor : StreamPlay() {
             else
             {
                 val sTag="Season $season"
-                val eTag="div.download-links-div h5:matches(Episodes: $episode)"
                 val doc=app.get(hrefpattern).document
                 val entries = doc.select("h4:matches((?i)$sTag)")
-                Log.d("Phisher",entries.toString())
+                //Log.d("Phisher",entries.toString())
                 entries.amap {
                     val href=it.nextElementSibling()?.select("a:matches(Download Links)")?.attr("href") ?:""
                     if (href!=null) {
                         val iframe = app.get(href).document.selectFirst("h5:matches(Episodes: $episode)")?.nextElementSibling()?.select("a:contains(GDFlix)")?.attr("href")
                         if (iframe != null) {
-                            Log.d("Phisher", iframe.toString())
+                                loadCustomExtractor(
+                                    "Movies4u",
+                                    iframe,
+                                    "",
+                                    subtitleCallback,
+                                    callback
+                                )
                         }
                     }
                 }
-
-                //val link=season?.selectFirst("a:contains(GDFlix)") ?: ""
             }
         }
     }
