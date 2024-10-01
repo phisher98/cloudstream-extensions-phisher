@@ -113,6 +113,7 @@ data class AnichiEpisode(
 
 data class SourceUrl(
     val sourceUrl: String,
+    val sourceName: String,
     val downloads: AnichiDownloads?,
 )
 
@@ -120,6 +121,22 @@ data class AnichiDownloads(
     val sourceName: String,
     val downloadUrl: String,
 )
+
+//Anichi Download URL Parser
+
+data class AnichiDownload(
+    val links: List<AnichiDownloadLink>,
+)
+
+data class AnichiDownloadLink(
+    val link: String,
+    val hls: Boolean,
+    val mp4: Boolean?,
+    val resolutionStr: String,
+    val priority: Long,
+    val src: String?,
+)
+
 
 
 data class CrunchyrollAccessToken(

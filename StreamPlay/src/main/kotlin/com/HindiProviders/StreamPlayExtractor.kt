@@ -1193,9 +1193,10 @@ object StreamPlayExtractor : StreamPlay() {
         val ephash="5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
         var type = ""
-            if (episode == null) {
+         if (episode==null) {
                 type = "Movie"
-            } else
+            }
+         else
             {
                 type = "TV"
             }
@@ -1215,22 +1216,56 @@ object StreamPlayExtractor : StreamPlay() {
                 for (i in langType) {
                     val epData =
                         """$api?variables={"showId":"$id","translationType":"$i","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
-                    val eplinks = app.get(epData, referer = privatereferer).parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
-                    eplinks?.amap {
-                        val href=it.sourceUrl
-                        if (href.startsWith("http"))
-                        {
-                            loadCustomExtractor(
-                                "Anichi [${i.uppercase()}]",
-                                href,
-                                "",
-                                subtitleCallback,
-                                callback
-                            )
-                        }
-                        else
-                        {
-                            Log.d("Error:","No Link Found")
+                    val eplinks = app.get(epData, referer = privatereferer)
+                        .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
+                    eplinks?.apmap { source ->
+                        safeApiCall {
+                            val sourceUrl=source.sourceUrl
+                            val downloadUrl= source.downloads?.downloadUrl ?:""
+                            if (downloadUrl.contains("blog.allanime.day"))
+                                {
+                                if (downloadUrl.isNotEmpty())
+                                {
+                                    val downloadid=downloadUrl.substringAfter("id=")
+                                    val sourcename=downloadUrl.getHost()
+                                    app.get("https://allanime.day/apivtwo/clock.json?id=$downloadid").parsedSafe<AnichiDownload>()?.links?.amap {
+                                        val href=it.link
+                                        Log.d("Phisher Blog:", href.toString())
+                                        loadNameExtractor(
+                                            "Anichi [${i.uppercase()}] [$sourcename]",
+                                            href,
+                                            "",
+                                            subtitleCallback,
+                                            callback,
+                                            Qualities.P1080.value
+                                        )
+                                    }
+                                }
+                                    else
+                                {
+                                    Log.d("Error:", "Not Found")
+                                }
+                            }
+                            else
+                            {
+                                if (sourceUrl.startsWith("http"))
+                                {
+                                    val sourcename=sourceUrl.getHost()
+                                    Log.d("Phisher source","$sourcename $sourceUrl")
+                                    loadCustomExtractor(
+                                        "Anichi [${i.uppercase()}] [$sourcename]",
+                                        sourceUrl
+                                            ?: "",
+                                        "",
+                                        subtitleCallback,
+                                        callback,
+                                    )
+                                }
+                                else
+                                {
+                                    Log.d("Error:", "Not Found")
+                                }
+                            }
                         }
                     }
                 }
@@ -1253,11 +1288,11 @@ object StreamPlayExtractor : StreamPlay() {
         val session = animeData?.find { it.episode == episode }?.session ?: ""
         app.get("$animepaheAPI/play/$id/$session", headers).document.select("div.dropup button")
             .map {
-                val quality = it.attr("data-resolution")
+                val quality = it.attr("data-resolution").toString()
                 val href = it.attr("data-src")
                 if (href.contains("kwik.si")) {
                     loadCustomExtractor(
-                        "Animepahe [Raw]",
+                        "Animepahe [SUB] $quality",
                         href,
                         "",
                         subtitleCallback,
