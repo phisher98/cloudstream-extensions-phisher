@@ -5,7 +5,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
 import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
-import com.Phisher98.StreamPlayExtractor.invokeDoomovies
+//import com.Phisher98.StreamPlayExtractor.invokeDoomovies
 import com.Phisher98.StreamPlayExtractor.invokeDramaday
 import com.Phisher98.StreamPlayExtractor.invokeDreamfilm
 import com.Phisher98.StreamPlayExtractor.invokeFilmxy
@@ -28,7 +28,6 @@ import com.Phisher98.StreamPlayExtractor.invokeVidsrcto
 import com.Phisher98.StreamPlayExtractor.invokeCinemaTv
 import com.Phisher98.StreamPlayExtractor.invokeMoflix
 import com.Phisher98.StreamPlayExtractor.invokeGhostx
-//import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeWatchCartoon
 import com.Phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.Phisher98.StreamPlayExtractor.invokeZoechip
@@ -36,6 +35,7 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
+import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -55,13 +55,54 @@ class StreamPlayLite : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
 
         argamap(
-                { if (!res.isAnime)
-                invokeM4uhd(res.title, res.airedYear?: res.year, res.season, res.episode,subtitleCallback,callback)
-                invokeBollyflix(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
-                invokeMoflix(res.id, res.season, res.episode, callback)
-                invokeWatchsomuch(res.imdbId,res.season,res.episode,subtitleCallback)
-                invokeMoviesdrive(res.title,res.season,res.episode,res.year,subtitleCallback,callback)
-                invokeTopMovies(res.title,res.year,res.season,res.lastSeason,res.episode,subtitleCallback,callback)
+            {
+                if (!res.isAnime) invokeM4uhd(
+                    res.title, res.airedYear
+                        ?: res.year, res.season, res.episode, subtitleCallback, callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeBollyflix(
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
+            },
+            {
+                if (!res.isAnime) invokeWatchsomuch(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback
+                )
+            },
+            {
+                if (!res.isAnime) invokeMoviesdrive(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeTopMovies(
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
             },
             {
                 invokeDumpStream(
@@ -154,15 +195,6 @@ class StreamPlayLite : StreamPlay() {
             },
          */
             {
-                if (!res.isAnime) invokeVidsrcto(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
                 if (res.isAsian || res.isAnime) invokeKisskh(
                     res.title,
                     res.season,
@@ -179,13 +211,6 @@ class StreamPlayLite : StreamPlay() {
                         ?: res.year, res.season, res.episode, subtitleCallback, callback
                 )
             },
-            /*{
-                if (!res.isAnime) invokeM4uhd(
-                    res.title, res.airedYear
-                        ?: res.year, res.season, res.episode, subtitleCallback, callback
-                )
-            },
-             */
             {
                 if (!res.isAnime) invokeFlixon(
                     res.id,
@@ -193,12 +218,6 @@ class StreamPlayLite : StreamPlay() {
                     res.season,
                     res.episode,
                     callback
-                )
-            },
-            {
-                invokeCinemaTv(
-                    res.imdbId, res.title, res.airedYear
-                        ?: res.year, res.season, res.episode, subtitleCallback, callback
                 )
             },
             {
@@ -253,13 +272,14 @@ class StreamPlayLite : StreamPlay() {
             {
                 if (!res.isAnime) invokeAllMovieland(res.imdbId, res.season, res.episode, callback)
             },
+            /*
             {
-                if (!res.isAnime && res.season == null) invokeDoomovies(
+                if (!res.isAnime && res.isBollywood) invokeDoomovies(
                     res.title,
                     subtitleCallback,
                     callback
                 )
-            },
+            },*/
             {
                 if (res.isAsian) invokeDramaday(
                     res.title,
@@ -308,7 +328,7 @@ class StreamPlayLite : StreamPlay() {
                     callback
                 )
             },
-            /*{
+            {
                 if (!res.isAnime) invokeNepu(
                     res.title,
                     res.airedYear ?: res.year,
@@ -316,11 +336,9 @@ class StreamPlayLite : StreamPlay() {
                     res.episode,
                     callback
                 )
-            }
-
-             */
+            },
             {
-                if (!res.isAnime) invokeVegamovies(
+                if (!res.isAnime && !res.isBollywood) invokeVegamovies(
                     res.title,
                     res.year,
                     res.season,

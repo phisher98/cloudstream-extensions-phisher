@@ -42,11 +42,12 @@ class StreamPlayTest : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime) invokemovies4u(
+                if (!res.isAnime) invokeDotmovies(
                     res.title,
-                    res.episode,
-                    res.season,
                     res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
                     subtitleCallback,
                     callback
                 )

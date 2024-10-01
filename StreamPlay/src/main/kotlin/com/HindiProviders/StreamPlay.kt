@@ -613,7 +613,7 @@ open class StreamPlay : TmdbProvider() {
                     )
                 },
                 {
-                if (!res.isAnime) invokeMoviesmod(
+                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                     res.title,
                     res.year,
                     res.season,
@@ -757,7 +757,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        if (!res.isAnime) invokeVegamovies(
+        if (!res.isAnime && !res.isBollywood) invokeVegamovies(
             res.title,
             res.year,
             res.season,
@@ -855,7 +855,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        invokeZshow(
+        if (!res.isAsian && !res.isBollywood) invokeZshow(
             res.title,
             res.year,
             res.season,

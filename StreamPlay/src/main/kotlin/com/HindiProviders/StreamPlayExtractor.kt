@@ -1766,47 +1766,49 @@ object StreamPlayExtractor : StreamPlay() {
                     Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find(
                         it.toString()
                     )?.groupValues?.get(1)
-                val res = hrefpattern?.let { app.get(it).document }
-                Log.d("Phisher url veg", hrefpattern.toString())
-                val hTag = if (season == null) "h5" else "h3,h5"
-                val aTag = if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct"
-                val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
-                val entries =
-                    res?.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
-                        ?.filter { element ->
-                            !element.text().contains("Series", true) &&
-                                    !element.text().contains("Zip", true) &&
-                                    !element.text().contains("[Complete]", true) &&
-                                    !element.text().contains("480p, 720p, 1080p", true) &&
-                                    !element.text().contains(domain, true) &&
-                                    (element.text().contains("Season $season", true) ||
-                                            element.text().contains("S$seasonSlug", true))
-                        }
-                entries?.amap { it ->
-                    val tags =
-                        """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
-                            ?.trim()
-                    val tagList = aTag.split(",")  // Changed variable name to tagList
-                    val href = it.nextElementSibling()?.select("a")?.find { anchor ->
-                        tagList.any { tag ->
-                            anchor.text().contains(tag.trim(), true)
-                        }
-                    }?.attr("href") ?: ""
-                    val selector =
-                        if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode) ~ p a:matches(V-Cloud|G-Direct)"
-                    if (href.isNotEmpty()) {
-                       app.get(
-                            href, interceptor = wpRedisInterceptor
-                        ).document.select("div.entry-content > $selector").map { sources->
-                            val server=sources.attr("href")
-                            loadCustomTagExtractor(
-                                tags,
-                                server,
-                                "$api/",
-                                subtitleCallback,
-                                callback,
-                                getIndexQuality(it.text())
-                            )
+                if (hrefpattern!=null) {
+                    val res = hrefpattern.let { app.get(it).document }
+                    Log.d("Phisher url veg", hrefpattern.toString())
+                    val hTag = if (season == null) "h5" else "h3,h5"
+                    val aTag =
+                        if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct"
+                    val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
+                    val entries =
+                        res.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+                            .filter { element ->
+                                !element.text().contains("Series", true) &&
+                                        !element.text().contains("Zip", true) &&
+                                        !element.text().contains("[Complete]", true) &&
+                                        !element.text().contains("480p, 720p, 1080p", true) &&
+                                        !element.text().contains(domain, true) &&
+                                        element.text().matches("(?i).*($sTag).*".toRegex())
+                            }
+                    entries.amap { it ->
+                        val tags =
+                            """(?:1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
+                                ?.trim()
+                        val tagList = aTag.split(",")  // Changed variable name to tagList
+                        val href = it.nextElementSibling()?.select("a")?.find { anchor ->
+                            tagList.any { tag ->
+                                anchor.text().contains(tag.trim(), true)
+                            }
+                        }?.attr("href") ?: ""
+                        val selector =
+                            if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode) ~ p a:matches(V-Cloud|G-Direct)"
+                        if (href.isNotEmpty()) {
+                            app.get(
+                                href, interceptor = wpRedisInterceptor
+                            ).document.select("div.entry-content > $selector").map { sources ->
+                                val server = sources.attr("href")
+                                loadCustomTagExtractor(
+                                    tags,
+                                    server,
+                                    "$api/",
+                                    subtitleCallback,
+                                    callback,
+                                    getIndexQuality(it.text())
+                                )
+                            }
                         }
                     }
                 }
@@ -3256,7 +3258,6 @@ object StreamPlayExtractor : StreamPlay() {
         val hrefpattern =
             Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1)
                 ?: ""
-        Log.d("Phisher Moviedrive", hrefpattern)
         val document = app.get(hrefpattern).document
         if (season == null) {
             document.select("h5 > a").amap {
@@ -3389,7 +3390,7 @@ object StreamPlayExtractor : StreamPlay() {
             app.get("$movies4u/search/$fixtitle $year").document.select("section.site-main article")
                 .toString()
         val hrefpattern =
-            Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*$searchtitle[^"]*)"""").find(res1)?.groupValues?.get(1)
+            Regex("""(?i)<h3[^>]*>\s*<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1)
         Log.d("Phisher","$movies4u/search/$searchtitle $year")
         Log.d("Phisher",hrefpattern ?:"")
         Log.d("Phisher", searchtitle.toString())
