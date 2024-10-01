@@ -1746,7 +1746,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val cfInterceptor = CloudflareKiller()
-        val fixtitle = title?.replace("-", " ")?.replace(":", " ")?.replace("&", " ")
+        val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
         Log.d("Phisher url veg", "$api/search/$fixtitle")
         val url = if (season == null) {
             "$api/search/$fixtitle $year"
@@ -1754,7 +1754,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$api/search/$fixtitle season $season $year"
         }
         val domain= api.substringAfter("//").substringBefore(".")
-        Log.d("Phisher url veg", url.toString())
+        Log.d("Phisher url veg", fixtitle.toString())
         app.get(url, interceptor = cfInterceptor).document.select("#main-content article")
             .filter { element ->
                 element.text().contains(
