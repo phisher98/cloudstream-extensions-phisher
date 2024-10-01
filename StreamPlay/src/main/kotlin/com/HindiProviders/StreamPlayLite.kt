@@ -24,8 +24,6 @@ import com.Phisher98.StreamPlayExtractor.invokeMultimovies
 import com.Phisher98.StreamPlayExtractor.invokeNetmovies
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
 import com.Phisher98.StreamPlayExtractor.invokeVidSrc
-import com.Phisher98.StreamPlayExtractor.invokeVidsrcto
-import com.Phisher98.StreamPlayExtractor.invokeCinemaTv
 import com.Phisher98.StreamPlayExtractor.invokeMoflix
 import com.Phisher98.StreamPlayExtractor.invokeGhostx
 import com.Phisher98.StreamPlayExtractor.invokeWatchCartoon
@@ -194,11 +192,10 @@ class StreamPlayLite : StreamPlay() {
             },
          */
             {
-                if (res.isAsian || res.isAnime) invokeKisskh(
+                if (res.isAsian) invokeKisskh(
                     res.title,
                     res.season,
                     res.episode,
-                    res.isAnime,
                     res.lastSeason,
                     subtitleCallback,
                     callback
