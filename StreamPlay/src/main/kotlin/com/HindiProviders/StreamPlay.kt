@@ -538,11 +538,10 @@ open class StreamPlay : TmdbProvider() {
                     )
                 },
                 {
-                   if (res.isAsian) invokeKisskh(
+                   if (res.isAsian && !res.isAnime) invokeKisskh(
                         res.title,
                         res.season,
                         res.episode,
-                        res.isAnime,
                         res.lastSeason,
                         subtitleCallback,
                         callback

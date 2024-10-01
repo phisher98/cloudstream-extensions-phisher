@@ -1378,3 +1378,22 @@ class Kwik : ExtractorApi() {
         )
     }
 }
+
+
+open class Embtaku : ExtractorApi() {
+    override var name = "Embtaku"
+    override var mainUrl = "https://embtaku.pro"
+    override val requiresReferer = false
+
+    override suspend fun
+            getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
+        val responsecode= app.get(url)
+        val serverRes = responsecode.document
+        serverRes.select("ul.list-server-items").amap {
+            val href=it.attr("data-video") ?: null
+            if (href != null) {
+                loadCustomExtractor("Anichi [Embtaku]",href,"",subtitleCallback,callback)
+            }
+        }
+    }
+}

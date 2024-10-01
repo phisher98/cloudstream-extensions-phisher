@@ -53,7 +53,6 @@ class StreamPlayLite : StreamPlay() {
     ): Boolean {
 
         val res = AppUtils.parseJson<LinkData>(data)
-
         argamap(
             {
                 if (!res.isAnime) invokeM4uhd(

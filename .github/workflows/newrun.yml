@@ -97,7 +97,6 @@ jobs:
           echo INDIANTV_Airtel_API=$INDIANTV_Airtel_API >> local.properties
           echo INDIANTV_JIO_API=$INDIANTV_JIO_API >> local.properties
           echo INDIANTV_Voot_API=$INDIANTV_Voot_API >> local.properties
-
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

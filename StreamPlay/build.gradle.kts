@@ -22,6 +22,8 @@ android {
         buildConfigField("String", "MultiMovies_API", "\"${properties.getProperty("MultiMovies_API")}\"")
         buildConfigField("String", "MovieDrive_API", "\"${properties.getProperty("MovieDrive_API")}\"")
         buildConfigField("String", "AsianDrama_API", "\"${properties.getProperty("AsianDrama_API")}\"")
+        buildConfigField("String", "ANICHI_API", "\"${properties.getProperty("ANICHI_API")}\"")
+
     }
 }
 

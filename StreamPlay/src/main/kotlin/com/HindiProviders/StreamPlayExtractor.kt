@@ -1045,14 +1045,12 @@ object StreamPlayExtractor : StreamPlay() {
         title: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        isAnime: Boolean = false,
         lastSeason: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val slug = title.createSlug() ?: return
         val type = when {
-            isAnime -> "3"
             season == null -> "2"
             else -> "1"
         }
@@ -1156,6 +1154,7 @@ object StreamPlayExtractor : StreamPlay() {
         val zoroname = malsync?.nineAnime?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         //val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
         val animepahe = malsync?.animepahe?.firstNotNullOf { it.value["url"] }
+        val year=airedDate?.substringBefore("-")
         //Log.d("Phisher", "$zoroIds $zoroname")
         argamap(
             {
@@ -1177,19 +1176,66 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
             },
             {
-                /*
-                if (season != null) invokeCrunchyroll(
-                    aniId,
-                    malId,
-                    epsTitle,
-                    season,
-                    episode,
-                    subtitleCallback,
-                    callback
-                )
-                 */
+                invokeAnichi(zoroname,year, episode, subtitleCallback, callback)
             }
         )
+    }
+
+    private suspend fun invokeAnichi(
+        name: String? = null,
+        year:String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val api=BuildConfig.ANICHI_API
+        val privatereferer="https://allmanga.to"
+        val ephash="5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
+        val queryhash="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
+        var type = ""
+            if (episode == null) {
+                type = "Movie"
+            } else
+            {
+                type = "TV"
+            }
+            val query="""$api?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+            val response= app.get(query, referer = privatereferer).parsedSafe<Anichi>()?.data?.shows?.edges?.filter {
+                // filtering in case there is an anime with 0 episodes available on the site.
+                !(it.availableEpisodes.raw.toInt() == 0 &&
+                        it.availableEpisodes.sub.toInt() == 0 &&
+                        it.availableEpisodes.dub.toInt() == 0)
+            }
+        if (response!=null) {
+            val id = response.apmap {
+                it.id
+            }.firstOrNull()
+            if (id!=null) {
+                val langType = listOf("sub", "dub")
+                for (i in langType) {
+                    val epData =
+                        """$api?variables={"showId":"$id","translationType":"$i","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
+                    val eplinks = app.get(epData, referer = privatereferer).parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
+                    eplinks?.amap {
+                        val href=it.sourceUrl
+                        if (href.startsWith("http"))
+                        {
+                            loadCustomExtractor(
+                                "Anichi [${i.uppercase()}]",
+                                href,
+                                "",
+                                subtitleCallback,
+                                callback
+                            )
+                        }
+                        else
+                        {
+                            Log.d("Error:","No Link Found")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun invokeAnimepahe(
@@ -1221,6 +1267,7 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
     }
+
 
     private suspend fun invokeAniwave(
         url: String? = null,
