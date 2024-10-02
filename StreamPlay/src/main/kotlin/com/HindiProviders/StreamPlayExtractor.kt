@@ -1164,10 +1164,7 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds, episode, subtitleCallback, callback)
             },
             {
-                invokeMiruroanimeZoro(zoroIds,zoroname, episode, subtitleCallback, callback)
-            },
-            {
-                invokeMiruroanimeGogo(zoroIds,zoroname, episode, subtitleCallback, callback)
+                invokeMiruroanimeGogo(zoroIds,zorotitle, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
@@ -1460,16 +1457,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private suspend fun invokeMiruroanimeZoro(
-        animeIds: List<String?>? = null,
-        title:String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-
-    }
-
     private suspend fun invokeMiruroanimeGogo(
         animeIds: List<String?>? = null,
         title:String? = null,
@@ -1483,11 +1470,14 @@ object StreamPlayExtractor : StreamPlay() {
         Log.d("Phisher Gogo",fixtitle.toString())
         val sub="$api/meta/anilist/watch/$fixtitle-episode-$episode"
         val dub="$api/meta/anilist/watch/$fixtitle-dub-episode-$episode"
+        Log.d("Phisher Gogo href",sub.toString())
         val list = listOf(sub, dub)
         for(url in list) {
             val json = app.get(url, header).parsedSafe<MiruroanimeGogo>()?.sources
+            Log.d("Phisher Gogo href",json.toString())
             json?.amap {
                 val href = it.url
+                Log.d("Phisher Gogo href",href.toString())
                 var quality = it.quality
                 if (quality.contains("backup"))
                 {
