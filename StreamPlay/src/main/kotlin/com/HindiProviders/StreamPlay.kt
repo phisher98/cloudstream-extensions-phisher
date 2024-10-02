@@ -86,7 +86,6 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlin.math.roundToInt
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.DubStatus
@@ -474,18 +473,6 @@ open class StreamPlay : TmdbProvider() {
                         res.episode,
                         subtitleCallback,
                         callback
-                    )
-                },
-                {
-                if (res.isAnime) invokeAnitaku(
-                    res.title,
-                    res.epsTitle,
-                    res.date,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
                     )
                 },
                 {
