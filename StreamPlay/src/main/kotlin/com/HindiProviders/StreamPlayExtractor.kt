@@ -1154,6 +1154,7 @@ object StreamPlayExtractor : StreamPlay() {
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         //val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
         val animepahe = malsync?.animepahe?.firstNotNullOf { it.value["url"] }
+        val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
         val year=airedDate?.substringBefore("-")
         Log.d("Phisher", Season)
         argamap(
@@ -1164,7 +1165,7 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds, episode, subtitleCallback, callback)
             },
             {
-                invokeMiruroanimeGogo(zoroIds,zorotitle, episode, subtitleCallback, callback)
+                invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
@@ -1220,55 +1221,43 @@ object StreamPlayExtractor : StreamPlay() {
                         """$api?variables={"showId":"$id","translationType":"$i","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
                     val eplinks = app.get(epData, referer = privatereferer)
                         .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
-                    if (eplinks!=null)
-                    {
-                        eplinks.apmap { source ->
-                            safeApiCall {
-                                val sourceUrl=source.sourceUrl
-                                val downloadUrl= source.downloads?.downloadUrl ?:""
-                                if (downloadUrl.contains("blog.allanime.day"))
-                                {
-                                    if (downloadUrl.isNotEmpty())
-                                    {
-                                        val downloadid=downloadUrl.substringAfter("id=")
-                                        val sourcename=downloadUrl.getHost()
-                                        app.get("https://allanime.day/apivtwo/clock.json?id=$downloadid").parsedSafe<AnichiDownload>()?.links?.amap {
-                                            val href=it.link
-                                            Log.d("Phisher Blog:", href.toString())
-                                            loadNameExtractor(
-                                                "Anichi [${i.uppercase()}] [$sourcename]",
-                                                href,
-                                                "",
-                                                subtitleCallback,
-                                                callback,
-                                                Qualities.P1080.value
-                                            )
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Log.d("Error:", "Not Found")
-                                    }
-                                }
-                                else
-                                {
-                                    if (sourceUrl.startsWith("http"))
-                                    {
-                                        val sourcename=sourceUrl.getHost()
-                                        Log.d("Phisher source","$sourcename $sourceUrl")
-                                        loadCustomExtractor(
+                    eplinks?.apmap { source ->
+                        safeApiCall {
+                            val sourceUrl=source.sourceUrl
+                            val downloadUrl= source.downloads?.downloadUrl ?:""
+                            if (downloadUrl.contains("blog.allanime.day")) {
+                                if (downloadUrl.isNotEmpty()) {
+                                    val downloadid=downloadUrl.substringAfter("id=")
+                                    val sourcename=downloadUrl.getHost()
+                                    app.get("https://allanime.day/apivtwo/clock.json?id=$downloadid").parsedSafe<AnichiDownload>()?.links?.amap {
+                                        val href=it.link
+                                        Log.d("Phisher Blog:", href.toString())
+                                        loadNameExtractor(
                                             "Anichi [${i.uppercase()}] [$sourcename]",
-                                            sourceUrl
-                                                ?: "",
+                                            href,
                                             "",
                                             subtitleCallback,
                                             callback,
+                                            Qualities.P1080.value
                                         )
                                     }
-                                    else
-                                    {
-                                        Log.d("Error:", "Not Found")
-                                    }
+                                } else {
+                                    Log.d("Error:", "Not Found")
+                                }
+                            } else {
+                                if (sourceUrl.startsWith("http")) {
+                                    val sourcename=sourceUrl.getHost()
+                                    Log.d("Phisher source","$sourcename $sourceUrl")
+                                    loadCustomExtractor(
+                                        "Anichi [${i.uppercase()}] [$sourcename]",
+                                        sourceUrl
+                                            ?: "",
+                                        "",
+                                        subtitleCallback,
+                                        callback,
+                                    )
+                                } else {
+                                    Log.d("Error:", "Not Found")
                                 }
                             }
                         }
