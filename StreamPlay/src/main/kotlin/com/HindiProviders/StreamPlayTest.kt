@@ -30,13 +30,11 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (res.isAnime) invokeAnimes(
+                if (!res.isAnime) invokeMoviesdrive(
                     res.title,
-                    res.epsTitle,
-                    res.date,
-                    res.airedDate,
                     res.season,
                     res.episode,
+                    res.year,
                     subtitleCallback,
                     callback
                 )
