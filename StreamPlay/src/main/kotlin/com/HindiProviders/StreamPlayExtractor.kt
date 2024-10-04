@@ -2435,7 +2435,7 @@ object StreamPlayExtractor : StreamPlay() {
         app.get(subUrl).parsedSafe<WatchsomuchSubResponses>()?.subtitles?.map { sub ->
             subtitleCallback.invoke(
                 SubtitleFile(
-                    sub.label ?: "", fixUrl(
+                    sub.label?.substringBefore("&nbsp") ?: "", fixUrl(
                         sub.url
                             ?: return@map null, watchSomuchAPI
                     )
