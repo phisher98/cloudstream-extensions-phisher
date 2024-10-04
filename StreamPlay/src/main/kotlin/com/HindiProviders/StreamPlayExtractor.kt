@@ -1204,7 +1204,7 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 type = "TV"
             }
-            val query="""$api?variables={"search":{"types":["$type"],"season":"$season","query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+            val query="""$api?variables={"search":{"types":["$type"],"year":$year,"season":"$season","query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
             val response= app.get(query, referer = privatereferer).parsedSafe<Anichi>()?.data?.shows?.edges
         val tes= app.get(query, referer = privatereferer)
         Log.d("Phisher Anichi", query.toString())
