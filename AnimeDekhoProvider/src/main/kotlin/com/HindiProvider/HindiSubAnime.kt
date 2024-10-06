@@ -17,6 +17,9 @@ class HindiSubAnime : AnimeDekhoProvider() {
 
     override val mainPage =
         mainPageOf(
+            "/category/shounen/" to "Shounen",
+            "/category/action/" to "Action",
+            "/category/fantasy/" to "Fantasy",
             "/series/" to "Series",
         )
 

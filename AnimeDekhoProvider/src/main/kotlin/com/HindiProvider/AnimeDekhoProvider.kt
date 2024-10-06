@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -65,10 +66,10 @@ open class AnimeDekhoProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-
+        Log.d("Phisher load",url)
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
-
+        Log.d("Phisher",media.toString())
         val title = document.selectFirst("h1.entry-title")?.text()?.trim()?.substringAfter("Watch Online ")
             ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.substringAfter("Watch Online ")?.substringBefore(" Movie in Hindi Dubbed Free") ?: "No Title"
         val poster = fixUrlNull(document.selectFirst("div.post-thumbnail figure img")?.attr("src") ?: media.poster)
@@ -97,10 +98,27 @@ open class AnimeDekhoProvider : MainAPI() {
                 val season=seasonnumber.toIntOrNull()
                 Episode(Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
             }
+            val recommendations = document.select("div.swiper-wrapper article").map {
+                val recName = it.selectFirst("h2")?.text() ?: "Unknown"
+                val recHref = it.selectFirst("a")!!.attr("href")
+                val recPosterUrl = it.selectFirst("figure img")?.attr("src")
+                val mediadata = Media(
+                    url = recHref,
+                    poster = recPosterUrl,
+                    mediaType = 0 // You can adjust this
+                )
+                val mediaJson = Gson().toJson(mediadata)
+                newTvSeriesSearchResponse(recName, mediaJson, TvType.TvSeries) {
+                    this.posterUrl = mediadata.poster
+                }
+            }
+            Log.d("Phisher recommendations",recommendations.toString())
+
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.plot = plot
                 this.year = year
+                this.recommendations = recommendations
             }
         }
     }
