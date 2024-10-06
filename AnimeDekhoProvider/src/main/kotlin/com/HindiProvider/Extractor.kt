@@ -2,6 +2,7 @@ package com.Phisher98
 
 
 //import android.util.Log
+import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -85,25 +86,25 @@ open class VidStream : ExtractorApi() {
         val decrypt = cryptoAESHandler(master ?: return, key.toByteArray(), false)
             ?.replace("\\", "")
             ?: throw ErrorLoadingException("failed to decrypt")
-
-        val source = Regex(""""?file"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
-        val subtitles = Regex("""subtitle"?:\s*"([^"]+)""").find(decrypt)?.groupValues?.get(1)
-        val subtitlePattern = """\[(.*?)](https?://[^\s,]+)""".toRegex()
-        val matches = subtitlePattern.findAll(subtitles ?: "")
-        val languageUrlPairs = matches.map { matchResult ->
-            val (language, url) = matchResult.destructured
-            decodeUnicodeEscape(language) to url
+        Log.d("Phisher decode",decrypt)
+        val source = Regex("""src="([^"]+\.m3u8[^"]*)"""").find(decrypt)?.groupValues?.get(1)
+        val subtitlePattern = """src="([^"]+\.srt)" label="([^"]+)"""".toRegex()
+        val subtitleMatches = subtitlePattern.findAll(decrypt).map { matchResult ->
+            val url = matchResult.groupValues[1]  // Full URL ending with .srt
+            val label = matchResult.groupValues[2]  // Label (e.g., "English" or "Japanese")
+            label to url  // Return pair of label and URL
         }.toList()
 
-        languageUrlPairs.forEach{ (name, file) ->
+        subtitleMatches.forEach { (label, url) ->
             subtitleCallback.invoke(
                 SubtitleFile(
-                    name,
-                    file
+                    label,  // Use label for the name
+                    url     // Use extracted URL
                 )
             )
         }
-		
+
+
         val header =
             mapOf(
                 "accept" to "*/*",
@@ -133,13 +134,6 @@ open class VidStream : ExtractorApi() {
     private suspend fun fetchKey(): String? {
         return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/keys/index.html")
             .parsedSafe<Keys>()?.key?.get(0)?.also { key = it }
-    }
-	
-	private fun decodeUnicodeEscape(input: String): String {
-        val regex = Regex("u([0-9a-fA-F]{4})")
-        return regex.replace(input) {
-            it.groupValues[1].toInt(16).toChar().toString()
-        }
     }
 	
 	data class Keys(
