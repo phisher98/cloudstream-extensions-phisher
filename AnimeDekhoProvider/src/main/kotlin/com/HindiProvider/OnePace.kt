@@ -38,7 +38,7 @@ open class OnepaceProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): AnimeSearchResponse {
-        val hreftitle= this.selectFirst("noscript img")?.attr("alt")
+        val hreftitle= this.selectFirst("header.entry-header h1")?.text()
         var href=""
         if (hreftitle!!.isNotEmpty()) {
             if (hreftitle.contains("Dub")) {
