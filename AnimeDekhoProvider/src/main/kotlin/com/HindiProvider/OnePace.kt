@@ -38,7 +38,7 @@ open class OnepaceProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): AnimeSearchResponse {
-        val hreftitle= this.selectFirst("header.entry-header h1")?.text()
+        val hreftitle= this.selectFirst("picture img")?.attr("alt")
         var href=""
         if (hreftitle!!.isNotEmpty()) {
             if (hreftitle.contains("Dub")) {
@@ -48,7 +48,7 @@ open class OnepaceProvider : MainAPI() {
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
-        val posterUrl = this.selectFirst("img")?.attr("data-src")
+        val posterUrl = this.selectFirst("img")?.attr("src")
         val dubtype:Boolean
         val subtype:Boolean
         if (hreftitle.contains("Dub"))
