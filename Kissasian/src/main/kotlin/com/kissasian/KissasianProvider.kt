@@ -11,8 +11,9 @@ import com.lagradost.cloudstream3.utils.extractorApis
 @CloudstreamPlugin
 class KissasianProvider: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(Kissasian())
+        registerMainAPI(Kissasiancx())
         registerMainAPI(Kissasianv2())
+        registerMainAPI(Kissasiansi())
         registerMainAPI(Dramacool())
         registerExtractorAPI(embedwish())
         registerExtractorAPI(dwish())

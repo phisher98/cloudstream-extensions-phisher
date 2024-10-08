@@ -8,9 +8,9 @@ import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
-open class Kissasian : MainAPI() {
-    override var mainUrl = "https://kissasian.pe"
-    override var name = "Kissasian"
+open class Kissasiancx : MainAPI() {
+    override var mainUrl = "https://kissasiantv.cx"
+    override var name = "Kissasian CX"
     override val hasMainPage = true
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.AsianDrama)

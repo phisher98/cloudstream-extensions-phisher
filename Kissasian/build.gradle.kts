@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 8
+version = 9
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Includes DramaCool,KissAsian,KissAsian V2"
+    description = "Includes DramaCool,KissAsian (All Clones),KissAsian V2"
     language    = "en"
     authors = listOf("Phisher98")
 
