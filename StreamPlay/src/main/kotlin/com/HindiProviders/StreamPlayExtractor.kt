@@ -1857,29 +1857,49 @@ object StreamPlayExtractor : StreamPlay() {
                             """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
                                 ?.trim()
                         val tagList = aTag.split(",")  // Changed variable name to tagList
-                        val href = it.nextElementSibling()?.select("a")?.find { anchor ->
+                        val href = it.nextElementSibling()?.select("a")?.filter { anchor ->
                             tagList.any { tag ->
                                 anchor.text().contains(tag.trim(), true)
                             }
-                        }?.attr("href") ?: ""
+                        }?.map { anchor ->
+                            anchor.attr("href")
+                        } ?: emptyList()
                         val selector =
                             if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode) ~ p a:matches(V-Cloud|G-Direct)"
-                        Log.d("Phisher url veg", href.toString())
                         if (href.isNotEmpty()) {
-                            app.get(
-                                href, interceptor = wpRedisInterceptor
-                            ).document.select("div.entry-content > $selector").first()?.let { sources ->
-                                Log.d("Phisher url selector", selector.toString())
-                                Log.d("Phisher url sources", sources.toString())
-                                val server = sources.attr("href")
-                                loadCustomTagExtractor(
-                                    tags,
-                                    server,
-                                    "$api/",
-                                    subtitleCallback,
-                                    callback,
-                                    getIndexQuality(it.text())
-                                )
+                            href.amap { url ->
+                            if (season==null)
+                            {
+                                app.get(
+                                    url, interceptor = wpRedisInterceptor
+                                ).document.select("div.entry-content > $selector").map { sources ->
+                                    val server = sources.attr("href")
+                                    loadCustomTagExtractor(
+                                        tags,
+                                        server,
+                                        "$api/",
+                                        subtitleCallback,
+                                        callback,
+                                        getIndexQuality(it.text())
+                                    )
+                                }
+                            }
+                            else
+                            {
+                                app.get(
+                                    url, interceptor = wpRedisInterceptor
+                                ).document.select("div.entry-content > $selector").first()?.let { sources ->
+                                    val server = sources.attr("href")
+                                    loadCustomTagExtractor(
+                                        tags,
+                                        server,
+                                        "$api/",
+                                        subtitleCallback,
+                                        callback,
+                                        getIndexQuality(it.text())
+                                    )
+                                }
+                             }
                             }
                         }
                     }
