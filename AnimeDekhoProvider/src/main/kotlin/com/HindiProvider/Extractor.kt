@@ -87,11 +87,11 @@ open class VidStream : ExtractorApi() {
             ?.replace("\\", "")
             ?: throw ErrorLoadingException("failed to decrypt")
         Log.d("Phisher decode",decrypt)
-        val source = Regex("""src="([^"]+\.m3u8[^"]*)"""").find(decrypt)?.groupValues?.get(1)
-        val subtitlePattern = """src="([^"]+\.srt)" label="([^"]+)"""".toRegex()
+        val source = Regex("""https?://[^\s"]+\?[^"]*""").find(decrypt)?.groupValues?.get(0)
+        val subtitlePattern = """\[(.*?)](https?://[^\s,]+\.srt)""".toRegex()
         val subtitleMatches = subtitlePattern.findAll(decrypt).map { matchResult ->
-            val url = matchResult.groupValues[1]  // Full URL ending with .srt
-            val label = matchResult.groupValues[2]  // Label (e.g., "English" or "Japanese")
+            val label = matchResult.groupValues[1]  // Label inside the square brackets
+            val url = matchResult.groupValues[2]    // URL ending with .srt
             label to url  // Return pair of label and URL
         }.toList()
 
