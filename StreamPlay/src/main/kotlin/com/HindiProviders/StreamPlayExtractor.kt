@@ -1571,7 +1571,6 @@ object StreamPlayExtractor : StreamPlay() {
                 Regex("""(?i)<a\s+href="([^"]*?\b$searchtitle\b[^"]*?\b$year\b[^"]*?)"[^>]*>""").find(
                     it.toString()
                 )?.groupValues?.get(1)
-            //Log.d("Phisher bolly", "$hrefpattern")
             val detailDoc = hrefpattern?.let { app.get(it).document }
             val iSelector = if (season == null) {
                 "div.entry-content p:has(:matches($year))"
@@ -1589,9 +1588,15 @@ object StreamPlayExtractor : StreamPlay() {
             }.filter { it.first.contains(Regex("(2160p)|(1080p)")) }
                 .filter { element -> !element.toString().contains("Download", true) }
             iframeList.amap { (quality, link) ->
-                Log.d("Phisher", link.toString())
                 val driveLink = bypassHrefli(link ?: "") ?: ""
-                loadExtractor(driveLink, referer = "UHDMovies", subtitleCallback, callback)
+                loadSourceNameExtractor(
+                    "UHDMovies",
+                    driveLink,
+                    "",
+                    subtitleCallback,
+                    callback,
+                    getQualityFromName("")
+                )
             }
         }
     }
@@ -1749,12 +1754,26 @@ object StreamPlayExtractor : StreamPlay() {
                     val domain= getBaseUrl(link)
                     val server="$domain$file"
                     Log.d("Phisher",link)
-                    loadExtractor(server, "MoviesMOD", subtitleCallback, callback)
+                    loadSourceNameExtractor(
+                        "Modflix",
+                        server,
+                        "",
+                        subtitleCallback,
+                        callback,
+                        getQualityFromName("")
+                    )
                 }
                 val server = Unblockedlinks(link) ?: ""
                 if (server.isNotEmpty()) {
                     Log.d("Phisher",server)
-                    loadExtractor(server, "MoviesMOD", subtitleCallback, callback)
+                    loadSourceNameExtractor(
+                        "Modflix",
+                        server,
+                        "",
+                        subtitleCallback,
+                        callback,
+                        getQualityFromName("")
+                    )
                 }
             }
         }
@@ -3431,9 +3450,9 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
         val searchtitle = title?.substringBefore("-").createSlug()
-        //Log.d("Phisher bolly", "$bollyflixAPI/search/$fixtitle")
+        Log.d("Phisher bolly", "$bollyflixAPI/search/$fixtitle")
         var res1 =
-            app.get("$bollyflixAPI/search/$fixtitle $year").document.select("#content_box article")
+            app.get("$bollyflixAPI/search/$fixtitle $year", interceptor = wpRedisInterceptor).document.select("#content_box article")
                 .toString()
         val hrefpattern =
             Regex("""(?i)<article[^>]*>\s*<a\s+href="([^"]*\b$searchtitle\b[^"]*)""").find(res1)?.groupValues?.get(
