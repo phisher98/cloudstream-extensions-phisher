@@ -16,7 +16,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "FanCode Streams"
+    description = "Sports Live Streams"
     language    = "en"
     authors = listOf("Phisher98")
 
