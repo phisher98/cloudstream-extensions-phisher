@@ -1,11 +1,11 @@
-package com.FanCode
+package com.PublicSportsIPTV
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class FanCode : MainAPI() {
+class PublicSportsIPTV : MainAPI() {
     override var mainUrl: String = BuildConfig.FanCode_API
-    override var name = "FanCode"
+    override var name = "PublicSportsIPTV"
     override val hasMainPage = true
     override var lang = "en"
     override val supportedTypes = setOf(TvType.Live)
@@ -29,7 +29,7 @@ class FanCode : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val title = "FanCode"
+        val title = "PublicSportsIPTV"
         val poster =
             "https://www.fancode.com/skillup-uploads/fc-web/home-page-new-arc/hero-image/v1/hero-image-dweb-v4.png"
         val description =

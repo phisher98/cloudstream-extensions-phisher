@@ -1,4 +1,4 @@
-package com.FanCode
+package com.PublicSportsIPTV
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
