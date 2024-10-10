@@ -1,10 +1,7 @@
 package com.Phisher98
 
 //import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -17,7 +14,6 @@ class AnimeDekho2Provider : MainAPI() {
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
-    private val serverUrl = "https://vidxstream.xyz"
 
     override val supportedTypes =
         setOf(
@@ -112,7 +108,7 @@ class AnimeDekho2Provider : MainAPI() {
     ): Boolean {
         val media = parseJson<Media>(data)
         val res=app.get(media.url).document
-        val servers=res.select("ul.bx-lst.aa-tbs li a").map {
+        res.select("ul.bx-lst.aa-tbs li a").map {
             val links=it.attr("data-src").decodeBase64().toString().substringAfter("=").substringBefore("]")
             val url=Extractlinks(links)
             loadExtractor(url,subtitleCallback, callback)

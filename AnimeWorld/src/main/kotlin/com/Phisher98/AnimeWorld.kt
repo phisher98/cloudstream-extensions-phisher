@@ -1,7 +1,6 @@
 package com.Phisher98
 
 // import android.util.Log
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse

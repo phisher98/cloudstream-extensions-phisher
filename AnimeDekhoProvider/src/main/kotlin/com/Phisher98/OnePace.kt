@@ -48,7 +48,7 @@ open class OnepaceProvider : MainAPI() {
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
-        val posterUrl = this.selectFirst("img")?.attr("src")
+        val posterUrl = this.selectFirst("img")?.attr("data-src")
         val dubtype:Boolean
         val subtype:Boolean
         if (hreftitle.contains("Dub"))

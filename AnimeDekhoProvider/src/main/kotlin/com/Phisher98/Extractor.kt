@@ -2,6 +2,7 @@ package com.Phisher98
 
 
 //import android.util.Log
+import android.annotation.SuppressLint
 import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -63,6 +64,7 @@ open class VidStream : ExtractorApi() {
     override val requiresReferer = false
 	private var key: String? = null
 
+    @SuppressLint("SuspiciousIndentation")
     @Suppress("NAME_SHADOWING")
 	override suspend fun getUrl(
         url: String,
