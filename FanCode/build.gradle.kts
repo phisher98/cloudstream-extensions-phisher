@@ -34,5 +34,5 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Live")
 
-    iconUrl="https://www.fancode.com/skillup-uploads/fc-web-logo/fc_logo_white_bg.svg"
+    iconUrl="https://www.thestatesman.com/wp-content/uploads/2021/05/fancode.jpg"
 }
