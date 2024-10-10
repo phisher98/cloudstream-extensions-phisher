@@ -1863,7 +1863,7 @@ object StreamPlayExtractor : StreamPlay() {
                     Log.d("Phisher url veg", hrefpattern.toString())
                     val hTag = if (season == null) "h5" else "h3,h5"
                     val aTag =
-                        if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct"
+                        if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct,Episode Links"
                     val sTag = if (season == null) "" else "(Season $season|S$seasonSlug)"
                     val entries =
                         res.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
