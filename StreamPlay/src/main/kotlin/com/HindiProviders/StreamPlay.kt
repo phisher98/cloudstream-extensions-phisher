@@ -57,6 +57,7 @@ import com.Phisher98.StreamPlayExtractor.invokekissasian
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
+import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -140,6 +141,7 @@ open class StreamPlay : TmdbProvider() {
         const val smashyStreamAPI = "https://api.smashystream.top"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
+        const val Whvx_API = BuildConfig.Whvx_API
         const val nineTvAPI = "https://moviesapi.club"
         const val nowTvAPI = "https://myfilestorage.xyz"
         //const val gokuAPI = "https://goku.sx"
@@ -662,6 +664,14 @@ open class StreamPlay : TmdbProvider() {
     },
     {
         if (!res.isAnime) invokeWatchsomuch(
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback
+        )
+    },
+    {
+        invokewhvx(
             res.imdbId,
             res.season,
             res.episode,

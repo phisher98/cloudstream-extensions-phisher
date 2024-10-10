@@ -331,6 +331,19 @@ data class WatchsomuchSubResponses(
     @JsonProperty("subtitles") val subtitles: ArrayList<WatchsomuchSubtitles>? = arrayListOf(),
 )
 
+typealias whvxSubResponses = List<whvxSubResponses2>;
+
+data class whvxSubResponses2(
+    val id: String,
+    val opensubtitles: Boolean,
+    val url: String,
+    val flagUrl: String?,
+    val type: String,
+    val languageName: String,
+    val language: String?,
+)
+
+
 data class IndexMedia(
     @JsonProperty("id") val id: String? = null,
     @JsonProperty("driveId") val driveId: String? = null,

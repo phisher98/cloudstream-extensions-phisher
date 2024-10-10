@@ -2,6 +2,8 @@ package com.Phisher98
 
 import android.annotation.SuppressLint
 import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.utils.*
@@ -23,6 +25,8 @@ import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.network.CloudflareKiller
+import java.lang.reflect.Type
+
 
 
 val session = Session(Requests().baseClient)
@@ -2486,6 +2490,30 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
 
+    }
+    //only sub
+    suspend fun invokewhvx(
+        imdbId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+    ) {
+        val subUrl = if (season == null) {
+            "$Whvx_API/search?id=$imdbId"
+        } else {
+            "$Whvx_API/search?id=$imdbId&season=$season&episode=$episode"
+        }
+        val jsonResponse: String = app.get(subUrl).toString()
+        val type: Type = object : TypeToken<List<whvxSubResponses2>>() {}.type
+        val subResponses: List<whvxSubResponses2> = Gson().fromJson(jsonResponse, type)
+        subResponses.map { sub ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    sub.languageName,
+                    fixUrl(sub.url)
+                )
+            )
+        }
     }
 
     suspend fun invokeShinobiMovies(
