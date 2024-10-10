@@ -71,6 +71,10 @@ jobs:
           INDIANTV_Voot_API: ${{ secrets.INDIANTV_Voot_API }}
           FanCode_API: ${{ secrets.FanCode_API }}
           Whvx_API: ${{ secrets.Whvx_API }}
+          JapanIPTV: ${{ secrets.JapanIPTV }}
+          SonyIPTV: ${{ secrets.SonyIPTV }}
+          PirateIPTV: ${{ secrets.PirateIPTV }}
+          Su_sports: ${{ secrets.Su_sports }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -101,6 +105,10 @@ jobs:
           echo INDIANTV_Voot_API=$INDIANTV_Voot_API >> local.properties
           echo FanCode_API=$FanCode_API >> local.properties
           echo Whvx_API=$Whvx_API >> local.properties
+          echo Su_sports=$Su_sports >> local.properties
+          echo PirateIPTV=$PirateIPTV >> local.properties
+          echo SonyIPTV=$SonyIPTV >> local.properties
+          echo JapanIPTV=$JapanIPTV >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
