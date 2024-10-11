@@ -343,6 +343,25 @@ data class whvxSubResponses2(
     val language: String?,
 )
 
+//Catflix Juicey
+
+data class CatflixJuicy(
+    val action: String,
+    val success: Boolean,
+    val msg: String,
+    val juice: String,
+    val juicePost: String,
+)
+
+data class CatflixJuicydata(
+    val action: String,
+    val success: Boolean,
+    val msg: String,
+    val data: String,
+    val juice: String,
+)
+
+
 
 data class IndexMedia(
     @JsonProperty("id") val id: String? = null,

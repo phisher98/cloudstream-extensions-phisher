@@ -27,6 +27,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFlixon
 import com.Phisher98.StreamPlayExtractor.invokeGhostx
 //import com.Phisher98.StreamPlayExtractor.invokeGoku
 //import com.Phisher98.StreamPlayExtractor.invokeHdmovies4u
+import com.Phisher98.StreamPlayExtractor.invokecatflix
 import com.Phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeLing
@@ -176,6 +177,7 @@ open class StreamPlay : TmdbProvider() {
         const val bollyflixAPI = "https://bollyflix.beer"
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
+        const val Catflix= "https://catflix.su"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -741,6 +743,16 @@ open class StreamPlay : TmdbProvider() {
         res.episode,
         callback
         )
+    },
+    {
+       if (!res.isAnime) invokecatflix(
+           res.title,
+           res.episode,
+           res.season,
+           res.year,
+           subtitleCallback,
+           callback
+       )
     },
     {
         if (!res.isAnime) invokeEmovies(

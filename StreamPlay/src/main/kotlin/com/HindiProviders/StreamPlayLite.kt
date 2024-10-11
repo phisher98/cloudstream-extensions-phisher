@@ -35,6 +35,7 @@ import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
+import com.Phisher98.StreamPlayExtractor.invokecatflix
 import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -182,25 +183,6 @@ class StreamPlayLite : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime && res.isCartoon) invokeKimcartoon(
-                    res.title,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-        /*    {
-                if (!res.isAnime) invokeSmashyStream(
-                    res.id,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-         */
-            {
                 if (res.isAsian) invokeKisskh(
                     res.title,
                     res.season,
@@ -277,14 +259,6 @@ class StreamPlayLite : StreamPlay() {
             {
                 if (!res.isAnime) invokeAllMovieland(res.imdbId, res.season, res.episode, callback)
             },
-            /*
-            {
-                if (!res.isAnime && res.isBollywood) invokeDoomovies(
-                    res.title,
-                    subtitleCallback,
-                    callback
-                )
-            },*/
             {
                 if (res.isAsian) invokeDramaday(
                     res.title,
@@ -364,6 +338,16 @@ class StreamPlayLite : StreamPlay() {
                     callback
                 )
             },
+            {
+                if (!res.isAnime) invokecatflix(
+                    res.title,
+                    res.episode,
+                    res.season,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                )
+            }
         )
         return true
     }

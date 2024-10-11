@@ -11,6 +11,7 @@ import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
+import com.Phisher98.StreamPlayExtractor.invokecatflix
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.lagradost.cloudstream3.SubtitleFile
@@ -39,12 +40,11 @@ class StreamPlayTest : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime && !res.isBollywood) invokeVegamovies(
+                if (!res.isAnime) invokecatflix(
                     res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
                     res.episode,
+                    res.season,
+                    res.year,
                     subtitleCallback,
                     callback
                 )

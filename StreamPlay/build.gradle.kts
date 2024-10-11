@@ -23,6 +23,7 @@ android {
         buildConfigField("String", "AsianDrama_API", "\"${properties.getProperty("AsianDrama_API")}\"")
         buildConfigField("String", "ANICHI_API", "\"${properties.getProperty("ANICHI_API")}\"")
         buildConfigField("String", "Whvx_API", "\"${properties.getProperty("Whvx_API")}\"")
+        buildConfigField("String", "CatflixAPI", "\"${properties.getProperty("CatflixAPI")}\"")
     }
 }
 

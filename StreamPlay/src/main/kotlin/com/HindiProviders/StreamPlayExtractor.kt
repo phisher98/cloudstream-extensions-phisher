@@ -2,6 +2,7 @@ package com.Phisher98
 
 import android.annotation.SuppressLint
 import android.util.Log
+import com.Phisher98.StreamPlay.Companion.movies4u
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lagradost.cloudstream3.*
@@ -25,6 +26,8 @@ import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.network.CloudflareKiller
+import okhttp3.Callback
+import okhttp3.Response
 import java.lang.reflect.Type
 
 
@@ -3598,7 +3601,54 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokecatflix(
+        title: String? = null,
+        episode: Int?= null,
+        season: Int?= null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val fixtitle=title.createSlug()
+        val Juicykey=app.get(BuildConfig.CatflixAPI, referer = Catflix).parsedSafe<CatflixJuicy>()?.juice
+        val href=if (season==null)
+        {
+            "$Catflix/movies/$fixtitle"
+        }
+        else
+        {
+            "$Catflix/episodes/${fixtitle}-${season}x${episode}"
+        }
+        val iframe=app.get(href, referer = Catflix).document.selectFirst("article iframe")?.attr("src")
+        if (iframe!=null)
+        {
+            val iframedata=app.get(iframe, referer = Catflix).toString()
+            val apkey=Regex("""apkey\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.get(1)
+            val xxid=Regex("""xxid\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.get(1)
+            val theJuiceData = "https://turbovid.eu/api/cucked/the_juice/?${apkey}=${xxid}"
+            val Juicedata= app.get(theJuiceData, headers = mapOf("X-Requested-With" to "XMLHttpRequest"), referer = theJuiceData).parsedSafe<CatflixJuicydata>()?.data
+            if (Juicedata!=null && Juicykey!=null)
+            {
+                val url= CatdecryptHexWithKey(Juicedata,Juicykey)
+                val headers= mapOf("Origin" to "https://turbovid.eu","Connection" to "keep-alive")
+                callback.invoke(
+                    ExtractorLink(
+                        "Catflix",
+                        "Catflix",
+                        url,
+                        "https://turbovid.eu",
+                        Qualities.P1080.value,
+                        type = INFER_TYPE,
+                        headers=headers,
+                    )
+                )
+                Log.d("Phisher",url)
+            }
+        }
+    }
 }
+
 
 
 
