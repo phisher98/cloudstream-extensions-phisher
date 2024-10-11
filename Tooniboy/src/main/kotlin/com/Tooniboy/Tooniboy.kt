@@ -117,7 +117,7 @@ class Tooniboy : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data, headers=header).document
         document.select("div.op-srv.brd1").forEach {
             val encodedlink=it.attr("data-src")
             val serverurl=base64ToUtf8(encodedlink) ?:""
