@@ -255,7 +255,7 @@ class VCloud : ExtractorApi() {
             val header = document.selectFirst("div.card-header")?.text() ?: ""
             val headerdetails =
                 """\.\d{3,4}p\.(.*)-[^-]*${'$'}""".toRegex().find(header)?.groupValues?.get(1)
-                    ?.trim()
+                    ?.trim() ?: ""
             Log.d("Phisher Vega",header)
             div?.select("h2 a.btn")?.apmap {
                 val link = it.attr("href")

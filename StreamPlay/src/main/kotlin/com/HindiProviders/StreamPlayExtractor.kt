@@ -1912,10 +1912,13 @@ object StreamPlayExtractor : StreamPlay() {
                                 app.get(url, interceptor = wpRedisInterceptor).document.select("div.entry-content > $selector")
                                     .forEach { h4Element ->
                                         var sibling = h4Element.nextElementSibling()
+                                        while (sibling != null && sibling.tagName() != "p") {
+                                            sibling = sibling.nextElementSibling()
+                                        }
                                         while (sibling != null && sibling.tagName() == "p") {
                                             sibling.select("a:matches(V-Cloud|G-Direct)").forEach { sources ->
                                                 val server = sources.attr("href")
-                                                Log.d("Phisher href veg", tags ?:"")
+                                                Log.d("Phisher href veg", tags ?: "")
                                                 loadSourceNameExtractor(
                                                     "V-Cloud",
                                                     server,
