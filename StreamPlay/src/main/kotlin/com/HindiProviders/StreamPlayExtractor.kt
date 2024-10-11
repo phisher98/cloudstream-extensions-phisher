@@ -1888,7 +1888,7 @@ object StreamPlayExtractor : StreamPlay() {
                             anchor.attr("href")
                         } ?: emptyList()
                         val selector =
-                            if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode) ~ p a:matches(V-Cloud|G-Direct)"
+                            if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode)"
                         if (href.isNotEmpty()) {
                             href.amap { url ->
                             if (season==null)
@@ -1909,19 +1909,25 @@ object StreamPlayExtractor : StreamPlay() {
                             }
                             else
                             {
-                                app.get(
-                                    url, interceptor = wpRedisInterceptor
-                                ).document.select("div.entry-content > $selector").first()?.let { sources ->
-                                    val server = sources.attr("href")
-                                    loadCustomTagExtractor(
-                                        tags,
-                                        server,
-                                        "$api/",
-                                        subtitleCallback,
-                                        callback,
-                                        getIndexQuality(it.text())
-                                    )
-                                }
+                                app.get(url, interceptor = wpRedisInterceptor).document.select("div.entry-content > $selector")
+                                    .forEach { h4Element ->
+                                        var sibling = h4Element.nextElementSibling()
+                                        while (sibling != null && sibling.tagName() == "p") {
+                                            sibling.select("a:matches(V-Cloud|G-Direct)").forEach { sources ->
+                                                val server = sources.attr("href")
+                                                Log.d("Phisher href veg", server)
+                                                loadCustomTagExtractor(
+                                                    tags,
+                                                    server,
+                                                    "$api/",
+                                                    subtitleCallback,
+                                                    callback,
+                                                    getIndexQuality(sources.text())
+                                                )
+                                            }
+                                            sibling = sibling.nextElementSibling()
+                                        }
+                                    }
                              }
                             }
                         }

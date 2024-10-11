@@ -39,7 +39,7 @@ class StreamPlayTest : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime) invokeBollyflix(
+                if (!res.isAnime && !res.isBollywood) invokeVegamovies(
                     res.title,
                     res.year,
                     res.season,
