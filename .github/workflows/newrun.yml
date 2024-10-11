@@ -101,8 +101,8 @@ jobs:
           echo PirateIPTV=$PirateIPTV >> local.properties
           echo SonyIPTV=$SonyIPTV >> local.properties
           echo JapanIPTV=$JapanIPTV >> local.properties
-          echo CatflixAPI=CatflixAPI >> local.properties
-          echo TooniboyCookie=TooniboyCookie >> local.properties
+          echo CatflixAPI=$CatflixAPI >> local.properties
+          echo TooniboyCookie=$TooniboyCookie >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
