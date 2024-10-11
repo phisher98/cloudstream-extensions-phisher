@@ -991,6 +991,7 @@ suspend fun loadSourceNameExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
+        Log.d("Phisher", link.toString())
         callback.invoke(
             ExtractorLink(
                 "$source[${link.source}]",

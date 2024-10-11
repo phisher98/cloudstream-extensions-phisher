@@ -248,19 +248,22 @@ class VCloud : ExtractorApi() {
         val doc = app.get(href).document
         val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?:""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
-        Log.d("Phisher Vega",urlValue)
         if (urlValue.isNotEmpty()) {
             val document = app.get(urlValue).document
             val size = document.selectFirst("i#size")?.text() ?: ""
             val div = document.selectFirst("div.card-body")
             val header = document.selectFirst("div.card-header")?.text() ?: ""
+            val headerdetails =
+                """\.\d{3,4}p\.(.*)-[^-]*${'$'}""".toRegex().find(header)?.groupValues?.get(1)
+                    ?.trim()
+            Log.d("Phisher Vega",header)
             div?.select("h2 a.btn")?.apmap {
                 val link = it.attr("href")
                 if (link.contains("technorozen.workers.dev")) {
                     @Suppress("NAME_SHADOWING") val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
                     callback.invoke(
                         ExtractorLink(
-                            "V-Cloud 10 Gbps $header",
+                            "V-Cloud 10 Gbps $headerdetails",
                             "V-Cloud 10 Gbps $size",
                             href,
                             "",
@@ -271,7 +274,7 @@ class VCloud : ExtractorApi() {
                     if (link.contains("pixeldra")) {
                         callback.invoke(
                             ExtractorLink(
-                                "Pixeldrain $header",
+                                "Pixeldrain $headerdetails",
                                 "Pixeldrain $size",
                                 link,
                                 "",
@@ -285,7 +288,7 @@ class VCloud : ExtractorApi() {
                                 ?: link
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud[Download]",
+                                "V-Cloud[Download] $headerdetails",
                                 "V-Cloud[Download] $size",
                                 downloadLink,
                                 "",
@@ -295,7 +298,7 @@ class VCloud : ExtractorApi() {
                     } else if (link.contains(".dev")) {
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud $header",
+                                "V-Cloud $headerdetails",
                                 "V-Cloud $size",
                                 link,
                                 "",
@@ -305,7 +308,7 @@ class VCloud : ExtractorApi() {
                     } else if (link.contains(".hubcdn.xyz")) {
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud $header",
+                                "V-Cloud $headerdetails",
                                 "V-Cloud $size",
                                 link,
                                 "",
@@ -315,7 +318,7 @@ class VCloud : ExtractorApi() {
                     } else if (link.contains(".lol")) {
                         callback.invoke(
                             ExtractorLink(
-                                "V-Cloud [FSL] $header",
+                                "V-Cloud [FSL] $headerdetails",
                                 "V-Cloud $size",
                                 link,
                                 "",

@@ -1897,13 +1897,13 @@ object StreamPlayExtractor : StreamPlay() {
                                     url, interceptor = wpRedisInterceptor
                                 ).document.select("div.entry-content > $selector").map { sources ->
                                     val server = sources.attr("href")
-                                    loadCustomTagExtractor(
-                                        tags,
+                                    loadSourceNameExtractor(
+                                        "V-Cloud",
                                         server,
                                         "$api/",
                                         subtitleCallback,
                                         callback,
-                                        getIndexQuality(it.text())
+                                        getIndexQuality(sources.text())
                                     )
                                 }
                             }
@@ -1915,9 +1915,9 @@ object StreamPlayExtractor : StreamPlay() {
                                         while (sibling != null && sibling.tagName() == "p") {
                                             sibling.select("a:matches(V-Cloud|G-Direct)").forEach { sources ->
                                                 val server = sources.attr("href")
-                                                Log.d("Phisher href veg", server)
-                                                loadCustomTagExtractor(
-                                                    tags,
+                                                Log.d("Phisher href veg", tags ?:"")
+                                                loadSourceNameExtractor(
+                                                    "V-Cloud",
                                                     server,
                                                     "$api/",
                                                     subtitleCallback,
