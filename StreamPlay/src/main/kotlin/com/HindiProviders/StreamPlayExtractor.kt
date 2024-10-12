@@ -1846,10 +1846,9 @@ object StreamPlayExtractor : StreamPlay() {
         val url = if (season == null) {
             "$api/search/$fixtitle $year"
         } else {
-            "$api/search/$fixtitle season $season $year"
+            "$api/search/$fixtitle season $season"
         }
         val domain= api.substringAfter("//").substringBefore(".")
-        Log.d("Phisher url veg", fixtitle.toString())
         app.get(url, interceptor = cfInterceptor).document.select("#main-content article")
             .filter { element ->
                 element.text().contains(
@@ -1857,13 +1856,14 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
             .amap {
+                Log.d("Phisher url veg", it.toString())
                 val hrefpattern =
                     Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find(
                         it.toString()
                     )?.groupValues?.get(1)
+                Log.d("Phisher url veg", hrefpattern.toString())
                 if (hrefpattern!=null) {
                     val res = hrefpattern.let { app.get(it).document }
-                    Log.d("Phisher url veg", hrefpattern.toString())
                     val hTag = if (season == null) "h5" else "h3,h5"
                     val aTag =
                         if (season == null) "Download Now" else "V-Cloud,Download Now,G-Direct,Episode Links"
@@ -1871,13 +1871,14 @@ object StreamPlayExtractor : StreamPlay() {
                     val entries =
                         res.select("div.entry-content > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
                             .filter { element ->
-                                !element.text().contains("Series", true) &&
+                                !element.text().contains("Series Info", true) &&
                                         !element.text().contains("Zip", true) &&
                                         !element.text().contains("[Complete]", true) &&
                                         !element.text().contains("480p, 720p, 1080p", true) &&
                                         !element.text().contains(domain, true) &&
-                                        element.text().matches("(?i).*($sTag).*".toRegex())
+                                element.text().matches("(?i).*($sTag).*".toRegex())
                             }
+                    Log.d("Phisher url entries", entries.toString())
                     entries.amap { it ->
                         val tags =
                             """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -1890,8 +1891,10 @@ object StreamPlayExtractor : StreamPlay() {
                         }?.map { anchor ->
                             anchor.attr("href")
                         } ?: emptyList()
+                        Log.d("Phisher url entries", href.toString())
                         val selector =
                             if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode)"
+                        Log.d("Phisher url veg", href.toString())
                         if (href.isNotEmpty()) {
                             href.amap { url ->
                             if (season==null)
