@@ -1157,13 +1157,13 @@ object StreamPlayExtractor : StreamPlay() {
             .parsedSafe<MALSyncResponses>()?.sites
         Log.d("Phisher", malsync.toString())
         val zoroIds = malsync?.zoro?.keys?.map { it }
-        val zoroname = malsync?.nineAnime?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
+        //val zoroname = malsync?.nineAnime?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         //val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
         val animepahe = malsync?.animepahe?.firstNotNullOf { it.value["url"] }
         val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
         val year=airedDate?.substringBefore("-")
-        Log.d("Phisher", Season)
+        Log.d("Phisher", "$Season $zorotitle $episode")
         argamap(
             {
                 invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
