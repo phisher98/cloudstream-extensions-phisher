@@ -107,11 +107,11 @@ open class Movierulzhd : MainAPI() {
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
         var background = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
         var posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
-        if (backgroud.isNullOrEmpty()) {
+        /*if (backgroud.isNullOrEmpty()) {
             if (background.contains("movierulzhd")) {
                 background = fixUrlNull(document.select("div.poster img").attr("src"))
             }
-        }
+        }*/
         val tags = document.select("div.sgeneros > a").map { it.text() }
         val year = Regex(",\\s?(\\d+)").find(
             document.select("span.date").text().trim()
