@@ -164,7 +164,7 @@ open class Movierulzhd : MainAPI() {
                     )
                 }
             } else {
-                document.select("ul#playeroptionsul > li").map {
+                document.select("ul#playeroptionsul > li").drop(1).map {
                     val name = it.selectFirst("span.title")?.text()
                     val type = it.attr("data-type")
                     val post = it.attr("data-post")
