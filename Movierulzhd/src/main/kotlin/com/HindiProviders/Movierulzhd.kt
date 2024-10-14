@@ -72,6 +72,7 @@ open class Movierulzhd : MainAPI() {
         val title = this.selectFirst("h3 > a")?.text() ?: return null
         val href = getProperLink(fixUrl(this.selectFirst("h3 > a")!!.attr("href")))
         var posterUrl = this.select("div.poster img").last()?.getImageAttr()
+       
         if (posterUrl != null) {
             if (posterUrl.contains(".gif")) {
                 posterUrl = fixUrlNull(this.select("div.poster img").attr("data-wpfc-original-src"))
@@ -104,10 +105,11 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        var posterUrl = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
-        if (posterUrl.isNullOrEmpty()) {
-            if (url.contains("movierulzhd")) {
-                posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
+        var background = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
+        var posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
+        if (backgroud.isNullOrEmpty()) {
+            if (background.contains("movierulzhd")) {
+                background = fixUrlNull(document.select("div.poster img").attr("src"))
             }
         }
         val tags = document.select("div.sgeneros > a").map { it.text() }
@@ -175,6 +177,7 @@ open class Movierulzhd : MainAPI() {
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
+                this.backgroundPosterUrl= background
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -187,6 +190,7 @@ open class Movierulzhd : MainAPI() {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.year = year
+                this.backgroundPosterUrl= background
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
