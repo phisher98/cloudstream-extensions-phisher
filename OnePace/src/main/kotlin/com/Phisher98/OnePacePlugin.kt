@@ -8,5 +8,11 @@ import com.lagradost.cloudstream3.plugins.Plugin
 class OnePacePlugin : Plugin() {
     override fun load(context: Context) {
         registerMainAPI(OnePace())
+        registerMainAPI(OnepaceProvider())
+        registerExtractorAPI(Streamruby())
+        registerExtractorAPI(VidStream())
+        registerExtractorAPI(Vidmolynet())
+        registerExtractorAPI(GDMirrorbot())
+        registerExtractorAPI(Cdnwish())
     }
 }

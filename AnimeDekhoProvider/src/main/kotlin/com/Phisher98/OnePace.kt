@@ -48,7 +48,7 @@ open class OnepaceProvider : MainAPI() {
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
-        val posterUrl = this.selectFirst("img")?.attr("data-src")
+        val posterUrl = this.selectFirst("img")?.attr("src")
         val dubtype:Boolean
         val subtype:Boolean
         if (hreftitle.contains("Dub"))
@@ -76,11 +76,11 @@ open class OnepaceProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-
+        Log.d("Phisher",url)
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
         val ArcINT=media.mediaType?.substringAfter("Arc ")
-        val element= document.selectFirst("div.seasons.aa-crd > div.seasons-bx:contains(S$ArcINT-)")
+        val element= document.selectFirst("div.seasons.aa-crd > div.seasons-bx:contains($ArcINT)")
         val title = media.mediaType ?:"No Title"
         val poster = "https://images3.alphacoders.com/134/1342304.jpeg"
         val plot = document.selectFirst("div.entry-content p")?.text()?.trim()
@@ -89,6 +89,7 @@ open class OnepaceProvider : MainAPI() {
             ?: document.selectFirst("meta[property=og:updated_time]")?.attr("content")
                 ?.substringBefore("-"))?.toIntOrNull()
         val lst = element?.select("ul.seasons-lst.anm-a li")
+        Log.d("Phisher","$ArcINT $element $title $lst")
         return if (lst!!.isEmpty()) {
             newMovieLoadResponse(title, url, TvType.Movie, Media(
                 media.url,
