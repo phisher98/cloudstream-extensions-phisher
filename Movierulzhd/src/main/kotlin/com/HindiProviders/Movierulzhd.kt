@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
-import com.lagradost.cloudstream3.network.CloudflareKiller
 import java.net.URI
 
 open class Movierulzhd : MainAPI() {
@@ -20,7 +19,7 @@ open class Movierulzhd : MainAPI() {
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
-    private val cfInterceptor = CloudflareKiller()
+   
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
@@ -41,8 +40,8 @@ open class Movierulzhd : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-       // val document = app.get(url).document
+       
+        val document = app.get(url).document
         val document = app.get(request.data.format(page), interceptor = cfInterceptor).document
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
