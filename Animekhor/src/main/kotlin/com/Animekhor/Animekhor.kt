@@ -46,7 +46,7 @@ class Animekhor : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("div.bsx > a").attr("title")
         val href      = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("data-src").toString())
+        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src").toString())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
