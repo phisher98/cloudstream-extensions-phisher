@@ -42,7 +42,7 @@ open class Movierulzhd : MainAPI() {
     ): HomePageResponse {
        
         val document = app.get(url).document
-        val document = app.get(request.data.format(page), interceptor = cfInterceptor).document
+       
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
