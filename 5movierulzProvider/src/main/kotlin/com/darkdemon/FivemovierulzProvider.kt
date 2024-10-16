@@ -97,9 +97,8 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
     ): Boolean {
         val fl = app.get(data).document.select("a")[107].attr("href").toString()
         Log.d("vidhidelink",fl)
-        val source = "https://vidhidepro.com/f/"+fl
         loadExtractor(
-                source,
+                fl,
                 "$mainUrl/",
                 subtitleCallback,
                 callback
