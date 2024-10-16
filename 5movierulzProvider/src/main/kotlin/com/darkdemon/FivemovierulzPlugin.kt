@@ -9,7 +9,7 @@ class FivemovierulzPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerExtractorAPI(Sbanh())
-        registerExtractorAPI(filelion())
+        registerExtractorAPI(Filelion())
         registerExtractorAPI(Ncdnstm())
         registerExtractorAPI(StreamTapeAdblockUser())
         registerMainAPI(FivemovierulzProvider())
