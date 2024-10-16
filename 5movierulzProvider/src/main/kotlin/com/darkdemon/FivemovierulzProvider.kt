@@ -21,14 +21,10 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/category/featured/page/" to "Popular Movies",
-        "$mainUrl/category/hollywood-movie-2021/page/" to "English",
-        "$mainUrl/bollywood-movie-free/page/" to "Hindi",
-        "$mainUrl/tamil-movie-free/page/" to "Tamil",
-        "$mainUrl/telugu-movie/page/" to "Telugu",
-        "$mainUrl/malayalam-movie-online/page/" to "Malayalam",
-        "$mainUrl/category/bengali-movie/page/" to "Bengali",
-        "$mainUrl/category/punjabi-movie/page/" to "Punjabi",
+        "$mainUrl/category/featured/page/" to "Latest",
+        "$mainUrl/category/bollywood-featured" "Bollywood",
+        "$mainUrl/language/hindi-dubbed" "Hindi Dubbed",
+        "$mainUrl/category/hollywood-featured" "Hollywood"
     )
 
     override suspend fun getMainPage(
