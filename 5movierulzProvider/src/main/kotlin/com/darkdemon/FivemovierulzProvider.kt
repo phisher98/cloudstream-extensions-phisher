@@ -94,33 +94,16 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val sources = ArrayList<String>()
-        app.get(data).document.select(".entry-content  p a[target=_blank]")
-            .mapNotNull {
-                if (it.attr("href").startsWith("https://down")) {
-                    sources.add(
-                        app.get(it.attr("href")).document.select(".entry-content iframe")
-                            .attr("src")
-                    )
-                } else {
-                    sources.add(it.attr("href"))
-                }
-            }
-        sources.forEach { source ->
-            val src = if (source.startsWith("https://stream")) source.replace(
-                "/([a-z])/".toRegex(),
-                "/e/"
-            ) else source
-            loadExtractor(
-                src,
+        val source = app.get(url).document.select("p")[12].attr("href").toString()
+        loadExtractor(
+                source,
                 "$mainUrl/",
                 subtitleCallback,
                 callback
             )
-        }
         return true
     }
-}
+
 
 class Sbanh : StreamSB() {
     override var mainUrl = "https://sbanh.com"
