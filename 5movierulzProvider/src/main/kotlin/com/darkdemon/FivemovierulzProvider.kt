@@ -94,7 +94,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val source = app.get(data).document.select("p")[12].attr("href").toString()
+        val source = app.get(data).document.select("a")[111].attr("href").toString()
         loadExtractor(
                 source,
                 "$mainUrl/",
