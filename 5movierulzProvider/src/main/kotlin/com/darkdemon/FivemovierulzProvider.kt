@@ -95,7 +95,6 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val linkElement = document.select("a[href*='https://filelions.to']").first()
         val fl = app.get(data).document.select("a[href*='https://filelions.to']").first().attr("href").toString()
         Log.d("vidhidelink",fl)
         loadExtractor(
