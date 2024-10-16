@@ -105,14 +105,4 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
     }
 
 
-class Sbanh : StreamSB() {
-    override var mainUrl = "https://sbanh.com"
-}
-
-class Ncdnstm : XStreamCdn() {
-    override var mainUrl = "https://ncdnstm.xyz"
-}
-
-class StreamTapeAdblockUser : StreamTape() {
-    override var mainUrl = "https://streamtapeadblockuser.homes"
 }
