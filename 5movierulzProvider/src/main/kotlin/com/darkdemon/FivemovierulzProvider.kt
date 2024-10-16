@@ -95,7 +95,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val fl = app.get(data).document.select("a")[110].attr("href").toString()
-        val source = "https://filelions.to/f/"+fl
+        val source = "https://vidhidepro.com/f/"+fl
         loadExtractor(
                 source,
                 "$mainUrl/",
