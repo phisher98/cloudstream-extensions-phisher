@@ -6,5 +6,5 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 
 class Filelion : VidhideExtractor() {
-    override var mainUrl = "https://filelions.to"
+    override var mainUrl = "https://vidhidepro.com"
 }
