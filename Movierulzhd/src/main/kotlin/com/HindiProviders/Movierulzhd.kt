@@ -40,7 +40,7 @@ open class Movierulzhd : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url).document
+        val document = app.get(url, timeout = 20L).document
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -105,8 +105,8 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        var background = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
-        var posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
+        val background = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
+        val posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
         /*if (backgroud.isNullOrEmpty()) {
             if (background.contains("movierulzhd")) {
                 background = fixUrlNull(document.select("div.poster img").attr("src"))

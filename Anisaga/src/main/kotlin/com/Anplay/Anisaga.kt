@@ -1,4 +1,4 @@
-package com.Anplay
+package com.Anisaga
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -10,9 +10,9 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 import java.net.URI
 
-open class Anplay : MainAPI() {
-    override var mainUrl = "https://anplay.in"
-    override var name = "Anplay"
+open class Anisaga : MainAPI() {
+    override var mainUrl = "https://anisaga.org"
+    override var name = "Anisaga"
     override val hasMainPage = true
     override var lang = "hi"
     var directUrl = ""
