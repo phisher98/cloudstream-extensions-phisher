@@ -911,16 +911,17 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
         "type" to "ANIME",
         "season" to season?.uppercase(),
         "seasonYear" to year,
-        "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV")
+        "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
     ).filterValues { value -> value != null && value.toString().isNotEmpty() }
-
+    Log.d("Phisher", "$query $variables")
     val data = mapOf(
         "query" to query,
         "variables" to variables
     ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
-
+    Log.d("Phisher", "$anilistAPI $data")
     val res = app.post(anilistAPI, requestBody = data)
         .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
+    Log.d("Phisher", res?.idMal.toString())
     return AniIds(res?.id, res?.idMal)
 
 }

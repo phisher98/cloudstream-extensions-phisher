@@ -2,7 +2,6 @@ package com.Phisher98
 
 import android.annotation.SuppressLint
 import android.util.Log
-import com.Phisher98.StreamPlay.Companion.movies4u
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lagradost.cloudstream3.*
@@ -3647,7 +3646,51 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokeStarkflix(
+        title: String? = null,
+        episode: Int?= null,
+        season: Int?= null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url=if (season==null)
+        {
+            "$Starkflix/?search=$title"
+        }
+        else
+        {
+            "$Starkflix/?search=${title}+S0${season}+E0${episode}"
+        }
+        Log.d("Phisher",url)
+        app.get(url, interceptor = wpRedisInterceptor).document.select("td.details").amap {
+            Log.d("Phisher", it.toString())
+            val link= it.selectFirst("a")?.attr("href") ?:""
+            val href="$Starkflix$link"
+            val trueurldoc=app.get(href, interceptor = wpRedisInterceptor).document
+            val trueurl= trueurldoc.selectFirst("div.button-container a")?.attr("href")
+            val header= trueurldoc.selectFirst("body > p:nth-child(2)")?.text() ?:""
+            val headerdetails ="""(\d{3,4}p) [A-Za-z]+ (.*)\.""".toRegex().find(header)?.groupValues?.get(1)?.trim() ?: ""
+            val size=trueurldoc.selectFirst("body > p:nth-child(3)")?.text()?.substringAfter("Size:")?.trim() ?:""
+            if (trueurl!=null)
+            {
+                callback.invoke(
+                    ExtractorLink(
+                        "Starflix $headerdetails",
+                        "Starflix $size",
+                        trueurl,
+                        referer = Starkflix,
+                        getIndexQuality(header)
+                    )
+                )
+            }
+        }
+
+    }
+
 }
+
 
 
 

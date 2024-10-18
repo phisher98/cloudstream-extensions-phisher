@@ -9,6 +9,7 @@ import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
+import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.Phisher98.StreamPlayExtractor.invokecatflix
@@ -40,11 +41,10 @@ class StreamPlayTest : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime) invokeDotmovies(
+                if (!res.isAnime) invokeStarkflix(
                     res.title,
                     res.year,
                     res.season,
-                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback

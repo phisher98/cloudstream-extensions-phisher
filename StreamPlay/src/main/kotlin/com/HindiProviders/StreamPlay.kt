@@ -57,6 +57,7 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokekissasian
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
+import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -178,6 +179,7 @@ open class StreamPlay : TmdbProvider() {
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
+        const val Starkflix= "https://scloud.starkflix.cloud"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -931,6 +933,18 @@ open class StreamPlay : TmdbProvider() {
         subtitleCallback,
         callback
     )
+},
+{
+    /*
+    if (!res.isAnime) invokeStarkflix(
+        res.title,
+        res.year,
+        res.season,
+        res.episode,
+        subtitleCallback,
+        callback
+    )
+     */
 }
 
 )
