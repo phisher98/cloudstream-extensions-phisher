@@ -23,5 +23,5 @@ cloudstream {
     )
     language = "hi"
 
-    iconUrl = "https://cinefreak.net/wp-content/uploads/2024/08/cropped-cgk-192x192.png"
+    iconUrl = "https://ownfmx.com/assets/favicon/favicon-32x32.png"
 }
