@@ -32,7 +32,7 @@ class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
         "category/series" to "Series",
         "category/series/netflix" to "Neflix",
         "category/series/amazon-prime" to "Prime",
-        
+        "category/documentaries" to " Documentary"
     )
 
     override suspend fun getMainPage(
