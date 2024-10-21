@@ -33,14 +33,12 @@ class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
         "category/documentaries" to " Documentary",
         "category/romance" to "Adult"
         )
-
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
         val url =if(page==1) "$mainUrl/${request.data}/" else  "$mainUrl/${request.data}/page/$page/" 
         val document = app.get(url).document
-        
         val home = document.select("div.thumb").mapNotNull {
             toResult(it)
         }
@@ -59,7 +57,6 @@ class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
         val document = app.get(url).document
       // val plot = document.select("span[role^=presentation]").text().toString()
         val title = document.selectFirst("h1")?.text().toString()
-       
         val poster = fixUrlNull(document.select("meta[property^=og:image]")?.attr("content"))
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = poster
