@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
-
+import android.util.Log
 
 class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://www.hindilinks4u.pics"
@@ -30,10 +30,9 @@ class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
     override val mainPage = mainPageOf(
         "" to "Latest",
         "category/series" to "Series",
-        "category/series/netflix" to "Neflix",
-        "category/series/amazon-prime" to "Prime",
-        "category/documentaries" to " Documentary"
-    )
+        "category/documentaries" to " Documentary",
+        "category/romance" to "Adult"
+        )
 
     override suspend fun getMainPage(
         page: Int,
@@ -61,7 +60,7 @@ class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
       // val plot = document.select("span[role^=presentation]").text().toString()
         val title = document.selectFirst("h1")?.text().toString()
        
-        val poster = fixUrlNull(document.select("img[src~=https://www\\.hindilinks4u\\.pics/wp-content/uploads]")?.attr("src"))
+        val poster = fixUrlNull(document.select("meta[property^=og:image]")?.attr("content"))
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = poster
             //this.plot=plot
@@ -75,16 +74,12 @@ class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        var src = app.get(data).document.selectFirst("a[href^=https://streamtape]").attr("href")
+        val st = app.get(data).document.select("a[href^=https://stream]").attr("href")
+        val mx = app.get(data).document.select("a[href^=https://mix]").attr("href")
         
-        //Log.d("link",src)
-        loadExtractor(
-                src,
-                "$mainUrl/",
-                subtitleCallback,
-                callback
-           
-        )
+        loadExtractor(st, "$mainUrl/", subtitleCallback, callback)
+        loadExtractor(mx, "$mainUrl/", subtitleCallback, callback)
+        
         return true
     }
 
