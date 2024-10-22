@@ -14,7 +14,6 @@ class KissasianProvider: Plugin() {
         registerMainAPI(Kissasiancx())
         registerMainAPI(Kissasianv2())
         registerMainAPI(Kissasiansi())
-        registerMainAPI(Dramacool())
         registerExtractorAPI(embedwish())
         registerExtractorAPI(dwish())
         registerExtractorAPI(StreamTape())

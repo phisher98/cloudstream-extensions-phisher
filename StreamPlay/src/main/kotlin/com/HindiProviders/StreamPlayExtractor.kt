@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -25,6 +26,7 @@ import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.network.CloudflareKiller
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import okhttp3.Callback
 import okhttp3.Response
 import java.lang.reflect.Type
@@ -222,10 +224,15 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$AsianhdAPI/watch/$fixTitle-$year-episode-$episode"
         }
-        val AsianHDepAPI = "https://api.asianhdplay.org/episodes/detail/"
+        val host=AsianhdAPI.substringAfter("//")
+        val AsianHDepAPI = "https://api.$host/episodes/detail/"
+        Log.d("Phisher", AsianHDepAPI.toString())
         val apisuburl = url.substringAfter("watch/")
+        Log.d("Phisher", apisuburl.toString())
         val json = app.get(AsianHDepAPI + apisuburl).parsedSafe<AsianHDResponse>()
+        Log.d("Phisher", json.toString())
         json?.data?.links?.forEach { link ->
+            Log.d("Phisher", link.toString())
             loadExtractor(link.url, subtitleCallback, callback)
         }
     }
@@ -270,12 +277,16 @@ object StreamPlayExtractor : StreamPlay() {
                 ).text
             ).html
         )
+        Log.d("Phisher", fixTitle.toString())
         doc.select("div.ps__-list > div.item.server-item").forEach {
             val serverid = it.attr("data-id")
             val apiRes =
                 app.get("$KissasianAPI/ajax/v2/episode/sources?id=$serverid")
                     .parsedSafe<KissasianAPISourceresponse>()
             val fstream = apiRes?.link.toString()
+            Log.d("Phisher", serverid.toString())
+            Log.d("Phisher", apiRes.toString())
+            Log.d("Phisher", fstream.toString())
             val response = app.get(
                 fstream,
                 referer = KissasianAPI,
@@ -1059,79 +1070,90 @@ object StreamPlayExtractor : StreamPlay() {
             season == null -> "2"
             else -> "1"
         }
-        val res = app.get(
+        Log.d("Phisher", slug.toString())
+        Log.d("Phisher", type.toString())
+        Log.d("Phisher", "$kissKhAPI/api/DramaList/Search?q=$title&type=$type".toString())
+        val response = app.get(
             "$kissKhAPI/api/DramaList/Search?q=$title&type=$type",
             referer = "$kissKhAPI/"
-        ).text.let {
-            tryParseJson<ArrayList<KisskhResults>>(it)
-        } ?: return
+        ).text
+        val res=tryParseJson<ArrayList<KisskhResults>>(response)
+        Log.d("Phisher", res.toString())
+        if (res!=null) {
+            val (id, contentTitle) = if (res.size == 1) {
+                res.first().id to res.first().title
+            } else {
+                val data = res.find {
+                    val slugTitle = it.title.createSlug() ?: return
+                    when {
+                        season == null -> slugTitle == slug
+                        lastSeason == 1 -> slugTitle.contains(slug)
+                        else -> (slugTitle.contains(slug) && it.title?.contains(
+                            "Season $season",
+                            true
+                        ) == true)
+                    }
+                } ?: res.find { it.title.equals(title) }
+                data?.id to data?.title
+            }
 
-        val (id, contentTitle) = if (res.size == 1) {
-            res.first().id to res.first().title
-        } else {
-            val data = res.find {
-                val slugTitle = it.title.createSlug() ?: return
-                when {
-                    season == null -> slugTitle == slug
-                    lastSeason == 1 -> slugTitle.contains(slug)
-                    else -> (slugTitle.contains(slug) && it.title?.contains(
-                        "Season $season",
-                        true
-                    ) == true)
+            val resDetail = app.get(
+                "$kissKhAPI/api/DramaList/Drama/$id?isq=false",
+                referer = "$kissKhAPI/Drama/${
+                    getKisskhTitle(contentTitle)
+                }?id=$id"
+            ).parsedSafe<KisskhDetail>() ?: return
+            Log.d("Phisher", resDetail.toString())
+            val epsId = if (season == null) {
+                resDetail.episodes?.first()?.id
+            } else {
+                resDetail.episodes?.find { it.number == episode }?.id
+            }
+            app.get(
+                "$kissKhAPI/api/DramaList/Episode/$epsId.png?err=false&ts=&time=",
+                referer = "$kissKhAPI/Drama/${getKisskhTitle(contentTitle)}/Episode-${episode ?: 0}?id=$id&ep=$epsId&page=0&pageSize=100"
+            ).parsedSafe<KisskhSources>()?.let { source ->
+                listOf(source.video, source.thirdParty).apmap { link ->
+                    Log.d("Phisher", link.toString())
+                    if (link?.contains(".m3u8") == true) {
+                        M3u8Helper.generateM3u8(
+                            "Kisskh",
+                            link,
+                            "$kissKhAPI/",
+                            headers = mapOf("Origin" to kissKhAPI)
+                        ).forEach(callback)
+                    } else if (link?.contains(".mp4") == true) {
+                        loadNameExtractor(
+                            "Kisskh",
+                            link,
+                            referer = null,
+                            subtitleCallback,
+                            callback,
+                            Qualities.P1080.value
+                        )
+                    } else {
+                        loadExtractor(
+                            link?.substringBefore("=http")
+                                ?: return@apmap null,
+                            "$kissKhAPI/",
+                            subtitleCallback,
+                            callback
+                        )
+                    }
                 }
-            } ?: res.find { it.title.equals(title) }
-            data?.id to data?.title
-        }
+            }
 
-        val resDetail = app.get(
-            "$kissKhAPI/api/DramaList/Drama/$id?isq=false",
-            referer = "$kissKhAPI/Drama/${
-                getKisskhTitle(contentTitle)
-            }?id=$id"
-        ).parsedSafe<KisskhDetail>() ?: return
-
-        val epsId = if (season == null) {
-            resDetail.episodes?.first()?.id
-        } else {
-            resDetail.episodes?.find { it.number == episode }?.id
-        }
-
-        app.get(
-            "$kissKhAPI/api/DramaList/Episode/$epsId.png?err=false&ts=&time=",
-            referer = "$kissKhAPI/Drama/${getKisskhTitle(contentTitle)}/Episode-${episode ?: 0}?id=$id&ep=$epsId&page=0&pageSize=100"
-        ).parsedSafe<KisskhSources>()?.let { source ->
-            listOf(source.video, source.thirdParty).apmap { link ->
-                if (link?.contains(".m3u8") == true) {
-                    M3u8Helper.generateM3u8(
-                        "Kisskh",
-                        link,
-                        "$kissKhAPI/",
-                        headers = mapOf("Origin" to kissKhAPI)
-                    ).forEach(callback)
-                } else {
-                    loadExtractor(
-                        link?.substringBefore("=http")
-                            ?: return@apmap null,
-                        "$kissKhAPI/",
-                        subtitleCallback,
-                        callback
+            app.get("$kissKhAPI/api/Sub/$epsId").text.let { resSub ->
+                tryParseJson<List<KisskhSubtitle>>(resSub)?.map { sub ->
+                    subtitleCallback.invoke(
+                        SubtitleFile(
+                            getLanguage(sub.label ?: return@map), sub.src
+                                ?: return@map
+                        )
                     )
                 }
             }
         }
-
-        app.get("$kissKhAPI/api/Sub/$epsId").text.let { resSub ->
-            tryParseJson<List<KisskhSubtitle>>(resSub)?.map { sub ->
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        getLanguage(sub.label ?: return@map), sub.src
-                            ?: return@map
-                    )
-                )
-            }
-        }
-
-
     }
 
     suspend fun invokeAnimes(
@@ -2514,17 +2536,16 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$Whvx_API/search?id=$imdbId&season=$season&episode=$episode"
         }
-        val jsonResponse: String = app.get(subUrl).toString()
-        val type: Type = object : TypeToken<List<whvxSubResponses2>>() {}.type
-        val subResponses: List<whvxSubResponses2> = Gson().fromJson(jsonResponse, type)
-        subResponses.map { sub ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    sub.languageName,
-                    fixUrl(sub.url)
+        val json = app.get(subUrl).text
+        val data = parseJson<ArrayList<WHVXSubtitle>>(json)
+            data.forEach {
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        it.languageName,
+                        it.url
+                    )
                 )
-            )
-        }
+            }
     }
 
     suspend fun invokeShinobiMovies(
@@ -3688,7 +3709,66 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
     }
+    suspend fun invokeDramaCool(
+        title: String?,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
 
+        val json = if(season == null && episode == null) {
+            var episodeSlug = "$title episode 1".createSlug()
+            val url = "${ConsumetAPI}/movies/dramacool/watch?episodeId=${episodeSlug}"
+            val res = app.get(url).text
+            if(res.contains("Media Not found")) {
+                val newEpisodeSlug = "$title $year episode 1".createSlug()
+                val newUrl = "$ConsumetAPI/movies/dramacool/watch?episodeId=${newEpisodeSlug}"
+                app.get(newUrl).text
+            }
+            else {
+                res
+            }
+        }
+        else {
+            val seasonText = if(season == 1) "" else "season $season"
+            val episodeSlug = "$title $seasonText episode $episode".createSlug()
+            val url =  "${ConsumetAPI}/movies/dramacool/watch?episodeId=${episodeSlug}"
+            val res = app.get(url).text
+            if(res.contains("Media Not found")) {
+                val newEpisodeSlug = "$title $seasonText $year episode $episode".createSlug()
+                val newUrl = "$ConsumetAPI/movies/dramacool/watch?episodeId=${newEpisodeSlug}"
+                app.get(newUrl).text
+            }
+            else {
+                res
+            }
+        }
+
+        val data = parseJson<ConsumetSources>(json)
+        data.sources?.forEach {
+            callback.invoke(
+                ExtractorLink(
+                    "DramaCool",
+                    "DramaCool",
+                    it.url,
+                    referer = "",
+                    quality = Qualities.P1080.value,
+                    isM3u8 = true
+                )
+            )
+        }
+
+        data.subtitles?.forEach {
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    it.lang,
+                    it.url
+                )
+            )
+        }
+    }
 }
 
 

@@ -3,8 +3,11 @@ package com.Phisher98
 import android.util.Log
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
 import com.Phisher98.StreamPlayExtractor.invokeAnitaku
+import com.Phisher98.StreamPlayExtractor.invokeAsianHD
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
+import com.Phisher98.StreamPlayExtractor.invokeDramaCool
+import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
@@ -13,6 +16,7 @@ import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.Phisher98.StreamPlayExtractor.invokecatflix
+import com.Phisher98.StreamPlayExtractor.invokekissasian
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.lagradost.cloudstream3.SubtitleFile
@@ -33,15 +37,7 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                invokewhvx(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback
-                )
-            },
-            {
-                if (!res.isAnime) invokeStarkflix(
+                if (res.isAsian) invokeAsianHD(
                     res.title,
                     res.year,
                     res.season,
@@ -49,7 +45,7 @@ class StreamPlayTest : StreamPlay() {
                     subtitleCallback,
                     callback
                 )
-            }
+            },
         )
         return true
     }

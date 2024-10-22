@@ -57,6 +57,7 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokekissasian
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
+import com.Phisher98.StreamPlayExtractor.invokeDramaCool
 import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokewhvx
@@ -180,6 +181,7 @@ open class StreamPlay : TmdbProvider() {
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
         const val Starkflix= "https://scloud.starkflix.cloud"
+        const val ConsumetAPI=BuildConfig.ConsumetAPI
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -627,7 +629,7 @@ open class StreamPlay : TmdbProvider() {
                 )
             },
             {
-                if (!res.isAnime) invokemovies4u(
+                if (!res.isAnime && !res.isAsian) invokemovies4u(
                     res.title,
                     res.episode,
                     res.season,
@@ -857,14 +859,6 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        if (res.isAsian) invokekissasian(
-            res.title,
-            res.year,
-            res.episode,
-            callback
-        )
-    },
-    {
         if (!res.isAsian && !res.isBollywood) invokeZshow(
             res.title,
             res.year,
@@ -933,6 +927,16 @@ open class StreamPlay : TmdbProvider() {
         subtitleCallback,
         callback
     )
+},
+{
+      if(res.isAsian) invokeDramaCool(
+          res.title,
+          res.year,
+          res.season,
+          res.episode,
+          subtitleCallback,
+          callback
+      )
 },
 {
     /*

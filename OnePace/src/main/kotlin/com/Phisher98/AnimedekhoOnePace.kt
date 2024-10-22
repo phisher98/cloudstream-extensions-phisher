@@ -38,7 +38,7 @@ open class OnepaceProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): AnimeSearchResponse {
-        val hreftitle= this.selectFirst("picture img")?.attr("alt")
+        val hreftitle= this.selectFirst("img")?.attr("alt")
         var href=""
         if (hreftitle!!.isNotEmpty()) {
             if (hreftitle.contains("Dub")) {
@@ -76,7 +76,6 @@ open class OnepaceProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        Log.d("Phisher",url)
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
         val ArcINT=media.mediaType?.substringAfter("Arc ")

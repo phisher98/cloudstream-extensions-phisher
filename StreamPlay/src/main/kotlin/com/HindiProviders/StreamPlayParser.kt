@@ -316,16 +316,9 @@ data class WatchsomuchSubResponses(
     @JsonProperty("subtitles") val subtitles: ArrayList<WatchsomuchSubtitles>? = arrayListOf(),
 )
 
-typealias whvxSubResponses = List<whvxSubResponses2>;
-
-data class whvxSubResponses2(
-    val id: String,
-    val opensubtitles: Boolean,
+data class WHVXSubtitle(
     val url: String,
-    val flagUrl: String?,
-    val type: String,
     val languageName: String,
-    val language: String?,
 )
 
 //Catflix Juicey
@@ -742,4 +735,20 @@ data class NepuSearch(
 }
 data class Bollyflixparse(
     val url: String,
+)
+
+data class ConsumetSources(
+    val sources: List<ConsumetSource>?,
+    val subtitles: List<ConsumetSubtitle>?,
+    val download: String?
+)
+
+data class ConsumetSource(
+    val url: String,
+    val isM3u8: Boolean
+)
+
+data class ConsumetSubtitle(
+    val url: String,
+    val lang: String
 )

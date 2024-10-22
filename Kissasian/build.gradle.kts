@@ -5,7 +5,7 @@ version = 9
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Includes DramaCool,KissAsian (All Clones),KissAsian V2"
+    description = "Includes KissAsian (All Clones),KissAsian V2"
     language    = "en"
     authors = listOf("Phisher98")
 

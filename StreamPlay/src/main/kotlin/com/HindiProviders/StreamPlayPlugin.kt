@@ -103,5 +103,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(OkRuSSL())
         registerExtractorAPI(OkRuHTTP())
         registerExtractorAPI(Embtaku())
+        registerExtractorAPI(bulbasaur())
     }
 }

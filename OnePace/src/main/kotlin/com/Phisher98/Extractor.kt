@@ -83,7 +83,6 @@ open class VidStream : ExtractorApi() {
         )?.groupValues?.get(1)
 
         val key = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
-
         val decrypt = cryptoAESHandler(master ?: return, key.toByteArray(), false)
             ?.replace("\\", "")
             ?: throw ErrorLoadingException("failed to decrypt")
@@ -133,7 +132,7 @@ open class VidStream : ExtractorApi() {
     }
 
     private suspend fun fetchKey(): String? {
-        return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/keys/index.html")
+        return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/refs/heads/keys/index.html")
             .parsedSafe<Keys>()?.key?.get(0)?.also { key = it }
     }
 

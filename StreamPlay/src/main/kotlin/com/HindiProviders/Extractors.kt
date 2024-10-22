@@ -20,8 +20,11 @@ import com.lagradost.cloudstream3.utils.*
 import java.math.BigInteger
 import java.security.MessageDigest
 import com.lagradost.cloudstream3.extractors.Chillx
+import com.lagradost.cloudstream3.extractors.FileMoon
+import com.lagradost.cloudstream3.extractors.FileMoonSx
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -584,6 +587,10 @@ class Snolaxstream : Filesim() {
     override val name = "Snolaxstream"
 }
 
+class bulbasaur : Filesim() {
+    override val mainUrl = "https://bulbasaur.online"
+    override val name = "Filemoon"
+}
 class do0od : DoodLaExtractor() {
     override var mainUrl = "https://do0od.com"
 }
