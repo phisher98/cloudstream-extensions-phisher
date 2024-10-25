@@ -1,6 +1,5 @@
 package com.Phisher98
 
-//import android.util.Log
 import com.Phisher98.StreamPlay.Companion.animepaheAPI
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
@@ -13,6 +12,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Jeniusplay
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
@@ -20,18 +20,14 @@ import com.lagradost.cloudstream3.utils.*
 import java.math.BigInteger
 import java.security.MessageDigest
 import com.lagradost.cloudstream3.extractors.Chillx
-import com.lagradost.cloudstream3.extractors.FileMoon
-import com.lagradost.cloudstream3.extractors.FileMoonSx
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
-import org.jsoup.nodes.Document
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -588,7 +584,7 @@ class Snolaxstream : Filesim() {
 }
 
 class bulbasaur : Filesim() {
-    override val mainUrl = "https://bulbasaur.online"
+    override val mainUrl = "https://file-mi11ljwj-embed.com"
     override val name = "Filemoon"
 }
 class do0od : DoodLaExtractor() {
@@ -863,7 +859,7 @@ open class Modflix : ExtractorApi() {
 }
 
 
-
+/*
 open class Asianbxkiun : ExtractorApi() {
     override val name: String = "Asianbxkiun"
     override val mainUrl: String = "https://asianbxkiun.pro"
@@ -875,13 +871,36 @@ open class Asianbxkiun : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-       app.get(url).document.select("#list-server-more ul li").map {
-           val link=it.attr("data-video")
-           loadExtractor(link,subtitleCallback, callback)
-       }
+        val iframe = app.get(httpsify(url))
+        val iframeDoc = iframe.document
+        argamap({
+            iframeDoc.select("#list-server-more ul li")
+                .forEach { element ->
+                    val extractorData = element.attr("data-video").substringBefore("=http")
+                    val dataprovider = element.attr("data-provider") ?: return@forEach
+                    if (dataprovider != "serverwithtoken") return@forEach
+                    Log.d("Phisher",iframe.url)
+                    loadExtractor(extractorData, iframe.url, subtitleCallback, callback)
+                }
+        }, {
+            val iv = "9262859232435825"
+            val secretKey = "93422192433952489752342908585752"
+            val secretDecryptKey = secretKey
+            GogoHelper.extractVidstream(
+                iframe.url,
+                this.name,
+                callback,
+                iv,
+                secretKey,
+                secretDecryptKey,
+                isUsingAdaptiveKeys = false,
+                isUsingAdaptiveData = true,
+                iframeDocument = iframeDoc
+            )
+        })
     }
 }
-
+ */
 
 class furher : Filesim() {
     override val name: String = "AZSeries"

@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
@@ -94,11 +95,14 @@ class Dramacool : MainAPI() {
         val iframeDoc = iframe.document
         argamap({
             iframeDoc.select(".list-server-items > .linkserver")
-                .amap { element ->
+                .forEach { element ->
                     val extractorData = element.attr("data-video").substringBefore("=http")
+                    val status = element.attr("data-status") ?: return@forEach
+                    if (status != "1") return@forEach
                     loadExtractor(extractorData, iframe.url, subtitleCallback, callback)
                 }
         }, {
+            Log.d("Phisher",iframe.url)
             val iv = "9262859232435825"
             val secretKey = "93422192433952489752342908585752"
             val secretDecryptKey = secretKey

@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.mozilla.javascript.Scriptable
 import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
+import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import okhttp3.Callback
@@ -226,14 +227,45 @@ object StreamPlayExtractor : StreamPlay() {
         }
         val host=AsianhdAPI.substringAfter("//")
         val AsianHDepAPI = "https://api.$host/episodes/detail/"
-        Log.d("Phisher", AsianHDepAPI.toString())
         val apisuburl = url.substringAfter("watch/")
-        Log.d("Phisher", apisuburl.toString())
         val json = app.get(AsianHDepAPI + apisuburl).parsedSafe<AsianHDResponse>()
-        Log.d("Phisher", json.toString())
         json?.data?.links?.forEach { link ->
-            Log.d("Phisher", link.toString())
-            loadExtractor(link.url, subtitleCallback, callback)
+            if (link.url.contains("asianbxkiun"))
+            {
+                val iframe = app.get(httpsify(link.url))
+                val iframeDoc = iframe.document
+                argamap({
+                    iframeDoc.select("#list-server-more ul li")
+                        .amap { element ->
+                            val extractorData = element.attr("data-video").substringBefore("=http")
+                            val dataprovider = element.attr("data-provider")
+                            if (dataprovider == "serverwithtoken") return@amap
+                            loadExtractor(extractorData, iframe.url, subtitleCallback, callback)
+                        }
+                }, {
+                    val iv = "9262859232435825"
+                    val secretKey = "93422192433952489752342908585752"
+                    val secretDecryptKey = secretKey
+                    GogoHelper.extractVidstream(
+                        iframe.url,
+                        "AsianHD",
+                        callback,
+                        iv,
+                        secretKey,
+                        secretDecryptKey,
+                        isUsingAdaptiveKeys = false,
+                        isUsingAdaptiveData = true,
+                        iframeDocument = iframeDoc
+                    )
+                })
+            } else if (link.url.contains("bulbasaur.online"))
+            {
+                val href=app.get(link.url).document.selectFirst("iframe")?.attr("src") ?:""
+                loadExtractor(href, subtitleCallback, callback)
+            } else
+            {
+                loadExtractor(link.url, subtitleCallback, callback)
+            }
         }
     }
 
@@ -323,53 +355,6 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
         }
-    }
-
-    suspend fun invokeDramacool(
-        title: String? = null,
-        season: Int? = null,
-        year: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val fixTitle = title.createSlug()
-        val url = if (season == null) {
-            "$DramacoolAPI/drama-detail/$fixTitle.html"
-        } else {
-            "$DramacoolAPI/$fixTitle-episode-$episode.html"
-        }
-        //Log.d("Phisher",url)
-        val document = app.get(url).document
-        document.select("div.anime_muti_link ul li").map {
-            var link = it.attr("data-video")
-            if (link.startsWith("http")) {
-                loadExtractor(link, subtitleCallback, callback)
-            } else {
-                link = "https:$link"
-                link = "https:$link"
-                loadExtractor(link, subtitleCallback, callback)
-            }
-
-
-        }
-        /*
-        servers.forEach { url ->
-            if (url.contains("asian")) {
-                val doc = app.get(url).document
-                val links = doc.select("ul > li.linkserver").toString()
-                val regex = "data-video=\"(.*)\\?c".toRegex()
-                val allservers = regex.findAll(links).map {
-                    it.groupValues[1]
-                }.toList()
-                allservers.forEach {
-                    loadExtractor(it, subtitleCallback, callback)
-                }
-            } else {
-                loadExtractor(url, subtitleCallback, callback)
-            }
-        }
-        */
     }
 
     suspend fun invokeMultimovies(
@@ -2525,6 +2510,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
     //only sub
+    @SuppressLint("SuspiciousIndentation")
     suspend fun invokewhvx(
         imdbId: String? = null,
         season: Int? = null,

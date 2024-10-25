@@ -83,7 +83,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Sethniceletter())
         registerExtractorAPI(GDFlix())
         registerExtractorAPI(fastdlserver())
-        registerExtractorAPI(Asianbxkiun())
         registerExtractorAPI(GDFlix1())
         registerExtractorAPI(GDFlix2())
         registerExtractorAPI(furher())
