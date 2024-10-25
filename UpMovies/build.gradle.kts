@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 8
+version = 9
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "HD Provider for all Indian Languages"
-    language = "hi"
+    description = "Multi-Language Movies"
+    language = "en"
     authors = listOf("Hindi Provider")
 
     /**
@@ -25,5 +25,5 @@ cloudstream {
         "TvSeries",
         "Movie",
     )
-    iconUrl = "https://upmovies.net/themes/movies/images/favicon.ico"
+    iconUrl = "https://flixwave.me/themes/movies/images/logo.png"
 }

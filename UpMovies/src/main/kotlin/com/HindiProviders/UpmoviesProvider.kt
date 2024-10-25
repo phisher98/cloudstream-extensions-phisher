@@ -1,20 +1,18 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
-import android.os.Build
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import java.util.Base64
 import org.jsoup.nodes.Element
 
 class UpmoviesProvider : MainAPI() {
-    override var mainUrl = "https://upmovies.net"
+    override var mainUrl = "https://flixwave.me"
     override var name = "UPMovies"
     override val hasMainPage = true
-    override var lang = "hi"
+    override var lang = "en"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries,TvType.AsianDrama,TvType.Anime)
-
     override val mainPage =
             mainPageOf(
                     "new-released" to "New Released",
@@ -152,6 +150,7 @@ class UpmoviesProvider : MainAPI() {
             }
         return true
     }
+    @SuppressLint("NewApi")
     fun String.decodeBase64(): String {
         val decodedBytes = Base64.getDecoder().decode(this)
         return String(decodedBytes, Charsets.UTF_8)
