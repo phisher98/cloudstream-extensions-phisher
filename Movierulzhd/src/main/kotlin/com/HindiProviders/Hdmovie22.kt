@@ -17,6 +17,6 @@ import java.time.Year
 class Hdmovie22 : Hdmovie2() {
 
     override var mainUrl = "https://hdmovie22.net"
-    override var name = "hd22"
+    override var name = "Hdmovie22"
 
 }
