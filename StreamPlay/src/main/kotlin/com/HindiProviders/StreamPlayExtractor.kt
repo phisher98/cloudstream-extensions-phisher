@@ -1028,8 +1028,28 @@ object StreamPlayExtractor : StreamPlay() {
             val epUrl = url.plus(it.replace("category/", "")).plus("-episode-${episode}")
             val epRes = app.get(epUrl).document
             epRes.select("div.anime_muti_link > ul > li").forEach {
+
                 val sourcename = it.selectFirst("a")?.ownText() ?: return@forEach
+                Log.d("Phisher", results.toString())
+                Log.d("Phisher", results.toString())
                 val iframe = it.selectFirst("a")?.attr("data-video") ?: return@forEach
+                if(iframe.contains("s3taku"))
+                {
+                    val iv = "3134003223491201"
+                    val secretKey = "37911490979715163134003223491201"
+                    val secretDecryptKey = "54674138327930866480207815084989"
+                    GogoHelper.extractVidstream(
+                        iframe,
+                        "Anitaku Vidstreaming [$subDub]",
+                        callback,
+                        iv,
+                        secretKey,
+                        secretDecryptKey,
+                        isUsingAdaptiveKeys = false,
+                        isUsingAdaptiveData = true
+                    )
+                }
+                else
                 loadCustomExtractor(
                     "Anitaku $sourcename [$subDub]",
                     iframe,
@@ -1257,8 +1277,23 @@ object StreamPlayExtractor : StreamPlay() {
                             }
                         } else {
                             if (sourceUrl.startsWith("http")) {
+                                if (sourceUrl.contains("embtaku.pro"))
+                                {
+                                    val iv = "3134003223491201"
+                                    val secretKey = "37911490979715163134003223491201"
+                                    val secretDecryptKey = "54674138327930866480207815084989"
+                                    GogoHelper.extractVidstream(
+                                        sourceUrl,
+                                        "Anichi [${i.uppercase()}] [Vidstreaming]",
+                                        callback,
+                                        iv,
+                                        secretKey,
+                                        secretDecryptKey,
+                                        isUsingAdaptiveKeys = false,
+                                        isUsingAdaptiveData = true
+                                    )
+                                }
                                 val sourcename=sourceUrl.getHost()
-                                Log.d("Phisher source","$sourcename $sourceUrl")
                                 loadCustomExtractor(
                                     "Anichi [${i.uppercase()}] [$sourcename]",
                                     sourceUrl

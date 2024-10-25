@@ -37,15 +37,16 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (res.isAsian) invokeAsianHD(
+                if (res.isAnime) invokeAnimes(
                     res.title,
-                    res.year,
+                    res.epsTitle,
+                    res.date,
+                    res.airedDate,
                     res.season,
                     res.episode,
                     subtitleCallback,
                     callback
-                )
-            },
+                )            },
         )
         return true
     }
