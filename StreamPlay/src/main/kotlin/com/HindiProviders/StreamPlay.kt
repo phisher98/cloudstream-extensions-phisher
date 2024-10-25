@@ -170,7 +170,7 @@ open class StreamPlay : TmdbProvider() {
         const val topmoviesAPI = "https://topmovies.mov"
         const val MoviesmodAPI= "https://moviesmod.day"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
-        const val vegaMoviesAPI = "https://vegamovies.foo"
+        const val vegaMoviesAPI = "https://vegamovies.si"
         const val dotmoviesAPI = "https://luxmovies.shop"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"

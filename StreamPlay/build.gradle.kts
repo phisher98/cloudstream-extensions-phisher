@@ -3,7 +3,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 70
+version = 71
 android {
     defaultConfig {
         val properties = Properties()
