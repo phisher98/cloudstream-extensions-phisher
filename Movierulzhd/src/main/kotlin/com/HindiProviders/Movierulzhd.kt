@@ -164,16 +164,30 @@ open class Movierulzhd : MainAPI() {
                     )
                 }
             } else {
-                document.select("ul#playeroptionsul > li").drop(1).map {
-                    val name = it.selectFirst("span.title")?.text()
-                    val type = it.attr("data-type")
-                    val post = it.attr("data-post")
-                    val nume = it.attr("data-nume")
-                    Episode(
-                        LinkData(name, type, post, nume).toJson(),
-                        name
-                    )
-                }
+            	val check = document.select("ul#playeroptionsul > li").toString().contains("super")
+				if (check) {
+				    document.select("ul#playeroptionsul > li").drop(1).map {
+				        val name = it.selectFirst("span.title")?.text()
+				        val type = it.attr("data-type")
+				        val post = it.attr("data-post")
+				        val nume = it.attr("data-nume")
+				        Episode(
+				            LinkData(name, type, post, nume).toJson(),
+				            name
+				        )
+				    }
+				} else {
+				    document.select("ul#playeroptionsul > li").map {
+				        val name = it.selectFirst("span.title")?.text()
+				        val type = it.attr("data-type")
+				        val post = it.attr("data-post")
+				        val nume = it.attr("data-nume")
+				        Episode(
+				            LinkData(name, type, post, nume).toJson(),
+				            name
+				        )
+				    }
+				}
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
