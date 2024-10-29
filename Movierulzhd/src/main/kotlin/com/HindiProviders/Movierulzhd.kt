@@ -164,7 +164,7 @@ open class Movierulzhd : MainAPI() {
                     )
                 }
             } else {
-            	val check = document.select("ul#playeroptionsul > li").toString().contains("super")
+            	val check = document.select("ul#playeroptionsul > li").toString().contains("Super")
 				if (check) {
 				    document.select("ul#playeroptionsul > li").drop(1).map {
 				        val name = it.selectFirst("span.title")?.text()
