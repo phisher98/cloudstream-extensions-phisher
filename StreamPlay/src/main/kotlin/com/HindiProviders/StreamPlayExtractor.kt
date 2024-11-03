@@ -1061,8 +1061,6 @@ object StreamPlayExtractor : StreamPlay() {
             season == null -> "2"
             else -> "1"
         }
-        Log.d("Phisher", slug.toString())
-        Log.d("Phisher", type.toString())
         Log.d("Phisher", "$kissKhAPI/api/DramaList/Search?q=$title&type=$type".toString())
         val response = app.get(
             "$kissKhAPI/api/DramaList/Search?q=$title&type=$type",
@@ -1120,7 +1118,7 @@ object StreamPlayExtractor : StreamPlay() {
                             referer = null,
                             subtitleCallback,
                             callback,
-                            Qualities.P1080.value
+                            Qualities.P720.value
                         )
                     } else {
                         loadExtractor(
