@@ -83,12 +83,14 @@ class StreamPlayLite : StreamPlay() {
                 )
             },
             {
+                /*
                 invokewhvx(
                     res.imdbId,
                     res.season,
                     res.episode,
                     subtitleCallback
                 )
+                 */
             },
             {
                 if (!res.isAnime) invokeMoviesdrive(

@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.extractors.Moviesapi
 import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.OkRuHTTP
 import com.lagradost.cloudstream3.extractors.OkRuSSL
+import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamSB8
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
@@ -99,6 +100,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Mp4Upload())
         registerExtractorAPI(Streamlare())
         registerExtractorAPI(StreamSB8())
+        registerExtractorAPI(StreamSB())
         registerExtractorAPI(OkRuSSL())
         registerExtractorAPI(OkRuHTTP())
         registerExtractorAPI(Embtaku())

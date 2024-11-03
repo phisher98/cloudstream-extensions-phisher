@@ -670,12 +670,14 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
+        /*
         invokewhvx(
             res.imdbId,
             res.season,
             res.episode,
             subtitleCallback
         )
+         */
     },
     {
         if (!res.isAnime) invokeNinetv(

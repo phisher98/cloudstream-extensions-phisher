@@ -1009,29 +1009,16 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeAnitaku(
-        title: String? = null,
-        Season: String? = null,
-        year: String?,
+        url: String? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        //val slug = title.createSlug() ?: return
-        val url = anitaku
-        val filterUrl = "$url/filter.html?keyword=${title}&year[]=${year}&season[]=$Season"
-        Log.d("Phisher", filterUrl.toString())
-        val filterRes = app.get(filterUrl).document
-        val results = filterRes.select("ul.items > li > p.name > a").map { it.attr("href") }
-        Log.d("Phisher", results.toString())
-        results.amap {
-            val subDub = if (it.contains("-dub")) "Dub" else "Sub"
-            val epUrl = url.plus(it.replace("category/", "")).plus("-episode-${episode}")
+            val subDub = if (url!!.contains("-dub")) "Dub" else "Sub"
+            val epUrl = url.replace("category/", "").plus("-episode-${episode}")
             val epRes = app.get(epUrl).document
-            epRes.select("div.anime_muti_link > ul > li").forEach {
-
+        epRes.select("div.anime_muti_link > ul > li").forEach {
                 val sourcename = it.selectFirst("a")?.ownText() ?: return@forEach
-                Log.d("Phisher", results.toString())
-                Log.d("Phisher", results.toString())
                 val iframe = it.selectFirst("a")?.attr("data-video") ?: return@forEach
                 if(iframe.contains("s3taku"))
                 {
@@ -1058,7 +1045,6 @@ object StreamPlayExtractor : StreamPlay() {
                     callback
                 )
             }
-        }
     }
 
 
@@ -1181,16 +1167,10 @@ object StreamPlayExtractor : StreamPlay() {
         val Season=app.get("$jikanAPI/anime/${malId ?: return}").parsedSafe<JikanResponse>()?.data?.season ?:""
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
-        Log.d("Phisher", malsync.toString())
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val TMDBdate=date?.substringBefore("-")
-        //val zoroname = malsync?.nineAnime?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
-        //val aniwaveId = malsync?.nineAnime?.firstNotNullOf { it.value["url"] }
-        val animepahe = malsync?.animepahe?.firstNotNullOf { it.value["url"] }
-        val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
         val year=airedDate?.substringBefore("-")
-        Log.d("Phisher", "$Season $zorotitle $episode $year $airedDate $date")
         argamap(
             {
                 invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
@@ -1199,19 +1179,25 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds, episode, subtitleCallback, callback)
             },
             {
+                val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
+                if (animepahetitle!=null)
                 invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
             },
             {
+                val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
+                if (animepahe!=null)
                 invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
             },
             {
                 invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
             },
             {
-                invokeAnitaku(zorotitle,Season,year, episode, subtitleCallback, callback)
+                val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
+                if (Gogourl != null)
+                invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             }
         )
     }
@@ -1460,7 +1446,6 @@ object StreamPlayExtractor : StreamPlay() {
             }?.select("div.ss-list a")
                 ?.find { it.attr("data-number") == "${episode ?: 1}" }
                 ?.attr("data-id")
-
             val servers = app.get(
                 "$hianimeAPI/ajax/v2/episode/servers?episodeId=${episodeId ?: return@apmap}",
                 headers = headers
@@ -1472,7 +1457,7 @@ object StreamPlayExtractor : StreamPlay() {
                         it.attr("data-type"),
                     )
                 }
-
+            Log.d("Phisher Hi",servers.toString())
             servers?.map servers@{ server ->
                 val iframe = app.get(
                     "$hianimeAPI/ajax/v2/episode/sources?id=${server.second ?: return@servers}",
@@ -1480,6 +1465,7 @@ object StreamPlayExtractor : StreamPlay() {
                 ).parsedSafe<HianimeResponses>()?.link
                     ?: return@servers
                 val audio = if (server.third == "sub") "Raw" else "English Dub"
+                Log.d("Phisher Hi",iframe)
                 loadCustomExtractor(
                     "HiAnime ${server.first} [$audio]",
                     iframe,
@@ -1501,17 +1487,13 @@ object StreamPlayExtractor : StreamPlay() {
         val api="https://gamma.miruro.tv/?url=https://api.miruro.tv"
         val header= mapOf("x-atx" to "12RmYtJexlqnNym38z4ahwy+g1g0la/El8nkkMOVtiQ=")
         val fixtitle=title.createSlug()
-        Log.d("Phisher Gogo",fixtitle.toString())
         val sub="$api/meta/anilist/watch/$fixtitle-episode-$episode"
         val dub="$api/meta/anilist/watch/$fixtitle-dub-episode-$episode"
-        Log.d("Phisher Gogo href",sub.toString())
         val list = listOf(sub, dub)
         for(url in list) {
             val json = app.get(url, header).parsedSafe<MiruroanimeGogo>()?.sources
-            Log.d("Phisher Gogo href",json.toString())
             json?.amap {
                 val href = it.url
-                Log.d("Phisher Gogo href",href.toString())
                 var quality = it.quality
                 if (quality.contains("backup"))
                 {

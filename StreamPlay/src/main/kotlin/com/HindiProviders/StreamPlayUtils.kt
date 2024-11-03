@@ -102,8 +102,7 @@ fun Document.getMirrorServer(server: Int): String {
 
 suspend fun extractMirrorUHD(url: String, ref: String): String? {
     var baseDoc = app.get(fixUrl(url, ref)).document
-    Log.d("TEst Mirror",baseDoc.toString())
-    Log.d("TEst Mirror",baseDoc.toString())
+
     var downLink = baseDoc.getMirrorLink()
     run lit@{
         (1..2).forEach {
@@ -913,12 +912,10 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
         "seasonYear" to year,
         "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
     ).filterValues { value -> value != null && value.toString().isNotEmpty() }
-    Log.d("Phisher", "$query $variables")
     val data = mapOf(
         "query" to query,
         "variables" to variables
     ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
-    Log.d("Phisher", "$anilistAPI $data")
     val res = app.post(anilistAPI, requestBody = data)
         .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
     Log.d("Phisher", res?.idMal.toString())
@@ -992,7 +989,6 @@ suspend fun loadSourceNameExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
-        Log.d("Phisher", link.toString())
         callback.invoke(
             ExtractorLink(
                 "$source[${link.source}]",
@@ -1209,7 +1205,6 @@ fun getIndexSize(str: String?): String? {
 suspend fun extractMdrive(url: String): List<String> {
     val doc= app.get(url).document
     val href=doc.select("h5 > a,h3 > a").map { it.attr("href") }
-    Log.d("Phisher1 it",href.toString())
     return href
 }
 
@@ -1697,7 +1692,6 @@ suspend fun extracttopmoviestag2(url:String): String? {
 suspend fun decodesmashy(url:String): String {
     val doc= app.get(url, referer = "https://smashystream.xyz/").document
     val string=doc.toString().substringAfter("#2").substringBefore("\"").replace(Regex("//.{16}"), "").let { DecodeBase64(it) }
-    Log.d("Phisher Em",string)
     return string
 }
 
