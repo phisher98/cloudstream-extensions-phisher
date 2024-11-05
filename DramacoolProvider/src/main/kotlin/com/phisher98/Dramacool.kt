@@ -17,7 +17,7 @@ class Dramacool : MainAPI() {
     )
     override var lang = "en"
 
-    override var mainUrl = "https://kdramaweb.com"
+    override var mainUrl = "https://kstardrama.com"
     override var name = "Dramacool"
 
     override val hasMainPage = true
