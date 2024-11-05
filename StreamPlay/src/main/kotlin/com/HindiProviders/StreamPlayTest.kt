@@ -37,16 +37,14 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (res.isAnime) invokeAnimes(
+                if (!res.isAnime) invokecatflix(
                     res.title,
-                    res.epsTitle,
-                    res.date,
-                    res.airedDate,
-                    res.season,
                     res.episode,
+                    res.season,
+                    res.year,
                     subtitleCallback,
                     callback
-                )            },
+                )         },
         )
         return true
     }

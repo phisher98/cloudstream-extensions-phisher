@@ -3652,19 +3652,18 @@ object StreamPlayExtractor : StreamPlay() {
             if (Juicedata!=null && Juicykey!=null)
             {
                 val url= CatdecryptHexWithKey(Juicedata,Juicykey)
-                val headers= mapOf("Origin" to "https://turbovid.eu","Connection" to "keep-alive")
+                val headers= mapOf("Origin" to "https://turbovid.eu/","Connection" to "keep-alive")
                 callback.invoke(
                     ExtractorLink(
                         "Catflix",
                         "Catflix",
                         url,
-                        "https://turbovid.eu",
+                        "https://turbovid.eu/",
                         Qualities.P1080.value,
                         type = INFER_TYPE,
                         headers=headers,
                     )
                 )
-                Log.d("Phisher",url)
             }
         }
     }
