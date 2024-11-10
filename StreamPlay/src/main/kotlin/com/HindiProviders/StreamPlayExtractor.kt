@@ -3702,7 +3702,8 @@ object StreamPlayExtractor : StreamPlay() {
                         "Starflix $size",
                         trueurl,
                         referer = Starkflix,
-                        getIndexQuality(header)
+                        getIndexQuality(header),
+                        isM3u8 = false
                     )
                 )
             }
