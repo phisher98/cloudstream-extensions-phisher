@@ -934,7 +934,7 @@ open class StreamPlay : TmdbProvider() {
       )
 },
 {
-    /*
+
     if (!res.isAnime) invokeStarkflix(
         res.title,
         res.year,
@@ -943,7 +943,7 @@ open class StreamPlay : TmdbProvider() {
         subtitleCallback,
         callback
     )
-     */
+     
 }
 
 )
