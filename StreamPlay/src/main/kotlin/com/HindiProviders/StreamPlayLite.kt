@@ -34,6 +34,7 @@ import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeNepu
+import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokecatflix
 import com.Phisher98.StreamPlayExtractor.invokewhvx
@@ -349,6 +350,17 @@ class StreamPlayLite : StreamPlay() {
                     subtitleCallback,
                     callback
                 )
+            },
+            {
+                if (!res.isAnime) invokeStarkflix(
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+
             }
         )
         return true

@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
@@ -31,7 +32,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import okhttp3.Callback
 import okhttp3.Response
 import java.lang.reflect.Type
-
+import java.util.Base64
 
 
 val session = Session(Requests().baseClient)
@@ -3690,13 +3691,17 @@ object StreamPlayExtractor : StreamPlay() {
             val link= it.selectFirst("a")?.attr("href") ?:""
             val href="$Starkflix$link"
             val trueurldoc=app.get(href, interceptor = wpRedisInterceptor).document
-            val trueurl= trueurldoc.selectFirst("div.button-container a")?.attr("href")
+            val base641= trueurldoc.selectFirst("div.button-container a")?.attr("href")
+                ?.substringAfter("download=")
+            val base642= base641?.decodeBase64()
+            val base643= base642?.decodeBase64()
+            val trueurl= base643?.decodeBase64()
             val header= trueurldoc.selectFirst("body > p:nth-child(2)")?.text() ?:""
             val headerdetails ="""(\d{3,4}p) [A-Za-z]+ (.*)\.""".toRegex().find(header)?.groupValues?.get(1)?.trim() ?: ""
             val size=trueurldoc.selectFirst("body > p:nth-child(3)")?.text()?.substringAfter("Size:")?.trim() ?:""
+            Log.d("Phisher",trueurl.toString())
             if (trueurl!=null)
-            {
-                callback.invoke(
+            callback.invoke(
                     ExtractorLink(
                         "Starflix $headerdetails",
                         "Starflix $size",
@@ -3706,9 +3711,14 @@ object StreamPlayExtractor : StreamPlay() {
                         isM3u8 = false
                     )
                 )
-            }
         }
 
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    fun String.decodeBase64(): String {
+        val decodedBytes = Base64.getDecoder().decode(this)
+        return String(decodedBytes, Charsets.UTF_8)
     }
     suspend fun invokeDramaCool(
         title: String?,
