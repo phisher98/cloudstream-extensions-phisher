@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 9
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Includes KissAsian (All Clones),KissAsian V2"
+    description = "All Asian Dramas/Series/Movies"
     language    = "en"
     authors = listOf("Phisher98")
 
@@ -23,5 +23,5 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("TvSeries,AsianDrama")
 
-    iconUrl = "https://play-lh.googleusercontent.com/IaCb2JXII0OV611MQ-wSA8v_SAs9XF6E3TMDiuxGGXo4wp9bI60GtDASIqdERSTO5XU"
+    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://asianhdplay.in&size=%size%"
 }
