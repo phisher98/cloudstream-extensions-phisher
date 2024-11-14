@@ -6,7 +6,7 @@ cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
 
-    description = "Anime in SUB"
+    description = "Animes (SUB/DUB)"
     authors = listOf("Cloudburst,Lorem Ipsum,Phisher98")
 
     /**
