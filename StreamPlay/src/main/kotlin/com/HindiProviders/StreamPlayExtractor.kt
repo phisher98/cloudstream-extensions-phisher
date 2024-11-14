@@ -1312,13 +1312,16 @@ object StreamPlayExtractor : StreamPlay() {
         val session = animeData?.find { it.episode == episode }?.session ?: ""
         app.get("$animepaheAPI/play/$id/$session", headers).document.select("div.dropup button")
             .map {
+                var lang=""
+                val dub=it.select("span").text()
+                if (dub.contains("eng")) lang="DUB" else lang="SUB"
                 val quality = it.attr("data-resolution").toString()
                 val href = it.attr("data-src")
                 if (href.contains("kwik.si")) {
                     loadCustomExtractor(
-                        "Animepahe [SUB] $quality",
+                        "Animepahe [$lang] $quality",
                         href,
-                        "",
+                        mainUrl,
                         subtitleCallback,
                         callback,
                         getIndexQuality(quality)
