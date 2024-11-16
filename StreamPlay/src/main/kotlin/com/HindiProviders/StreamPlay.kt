@@ -56,7 +56,6 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
-import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -178,8 +177,8 @@ open class StreamPlay : TmdbProvider() {
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
-        const val Starkflix= "https://scloud.starkflix.cloud"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
+        const val BollyflixVIP= "https://bollyflix.fi"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -590,6 +589,7 @@ open class StreamPlay : TmdbProvider() {
                 },
                 {
                     if (!res.isAnime) invokeTopMovies(
+                        res.imdbId,
                         res.title,
                         res.year,
                         res.season,
@@ -612,6 +612,7 @@ open class StreamPlay : TmdbProvider() {
             },
             {
                 if (!res.isAnime) invokeBollyflix(
+                    res.imdbId,
                     res.title,
                     res.year,
                     res.season,
@@ -765,6 +766,7 @@ open class StreamPlay : TmdbProvider() {
     },
     {
         if (!res.isAnime && !res.isBollywood) invokeVegamovies(
+            res.imdbId,
             res.title,
             res.year,
             res.season,
@@ -776,6 +778,7 @@ open class StreamPlay : TmdbProvider() {
     },
     {
         if (!res.isAnime) invokeDotmovies(
+            res.imdbId,
             res.title,
             res.year,
             res.season,

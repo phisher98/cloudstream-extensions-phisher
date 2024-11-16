@@ -1210,10 +1210,10 @@ class Driveleech : Driveseed() {
         return links
     }
 
-    private suspend fun resumeCloudLink(url: String): String {
+    private suspend fun resumeCloudLink(url: String): String? {
         val resumeCloudUrl = mainUrl + url
         val document = app.get(resumeCloudUrl).document
-        val link = document.selectFirst("a.btn-success")?.attr("href").toString()
+        val link = document.selectFirst("a.btn-success")?.attr("href")
         return link
     }
 
@@ -1280,7 +1280,8 @@ class Driveleech : Driveseed() {
             val href = element.attr("href")
             when {
                 text.contains("Instant Download") -> {
-                    val instant = instantLink(href)
+                    val instant = instantLink(href) ?: null
+                    if (instant!=null)
                     callback.invoke(
                         ExtractorLink(
                             "$name Instant(Download)",
@@ -1292,7 +1293,8 @@ class Driveleech : Driveseed() {
                     )
                 }
                 text.contains("Resume Worker Bot") -> {
-                    val resumeLink = resumeBot(href)
+                    val resumeLink = resumeBot(href)?: null
+                    if (resumeLink!=null)
                     callback.invoke(
                         ExtractorLink(
                             "$name ResumeBot(VLC)",
@@ -1319,6 +1321,7 @@ class Driveleech : Driveseed() {
                 }
                 text.contains("Resume Cloud") -> {
                     val resumeCloud = resumeCloudLink(href)
+                    if (resumeCloud!=null)
                     callback.invoke(
                         ExtractorLink(
                             "$name ResumeCloud",

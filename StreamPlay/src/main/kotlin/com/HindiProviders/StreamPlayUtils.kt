@@ -669,11 +669,6 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-suspend fun bypasstopoviesunblocked(url: String): String {
-    val driveLink = bypassHrefli(url) ?:""
-    return driveLink
-}
-
 suspend fun getTvMoviesServer(url: String, season: Int?, episode: Int?): Pair<String, String?>? {
 
     val req = app.get(url)

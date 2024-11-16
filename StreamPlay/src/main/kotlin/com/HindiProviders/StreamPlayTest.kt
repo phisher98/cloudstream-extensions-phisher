@@ -1,24 +1,8 @@
 package com.Phisher98
 
 import android.util.Log
-import com.Phisher98.StreamPlayExtractor.invokeAnimes
-import com.Phisher98.StreamPlayExtractor.invokeAnitaku
-import com.Phisher98.StreamPlayExtractor.invokeAsianHD
-import com.Phisher98.StreamPlayExtractor.invokeBollyflix
-import com.Phisher98.StreamPlayExtractor.invokeDotmovies
-import com.Phisher98.StreamPlayExtractor.invokeDramaCool
-import com.Phisher98.StreamPlayExtractor.invokeKisskh
-import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
-import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
-import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
-import com.Phisher98.StreamPlayExtractor.invokeStarkflix
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
-import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
-import com.Phisher98.StreamPlayExtractor.invokecatflix
-import com.Phisher98.StreamPlayExtractor.invokekissasian
-import com.Phisher98.StreamPlayExtractor.invokemovies4u
-import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -37,14 +21,48 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokeStarkflix(
+            },
+            /*
+            {
+                if (!res.isAnime) invokeDotmovies(
+                    res.imdbId,
                     res.title,
                     res.year,
                     res.season,
+                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback
-                )        },
+                )
+            },
+             */
+            /*
+            {
+                if (!res.isAnime && !res.isBollywood) invokeVegamovies(
+                    res.imdbId,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+
+
+            {
+                if (!res.isAnime) invokeBollyflix(
+                    res.imdbId,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },*/
         )
         return true
     }
