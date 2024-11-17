@@ -23,4 +23,4 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie,Torrent")
 
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=hhttps://en.yts-official.mx&size=%size%"}
+    iconUrl = "https://yts-official.mx/static/yts/image/logo-YTS.svg"}
