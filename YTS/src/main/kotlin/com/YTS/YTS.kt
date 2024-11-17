@@ -1,13 +1,9 @@
 package com.YTS
 
 //import android.util.Log
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
-import java.net.URI
 
 class YTS : MainAPI() {
     override var mainUrl              = "https://en.yts-official.mx"
@@ -72,17 +68,17 @@ class YTS : MainAPI() {
         val document = app.get(url).document
         val title = document.selectFirst("#mobile-movie-info h1")?.text()?.trim() ?:"No Title"
         val poster = getURL(document.select("#movie-poster img").attr("src"))
-        val trailer = document.selectFirst("div.tmdb-trailer > iframe")?.attr("src")
         val year = document.selectFirst("#mobile-movie-info h2")?.text()?.trim()?.toIntOrNull()
         val tags = document.selectFirst("#mobile-movie-info > h2:nth-child(3)")?.text()?.trim()
             ?.split(" / ")
             ?.map { it.trim() }
-            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+        val rating= document.select("#movie-info > div.bottom-info > div:nth-child(2) > span:nth-child(2)").text().toRatingInt()
+        return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.plot = title
                 this.year = year
+                this.rating=rating
                 this.tags = tags
-                addTrailer(trailer)
             }
     }
 
