@@ -58,6 +58,7 @@ import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
+import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -177,6 +178,7 @@ open class StreamPlay : TmdbProvider() {
         const val ConsumetAPI=BuildConfig.ConsumetAPI
         const val BollyflixVIP= "https://bollyflix.fi"
         const val FlixAPI= BuildConfig.FlixAPI
+        const val NyaaAPI="https://nyaa.land"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -949,6 +951,15 @@ open class StreamPlay : TmdbProvider() {
 {
     invokeFlixAPI(
         res.tvdbId,
+        res.season,
+        res.episode,
+        subtitleCallback,
+        callback
+    )
+},
+{
+    if (res.isAnime) invokenyaa(
+        res.title,
         res.season,
         res.episode,
         subtitleCallback,

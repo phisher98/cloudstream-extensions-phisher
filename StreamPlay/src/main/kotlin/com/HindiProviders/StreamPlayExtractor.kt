@@ -3756,7 +3756,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
+        //val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
         val searchtitle = title?.substringBefore("-").createSlug()
         //Log.d("Phisher bolly", "$BollyflixVIP/search/$imdbId")
         var res1 =
@@ -3829,6 +3829,30 @@ suspend fun invokeFlixAPI(
             )
         )
     }
+    }
+
+suspend fun invokenyaa(
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url="$NyaaAPI?f=0&c=0_0&q=$title+S0${season}E0$episode&s=seeders&o=desc"
+        app.get(url).document.select("tr.danger,tr.default").take(10).amap {
+            val Qualities=getIndexQuality(it.selectFirst("tr td:nth-of-type(2)")?.text())
+            val href= getfullURL(it.select("td.text-center a:nth-child(1)").attr("href"), NyaaAPI)
+            callback.invoke(
+                ExtractorLink(
+                    "Nyaa $Qualities",
+                    "Nyaa $Qualities",
+                    href,
+                    "",
+                    Qualities,
+                    ExtractorLinkType.TORRENT
+                )
+            )
+        }
     }
 
 }

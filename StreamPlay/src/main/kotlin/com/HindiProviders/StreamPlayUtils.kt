@@ -1725,3 +1725,7 @@ fun CatdecryptHexWithKey(hex: String, key: String): String {
     val binary = CathexToBinary(hex)
     return CatxorDecrypt(binary, key)
 }
+
+fun getfullURL(url: String,mainUrl:String): String {
+    return "$mainUrl$url"
+}
