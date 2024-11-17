@@ -1379,7 +1379,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         fun Elements.getLinks(): List<Triple<String, String, Int>> {
             return this.flatMap { ele ->
-                ele.select("div.links a:matches(KrakenFiles|GoFile)").map {
+                ele.select("div.links a:matches(KrakenFiles|GoFile|Magnet|Torrent)").map {
                     Triple(
                         it.attr("href"),
                         ele.select("div.size").text(),
@@ -1394,33 +1394,46 @@ object StreamPlayExtractor : StreamPlay() {
             app.get("$jikanAPI/anime/$malId/full").parsedSafe<JikanResponse>()?.data
         val aniId =
             jikan?.external?.find { it.name == "AniDB" }?.url?.substringAfterLast("=")
-        val res =
-            app.get("$animetoshoAPI/series/${jikan?.title?.createSlug()}.$aniId?filter[0][t]=nyaa_class&filter[0][v]=trusted").document
-
-        val servers = if (season == null) {
-            res.select("div.home_list_entry:has(div.links)").getLinks()
-        } else {
-            res.select("div.home_list_entry:has(div.link a:matches([\\.\\s]$episodeSlug[\\.\\s]|S${seasonSLug}E$episodeSlug))")
-                .getLinks()
-        }
-
-        servers.filter {
-            it.third in arrayOf(
-                Qualities.P1080.value,
-                Qualities.P720.value
-            )
-        }
-            .apmap {
-                loadCustomTagExtractor(
-                    it.second,
-                    it.first,
-                    "$animetoshoAPI/",
-                    subtitleCallback,
-                    callback,
-                    it.third
+        for (i in 1..3) {
+            val res =
+                app.get("$animetoshoAPI/series/${jikan?.title?.createSlug()}.$aniId?filter[0][t]=nyaa_class&filter[0][v]=trusted&page=$i").document
+            val servers = if (season == null) {
+                res.select("div.home_list_entry:has(div.links)").getLinks()
+            } else {
+                res.select("div.home_list_entry:has(div.link a:matches([\\.\\s]$episodeSlug[\\.\\s]|S${seasonSLug}E$episodeSlug))")
+                    .getLinks()
+            }
+            servers.filter {
+                it.third in arrayOf(
+                    Qualities.P1080.value,
+                    Qualities.P720.value
                 )
             }
-
+                .apmap {
+                    if(it.first.startsWith("magnet")||it.first.startsWith("Torrent"))
+                    {
+                        callback.invoke(
+                            ExtractorLink(
+                                "Animetosho Torrent",
+                                "Animetosho Torrent",
+                                it.first,
+                                "",
+                                it.third,
+                                INFER_TYPE
+                            )
+                        )
+                    }
+                    else
+                    loadCustomTagExtractor(
+                        it.second,
+                        it.first,
+                        "$animetoshoAPI/",
+                        subtitleCallback,
+                        callback,
+                        it.third
+                    )
+                }
+        }
     }
 
     private suspend fun invokeHianime(
