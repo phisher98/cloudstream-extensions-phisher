@@ -4,6 +4,19 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
+//FlixAPI
+
+data class FlixAPI(
+    val source: String,
+    val subtitles: List<FlixAPISubtitle>,
+)
+
+data class FlixAPISubtitle(
+    val url: String,
+    val lang: String,
+)
+
+
 //Anichi
 
 data class Anichi(
@@ -734,9 +747,6 @@ data class NepuSearch(
         @JsonProperty("type") val type: String? = null,
     )
 }
-data class Bollyflixparse(
-    val url: String,
-)
 
 data class ConsumetSources(
     val sources: List<ConsumetSource>?,

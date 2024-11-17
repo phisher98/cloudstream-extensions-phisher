@@ -5,7 +5,6 @@ import android.util.Log
 import com.Phisher98.StreamPlayExtractor.invoke2embed
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
-import com.Phisher98.StreamPlayExtractor.invokeAnitaku
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 import com.Phisher98.StreamPlayExtractor.invokeAsianHD
@@ -55,9 +54,10 @@ import com.Phisher98.StreamPlayExtractor.invokeZoechip
 import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
+import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
+import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
-import com.Phisher98.StreamPlayExtractor.invokewhvx
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -126,14 +126,12 @@ open class StreamPlay : TmdbProvider() {
         const val kimcartoonAPI = "https://kimcartoon.li"
         const val hianimeAPI = "https://hianime.to"
         const val aniwaveAPI = "https://aniwave.to"
-        const val anitaku = "https://anitaku.pe"
+        //const val anitaku = "https://anitaku.pe"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val crunchyrollAPI = "https://beta-api.crunchyroll.com"
         const val kissKhAPI = "https://kisskh.co"
         const val lingAPI = "https://ling-online.net"
         const val AsianhdAPI = "https://asianhdplay.in"
-        const val KissasianAPI= "https://ww2.kissasian.vip"
-        const val WatchasinAPI = "https://watchasia.to"
         const val m4uhdAPI = "https://ww1.streamm4u.ws"
         const val flixonAPI = "https://myflixer.lol"
         const val azseriesAPI = "https://azseries.org"
@@ -161,7 +159,6 @@ open class StreamPlay : TmdbProvider() {
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
         const val nepuAPI = "https://nepu.to"
-        const val DramacoolAPI = "https://watchasia.to"
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.icu"
         const val topmoviesAPI = "https://topmovies.icu"
@@ -179,6 +176,7 @@ open class StreamPlay : TmdbProvider() {
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
         const val BollyflixVIP= "https://bollyflix.fi"
+        const val FlixAPI= BuildConfig.FlixAPI
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -623,6 +621,18 @@ open class StreamPlay : TmdbProvider() {
                 )
             },
             {
+                if (!res.isAnime) invokeBollyflixvip(
+                    res.imdbId,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
                 if (!res.isAnime && !res.isAsian) invokemovies4u(
                     res.title,
                     res.episode,
@@ -917,7 +927,7 @@ open class StreamPlay : TmdbProvider() {
     )
 },
 {
-    if (!res.isAnime) invokeAsiandrama(
+    if (res.isAsian) invokeAsiandrama(
         res.title,
         res.season,
         res.episode,
@@ -935,7 +945,17 @@ open class StreamPlay : TmdbProvider() {
           subtitleCallback,
           callback
       )
+},
+{
+    invokeFlixAPI(
+        res.tvdbId,
+        res.season,
+        res.episode,
+        subtitleCallback,
+        callback
+    )
 }
+
 
 )
 return true

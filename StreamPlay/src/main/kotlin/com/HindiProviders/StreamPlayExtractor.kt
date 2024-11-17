@@ -1,11 +1,7 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
-import android.os.Build
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.utils.*
@@ -29,11 +25,6 @@ import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import okhttp3.Callback
-import okhttp3.Response
-import java.lang.reflect.Type
-import java.util.Base64
-
 
 val session = Session(Requests().baseClient)
 
@@ -270,6 +261,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    /*
     suspend fun invokeWatchasian(
         title: String? = null,
         year: Int? = null,
@@ -357,6 +349,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+*/
 
     suspend fun invokeMultimovies(
         apiUrl: String,
@@ -3789,7 +3782,41 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
+suspend fun invokeFlixAPI(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$FlixAPI/movie/$tmdbId"
+        } else {
+            "$FlixAPI/tv/$tmdbId/$season/$episode"
+        }
+    Log.d("Phisher", url.toString())
+    val source= app.get(url).parsedSafe<FlixAPI>()?.source
+    callback.invoke(
+        ExtractorLink(
+            "FlixAPI",
+            "FlixAPI",
+            url = source ?: return,
+            referer = "$mainUrl/",
+            quality = Qualities.P1080.value,
+            INFER_TYPE,
+        )
+    )
+    app.get(url).parsedSafe<FlixAPI>()?.subtitles?.forEach {
+        val sub=it.url
+        val lang=it.lang
+        subtitleCallback.invoke(
+            SubtitleFile(
+                lang,  // Use label for the name
+                sub     // Use extracted URL
+            )
+        )
+    }
+    }
 
 }
 
