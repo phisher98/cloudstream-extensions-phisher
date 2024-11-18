@@ -54,7 +54,7 @@ class Oldserials : MainAPI() {
     private fun Element.toRecommendResult(): SearchResponse? {
         val title = this.selectFirst("a")?.attr("title") ?: return null
         val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
-        val posterUrl = "https://oldserials.co/pub/assets/images/OldSerials-logo-v3.png"
+        val posterUrl = "https://oldserials.cc/pub/assets/images/OldSerials-logo-v3.png"
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -64,7 +64,7 @@ class Oldserials : MainAPI() {
 
     private fun Suggestion.toSearchResponse(): SearchResponse {
         return newTvSeriesSearchResponse(value,link,TvType.TvSeries) {
-            this.posterUrl = "https://oldserials.co/pub/assets/images/OldSerials-logo-v3.png"
+            this.posterUrl = "https://oldserials.cc/pub/assets/images/OldSerials-logo-v3.png"
         }
     }
 
@@ -77,7 +77,7 @@ class Oldserials : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url, timeout = 30L).document
         val title = document.selectFirst("div.contentp h1")?.text() ?: "Unknown"
-        val posterUrl = document.selectFirst("div.cont-img figure img")?.attr("src") ?: "https://oldserials.co/pub/assets/images/OldSerials-logo-v3.png"
+        val posterUrl = document.selectFirst("div.cont-img figure img")?.attr("src") ?: "https://oldserials.cc/pub/assets/images/OldSerials-logo-v3.png"
         val lastpage=document.select("#pagination_btns a:contains(Last)").attr("href").substringAfterLast("/").toIntOrNull() ?: 0
         val plot = document.selectFirst("div.story-section")?.text() ?: ""
         val recommendations = document.select("ul.serial-listing li").mapNotNull {
