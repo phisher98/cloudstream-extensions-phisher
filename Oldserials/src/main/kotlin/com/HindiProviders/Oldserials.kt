@@ -8,7 +8,7 @@ import okhttp3.FormBody
 import java.net.URI
 
 class Oldserials : MainAPI() {
-    override var mainUrl = "https://oldserials.co"
+    override var mainUrl = "https://oldserials.cc"
     override var name = "Oldserials"
     override val hasMainPage = true
     override val hasQuickSearch = true

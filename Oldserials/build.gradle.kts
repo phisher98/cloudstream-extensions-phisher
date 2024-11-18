@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 1
+version = 2
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
@@ -20,5 +20,5 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("TvSeries")
-    iconUrl = "https://animekhor.org/wp-content/uploads/2021/11/AnimeKhor_darkmode.png"
+    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://oldserials.cc&size=%size%"
 }
