@@ -5,7 +5,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class YTS : MainAPI() {
+open class YTS : MainAPI() {
     override var mainUrl              = "https://en.yts-official.mx"
     override var name                 = "YTS"
     override val hasMainPage          = true

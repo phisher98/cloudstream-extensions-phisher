@@ -77,7 +77,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         //Log.d("title", title)
         val href = fixUrl(this.selectFirst("div.data > h3 > a")?.attr("href").toString())
         //Log.d("href", href)
-        val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("data-src"))
         //Log.d("posterUrl", posterUrl.toString())
         //Log.d("QualityN", qualityN)
         val quality =
