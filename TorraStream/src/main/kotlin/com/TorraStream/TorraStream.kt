@@ -9,17 +9,12 @@ import com.lagradost.cloudstream3.utils.*
 
 class TorraStream() : TraktProvider() {
     override var name = "TorraStream"
-    override var mainUrl = "https://trakt.tv"
     override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama,TvType.Torrent)
     override var lang = "en"
     override val supportedSyncNames = setOf(SyncIdName.Trakt)
     override val hasMainPage = true
     override val hasQuickSearch = false
 
-    private val traktClientId =
-        base64Decode(
-            "N2YzODYwYWQzNGI4ZTZmOTdmN2I5MTA0ZWQzMzEwOGI0MmQ3MTdlMTM0MmM2NGMxMTg5NGE1MjUyYTQ3NjE3Zg=="
-        )
     private val traktApiUrl = base64Decode("aHR0cHM6Ly9hcGl6LnRyYWt0LnR2")
 
     protected fun Any.toStringData(): String {

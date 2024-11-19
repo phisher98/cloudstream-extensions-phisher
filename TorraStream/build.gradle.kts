@@ -5,7 +5,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "YTS Movies 4K Support (Torrent)"
+    description = "Movies/Series/Animes 4K Support (Torrent)"
     language    = "en"
     authors = listOf("Phisher98")
 
