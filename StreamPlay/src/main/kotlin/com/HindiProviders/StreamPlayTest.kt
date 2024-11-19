@@ -1,7 +1,9 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
+import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -30,9 +32,13 @@ class StreamPlayTest : StreamPlay() {
                 )
             },
             {
-                if (res.isAnime) invokenyaa(
+                if (!res.isAnime) invokeVidbinge(
+                    res.imdbId,
+                    res.id,
                     res.title,
+                    res.year,
                     res.season,
+                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback

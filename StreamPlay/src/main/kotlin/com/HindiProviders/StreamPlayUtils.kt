@@ -411,6 +411,23 @@ suspend fun extractCovyn(url: String?): Pair<String?, String?>? {
     return Pair(videoLink, size)
 }
 
+
+fun encodeQuery(query: String): String {
+    return URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+}
+
+fun fixUrlEncoding(url: String): String {
+    // Extract query parameters from the URL (everything after the "?")
+    val baseUrl = url.substringBefore("?")
+    val query = url.substringAfter("?")
+
+    // Encode the query string
+    val encodedQuery = URLEncoder.encode(query, "UTF-8")
+
+    // Ensure special characters in the query string are handled correctly (e.g., %20 for spaces, %26 for &)
+    return "$baseUrl?$encodedQuery"
+}
+
 suspend fun getDirectGdrive(url: String): String {
     val fixUrl = if (url.contains("&export=download")) {
         url

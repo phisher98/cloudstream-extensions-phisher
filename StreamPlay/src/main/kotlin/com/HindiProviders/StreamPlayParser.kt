@@ -763,3 +763,34 @@ data class ConsumetSubtitle(
     val url: String,
     val lang: String
 )
+
+data class Vidbinge(
+    val token: String,
+)
+
+data class Vidbingesources(
+    val embedId: String,
+    val url: String,
+)
+
+data class Vidbingeplaylist(
+    val stream: List<Streamplaylist>,
+)
+
+data class Streamplaylist(
+    val id: String,
+    val type: String,
+    val playlist: String,
+    val flags: List<String>,
+    val captions: List<Captionplaylist>,
+)
+
+data class Captionplaylist(
+    val id: String,
+    val url: String,
+    val type: String,
+    val hasCorsRestrictions: Boolean,
+    val language: String,
+)
+
+

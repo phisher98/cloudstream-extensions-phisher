@@ -56,7 +56,9 @@ import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
+import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
+import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -179,6 +181,9 @@ open class StreamPlay : TmdbProvider() {
         const val BollyflixVIP= "https://bollyflix.fi"
         const val FlixAPI= BuildConfig.FlixAPI
         const val NyaaAPI="https://nyaa.land"
+        const val Extramovies="https://extramovies.poker"
+        const val WhvxAPI=BuildConfig.WhvxAPI
+        const val Vidbinge = "https://www.vidbinge.com"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -787,6 +792,31 @@ open class StreamPlay : TmdbProvider() {
             subtitleCallback,
             callback
         )
+    },
+    {
+         if (!res.isAnime) invokeExtramovies(
+                    res.imdbId,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+    },
+    {
+                if (!res.isAnime) invokeVidbinge(
+                    res.imdbId,
+                    res.id,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
     },
     {
         if (!res.isAnime) invokeDotmovies(

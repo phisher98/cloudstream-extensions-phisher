@@ -74,6 +74,8 @@ jobs:
           TooniboyCookie: ${{ secrets.TooniboyCookie }}
           ConsumetAPI: ${{ secrets.ConsumetAPI }}
           FlixAPI: ${{ secrets.FlixAPI }}
+          WhvxAPI: ${{ secrets.WhvxAPI }}
+          WhvxT: ${{ secrets.WhvxT }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -107,6 +109,8 @@ jobs:
           echo TooniboyCookie=$TooniboyCookie >> local.properties
           echo ConsumetAPI=ConsumetAPI >> local.properties
           echo FlixAPI=FlixAPI >> local.properties
+          echo WhvxAPI=WhvxAPI >> local.properties
+          echo WhvxT=WhvxT >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

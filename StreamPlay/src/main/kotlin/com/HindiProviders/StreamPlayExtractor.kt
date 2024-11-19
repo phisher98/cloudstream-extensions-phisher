@@ -1977,6 +1977,76 @@ object StreamPlayExtractor : StreamPlay() {
             }
     }
 
+    suspend fun invokeExtramovies(
+        imdbId: String? = null,
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url="$Extramovies/search/$imdbId"
+        app.get(url).document.select("h3 a").amap {
+                val link=it.attr("href")
+                app.get(link).document.select("div.entry-content a.maxbutton-8").map { it ->
+                    val href=it.select("a").attr("href")
+                    loadSourceNameExtractor(
+                        "ExtraMovies",
+                        href,
+                        "",
+                        subtitleCallback,
+                        callback,
+                    )
+            }
+        }
+    }
+
+    suspend fun invokeVidbinge(
+        imdbId: String? = null,
+        tmdbId: Int?=null,
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val type=if (season==null) "movie" else "tv"
+        val servers = listOf("astra", "orion")
+        for(source in servers) {
+            val token= app.get(BuildConfig.WhvxT).parsedSafe<Vidbinge>()?.token ?:""
+            val s= season ?: ""
+            val e= episode ?: ""
+            val query="""{"title":"$title","imdbId":"$imdbId","tmdbId":"$tmdbId","type":"$type","season":"$s","episode":"$e","releaseYear":"$year"}"""
+            val encodedQuery = encodeQuery(query)
+            val encodedToken = encodeQuery(token)
+            val originalUrl = "$WhvxAPI/search?query=$encodedQuery&provider=$source&token=$encodedToken"
+            Log.d("Phisher", originalUrl)
+            val headers = mapOf(
+                "accept" to "*/*",
+                "origin" to "https://www.vidbinge.com",
+                "user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            )
+            val oneurl= app.get(originalUrl, headers=headers, timeout = 50L).parsedSafe<Vidbingesources>()?.url
+            oneurl?.let {
+                val encodedit=encodeQuery(it)
+                Log.d("Phisher", encodedit)
+                app.get("$WhvxAPI/source?resourceId=$encodedit&provider=$source",headers=headers).parsedSafe<Vidbingeplaylist>()?.stream?.map {
+                    val playlist=it.playlist
+                    callback.invoke(
+                        ExtractorLink(
+                            "Vidbinge $source", "Vidbinge $source", playlist
+                            , "", Qualities.P1080.value, INFER_TYPE
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     suspend fun invokeVidSrc(
         id: Int? = null,
         season: Int? = null,
