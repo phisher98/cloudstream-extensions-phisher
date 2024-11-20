@@ -24,6 +24,5 @@ cloudstream {
     requiresResources = true
     language = "en"
 
-    // random cc logo i found
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://https://kimcartoon.si&size=%size%"
+    iconUrl = "https://img.cartooncdn.xyz/themes/kim/images/kimcartoon.png"
 }
