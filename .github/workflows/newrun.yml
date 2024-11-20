@@ -107,10 +107,10 @@ jobs:
           echo JapanIPTV=$JapanIPTV >> local.properties
           echo CatflixAPI=$CatflixAPI >> local.properties
           echo TooniboyCookie=$TooniboyCookie >> local.properties
-          echo ConsumetAPI=ConsumetAPI >> local.properties
-          echo FlixAPI=FlixAPI >> local.properties
-          echo WhvxAPI=WhvxAPI >> local.properties
-          echo WhvxT=WhvxT >> local.properties
+          echo ConsumetAPI=$ConsumetAPI >> local.properties
+          echo FlixAPI=$FlixAPI >> local.properties
+          echo WhvxAPI=$WhvxAPI >> local.properties
+          echo WhvxT=$WhvxT >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
