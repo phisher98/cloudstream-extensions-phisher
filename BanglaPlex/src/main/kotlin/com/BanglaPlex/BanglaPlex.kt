@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class Banglaplex : MainAPI() {
-    override var mainUrl              = "https://banglaplex.art"
+    override var mainUrl              = "https://banglaplex.shop"
     override var name                 = "Banglaplex"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -103,6 +103,7 @@ class Banglaplex : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val iframeurl=document.select("div.video-embed-container > iframe").attr("src")
+        Log.d("Phisher",iframeurl)
         val link=iframeurl.replace("https://vectorx.top","https://bestx.stream")
         loadExtractor(link,subtitleCallback, callback)
         return true

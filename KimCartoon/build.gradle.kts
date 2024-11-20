@@ -15,7 +15,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 0
+    status = 1
 
     tvTypes = listOf(
         "Cartoon"
@@ -25,5 +25,5 @@ cloudstream {
     language = "en"
 
     // random cc logo i found
-    iconUrl = "https://kimcartoon.si/Content/images/logo.png"
+    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://https://kimcartoon.si&size=%size%"
 }

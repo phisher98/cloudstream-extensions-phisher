@@ -23,5 +23,5 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie")
 
-    iconUrl="https://banglaplex.art/uploads/system_logo/logo_619305d7d016f.png"
+    iconUrl="https://banglaplex.shop/uploads/system_logo/logo_619305d7d016f.png"
 }
