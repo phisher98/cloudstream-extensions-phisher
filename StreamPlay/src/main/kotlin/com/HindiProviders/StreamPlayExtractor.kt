@@ -3310,11 +3310,10 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        Log.d("Phisher", "Test".toString())
-        val doc = app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
-        val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
-        val host = domainRegex.find(doc)?.groups?.get(1)?.value.toString()
-        Log.d("Phisher",host)
+        //val doc = app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
+        //val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
+        //var host = domainRegex.find(doc)?.groups?.get(1)?.value
+        var host="https://keels313ale.com"
         val res = app.get(
             "$host/play/$imdbId",
             referer = "$allmovielandAPI/"
