@@ -777,6 +777,83 @@ data class Vidbingeplaylist(
     val stream: List<Streamplaylist>,
 )
 
+//SharmaFlix
+
+// Top-level list alias
+typealias SharmaFlixRoot = List<SharmaFlixRoot2>
+
+// Root2 data class
+data class SharmaFlixRoot2(
+    val id: String,
+    @JsonProperty("TMDB_ID")
+    val tmdbId: String,
+    val name: String,
+    val description: String,
+    val genres: String,
+    @JsonProperty("release_date")
+    val releaseDate: String,
+    val runtime: String,
+    val poster: String,
+    val banner: String,
+    @JsonProperty("youtube_trailer")
+    val youtubeTrailer: String,
+    val downloadable: String,
+    val type: String,
+    val status: String,
+    @JsonProperty("content_type")
+    val contentType: String,
+    @JsonProperty("custom_tag")
+    val customTag: CustomTag
+)
+
+// CustomTag data class
+data class CustomTag(
+    val id: String,
+    @JsonProperty("custom_tags_id")
+    val customTagsId: String,
+    @JsonProperty("content_id")
+    val contentId: String,
+    @JsonProperty("content_type")
+    val contentType: String,
+    @JsonProperty("custom_tags_name")
+    val customTagsName: String,
+    @JsonProperty("background_color")
+    val backgroundColor: String,
+    @JsonProperty("text_color")
+    val textColor: String
+)
+
+typealias SharmaFlixLinks = List<SharmaFlixLink>
+
+data class SharmaFlixLink(
+    val id: String,
+    val name: String,
+    val size: String,
+    val quality: String,
+    @JsonProperty("link_order")
+    val linkOrder: String,
+    @JsonProperty("movie_id")
+    val movieId: String,
+    val url: String,
+    val type: String,
+    val status: String,
+    @JsonProperty("skip_available")
+    val skipAvailable: String,
+    @JsonProperty("intro_start")
+    val introStart: String?,
+    @JsonProperty("intro_end")
+    val introEnd: String?,
+    @JsonProperty("end_credits_marker")
+    val endCreditsMarker: String,
+    @JsonProperty("link_type")
+    val linkType: String,
+    @JsonProperty("drm_uuid")
+    val drmUuid: String?,
+    @JsonProperty("drm_license_uri")
+    val drmLicenseUri: String?
+)
+
+
 data class Streamplaylist(
     val id: String,
     val type: String,

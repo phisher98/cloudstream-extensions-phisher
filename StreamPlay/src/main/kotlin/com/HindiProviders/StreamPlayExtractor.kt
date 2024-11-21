@@ -2,6 +2,8 @@ package com.Phisher98
 
 import android.annotation.SuppressLint
 import android.util.Log
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.utils.*
@@ -2043,6 +2045,36 @@ object StreamPlayExtractor : StreamPlay() {
                         )
                     )
                 }
+            }
+        }
+    }
+
+    suspend fun invokeSharmaflix(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val searchtitle=encodeQuery(title ?:"").replace("+", "%20")
+        val url="$Sharmaflix/searchContent/$searchtitle/0"
+        val headers= mapOf("x-api-key" to BuildConfig.SharmaflixApikey,"User-Agent" to "Dalvik/2.1.0 (Linux; U; Android 13; Subsystem for Android(TM) Build/TQ3A.230901.001)")
+        val json= app.get(url, headers = headers).toString().toJson()
+        val objectMapper = jacksonObjectMapper()
+        val parsedResponse: SharmaFlixRoot = objectMapper.readValue(json)
+        parsedResponse.forEach { root ->
+            val id=root.id
+            val movieurl="$Sharmaflix/getMoviePlayLinks/$id/0"
+            val hrefresponse= app.get(movieurl, headers = headers).toString().toJson()
+            val hrefparser: SharmaFlixLinks = objectMapper.readValue(hrefresponse)
+            hrefparser.forEach {
+                callback.invoke(
+                    ExtractorLink(
+                        "Sharmaflix", "Sharmaflix", it.url
+                            ?: return, "", Qualities.P1080.value, INFER_TYPE
+                    )
+                )
             }
         }
     }
