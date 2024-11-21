@@ -3310,9 +3310,11 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
+        Log.d("Phisher", "Test".toString())
         val doc = app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
         val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
         val host = domainRegex.find(doc)?.groups?.get(1)?.value.toString()
+        Log.d("Phisher",host)
         val res = app.get(
             "$host/play/$imdbId",
             referer = "$allmovielandAPI/"
@@ -3320,6 +3322,7 @@ object StreamPlayExtractor : StreamPlay() {
             ?.substringAfter("{")
             ?.substringBefore(";")?.substringBefore(")")
         val json = tryParseJson<AllMovielandPlaylist>("{${res ?: return}")
+        Log.d("Phisher", json.toString())
         val headers = mapOf("X-CSRF-TOKEN" to "${json?.key}")
         val serverRes = app.get(
             fixUrl(

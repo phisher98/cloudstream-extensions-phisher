@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
@@ -41,6 +42,14 @@ class StreamPlayTest : StreamPlay() {
                     res.lastSeason,
                     res.episode,
                     subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeAllMovieland(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
                     callback
                 )
             }

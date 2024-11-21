@@ -15,16 +15,15 @@ class TorraStream() : TraktProvider() {
     override val hasMainPage = true
     override val hasQuickSearch = false
 
+    companion object
+    {
+        val ServerURL="https://torrentio.strem.fun"
+    }
+
     private val traktApiUrl = base64Decode("aHR0cHM6Ly9hcGl6LnRyYWt0LnR2")
 
     protected fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
-    }
-
-    companion object
-    {
-        const val torrentioAPI="https://torrentio.strem.fun"
-        const val torrentioCONFIG = "providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex|sort=seeders|qualityfilter=threed,480p,other,scr,cam,unknown|limit=10"
     }
 
     override val mainPage =
@@ -58,48 +57,70 @@ class TorraStream() : TraktProvider() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
-        /*
-        argamap(
+        val season =AppUtils.parseJson<LinkData>(data).season
+        val episode =AppUtils.parseJson<LinkData>(data).episode
+        val id =AppUtils.parseJson<LinkData>(data).imdbId
+        val torrentioAPI:String
+        if (mainUrl.contains(","))
             {
-                invokeMainSource(res.imdbId, res.season, res.episode, subtitleCallback, callback)
-            },
-            {
-                invokeWatchsomuch(res.imdbId, res.season, res.episode, subtitleCallback)
-            },
-            {
-                invokeOpenSubs(res.imdbId, res.season, res.episode, subtitleCallback)
-            },
-        )
-         */
-            val season =AppUtils.parseJson<LinkData>(data).season
-            val episode =AppUtils.parseJson<LinkData>(data).episode
-            val id =AppUtils.parseJson<LinkData>(data).imdbId
-            val url = if(season == null) {
-                "$torrentioAPI/$torrentioCONFIG/stream/movie/$id.json"
-            }
-            else {
-                "$torrentioAPI/$torrentioCONFIG/stream/series/$id:$season:$episode.json"
-            }
-            Log.d("Phisher",url)
-            val headers = mapOf(
-                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            )
-            val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
-            res?.streams?.forEach { stream ->
-                val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
-                callback.invoke(
-                    ExtractorLink(
-                        "Torrentio",
-                        stream.title ?: stream.name ?: "",
-                        magnet,
-                        "",
-                        getIndexQuality(stream.name),
-                        INFER_TYPE,
-                    )
+                val splitdata = mainUrl.split(",")
+                val service = splitdata[0]
+                val key= splitdata[1]
+                torrentioAPI="$ServerURL/$service=$key"
+                val url = if(season == null) {
+                    "$torrentioAPI/stream/movie/$id.json"
+                }
+                else {
+                    "$torrentioAPI/stream/series/$id:$season:$episode.json"
+                }
+                Log.d("Phisher",url)
+                val headers = mapOf(
+                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                    "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
                 )
+                val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<DebianRoot>()
+                res?.streams?.forEach { stream ->
+                    callback.invoke(
+                        ExtractorLink(
+                            "Torrentio",
+                            stream.title,
+                            stream.url,
+                            "",
+                            getIndexQuality(stream.name),
+                            INFER_TYPE,
+                        )
+                    )
+                }
             }
-        Log.d("Phisher",data)
+            else
+            {
+                torrentioAPI=ServerURL
+                val url = if(season == null) {
+                    "$torrentioAPI/stream/movie/$id.json"
+                }
+                else {
+                    "$torrentioAPI/stream/series/$id:$season:$episode.json"
+                }
+                Log.d("Phisher",url)
+                val headers = mapOf(
+                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                    "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+                )
+                val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
+                res?.streams?.forEach { stream ->
+                    val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
+                    callback.invoke(
+                        ExtractorLink(
+                            "Torrentio",
+                            stream.title ?: stream.name ?: "",
+                            magnet,
+                            "",
+                            getIndexQuality(stream.name),
+                            INFER_TYPE,
+                        )
+                    )
+                }
+            }
         return true
     }
 

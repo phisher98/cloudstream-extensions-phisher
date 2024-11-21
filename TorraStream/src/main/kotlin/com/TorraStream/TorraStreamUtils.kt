@@ -42,3 +42,22 @@ data class LinkData(
     @JsonProperty("isBollywood") val isBollywood: Boolean = false,
     @JsonProperty("isCartoon") val isCartoon: Boolean = false,
 )
+
+data class DebianRoot(
+    val streams: List<Stream>,
+    val cacheMaxAge: Long,
+    val staleRevalidate: Long,
+    val staleError: Long,
+)
+
+data class Stream(
+    val name: String,
+    val title: String,
+    val url: String,
+    val behaviorHints: BehaviorHints,
+)
+
+data class BehaviorHints(
+    val bingeGroup: String,
+    val filename: String?,
+)

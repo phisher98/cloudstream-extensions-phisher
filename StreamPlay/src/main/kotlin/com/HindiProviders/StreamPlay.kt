@@ -165,9 +165,9 @@ open class StreamPlay : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.icu"
         const val topmoviesAPI = "https://topmovies.icu"
-        const val MoviesmodAPI= "https://moviesmod.bid"
+        const val MoviesmodAPI= "https://moviesmod.rip"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
-        const val vegaMoviesAPI = "https://vegamovies.si"
+        const val vegaMoviesAPI = "https://vegamovies.ps"
         const val dotmoviesAPI = "https://luxmovies.live"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
@@ -178,7 +178,7 @@ open class StreamPlay : TmdbProvider() {
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
-        const val BollyflixVIP= "https://bollyflix.fi"
+        const val BollyflixVIP= "https://bollyflix.meme"
         const val FlixAPI= BuildConfig.FlixAPI
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.poker"
