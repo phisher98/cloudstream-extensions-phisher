@@ -73,7 +73,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val posterUrl = fixUrlNull(this.select("div.entry-image > a > img").attr("src"))
         val quality = getQualityFromString(title)
         //Log.d("Quality", quality.toString())
-        return if (titleRaw.contains("season", true) || titleRaw.contains("episode", true)) {
+        return if (titleRaw.contains("season|S0", true) || titleRaw.contains("episode", true) || titleRaw.contains("S0", true)) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
                 this.quality = quality
@@ -113,7 +113,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val year = yearRegex.find(title)?.value?.toIntOrNull()
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
-        val type = if (tvTags.contains("Season")) TvType.TvSeries else TvType.Movie
+        val type = if (tvTags.contains("Season") || tvTags.contains("S0")) TvType.TvSeries else TvType.Movie
         return if (type == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
             var pTags = doc.select("p:has(a:contains(Episode))")
