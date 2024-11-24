@@ -871,3 +871,20 @@ data class Captionplaylist(
 )
 
 
+data class SubtitlesAPI(
+    val subtitles: List<Subtitle>,
+    val cacheMaxAge: Long,
+)
+
+data class Subtitle(
+    val id: String,
+    val url: String,
+    @JsonProperty("SubEncoding")
+    val subEncoding: String,
+    val lang: String,
+    val m: String,
+    val g: String,
+)
+
+
+

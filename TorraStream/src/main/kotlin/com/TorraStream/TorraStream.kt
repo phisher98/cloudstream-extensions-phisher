@@ -3,6 +3,7 @@ package com.TorraStream
 //import android.util.Log
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -121,6 +122,29 @@ class TorraStream() : TraktProvider() {
                     )
                 }
             }
+        val SubAPI="https://opensubtitles-v3.strem.io"
+        val url = if(season == null) {
+            "$SubAPI/subtitles/movie/$id.json"
+        }
+        else {
+            "$SubAPI/subtitles/series/$id:$season:$episode.json"
+        }
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        )
+        Log.d("Phisher", url)
+        app.get(url, headers = headers, timeout = 100L).parsedSafe<Subtitles>()?.subtitles?.amap {
+            val lan=it.lang
+            val suburl=it.url
+            Log.d("Phisher","$lan $suburl")
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    lan.capitalize(),  // Use label for the name
+                    suburl     // Use extracted URL
+                )
+            )
+        }
         return true
     }
 

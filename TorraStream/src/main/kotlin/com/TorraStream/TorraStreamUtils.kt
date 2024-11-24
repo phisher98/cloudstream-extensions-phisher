@@ -61,3 +61,21 @@ data class BehaviorHints(
     val bingeGroup: String,
     val filename: String?,
 )
+
+//Subtitles
+
+data class Subtitles(
+    val subtitles: List<Subtitle>,
+    val cacheMaxAge: Long,
+)
+
+data class Subtitle(
+    val id: String,
+    val url: String,
+    @JsonProperty("SubEncoding")
+    val subEncoding: String,
+    val lang: String,
+    val m: String,
+    val g: String,
+)
+

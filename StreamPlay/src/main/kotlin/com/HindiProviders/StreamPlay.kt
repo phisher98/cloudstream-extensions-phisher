@@ -62,6 +62,7 @@ import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
+import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -185,6 +186,7 @@ open class StreamPlay : TmdbProvider() {
         const val Extramovies="https://extramovies.poker"
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
+        const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -1001,6 +1003,15 @@ open class StreamPlay : TmdbProvider() {
 {
     if (res.isAnime) invokenyaa(
         res.title,
+        res.season,
+        res.episode,
+        subtitleCallback,
+        callback
+    )
+},
+{
+    invokeSubtitleAPI(
+        res.imdbId,
         res.season,
         res.episode,
         subtitleCallback,

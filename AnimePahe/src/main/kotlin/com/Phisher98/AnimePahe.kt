@@ -11,7 +11,6 @@ import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.nicehttp.NiceResponse
 import org.jsoup.Jsoup
 import kotlin.math.pow
 
@@ -476,7 +475,6 @@ class AnimePaheProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        //Log.d("Phisher",data)
         val parsed = parseJson<LinkLoadData>(data)
         val episodeUrl = parsed.getUrl() ?: ""
         val document= app.get(episodeUrl, headers= headers).document
@@ -485,18 +483,17 @@ class AnimePaheProvider : MainAPI() {
                 var lang=""
                 val dub=it.select("span").text()
                 if (dub.contains("eng")) lang="DUB" else lang="SUB"
-                val quality = it.attr("data-resolution").toString()
+                val quality = it.attr("data-resolution")
                 val href = it.attr("data-src")
-                if (href.contains("kwik.si")) {
-                    loadSourceNameExtractor(
-                        "Animepahe [$lang]",
-                        href,
-                        mainUrl,
-                        subtitleCallback,
-                        callback,
-                        quality
-                    )
-                }
+                    Log.d("Phisher", "$lang $quality $href")
+                        loadSourceNameExtractor(
+                            "Animepahe [$lang]",
+                            href,
+                            mainUrl,
+                            subtitleCallback,
+                            callback,
+                            quality
+                        )
             }
         return true
     }

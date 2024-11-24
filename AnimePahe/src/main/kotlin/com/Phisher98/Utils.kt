@@ -22,8 +22,8 @@ suspend fun loadSourceNameExtractor(
     loadExtractor(url, referer, subtitleCallback) { link ->
         callback.invoke(
             ExtractorLink(
-                "$source[${quality}]",
-                "$source[${quality}]",
+                "$source $quality",
+                "$source $quality",
                 link.url,
                 link.referer,
                 getIndexQuality(quality),
@@ -54,7 +54,6 @@ class Kwik : ExtractorApi() {
             res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
-        Log.d("Phisher",m3u8)
         callback.invoke(
             ExtractorLink(
                 name,

@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import java.util.Locale
 
 val session = Session(Requests().baseClient)
 
@@ -1310,11 +1311,11 @@ object StreamPlayExtractor : StreamPlay() {
                 var lang=""
                 val dub=it.select("span").text()
                 if (dub.contains("eng")) lang="DUB" else lang="SUB"
-                val quality = it.attr("data-resolution").toString()
+                val quality = it.attr("data-resolution")
                 val href = it.attr("data-src")
                 if (href.contains("kwik.si")) {
                     loadCustomExtractor(
-                        "Animepahe [$lang] $quality",
+                        "Animepahe [$lang]",
                         href,
                         mainUrl,
                         subtitleCallback,
@@ -1635,6 +1636,36 @@ object StreamPlayExtractor : StreamPlay() {
                     getQualityFromName("")
                 )
             }
+        }
+    }
+//Kindly don't copy this as well
+    suspend fun invokeSubtitleAPI(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if(season == null) {
+            "$SubtitlesAPI/subtitles/movie/$id.json"
+        }
+        else {
+            "$SubtitlesAPI/subtitles/series/$id:$season:$episode.json"
+        }
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        )
+        app.get(url, headers = headers, timeout = 100L).parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
+            val lan=it.lang
+            val suburl=it.url
+            Log.d("Phisher","$lan $suburl")
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
+                    suburl     // Use extracted URL
+                )
+            )
         }
     }
 

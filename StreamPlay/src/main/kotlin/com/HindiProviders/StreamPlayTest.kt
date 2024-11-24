@@ -5,6 +5,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
+import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.lagradost.cloudstream3.SubtitleFile
@@ -28,6 +29,15 @@ class StreamPlayTest : StreamPlay() {
                 invokeSharmaflix(
                     res.title,
                     res.year,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                invokeSubtitleAPI(
+                    res.imdbId,
                     res.season,
                     res.episode,
                     subtitleCallback,
