@@ -2,8 +2,11 @@ package com.Phisher98
 
 import android.util.Log
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
+import com.Phisher98.StreamPlayExtractor.invokeBroflixVidlink
+import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
+import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
@@ -26,16 +29,19 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                invokeSharmaflix(
+                if (!res.isAnime) invokeDotmovies(
+                    res.imdbId,
                     res.title,
                     res.year,
                     res.season,
+                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback
                 )
             },
             {
+                /*
                 invokeSubtitleAPI(
                     res.imdbId,
                     res.season,
@@ -43,6 +49,7 @@ class StreamPlayTest : StreamPlay() {
                     subtitleCallback,
                     callback
                 )
+                 */
             }
 
         )

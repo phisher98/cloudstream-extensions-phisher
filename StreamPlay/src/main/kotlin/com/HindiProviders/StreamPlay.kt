@@ -55,6 +55,7 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
+import com.Phisher98.StreamPlayExtractor.invokeBroflixVidlink
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
@@ -187,6 +188,7 @@ open class StreamPlay : TmdbProvider() {
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
+        const val BroflixVidlink="https://bombthe.irish"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -821,6 +823,20 @@ open class StreamPlay : TmdbProvider() {
                     callback
                 )
     },
+            {
+
+                if (!res.isAnime) invokeBroflixVidlink(
+                    res.imdbId,
+                    res.id,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
     {
         invokeSharmaflix(
                     res.title,

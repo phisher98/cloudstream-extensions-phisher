@@ -1091,8 +1091,8 @@ open class HubCloud : ExtractorApi() {
         }
         else {
             val doc = app.get(url).text
-            val gamerlink=Regex("""https://gamerxyt\.com/([^'"]+)""").find(doc)?.groupValues?.get(1)
-            href = "https://gamerxyt.com/$gamerlink"
+            val gamerlink=Regex("""hubcloud\.php\?([^'"]+)""").find(doc)?.groupValues?.get(1)
+            href = "https://gamerxyt.com/hubcloud.php?$gamerlink"
             Log.d("Phisher Hub", href)
             if (href.isEmpty()) {
                 Log.d("Error", "Not Found")

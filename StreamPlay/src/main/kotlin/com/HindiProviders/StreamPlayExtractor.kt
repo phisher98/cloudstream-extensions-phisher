@@ -5,6 +5,7 @@ import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -27,6 +28,7 @@ import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import okio.ByteString.Companion.decodeBase64
 import java.util.Locale
 
 val session = Session(Requests().baseClient)
@@ -174,9 +176,11 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$MultiEmbedAPI/directstream.php?video_id=$imdbId&s=$season&e=$episode"
         }
+        Log.d("Phisher", url.toString())
         val res = app.get(url, referer = url).document
         val script =
             res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data()
+        Log.d("Phisher", script.toString())
         if (script!=null) {
             val firstJS =
                 """
@@ -1909,7 +1913,7 @@ object StreamPlayExtractor : StreamPlay() {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val cfInterceptor = CloudflareKiller()
         val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
-        Log.d("Phisher url veg", "$api/search/$imdbId")
+        //Log.d("Phisher url veg", "$api/search/$imdbId")
         val url = if (season == null) {
             "$api/search/$imdbId"
         } else {
@@ -1923,7 +1927,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
             .amap {
-                Log.d("Phisher url veg", it.toString())
+                //Log.d("Phisher url veg", it.toString())
                 val hrefpattern =
                     Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find(
                         it.toString()
@@ -1956,10 +1960,9 @@ object StreamPlayExtractor : StreamPlay() {
                         }?.map { anchor ->
                             anchor.attr("href")
                         } ?: emptyList()
-                        Log.d("Phisher url entries", href.toString())
                         val selector =
                             if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode)"
-                        Log.d("Phisher url veg", href.toString())
+                        //Log.d("Phisher href", href.toString())
                         if (href.isNotEmpty()) {
                             href.amap { url ->
                             if (season==null)
@@ -1982,6 +1985,7 @@ object StreamPlayExtractor : StreamPlay() {
                             {
                                 app.get(url, interceptor = wpRedisInterceptor).document.select("div.entry-content > $selector")
                                     .forEach { h4Element ->
+                                        Log.d("Phisher href veg", (h4Element ?: "").toString())
                                         var sibling = h4Element.nextElementSibling()
                                         while (sibling != null && sibling.tagName() != "p") {
                                             sibling = sibling.nextElementSibling()
@@ -1989,7 +1993,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         while (sibling != null && sibling.tagName() == "p") {
                                             sibling.select("a:matches(V-Cloud|G-Direct)").forEach { sources ->
                                                 val server = sources.attr("href")
-                                                Log.d("Phisher href veg", tags ?: "")
+                                                Log.d("Phisher href veg", server ?: "")
                                                 loadSourceNameExtractor(
                                                     "V-Cloud",
                                                     server,
@@ -2048,7 +2052,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val type=if (season==null) "movie" else "tv"
-        val servers = listOf("astra", "orion")
+        val servers = listOf("astra", "orion","nova")
         for(source in servers) {
             val token= app.get(BuildConfig.WhvxT).parsedSafe<Vidbinge>()?.token ?:""
             val s= season ?: ""
@@ -2057,7 +2061,7 @@ object StreamPlayExtractor : StreamPlay() {
             val encodedQuery = encodeQuery(query)
             val encodedToken = encodeQuery(token)
             val originalUrl = "$WhvxAPI/search?query=$encodedQuery&provider=$source&token=$encodedToken"
-            Log.d("Phisher", originalUrl)
+            //Log.d("Phisher", originalUrl)
             val headers = mapOf(
                 "accept" to "*/*",
                 "origin" to "https://www.vidbinge.com",
@@ -2066,17 +2070,39 @@ object StreamPlayExtractor : StreamPlay() {
             val oneurl= app.get(originalUrl, headers=headers, timeout = 50L).parsedSafe<Vidbingesources>()?.url
             oneurl?.let {
                 val encodedit=encodeQuery(it)
-                Log.d("Phisher", encodedit)
-                app.get("$WhvxAPI/source?resourceId=$encodedit&provider=$source",headers=headers).parsedSafe<Vidbingeplaylist>()?.stream?.map {
+                Log.d("Phisher", "$source $encodedit")
+                app.get("$WhvxAPI/source?resourceId=$encodedit&provider=$source",headers=headers).parsedSafe<Vidbingeplaylist>()?.stream?.amap {
+                    Log.d("Phisher", "$source ${it.playlist}")
                     val playlist=it.playlist
                     callback.invoke(
                         ExtractorLink(
-                            "Vidbinge $source", "Vidbinge $source", playlist
+                            "Vidbinge ${source.capitalize()}", "Vidbinge ${source.capitalize()}", playlist
                             , "", Qualities.P1080.value, INFER_TYPE
                         )
                     )
                 }
             }
+        }
+    }
+
+    suspend fun invokeBroflixVidlink(
+        imdbId: String? = null,
+        tmdbId: Int?=null,
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = "$BroflixVidlink/embed/movie/$tmdbId"
+        app.get(url).document.select("div.menu a").amap {
+            val encoded=it.attr("data-url").substringAfter("url=")
+            val href=base64Decode(encoded)
+            loadSourceNameExtractor("Broflix Vidlink",href,"",subtitleCallback,callback,
+                getQualityFromName("")
+            )
         }
     }
 
