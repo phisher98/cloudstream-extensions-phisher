@@ -22,7 +22,6 @@ import com.Phisher98.StreamPlayExtractor.invokeEmovies
 import com.Phisher98.StreamPlayExtractor.invokeMultimovies
 import com.Phisher98.StreamPlayExtractor.invokeNetmovies
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
-import com.Phisher98.StreamPlayExtractor.invokeVidSrc
 import com.Phisher98.StreamPlayExtractor.invokeMoflix
 import com.Phisher98.StreamPlayExtractor.invokeGhostx
 import com.Phisher98.StreamPlayExtractor.invokeWatchCartoon
@@ -132,9 +131,6 @@ class StreamPlayLite : StreamPlay() {
                     subtitleCallback,
                     callback
                 )
-            },
-            {
-                invokeVidSrc(res.id, res.season, res.episode, subtitleCallback,callback)
             },
             {
                 if (!res.isAnime && res.isCartoon) invokeWatchCartoon(

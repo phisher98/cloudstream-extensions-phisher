@@ -46,7 +46,6 @@ import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeTvMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
-import com.Phisher98.StreamPlayExtractor.invokeVidSrc
 import com.Phisher98.StreamPlayExtractor.invokeVidsrcto
 import com.Phisher98.StreamPlayExtractor.invokeWatchCartoon
 import com.Phisher98.StreamPlayExtractor.invokeWatchsomuch
@@ -57,6 +56,7 @@ import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.Phisher98.StreamPlayExtractor.invokeBroflixVidlink
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
+import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
@@ -64,6 +64,7 @@ import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -124,7 +125,6 @@ open class StreamPlay : TmdbProvider() {
 
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
-        const val vidSrcAPI = "https://vidsrc.me"
         const val dreamfilmAPI = "https://dreamfilmsw.info"
         const val noverseAPI = "https://www.thenollyverse.com"
         const val filmxyAPI = "https://www.filmxy.online"
@@ -189,6 +189,7 @@ open class StreamPlay : TmdbProvider() {
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val BroflixVidlink="https://bombthe.irish"
+        const val EmbedSu="https://embed.su"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -474,9 +475,9 @@ open class StreamPlay : TmdbProvider() {
                    )
                 },
              */
-                {
-                    invokeVidSrc(res.id, res.season, res.episode, subtitleCallback,callback)
-                },
+            {
+                invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
+            },
                 {
                     if (!res.isAnime) invokeAoneroom(
                         res.title, res.airedYear
@@ -536,8 +537,8 @@ open class StreamPlay : TmdbProvider() {
                     )
                 },
                 {
-                    if (!res.isAnime) invokeVidsrcto(
-                        res.imdbId,
+                    if (!res.isAnime) invokeVidsrccc(
+                        res.id,
                         res.season,
                         res.episode,
                         subtitleCallback,
@@ -801,11 +802,6 @@ open class StreamPlay : TmdbProvider() {
     {
          if (!res.isAnime) invokeExtramovies(
                     res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
                     subtitleCallback,
                     callback
                 )
@@ -817,22 +813,14 @@ open class StreamPlay : TmdbProvider() {
                     res.title,
                     res.year,
                     res.season,
-                    res.lastSeason,
                     res.episode,
-                    subtitleCallback,
                     callback
                 )
     },
             {
 
                 if (!res.isAnime) invokeBroflixVidlink(
-                    res.imdbId,
                     res.id,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
                     subtitleCallback,
                     callback
                 )
@@ -840,10 +828,6 @@ open class StreamPlay : TmdbProvider() {
     {
         invokeSharmaflix(
                     res.title,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
                     callback
         )
     },

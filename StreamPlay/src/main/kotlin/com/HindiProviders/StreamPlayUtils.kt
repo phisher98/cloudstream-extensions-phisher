@@ -1,5 +1,7 @@
 package com.Phisher98
 
+import android.annotation.TargetApi
+import android.os.Build
 import android.util.Base64
 import android.util.Log
 import com.Phisher98.DumpUtils.queryApi
@@ -11,6 +13,7 @@ import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 //import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlay.Companion.tvMoviesAPI
+import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -411,6 +414,42 @@ suspend fun extractCovyn(url: String?): Pair<String?, String?>? {
     return Pair(videoLink, size)
 }
 
+//EmbedSu
+fun simpleDecodeProcess(mEncrypt: String): String? {
+    // Define base64Decode() as a private function inside simpleDecodeProcess()
+    @TargetApi(Build.VERSION_CODES.O)
+    fun base64Decode(input: String): ByteArray {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            java.util.Base64.getDecoder().decode(input)
+        } else {
+            TODO("VERSION.SDK_INT < O")
+        }
+    }
+
+    return try {
+        // Step 1: Decode from Base64 using base64Decode()
+        val firstDecode = String(base64Decode(mEncrypt))  // Decode and convert ByteArray to String
+
+        // Step 2: Reverse each part of the decoded string after splitting by "."
+        val reversed = firstDecode.split(".").map { it.reversed() }.joinToString("")
+
+        // Step 3: Reverse the entire string and decode it again
+        val finalDecoded = String(base64Decode(reversed.reversed()))
+
+        finalDecoded
+    } catch (e: Exception) {
+        e.printStackTrace()  // Handle any decoding errors
+        null
+    }
+}
+
+fun EmbedSuitemparseJson(jsonString: String): List<EmbedsuItem> {
+    // Create a Gson instance
+    val gson = Gson()
+
+    // Parse the JSON string into a list of Item objects
+    return gson.fromJson(jsonString, Array<EmbedsuItem>::class.java).toList()
+}
 
 fun encodeQuery(query: String): String {
     return URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
@@ -1153,12 +1192,62 @@ fun String.xorDecrypt(key: String): String {
     return sb.toString()
 }
 
+//
+
+fun VidsrcCCEncode(input: String): String {
+    val key = "78B22E5E862BC"
+    val encrypted = rc4(key, input)
+    val base64Encoded = base64Encode(base64Encode(encrypted))
+    return urlEncode(base64Encoded)
+}
+
+private fun rc4(key: String, input: String): String {
+    val s = IntArray(256) { it }
+    val k = IntArray(256)
+
+    for (i in key.indices) {
+        k[i] = key[i].code
+    }
+
+    var j = 0
+    for (i in 0 until 256) {
+        j = (j + s[i] + k[i % key.length]) % 256
+        s[i] = s[j].also { s[j] = s[i] }
+    }
+
+    val result = StringBuilder()
+    var i = 0
+    j = 0
+    for (char in input) {
+        i = (i + 1) % 256
+        j = (j + s[i]) % 256
+        s[i] = s[j].also { s[j] = s[i] }
+        val k = s[(s[i] + s[j]) % 256]
+        result.append((char.code xor k).toChar())
+    }
+    return result.toString()
+}
+
+private fun base64Encode(input: String): String {
+    return Base64.encodeToString(input.toByteArray(), Base64.NO_WRAP) // Android's Base64 encoding
+}
+
+private fun urlEncode(input: String): String {
+    return URLEncoder.encode(input, Charsets.UTF_8.name())
+}
+
+fun encodeURIComponent(value: String): String {
+    return URLEncoder.encode(value, Charsets.UTF_8.name())
+}
+
+//
+
 fun vidsrctoDecrypt(text: String): String {
     val parse = Base64.decode(text.toByteArray(), Base64.URL_SAFE)
     val cipher = Cipher.getInstance("RC4")
     cipher.init(
         Cipher.DECRYPT_MODE,
-        SecretKeySpec("8z5Ag5wgagfsOuhz".toByteArray(), "RC4"),
+        SecretKeySpec("78B22E5E862BC".toByteArray(), "RC4"),
         cipher.parameters
     )
     return decode(cipher.doFinal(parse).toString(Charsets.UTF_8))

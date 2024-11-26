@@ -225,31 +225,6 @@ data class Link(
     val type: String,
     val url: String
 )
-//
-
-//Dramacool
-
-
-data class StreamwishD(
-    val server: String,
-    val link: String,
-    val active: Long,
-)
-
-data class Backup(
-    val server: String,
-    val link: String,
-)
-
-
-data class KissasianAPISourceresponse(
-    @JsonProperty("type") val type: String,
-    @JsonProperty("link") val link: String? = null,
-)
-data class KissasianAPIResponse(
-        @JsonProperty("status") val status: Boolean,
-        @JsonProperty("html") val html: String
-    )
 
 data class UHDBackupUrl(
     @JsonProperty("url") val url: String? = null,
@@ -869,6 +844,36 @@ data class Captionplaylist(
     val hasCorsRestrictions: Boolean,
     val language: String,
 )
+
+//
+
+data class Embedsu(
+    val title: String,
+    val server: String,
+    val ref: String,
+    val xid: String,
+    val uwuId: String,
+    val episodeId: String,
+    val hash: String,
+    val poster: String,
+)
+
+data class EmbedsuItem(val name: String, val hash: String)
+
+
+data class Embedsuhref(
+    val source: String,
+    val subtitles: List<EmbedsuhrefSubtitle>,
+    val skips: List<Any?>,
+    val format: String,
+)
+
+data class EmbedsuhrefSubtitle(
+    val label: String,
+    val file: String,
+)
+
+
 
 
 data class SubtitlesAPI(

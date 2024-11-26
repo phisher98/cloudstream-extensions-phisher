@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -28,7 +29,9 @@ import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import okio.ByteString.Companion.decodeBase64
+import okhttp3.Response
+import java.net.URLEncoder
+import java.util.Base64
 import java.util.Locale
 
 val session = Session(Requests().baseClient)
@@ -118,22 +121,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 */
-    @SuppressLint("SuspiciousIndentation")
-    suspend fun invokeVidSrc(
-        id: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = if (season == null) {
-            "$vidSrcAPI/embed/movie?tmdb=$id"
-        } else {
-            "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
-        }
-        VidSrcExtractor().getUrl(url, url, subtitleCallback, callback)
-    }
-
     suspend fun invokeDreamfilm(
         title: String? = null,
         season: Int? = null,
@@ -2016,11 +2003,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeExtramovies(
         imdbId: String? = null,
-        title: String? = null,
-        year: Int? = null,
-        season: Int? = null,
-        lastSeason: Int? = null,
-        episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
@@ -2046,9 +2028,7 @@ object StreamPlayExtractor : StreamPlay() {
         title: String? = null,
         year: Int? = null,
         season: Int? = null,
-        lastSeason: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val type=if (season==null) "movie" else "tv"
@@ -2086,13 +2066,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     suspend fun invokeBroflixVidlink(
-        imdbId: String? = null,
         tmdbId: Int?=null,
-        title: String? = null,
-        year: Int? = null,
-        season: Int? = null,
-        lastSeason: Int? = null,
-        episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
@@ -2108,10 +2082,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeSharmaflix(
         title: String? = null,
-        year: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val searchtitle=encodeQuery(title ?:"").replace("+", "%20")
@@ -2136,40 +2106,85 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeVidSrc(
-        id: Int? = null,
+//Kindly don't copy it
+    suspend fun invokeEmbedsu(
+        id: String? = null,
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url = if (season == null) {
-            "$vidSrcAPI/embed/movie?tmdb=$id"
+    val url = if (season == null) {
+            "$EmbedSu/embed/movie/$id"
         } else {
-            "$vidSrcAPI/embed/tv?tmdb=$id&season=$season&episode=$episode"
+            "$EmbedSu/embed/tv/$id/$season/$episode"
         }
+        Log.d("Phisher", url.toString())
+        val res = app.get(url, referer = EmbedSu).document.selectFirst("script:containsData(window.vConfig)")?.data()
+            .toString()
+        val jsonencoded =
+            Regex("JSON\\.parse\\(atob\\(`(.*?)`\\)\\);").find(res)?.groupValues?.getOrNull(1) ?: ""
+        val decodedjson = base64Decode(jsonencoded).toJson()
+        val gson = Gson()
+        val json = gson.fromJson(decodedjson, Embedsu::class.java)
+        val hash = json.hash
+        val decodedResult = simpleDecodeProcess(hash) ?:""
+        val items = EmbedSuitemparseJson(decodedResult)
+        items.map {
+            val sourceurl="${EmbedSu}/api/e/${it.hash}"
+            app.get(sourceurl,referer = EmbedSu).parsedSafe<Embedsuhref>()?.let { href->
+                Log.d("Phisher", href.toString())
+                val m3u8=href.source
+                val headers = mapOf(
+                    "Origin" to "https://embed.su",
+                    "Referer" to "https://embed.su/",
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                )
+                callback.invoke(
+                    ExtractorLink(
+                        "Embedsu Viper",
+                        "Embedsu Viper",
+                        m3u8,
+                        EmbedSu,
+                        Qualities.P1080.value,
+                        ExtractorLinkType.M3U8,
+                        headers = headers
+                    )
+                )
+            }
+        }
+    }
 
-        val iframedoc =
-            app.get(url).document.select("iframe#player_iframe").attr("src").let { httpsify(it) }
-        val doc = app.get(iframedoc, referer = url).document
-
-        val index = doc.select("body").attr("data-i")
-        val hash = doc.select("div#hidden").attr("data-h")
-        val srcrcp = deobfstr(hash, index)
-
-        val script = app.get(
-            httpsify(srcrcp),
-            referer = iframedoc
-        ).document.selectFirst("script:containsData(Playerjs)")?.data()
-        val video = script?.substringAfter("file:\"#9")?.substringBefore("\"")
-            ?.replace(Regex("/@#@\\S+?=?="), "")?.let { base64Decode(it) }
-
+// Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
+    //Still in progress
+    suspend fun invokeVidsrccc(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null) {
+            "$vidsrctoAPI/v2/embed/movie/$id"
+        } else {
+            "$vidsrctoAPI/v2/embed/tv/$id/$season/$episode"
+        }
+        val type=if (season==null) "movie" else "tv"
+        val ID="VSC"
+        Log.d("Phisher",url)
+        val doc = app.get(url).document.toString()
+        val new_data_id= Regex("data-id=\"(.*?)\".*data-number=").find(doc)?.groupValues?.get(1).toString()
+        val v_value= Regex("var.v.=.\"(.*?)\"").find(doc)?.groupValues?.get(1).toString()
+        val vrf=vidsrctoDecrypt(id.toString())
+        Log.d("Phisher",vrf)
+        val api_url="${vidsrctoAPI}/api/episodes/${new_data_id}/servers?id=${id}&season=${season}&episode=${episode}&type=${type}&isMobile=false&v=${encodeURIComponent(v_value)}&vrf=${vrf}"
+        Log.d("Phisher",api_url)
         callback.invoke(
             ExtractorLink(
-                "Vidsrc", "Vidsrc", video
+                "Vidsrc", "Vidsrc", ""
                     ?: return, "https://vidsrc.stream/", Qualities.P1080.value, INFER_TYPE
             )
         )
-    }
+}
 /*
     suspend fun invokeHdmovies4u(
         title: String? = null,
