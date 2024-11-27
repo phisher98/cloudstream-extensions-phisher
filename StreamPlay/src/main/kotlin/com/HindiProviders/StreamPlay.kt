@@ -58,6 +58,7 @@ import com.Phisher98.StreamPlayExtractor.invokeBroflixVidlink
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
+import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
@@ -65,6 +66,7 @@ import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -159,7 +161,7 @@ open class StreamPlay : TmdbProvider() {
         const val vidsrctoAPI = "https://vidsrc.cc"
         const val dramadayAPI = "https://dramaday.me"
         const val animetoshoAPI = "https://animetosho.org"
-        const val showflixAPI = "https://showflix.xyz"
+        const val showflixAPI = "https://showflix.site"
         const val aoneroomAPI = "https://api3.aoneroom.com"
         const val watchCartoonAPI = "https://www1.watchcartoononline.bz"
         const val moflixAPI = "https://moflix-stream.xyz"
@@ -190,6 +192,8 @@ open class StreamPlay : TmdbProvider() {
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val BroflixVidlink="https://bombthe.irish"
         const val EmbedSu="https://embed.su"
+        const val FlickyAPI="https://www.flicky.host"
+        const val WyZIESUBAPI="https://sub.wyzie.ru"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -656,8 +660,11 @@ open class StreamPlay : TmdbProvider() {
                 )
             },
         {
-        if (!res.isAnime) invokeFDMovies(res.title, res.season, res.episode, callback)
+        invokeFDMovies(res.title, res.season, res.episode, callback)
     },
+            {
+                if (!res.isAnime) invokeFlicky(res.id, res.season, res.episode, callback)
+            },
     {
         if (!res.isAnime) invokeM4uhd(
             res.title, res.airedYear
@@ -1017,6 +1024,15 @@ open class StreamPlay : TmdbProvider() {
         subtitleCallback,
         callback
     )
+},
+{
+     invokeWyZIESUBAPI(
+        res.imdbId,
+        res.season,
+         res.episode,
+         subtitleCallback,
+         callback
+     )
 }
 
 

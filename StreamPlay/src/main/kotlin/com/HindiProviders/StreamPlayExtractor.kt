@@ -5,6 +5,7 @@ import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -1644,13 +1645,42 @@ object StreamPlayExtractor : StreamPlay() {
             "$SubtitlesAPI/subtitles/series/$id:$season:$episode.json"
         }
         val headers = mapOf(
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         )
-        app.get(url, headers = headers, timeout = 100L).parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
+    Log.d("Phisher","$url")
+    app.get(url, headers = headers, timeout = 100L).parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
             val lan=it.lang
             val suburl=it.url
-            Log.d("Phisher","$lan $suburl")
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
+                    suburl     // Use extracted URL
+                )
+            )
+        }
+    }
+
+    suspend fun invokeWyZIESUBAPI(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if(season == null) {
+            "$WyZIESUBAPI/search?id=$id"
+        }
+        else {
+            "$WyZIESUBAPI/search?id=$id/$season/$episode"
+        }
+
+        val res=app.get(url).toString()
+        val gson = Gson()
+        val listType = object : TypeToken<List<WyZIESUB>>() {}.type
+        val subtitles: List<WyZIESUB> = gson.fromJson(res, listType)
+        subtitles.map {
+            val lan=it.display
+            val suburl=it.url
             subtitleCallback.invoke(
                 SubtitleFile(
                     lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
@@ -2293,6 +2323,33 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
     }
+
+    suspend fun invokeFlicky(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null) {
+            "$FlickyAPI/embed/movie/?id=$id"
+        } else {
+            "$FlickyAPI/embed/tv/?id=$id/${season}/${episode}"
+        }
+        val res= app.get(url, referer = FlickyAPI).toString().substringAfter("const streams = ").substringBefore(";")
+        val gson = Gson()
+        val listType = object : TypeToken<List<FlickyStream>>() {}.type
+        val streams: List<FlickyStream> = gson.fromJson(res, listType)
+        streams.map {
+            val href=it.link
+            val name=it.language
+            callback.invoke(
+                ExtractorLink(
+                    "Flicky $name", "Flicky $name", href, "", Qualities.P1080.value, INFER_TYPE
+                )
+            )
+        }
+    }
+
 
     suspend fun invokeM4uhd(
         title: String? = null,
@@ -3138,7 +3195,7 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
-        api: String = "https://parse.showflix.online"
+        api: String = "https://parse.showflix.shop"
     ) {
         val where = if (season == null) "movieName" else "seriesName"
         val classes = if (season == null) "movies" else "series"
@@ -3168,7 +3225,7 @@ object StreamPlayExtractor : StreamPlay() {
             listOf(
                 "https://streamwish.to/e/${result?.streamwish}",
                 "https://filelions.to/v/${result?.filelions}.html",
-                "https://streamruby.com/e/${result?.streamruby}.html",
+                "https://streamruby.com/${result?.streamruby}",
             )
         } else {
             val result = tryParseJson<ShowflixSearchSeries>(data)?.resultsSeries?.find {
@@ -3180,9 +3237,9 @@ object StreamPlayExtractor : StreamPlay() {
                 result?.streamruby?.get("Season $season")?.get(episode!!),
             )
         }
-
         iframes.apmap { iframe ->
-            loadExtractor(
+            loadSourceNameExtractor(
+                "Showflix ",
                 iframe ?: return@apmap,
                 "$showflixAPI/",
                 subtitleCallback,
@@ -3983,9 +4040,9 @@ suspend fun invokeFlixAPI(
         } else {
             "$FlixAPI/tv/$tmdbId/$season/$episode"
         }
-    Log.d("Phisher", url.toString())
-    val source= app.get(url).parsedSafe<FlixAPI>()?.source
-    callback.invoke(
+        Log.d("Phisher", url.toString())
+        val source= app.get(url).parsedSafe<FlixAPI>()?.source
+        callback.invoke(
         ExtractorLink(
             "FlixAPI",
             "FlixAPI",

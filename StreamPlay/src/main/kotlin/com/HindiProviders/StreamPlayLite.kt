@@ -31,6 +31,7 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
+import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
@@ -71,6 +72,9 @@ class StreamPlayLite : StreamPlay() {
                 )
             },
             {
+                if (!res.isAnime) invokeFlicky(res.id, res.season, res.episode, callback)
+            },
+            {
                 if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
             },
             {
@@ -90,28 +94,6 @@ class StreamPlayLite : StreamPlay() {
                     subtitleCallback
                 )
                  */
-            },
-            {
-                if (!res.isAnime) invokeMoviesdrive(
-                    res.title,
-                    res.season,
-                    res.episode,
-                    res.year,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeTopMovies(
-                    res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
             },
             {
                 invokeDumpStream(
@@ -316,38 +298,7 @@ class StreamPlayLite : StreamPlay() {
                 )
             },
             {
-                if (!res.isAnime && !res.isBollywood) invokeVegamovies(
-                    res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeDotmovies(
-                    res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokecatflix(
-                    res.title,
-                    res.episode,
-                    res.season,
-                    res.year,
-                    subtitleCallback,
-                    callback
-                )
+                invokeFlicky(res.id, res.season, res.episode, callback)
             },
             {
                 invokeFlixAPI(

@@ -226,6 +226,25 @@ data class Link(
     val url: String
 )
 
+//Flicky
+data class FlickyStream(
+    val link: String,
+    val language: String
+)
+
+//WyZIESUBAPI
+
+data class WyZIESUB(
+    val id: String,
+    val url: String,
+    val flagUrl: String,
+    val format: String,
+    val display: String,
+    val language: String,
+    val media: String,
+    val isHearingImpaired: Boolean,
+)
+
 data class UHDBackupUrl(
     @JsonProperty("url") val url: String? = null,
 )
