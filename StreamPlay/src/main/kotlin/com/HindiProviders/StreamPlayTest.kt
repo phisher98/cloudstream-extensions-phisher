@@ -6,6 +6,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
@@ -28,14 +29,7 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokeShowflix(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
+                invokeTheyallsayflix(res.imdbId, res.season, res.episode,callback)
             },
             {
                 invokeSubtitleAPI(

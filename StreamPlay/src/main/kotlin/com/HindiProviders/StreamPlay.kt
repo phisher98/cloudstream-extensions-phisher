@@ -65,6 +65,7 @@ import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -194,6 +195,7 @@ open class StreamPlay : TmdbProvider() {
         const val EmbedSu="https://embed.su"
         const val FlickyAPI="https://www.flicky.host"
         const val WyZIESUBAPI="https://sub.wyzie.ru"
+        const val Theyallsayflix=BuildConfig.Theyallsayflix
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -237,7 +239,6 @@ open class StreamPlay : TmdbProvider() {
         "$tmdbAPI/discover/tv?api_key=$apiKey&with_keywords=210024|222243" to "Anime",
         "$tmdbAPI/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
     )
-
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
@@ -247,7 +248,6 @@ open class StreamPlay : TmdbProvider() {
         if (link == null) return null
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
-
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
@@ -481,6 +481,9 @@ open class StreamPlay : TmdbProvider() {
              */
             {
                 invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
+            },
+            {
+                invokeTheyallsayflix(res.imdbId, res.season, res.episode,callback)
             },
                 {
                     if (!res.isAnime) invokeAoneroom(

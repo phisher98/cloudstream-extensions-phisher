@@ -910,5 +910,49 @@ data class Subtitle(
     val g: String,
 )
 
+// Theyallsayflix
 
+data class Theyallsayflix(
+    val error: Boolean,
+    val title: String,
+    @JsonProperty("poster_url")
+    val posterUrl: String,
+    @JsonProperty("backdrop_url")
+    val backdropUrl: String,
+    @JsonProperty("release_date")
+    val releaseDate: String,
+    val rating: Double,
+    val desc: String,
+    @JsonProperty("original_lang")
+    val originalLang: String,
+    val minutes: Long,
+    val status: String,
+    @JsonProperty("status_desc")
+    val statusDesc: String,
+    val streams: List<TheyallsayflixStream>,
+    val subtitles: List<TheyallsayflixSubtitle>,
+)
+
+data class TheyallsayflixStream(
+    val quality: Long,
+    @JsonProperty("file_size")
+    val fileSize: Long,
+    @JsonProperty("file_name")
+    val fileName: String,
+    @JsonProperty("play_url")
+    val playUrl: String,
+)
+
+data class TheyallsayflixSubtitle(
+    @JsonProperty("lang_code")
+    val langCode: String,
+    @JsonProperty("lang_name")
+    val langName: String,
+    @JsonProperty("sub_name")
+    val subName: String,
+    @JsonProperty("is_hearing_impaired")
+    val isHearingImpaired: Boolean,
+    @JsonProperty("download_link")
+    val downloadLink: String,
+)
 

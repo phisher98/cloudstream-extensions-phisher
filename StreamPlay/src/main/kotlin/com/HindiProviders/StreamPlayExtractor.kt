@@ -2184,6 +2184,35 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokeTheyallsayflix(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val type=if (season==null) "movie" else "show"
+        val url = if (season == null) {
+            "$Theyallsayflix/api/v1/search?type=$type&imdb_id=$id"
+        } else {
+            "$Theyallsayflix/api/v1/search?type=$type&imdb_id=$id&season=$season&episode=$episode"
+        }
+        val test=app.get(url).parsed<Theyallsayflix>()
+        app.get(url).parsedSafe<Theyallsayflix>()?.streams?.amap {
+            Log.d("Phisher",it.toString() )
+            val href=it.playUrl
+            val quality=it.quality.toInt()
+            val name=it.fileName
+            val size=it.fileSize
+            callback.invoke(
+                ExtractorLink(
+                    "DebianFlix $name $size", "DebianFlix $name $size", href, "", quality, INFER_TYPE
+                )
+            )
+        }
+
+    }
+
+
 // Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
     //Still in progress
     suspend fun invokeVidsrccc(
