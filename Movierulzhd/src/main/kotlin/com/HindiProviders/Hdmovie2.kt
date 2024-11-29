@@ -16,7 +16,7 @@ import java.time.Year
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.diy"
+    override var mainUrl = "https://hdmovie2.dance"
     override var name = "Hdmovie2"
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
