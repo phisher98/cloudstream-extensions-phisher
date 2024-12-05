@@ -417,10 +417,30 @@ object StreamPlayExtractor : StreamPlay() {
             ?.map { it.subjectId }
         subjectIds?.forEach { subjectId ->
             val data = app.get(
-                "$aoneroomAPI/wefeed-mobile-bff/subject-api/resource?subjectId=${subjectId ?: return}&page=1&perPage=20&all=0&startPosition=1&endPosition=1&pagerMode=0&resolution=480",
+                "$aoneroomAPI/wefeed-mobile-bff/subject-api/resource?subjectId=${subjectId ?: return}",
                 headers = headers
             ).parsedSafe<AoneroomResponse>()?.data?.list?.findLast {
                 it.se == (season ?: 0) && it.ep == (episode ?: 0)
+            }
+            if (episode!=null)
+            {
+                app.get(
+                    "$aoneroomAPI/wefeed-mobile-bff/subject-api/play-info?subjectId=$subjectId&se=$season&ep=$episode",
+                    headers = headers
+                ).parsedSafe<Aoneroomep>()?.data?.streams?.map {
+                    val res= it.resolutions.toInt()
+                    Log.d("Phisher", res.toString())
+                    callback.invoke(
+                        ExtractorLink(
+                            "Aoneroom",
+                            "Aoneroom",
+                            it.url,
+                            "",
+                            res,
+                            INFER_TYPE
+                        )
+                    )
+                }
             }
             callback.invoke(
                 ExtractorLink(

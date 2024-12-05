@@ -722,6 +722,31 @@ data class AoneroomResponse(
     }
 }
 
+//
+
+data class Aoneroomep(
+    val code: Long,
+    val message: String,
+    val data: AoneroomepData,
+)
+
+data class AoneroomepData(
+    val streams: List<AoneroomepStream>,
+    val title: String,
+)
+
+data class AoneroomepStream(
+    val format: String,
+    val id: String,
+    val url: String,
+    val resolutions: String,
+    val size: String,
+    val duration: Long,
+    val codecName: String,
+    val signCookie: String,
+)
+
+
 data class CinemaTvResponse(
     @JsonProperty("streams") val streams: HashMap<String, String>? = null,
     @JsonProperty("subtitles") val subtitles: ArrayList<Subtitles>? = arrayListOf(),
