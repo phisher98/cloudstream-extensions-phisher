@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
@@ -32,13 +33,10 @@ class StreamPlayTest : StreamPlay() {
                 invokeTheyallsayflix(res.imdbId, res.season, res.episode,callback)
             },
             {
-                invokeSubtitleAPI(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
+                if (!res.isAnime) invokeAoneroom(
+                    res.title, res.airedYear
+                        ?: res.year, res.season, res.episode, subtitleCallback, callback)
+
             }
 
         )

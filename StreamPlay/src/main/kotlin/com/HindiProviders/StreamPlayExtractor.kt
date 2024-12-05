@@ -401,47 +401,47 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val headers =
-            mapOf("Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjcyODc3MjQ5OTg4MzA0NzM5NzYsInV0cCI6MSwiZXhwIjoxNzEwMzg4NzczLCJpYXQiOjE3MDI2MTI3NzN9.Myt-gVHfPfQFbFyRX3WXtiiwvRzDwBrXTEKy1l-GDRU")
-        val subjectId = app.post(
+            mapOf("Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg5OTM3MDA1MDUzOTQ1NDk2OCwiZXhwIjoxNzQxMTk0NDg4LCJpYXQiOjE3MzM0MTg0ODh9.UQ7pslt7o85nuNW14jchnrp7DxpQT0d0vl50kDTXSnI")
+        Log.d("Phisher", headers.toString())
+        val subjectIds = app.post(
             "$aoneroomAPI/wefeed-mobile-bff/subject-api/search", data = mapOf(
                 "page" to "1",
                 "perPage" to "10",
                 "keyword" to "$title",
                 "subjectType" to if (season == null) "1" else "2",
             ), headers = headers
-        ).parsedSafe<AoneroomResponse>()?.data?.items?.find {
-            it.title.equals(
-                title,
-                true
-            ) && it.releaseDate?.substringBefore("-") == "$year"
-        }?.subjectId
-
-        val data = app.get(
-            "$aoneroomAPI/wefeed-mobile-bff/subject-api/resource?subjectId=${subjectId ?: return}&page=1&perPage=20&all=0&startPosition=1&endPosition=1&pagerMode=0&resolution=480",
-            headers = headers
-        ).parsedSafe<AoneroomResponse>()?.data?.list?.findLast {
-            it.se == (season ?: 0) && it.ep == (episode ?: 0)
-        }
-
-        callback.invoke(
-            ExtractorLink(
-                "Aoneroom",
-                "Aoneroom",
-                data?.resourceLink
-                    ?: return,
-                "",
-                data.resolution ?: Qualities.Unknown.value,
-                INFER_TYPE
-            )
-        )
-
-        data.extCaptions?.map { sub ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    sub.lanName ?: return@map,
-                    sub.url ?: return@map,
+        ).parsedSafe<AoneroomResponse>()?.data?.items?.filter {
+            it.title?.contains("$title", ignoreCase = true) ?: return &&
+                    it.releaseDate?.substringBefore("-") == year.toString()
+        } // Filter by title and release year
+            ?.map { it.subjectId }
+        subjectIds?.forEach { subjectId ->
+            val data = app.get(
+                "$aoneroomAPI/wefeed-mobile-bff/subject-api/resource?subjectId=${subjectId ?: return}&page=1&perPage=20&all=0&startPosition=1&endPosition=1&pagerMode=0&resolution=480",
+                headers = headers
+            ).parsedSafe<AoneroomResponse>()?.data?.list?.findLast {
+                it.se == (season ?: 0) && it.ep == (episode ?: 0)
+            }
+            callback.invoke(
+                ExtractorLink(
+                    "Aoneroom",
+                    "Aoneroom",
+                    data?.resourceLink
+                        ?: return,
+                    "",
+                    data.resolution ?: Qualities.Unknown.value,
+                    INFER_TYPE
                 )
             )
+
+            data.extCaptions?.map { sub ->
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        sub.lanName ?: return@map,
+                        sub.url ?: return@map,
+                    )
+                )
+            }
         }
 
     }
