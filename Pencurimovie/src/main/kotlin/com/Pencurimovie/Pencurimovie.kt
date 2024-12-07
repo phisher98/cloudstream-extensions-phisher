@@ -29,7 +29,7 @@ class Pencurimovie : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page").document
+        val document = app.get("$mainUrl/${request.data}/page/$page", timeout = 50L).document
         val home = document.select("div.ml-item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -55,13 +55,13 @@ class Pencurimovie : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-            val document = app.get("${mainUrl}?s=$query").document
+            val document = app.get("${mainUrl}?s=$query", timeout = 50L).document
             val results =document.select("div.ml-item").mapNotNull { it.toSearchResult() }
         return results
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url, timeout = 50L).document
         val title =
             document.selectFirst("div.mvic-desc h3")?.text()?.trim().toString().substringBefore("(")
         val poster = document.select("meta[property=og:image]").attr("content").toString()
@@ -78,15 +78,27 @@ class Pencurimovie : MainAPI() {
         }
         return if (tvtag == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
-            document.select("div.les-content a").forEach { info ->
-                val name = info.select("a").text().substringAfter("-").trim()
-                val href = info.select("a").attr("href") ?: ""
-                val Rawepisode =
-                    info.select("a").text().substringAfter("Episode")
-                        .substringBefore("-")
-                        .trim().toIntOrNull()
-                episodes.add(Episode(data = href, episode = Rawepisode, name = name))
+            document.select("div.tvseason").amap { info ->
+                val season = info.select("strong").text().substringAfter("Season").trim().toIntOrNull()
+                info.select("div.les-content a").forEach { it ->
+                    Log.d("Phis","$it")
+                    val name = it.select("a").text().substringAfter("-").trim()
+                    val href = it.select("a").attr("href") ?: ""
+                    val Rawepisode =
+                        it.select("a").text().substringAfter("Episode")
+                            .substringBefore("-")
+                            .trim().toIntOrNull()
+                    episodes.add(
+                        Episode(
+                            data = href,
+                            episode = Rawepisode,
+                            name = name,
+                            season = season
+                        )
+                    )
+                }
             }
+
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.plot = description
@@ -118,7 +130,6 @@ class Pencurimovie : MainAPI() {
         val document = app.get(data).document
         document.select("div.movieplay iframe").forEach {
             val href = it.attr("data-src")
-            Log.d("Phisher",href)
             loadExtractor(href,subtitleCallback, callback)
         }
         return true
