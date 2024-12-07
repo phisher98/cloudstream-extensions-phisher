@@ -1,4 +1,4 @@
-version = 5
+version = 6
 
 
 cloudstream {
@@ -17,7 +17,6 @@ cloudstream {
      * */
     status = 1 // will be 3 if unspecified
     tvTypes = listOf(
-        "TvSeries",
         "Movie",
         "Anime",
         "Cartoon"
