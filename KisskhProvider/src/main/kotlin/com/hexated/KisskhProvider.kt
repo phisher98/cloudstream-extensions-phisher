@@ -7,7 +7,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.ArrayList
 
@@ -140,7 +142,19 @@ class KisskhProvider : MainAPI() {
                             referer = "$mainUrl/",
                             headers = mapOf("Origin" to mainUrl)
                         ).forEach(callback)
-                    } else {
+                    } else if (link?.contains("mp4") == true) {
+                        callback.invoke(
+                            ExtractorLink(
+                                this.name,
+                                this.name,
+                                fixUrl( link),
+                                "",
+                                Qualities.P720.value,
+                                INFER_TYPE
+                            )
+                        )
+
+                } else {
                         loadExtractor(
                             link?.substringBefore("=http") ?: return@safeApiCall,
                             "$mainUrl/",
