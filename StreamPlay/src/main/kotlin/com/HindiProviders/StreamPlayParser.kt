@@ -536,6 +536,30 @@ data class GokuData(
 data class GokuServer(
     @JsonProperty("data") val data: GokuData? = GokuData(),
 )
+//Gojo
+
+data class Gojoresponseshashh(
+    val sources: List<shashhSource>,
+    val thumbs: String,
+    val skips: Any?,
+)
+
+data class shashhSource(
+    val quality: String,
+    val url: String,
+)
+
+data class Gojoresponsevibe(
+    val sources: List<vibeSource>,
+    val skips: Any?,
+)
+
+data class vibeSource(
+    val url: String,
+    val quality: String,
+    val type: String,
+)
+
 
 //MiruroanimeGogo
 

@@ -14,9 +14,9 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import java.time.Year
 
-class Hdmovie22 : Hdmovie2() {
+class Hdmovie6 : Hdmovie2() {
 
-    override var mainUrl = "https://hdmovie22.net"
-    override var name = "Hdmovie22"
+    override var mainUrl = "https://hdmovie6.com"
+    override var name = "Hdmovie6"
 
 }

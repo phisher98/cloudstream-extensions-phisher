@@ -1026,7 +1026,7 @@ suspend fun loadNameExtractor(
                 url,
                 referer ?: "",
                 quality,
-                INFER_TYPE,
+                if (url.contains("m3u8"))ExtractorLinkType.M3U8 else INFER_TYPE,
             )
         )
 }

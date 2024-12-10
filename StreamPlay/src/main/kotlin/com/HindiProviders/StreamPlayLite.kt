@@ -127,6 +127,7 @@ class StreamPlayLite : StreamPlay() {
             {
                 if (res.isAnime) invokeAnimes(
                     res.title,
+                    res.jpTitle,
                     res.epsTitle,
                     res.date,
                     res.airedDate,
@@ -260,7 +261,7 @@ class StreamPlayLite : StreamPlay() {
                 )
             },
             {
-                invokeZshow(
+                if (!res.isAsian && !res.isBollywood &&!res.isAnime) invokeZshow(
                     res.title,
                     res.year,
                     res.season,
@@ -298,10 +299,10 @@ class StreamPlayLite : StreamPlay() {
                 )
             },
             {
-                invokeFlicky(res.id, res.season, res.episode, callback)
+                if (!res.isAnime) invokeFlicky(res.id, res.season, res.episode, callback)
             },
             {
-                invokeFlixAPI(
+                if (!res.isAnime) invokeFlixAPI(
                     res.id,
                     res.season,
                     res.episode,

@@ -171,13 +171,13 @@ open class StreamPlay : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.icu"
         const val topmoviesAPI = "https://topmovies.icu"
-        const val MoviesmodAPI= "https://moviesmod.rip"
+        const val MoviesmodAPI= "https://moviesmod.bot"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://vegamovies.ps"
         const val dotmoviesAPI = "https://luxmovies.live"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
-        const val MovieDrive_API="https://moviesdrive.world"
+        const val MovieDrive_API="https://moviesdrive.cloud"
         const val Asiandrama_API=BuildConfig.AsianDrama_API
         const val bollyflixAPI = "https://bollyflix.ninja"
         const val movies4u = "https://movies4u.gb.net"
@@ -187,7 +187,7 @@ open class StreamPlay : TmdbProvider() {
         const val BollyflixVIP= "https://bollyflix.meme"
         const val FlixAPI= BuildConfig.FlixAPI
         const val NyaaAPI="https://nyaa.land"
-        const val Extramovies="https://extramovies.poker"
+        const val Extramovies="https://extramovies.soy"
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
@@ -494,6 +494,7 @@ open class StreamPlay : TmdbProvider() {
                 {
                     if (res.isAnime) invokeAnimes(
                         res.title,
+                        res.jpTitle,
                         res.epsTitle,
                         res.date,
                         res.airedDate,
@@ -922,7 +923,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
     {
-        if (!res.isAsian && !res.isBollywood) invokeZshow(
+        if (!res.isAsian && !res.isBollywood &&!res.isAnime) invokeZshow(
             res.title,
             res.year,
             res.season,
@@ -1002,17 +1003,8 @@ open class StreamPlay : TmdbProvider() {
       )
 },
 {
-    invokeFlixAPI(
+    if (!res.isAnime) invokeFlixAPI(
         res.tvdbId,
-        res.season,
-        res.episode,
-        subtitleCallback,
-        callback
-    )
-},
-{
-    if (res.isAnime) invokenyaa(
-        res.title,
         res.season,
         res.episode,
         subtitleCallback,
