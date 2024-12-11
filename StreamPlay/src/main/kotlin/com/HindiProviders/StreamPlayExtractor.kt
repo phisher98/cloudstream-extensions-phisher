@@ -916,11 +916,10 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$azseriesAPI/episodes/$fixTitle-season-$season-episode-$episode"
         }
-        val res = app.get(url, referer = azseriesAPI)
-        if (res.code == 200) {
+        val res = app.get("$url", referer = azseriesAPI)
             val document = res.document
             val id = document.selectFirst("#show_player_lazy")?.attr("movie-id").toString()
-            val server_doc = app.post(
+        val server_doc = app.post(
                 url = "$azseriesAPI/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "lazy_player",
                     "movieID" to id
@@ -937,7 +936,6 @@ object StreamPlayExtractor : StreamPlay() {
                     loadExtractor(response, subtitleCallback, callback)
                 }
             }
-        }
     }
 
     suspend fun invokeDumpStream(
@@ -2075,6 +2073,42 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             }
+    }
+
+    suspend fun invokeTom(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if(season == null) "$TomAPI/api/getVideoSource?type=movie&id=$id" else "$TomAPI/api/getVideoSource?type=tv&id=$id/$season/$episode"
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+            "Referer" to "https://autoembed.cc"
+        )
+        val json = app.get(url, headers = headers).text
+        val data = tryParseJson<TomResponse>(json) ?: return
+
+        callback.invoke(
+            ExtractorLink(
+                "Tom Embeded",
+                "Tom Embeded",
+                data.videoSource,
+                "",
+                Qualities.P1080.value,
+                true
+            )
+        )
+
+        data.subtitles.map {
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    it.label,
+                    it.file,
+                )
+            )
+        }
     }
 
     suspend fun invokeExtramovies(
@@ -3752,49 +3786,51 @@ object StreamPlayExtractor : StreamPlay() {
         val hrefpattern =
             Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1)
                 ?: ""
-        val document = app.get(hrefpattern).document
-        if (season == null) {
-            document.select("h5 > a").amap {
-                val href = it.attr("href")
-                Log.d("Phisher M href", href)
-                val server = extractMdrive(href)
-                server.amap {
-                    Log.d("Phisher M server", it)
-                    loadExtractor(it, referer = "MoviesDrive", subtitleCallback, callback)
+        if (hrefpattern.isBlank()) {
+            val document = app.get(hrefpattern).document
+            if (season == null) {
+                document.select("h5 > a").amap {
+                    val href = it.attr("href")
+                    Log.d("Phisher M href", href)
+                    val server = extractMdrive(href)
+                    server.amap {
+                        Log.d("Phisher M server", it)
+                        loadExtractor(it, referer = "MoviesDrive", subtitleCallback, callback)
+                    }
                 }
-            }
-        } else {
-            val stag = "Season $season|S0$season"
-            val sep = "Ep0$episode|Ep$episode"
-            val entries = document.select("h5:matches((?i)$stag)")
-            Log.d("Phisher Moviedrive", entries.toString())
-            entries.amap { entry ->
-                val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
-                if (href.isNotBlank()) {
-                    val doc = app.get(href).document
-                    val fEp = doc.selectFirst("h5:matches((?i)$sep)")?.toString()
-                    if (fEp.isNullOrEmpty()) {
-                        val furl = doc.select("h5 a:contains(HubCloud)").attr("href")
-                        loadExtractor(furl, referer = "MoviesDrive", subtitleCallback, callback)
-                    } else
-                        doc.selectFirst("h5:matches((?i)$sep)")?.let { epElement ->
-                            val linklist = mutableListOf<String>()
-                            val firstHubCloudH5 = epElement.nextElementSibling()
-                            val secondHubCloudH5 = firstHubCloudH5?.nextElementSibling()
-                            val firstLink = secondHubCloudH5?.selectFirst("a")?.attr("href")
-                            val secondLink = secondHubCloudH5?.selectFirst("a")?.attr("href")
-                            if (firstLink != null) linklist.add(firstLink)
-                            if (secondLink != null) linklist.add(secondLink)
-                            Log.d("Phisher Moviedrive", linklist.toString())
-                            linklist.forEach { url ->
-                                loadExtractor(
-                                    url,
-                                    referer = "MoviesDrive",
-                                    subtitleCallback,
-                                    callback
-                                )
+            } else {
+                val stag = "Season $season|S0$season"
+                val sep = "Ep0$episode|Ep$episode"
+                val entries = document.select("h5:matches((?i)$stag)")
+                Log.d("Phisher Moviedrive", entries.toString())
+                entries.amap { entry ->
+                    val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
+                    if (href.isNotBlank()) {
+                        val doc = app.get(href).document
+                        val fEp = doc.selectFirst("h5:matches((?i)$sep)")?.toString()
+                        if (fEp.isNullOrEmpty()) {
+                            val furl = doc.select("h5 a:contains(HubCloud)").attr("href")
+                            loadExtractor(furl, referer = "MoviesDrive", subtitleCallback, callback)
+                        } else
+                            doc.selectFirst("h5:matches((?i)$sep)")?.let { epElement ->
+                                val linklist = mutableListOf<String>()
+                                val firstHubCloudH5 = epElement.nextElementSibling()
+                                val secondHubCloudH5 = firstHubCloudH5?.nextElementSibling()
+                                val firstLink = secondHubCloudH5?.selectFirst("a")?.attr("href")
+                                val secondLink = secondHubCloudH5?.selectFirst("a")?.attr("href")
+                                if (firstLink != null) linklist.add(firstLink)
+                                if (secondLink != null) linklist.add(secondLink)
+                                Log.d("Phisher Moviedrive", linklist.toString())
+                                linklist.forEach { url ->
+                                    loadExtractor(
+                                        url,
+                                        referer = "MoviesDrive",
+                                        subtitleCallback,
+                                        callback
+                                    )
+                                }
                             }
-                        }
+                    }
                 }
             }
         }

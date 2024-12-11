@@ -66,6 +66,7 @@ import com.Phisher98.StreamPlayExtractor.invokenyaa
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
+import com.Phisher98.StreamPlayExtractor.invokeTom
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -123,7 +124,6 @@ open class StreamPlay : TmdbProvider() {
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
-
         private const val apiKey = BuildConfig.TMDB_API
 
         /** ALL SOURCES */
@@ -196,6 +196,7 @@ open class StreamPlay : TmdbProvider() {
         const val FlickyAPI="https://www.flicky.host"
         const val WyZIESUBAPI="https://sub.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
+        const val TomAPI="https://tom.autoembed.cc"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -945,6 +946,9 @@ open class StreamPlay : TmdbProvider() {
     {
         if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
     },
+            {
+                if (!res.isAnime) invokeTom(res.id, res.season, res.episode,subtitleCallback,callback)
+            },
     {
         if (!res.isAnime) invokeZoechip(
             res.title,

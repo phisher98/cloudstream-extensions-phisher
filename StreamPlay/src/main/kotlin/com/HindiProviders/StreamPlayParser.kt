@@ -536,6 +536,18 @@ data class GokuData(
 data class GokuServer(
     @JsonProperty("data") val data: GokuData? = GokuData(),
 )
+//Tom
+
+data class TomResponse (
+    var videoSource    : String,
+    var subtitles      : ArrayList<TomSubtitles> = arrayListOf(),
+)
+
+data class TomSubtitles (
+    var file    : String,
+    var label   : String
+)
+
 //Gojo
 
 data class Gojoresponseshashh(
