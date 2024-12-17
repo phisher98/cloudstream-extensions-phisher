@@ -1,4 +1,4 @@
-package com.Doraemontheanime
+package com.DoraBash
 
 //import android.util.Log
 import com.lagradost.cloudstream3.app

@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 1
+version = 2
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Doremon"
+    description = "Doremon Show in Hindi"
     language    = "hi"
     authors = listOf("Phisher98")
 
@@ -22,5 +22,5 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie,Anime,Cartoon")
-    iconUrl="https://doraemontheanime.com/wp-content/uploads/2022/06/20210525_121800.png"
+    iconUrl="https://dorabash.com/wp-content/uploads/2022/06/20210525_121800.png"
 }

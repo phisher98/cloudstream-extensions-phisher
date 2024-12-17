@@ -1,13 +1,14 @@
-package com.Doraemontheanime
+package com.DoraBash
 
 import android.annotation.SuppressLint
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class Doraemontheanime : MainAPI() {
-    override var mainUrl = "https://doraemontheanime.com"
-    override var name = "Doraemon The Anime"
+class DoraBash : MainAPI() {
+    override var mainUrl = "https://dorabash.com"
+    override var name = "DoraBash"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
@@ -115,6 +116,7 @@ class Doraemontheanime : MainAPI() {
         val document = app.get(data).document
         document.select("div.player-embed iframe").forEach {
             val href = it.attr("src")
+            Log.d("Phisher",href)
             if (href.contains("gdplaydora.blogspot.com"))
             {
                 val truelink=app.get(href).document.selectFirst("#container source")?.attr("src")
@@ -134,16 +136,11 @@ class Doraemontheanime : MainAPI() {
             else {
                 val truelink = gettrueurl(href)
                 if (truelink != null) {
-                    callback.invoke(
-                        ExtractorLink(
-                            this.name,
-                            this.name,
-                            truelink,
-                            "",
-                            Qualities.Unknown.value,
-                            type = INFER_TYPE
-                        )
-                    )
+                    M3u8Helper.generateM3u8(
+                        this.name,
+                        truelink,
+                        "",
+                    ).forEach(callback)
                 }
             }
         }
@@ -151,10 +148,13 @@ class Doraemontheanime : MainAPI() {
     }
     private suspend fun gettrueurl(href: String): String? {
         val filemoon=app.get(href).document.selectFirst("iframe")?.attr("src") ?:""
-        val Filedata= app.get(filemoon, headers = mapOf("Accept-Language" to "en-US,en;q=0.5")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val Filedata= app.get(filemoon, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         val Fileurl=JsUnpacker(Filedata).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
         }
+        Log.d("Phisher", filemoon.toString())
+        Log.d("Phisher", Filedata.toString())
+        Log.d("Phisher", Fileurl.toString())
         return Fileurl
     }
 
