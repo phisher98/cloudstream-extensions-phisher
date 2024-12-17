@@ -116,7 +116,7 @@ class Donghuastream : MainAPI() {
                 val newurl=url.substringAfter("=\"").substringBefore("\"")
                 val link= "http:$newurl"
                 loadExtractor(link,referer = url,subtitleCallback, callback)
-            } else if(url.contains(".mp4")) {
+            } else if(url.endsWith("mp4")) {
                 callback.invoke(
                     ExtractorLink(
                         "All Sub Player",

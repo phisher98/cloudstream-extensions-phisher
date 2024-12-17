@@ -74,12 +74,28 @@ open class Ultrahd : ExtractorApi() {
             Regex("\\\$\\.\\s*ajax\\(\\s*\\{\\s*url:\\s*\"(.*?)\"").find(extractedpack)?.groupValues?.get(1)?.let { link ->
                 app.get(link).parsedSafe<Root>()?.sources?.map {
                     val m3u8= httpsify( it.file)
-                    Log.d("Phisher",m3u8)
-                    M3u8Helper.generateM3u8(
-                        this.name,
-                        m3u8,
-                        "$referer",
-                    ).forEach(callback)
+                    Log.d("Phisher Ultrahd",m3u8)
+                    if (m3u8.contains(".mp4"))
+                    {
+                        callback.invoke(
+                            ExtractorLink(
+                                "Ultrahd Streamplay",
+                                "Ultrahd Streamplay",
+                                m3u8,
+                                "",
+                                getQualityFromName(""),
+                                type = INFER_TYPE,
+                            )
+                        )
+                    }
+                    else
+                    {
+                        M3u8Helper.generateM3u8(
+                            this.name,
+                            m3u8,
+                            "$referer",
+                        ).forEach(callback)
+                    }
                 }
                 app.get(link).parsedSafe<Root>()?.tracks?.map {
                     val langurl=it.file

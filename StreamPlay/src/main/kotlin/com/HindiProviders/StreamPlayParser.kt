@@ -39,6 +39,9 @@ data class PageInfo(
 data class Edge(
     @JsonProperty("_id")
     val id: String,
+    val name: String,
+    val englishName: String,
+    val nativeName: String,
 )
 
 data class LastEpisodeInfo(
