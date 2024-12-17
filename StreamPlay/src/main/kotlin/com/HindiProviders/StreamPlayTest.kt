@@ -1,10 +1,12 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
+import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
@@ -32,16 +34,14 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                invokeTheyallsayflix(res.imdbId, res.season, res.episode,callback)
-            },
-            {
-                if (!res.isAnime) invokeazseries(
-                    res.title,
+                if (!res.isAnime) invokeAllMovieland(
+                    res.imdbId,
                     res.season,
                     res.episode,
-                    subtitleCallback,
                     callback
                 )
+            },
+            {
 
             }
 

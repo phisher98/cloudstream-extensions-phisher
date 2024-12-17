@@ -3580,10 +3580,10 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        //val doc = app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
-        //val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
-        //var host = domainRegex.find(doc)?.groups?.get(1)?.value
-        var host="https://keels313ale.com"
+        val doc = app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
+        val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
+        val host = domainRegex.find(doc)?.groups?.get(1)?.value ?:""
+        //val host="https://kioled326aps.com"
         val res = app.get(
             "$host/play/$imdbId",
             referer = "$allmovielandAPI/"
@@ -3786,7 +3786,7 @@ object StreamPlayExtractor : StreamPlay() {
         val hrefpattern =
             Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1)
                 ?: ""
-        if (hrefpattern.isBlank()) {
+        if (hrefpattern.isNotEmpty()) {
             val document = app.get(hrefpattern).document
             if (season == null) {
                 document.select("h5 > a").amap {
