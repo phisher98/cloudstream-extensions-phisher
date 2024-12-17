@@ -2,6 +2,8 @@
 
 Shortcode: phisherrepo
 
+[![Discord](https://invidget.switchblade.xyz/p5PtjcRA)](https://discord.com/invite/p5PtjcRA)
+
 
 ### 🕹 Tools and Programming languages used :
 <p align="left">
