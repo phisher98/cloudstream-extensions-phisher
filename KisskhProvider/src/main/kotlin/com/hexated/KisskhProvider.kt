@@ -11,6 +11,9 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import okhttp3.Interceptor
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import java.util.ArrayList
 
 class KisskhProvider : MainAPI() {
@@ -169,10 +172,19 @@ class KisskhProvider : MainAPI() {
         // parsedSafe doesn't work in <List<Object>>
         app.get("$mainUrl/api/Sub/${loadData.epsId}").text.let { res ->
             tryParseJson<List<Subtitle>>(res)?.map { sub ->
+                if (sub.src!!.endsWith("txt")) {
+                    subtitleCallback.invoke(
+                        SubtitleFile(
+                            getLanguage(sub.label ?: return@map),
+                            sub.src
+                        )
+                    )
+                }
+                else
                 subtitleCallback.invoke(
                     SubtitleFile(
                         getLanguage(sub.label ?: return@map),
-                        sub.src ?: return@map
+                        sub.src
                     )
                 )
             }
@@ -181,6 +193,37 @@ class KisskhProvider : MainAPI() {
         return true
 
     }
+// SubDecryptor Code from Thanks to https://github.com/Kohi-den/extensions-source/blob/515590ecfec6af2b915d23508266536f7f5a3ab8/src/en/kisskh/src/eu/kanade/tachiyomi/animeextension/en/kisskh/SubDecryptor.kt
+
+    private val CHUNK_REGEX1 by lazy { Regex("^\\d+$", RegexOption.MULTILINE) }
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return object : Interceptor {
+            override fun intercept(chain: Interceptor.Chain): Response {
+                val request = chain.request()
+                    .newBuilder()
+                    .build()
+                val response = chain.proceed(request)
+                if (response.request.url.toString().endsWith(".txt")) {
+                    val responseBody = response.body.string()
+                    val chunks = responseBody.split(CHUNK_REGEX1)
+                        .filter(String::isNotBlank)
+                        .map(String::trim)
+                    val decrypted = chunks.mapIndexed { index, chunk ->
+                        val parts = chunk.split("\n")
+                        val text = parts.slice(1 until parts.size)
+                        val d = text.map { decrypt(it) }.joinToString("\n")
+                        arrayOf(index + 1, parts.first(), d).joinToString("\n")
+                    }.joinToString("\n\n")
+                    val newBody = decrypted.toResponseBody(response.body.contentType())
+                    return response.newBuilder()
+                        .body(newBody)
+                        .build()
+                }
+                return response
+            }
+        }
+    }
+
 
     data class Data(
         val title: String?,
