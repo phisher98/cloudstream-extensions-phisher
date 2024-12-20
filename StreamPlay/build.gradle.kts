@@ -32,6 +32,7 @@ android {
         buildConfigField("String", "SharmaflixApi", "\"${properties.getProperty("SharmaflixApi")}\"")
         buildConfigField("String", "Theyallsayflix", "\"${properties.getProperty("Theyallsayflix")}\"")
         buildConfigField("String", "GojoAPI", "\"${properties.getProperty("GojoAPI")}\"")
+        buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
     }
 }
 

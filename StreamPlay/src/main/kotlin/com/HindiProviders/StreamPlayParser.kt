@@ -473,6 +473,46 @@ data class CrunchyrollSourcesResponses(
         @JsonProperty("vo_adaptive_hls") val vo_adaptive_hls: HashMap<String, HashMap<String, String>>? = hashMapOf(),
     )
 }
+//Hianime
+
+
+data class Hianime(
+    val success: Boolean,
+    val data: HianimeData,
+)
+
+data class HianimeData(
+    val tracks: List<HianimeTrack>,
+    val intro: Intro,
+    val outro: Outro,
+    val sources: List<HianimeSource>,
+    @JsonProperty("anilistID")
+    val anilistId: Long,
+    @JsonProperty("malID")
+    val malId: Long,
+)
+
+data class HianimeTrack(
+    val file: String,
+    val label: String?,
+    val kind: String,
+    val default: Boolean?,
+)
+
+data class Intro(
+    val start: Long,
+    val end: Long,
+)
+
+data class Outro(
+    val start: Long,
+    val end: Long,
+)
+
+data class HianimeSource(
+    val url: String,
+    val type: String,
+)
 
 //anime animepahe parser
 

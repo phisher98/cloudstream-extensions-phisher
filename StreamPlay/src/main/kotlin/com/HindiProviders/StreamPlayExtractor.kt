@@ -1166,13 +1166,14 @@ object StreamPlayExtractor : StreamPlay() {
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val TMDBdate=date?.substringBefore("-")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
-        Log.d("Phisher zoroIds", zoroIds.toString())
+        val hianimeurl=malsync?.zoro?.firstNotNullOf { it.value["url"] }
+        Log.d("Phisher zoroIds", malsync.toString())
         argamap(
             {
                 invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
             },
             {
-                invokeHianime(zoroIds, episode, subtitleCallback, callback)
+                invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
             {
                 val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
@@ -1477,6 +1478,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     private suspend fun invokeHianime(
         animeIds: List<String?>? = null,
+        url: String?,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
@@ -1511,6 +1513,37 @@ object StreamPlayExtractor : StreamPlay() {
                 ).parsedSafe<HianimeResponses>()?.link
                     ?: return@servers
                 val audio = if (server.third == "sub") "Raw" else "English Dub"
+                val animeEpisodeId=url?.substringAfter("to/")
+                val api="${BuildConfig.HianimeAPI}/api/v2/hianime/episode/sources?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
+                app.get(api).parsedSafe<Hianime>()?.data?.let { data ->
+                    val m3u8Urls = data.sources.map { it.url }
+                    val m3u8 = m3u8Urls.firstOrNull()
+                    if (m3u8Urls.isNotEmpty()) {
+                        loadNameExtractor(
+                            "HiAnime ${server.first} [$audio]",
+                            m3u8 ?:"",
+                            "",
+                            subtitleCallback,
+                            callback,
+                            Qualities.P1080.value
+                        )
+                    } else {
+                        Log.w("Phisher", "No m3u8 URLs found in sources.")
+                    }
+
+                    data.tracks.amap { track ->
+                        val vtt = track.file
+                        val lang=track.label
+                        subtitleCallback.invoke(
+                            SubtitleFile(
+                                getLanguage(lang ?: return@amap),
+                                vtt
+                            )
+                        )
+                    }
+                }
+
+                /*
                 Log.d("Phisher",iframe.toString())
                 loadCustomExtractor(
                     "HiAnime ${server.first} [$audio]",
@@ -1519,6 +1552,8 @@ object StreamPlayExtractor : StreamPlay() {
                     subtitleCallback,
                     callback,
                 )
+
+                 */
             }
         }
     }

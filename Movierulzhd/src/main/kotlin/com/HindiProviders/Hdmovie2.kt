@@ -11,6 +11,9 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import okhttp3.Headers
+import okhttp3.Interceptor
+import okhttp3.Response
 import org.jsoup.Jsoup
 import java.time.Year
 
@@ -101,4 +104,17 @@ open class Hdmovie2 : Movierulzhd() {
         @JsonProperty("embed_url") val embed_url: String,
         @JsonProperty("type") val type: String?,
     )
+
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor? {
+        return object : Interceptor {
+            override fun intercept(chain: Interceptor.Chain): Response {
+                val request = chain.request()
+                    .newBuilder()
+                    .headers(Headers.Builder().build())
+                    .addHeader("User-Agent", "PostmanRuntime/7.43.0")
+                    .build()
+                return chain.proceed(request)
+            }
+        }
+    }
 }
