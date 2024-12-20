@@ -1346,7 +1346,7 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 val response = app.get("${BuildConfig.GojoAPI}/api/anime/tiddies?provider=$source&id=$aniid&watchId=$jptitle-episode-$episode", headers = headers)
                     .parsedSafe<Gojoresponseshashh>()?.sources?.map { it.url }
-                val m3u8=response.toString()
+                val m3u8 = response?.firstOrNull() ?: ""
                 callback.invoke(
                     ExtractorLink(
                         "GojoAPI [${source.capitalize()}]",
@@ -1362,7 +1362,7 @@ object StreamPlayExtractor : StreamPlay() {
             else{
                 val response = app.get("${BuildConfig.GojoAPI}/api/anime/tiddies?provider=$source&id=$aniid&watchId=$jptitle-episode-$episode", headers = headers)
                     .parsedSafe<Gojoresponsevibe>()?.sources?.map { it.url }
-                val m3u8=response.toString()
+                val m3u8 = response?.firstOrNull() ?: ""
                 callback.invoke(
                     ExtractorLink(
                         "GojoAPI [${source.capitalize()}]",
