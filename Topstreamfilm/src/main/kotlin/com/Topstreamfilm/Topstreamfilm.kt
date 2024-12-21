@@ -1,8 +1,10 @@
 package com.Topstreamfilm
 
 import android.annotation.SuppressLint
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.httpsify
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.utils.loadExtractor
 
@@ -108,13 +110,10 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val urls = data
-            .removePrefix("[")
-            .removeSuffix("]")
-            .split(", ")
-            .map { it.trim() }
-        urls.forEach {
-            loadExtractor(it,subtitleCallback, callback)
+        val iframe=app.get(data).document.select("div.TPlayer iframe").attr("src")
+        app.get(iframe).document.select("ul li").map {
+            val href= httpsify( it.attr("data-link"))
+            loadExtractor(href,subtitleCallback, callback)
         }
         return true
     }
