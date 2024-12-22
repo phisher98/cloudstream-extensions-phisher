@@ -5,12 +5,11 @@ import android.annotation.SuppressLint
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import java.net.URLDecoder
 import android.util.Base64
 import org.jsoup.Jsoup
 
 class Animexin : MainAPI() {
-    override var mainUrl              = "https://animexin.top"
+    override var mainUrl              = "https://animexin.dev"
     override var name                 = "Animexin"
     override val hasMainPage          = true
     override var lang                 = "en"
