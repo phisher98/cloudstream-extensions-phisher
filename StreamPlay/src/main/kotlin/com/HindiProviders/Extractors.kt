@@ -1035,6 +1035,14 @@ class HubCloudClub : HubCloud() {
     override var mainUrl = "https://hubcloud.club"
 }
 
+class HubCloudink : HubCloud() {
+    override var mainUrl = "https://hubcloud.ink"
+}
+
+class HubCloudtel : HubCloud() {
+    override var mainUrl = "https://hubcloud.tel"
+}
+
 class HubCloudlol : HubCloud() {
     override var mainUrl = "https://hubcloud.lol"
 }

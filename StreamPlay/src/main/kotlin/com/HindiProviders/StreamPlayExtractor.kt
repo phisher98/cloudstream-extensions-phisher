@@ -3815,7 +3815,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
         Log.d("Phisher Moviedrive", url)
         val res1 =
-            app.get(url, interceptor = wpRedisInterceptor).document.select("figure")
+            app.get(url).document.select("figure")
                 .toString()
         Log.d("Phisher Moviedrive", res1)
         val hrefpattern =
@@ -3829,6 +3829,10 @@ object StreamPlayExtractor : StreamPlay() {
                     Log.d("Phisher M href", href)
                     val server = extractMdrive(href)
                     server.amap {
+                        if (it.startsWith("https://hubcloud"))
+                        {
+                            HubCloud().getUrl(it, referer = "MoviesDrive")
+                        }
                         Log.d("Phisher M server", it)
                         loadExtractor(it, referer = "MoviesDrive", subtitleCallback, callback)
                     }
@@ -3845,6 +3849,10 @@ object StreamPlayExtractor : StreamPlay() {
                         val fEp = doc.selectFirst("h5:matches((?i)$sep)")?.toString()
                         if (fEp.isNullOrEmpty()) {
                             val furl = doc.select("h5 a:contains(HubCloud)").attr("href")
+                            if (furl.startsWith("https://hubcloud"))
+                            {
+                                HubCloud().getUrl(furl, referer = "MoviesDrive")
+                            }
                             loadExtractor(furl, referer = "MoviesDrive", subtitleCallback, callback)
                         } else
                             doc.selectFirst("h5:matches((?i)$sep)")?.let { epElement ->
@@ -3857,6 +3865,10 @@ object StreamPlayExtractor : StreamPlay() {
                                 if (secondLink != null) linklist.add(secondLink)
                                 Log.d("Phisher Moviedrive", linklist.toString())
                                 linklist.forEach { url ->
+                                    if (url.startsWith("https://hubcloud"))
+                                    {
+                                        HubCloud().getUrl(url, referer = "MoviesDrive")
+                                    }
                                     loadExtractor(
                                         url,
                                         referer = "MoviesDrive",

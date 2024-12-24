@@ -105,5 +105,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(OkRuHTTP())
         registerExtractorAPI(Embtaku())
         registerExtractorAPI(bulbasaur())
+        registerExtractorAPI(HubCloudink())
+        registerExtractorAPI(HubCloudtel())
     }
 }
