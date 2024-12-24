@@ -1,8 +1,8 @@
 package com.Topstreamfilm
 
 import android.annotation.SuppressLint
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.httpsify
 import org.jsoup.nodes.Element
@@ -84,7 +84,7 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
                             name = name,
                             season = season
                         )
-                    )
+                    ).toJson()
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -110,11 +110,33 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val iframe=app.get(data).document.select("div.TPlayer iframe").attr("src")
-        app.get(iframe).document.select("ul li").map {
-            val href= httpsify( it.attr("data-link"))
-            loadExtractor(href,subtitleCallback, callback)
+        if (data.startsWith("["))
+        {
+            val urls = extractUrlsWithMapNotNull(data)
+            urls.map {
+                loadExtractor(it, subtitleCallback, callback)
+            }
+
+        }
+        else {
+            val iframe = app.get(data).document.select("div.TPlayer iframe").attr("src")
+            app.get(iframe).document.select("ul li").map {
+                val href = httpsify(it.attr("data-link"))
+                loadExtractor(href, subtitleCallback, callback)
+            }
         }
         return true
     }
+
+
+    fun extractUrlsWithMapNotNull(text: String): List<String> {
+        return text
+            .removeSurrounding("[", "]")
+            .split(",")
+            .mapNotNull { part ->
+                val url = part.trim()
+                if (url.startsWith("http://") || url.startsWith("https://")) url else null
+            }
+    }
+
 }

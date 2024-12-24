@@ -46,7 +46,7 @@ open class Dropload : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get("https://goodproxy.goodproxy.workers.dev/fetch?url=$url")
+        val res = app.get(url)
         val script =res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = JsUnpacker(script).unpack().toString()
         val m3u8 =Regex("file:\"(.*?m3u8.*?)\"").find(unpacked)?.groupValues?.getOrNull(1) ?:""
