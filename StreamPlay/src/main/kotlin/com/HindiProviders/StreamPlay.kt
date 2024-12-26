@@ -58,7 +58,7 @@ import com.Phisher98.StreamPlayExtractor.invokeDramaCool
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
-import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
+import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
@@ -183,7 +183,7 @@ open class StreamPlay : TmdbProvider() {
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
         const val BollyflixVIP= "https://bollyflix.meme"
-        const val FlixAPI= BuildConfig.FlixAPI
+        const val FlixAPI= BuildConfig.FlixHQAPI
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.soy"
         const val WhvxAPI=BuildConfig.WhvxAPI
@@ -1005,8 +1005,9 @@ open class StreamPlay : TmdbProvider() {
       )
 },
 {
-    if (!res.isAnime) invokeFlixAPI(
-        res.tvdbId,
+    if (!res.isAnime) invokeFlixAPIHQ(
+        res.title,
+        res.year,
         res.season,
         res.episode,
         subtitleCallback,

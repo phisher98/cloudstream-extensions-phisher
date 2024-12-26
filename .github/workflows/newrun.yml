@@ -73,7 +73,7 @@ jobs:
           CatflixAPI: ${{ secrets.CatflixAPI }}
           TooniboyCookie: ${{ secrets.TooniboyCookie }}
           ConsumetAPI: ${{ secrets.ConsumetAPI }}
-          FlixAPI: ${{ secrets.FlixAPI }}
+          FlixHQAPI: ${{ secrets.FlixHQAPI }}
           WhvxAPI: ${{ secrets.WhvxAPI }}
           WhvxT: ${{ secrets.WhvxT }}
           SharmaflixApikey: ${{ secrets.SharmaflixApikey }}
@@ -113,7 +113,7 @@ jobs:
           echo CatflixAPI=$CatflixAPI >> local.properties
           echo TooniboyCookie=$TooniboyCookie >> local.properties
           echo ConsumetAPI=$ConsumetAPI >> local.properties
-          echo FlixAPI=$FlixAPI >> local.properties
+          echo FlixHQAPI=$FlixHQAPI >> local.properties
           echo WhvxAPI=$WhvxAPI >> local.properties
           echo WhvxT=$WhvxT >> local.properties
           echo SharmaflixApi=$SharmaflixApi >> local.properties

@@ -2311,7 +2311,6 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$Theyallsayflix/api/v1/search?type=$type&imdb_id=$id&season=$season&episode=$episode"
         }
-        val test=app.get(url).parsed<Theyallsayflix>()
         app.get(url).parsedSafe<Theyallsayflix>()?.streams?.amap {
             Log.d("Phisher",it.toString() )
             val href=it.playUrl
@@ -2343,7 +2342,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/v2/embed/tv/$id/$season/$episode"
         }
         val type=if (season==null) "movie" else "tv"
-        val ID="VSC"
+        //val ID="VSC"
         Log.d("Phisher",url)
         val doc = app.get(url).document.toString()
         val new_data_id= Regex("data-id=\"(.*?)\".*data-number=").find(doc)?.groupValues?.get(1).toString()
@@ -4186,40 +4185,79 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-suspend fun invokeFlixAPI(
-        tmdbId: Int? = null,
+suspend fun invokeFlixAPIHQ(
+        title: String? = null,
+        year: Int?=null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val url = if (season == null) {
-            "$FlixAPI/movie/$tmdbId"
-        } else {
-            "$FlixAPI/tv/$tmdbId/$season/$episode"
+        val url = "$FlixAPI/search?q=$title"
+        val id= app.get(url).parsedSafe<SerachFlix>()?.items?.find {
+        if (season==null)
+        {
+            it.title.equals(
+                "$title", true
+            ) && it.stats.year == "$year"
         }
-        val source= app.get(url).parsedSafe<FlixAPI>()?.source
-        callback.invoke(
-        ExtractorLink(
-            "FlixAPI",
-            "FlixAPI",
-            url = source ?: return,
-            referer = "$mainUrl/",
-            quality = Qualities.P1080.value,
-            INFER_TYPE,
-        )
-    )
-    app.get(url).parsedSafe<FlixAPI>()?.subtitles?.forEach {
-        val sub=it.url
-        val lang=it.lang
-        subtitleCallback.invoke(
-            SubtitleFile(
-                lang,  // Use label for the name
-                sub     // Use extracted URL
+        else {
+            //TODO
+            it.title.equals(
+                "$title", true
+            ) && it.stats.year == "$year"
+        }
+        }?.id ?: return
+        val epid=if (season == null)
+        {
+            app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId ?: return
+        } else {
+        //TODO
+            app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId ?: return
+        }
+    val listOfServers = if (season == null) {
+        app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
+            .parsedSafe<FlixServers>()
+            ?.servers
+            ?.map { server ->
+                server.id to server.name // Pair of id and name
+            }
+    } else {
+        app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
+            .parsedSafe<FlixServers>()
+            ?.servers
+            ?.map { server ->
+                server.id to null // Pair of id and null (no name if not required)
+            }
+    }
+    listOfServers?.forEach { (serverid, name) ->
+        val data= app.get("$FlixAPI/movie/$id/sources?serverId=$serverid").parsedSafe<FlixHQsources>()
+        val m3u8=data?.sources?.map { it.file }?.firstOrNull()
+        if (name != null) {
+            callback.invoke(
+                ExtractorLink(
+                    name.capitalize(),
+                    name,
+                    fixUrl( m3u8 ?:""),
+                    "",
+                    Qualities.P1080.value,
+                    INFER_TYPE
+                )
             )
-        )
+        }
+        data?.tracks?.amap { track->
+            val vtt=track.file
+            val lang=track.label
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    getLanguage(lang),
+                    vtt
+                )
+            )
+        }
     }
-    }
+
+}
 
 suspend fun invokenyaa(
         title: String? = null,

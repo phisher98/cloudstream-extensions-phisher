@@ -5,7 +5,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
-import com.Phisher98.StreamPlayExtractor.invokeFlixAPI
+import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
@@ -34,6 +34,7 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
+
                 if (!res.isAnime) invokeMoviesdrive(
                     res.title,
                     res.season,
@@ -42,6 +43,7 @@ class StreamPlayTest : StreamPlay() {
                     subtitleCallback,
                     callback
                 )
+
             },
             {
 

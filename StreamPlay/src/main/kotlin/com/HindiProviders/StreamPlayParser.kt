@@ -4,17 +4,88 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
-//FlixAPI
+//FlixHQAPI
 
-data class FlixAPI(
-    val source: String,
-    val subtitles: List<FlixAPISubtitle>,
+data class SerachFlix(
+    val items: List<Item>,
+    val pagination: Pagination,
 )
 
-data class FlixAPISubtitle(
-    val url: String,
-    val lang: String,
+data class Item(
+    val id: String,
+    val title: String,
+    val poster: String,
+    val stats: Stats,
 )
+
+data class Stats(
+    val year: String,
+    val duration: String,
+    val rating: String,
+)
+
+data class Pagination(
+    val current: Long,
+    val total: Long,
+)
+
+data class MoviedetailsResponse(
+    val title: String,
+    val description: String,
+    val type: String,
+    val stats: List<Stat>,
+    val related: List<Related>,
+    val episodeId: String,
+)
+
+data class Stat(
+    val name: String,
+    val value: Any?,
+)
+
+data class Related(
+    val id: String,
+    val title: String,
+    val poster: String,
+    val stats: EPStats,
+)
+
+data class EPStats(
+    val year: String,
+    val duration: String,
+    val rating: String,
+)
+
+
+data class FlixServers(
+    val servers: List<Server>,
+)
+
+data class Server(
+    val id: String,
+    val name: String,
+)
+
+
+data class FlixHQsources(
+    val sources: List<FlixSource>,
+    val tracks: List<Track>,
+    val t: Long,
+    val server: Long,
+)
+
+data class FlixSource(
+    val file: String,
+    val type: String,
+)
+
+data class Track(
+    val file: String,
+    val label: String,
+    val kind: String,
+    val default: Boolean?,
+)
+
 
 
 //Anichi
