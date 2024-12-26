@@ -15,6 +15,7 @@ import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.Phisher98.StreamPlayExtractor.invokeazseries
+import com.Phisher98.StreamPlayExtractor.invokecatflix
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.argamap
@@ -34,20 +35,15 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-
-                if (!res.isAnime) invokeMoviesdrive(
+                if (!res.isAnime) invokecatflix(
                     res.title,
-                    res.season,
                     res.episode,
+                    res.season,
                     res.year,
                     subtitleCallback,
                     callback
                 )
-
             },
-            {
-
-            }
 
         )
         return true

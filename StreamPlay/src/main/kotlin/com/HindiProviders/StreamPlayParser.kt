@@ -87,6 +87,28 @@ data class Track(
 )
 
 
+data class Seasonresponse(
+    val seasons: List<Seasondata>,
+)
+
+data class Seasondata(
+    val id: String,
+    val number: Long,
+)
+
+
+data class Episoderesponse(
+    val episodes: List<Episodedata>,
+)
+
+data class Episodedata(
+    val id: String,
+    val number: Long,
+    val title: String,
+)
+
+
+
 
 //Anichi
 
@@ -301,9 +323,10 @@ data class Link(
 )
 
 //Flicky
+
 data class FlickyStream(
-    val link: String,
-    val language: String
+    val language: String,
+    val url: String,
 )
 
 //WyZIESUBAPI

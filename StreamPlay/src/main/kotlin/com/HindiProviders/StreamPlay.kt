@@ -191,7 +191,7 @@ open class StreamPlay : TmdbProvider() {
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val BroflixVidlink="https://bombthe.irish"
         const val EmbedSu="https://embed.su"
-        const val FlickyAPI="https://www.flicky.host"
+        const val FlickyAPI="https://player.flicky.host"
         const val WyZIESUBAPI="https://sub.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"

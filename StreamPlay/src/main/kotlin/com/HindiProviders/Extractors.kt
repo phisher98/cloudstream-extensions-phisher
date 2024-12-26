@@ -1091,23 +1091,25 @@ open class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url=url.replace(".art",".club")
+        Log.d("Phisher url 1", url)
+        val url=url.replace(".ink",".tel")
         val href:String
         if (url.contains("gamerxyt"))
         {
             href=url
+            Log.d("Phisher Hub", href)
         }
         else {
             val doc = app.get(url).text
-            val gamerlink=Regex("""hubcloud\.php\?([^'"]+)""").find(doc)?.groupValues?.get(1)
-            href = "https://gamerxyt.com/hubcloud.php?$gamerlink"
+            //val gamerlink=Regex("""hubcloud\.php\?([^'"]+)""").find(doc)?.groupValues?.get(1)
+            href=doc.substringAfter("var url = '").substringBefore("\'")
+            //href = "https://gamerxyt.com/hubcloud.php?$bypasslink"
             Log.d("Phisher Hub", href)
             if (href.isEmpty()) {
                 Log.d("Error", "Not Found")
             }
         }
         if (href.isNotEmpty()) {
-            Log.d("Phisher HubCloud href 1",href)
             val document = app.get(href).document
             val size = document.selectFirst("i#size")?.text()
             val div = document.selectFirst("div.card-body")
@@ -1115,7 +1117,6 @@ open class HubCloud : ExtractorApi() {
             div?.select("div.card-body a.btn")?.amap {
                 val link = it.attr("href")
                 val text = it.text()
-                Log.d("Phisher HubCloud href",href)
                 if (link.contains("www-google-com"))
                 {
                     Log.d("Error:","Not Found")

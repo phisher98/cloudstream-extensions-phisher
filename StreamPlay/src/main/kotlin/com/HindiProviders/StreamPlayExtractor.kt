@@ -2474,22 +2474,22 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val url = if (season == null) {
-            "$FlickyAPI/embed/movie/?id=$id"
+            "$FlickyAPI/Server-main.php?id=$id"
         } else {
-            "$FlickyAPI/embed/tv/?id=$id/${season}/${episode}"
+            "$FlickyAPI/Server-main.php?id=$id&season=${season}&episode=${episode}"
         }
-        val res= app.get(url, referer = FlickyAPI).toString().substringAfter("const streams = ").substringBefore(";")
+        val res= app.get(url, referer = FlickyAPI, timeout = 50000).toString().substringAfter("const streams = ").substringBefore(";")
         val gson = Gson()
         val listType = object : TypeToken<List<FlickyStream>>() {}.type
         val streams: List<FlickyStream> = gson.fromJson(res, listType)
         streams.map {
-            val href=it.link
+            val href=it.url
             val name=it.language
-            callback.invoke(
-                ExtractorLink(
-                    "Flicky $name", "Flicky $name", href, "", Qualities.P1080.value, INFER_TYPE
-                )
-            )
+            M3u8Helper.generateM3u8(
+                "Flicky $name",
+                href,
+                "",
+            ).forEach(callback)
         }
     }
 
@@ -4048,6 +4048,7 @@ object StreamPlayExtractor : StreamPlay() {
         {
             "$Catflix/episodes/${fixtitle}-${season}x${episode}"
         }
+        Log.d("Phisher",href)
         val iframe=app.get(href, referer = Catflix).document.selectFirst("article iframe")?.attr("src")
         if (iframe!=null)
         {
