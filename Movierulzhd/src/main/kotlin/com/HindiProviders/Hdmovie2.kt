@@ -19,7 +19,7 @@ import java.time.Year
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.place"
+    override var mainUrl = "https://hdmovie2.band"
     override var name = "Hdmovie2"
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
@@ -43,20 +43,6 @@ open class Hdmovie2 : Movierulzhd() {
         Log.d("Phisher",data)
         if (data.startsWith("{")) {
             val loadData = tryParseJson<LinkData>(data)
-            if(loadData?.nume=="1"){
-                var doc = app.get("${loadData?.url}").document
-                var gd= doc.select("a[href^=https://dwso]").first().attr("href")
-            var gddoc= app.get(gd).document
-            gddoc.select("a[href*=gdflix]").forEach{link->
-                loadExtractor(
-                        link.attr("href"),
-                        "$directUrl/",
-                        subtitleCallback,
-                        callback
-                )
-            }
-            }else{
-            
             val source = app.post(
                 url = "$directUrl/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "doo_player_ajax", "post" to "${loadData?.post}", "nume" to "${loadData?.nume}", "type" to "${loadData?.type}"
@@ -68,7 +54,6 @@ open class Hdmovie2 : Movierulzhd() {
                 subtitleCallback,
                 callback
             )
-            }
         } else {
             val document = app.get(data).document
             val id = document.select("ul#playeroptionsul > li").attr("data-post")
@@ -101,31 +86,18 @@ open class Hdmovie2 : Movierulzhd() {
                     else -> ""
                 }
             }
-            var gd= document.select("a[href^=https://dwso]").first().attr("href")
-            var gddoc= app.get(gd).document
-            gddoc.select("a[href*=gdflix]").forEach{link->
-                loadExtractor(
-                        link.attr("href"),
-                        "$directUrl/",
-                        subtitleCallback,
-                        callback
-                )
-            }
-            
         }
         return true
     }
-    
-    
+
     private fun String.getIframe(): String {
         return Jsoup.parse(this).select("iframe").attr("src")
     }
-    
+
     data class LinkData(
         val type: String? = null,
         val post: String? = null,
         val nume: String? = null,
-        val url: String? = null
     )
 
     data class ResponseHash(

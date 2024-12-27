@@ -164,18 +164,30 @@ open class Movierulzhd : MainAPI() {
                     )
                 }
             } else {
-            	 
+            	val check = document.select("ul#playeroptionsul > li").toString().contains("Super")
+				if (check) {
+				    document.select("ul#playeroptionsul > li").drop(1).map {
+				        val name = it.selectFirst("span.title")?.text()
+				        val type = it.attr("data-type")
+				        val post = it.attr("data-post")
+				        val nume = it.attr("data-nume")
+				        Episode(
+				            LinkData(name, type, post, nume).toJson(),
+				            name
+				        )
+				    }
+				} else {
 				    document.select("ul#playeroptionsul > li").map {
 				        val name = it.selectFirst("span.title")?.text()
 				        val type = it.attr("data-type")
 				        val post = it.attr("data-post")
 				        val nume = it.attr("data-nume")
 				        Episode(
-				            LinkData(name, type, post, nume, url).toJson(),
-				            if (name?.contains("super", ignoreCase = true) == true) "Complete" else name
+				            LinkData(name, type, post, nume).toJson(),
+				            name
 				        )
 				    }
-				
+				}
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
@@ -305,7 +317,6 @@ open class Movierulzhd : MainAPI() {
         val type: String? = null,
         val post: String? = null,
         val nume: String? = null,
-        val url: String? = null
     )
 
     data class ResponseHash(
