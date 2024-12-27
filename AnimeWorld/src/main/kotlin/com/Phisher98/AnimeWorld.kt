@@ -1,7 +1,5 @@
 package com.Phisher98
 
-// import android.util.Log
-import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -131,15 +129,15 @@ class AnimeWorld : MainAPI() {
             if (href.contains("awstream"))
             {
 
-                val regex = Regex("""m3u8\\/(.*?)\\/""")
-                val res= app.get(href).toString()
-                val hash = regex.find(res)?.groupValues?.get(1)
-                val lang=href.substringAfterLast("=")
+                val host=href.substringBefore("/video")
+                val hash = href.substringAfter("video/")
+                val postreq= app.post("$host/player/index.php?data=$hash&do=getVideo", headers = mapOf("X-Requested-With" to "XMLHttpRequest")).parsedSafe<Response>()
+                val m3u8= postreq?.securedLink
                 callback.invoke(
                     ExtractorLink(
-                        "$name ${lang.capitalize()}",
-                        "$name ${lang.capitalize()}",
-                        "$API/m3u8/$hash/master.txt?s=1&lang=$lang&cache=1",
+                        name,
+                        name,
+                        m3u8 ?:"",
                         "",
                         Qualities.P1080.value,
                         ExtractorLinkType.M3U8
@@ -147,12 +145,24 @@ class AnimeWorld : MainAPI() {
                 )
                 subtitleCallback.invoke(
                     SubtitleFile(
-                        "English",  // Use label for the name
-                        "$API/subs/m3u8/$hash/subtitles-eng.vtt"     // Use extracted URL
+                        "English",
+                        "$API/subs/m3u8/$hash/subtitles-eng.vtt"
                     )
                 )
             }
         }
         return true
     }
+
+    data class Response(
+        val hls: Boolean,
+        val videoImage: String,
+        val videoSource: String,
+        val securedLink: String,
+        val downloadLinks: List<Any?>,
+        val attachmentLinks: List<Any?>,
+        val ck: String,
+    )
+
+
 }
