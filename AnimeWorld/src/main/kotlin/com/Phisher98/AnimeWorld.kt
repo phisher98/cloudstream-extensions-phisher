@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -133,11 +134,35 @@ class AnimeWorld : MainAPI() {
                 val hash = href.substringAfter("video/")
                 val postreq= app.post("$host/player/index.php?data=$hash&do=getVideo", headers = mapOf("X-Requested-With" to "XMLHttpRequest")).parsedSafe<Response>()
                 val m3u8= postreq?.securedLink
+                if (m3u8.isNullOrBlank())
+                {
+                    val regex = Regex("""m3u8\\/(.*?)\\/""")
+                    val res= app.get(href).toString()
+                    val hash1 = regex.find(res)?.groupValues?.get(1)
+                    val lang=href.substringAfterLast("=")
+                    callback.invoke(
+                        ExtractorLink(
+                            "$name ${lang.capitalize()}",
+                            "$name ${lang.capitalize()}",
+                            "$API/m3u8/$hash1/master.txt?s=1&lang=$lang&cache=1",
+                            "",
+                            Qualities.P1080.value,
+                            ExtractorLinkType.M3U8
+                        )
+                    )
+                    subtitleCallback.invoke(
+                        SubtitleFile(
+                            "English",  // Use label for the name
+                            "$API/subs/m3u8/$hash/subtitles-eng.vtt"     // Use extracted URL
+                        )
+                    )
+                }
+                else
                 callback.invoke(
                     ExtractorLink(
                         name,
                         name,
-                        m3u8 ?:"",
+                        m3u8,
                         "",
                         Qualities.P1080.value,
                         ExtractorLinkType.M3U8
