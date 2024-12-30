@@ -59,6 +59,7 @@ import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.Phisher98.StreamPlayExtractor.invokeHinAuto
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
@@ -195,6 +196,7 @@ open class StreamPlay : TmdbProvider() {
         const val WyZIESUBAPI="https://sub.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"
+        const val HinAutoAPI="https://hin.autoembed.cc"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -829,11 +831,13 @@ open class StreamPlay : TmdbProvider() {
     },
             {
 
+                /*
                 if (!res.isAnime) invokeBroflixVidlink(
                     res.id,
                     subtitleCallback,
                     callback
                 )
+                 */
             },
     {
         invokeSharmaflix(
@@ -1011,6 +1015,15 @@ open class StreamPlay : TmdbProvider() {
         res.season,
         res.episode,
         subtitleCallback,
+        callback
+    )
+},
+{
+    if (!res.isAnime) invokeHinAuto(
+        res.id,
+        res.year,
+        res.season,
+        res.episode,
         callback
     )
 },

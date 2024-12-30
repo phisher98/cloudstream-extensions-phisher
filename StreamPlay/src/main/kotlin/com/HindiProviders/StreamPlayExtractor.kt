@@ -4195,6 +4195,7 @@ suspend fun invokeFlixAPIHQ(
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = "$FlixAPI/search?q=$title"
+        Log.d("Phisher", url)
         val id= app.get(url).parsedSafe<SerachFlix>()?.items?.find {
         if (season==null)
         {
@@ -4209,6 +4210,7 @@ suspend fun invokeFlixAPIHQ(
             ) && it.stats.year == "$year"
         }
         }?.id ?: return
+        Log.d("Phisher","$url $id")
         val epid=if (season == null)
         {
             app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId ?: return
@@ -4216,6 +4218,7 @@ suspend fun invokeFlixAPIHQ(
         //TODO
             app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId ?: return
         }
+    Log.d("Phisher",epid)
     val listOfServers = if (season == null) {
         app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
             .parsedSafe<FlixServers>()
@@ -4259,6 +4262,42 @@ suspend fun invokeFlixAPIHQ(
     }
 
 }
+
+    suspend fun invokeHinAuto(
+        id: Int? = null,
+        year: Int?=null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season==null) "$HinAutoAPI/movie/$id" else "$HinAutoAPI/tv/$id/$season/$episode"
+        val res= app.get(url, referer = "https://autoembed.cc", timeout = 5000L).toString()
+            val json =
+                Regex("sources\\s*:\\s*(\\[[^]]*])").find(res)?.groupValues?.get(1).toString() ?:null
+            if (json!=null) {
+                val jsondata = parseJsonHinAuto((json))
+                jsondata.forEach { data ->
+                    val m3u8 = data.file
+                    val lang = data.label
+                    callback.invoke(
+                        ExtractorLink(
+                            "HIN Autoembed $lang",
+                            "HIN Autoembed $lang",
+                            m3u8,
+                            "",
+                            Qualities.P1080.value,
+                            ExtractorLinkType.M3U8
+                        )
+                    )
+                }
+            }
+    }
+    private fun parseJsonHinAuto(json: String): HinAuto {
+        val gson = Gson()
+
+        // Deserialize the JSON into the Root type (List of Root2)
+        return gson.fromJson(json, Array<HinAutoRoot2>::class.java).toList()
+    }
 
 suspend fun invokenyaa(
         title: String? = null,

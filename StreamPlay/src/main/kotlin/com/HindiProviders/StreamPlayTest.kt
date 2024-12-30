@@ -6,6 +6,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.Phisher98.StreamPlayExtractor.invokeHinAuto
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
@@ -35,12 +36,11 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokecatflix(
-                    res.title,
-                    res.episode,
-                    res.season,
+                if (!res.isAnime) invokeHinAuto(
+                    res.id,
                     res.year,
-                    subtitleCallback,
+                    res.season,
+                    res.episode,
                     callback
                 )
             },
