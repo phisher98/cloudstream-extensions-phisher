@@ -47,7 +47,6 @@ subprojects {
         }
 
         compileOptions {
-            isCoreLibraryDesugaringEnabled = true
             sourceCompatibility = JavaVersion.VERSION_1_8
             targetCompatibility = JavaVersion.VERSION_1_8
         }
@@ -74,7 +73,6 @@ subprojects {
         implementation(kotlin("stdlib")) // adds standard kotlin features, like listOf, mapOf etc
         implementation("com.github.Blatzar:NiceHttp:0.4.11") // http library
         implementation("org.jsoup:jsoup:1.18.1") // html parser
-        implementation("com.android.tools:desugar_jdk_libs:2.1.3")
         //noinspection GradleDependency
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
