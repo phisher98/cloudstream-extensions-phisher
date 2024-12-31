@@ -1,8 +1,5 @@
 package com.Anisaga
 
-import android.annotation.SuppressLint
-import android.annotation.TargetApi
-import android.os.Build
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
@@ -28,7 +25,6 @@ open class Chillx : ExtractorApi() {
     override val requiresReferer = true
     private var key: String? = null
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -79,7 +75,6 @@ open class Chillx : ExtractorApi() {
         return unsignedIntArray
     }
 
-    @TargetApi(Build.VERSION_CODES.O)
     private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
         // Ensure padding for Base64 encoding (if necessary)
         var paddedString = xIdJ2lG
