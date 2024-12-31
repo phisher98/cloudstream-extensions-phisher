@@ -2009,12 +2009,12 @@ object StreamPlayExtractor : StreamPlay() {
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val cfInterceptor = CloudflareKiller()
         val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
-        //Log.d("Phisher url veg", "$api/search/$imdbId")
         val url = if (season == null) {
-            "$api/search/$imdbId"
+            "$api/?s=$imdbId"
         } else {
-            "$api/search/$imdbId season $season"
+            "$api/?s=$imdbId season $season"
         }
+        Log.d("Phisher url veg", "$api/search/$imdbId")
         val domain= api.substringAfter("//").substringBefore(".")
         app.get(url, interceptor = cfInterceptor).document.select("#main-content article")
             .filter { element ->
@@ -2023,12 +2023,13 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
             .amap {
-                //Log.d("Phisher url veg", it.toString())
+                Log.d("Phisher url veg", it.toString())
                 val hrefpattern =
                     Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find(
                         it.toString()
                     )?.groupValues?.get(1)
                 if (hrefpattern!=null) {
+                    Log.d("Phisher url veg", it.toString())
                     val res = hrefpattern.let { app.get(it).document }
                     val hTag = if (season == null) "h5" else "h3,h5"
                     val aTag =
@@ -3526,6 +3527,7 @@ object StreamPlayExtractor : StreamPlay() {
                 referer = "https://pressplay.top/"
             ).document.selectFirst("iframe")
                 ?.attr("src")
+        Log.d("Phisher",iframe.toString())
         loadExtractor(iframe ?: return, "$nineTvAPI/", subtitleCallback, callback)
     }
 
@@ -4195,7 +4197,6 @@ suspend fun invokeFlixAPIHQ(
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = "$FlixAPI/search?q=$title"
-        Log.d("Phisher", url)
         val id= app.get(url).parsedSafe<SerachFlix>()?.items?.find {
         if (season==null)
         {
@@ -4210,15 +4211,12 @@ suspend fun invokeFlixAPIHQ(
             ) && it.stats.year == "$year"
         }
         }?.id ?: return
-        Log.d("Phisher","$url $id")
-        val epid=if (season == null)
+    val epid=if (season == null)
         {
-            app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId ?: return
+            app.get("$FlixAPI/movie/$id", timeout = 5000L).parsedSafe<MoviedetailsResponse>()?.episodeId
         } else {
-        //TODO
-            app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId ?: return
+            app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId
         }
-    Log.d("Phisher",epid)
     val listOfServers = if (season == null) {
         app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
             .parsedSafe<FlixServers>()
@@ -4234,8 +4232,10 @@ suspend fun invokeFlixAPIHQ(
                 server.id to null // Pair of id and null (no name if not required)
             }
     }
+    Log.d("Phisher",listOfServers.toString())
     listOfServers?.forEach { (serverid, name) ->
         val data= app.get("$FlixAPI/movie/$id/sources?serverId=$serverid").parsedSafe<FlixHQsources>()
+        Log.d("Phisher","\"$FlixAPI/movie/$id/sources?serverId=$serverid\" $data".toString())
         val m3u8=data?.sources?.map { it.file }?.firstOrNull()
         if (name != null) {
             callback.invoke(

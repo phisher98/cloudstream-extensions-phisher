@@ -1,6 +1,5 @@
-package com.Anisaga
+package com.Toonstream
 
-import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -17,29 +16,22 @@ import com.lagradost.cloudstream3.utils.Qualities
 import java.security.MessageDigest
 import java.util.Base64
 
-
-class AnisagaStream : Chillx() {
-    override val name = "Anisaga"
-    override val mainUrl = "https://plyrxcdn.site"
-}
-
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
     private var key: String? = null
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url).toString()
+        val res = app.get(url,referer=referer).toString()
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1)?.replace("_", "/")
-                ?.replace("-", "+")
+                ?.replace("-", "+")?.trim()
                 ?: ""
         val fetchkey = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
         val key = logSha256Checksum(fetchkey)
@@ -47,7 +39,11 @@ open class Chillx : ExtractorApi() {
         val byteList: List<Int> = decodedBytes.map { it.toInt() and 0xFF }
         val processedResult = decryptWithXor(byteList, key)
         val decoded= base64Decode(processedResult)
-        val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded)?.groupValues?.get(1) ?:""
+        val m3u8 = Regex("sources:\\s*\\[\\s*\\{\\s*\"file\"\\s*:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
+            ?.trim()
+            ?:""
+        Log.d("Phisher","$decoded $m3u8")
+
         val header =
             mapOf(
                 "accept" to "*/*",
@@ -60,17 +56,17 @@ open class Chillx : ExtractorApi() {
                 "Sec-Fetch-Site" to "cross-site",
                 "user-agent" to USER_AGENT,
             )
-                callback.invoke(
-                    ExtractorLink(
-                        name,
-                        name,
-                        m3u8,
-                        mainUrl,
-                        Qualities.P1080.value,
-                        INFER_TYPE,
-                        headers = header
-                    )
-                )
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                m3u8,
+                mainUrl,
+                Qualities.P1080.value,
+                INFER_TYPE,
+                headers = header
+            )
+        )
     }
 
     private fun logSha256Checksum(input: String): List<Int> {
