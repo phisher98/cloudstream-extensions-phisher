@@ -1305,7 +1305,7 @@ fun getIndexSize(str: String?): String? {
 
 suspend fun extractMdrive(url: String): List<String> {
     val doc= app.get(url).document
-    val href=doc.select("h5 > a,h3 > a").map { it.attr("href") }
+    val href=doc.select("h5 > a, h3 > a,article p:nth-child(7) a").map { it.attr("href") }
     return href
 }
 

@@ -60,6 +60,7 @@ import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeHinAuto
+import com.Phisher98.StreamPlayExtractor.invokeRogmovies
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
@@ -174,6 +175,7 @@ open class StreamPlay : TmdbProvider() {
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://vegamovies.st"
         const val dotmoviesAPI = "https://luxmovies.live"
+        const val rogmoviesAPI = "https://rogmovies.com"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.cloud"
@@ -857,6 +859,18 @@ open class StreamPlay : TmdbProvider() {
             callback
         )
     },
+            {
+                if (!res.isAnime) invokeRogmovies(
+                    res.imdbId,
+                    res.title,
+                    res.year,
+                    res.season,
+                    res.lastSeason,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
     {
         invokeMultimovies(
             multimoviesAPI,

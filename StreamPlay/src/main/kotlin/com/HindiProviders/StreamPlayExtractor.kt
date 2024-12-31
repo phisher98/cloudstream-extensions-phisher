@@ -1972,6 +1972,29 @@ object StreamPlayExtractor : StreamPlay() {
         )
     }
 
+    suspend fun invokeRogmovies(
+        imdbId: String? = null,
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        lastSeason: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        invokeWpredis(
+            imdbId,
+            title,
+            year,
+            season,
+            lastSeason,
+            episode,
+            subtitleCallback,
+            callback,
+            rogmoviesAPI
+        )
+    }
+
     suspend fun invokeVegamovies(
         imdbId: String? = null,
         title: String? = null,
@@ -2014,22 +2037,14 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$api/?s=$imdbId season $season"
         }
-        Log.d("Phisher url veg", "$api/search/$imdbId")
+        //Log.d("Phisher url veg", "$api/?s=$imdbId")
         val domain= api.substringAfter("//").substringBefore(".")
-        app.get(url, interceptor = cfInterceptor).document.select("#main-content article")
-            .filter { element ->
-                element.text().contains(
-                    fixtitle.toString(), true
-                )
-            }
+        app.get(url, interceptor = cfInterceptor).document.select("article h3 a")
             .amap {
-                Log.d("Phisher url veg", it.toString())
-                val hrefpattern =
-                    Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find(
-                        it.toString()
-                    )?.groupValues?.get(1)
+                //val hrefpattern = Regex("""(?i)<a\s+href="([^"]+)"[^>]*?>[^<]*?\b($fixtitle)\b[^<]*?""").find( it.toString() )?.groupValues?.get(1)
+                val hrefpattern=it.attr("href") ?: null
+                //Log.d("Phisher", hrefpattern.toString())
                 if (hrefpattern!=null) {
-                    Log.d("Phisher url veg", it.toString())
                     val res = hrefpattern.let { app.get(it).document }
                     val hTag = if (season == null) "h5" else "h3,h5"
                     val aTag =
@@ -2045,6 +2060,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         !element.text().contains(domain, true) &&
                                 element.text().matches("(?i).*($sTag).*".toRegex())
                             }
+                    //Log.d("Phisher url entries", entries.toString())
                     entries.amap { it ->
                         val tags =
                             """(?:720p|1080p|2160p)(.*)""".toRegex().find(it.text())?.groupValues?.get(1)
@@ -2066,7 +2082,7 @@ object StreamPlayExtractor : StreamPlay() {
                             {
                                 app.get(
                                     url, interceptor = wpRedisInterceptor
-                                ).document.select("div.entry-content > $selector").map { sources ->
+                                ).document.select("div.entry-inner > $selector").map { sources ->
                                     val server = sources.attr("href")
                                     loadSourceNameExtractor(
                                         "V-Cloud",
@@ -3807,6 +3823,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val cfInterceptor = CloudflareKiller()
         val fixTitle = title?.substringBefore("-")?.replace(":", " ")?.replace("&", " ")
         val searchtitle = title?.substringBefore("-").createSlug()
         val url = if (season == null) {
@@ -3823,9 +3840,10 @@ object StreamPlayExtractor : StreamPlay() {
             Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1)
                 ?: ""
         if (hrefpattern.isNotEmpty()) {
-            val document = app.get(hrefpattern).document
+            val document = app.get(hrefpattern, interceptor = cfInterceptor).document
             if (season == null) {
                 document.select("h5 > a").amap {
+                    Log.d("Phisher M href", it.toString())
                     val href = it.attr("href")
                     Log.d("Phisher M href", href)
                     val server = extractMdrive(href)
