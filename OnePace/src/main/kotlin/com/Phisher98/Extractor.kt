@@ -2,12 +2,15 @@ package com.Phisher98
 
 //import android.util.Log
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.os.Build
 import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -16,6 +19,8 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
+import java.security.MessageDigest
+import java.util.Base64
 
 open class Streamruby : ExtractorApi() {
     override var name = "Streamruby"
@@ -57,53 +62,33 @@ open class Streamruby : ExtractorApi() {
 }
 
 
-open class VidStream : ExtractorApi() {
-    override var name = "VidStream"
-    override var mainUrl = "https://vidstreamnew.xyz"
-    override val requiresReferer = false
+class VidStream : ExtractorApi() {
+    override val name = "Vidstreaming"
+    override val mainUrl = "https://vidstreamnew.xyz"
+    override val requiresReferer = true
     private var key: String? = null
 
-    @SuppressLint("SuspiciousIndentation")
-    @Suppress("NAME_SHADOWING")
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val master = Regex("\\s*=\\s*'([^']+)").find(
-            app.get(
-                url,
-                referer = referer ?: "",
-                headers = mapOf(
-                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                    "Accept-Language" to "en-US,en;q=0.5",
-                )
-            ).text
-        )?.groupValues?.get(1)
-
-        val key = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
-        val decrypt = cryptoAESHandler(master ?: return, key.toByteArray(), false)
-            ?.replace("\\", "")
-            ?: throw ErrorLoadingException("failed to decrypt")
-        Log.d("Phisher decode",decrypt)
-        val source = Regex("""https?://[^\s"]+\?[^"]*""").find(decrypt)?.groupValues?.get(0)
-        val subtitlePattern = """\[(.*?)](https?://[^\s,]+\.srt)""".toRegex()
-        val subtitleMatches = subtitlePattern.findAll(decrypt).map { matchResult ->
-            val label = matchResult.groupValues[1]  // Label inside the square brackets
-            val url = matchResult.groupValues[2]    // URL ending with .srt
-            label to url  // Return pair of label and URL
-        }.toList()
-
-        subtitleMatches.forEach { (label, url) ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    label,  // Use label for the name
-                    url     // Use extracted URL
-                )
-            )
-        }
-
+        val res = app.get(url,referer=referer).toString()
+        val encodedString =
+            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1)?.replace("_", "/")
+                ?.replace("-", "+")?.trim()
+                ?: ""
+        val fetchkey = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
+        val key = logSha256Checksum(fetchkey)
+        val decodedBytes: ByteArray = decodeBase64WithPadding(encodedString)
+        val byteList: List<Int> = decodedBytes.map { it.toInt() and 0xFF }
+        val processedResult = decryptWithXor(byteList, key)
+        val decoded= base64Decode(processedResult)
+        val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
+            ?.trim()
+            ?:""
+        com.lagradost.api.Log.d("Phisher","$decoded $m3u8")
 
         val header =
             mapOf(
@@ -117,30 +102,60 @@ open class VidStream : ExtractorApi() {
                 "Sec-Fetch-Site" to "cross-site",
                 "user-agent" to USER_AGENT,
             )
-
         callback.invoke(
             ExtractorLink(
-                "VidStream",
-                "VidStream",
-                url = source ?: return,
-                referer = "$mainUrl/",
-                quality = Qualities.P1080.value,
+                name,
+                name,
+                m3u8,
+                mainUrl,
+                Qualities.P1080.value,
                 INFER_TYPE,
-                headers = header,
+                headers = header
             )
         )
+    }
+
+    private fun logSha256Checksum(input: String): List<Int> {
+        val messageDigest = MessageDigest.getInstance("SHA-256")
+        val sha256Hash = messageDigest.digest(input.toByteArray())
+        val unsignedIntArray = sha256Hash.map { it.toInt() and 0xFF }
+        return unsignedIntArray
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
+        // Ensure padding for Base64 encoding (if necessary)
+        var paddedString = xIdJ2lG
+        while (paddedString.length % 4 != 0) {
+            paddedString += '=' // Add necessary padding
+        }
+
+        // Decode using standard Base64 (RFC4648)
+        return Base64.getDecoder().decode(paddedString)
+    }
+
+    private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {
+        val result = StringBuilder()
+        val length = byteList.size
+
+        for (i in 0 until length) {
+            val byteValue = byteList[i]
+            val keyValue = xorKey[i % xorKey.size]  // Modulo operation to cycle through NDlDrF
+            val xorResult = byteValue xor keyValue  // XOR operation
+            result.append(xorResult.toChar())  // Convert result to char and append to the result string
+        }
+
+        return result.toString()
     }
 
     private suspend fun fetchKey(): String? {
         return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/refs/heads/keys/index.html")
             .parsedSafe<Keys>()?.key?.get(0)?.also { key = it }
     }
-
     data class Keys(
-        @JsonProperty("chillx") val key: List<String>
-    )
-
+        @JsonProperty("chillx") val key: List<String>)
 }
+
 
 
 class Vidmolynet : Vidmoly() {
