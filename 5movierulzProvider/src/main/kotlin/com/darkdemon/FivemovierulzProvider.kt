@@ -2,9 +2,6 @@ package com.darkdemon
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.extractors.StreamSB
-import com.lagradost.cloudstream3.extractors.StreamTape
-import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -12,7 +9,7 @@ import android.util.Log
 
 class FivemovierulzProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://5movierulz.mom"
-    override var name = "5movierulz"
+    override var name = "Fivemovierulz"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
