@@ -9,10 +9,10 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.0.4")
+        classpath("com.android.tools.build:gradle:7.4.2")
         // Cloudstream gradle plugin which makes everything work and builds plugins
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
     }
 }
 
@@ -39,7 +39,7 @@ subprojects {
     android {
 
         defaultConfig {
-            minSdk = 21
+            minSdk = 26
             compileSdkVersion(33)
             //noinspection OldTargetApi
             targetSdk = 33
