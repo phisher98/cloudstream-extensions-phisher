@@ -10,7 +10,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.4.2")
+        classpath("com.android.tools.build:gradle:7.4.0")
         // Cloudstream gradle plugin which makes everything work and builds plugins
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
@@ -45,7 +45,7 @@ subprojects {
         defaultConfig {
             minSdk = 26
             compileSdkVersion(33)
-            targetSdk = 35
+            targetSdk = 33
         }
 
         compileOptions {
@@ -78,9 +78,9 @@ subprojects {
         implementation(kotlin("stdlib"))
         implementation("com.github.Blatzar:NiceHttp:0.4.11")
         implementation("org.jsoup:jsoup:1.18.1")
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
-        implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.16.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
         implementation("com.faendir.rhino:rhino-android:1.6.0")
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("com.google.code.gson:gson:2.11.0")
