@@ -1,8 +1,10 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeTom
 
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.Phisher98.StreamPlayExtractor.invokecatflix
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -21,10 +23,13 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokeVidsrccc(
+                if (!res.isAnime) invokecatflix(
                     res.id,
-                    res.season,
+                    res.epid,
+                    res.title,
                     res.episode,
+                    res.season,
+                    res.year,
                     subtitleCallback,
                     callback
                 )
