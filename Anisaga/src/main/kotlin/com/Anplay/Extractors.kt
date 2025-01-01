@@ -66,6 +66,17 @@ open class Chillx : ExtractorApi() {
                         headers = header
                     )
                 )
+
+        val subtitles = extractSrtSubtitles(decoded)
+
+        subtitles.forEachIndexed { _, (language, url) ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    language,
+                    url
+                )
+            )
+        }
     }
 
     private fun logSha256Checksum(input: String): List<Int> {
@@ -84,6 +95,15 @@ open class Chillx : ExtractorApi() {
 
         // Decode using standard Base64 (RFC4648)
         return Base64.getDecoder().decode(paddedString)
+    }
+
+    private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
+        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
+
+        return regex.findAll(subtitle).map { match ->
+            val (language, url) = match.destructured
+            language.trim() to url.trim()
+        }.toList()
     }
 
     private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {

@@ -1,7 +1,5 @@
 package com.Toonstream
 
-import android.annotation.TargetApi
-import android.os.Build
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -67,6 +65,17 @@ open class Chillx : ExtractorApi() {
                 headers = header
             )
         )
+
+        val subtitles = extractSrtSubtitles(decoded)
+
+        subtitles.forEachIndexed { _, (language, url) ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    language,
+                    url
+                )
+            )
+        }
     }
 
     private fun logSha256Checksum(input: String): List<Int> {
@@ -76,7 +85,6 @@ open class Chillx : ExtractorApi() {
         return unsignedIntArray
     }
 
-    @TargetApi(Build.VERSION_CODES.O)
     private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
         // Ensure padding for Base64 encoding (if necessary)
         var paddedString = xIdJ2lG
@@ -86,6 +94,17 @@ open class Chillx : ExtractorApi() {
 
         // Decode using standard Base64 (RFC4648)
         return Base64.getDecoder().decode(paddedString)
+    }
+
+    private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
+        // Regex to match the language and associated .srt URL properly, and stop at the next [Language] section
+        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
+
+        // Process each match and return language-URL pairs
+        return regex.findAll(subtitle).map { match ->
+            val (language, url) = match.destructured
+            language.trim() to url.trim()
+        }.toList()
     }
 
     private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {
