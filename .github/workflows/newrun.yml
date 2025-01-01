@@ -81,6 +81,7 @@ jobs:
           Theyallsayflix: ${{ secrets.Theyallsayflix }}
           GojoAPI: ${{ secrets.GojoAPI }}
           HianimeAPI: ${{ secrets.HianimeAPI }}
+          Vidsrccc: ${{ secrets.Vidsrccc }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -120,6 +121,7 @@ jobs:
           echo SharmaflixApikey=$SharmaflixApikey >> local.properties
           echo GojoAPI=$GojoAPI >> local.properties
           echo HianimeAPI=$HianimeAPI >> local.properties
+          echo Vidsrccc=$Vidsrccc >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

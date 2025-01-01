@@ -3,6 +3,41 @@ package com.Phisher98
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+//Vidsrccc
+
+data class Vidsrccc(
+    val id: String,
+    val vrf: String,
+    val timestamp: String,
+)
+
+data class Vidsrcccservers(
+    val data: List<VidsrcccDaum>,
+    val success: Boolean,
+)
+
+data class VidsrcccDaum(
+    val name: String,
+    val hash: String,
+)
+
+data class Vidsrcccm3u8(
+    val data: VidsrcccData,
+    val success: Boolean,
+)
+
+data class VidsrcccData(
+    val source: String,
+    val subtitles: List<VidsrcccSubtitle>,
+)
+
+data class VidsrcccSubtitle(
+    val kind: String,
+    val file: String,
+    val label: String,
+    val default: Boolean?,
+)
+
 
 //FlixHQAPI
 

@@ -18,6 +18,7 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.nicehttp.RequestBodyTypes
 import kotlinx.coroutines.delay
 import okhttp3.Interceptor
+import java.time.Instant
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.*
@@ -2359,21 +2360,34 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidsrctoAPI/v2/embed/tv/$id/$season/$episode"
         }
         val type=if (season==null) "movie" else "tv"
-        //val ID="VSC"
         Log.d("Phisher",url)
         val doc = app.get(url).document.toString()
-        val new_data_id= Regex("data-id=\"(.*?)\".*data-number=").find(doc)?.groupValues?.get(1).toString()
+        //val new_data_id= Regex("data-id=\"(.*?)\".*data-number=").find(doc)?.groupValues?.get(1).toString()
         val v_value= Regex("var.v.=.\"(.*?)\"").find(doc)?.groupValues?.get(1).toString()
-        val vrf=vidsrctoDecrypt(id.toString())
-        Log.d("Phisher",vrf)
-        val api_url="${vidsrctoAPI}/api/episodes/${new_data_id}/servers?id=${id}&season=${season}&episode=${episode}&type=${type}&isMobile=false&v=${encodeURIComponent(v_value)}&vrf=${vrf}"
-        Log.d("Phisher",api_url)
-        callback.invoke(
-            ExtractorLink(
-                "Vidsrc", "Vidsrc", ""
+        val vrfres= app.get("${BuildConfig.Vidsrccc}/vrf/$id").parsedSafe<Vidsrccc>()
+        val vrf= vrfres?.vrf
+        val timetamp= vrfres?.timestamp
+        val instant = Instant.parse(timetamp)
+        val unixTimeMs = instant.toEpochMilli()
+        val api_url=if (season==null)
+        {
+            "${vidsrctoAPI}/api/$id/servers?id=${id}&type=$type&v=$v_value&vrf=${vrf}"
+        }
+        else
+        {
+            "${vidsrctoAPI}/api/$id/servers?id=${id}&type=$type&season=$season&episode=$episode&v=$v_value&vrf=${vrf}"
+        }
+    app.get(api_url).parsedSafe<Vidsrcccservers>()?.data?.forEach {
+            val servername=it.name
+            val m3u8= app.get("$vidsrctoAPI/api/source/${it.hash}?t=$unixTimeMs").parsedSafe<Vidsrcccm3u8>()?.data?.source
+            callback.invoke(
+                ExtractorLink(
+                "Vidsrc [$servername]", "Vidsrc [$servername]", m3u8
                     ?: return, "https://vidsrc.stream/", Qualities.P1080.value, INFER_TYPE
+                )
             )
-        )
+    }
+
 }
 /*
     suspend fun invokeHdmovies4u(
