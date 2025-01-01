@@ -61,8 +61,6 @@ jobs:
           SUPERSTREAM_THIRD_API: ${{ secrets.SUPERSTREAM_THIRD_API }}
           SUPERSTREAM_FOURTH_API: ${{ secrets.SUPERSTREAM_FOURTH_API }}
           MOVIE_API: ${{ secrets.MOVIE_API }}
-          MultiMovies_API: ${{ secrets.MultiMovies_API }}
-          MovieDrive_API: ${{ secrets.MovieDrive_API }}
           AsianDrama_API: ${{ secrets.AsianDrama_API }}
           FanCode_API: ${{ secrets.FanCode_API }}
           Whvx_API: ${{ secrets.Whvx_API }}
@@ -102,8 +100,6 @@ jobs:
           echo SUPERSTREAM_THIRD_API=$SUPERSTREAM_THIRD_API >> local.properties
           echo SUPERSTREAM_FOURTH_API=$SUPERSTREAM_FOURTH_API >> local.properties
           echo MOVIE_API=$MOVIE_API >> local.properties
-          echo MultiMovies_API=$MultiMovies_API >> local.properties
-          echo MovieDrive_API=$MovieDrive_API >> local.properties
           echo AsianDrama_API=$AsianDrama_API >> local.properties
           echo FanCode_API=$FanCode_API >> local.properties
           echo Whvx_API=$Whvx_API >> local.properties
