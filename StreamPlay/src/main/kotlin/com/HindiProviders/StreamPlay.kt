@@ -53,7 +53,6 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
-import com.Phisher98.StreamPlayExtractor.invokeBroflixVidlink
 import com.Phisher98.StreamPlayExtractor.invokeDramaCool
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
@@ -179,7 +178,7 @@ open class StreamPlay : TmdbProvider() {
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.cloud"
-        const val Asiandrama_API=BuildConfig.AsianDrama_API
+        const val Asiandrama_API="https://asiandrama.fun"
         const val bollyflixAPI = "https://bollyflix.ninja"
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
