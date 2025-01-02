@@ -20,5 +20,6 @@ class MovierulzhdPlugin: Plugin() {
         registerExtractorAPI(FMX())
         registerExtractorAPI(Lulust())
         registerExtractorAPI(Playonion())
+        registerExtractorAPI(FilemoonV2())
     }
 }

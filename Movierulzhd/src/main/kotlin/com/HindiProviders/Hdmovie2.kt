@@ -19,7 +19,7 @@ import java.time.Year
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.band"
+    override var mainUrl = "https://hdmovie2.com.im"
     override var name = "Hdmovie2"
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
@@ -105,16 +105,4 @@ open class Hdmovie2 : Movierulzhd() {
         @JsonProperty("type") val type: String?,
     )
 
-    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor? {
-        return object : Interceptor {
-            override fun intercept(chain: Interceptor.Chain): Response {
-                val request = chain.request()
-                    .newBuilder()
-                    .headers(Headers.Builder().build())
-                    .addHeader("User-Agent", "PostmanRuntime/7.43.0")
-                    .build()
-                return chain.proceed(request)
-            }
-        }
-    }
 }

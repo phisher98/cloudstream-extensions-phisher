@@ -29,7 +29,36 @@ class Luluvdo : StreamWishExtractor() {
 
 class Lulust : StreamWishExtractor() {
     override val mainUrl = "https://lulu.st"
+}
+
+class FilemoonV2 : ExtractorApi() {
+    override var name = "Filemoon"
+    override var mainUrl = "https://movierulz2025.bar"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
+        val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val m3u8=JsUnpacker(res).unpack()?.let { unPacked ->
+            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+        }
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8 ?:"",
+                url,
+                Qualities.P1080.value,
+                type = ExtractorLinkType.M3U8,
+            )
+        )
     }
+}
 
 open class FMX : ExtractorApi() {
     override var name = "FMX"
@@ -73,7 +102,6 @@ open class Akamaicdn : ExtractorApi() {
         val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
-        val header= mapOf("User-Agent" to "PostmanRuntime/7.43.0","Accept" to "*/*","Referer" to url)
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -82,7 +110,6 @@ open class Akamaicdn : ExtractorApi() {
                 url,
                 Qualities.P1080.value,
                 type = ExtractorLinkType.M3U8,
-                headers = header
             )
         )
     }
