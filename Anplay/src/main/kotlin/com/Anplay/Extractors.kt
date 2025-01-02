@@ -1,4 +1,4 @@
-package com.Anisaga
+package com.Anplay
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
