@@ -2,7 +2,11 @@
 
 Shortcode: phisherrepo
 
-[![Discord](https://invidget.switchblade.xyz/p5PtjcRA)](https://discord.com/invite/p5PtjcRA)
+## Phisher Cloudstream Plugin Server
+[![Discord](https://invidget.switchblade.xyz/3VmSzGeCTz)](https://discord.com/invite/3VmSzGeCTz)
+
+## Cloudstream Plugin Server
+[![Discord](https://invidget.switchblade.xyz/JrGk2MjX7S)](https://discord.com/invite/JrGk2MjX7S)
 
 
 ### 🕹 Tools and Programming languages used :
