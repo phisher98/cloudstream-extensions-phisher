@@ -2,10 +2,10 @@
 
 Shortcode: phisherrepo
 
-Phisher Cloudstream Plugin Server
+## Phisher Cloudstream Plugin Server
 [![Discord](https://invidget.switchblade.xyz/3VmSzGeCTz)](https://discord.com/invite/3VmSzGeCTz)
 
-Cloudstream Plugin Server
+## Cloudstream Plugin Server
 [![Discord](https://invidget.switchblade.xyz/JrGk2MjX7S)](https://discord.com/invite/JrGk2MjX7S)
 
 
