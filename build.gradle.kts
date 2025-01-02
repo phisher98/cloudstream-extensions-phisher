@@ -1,5 +1,6 @@
 import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import com.android.build.gradle.BaseExtension
+import com.android.build.gradle.internal.dsl.PackagingOptions
 
 buildscript {
     repositories {
@@ -46,6 +47,7 @@ subprojects {
         defaultConfig {
             minSdk = 21
             compileSdkVersion(33)
+            //noinspection OldTargetApi
             targetSdk = 33
         }
 
@@ -53,6 +55,12 @@ subprojects {
             sourceCompatibility = JavaVersion.VERSION_1_8
             targetCompatibility = JavaVersion.VERSION_1_8
         }
+
+        packagingOptions(fun PackagingOptions.() {
+            this.jniLibs {
+                excludes += "lib/arm64-v8a/*.so"
+            }
+        })
 
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
             kotlinOptions {
