@@ -10,6 +10,7 @@ buildscript {
     }
 
     dependencies {
+        //noinspection AndroidGradlePluginVersion
         classpath("com.android.tools.build:gradle:7.4.0")
         // Cloudstream gradle plugin which makes everything work and builds plugins
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
@@ -45,12 +46,12 @@ subprojects {
         defaultConfig {
             minSdk = 21
             compileSdkVersion(33)
-            targetSdk = 35
+            targetSdk = 33
         }
 
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
+            sourceCompatibility = JavaVersion.VERSION_1_8
+            targetCompatibility = JavaVersion.VERSION_1_8
         }
 
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
