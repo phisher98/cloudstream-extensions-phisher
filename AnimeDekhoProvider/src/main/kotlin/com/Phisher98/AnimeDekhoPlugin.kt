@@ -4,6 +4,9 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 import com.lagradost.cloudstream3.extractors.FileMoon
+import com.lagradost.cloudstream3.extractors.Krakenfiles
+import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.extractors.Voe
 
 @CloudstreamPlugin
 class AnimeDekhoPlugin: Plugin() {
@@ -19,5 +22,9 @@ class AnimeDekhoPlugin: Plugin() {
         registerExtractorAPI(Multimovies())
         registerExtractorAPI(FileMoon())
         registerExtractorAPI(FileMoonNL())
+        registerExtractorAPI(Krakenfiles())
+        registerExtractorAPI(Voe())
+        registerExtractorAPI(StreamTape())
+        registerExtractorAPI(FilemoonV2())
     }
 }

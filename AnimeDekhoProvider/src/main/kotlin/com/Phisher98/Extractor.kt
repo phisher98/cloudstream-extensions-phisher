@@ -1,15 +1,11 @@
 package com.Phisher98
 
-
-//import android.util.Log
-import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
 import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.Gson
-import com.google.gson.JsonElement
+
 import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
@@ -20,14 +16,44 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
-import kotlinx.serialization.json.Json
 import java.net.URI
 import java.security.MessageDigest
 import java.util.Base64
+
+
+class FilemoonV2 : ExtractorApi() {
+    override var name = "Filemoon"
+    override var mainUrl = "https://movierulz2025.bar"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
+        val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val m3u8= JsUnpacker(res).unpack()?.let { unPacked ->
+            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+        }
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8 ?:"",
+                url,
+                Qualities.P1080.value,
+                type = ExtractorLinkType.M3U8,
+            )
+        )
+    }
+}
 
 open class Streamruby : ExtractorApi() {
     override var name = "Streamruby"
@@ -198,14 +224,25 @@ class GDMirrorbot : ExtractorApi() {
         val data = mapOf("sid" to embed)
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
         val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-        val siteUrls = jsonObject.getAsJsonObject("siteUrls")
-        val mresult = jsonObject.getAsJsonObject("mresult")
-        siteUrls.keySet().forEach { key->
-            val siteValue: JsonElement = siteUrls.get(key)
-            val mresultValue: JsonElement = mresult.get(key)
-            val href = siteValue.asString + mresultValue.asString
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").asJsonObject
+        val matchingResults = mutableListOf<Pair<String, String>>()
+        siteUrls.keySet().forEach { key ->
+            if (mresult.has(key)) {
+                val value1 = siteUrls.get(key).asString
+                val value2 = mresult.get(key).asString
+                matchingResults.add(Pair(value1, value2))
+            }
+        }
+
+        // Print combined values
+        matchingResults.forEach { (siteUrl, mresult) ->
+            Log.d("Phisher","$siteUrl $mresult")
+            val href="$siteUrl$mresult"
+            Log.d("Phisher",href)
             loadExtractor(href,subtitleCallback, callback)
         }
+
     }
 
     fun getBaseUrl(url: String): String {

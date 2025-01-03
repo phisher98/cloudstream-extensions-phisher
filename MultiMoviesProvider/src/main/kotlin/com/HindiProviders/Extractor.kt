@@ -14,6 +14,8 @@ import kotlinx.serialization.json.Json
 import java.net.URI
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.loadExtractor
 
 class MultimoviesAIO: StreamWishExtractor() {
@@ -67,15 +69,25 @@ class GDMirrorbot : ExtractorApi() {
         val data = mapOf("sid" to embed)
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
         val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-        val siteUrls = jsonObject.getAsJsonObject("siteUrls")
-        val mresult = jsonObject.getAsJsonObject("mresult")
-        siteUrls.keySet().forEach { key->
-            val siteValue: JsonElement = siteUrls.get(key)
-            val mresultValue: JsonElement = mresult.get(key)
-            val href = siteValue.asString + mresultValue.asString
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").asJsonObject
+        val matchingResults = mutableListOf<Pair<String, String>>()
+        siteUrls.keySet().forEach { key ->
+            if (mresult.has(key)) {
+                val value1 = siteUrls.get(key).asString
+                val value2 = mresult.get(key).asString
+                matchingResults.add(Pair(value1, value2))
+            }
+        }
+
+        // Print combined values
+        matchingResults.forEach { (siteUrl, mresult) ->
+            android.util.Log.d("Phisher","$siteUrl $mresult")
+            val href="$siteUrl$mresult"
             android.util.Log.d("Phisher",href)
             loadExtractor(href,subtitleCallback, callback)
         }
+
     }
 
     fun getBaseUrl(url: String): String {
@@ -84,6 +96,38 @@ class GDMirrorbot : ExtractorApi() {
         }
     }
 }
+
+
+class FilemoonV2 : ExtractorApi() {
+    override var name = "Filemoon"
+    override var mainUrl = "https://movierulz2025.bar"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
+        val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val m3u8= JsUnpacker(res).unpack()?.let { unPacked ->
+            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+        }
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8 ?:"",
+                url,
+                Qualities.P1080.value,
+                type = ExtractorLinkType.M3U8,
+            )
+        )
+    }
+}
+
+
 
 class Strwishcom : StreamWishExtractor() {
     override val name = "Strwish"
