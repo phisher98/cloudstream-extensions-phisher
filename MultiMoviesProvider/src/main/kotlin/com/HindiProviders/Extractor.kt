@@ -1,11 +1,20 @@
 package com.Phisher98
 
+import com.google.gson.JsonElement
+import com.lagradost.api.Log
+import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.serialization.json.Json
+import java.net.URI
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.lagradost.cloudstream3.utils.loadExtractor
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -42,7 +51,7 @@ class CdnwishCom : StreamWishExtractor() {
     override val mainUrl = "https://cdnwish.com"
     override val requiresReferer = true
 }
-/*
+
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
@@ -51,16 +60,31 @@ class GDMirrorbot : ExtractorApi() {
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit) {
-        Log.d("Phisher url","$url")
-        app.get(url).document.select("ul#videoLinks li").map {
-            val link=it.attr("data-link")
-            Log.d("Phisher url","$link")
-            loadExtractor(link,"https://multimovies.sbs",subtitleCallback, callback)
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val host = getBaseUrl(app.get(url).url)
+        val embed = url.substringAfter("embed/")
+        val data = mapOf("sid" to embed)
+        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls")
+        val mresult = jsonObject.getAsJsonObject("mresult")
+        siteUrls.keySet().forEach { key->
+            val siteValue: JsonElement = siteUrls.get(key)
+            val mresultValue: JsonElement = mresult.get(key)
+            val href = siteValue.asString + mresultValue.asString
+            android.util.Log.d("Phisher",href)
+            loadExtractor(href,subtitleCallback, callback)
+        }
+    }
+
+    fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
     }
 }
- */
+
 class Strwishcom : StreamWishExtractor() {
     override val name = "Strwish"
     override val mainUrl = "https://strwish.com"

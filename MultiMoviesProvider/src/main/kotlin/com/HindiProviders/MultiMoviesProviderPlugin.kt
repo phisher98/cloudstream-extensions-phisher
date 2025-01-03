@@ -22,7 +22,7 @@ class MultiMoviesProviderPlugin: Plugin() {
         registerExtractorAPI(Animezia())
         registerExtractorAPI(server2())
         registerExtractorAPI(MultimoviesAIO())
-        //registerExtractorAPI(GDMirrorbot())
+        registerExtractorAPI(GDMirrorbot())
         //registerExtractorAPI(VidhideExtractor())
         registerExtractorAPI(Asnwish())
         registerExtractorAPI(CdnwishCom())

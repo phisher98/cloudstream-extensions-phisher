@@ -8,10 +8,14 @@ import android.os.Build
 import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.Gson
+import com.google.gson.JsonElement
+import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -20,6 +24,8 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
+import kotlinx.serialization.json.Json
+import java.net.URI
 import java.security.MessageDigest
 import java.util.Base64
 
@@ -157,6 +163,16 @@ class VidStream : ExtractorApi() {
         @JsonProperty("chillx") val key: List<String>)
 }
 
+class Multimovies: StreamWishExtractor() {
+    override var name = "Multimovies Cloud"
+    override var mainUrl = "https://multimovies.cloud"
+    override var requiresReferer = true
+}
+
+class FileMoonNL : Filesim() {
+    override val mainUrl = "https://filemoon.nl"
+    override val name = "FileMoon"
+}
 
 class Vidmolynet : Vidmoly() {
     override val mainUrl = "https://vidmoly.net"
@@ -167,21 +183,36 @@ class Cdnwish : StreamWishExtractor() {
     override var mainUrl = "https://cdnwish.com"
 }
 
-open class GDMirrorbot : ExtractorApi() {
+class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
-    override val requiresReferer = false
+    override val requiresReferer = true
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit) {
-        app.get(url).document.select("ul#videoLinks li").map {
-            val link=it.attr("data-link")
-            loadExtractor(link,subtitleCallback, callback)
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val host = getBaseUrl(app.get(url).url)
+        val embed = url.substringAfter("embed/")
+        val data = mapOf("sid" to embed)
+        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls")
+        val mresult = jsonObject.getAsJsonObject("mresult")
+        siteUrls.keySet().forEach { key->
+            val siteValue: JsonElement = siteUrls.get(key)
+            val mresultValue: JsonElement = mresult.get(key)
+            val href = siteValue.asString + mresultValue.asString
+            loadExtractor(href,subtitleCallback, callback)
+        }
+    }
+
+    fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
     }
 }
-
 
 data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)

@@ -11,7 +11,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:7.4.0")
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
     }
 }
 
@@ -39,7 +39,7 @@ subprojects {
 
     android {
         defaultConfig {
-            minSdk = 26
+            minSdk = 21
             compileSdkVersion(33)
             targetSdk = 33
         }
@@ -78,7 +78,6 @@ subprojects {
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("com.google.code.gson:gson:2.11.0")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-        implementation("com.android.tools:desugar_jdk_libs:1.1.5")
     }
 }
 
