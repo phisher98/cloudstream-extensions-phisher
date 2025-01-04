@@ -62,9 +62,8 @@ subprojects {
     }
 
     dependencies {
+        val apk by configurations
         val implementation by configurations
-
-        // Cloudstream dependency
         apk("com.lagradost:cloudstream3:pre-release")
 
         // Other dependencies
