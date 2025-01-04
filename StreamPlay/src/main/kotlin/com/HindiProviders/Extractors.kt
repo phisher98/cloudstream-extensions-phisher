@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.Voe
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -29,6 +30,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
+import java.net.URI
 import java.util.Base64
 
 open class Playm4u : ExtractorApi() {
@@ -1629,6 +1631,52 @@ open class Embtaku : ExtractorApi() {
             if (href != null) {
                 loadCustomExtractor("Anichi [Embtaku]",href,"",subtitleCallback,callback)
             }
+        }
+    }
+}
+
+class GDMirrorbot : ExtractorApi() {
+    override var name = "GDMirrorbot"
+    override var mainUrl = "https://gdmirrorbot.nl"
+    override val requiresReferer = true
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val host = getBaseUrl(app.get(url).url)
+        val embed = url.substringAfter("embed/")
+        val data = mapOf("sid" to embed)
+        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").toString()
+        val regex = """"(\w+)":"([^"]+)"""".toRegex()
+        val mresultMap = regex.findAll(mresult).associate {
+            it.groupValues[1] to it.groupValues[2]
+        }
+
+        val matchingResults = mutableListOf<Pair<String, String>>()
+        siteUrls.keySet().forEach { key ->
+            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
+                val value1 = siteUrls.get(key).asString
+                val value2 = mresultMap[key].orEmpty()
+                matchingResults.add(Pair(value1, value2))
+            }
+        }
+
+        matchingResults.amap { (siteUrl, result) ->
+            val href = "$siteUrl$result"
+            android.util.Log.d("Phisher", "Generated Href: $href")
+            loadExtractor(href, subtitleCallback, callback)
+        }
+
+    }
+
+    fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
     }
 }

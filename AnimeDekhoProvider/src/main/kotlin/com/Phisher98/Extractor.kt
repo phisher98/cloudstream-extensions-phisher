@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -28,7 +30,7 @@ import java.util.Base64
 
 class FilemoonV2 : ExtractorApi() {
     override var name = "Filemoon"
-    override var mainUrl = "https://movierulz2025.bar"
+    override var mainUrl = " https://filemoon.nl"
     override val requiresReferer = true
 
     override suspend fun getUrl(
@@ -225,22 +227,25 @@ class GDMirrorbot : ExtractorApi() {
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
         val jsonObject = JsonParser.parseString(jsonString).asJsonObject
         val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
-        val mresult = jsonObject.getAsJsonObject("mresult").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").toString()
+        val regex = """"(\w+)":"([^"]+)"""".toRegex()
+        val mresultMap = regex.findAll(mresult).associate {
+            it.groupValues[1] to it.groupValues[2]
+        }
+
         val matchingResults = mutableListOf<Pair<String, String>>()
         siteUrls.keySet().forEach { key ->
-            if (mresult.has(key)) {
+            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
                 val value1 = siteUrls.get(key).asString
-                val value2 = mresult.get(key).asString
+                val value2 = mresultMap[key].orEmpty()
                 matchingResults.add(Pair(value1, value2))
             }
         }
 
-        // Print combined values
-        matchingResults.forEach { (siteUrl, mresult) ->
-            Log.d("Phisher","$siteUrl $mresult")
-            val href="$siteUrl$mresult"
-            Log.d("Phisher",href)
-            loadExtractor(href,subtitleCallback, callback)
+        matchingResults.amap { (siteUrl, result) ->
+            val href = "$siteUrl$result"
+            Log.d("Phisher", "Generated Href: $href")
+            loadExtractor(href, subtitleCallback, callback)
         }
 
     }
@@ -250,6 +255,12 @@ class GDMirrorbot : ExtractorApi() {
             "${it.scheme}://${it.host}"
         }
     }
+}
+
+class Animezia : VidhideExtractor() {
+    override var name = "Animezia"
+    override var mainUrl = "https://animezia.cloud"
+    override var requiresReferer = true
 }
 
 data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)

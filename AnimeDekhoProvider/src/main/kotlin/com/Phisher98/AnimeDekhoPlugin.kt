@@ -26,5 +26,6 @@ class AnimeDekhoPlugin: Plugin() {
         registerExtractorAPI(Voe())
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(FilemoonV2())
+        registerExtractorAPI(Animezia())
     }
 }

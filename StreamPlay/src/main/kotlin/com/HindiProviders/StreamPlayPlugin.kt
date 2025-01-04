@@ -106,5 +106,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(bulbasaur())
         registerExtractorAPI(HubCloudink())
         registerExtractorAPI(HubCloudtel())
+        registerExtractorAPI(GDMirrorbot())
     }
 }

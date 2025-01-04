@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 import java.net.URI
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -70,22 +71,25 @@ class GDMirrorbot : ExtractorApi() {
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
         val jsonObject = JsonParser.parseString(jsonString).asJsonObject
         val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
-        val mresult = jsonObject.getAsJsonObject("mresult").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").toString()
+        val regex = """"(\w+)":"([^"]+)"""".toRegex()
+        val mresultMap = regex.findAll(mresult).associate {
+            it.groupValues[1] to it.groupValues[2]
+        }
+
         val matchingResults = mutableListOf<Pair<String, String>>()
         siteUrls.keySet().forEach { key ->
-            if (mresult.has(key)) {
+            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
                 val value1 = siteUrls.get(key).asString
-                val value2 = mresult.get(key).asString
+                val value2 = mresultMap[key].orEmpty()
                 matchingResults.add(Pair(value1, value2))
             }
         }
 
-        // Print combined values
-        matchingResults.forEach { (siteUrl, mresult) ->
-            android.util.Log.d("Phisher","$siteUrl $mresult")
-            val href="$siteUrl$mresult"
-            android.util.Log.d("Phisher",href)
-            loadExtractor(href,subtitleCallback, callback)
+        matchingResults.amap { (siteUrl, result) ->
+            val href = "$siteUrl$result"
+            android.util.Log.d("Phisher", "Generated Href: $href")
+            loadExtractor(href, subtitleCallback, callback)
         }
 
     }
