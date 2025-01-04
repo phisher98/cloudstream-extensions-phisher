@@ -11,8 +11,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:7.4.0")
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
-        isCoreLibraryDesugaring("com.android.tools.desugar_jdk_libs_nio")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
     }
 }
 
@@ -47,6 +46,7 @@ subprojects {
 
         compileOptions {
             isCoreLibraryDesugaringEnabled = true
+            coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
             sourceCompatibility = JavaVersion.VERSION_1_8
             targetCompatibility = JavaVersion.VERSION_1_8
         }
@@ -63,11 +63,10 @@ subprojects {
     }
 
     dependencies {
-        val apk by configurations
         val implementation by configurations
 
         // Cloudstream dependency
-        apk("com.lagradost:cloudstream3:pre-release")
+        implementation("com.lagradost:cloudstream3:pre-release")
 
         // Other dependencies
         implementation(kotlin("stdlib"))
