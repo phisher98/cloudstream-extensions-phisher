@@ -11,7 +11,8 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:7.4.0")
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
+        isCoreLibraryDesugaring("com.android.tools.desugar_jdk_libs_nio")
     }
 }
 
@@ -39,12 +40,13 @@ subprojects {
 
     android {
         defaultConfig {
-            minSdk = 26
+            minSdk = 21
             compileSdkVersion(33)
             targetSdk = 33
         }
 
         compileOptions {
+            isCoreLibraryDesugaringEnabled = true
             sourceCompatibility = JavaVersion.VERSION_1_8
             targetCompatibility = JavaVersion.VERSION_1_8
         }
