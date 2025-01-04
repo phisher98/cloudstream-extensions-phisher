@@ -20,7 +20,6 @@ import org.json.JSONObject
 import java.net.URI
 import java.util.Base64
 import javax.crypto.Cipher
-import javax.crypto.Mac
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
@@ -161,11 +160,6 @@ class VidStream : ExtractorApi() {
         val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
         val iv = IvParameterSpec(ivBytes)
         val ciphertext = Base64.getDecoder().decode(data.getString("data"))
-
-        // Generate HMAC for integrity check (optional)
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(key, "HmacSHA256"))
-        val calculatedMac = mac.doFinal(ciphertext).joinToString("") { "%02x".format(it) }
 
         // Decrypt the ciphertext using AES
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")

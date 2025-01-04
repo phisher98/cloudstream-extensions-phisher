@@ -1,5 +1,6 @@
 package com.Toonstream
 
+import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
@@ -9,7 +10,6 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import java.util.Base64
 import javax.crypto.Cipher
-import javax.crypto.Mac
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
@@ -21,6 +21,7 @@ open class Chillx : ExtractorApi() {
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -97,11 +98,6 @@ open class Chillx : ExtractorApi() {
         val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
         val iv = IvParameterSpec(ivBytes)
         val ciphertext = Base64.getDecoder().decode(data.getString("data"))
-
-        // Generate HMAC for integrity check (optional)
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(key, "HmacSHA256"))
-        val calculatedMac = mac.doFinal(ciphertext).joinToString("") { "%02x".format(it) }
 
         // Decrypt the ciphertext using AES
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")

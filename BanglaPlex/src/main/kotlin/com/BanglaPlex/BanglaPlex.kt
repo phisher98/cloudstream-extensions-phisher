@@ -91,7 +91,7 @@ class Banglaplex : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString().substringBefore(" | Watch Online")
-        val poster      = document.select("#info > div > div > img").attr("src").toString()
+        val poster      = document.select("#info > div > div > img").attr("src")
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
 
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -104,8 +104,7 @@ class Banglaplex : MainAPI() {
         val document = app.get(data).document
         val iframeurl=document.select("div.video-embed-container > iframe").attr("src")
         Log.d("Phisher",iframeurl)
-        val link=iframeurl.replace("https://vectorx.top","https://bestx.stream")
-        loadExtractor(link,subtitleCallback, callback)
+        loadExtractor(iframeurl,mainUrl,subtitleCallback, callback)
         return true
     }
 }

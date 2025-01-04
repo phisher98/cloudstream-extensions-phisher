@@ -9,5 +9,6 @@ class BanglaPlexProvider: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(Banglaplex())
         registerExtractorAPI(Vectorx())
+        registerExtractorAPI(Boosterx())
     }
 }

@@ -1,5 +1,6 @@
 package com.BanglaPlex
 
+import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
@@ -21,12 +22,19 @@ class Vectorx : Chillx() {
     override val mainUrl = "https://bestx.stream"
 }
 
+class Boosterx : Chillx() {
+    override val name = "Boosterx"
+    override val mainUrl = "https://boosterx.stream"
+    override val requiresReferer = true
+}
+
 
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -84,37 +92,32 @@ open class Chillx : ExtractorApi() {
     }
 
     fun decrypt(encrypted: String): String {
-        // Decode the Base64-encoded JSON string and extract data
+        // Decode the Base64-encoded JSON string
         val data = JSONObject(String(Base64.getDecoder().decode(encrypted)))
-        val salt = data.getString("salt")
-        val ivBase64 = data.getString("iv")
-        val ciphertextBase64 = data.getString("data")
 
-        // Derive the encryption key
-        val key = deriveKey("NMhG08LLwixKRmgx", salt)
+        // Function to derive the key
+        fun deriveKey(password: String, salt: String): ByteArray {
+            val saltBytes = if (salt.contains("=")) Base64.getDecoder().decode(salt) else salt.toByteArray()
+            val passwordBytes = (password + "sB0mZOqlRTy8CVpL").toCharArray()
+            val spec = PBEKeySpec(passwordBytes, saltBytes, 1000, 64 * 8) // 64 bytes = 512 bits
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+            return factory.generateSecret(spec).encoded
+        }
+
+        // Derive the key
+        val key = deriveKey("NMhG08LLwixKRmgx", data.getString("salt"))
 
         // Decode IV and ciphertext
-        val iv = IvParameterSpec(Base64.getDecoder().decode(ivBase64))
-        val ciphertext = Base64.getDecoder().decode(ciphertextBase64)
+        val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
+        val iv = IvParameterSpec(ivBytes)
+        val ciphertext = Base64.getDecoder().decode(data.getString("data"))
 
         // Decrypt the ciphertext using AES
-        val decrypted = decryptAES(key.copyOf(32), iv, ciphertext)
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key.copyOf(32), "AES"), iv)
+        val decrypted = cipher.doFinal(ciphertext)
 
         return String(decrypted, Charsets.UTF_8)
-    }
-
-    private fun deriveKey(password: String, salt: String): ByteArray {
-        val saltBytes = if (salt.contains("=")) Base64.getDecoder().decode(salt) else salt.toByteArray()
-        val passwordBytes = (password + "sB0mZOqlRTy8CVpL").toCharArray()
-        val spec = PBEKeySpec(passwordBytes, saltBytes, 1000, 64 * 8) // 64 bytes = 512 bits
-        val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-        return factory.generateSecret(spec).encoded
-    }
-
-    private fun decryptAES(key: ByteArray, iv: IvParameterSpec, ciphertext: ByteArray): ByteArray {
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), iv)
-        return cipher.doFinal(ciphertext)
     }
 
 }
