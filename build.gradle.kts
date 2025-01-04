@@ -67,6 +67,8 @@ subprojects {
         val implementation by configurations
         apk("com.lagradost:cloudstream3:pre-release")
 
+        coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
+
         // Other dependencies
         implementation(kotlin("stdlib"))
         implementation("com.github.Blatzar:NiceHttp:0.4.11")
@@ -78,6 +80,7 @@ subprojects {
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("com.google.code.gson:gson:2.11.0")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+        
     }
 }
 
