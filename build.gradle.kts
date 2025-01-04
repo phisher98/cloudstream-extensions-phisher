@@ -67,9 +67,6 @@ subprojects {
         // Cloudstream dependency
         implementation("com.lagradost:cloudstream3:pre-release")
 
-        // Core library desugaring
-        coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
-
         // Other dependencies
         implementation(kotlin("stdlib"))
         implementation("com.github.Blatzar:NiceHttp:0.4.11")
