@@ -9,13 +9,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
-import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Jeniusplay
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
@@ -32,6 +30,12 @@ import okhttp3.FormBody
 import org.json.JSONObject
 import java.net.URI
 import java.util.Base64
+import javax.crypto.Cipher
+import javax.crypto.Mac
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -687,7 +691,6 @@ open class Chillx : ExtractorApi() {
     override val name = "Chillx"
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
-    private var key: String? = null
 
     override suspend fun getUrl(
         url: String,
@@ -695,18 +698,11 @@ open class Chillx : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url,referer=referer).toString()
+        val res = app.get(url).toString()
         val encodedString =
-            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1)?.replace("_", "/")
-                ?.replace("-", "+")
-                ?: ""
-        val fetchkey = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
-        val key = logSha256Checksum(fetchkey)
-        val decodedBytes: ByteArray = decodeBase64WithPadding(encodedString)
-        val byteList: List<Int> = decodedBytes.map { it.toInt() and 0xFF }
-        val processedResult = decryptWithXor(byteList, key)
-        val decoded= base64Decode(processedResult)
-        val m3u8 =Regex("""file"?:\s*"([^"]+)""").find(decoded)?.groupValues?.get(1) ?:""
+            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
+        val decoded = decrypt(encodedString)
+        val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded)?.groupValues?.get(1) ?:""
         val header =
             mapOf(
                 "accept" to "*/*",
@@ -730,46 +726,62 @@ open class Chillx : ExtractorApi() {
                 headers = header
             )
         )
+
+        val subtitles = extractSrtSubtitles(decoded)
+
+        subtitles.forEachIndexed { _, (language, url) ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    language,
+                    url
+                )
+            )
+        }
     }
 
-    private fun logSha256Checksum(input: String): List<Int> {
-        val messageDigest = MessageDigest.getInstance("SHA-256")
-        val sha256Hash = messageDigest.digest(input.toByteArray())
-        val unsignedIntArray = sha256Hash.map { it.toInt() and 0xFF }
-        return unsignedIntArray
+    private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
+        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
+
+        return regex.findAll(subtitle).map { match ->
+            val (language, url) = match.destructured
+            language.trim() to url.trim()
+        }.toList()
     }
 
-    private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
-        // Ensure padding for Base64 encoding (if necessary)
-        var paddedString = xIdJ2lG
-        while (paddedString.length % 4 != 0) {
-            paddedString += '=' // Add necessary padding
+    fun decrypt(encrypted: String): String {
+        // Decode the Base64-encoded JSON string
+        val data = JSONObject(String(Base64.getDecoder().decode(encrypted)))
+
+        // Function to derive the key
+        fun deriveKey(password: String, salt: String): ByteArray {
+            val saltBytes = if (salt.contains("=")) Base64.getDecoder().decode(salt) else salt.toByteArray()
+            val passwordBytes = (password + "sB0mZOqlRTy8CVpL").toCharArray()
+            val spec = PBEKeySpec(passwordBytes, saltBytes, 1000, 64 * 8) // 64 bytes = 512 bits
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+            return factory.generateSecret(spec).encoded
         }
 
-        // Decode using standard Base64 (RFC4648)
-        return Base64.getDecoder().decode(paddedString)
+        // Derive the key
+        val key = deriveKey("NMhG08LLwixKRmgx", data.getString("salt"))
+
+        // Decode IV and ciphertext
+        val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
+        val iv = IvParameterSpec(ivBytes)
+        val ciphertext = Base64.getDecoder().decode(data.getString("data"))
+
+        // Generate HMAC for integrity check (optional)
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(key, "HmacSHA256"))
+        val calculatedMac = mac.doFinal(ciphertext).joinToString("") { "%02x".format(it) }
+
+        // Decrypt the ciphertext using AES
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key.copyOf(32), "AES"), iv)
+        val decrypted = cipher.doFinal(ciphertext)
+
+        return String(decrypted, Charsets.UTF_8)
     }
 
-    private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {
-        val result = StringBuilder()
-        val length = byteList.size
-
-        for (i in 0 until length) {
-            val byteValue = byteList[i]
-            val keyValue = xorKey[i % xorKey.size]
-            val xorResult = byteValue xor keyValue
-            result.append(xorResult.toChar())
-        }
-
-        return result.toString()
-    }
-
-    private suspend fun fetchKey(): String? {
-        return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/refs/heads/keys/index.html")
-            .parsedSafe<Keys>()?.key?.get(0)?.also { key = it }
-    }
-    data class Keys(
-        @JsonProperty("chillx") val key: List<String>)
 }
 
 class Bestx : Chillx() {

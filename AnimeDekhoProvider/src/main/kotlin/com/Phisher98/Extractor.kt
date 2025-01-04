@@ -1,17 +1,10 @@
 package com.Phisher98
 
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Log
 import com.lagradost.cloudstream3.USER_AGENT
-import com.fasterxml.jackson.annotation.JsonProperty
-
 import com.google.gson.JsonParser
-import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
@@ -23,9 +16,15 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.json.JSONObject
 import java.net.URI
-import java.security.MessageDigest
 import java.util.Base64
+import javax.crypto.Cipher
+import javax.crypto.Mac
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 
 class FilemoonV2 : ExtractorApi() {
@@ -101,7 +100,6 @@ class VidStream : ExtractorApi() {
     override val name = "Vidstreaming"
     override val mainUrl = "https://vidstreamnew.xyz"
     override val requiresReferer = true
-    private var key: String? = null
 
     override suspend fun getUrl(
         url: String,
@@ -111,15 +109,8 @@ class VidStream : ExtractorApi() {
     ) {
         val res = app.get(url,referer=referer).toString()
         val encodedString =
-            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1)?.replace("_", "/")
-                ?.replace("-", "+")?.trim()
-                ?: ""
-        val fetchkey = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
-        val key = logSha256Checksum(fetchkey)
-        val decodedBytes: ByteArray = decodeBase64WithPadding(encodedString)
-        val byteList: List<Int> = decodedBytes.map { it.toInt() and 0xFF }
-        val processedResult = decryptWithXor(byteList, key)
-        val decoded= base64Decode(processedResult)
+            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
+        val decoded = decrypt(encodedString)
         val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
             ?.trim()
             ?:""
@@ -150,45 +141,39 @@ class VidStream : ExtractorApi() {
         )
     }
 
-    private fun logSha256Checksum(input: String): List<Int> {
-        val messageDigest = MessageDigest.getInstance("SHA-256")
-        val sha256Hash = messageDigest.digest(input.toByteArray())
-        val unsignedIntArray = sha256Hash.map { it.toInt() and 0xFF }
-        return unsignedIntArray
-    }
+    fun decrypt(encrypted: String): String {
+        // Decode the Base64-encoded JSON string
+        val data = JSONObject(String(Base64.getDecoder().decode(encrypted)))
 
-    @TargetApi(Build.VERSION_CODES.O)
-    private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
-        // Ensure padding for Base64 encoding (if necessary)
-        var paddedString = xIdJ2lG
-        while (paddedString.length % 4 != 0) {
-            paddedString += '=' // Add necessary padding
+        // Function to derive the key
+        fun deriveKey(password: String, salt: String): ByteArray {
+            val saltBytes = if (salt.contains("=")) Base64.getDecoder().decode(salt) else salt.toByteArray()
+            val passwordBytes = (password + "sB0mZOqlRTy8CVpL").toCharArray()
+            val spec = PBEKeySpec(passwordBytes, saltBytes, 1000, 64 * 8) // 64 bytes = 512 bits
+            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+            return factory.generateSecret(spec).encoded
         }
 
-        // Decode using standard Base64 (RFC4648)
-        return Base64.getDecoder().decode(paddedString)
+        // Derive the key
+        val key = deriveKey("NMhG08LLwixKRmgx", data.getString("salt"))
+
+        // Decode IV and ciphertext
+        val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
+        val iv = IvParameterSpec(ivBytes)
+        val ciphertext = Base64.getDecoder().decode(data.getString("data"))
+
+        // Generate HMAC for integrity check (optional)
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(key, "HmacSHA256"))
+        val calculatedMac = mac.doFinal(ciphertext).joinToString("") { "%02x".format(it) }
+
+        // Decrypt the ciphertext using AES
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key.copyOf(32), "AES"), iv)
+        val decrypted = cipher.doFinal(ciphertext)
+
+        return String(decrypted, Charsets.UTF_8)
     }
-
-    private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {
-        val result = StringBuilder()
-        val length = byteList.size
-
-        for (i in 0 until length) {
-            val byteValue = byteList[i]
-            val keyValue = xorKey[i % xorKey.size]  // Modulo operation to cycle through NDlDrF
-            val xorResult = byteValue xor keyValue  // XOR operation
-            result.append(xorResult.toChar())  // Convert result to char and append to the result string
-        }
-
-        return result.toString()
-    }
-
-    private suspend fun fetchKey(): String? {
-        return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/refs/heads/keys/index.html")
-            .parsedSafe<Keys>()?.key?.get(0)?.also { key = it }
-    }
-    data class Keys(
-        @JsonProperty("chillx") val key: List<String>)
 }
 
 class Multimovies: StreamWishExtractor() {
@@ -244,7 +229,6 @@ class GDMirrorbot : ExtractorApi() {
 
         matchingResults.amap { (siteUrl, result) ->
             val href = "$siteUrl$result"
-            Log.d("Phisher", "Generated Href: $href")
             loadExtractor(href, subtitleCallback, callback)
         }
 
