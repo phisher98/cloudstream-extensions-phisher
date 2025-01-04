@@ -39,7 +39,7 @@ subprojects {
 
     android {
         defaultConfig {
-            minSdk = 26
+            minSdk = 21
             compileSdkVersion(33)
             targetSdk = 33
         }
@@ -71,8 +71,8 @@ subprojects {
         implementation(kotlin("stdlib"))
         implementation("com.github.Blatzar:NiceHttp:0.4.11")
         implementation("org.jsoup:jsoup:1.18.1")
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
-        implementation("com.fasterxml.jackson.core:jackson-databind:2.16.0")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
         implementation("com.faendir.rhino:rhino-android:1.6.0")
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
