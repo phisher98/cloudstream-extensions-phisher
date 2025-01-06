@@ -174,7 +174,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
                     ExtractorLink(
                         it.sourceName,
                         it.sourceName,
-                        it.sourceLink,
+                        "https://goodproxy.goodproxy.workers.dev/fetch?url=${it.sourceLink}",
                         "$mainUrl/",
                         Qualities.Unknown.value,
                         INFER_TYPE
