@@ -7,6 +7,7 @@ android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
         buildConfigField("String", "TMDB_API", "\"${properties.getProperty("TMDB_API")}\"")
         buildConfigField("String", "GHOSTX_API", "\"${properties.getProperty("GHOSTX_API")}\"")
         buildConfigField("String", "CINEMATV_API", "\"${properties.getProperty("CINEMATV_API")}\"")

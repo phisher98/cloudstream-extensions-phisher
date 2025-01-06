@@ -8,6 +8,7 @@ android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
         buildConfigField("String", "FanCode_API", "\"${properties.getProperty("FanCode_API")}\"")
 
     }

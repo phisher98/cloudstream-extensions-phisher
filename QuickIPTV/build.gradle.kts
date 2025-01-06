@@ -8,6 +8,7 @@ android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
         buildConfigField("String", "Su_sports", "\"${properties.getProperty("Su_sports")}\"")
         buildConfigField("String", "PirateIPTV", "\"${properties.getProperty("PirateIPTV")}\"")
         buildConfigField("String", "SonyIPTV", "\"${properties.getProperty("SonyIPTV")}\"")

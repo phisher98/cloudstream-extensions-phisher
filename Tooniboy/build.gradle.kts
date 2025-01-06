@@ -1,8 +1,12 @@
 @file:Suppress("UnstableApiUsage")
-
+import com.android.build.gradle.BaseExtension
 import org.jetbrains.kotlin.konan.properties.Properties
+
 // use an integer for version numbers
 version = 3
+
+
+android.buildFeatures.buildConfig = true
 
 
 android {

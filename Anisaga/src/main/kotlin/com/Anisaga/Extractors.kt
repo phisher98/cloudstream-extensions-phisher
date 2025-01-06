@@ -2,6 +2,7 @@ package com.Anisaga
 
 
 import android.annotation.SuppressLint
+import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
@@ -39,6 +40,7 @@ open class Chillx : ExtractorApi() {
         val res = app.get(url).toString()
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
+        Log.d("Phisher",encodedString)
         val decoded = decrypt(encodedString)
         val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded)?.groupValues?.get(1) ?:""
         val header =

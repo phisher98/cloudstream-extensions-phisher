@@ -4,7 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class PublicSportsIPTV : MainAPI() {
-    override var mainUrl: String = BuildConfig.FanCode_API
+    override var mainUrl: String = com.Phisher98.BuildConfig.FanCode_API
     override var name = "PublicSportsIPTV"
     override val hasMainPage = true
     override var lang = "en"

@@ -1,6 +1,7 @@
 import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import com.android.build.gradle.BaseExtension
 
+
 buildscript {
     repositories {
         google()
@@ -9,7 +10,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.7.3")
+        classpath("com.android.tools.build:gradle:8.6.0")
         classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
     }
@@ -44,12 +45,14 @@ subprojects {
             minSdk = 21
             compileSdkVersion(35)
             targetSdk = 35
+
         }
 
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_1_8
             targetCompatibility = JavaVersion.VERSION_1_8
         }
+
 
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile> {
             compilerOptions {

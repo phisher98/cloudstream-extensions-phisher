@@ -103,7 +103,29 @@ class Banglaplex : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val iframeurl=document.select("div.video-embed-container > iframe").attr("src")
-        Log.d("Phisher",iframeurl)
+        val DownloadURLs=document.select("#download a ").attr("href")
+        if (DownloadURLs.isNotEmpty())
+        {
+            val tokenres= app.get(DownloadURLs).document
+            val csrf_token=tokenres.selectFirst("form input")?.attr("name")
+            val csrf_token_vakue=tokenres.selectFirst("form input")?.attr("name")
+            app.post(DownloadURLs, data = mapOf("$csrf_token" to "$csrf_token_vakue")).document.select("div.row > div.col-sm-8 > a").amap {
+                val href=it.attr("href")
+                Log.d("Phisher",href)
+                if (href.contains("gdflix"))
+                {
+                    GDFlix().getUrl(href)
+                }
+                else
+                loadExtractor(href,subtitleCallback,callback)
+            }
+        }
+        else
+        if (iframeurl.contains("boosterx.stream"))
+        {
+            Chillx().getUrl(iframeurl,mainUrl)
+        }
+        else
         loadExtractor(iframeurl,mainUrl,subtitleCallback, callback)
         return true
     }
