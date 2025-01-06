@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
-        "Music",Movie
+        "Music","Movie"
     )
     iconUrl = "https://pagalnew.com/images/logo-pagal.webp"
 }
