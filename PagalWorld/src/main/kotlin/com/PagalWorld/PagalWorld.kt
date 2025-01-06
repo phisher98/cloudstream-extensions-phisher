@@ -13,7 +13,7 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
     override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
-        TvType.Music
+        TvType.Music,TvType.Movie
     )
 
     override val mainPage = mainPageOf(

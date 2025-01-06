@@ -18,7 +18,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
     override var lang = "ta"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
-        TvType.Music
+        TvType.Music,TvType.Movie
     )
 
     override val mainPage = mainPageOf(
