@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 2
+version = 3
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Indian Multi-language Music Provider"
-    language = "ta"
+    language = "hi"
     authors = listOf("Phisher98")
 
     /**
@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
-        "Music",
+        "Music",Movie
     )
     iconUrl = "https://pagalnew.com/images/logo-pagal.webp"
 }
