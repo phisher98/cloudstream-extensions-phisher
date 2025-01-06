@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           path: "src"
 
       - name: Checkout builds
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           ref: "builds"
           path: "builds"
@@ -39,7 +39,7 @@ jobs:
           java-version: 17
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v3.2.2
 
       - name: Access Secrets
         env:
