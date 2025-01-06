@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class Banglaplex : MainAPI() {
-    override var mainUrl              = "https://banglaplex.shop"
+    override var mainUrl              = "https://banglaplex.lol"
     override var name                 = "Banglaplex"
     override val hasMainPage          = true
     override var lang                 = "hi"
