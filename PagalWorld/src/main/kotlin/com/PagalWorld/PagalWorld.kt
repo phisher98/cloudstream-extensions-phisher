@@ -41,11 +41,10 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
         val title = this.selectFirst("div.main_page_category_music_txt div")?.text()?.trim() ?: return null
         val href = fixUrl(this.select("a").attr("href"))
         var posterUrl = this.selectFirst("a img")?.attr("src")?.replace("covericons","coverimages")?.replace("80","500")?.replace("png","jpg")
-        if (posterUrl!!.startsWith("/images/"))
+        if (posterUrl!!.startsWith("/images/") || posterUrl.startsWith("../"))
         {
             posterUrl=mainUrl+posterUrl.substringAfter("..")
         }
-        Log.d("phisher",posterUrl.toString())
         return newTvSeriesSearchResponse(title, href+",,"+title, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
@@ -53,7 +52,7 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/search.php?find=$query", timeout = 50000).document
-        return document.select("div.main_page_category_music").mapNotNull {
+        return document.select("a").mapNotNull {
             it.toSearchResult()
         }
     }
