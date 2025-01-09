@@ -1,37 +1,33 @@
 package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.Jsoup
-import kotlin.math.pow
 
-class AnimePaheProvider : MainAPI() {
+class AnimePahe : MainAPI() {
     companion object {
         const val MAIN_URL = "https://animepahe.ru"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        var cookies: Map<String, String> = mapOf()
+        //var cookies: Map<String, String> = mapOf()
         private fun getType(t: String): TvType {
             return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
             else if (t.contains("Movie")) TvType.AnimeMovie
             else TvType.Anime
         }
 
-        val YTSM = Regex("ysmm = '([^']+)")
+        //val YTSM = Regex("ysmm = '([^']+)")
 
-        val KWIK_PARAMS_RE = Regex("""\("(\w+)",\d+,"(\w+)",(\d+),(\d+),\d+\)""")
-        val KWIK_D_URL = Regex("action=\"([^\"]+)\"")
-        val KWIK_D_TOKEN = Regex("value=\"([^\"]+)\"")
-        val YOUTUBE_VIDEO_LINK =
-            Regex("""(^(?:https?:)?(?://)?(?:www\.)?(?:youtu\.be/|youtube(?:-nocookie)?\.(?:[A-Za-z]{2,4}|[A-Za-z]{2,3}\.[A-Za-z]{2})/)(?:watch|embed/|vi?/)*(?:\?[\w=&]*vi?=)?[^#&?/]{11}.*${'$'})""")
+        //val KWIK_PARAMS_RE = Regex("""\("(\w+)",\d+,"(\w+)",(\d+),(\d+),\d+\)""")
+        //val KWIK_D_URL = Regex("action=\"([^\"]+)\"")
+        //val KWIK_D_TOKEN = Regex("value=\"([^\"]+)\"")
+        //val YOUTUBE_VIDEO_LINK = Regex("""(^(?:https?:)?(?://)?(?:www\.)?(?:youtu\.be/|youtube(?:-nocookie)?\.(?:[A-Za-z]{2,4}|[A-Za-z]{2,3}\.[A-Za-z]{2})/)(?:watch|embed/|vi?/)*(?:\?[\w=&]*vi?=)?[^#&?/]{11}.*${'$'})""")
     }
 
     override var mainUrl = MAIN_URL
@@ -252,12 +248,13 @@ class AnimePaheProvider : MainAPI() {
 
             val tvType = doc.selectFirst("""a[href*="/anime/type/"]""")?.text()
 
+            /*
             val trailer: String? = if (html.contains("https://www.youtube.com/watch")) {
                 YOUTUBE_VIDEO_LINK.find(html)?.destructured?.component1()
             } else {
                 null
             }
-
+             */
             val episodes = generateListOfEpisodes(session)
             val year = Regex("""<strong>Aired:</strong>[^,]*, (\d+)""")
                 .find(html)?.destructured?.component1()
@@ -294,23 +291,18 @@ class AnimePaheProvider : MainAPI() {
                 this.showStatus = status
                 plot = synopsis
                 tags = if (!doc.select(".anime-genre > ul a").isEmpty()) {
-                    ArrayList(doc.select(".anime-genre > ul a").map { it.text().toString() })
+                    ArrayList(doc.select(".anime-genre > ul a").map { it.text() })
                 } else {
                     null
                 }
 
                 addMalId(malId)
                 addAniListId(anilistId)
-                addTrailer(trailer)
             }
         }
     }
 
-
-    private fun isNumber(s: String?): Boolean {
-        return s?.toIntOrNull() != null
-    }
-
+    /*
     private fun cookieStrToMap(cookie: String): Map<String, String> {
         val cookies = mutableMapOf<String, String>()
         for (string in cookie.split("; ")) {
@@ -325,6 +317,7 @@ class AnimePaheProvider : MainAPI() {
         }
         return cookies.toMap()
     }
+
 
     private fun getString(content: String, s1: Int, s2: Int): String {
         val characterMap = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/"
@@ -425,10 +418,10 @@ class AnimePaheProvider : MainAPI() {
         @JsonProperty("kwik") val kwik: String?,
         @JsonProperty("kwik_pahewin") val kwikPahewin: String
     )
-
     private data class AnimePaheEpisodeLoadLinks(
         @JsonProperty("data") val data: List<Map<String, VideoQuality>>
     )
+
 
     private suspend fun getStreamUrlFromKwik(url: String?): String? {
         if (url == null) return null
@@ -441,7 +434,6 @@ class AnimePaheProvider : MainAPI() {
         val unpacked = getAndUnpack(response)
         return Regex("source=\'(.*?)\'").find(unpacked)?.groupValues?.get(1)
     }
-
 
     private suspend fun extractVideoLinks(
         data: String,
@@ -469,6 +461,7 @@ class AnimePaheProvider : MainAPI() {
         }
     }
 
+ */
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -480,16 +473,15 @@ class AnimePaheProvider : MainAPI() {
         val document= app.get(episodeUrl, headers= headers).document
         document.select("div.dropup button")
             .map {
-                var lang=""
+                val lang: String
                 val dub=it.select("span").text()
                 if (dub.contains("eng")) lang="DUB" else lang="SUB"
                 val quality = it.attr("data-resolution")
                 val href = it.attr("data-src")
-                    Log.d("Phisher", "$lang $quality $href")
                         loadSourceNameExtractor(
                             "Animepahe [$lang]",
                             href,
-                            mainUrl,
+                            quality,
                             subtitleCallback,
                             callback,
                             quality
