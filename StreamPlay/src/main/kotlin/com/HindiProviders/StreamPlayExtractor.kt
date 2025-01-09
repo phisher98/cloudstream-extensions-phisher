@@ -1169,18 +1169,17 @@ object StreamPlayExtractor : StreamPlay() {
         val TMDBdate=date?.substringBefore("-")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         val hianimeurl=malsync?.zoro?.firstNotNullOf { it.value["url"] }
-        Log.d("Phisher zoroIds", malsync.toString())
         argamap(
             {
-                //invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
+                invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
             },
             {
-                //invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
+                invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
             {
-                //val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
-                //if (animepahetitle!=null)
-                //invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
+                val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
+                if (animepahetitle!=null)
+                invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
@@ -1193,15 +1192,15 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }
                 val jptitleslug=jptitle.createSlug()
-               // invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
+                invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
             },
             {
-                //invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
+                invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
             },
             {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                //if (Gogourl != null)
-                //invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
+                if (Gogourl != null)
+                invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             }
         )
     }
