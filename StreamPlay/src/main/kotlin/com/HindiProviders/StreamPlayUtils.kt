@@ -1011,7 +1011,7 @@ suspend fun loadCustomTagExtractor(
     }
 }
 
-suspend fun loadNameExtractor(
+fun loadNameExtractor(
     name: String? = null,
     url: String,
     referer: String? = null,

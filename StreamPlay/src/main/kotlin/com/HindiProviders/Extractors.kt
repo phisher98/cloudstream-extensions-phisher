@@ -1618,7 +1618,7 @@ class Kwik : ExtractorApi() {
                 name,
                 m3u8,
                 "",
-                getQualityFromName(""),
+                getQualityFromName(referer),
                 INFER_TYPE
             )
         )

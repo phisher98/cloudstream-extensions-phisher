@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -1171,15 +1172,15 @@ object StreamPlayExtractor : StreamPlay() {
         Log.d("Phisher zoroIds", malsync.toString())
         argamap(
             {
-                invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
+                //invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
             },
             {
-                invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
+                //invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
             {
-                val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
-                if (animepahetitle!=null)
-                invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
+                //val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
+                //if (animepahetitle!=null)
+                //invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
@@ -1192,15 +1193,15 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }
                 val jptitleslug=jptitle.createSlug()
-                invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
+               // invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
             },
             {
-                invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
+                //invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
             },
             {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                if (Gogourl != null)
-                invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
+                //if (Gogourl != null)
+                //invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             }
         )
     }
@@ -1313,19 +1314,21 @@ object StreamPlayExtractor : StreamPlay() {
         val session = animeData?.find { it.episode == episode }?.session ?: ""
         app.get("$animepaheAPI/play/$id/$session", headers).document.select("div.dropup button")
             .map {
-                var lang=""
-                val dub=it.select("span").text()
-                if (dub.contains("eng")) lang="DUB" else lang="SUB"
-                val quality = it.attr("data-resolution")
-                val href = it.attr("data-src")
-                if (href.contains("kwik.si")) {
+                    Log.d("Phisher it",it.toString())
+                    var lang=""
+                    val dub=it.select("span").text()
+                    if (dub.contains("eng")) lang="DUB" else lang="SUB"
+                    val quality = it.attr("data-resolution").toIntOrNull()
+                    Log.d("Phisher",quality.toString())
+                    val href = it.attr("data-src")
+                    if (href.contains("kwik.si")) {
                     loadCustomExtractor(
                         "Animepahe [$lang]",
                         href,
-                        mainUrl,
+                        "$quality",
                         subtitleCallback,
                         callback,
-                        getIndexQuality(quality)
+                        quality ?: Qualities.Unknown.value
                     )
                 }
             }
@@ -2429,6 +2432,7 @@ object StreamPlayExtractor : StreamPlay() {
 
 // Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
     //Still in progress
+    @SuppressLint("NewApi")
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
@@ -2450,8 +2454,12 @@ object StreamPlayExtractor : StreamPlay() {
         val vrf= vrfres?.vrf
         val timetamp= vrfres?.timestamp
         val instant = Instant.parse(timetamp)
-        val unixTimeMs = instant.toEpochMilli()
-        val api_url=if (season==null)
+        val unixTimeMs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            instant.toEpochMilli()
+        } else {
+            TODO("VERSION.SDK_INT < O")
+        }
+    val api_url=if (season==null)
         {
             "${vidsrctoAPI}/api/$id/servers?id=${id}&type=$type&v=$v_value&vrf=${vrf}"
         }
@@ -3026,7 +3034,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
     //only sub
-    @SuppressLint("SuspiciousIndentation")
     suspend fun invokewhvx(
         imdbId: String? = null,
         season: Int? = null,
