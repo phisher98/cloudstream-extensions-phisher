@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -127,15 +128,17 @@ class AnimeWorld : MainAPI() {
     ): Boolean {
         app.get(data).document.select("section.section.player iframe").amap {
             val href=it.attr("data-src")
+            Log.d("Phisher",href.toString())
             if (href.contains("awstream"))
             {
 
                 val host=href.substringBefore("/video")
                 val hash = href.substringAfter("video/")
-                val postreq= app.post("$host/player/index.php?data=$hash&do=getVideo", headers = mapOf("X-Requested-With" to "XMLHttpRequest")).parsedSafe<Response>()
+                val form= mapOf("hash" to hash,"r" to mainUrl)
+                val postreq= app.post("$host/player/index.php?data=$hash&do=getVideo", data = form, headers = mapOf("X-Requested-With" to "XMLHttpRequest","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")).parsedSafe<Response>()
                 val m3u8= postreq?.securedLink
-                if (m3u8.isNullOrBlank())
-                {
+                    if (m3u8.isNullOrBlank())
+                    {
                     val regex = Regex("""m3u8\\/(.*?)\\/""")
                     val res= app.get(href).toString()
                     val hash1 = regex.find(res)?.groupValues?.get(1)
@@ -156,7 +159,7 @@ class AnimeWorld : MainAPI() {
                             "$API/subs/m3u8/$hash/subtitles-eng.vtt"     // Use extracted URL
                         )
                     )
-                }
+                    }
                 else
                 callback.invoke(
                     ExtractorLink(

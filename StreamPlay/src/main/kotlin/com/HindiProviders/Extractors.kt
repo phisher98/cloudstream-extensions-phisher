@@ -1,5 +1,7 @@
 package com.Phisher98
 
+import android.annotation.TargetApi
+import android.os.Build
 import com.Phisher98.StreamPlay.Companion.animepaheAPI
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
@@ -485,24 +487,6 @@ open class Ridoo : ExtractorApi() {
 
 }
 
-open class Gdmirrorbot : ExtractorApi() {
-    override val name = "Gdmirrorbot"
-    override val mainUrl = "https://gdmirrorbot.nl"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        app.get(url, referer = referer).document.select("ul#videoLinks li").apmap {
-            loadExtractor(it.attr("data-link"), "$mainUrl/", subtitleCallback, callback)
-        }
-    }
-
-}
-
 open class Streamvid : ExtractorApi() {
     override val name = "Streamvid"
     override val mainUrl = "https://streamvid.net"
@@ -748,6 +732,7 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
+    @TargetApi(Build.VERSION_CODES.O)
     fun decrypt(encrypted: String): String {
         // Decode the Base64-encoded JSON string
         val data = JSONObject(String(Base64.getDecoder().decode(encrypted)))
@@ -1205,15 +1190,16 @@ open class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher url 1", url)
-        val url=url.replace(".ink",".tel")
+        val url=url.replace(".ink",".tel").replace(".art",".tel")
+        Log.d("Phisher real url", url)
         val href:String
-        if (url.contains("gamerxyt"))
+        if (url.contains("hubcloud.php"))
         {
             href=url
             Log.d("Phisher Hub", href)
         }
         else {
+            Log.d("Phisher else",url)
             val doc = app.get(url).text
             //val gamerlink=Regex("""hubcloud\.php\?([^'"]+)""").find(doc)?.groupValues?.get(1)
             href=doc.substringAfter("var url = '").substringBefore("\'")
@@ -1223,6 +1209,7 @@ open class HubCloud : ExtractorApi() {
                 Log.d("Error", "Not Found")
             }
         }
+        Log.d("Phisher href",href)
         if (href.isNotEmpty()) {
             val document = app.get(href).document
             val size = document.selectFirst("i#size")?.text()
@@ -1258,6 +1245,16 @@ open class HubCloud : ExtractorApi() {
                             getIndexQuality(header),
                         )
                     )
+                } else if (link.contains("buzzheavier")) {
+                callback.invoke(
+                    ExtractorLink(
+                        "$source Buzzheavier",
+                        "$source Buzzheavier $size",
+                        "$link/download",
+                        "",
+                        getIndexQuality(header),
+                    )
+                )
                 } else if (link.contains(".dev")) {
                     callback.invoke(
                         ExtractorLink(

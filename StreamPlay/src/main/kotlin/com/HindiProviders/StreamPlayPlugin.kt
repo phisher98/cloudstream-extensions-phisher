@@ -65,7 +65,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(do0od())
         registerExtractorAPI(Embedrise())
-        registerExtractorAPI(Gdmirrorbot())
+        registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(FilemoonNl())
         registerExtractorAPI(Alions())
         registerExtractorAPI(Vidmolyme())

@@ -102,6 +102,7 @@ open class Akamaicdn : ExtractorApi() {
         val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
+        val headers= mapOf("user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -110,6 +111,7 @@ open class Akamaicdn : ExtractorApi() {
                 url,
                 Qualities.P1080.value,
                 type = ExtractorLinkType.M3U8,
+                headers = headers
             )
         )
     }

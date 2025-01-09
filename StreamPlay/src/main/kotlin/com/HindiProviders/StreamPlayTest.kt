@@ -1,7 +1,11 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeDotmovies
+import com.Phisher98.StreamPlayExtractor.invokeExtramovies
+import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.Phisher98.StreamPlayExtractor.invokeTom
+import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokecatflix
@@ -23,12 +27,10 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokecatflix(
-                    res.id,
-                    res.epid,
+                if (!res.isAnime) invokeMoviesdrive(
                     res.title,
-                    res.episode,
                     res.season,
+                    res.episode,
                     res.year,
                     subtitleCallback,
                     callback

@@ -170,16 +170,16 @@ open class StreamPlay : TmdbProvider() {
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.bet"
         const val topmoviesAPI = "https://topmovies.bet"
-        const val MoviesmodAPI= "https://moviesmod.bot"
+        const val MoviesmodAPI= "https://moviesmod.red"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
-        const val vegaMoviesAPI = "https://vegamovies.st"
-        const val dotmoviesAPI = "https://luxmovies.live"
+        const val vegaMoviesAPI = "https://vegamovies.ms"
+        const val dotmoviesAPI = "https://luxmovies.cam"
         const val rogmoviesAPI = "https://rogmovies.com"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
-        const val MovieDrive_API="https://moviesdrive.cloud"
+        const val MovieDrive_API="https://moviesdrive.pro"
         const val Asiandrama_API="https://asiandrama.fun"
-        const val bollyflixAPI = "https://bollyflix.ninja"
+        const val bollyflixAPI = "https://bollyflix.diy"
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
@@ -187,7 +187,7 @@ open class StreamPlay : TmdbProvider() {
         const val BollyflixVIP= "https://bollyflix.meme"
         const val FlixAPI= BuildConfig.FlixHQAPI
         const val NyaaAPI="https://nyaa.land"
-        const val Extramovies="https://extramovies.soy"
+        const val Extramovies="https://extramovies.repair"
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
@@ -805,11 +805,9 @@ open class StreamPlay : TmdbProvider() {
     },
     {
         if (!res.isAnime && !res.isBollywood) invokeVegamovies(
-            res.imdbId,
             res.title,
             res.year,
             res.season,
-            res.lastSeason,
             res.episode,
             subtitleCallback,
             callback
