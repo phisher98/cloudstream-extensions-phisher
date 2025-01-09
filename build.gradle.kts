@@ -79,7 +79,7 @@ subprojects {
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
         implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-        implementation("com.faendir.rhino:rhino-android:1.6.0")
+        implementation("com.faendir.rhino:rhino-android:1.7.15")
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("com.google.code.gson:gson:2.11.0")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
