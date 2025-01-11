@@ -11,7 +11,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 open class Anisaga : MainAPI() {
-    override var mainUrl = "https://anisaga.org"
+    override var mainUrl = "https://anplay.in"
     override var name = "Anisaga"
     override val hasMainPage = true
     override var lang = "hi"
@@ -137,7 +137,7 @@ open class Anisaga : MainAPI() {
 
         val recommendations = document.select("div.owl-item").map {
             val recName =
-                it.selectFirst("a")!!.attr("href").toString().removeSuffix("/").split("/").last()
+                it.selectFirst("a")!!.attr("href").removeSuffix("/").split("/").last()
             val recHref = it.selectFirst("a")!!.attr("href")
             val recPosterUrl = it.selectFirst("img")?.getImageAttr()
             newTvSeriesSearchResponse(recName, recHref, TvType.TvSeries) {
@@ -201,7 +201,6 @@ open class Anisaga : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         val document = app.get(data, cookies=cookies).document
         document.select("ul#playeroptionsul > li").map {
             Triple(
@@ -234,7 +233,7 @@ open class Anisaga : MainAPI() {
         return true
     }
 
-    private fun Element.getImageAttr(): String? {
+    private fun Element.getImageAttr(): String {
         return when {
             this.hasAttr("data-src") -> this.attr("abs:data-src")
             this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")
