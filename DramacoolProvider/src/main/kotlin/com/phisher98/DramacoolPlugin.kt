@@ -15,7 +15,7 @@ class DramacoolPlugin: Plugin() {
         registerExtractorAPI(dlions())
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(MixDropSi())
+        registerExtractorAPI(PeytonePre())
     }
 }
-
 
