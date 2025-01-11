@@ -5,7 +5,7 @@ cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
 
-    description = "Kdrama"
+    description = "Asian Dramas"
     authors = listOf("Phisher98")
 
     /**
