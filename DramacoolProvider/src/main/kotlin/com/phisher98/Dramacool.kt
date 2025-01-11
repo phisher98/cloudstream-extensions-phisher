@@ -73,7 +73,7 @@ class Dramacool : MainAPI() {
             Episode(href, "Episode $name")
         }.reversed()
 
-        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+        return newTvSeriesLoadResponse(title, detailsUrl, TvType.TvSeries, episodes) {
             posterUrl = posterurl
             addActors(actors)
             this.plot=description
