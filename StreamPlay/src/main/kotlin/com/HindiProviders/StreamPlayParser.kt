@@ -41,7 +41,7 @@ data class VidsrcccSubtitle(
 
 //FlixHQAPI
 
-data class SerachFlix(
+data class SearchFlixAPI(
     val items: List<Item>,
     val pagination: Pagination,
 )
@@ -54,15 +54,41 @@ data class Item(
 )
 
 data class Stats(
-    val year: String,
-    val duration: String,
+    val seasons: String?,
     val rating: String,
+    val year: String?,
+    val duration: String?,
 )
 
 data class Pagination(
     val current: Long,
     val total: Long,
 )
+
+//SeasonResponse
+
+data class SeasonResponseFlixHQAPI(
+    val seasons: List<SeasonFlixHQAPI>,
+)
+
+data class SeasonFlixHQAPI(
+    val id: String,
+    val number: Long,
+)
+
+//EpisodeResponseFlixHQAPI
+
+
+data class EpisodeResponseFlixHQAPI(
+    val episodes: List<EpisodeFlixHQAPI>,
+)
+
+data class EpisodeFlixHQAPI(
+    val id: String,
+    val number: Long,
+    val title: String,
+)
+
 
 data class MoviedetailsResponse(
     val title: String,

@@ -4316,7 +4316,7 @@ suspend fun invokeFlixAPIHQ(
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = "$FlixAPI/search?q=$title"
-        val id= app.get(url).parsedSafe<SerachFlix>()?.items?.find {
+        val id= app.get(url).parsedSafe<SearchFlixAPI>()?.items?.find {
         if (season==null)
         {
             it.title.equals(
@@ -4324,50 +4324,41 @@ suspend fun invokeFlixAPIHQ(
             ) && it.stats.year == "$year"
         }
         else {
-            //TODO
             it.title.equals(
                 "$title", true
-            ) && it.stats.year == "$year"
+            ) && it.stats.seasons?.contains("SS") ?: return
         }
         }?.id ?: return
     val epid=if (season == null)
         {
-            app.get("$FlixAPI/movie/$id", timeout = 5000L).parsedSafe<MoviedetailsResponse>()?.episodeId
-        } else {
             app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId
-        }
-    val listOfServers = if (season == null) {
-        app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
-            .parsedSafe<FlixServers>()
-            ?.servers
-            ?.map { server ->
-                server.id to server.name // Pair of id and name
-            }
-    } else {
-        app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
-            .parsedSafe<FlixServers>()
-            ?.servers
-            ?.map { server ->
-                server.id to null // Pair of id and null (no name if not required)
-            }
+        } else {
+            val seasonid= app.get("$FlixAPI/movie/$id/seasons").parsedSafe<SeasonResponseFlixHQAPI>()?.seasons?.find { it.number.toInt() == season }?.id ?:return
+            Log.d("Phisher epid", seasonid.toString())
+            app.get("$FlixAPI/movie/$id/episodes?seasonId=$seasonid").parsedSafe<EpisodeResponseFlixHQAPI>()?.episodes?.find {
+                it.number.toInt() == episode
+            }?.id ?:return
     }
-    Log.d("Phisher",listOfServers.toString())
-    listOfServers?.forEach { (serverid, name) ->
+    val listOfServers =
+        app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
+            .parsedSafe<FlixServers>()
+            ?.servers
+            ?.map { server ->
+                server.id to server.name
+            }
+    listOfServers?.amap { (serverid, name) ->
         val data= app.get("$FlixAPI/movie/$id/sources?serverId=$serverid").parsedSafe<FlixHQsources>()
-        Log.d("Phisher","\"$FlixAPI/movie/$id/sources?serverId=$serverid\" $data".toString())
         val m3u8=data?.sources?.map { it.file }?.firstOrNull()
-        if (name != null) {
-            callback.invoke(
-                ExtractorLink(
-                    name.capitalize(),
-                    name,
-                    fixUrl( m3u8 ?:""),
-                    "",
-                    Qualities.P1080.value,
-                    INFER_TYPE
-                )
+        callback.invoke(
+            ExtractorLink(
+                "FlixHQ ${name.capitalize()}",
+                "FlixHQ $name",
+                fixUrl( m3u8 ?:""),
+                "",
+                Qualities.P1080.value,
+                INFER_TYPE
             )
-        }
+        )
         data?.tracks?.amap { track->
             val vtt=track.file
             val lang=track.label
