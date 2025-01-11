@@ -17,14 +17,13 @@ class Dramacool : MainAPI() {
     )
     override var lang = "en"
 
-    override var mainUrl = "https://asianc.co"
+    override var mainUrl = "https://dramacool.bg"
     override var name = "Dramacool"
 
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        "most-popular-drama" to "Popular Drama",
-        "genre/crime.html" to "Crime Series",
+        "/" to "Recent Dramas",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -48,7 +47,7 @@ class Dramacool : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchtitle=query.createSlug()
-        val url = "$mainUrl/search?type=movies&keyword=$searchtitle"
+        val url = "$mainUrl/search?type=drama&keyword=$searchtitle"
         val document = app.get(url, referer = "$mainUrl/").document
         val items = document.select("ul.switch-block.list-episode-item li").mapNotNull {
             it.toSearchResult()
@@ -57,7 +56,8 @@ class Dramacool : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url, referer = "$mainUrl/", timeout = 10L).document
+        val detailsUrl = url.substringBefore("-episode").replace("video-watch", "drama-detail")
+        val document = app.get(detailsUrl, referer = "$mainUrl/", timeout = 10L).document
         val title = document.selectFirst("h1")?.text()?.trim() ?: return null
         val actors = document.select("div.item a").map {
             Actor(
