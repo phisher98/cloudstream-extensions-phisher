@@ -22,7 +22,6 @@ class MixDropSi : MixDrop() {
     override var mainUrl = "https://mixdrop.si"
 }
 
-
 class Dramacool : StreamWishExtractor() {
     override var name = "Dramacool"
     override var mainUrl = "https://dramacool.men"
