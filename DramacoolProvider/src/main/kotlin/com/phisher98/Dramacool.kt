@@ -8,13 +8,18 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
-class Dramacool : MainAPI() {
+class Dramacool2 : Dramacool() {
+    override var mainUrl = "https://dramacool.ba"
+    override var name = "Dramacool2"
+}
+
+open class Dramacool : MainAPI() {
     override val supportedTypes = setOf(
         TvType.AsianDrama
     )
     override var lang = "en"
 
-    override var mainUrl = "https://dramacool.ba"
+    override var mainUrl = "https://dramacool.bg"
     override var name = "Dramacool"
 
     override val hasMainPage = true
