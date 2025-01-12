@@ -11,7 +11,7 @@ class DramacoolPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Dramacool())
-        registerMainAPI(Dramacool2())
+        // registerMainAPI(Dramacool2())
         registerExtractorAPI(Dwish())
         registerExtractorAPI(dlions())
         registerExtractorAPI(StreamTape())
