@@ -86,8 +86,8 @@ class Dramacool : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        val url = document.selectFirst("div.anime_muti_link ul li")?.attr("data-video") ?:
-            document.selectFirst("iframe")?.attr("src") ?: return false
+        val url = fixUrl(document.selectFirst("div.anime_muti_link ul li")?.attr("data-video") ?:
+            document.selectFirst("iframe")?.attr("src") ?: return false)
         loadExtractor(url, mainUrl, subtitleCallback, callback)
         return true
     }
