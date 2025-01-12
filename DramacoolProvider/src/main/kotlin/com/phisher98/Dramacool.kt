@@ -62,7 +62,7 @@ class Dramacool : MainAPI() {
                 it.select("img").attr("src")
             )
         }
-        val description=document.selectFirst("div.info > p:nth-child(3)")?.text()?.trim() ?: ""
+        val description=document.selectFirst("div.info > p:nth-of-type(4)")?.text()?.trim() ?: ""
         val posterurl=document.selectFirst("div.details img")?.attr("src")
         val episodes = document.select("ul.list-episode-item-2 li").mapNotNull { el ->
             val name=el.selectFirst("a h3")?.text()?.substringAfter("Episode")?.trim()
