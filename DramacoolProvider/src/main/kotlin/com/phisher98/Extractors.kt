@@ -22,7 +22,14 @@ class MixDropSi : MixDrop() {
     override var mainUrl = "https://mixdrop.si"
 }
 
-class PeytonePre : StreamWishExtractor() {
-    override var name = "PeytonePre"
+class dhtpre : StreamWishExtractor() {
+    override var mainUrl = "https://dhtpre.com"
+}
+
+class nikaplayerr : StreamWishExtractor() {
+    override var mainUrl = "https://nikaplayerr.com"
+}
+
+class peytonepre : StreamWishExtractor() {
     override var mainUrl = "https://peytonepre.com"
 }
