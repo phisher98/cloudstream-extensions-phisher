@@ -643,18 +643,27 @@ data class CrunchyrollSourcesResponses(
 
 data class Hianime(
     val success: Boolean,
-    val data: HianimeData,
+    val results: HianimeResults,
 )
 
-data class HianimeData(
+data class HianimeResults(
+    val streamingLink: HianimeStreamingLink,
+    val servers: List<HianimeServer>,
+)
+
+data class HianimeStreamingLink(
+    val id: String,
+    val type: String,
+    val link: HianimeLink,
     val tracks: List<HianimeTrack>,
     val intro: Intro,
     val outro: Outro,
-    val sources: List<HianimeSource>,
-    @JsonProperty("anilistID")
-    val anilistId: Long,
-    @JsonProperty("malID")
-    val malId: Long,
+    val server: String,
+)
+
+data class HianimeLink(
+    val file: String,
+    val type: String,
 )
 
 data class HianimeTrack(
@@ -674,10 +683,15 @@ data class Outro(
     val end: Long,
 )
 
-data class HianimeSource(
-    val url: String,
+data class HianimeServer(
     val type: String,
+    @JsonProperty("data_id")
+    val dataId: String,
+    @JsonProperty("server_id")
+    val serverId: String,
+    val serverName: String,
 )
+
 
 //anime animepahe parser
 

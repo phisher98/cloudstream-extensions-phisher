@@ -1517,32 +1517,33 @@ object StreamPlayExtractor : StreamPlay() {
                     ?: return@servers
                 val audio = if (server.third == "sub") "Raw" else "English Dub"
                 val animeEpisodeId=url?.substringAfter("to/")
-                val api="${BuildConfig.HianimeAPI}/api/v2/hianime/episode/sources?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
-                app.get(api).parsedSafe<Hianime>()?.data?.let { data ->
-                    val m3u8Urls = data.sources.map { it.url }
-                    val m3u8 = m3u8Urls.firstOrNull()
-                    if (m3u8Urls.isNotEmpty()) {
-                        loadNameExtractor(
-                            "HiAnime ${server.first} [$audio]",
-                            m3u8 ?:"",
-                            "",
-                            subtitleCallback,
-                            callback,
-                            Qualities.P1080.value
-                        )
-                    } else {
-                        Log.w("Phisher", "No m3u8 URLs found in sources.")
-                    }
+                val api="${BuildConfig.HianimeAPI}/api/stream?id=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&type=${server.third}"
+                Log.d("Phisher api",api)
+                app.get(api, referer = api).parsedSafe<Hianime>()?.results?.streamingLink?.let { streamingLink ->
+                    val m3u8 = streamingLink.link.file
+                    Log.d("Phisher", "$audio $m3u8")
+                    loadNameExtractor(
+                        "HiAnime ${streamingLink.server.uppercase()} [${audio.capitalize()}]",
+                        m3u8,
+                        "",
+                        subtitleCallback,
+                        callback,
+                        Qualities.P1080.value
+                    )
 
-                    data.tracks.amap { track ->
-                        val vtt = track.file
-                        val lang=track.label
-                        subtitleCallback.invoke(
-                            SubtitleFile(
-                                getLanguage(lang ?: return@amap),
-                                vtt
-                            )
-                        )
+                    streamingLink.tracks.forEach { track ->
+                        track.label?.let { lang -> // Proceed only if the label is not null
+                            try {
+                                subtitleCallback.invoke(
+                                    SubtitleFile(
+                                        getLanguage(lang),
+                                        track.file
+                                    )
+                                )
+                            } catch (e: Exception) {
+                                Log.e("Phisher", "Error processing subtitle for language: $lang, file: ${track.file}", e)
+                            }
+                        } ?: Log.w("Phisher", "Skipping track due to missing label for file: ${track.file}")
                     }
                 }
 
