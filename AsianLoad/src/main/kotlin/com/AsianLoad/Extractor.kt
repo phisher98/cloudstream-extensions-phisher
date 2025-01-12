@@ -35,6 +35,11 @@ class asianbxkiun : Embasic() {
     override val requiresReferer = false
 }
 
+class AsianLoadInfo : Embasic() {
+    override var mainUrl = "https://asianload.info"
+    override val requiresReferer = false
+}
+
 open class Embasic : ExtractorApi() {
     override var mainUrl = "https://embasic.pro"
     override val name = "AsianHD"
