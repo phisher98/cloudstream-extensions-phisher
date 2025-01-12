@@ -53,18 +53,20 @@ class Dramacool : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val detailsUrl = url.substringBefore("-episode").replace("video-watch", "drama-detail")
-        val document = app.get(detailsUrl, referer = "$mainUrl/", timeout = 10L).document
-        val title = document.selectFirst("h1")?.text()?.trim() ?: ""
-        val actors = document.select("div.item a").map {
+        val document = app.get(url, referer = "$mainUrl/", timeout = 10L).document
+        val detailsUrl = document.selectFirst("div.category > a")?.attr("href") ?:
+            url.substringBefore("-episode").replace("video-watch", "drama-detail")
+        val detailsDocument = app.get(detailsUrl, referer = "$mainUrl/", timeout = 10L).document
+        val title = detailsDocument.selectFirst("h1")?.text()?.trim() ?: ""
+        val actors = detailsDocument.select("div.item a").map {
             Actor(
                 it.select("h3").text(),
                 it.select("img").attr("src")
             )
         }
-        val description=document.selectFirst("div.info > p:nth-of-type(4)")?.text()?.trim() ?: ""
-        val posterurl=document.selectFirst("div.details img")?.attr("src")
-        val episodes = document.select("ul.list-episode-item-2 li").mapNotNull { el ->
+        val description= detailsDocument.selectFirst("div.info > p:nth-of-type(4)")?.text()?.trim() ?: ""
+        val posterurl = detailsDocument.selectFirst("div.details img")?.attr("src")
+        val episodes = detailsDocument.select("ul.list-episode-item-2 li").mapNotNull { el ->
             val name=el.selectFirst("a h3")?.text()?.substringAfter("Episode")?.trim()
             val href=el.selectFirst("a")?.attr("href") ?: ""
             Episode(href, "Episode $name")
