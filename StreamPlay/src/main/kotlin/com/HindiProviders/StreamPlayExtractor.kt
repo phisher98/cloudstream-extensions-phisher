@@ -921,7 +921,7 @@ object StreamPlayExtractor : StreamPlay() {
         val res = app.get(url, referer = azseriesAPI)
             val document = res.document
             val id = document.selectFirst("#show_player_lazy")?.attr("movie-id").toString()
-        val server_doc = app.post(
+            val server_doc = app.post(
                 url = "$azseriesAPI/wp-admin/admin-ajax.php", data = mapOf(
                     "action" to "lazy_player",
                     "movieID" to id
@@ -1162,9 +1162,12 @@ object StreamPlayExtractor : StreamPlay() {
             airedDate,
             if (season == null) TvType.AnimeMovie else TvType.Anime
         )
+        Log.d("Phisher Malid","$aniId $$malId")
         val Season=app.get("$jikanAPI/anime/${malId ?: return}").parsedSafe<JikanResponse>()?.data?.season ?:""
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
+        Log.d("Phisher Malid","\"$malsyncAPI/mal/anime/${malId ?: return}\"")
+
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val TMDBdate=date?.substringBefore("-")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
@@ -1298,7 +1301,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private suspend fun invokeAnimepahe(
+    suspend fun invokeAnimepahe(
         url: String? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -1333,7 +1336,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
     }
 
-    private suspend fun invokeGojo(
+    suspend fun invokeGojo(
         aniid: String? = null,
         jptitle:String?=null,
         episode: Int? = null,
@@ -1428,7 +1431,7 @@ object StreamPlayExtractor : StreamPlay() {
         return response
     }
 
-    private suspend fun invokeAnimetosho(
+    suspend fun invokeAnimetosho(
         malId: Int? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -1479,7 +1482,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private suspend fun invokeHianime(
+    suspend fun invokeHianime(
         animeIds: List<String?>? = null,
         url: String?,
         episode: Int? = null,
@@ -1562,7 +1565,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private suspend fun invokeMiruroanimeGogo(
+    suspend fun invokeMiruroanimeGogo(
         animeIds: List<String?>? = null,
         title:String? = null,
         episode: Int? = null,

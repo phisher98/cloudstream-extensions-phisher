@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version =24
+version =1
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian Multi-language HD Provider"
-    language = "hi"
+    description = "German Movies/TV-Series HD Provider"
+    language = "de"
     authors = listOf("Phisher98")
 
     /**
@@ -25,5 +25,5 @@ cloudstream {
         "TvSeries",
         "Anime",
     )
-    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/MultiMoviesProvider/icon.png"
+    iconUrl = "https://kinoking.cc/wp-content/uploads/2021/09/logo_production-1.png"
 }
