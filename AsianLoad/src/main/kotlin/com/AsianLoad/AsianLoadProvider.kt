@@ -14,6 +14,7 @@ class AsianLoadProvider: Plugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(Embasic())
         registerExtractorAPI(asianbxkiun())
+        registerExtractorAPI(AsianLoadInfo())
         registerExtractorAPI(bulbasaur())
         registerExtractorAPI(Mp4Upload())
     }
