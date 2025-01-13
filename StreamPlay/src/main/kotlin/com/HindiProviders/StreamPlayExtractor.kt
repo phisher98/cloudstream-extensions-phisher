@@ -2516,6 +2516,35 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 }
+
+
+
+
+suspend fun invokeVidsrcsu(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+) {
+        val url = if (season == null) {
+            "$vidsrcsu/embed/movie/$id"
+        } else {
+            "$vidsrcsu/embed/tv/$id/$season/$episode"
+        }
+        val doc = app.get(url).document.toString()
+        val regex = """Server\s*\d+',\surl:\s*'(.*?)'""".toRegex()
+        val matches = regex.findAll(doc)
+        for (match in matches) {
+            val server = match.value.substringBefore("'")
+            val href = match.groupValues[1]
+            if (href.isNotEmpty())
+                callback.invoke(
+                    ExtractorLink(
+                    "Vidsrcsu [$server]", "Vidsrcsu [$server]", href, "", Qualities.P1080.value, INFER_TYPE
+                    )
+                )
+        }
+}
 /*
     suspend fun invokeHdmovies4u(
         title: String? = null,

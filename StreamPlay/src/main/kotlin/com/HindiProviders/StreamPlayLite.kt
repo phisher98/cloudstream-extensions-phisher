@@ -28,6 +28,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -49,6 +50,14 @@ class StreamPlayLite : StreamPlay() {
                 if (!res.isAnime) invokeM4uhd(
                     res.title, res.airedYear
                         ?: res.year, res.season, res.episode, subtitleCallback, callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeVidsrcsu(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
                 )
             },
             {

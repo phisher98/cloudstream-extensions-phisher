@@ -67,6 +67,7 @@ import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
 import com.Phisher98.StreamPlayExtractor.invokeTom
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
@@ -111,6 +112,7 @@ open class StreamPlay : TmdbProvider() {
         TvType.Movie,
         TvType.TvSeries,
         TvType.Anime,
+        TvType.Cartoon,
     )
 
     val wpRedisInterceptor by lazy { CloudflareKiller() }
@@ -159,6 +161,7 @@ open class StreamPlay : TmdbProvider() {
         const val allmovielandAPI = "https://allmovieland.fun"
         const val doomoviesAPI = "https://doomovies.net"
         const val vidsrctoAPI = "https://vidsrc.cc"
+        const val vidsrcsu = "https://vidsrc.su"
         const val dramadayAPI = "https://dramaday.me"
         const val animetoshoAPI = "https://animetosho.org"
         const val showflixAPI = "https://showflix.site"
@@ -554,6 +557,14 @@ open class StreamPlay : TmdbProvider() {
                         res.episode,
                         subtitleCallback,
                         callback
+                    )
+                },
+                {
+                    if (!res.isAnime) invokeVidsrcsu(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
                     )
                 },
                 {

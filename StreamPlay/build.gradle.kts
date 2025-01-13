@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 120
+version = 121
 android {
     defaultConfig {
         val properties = Properties()
@@ -54,6 +54,7 @@ cloudstream {
         "TvSeries",
         "Anime",
         "Movie",
+        "Cartoon"
     )
 
     iconUrl = "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1"
