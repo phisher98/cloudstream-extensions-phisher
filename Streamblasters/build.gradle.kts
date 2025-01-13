@@ -23,5 +23,5 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie,TvSeries")
 
-    iconUrl="https://www.streamblasters.link/wp-content/uploads/2022/05/cropped-png12.png"
+    iconUrl="https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/Telugumv/faviconV2.png"
 }
