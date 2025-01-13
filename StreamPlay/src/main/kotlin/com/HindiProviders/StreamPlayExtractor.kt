@@ -1180,17 +1180,18 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
             {
+                invokeAnimenexus(title, episode, subtitleCallback, callback)
+            },
+            {
                 val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
-                if (animepahetitle!=null)
-                invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
+                if (animepahetitle!=null) invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
             },
             {
                 //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
             },
             {
                 val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
-                if (animepahe!=null)
-                invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
+                if (animepahe!=null) invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
             },
             {
                 val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }
@@ -1202,8 +1203,7 @@ object StreamPlayExtractor : StreamPlay() {
             },
             {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                if (Gogourl != null)
-                invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
+                if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             }
         )
     }
@@ -1599,6 +1599,40 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
         }
+    }
+
+
+
+    suspend fun invokeAnimenexus(
+        title:String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val apiurl="https://api.anime.nexus"
+        val api="$apiurl/api/anime/shows?search=$title&sortBy=name+asc&page=1&includes%5B%5D=poster&includes%5B%5D=genres&hasVideos=1"
+        Log.d("Phisher api", api.toString())
+        val apires=app.get(api).parsedSafe<AnimeNexus>()
+        val id=apires?.data?.find { it.name.equals(
+            "$title", true
+        ) }?.id
+        val epres= app.get("$apiurl/api/anime/details/episodes?id=$id&page=1&perPage=24&order=asc").parsedSafe<AnimeNexusEp>()?.data
+        val epid= epres?.find { it.number==episode }?.id
+        Log.d("Phisher epid", "$epid")
+        val iframeurl="$apiurl/api/anime/details/episode/stream?id=$epid"
+        Log.d("Phisher", iframeurl.toString())
+        val headers= mapOf("origin" to "https://anime.nexus")
+        callback.invoke(
+            ExtractorLink(
+                "Ling",
+                "Ling",
+                "https://api.anime.nexus/api/anime/video/9d48b18e-d9a0-4549-b2a4-4bfa5153ee37/stream/video.m3u8?token=1736709285_941d585bc707c9cac2f96bdf190f67a3cf9ed380",
+                "https://anime.nexus/",
+                Qualities.P720.value,
+                INFER_TYPE,
+                headers=headers
+            )
+        )
     }
 
     suspend fun invokeLing(

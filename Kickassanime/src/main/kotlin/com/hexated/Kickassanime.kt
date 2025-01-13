@@ -15,7 +15,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 
 open class Kickassanime : MainAPI() {
-    final override var mainUrl = "https://www1.kickassanime.mx"
+    final override var mainUrl = "https://www2.kickassanime.mx"
     override var name = "Kickassanime"
     override val hasMainPage = true
     override var lang = "en"
@@ -119,9 +119,17 @@ val json = """
 
     override suspend fun load(url: String): LoadResponse? {
         val showname=url.substringAfter(mainUrl)
+        Log.d("Phisher loadapi","${mainUrl}/api/show/$showname")
         val loadapi="${mainUrl}/api/show/$showname"
         val loadjson= app.get(loadapi).parsedSafe<Loadresponse>()
-        val title= loadjson?.titleEn ?: "Unknown"
+        Log.d("Phisher",loadjson.toString())
+        var title= loadjson?.titleEn
+        if (title.isNullOrEmpty())
+        {
+            title= loadjson?.title ?: "Unknown"
+        }
+        Log.d("Phisher",title.toString())
+
         val poster = getBannerUrl( loadjson?.banner?.hq)
         val description= loadjson?.synopsis
         val tags= loadjson?.genres?.map { it }
