@@ -81,6 +81,7 @@ class GDMirrorbot : ExtractorApi() {
         siteUrls.keySet().forEach { key ->
             if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
                 val value1 = siteUrls.get(key).asString
+                Log.d("Phisher",value1)
                 val value2 = mresultMap[key].orEmpty()
                 matchingResults.add(Pair(value1, value2))
             }
@@ -125,6 +126,32 @@ class FilemoonV2 : ExtractorApi() {
                 m3u8 ?:"",
                 url,
                 Qualities.P1080.value,
+                type = ExtractorLinkType.M3U8,
+            )
+        )
+    }
+}
+
+class Streamcasthub : ExtractorApi() {
+    override var name = "Streamcasthub"
+    override var mainUrl = "https://multimovies.streamcasthub.store"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val id=url.substringAfterLast("/#")
+        val m3u8= "https://ss1.rackcloudservice.cyou/ic/$id/master.txt"
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8,
+                url,
+                Qualities.Unknown.value,
                 type = ExtractorLinkType.M3U8,
             )
         )

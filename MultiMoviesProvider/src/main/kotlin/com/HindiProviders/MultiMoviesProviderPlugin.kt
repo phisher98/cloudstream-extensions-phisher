@@ -29,5 +29,6 @@ class MultiMoviesProviderPlugin: Plugin() {
         registerExtractorAPI(Strwishcom())
         registerExtractorAPI(VidHidePro6())
         registerExtractorAPI(FilemoonV2())
+        registerExtractorAPI(Streamcasthub())
         }
 }

@@ -1190,7 +1190,7 @@ open class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url=url.replace(".ink",".tel").replace(".art",".tel")
+        val url=url.replace(".ink",".tel").replace(".art",".tel").replace(".art",".dad")
         Log.d("Phisher real url", url)
         val href:String
         if (url.contains("hubcloud.php"))
