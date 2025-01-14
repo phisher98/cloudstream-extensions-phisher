@@ -1,6 +1,5 @@
 package com.YTS
 
-//import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -85,7 +84,7 @@ open class YTS : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select("p.hidden-md.hidden-lg a").amap {
-            val href=getURL(it.attr("href"))
+            val href=getURL(it.attr("href").replace(" ","%20"))
             val quality =it.ownText().substringBefore(".").replace("p","").toInt()
             callback.invoke(
                 ExtractorLink(
