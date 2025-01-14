@@ -3,9 +3,11 @@ package com.TorraStream
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
 import com.TorraStream.TorraStream.Companion.TorrentgalaxyAPI
 import com.TorraStream.TorraStream.Companion.TorrentioAPI
+import com.TorraStream.TorraStream.Companion.TorrentmovieAPI
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.getQualityFromName
 
 suspend fun invokeTorrastream(
     mainUrl:String,
@@ -95,6 +97,30 @@ suspend fun invokeTorrentgalaxy(
             )
         )
     }
+}
 
 
+suspend fun invokeTorrentmovie(
+    title: String? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    app.get("$TorrentmovieAPI/secure/search/$title?limit=20").parsedSafe<Torrentmovie>()?.results?.map {
+            val files= mutableListOf<String>()
+            files+=it.screenResolution2160p
+            files+=it.screenResolution1080p
+            files+=it.screenResolution720p
+            files.forEach { file ->
+                val quality=file.substringAfter("resolution_").substringBefore("ps")
+                callback.invoke(
+                    ExtractorLink(
+                        "Torrentmovie",
+                        "Torrentmovie",
+                        "$TorrentmovieAPI/${file}",
+                        "",
+                        getQualityFromName(quality),
+                        INFER_TYPE,
+                    )
+                )
+            }
+    }
 }

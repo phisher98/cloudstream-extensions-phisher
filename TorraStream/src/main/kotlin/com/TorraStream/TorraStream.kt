@@ -18,6 +18,7 @@ class TorraStream() : TraktProvider() {
     {
         const val TorrentioAPI="https://torrentio.strem.fun"
         const val TorrentgalaxyAPI="https://torrentgalaxy.to"
+        const val TorrentmovieAPI="https://torrentmovie.net"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -54,6 +55,7 @@ class TorraStream() : TraktProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val title=AppUtils.parseJson<LinkData>(data).title
         val season =AppUtils.parseJson<LinkData>(data).season
         val episode =AppUtils.parseJson<LinkData>(data).episode
         val id =AppUtils.parseJson<LinkData>(data).imdbId
@@ -70,6 +72,12 @@ class TorraStream() : TraktProvider() {
             {
                 invokeTorrentgalaxy(
                     id,
+                    callback
+                )
+            },
+            {
+                invokeTorrentmovie(
+                    title,
                     callback
                 )
             }
