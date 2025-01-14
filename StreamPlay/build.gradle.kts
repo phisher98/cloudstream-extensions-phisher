@@ -2,13 +2,12 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-// use an integer for version numbers
-version = 15
-
+version = 121
 android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
         buildConfigField("String", "TMDB_API", "\"${properties.getProperty("TMDB_API")}\"")
         buildConfigField("String", "GHOSTX_API", "\"${properties.getProperty("GHOSTX_API")}\"")
         buildConfigField("String", "CINEMATV_API", "\"${properties.getProperty("CINEMATV_API")}\"")
@@ -19,9 +18,19 @@ android {
         buildConfigField("String", "CRUNCHYROLL_BASIC_TOKEN", "\"${properties.getProperty("CRUNCHYROLL_BASIC_TOKEN")}\"")
         buildConfigField("String", "CRUNCHYROLL_REFRESH_TOKEN", "\"${properties.getProperty("CRUNCHYROLL_REFRESH_TOKEN")}\"")
         buildConfigField("String", "MOVIE_API", "\"${properties.getProperty("MOVIE_API")}\"")
-        buildConfigField("String", "MultiMovies_API", "\"${properties.getProperty("MultiMovies_API")}\"")
-        buildConfigField("String", "MovieDrive_API", "\"${properties.getProperty("MovieDrive_API")}\"")
-        buildConfigField("String", "AsianDrama_API", "\"${properties.getProperty("AsianDrama_API")}\"")
+        buildConfigField("String", "ANICHI_API", "\"${properties.getProperty("ANICHI_API")}\"")
+        buildConfigField("String", "Whvx_API", "\"${properties.getProperty("Whvx_API")}\"")
+        buildConfigField("String", "CatflixAPI", "\"${properties.getProperty("CatflixAPI")}\"")
+        buildConfigField("String", "ConsumetAPI", "\"${properties.getProperty("ConsumetAPI")}\"")
+        buildConfigField("String", "FlixHQAPI", "\"${properties.getProperty("FlixHQAPI")}\"")
+        buildConfigField("String", "WhvxAPI", "\"${properties.getProperty("WhvxAPI")}\"")
+        buildConfigField("String", "WhvxT", "\"${properties.getProperty("WhvxT")}\"")
+        buildConfigField("String", "SharmaflixApikey", "\"${properties.getProperty("SharmaflixApikey")}\"")
+        buildConfigField("String", "SharmaflixApi", "\"${properties.getProperty("SharmaflixApi")}\"")
+        buildConfigField("String", "Theyallsayflix", "\"${properties.getProperty("Theyallsayflix")}\"")
+        buildConfigField("String", "GojoAPI", "\"${properties.getProperty("GojoAPI")}\"")
+        buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
+        buildConfigField("String", "Vidsrccc", "\"${properties.getProperty("Vidsrccc")}\"")
     }
 }
 
@@ -30,7 +39,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
      description = "#1 best extention based on MultiAPI"
-     authors = listOf("HindiProviders", "Hexated")
+     authors = listOf("Phisher98", "Hexated")
 
     /**
      * Status int as the following:
@@ -45,6 +54,7 @@ cloudstream {
         "TvSeries",
         "Anime",
         "Movie",
+        "Cartoon"
     )
 
     iconUrl = "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1"

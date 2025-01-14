@@ -1,17 +1,19 @@
-package com.HindiProviders
+package com.Phisher98
 
-import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.os.Build
 import android.util.Base64
 import android.util.Log
-import com.HindiProviders.DumpUtils.queryApi
-import com.HindiProviders.StreamPlay.Companion.anilistAPI
-import com.HindiProviders.StreamPlay.Companion.crunchyrollAPI
-import com.HindiProviders.StreamPlay.Companion.filmxyAPI
-import com.HindiProviders.StreamPlay.Companion.gdbot
-import com.HindiProviders.StreamPlay.Companion.hdmovies4uAPI
-//import com.HindiProviders.StreamPlay.Companion.hdmovies4uAPI
-import com.HindiProviders.StreamPlay.Companion.malsyncAPI
-import com.HindiProviders.StreamPlay.Companion.tvMoviesAPI
+import com.Phisher98.DumpUtils.queryApi
+import com.Phisher98.StreamPlay.Companion.anilistAPI
+import com.Phisher98.StreamPlay.Companion.crunchyrollAPI
+import com.Phisher98.StreamPlay.Companion.filmxyAPI
+import com.Phisher98.StreamPlay.Companion.gdbot
+import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
+//import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
+import com.Phisher98.StreamPlay.Companion.malsyncAPI
+import com.Phisher98.StreamPlay.Companion.tvMoviesAPI
+import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -27,7 +29,6 @@ import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.ByteString.Companion.decodeBase64
 import org.jsoup.nodes.Document
 import java.math.BigInteger
 import java.net.*
@@ -104,8 +105,7 @@ fun Document.getMirrorServer(server: Int): String {
 
 suspend fun extractMirrorUHD(url: String, ref: String): String? {
     var baseDoc = app.get(fixUrl(url, ref)).document
-    Log.d("TEst Mirror",baseDoc.toString())
-    Log.d("TEst Mirror",baseDoc.toString())
+
     var downLink = baseDoc.getMirrorLink()
     run lit@{
         (1..2).forEach {
@@ -194,14 +194,25 @@ suspend fun extractBackupUHD(url: String): String? {
 }
 
 @Suppress("NAME_SHADOWING")
-suspend fun extractResumeUHD(url: String): String? {
+suspend fun extractResumeUHD(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         val url = it.selectFirst("a.btn.btn-success")?.attr("href").toString()
         return url
     }
 }
 
-suspend fun extractPixeldrainUHD(url: String): String? {
+suspend fun extractCFUHD(url: String): MutableList<String> {
+    val CFlinks= mutableListOf<String>()
+    app.get("https://driveleech.org$url?type=1").document.let {
+        CFlinks+=it.select("div.mb-4 a").attr("href")
+    }
+    app.get("https://driveleech.org$url?type=2").document.let {
+        CFlinks+=it.select("div.mb-4 a").attr("href")
+    }
+    return CFlinks
+}
+
+suspend fun extractPixeldrainUHD(url: String): String {
     app.get("https://driveleech.org$url").document.let {
         return it.selectFirst("a.btn.btn-outline-info:contains(pixel)")?.attr("href").toString()
     }
@@ -401,6 +412,59 @@ suspend fun extractCovyn(url: String?): Pair<String?, String?>? {
         ?.text()
 
     return Pair(videoLink, size)
+}
+
+//EmbedSu
+fun simpleDecodeProcess(mEncrypt: String): String? {
+    // Define base64Decode() as a private function inside simpleDecodeProcess()
+    @TargetApi(Build.VERSION_CODES.O)
+    fun base64Decode(input: String): ByteArray {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            java.util.Base64.getDecoder().decode(input)
+        } else {
+            TODO("VERSION.SDK_INT < O")
+        }
+    }
+
+    return try {
+        // Step 1: Decode from Base64 using base64Decode()
+        val firstDecode = String(base64Decode(mEncrypt))  // Decode and convert ByteArray to String
+
+        // Step 2: Reverse each part of the decoded string after splitting by "."
+        val reversed = firstDecode.split(".").map { it.reversed() }.joinToString("")
+
+        // Step 3: Reverse the entire string and decode it again
+        val finalDecoded = String(base64Decode(reversed.reversed()))
+
+        finalDecoded
+    } catch (e: Exception) {
+        e.printStackTrace()  // Handle any decoding errors
+        null
+    }
+}
+
+fun EmbedSuitemparseJson(jsonString: String): List<EmbedsuItem> {
+    // Create a Gson instance
+    val gson = Gson()
+
+    // Parse the JSON string into a list of Item objects
+    return gson.fromJson(jsonString, Array<EmbedsuItem>::class.java).toList()
+}
+
+fun encodeQuery(query: String): String {
+    return URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+}
+
+fun fixUrlEncoding(url: String): String {
+    // Extract query parameters from the URL (everything after the "?")
+    val baseUrl = url.substringBefore("?")
+    val query = url.substringAfter("?")
+
+    // Encode the query string
+    val encodedQuery = URLEncoder.encode(query, "UTF-8")
+
+    // Ensure special characters in the query string are handled correctly (e.g., %20 for spaces, %26 for &)
+    return "$baseUrl?$encodedQuery"
 }
 
 suspend fun getDirectGdrive(url: String): String {
@@ -661,11 +725,6 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-suspend fun bypasstopoviesunblocked(url: String): String {
-    val driveLink = bypassHrefli(url) ?:""
-    return driveLink
-}
-
 suspend fun getTvMoviesServer(url: String, season: Int?, episode: Int?): Pair<String, String?>? {
 
     val req = app.get(url)
@@ -902,16 +961,15 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
         "type" to "ANIME",
         "season" to season?.uppercase(),
         "seasonYear" to year,
-        "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV")
+        "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
     ).filterValues { value -> value != null && value.toString().isNotEmpty() }
-
     val data = mapOf(
         "query" to query,
         "variables" to variables
     ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
-
     val res = app.post(anilistAPI, requestBody = data)
         .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
+    Log.d("Phisher", res?.idMal.toString())
     return AniIds(res?.id, res?.idMal)
 
 }
@@ -945,6 +1003,50 @@ suspend fun loadCustomTagExtractor(
                     ExtractorLinkType.M3U8 -> link.quality
                     else -> quality ?: link.quality
                 },
+                link.type,
+                link.headers,
+                link.extractorData
+            )
+        )
+    }
+}
+
+fun loadNameExtractor(
+    name: String? = null,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+    quality: Int,
+) {
+        callback.invoke(
+            ExtractorLink(
+                name ?: "",
+                name ?: "",
+                url,
+                referer ?: "",
+                quality,
+                if (url.contains("m3u8"))ExtractorLinkType.M3U8 else INFER_TYPE,
+            )
+        )
+}
+
+suspend fun loadSourceNameExtractor(
+    source: String,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+    quality: Int? = null,
+) {
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        callback.invoke(
+            ExtractorLink(
+                "$source[${link.source}]",
+                "$source[${link.source}]",
+                link.url,
+                link.referer,
+                link.quality,
                 link.type,
                 link.headers,
                 link.extractorData
@@ -1090,12 +1192,62 @@ fun String.xorDecrypt(key: String): String {
     return sb.toString()
 }
 
+//
+
+fun VidsrcCCEncode(input: String): String {
+    val key = "78B22E5E862BC"
+    val encrypted = rc4(key, input)
+    val base64Encoded = base64Encode(base64Encode(encrypted))
+    return urlEncode(base64Encoded)
+}
+
+private fun rc4(key: String, input: String): String {
+    val s = IntArray(256) { it }
+    val k = IntArray(256)
+
+    for (i in key.indices) {
+        k[i] = key[i].code
+    }
+
+    var j = 0
+    for (i in 0 until 256) {
+        j = (j + s[i] + k[i % key.length]) % 256
+        s[i] = s[j].also { s[j] = s[i] }
+    }
+
+    val result = StringBuilder()
+    var i = 0
+    j = 0
+    for (char in input) {
+        i = (i + 1) % 256
+        j = (j + s[i]) % 256
+        s[i] = s[j].also { s[j] = s[i] }
+        val k = s[(s[i] + s[j]) % 256]
+        result.append((char.code xor k).toChar())
+    }
+    return result.toString()
+}
+
+private fun base64Encode(input: String): String {
+    return Base64.encodeToString(input.toByteArray(), Base64.NO_WRAP) // Android's Base64 encoding
+}
+
+private fun urlEncode(input: String): String {
+    return URLEncoder.encode(input, Charsets.UTF_8.name())
+}
+
+fun encodeURIComponent(value: String): String {
+    return URLEncoder.encode(value, Charsets.UTF_8.name())
+}
+
+//
+
 fun vidsrctoDecrypt(text: String): String {
     val parse = Base64.decode(text.toByteArray(), Base64.URL_SAFE)
     val cipher = Cipher.getInstance("RC4")
     cipher.init(
         Cipher.DECRYPT_MODE,
-        SecretKeySpec("8z5Ag5wgagfsOuhz".toByteArray(), "RC4"),
+        SecretKeySpec("78B22E5E862BC".toByteArray(), "RC4"),
         cipher.parameters
     )
     return decode(cipher.doFinal(parse).toString(Charsets.UTF_8))
@@ -1151,41 +1303,10 @@ fun getIndexSize(str: String?): String? {
     return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
 }
 
-suspend fun ExtractMdrive(url: String): MutableList<String> {
+suspend fun extractMdrive(url: String): List<String> {
     val doc= app.get(url).document
-    val linklist= mutableListOf(String())
-    doc.select("h3 > a").forEach {
-        Log.d("Phisher1 it",it.toString())
-        val link=it.attr("href").replace("lol","day")
-        if (!link.contains("gdtot"))
-        {
-            Log.d("Phisher1 it",link.toString())
-            val mainpage= link
-            Log.d("Phisher1 it",mainpage.toString())
-            if (!mainpage.contains("https://"))
-            {
-                val newlink= "https://hubcloud.club$mainpage"
-                linklist.add(newlink)
-            }
-            else
-            {
-                linklist.add(mainpage)
-            }
-        }
-    }
-    return linklist
-}
-
-suspend fun ExtractMdriveSeries(url: String): MutableList<String> {
-            val linklist= mutableListOf(String())
-            val mainpage = app.get(url).document.selectFirst("a.btn.btn-primary")?.attr("href").toString()
-            if (!mainpage.contains("https://")) {
-                val newlink = "https://hubcloud.club$mainpage"
-                linklist.add(newlink)
-            } else {
-                linklist.add(mainpage)
-            }
-    return linklist
+    val href=doc.select("h5 > a, h3 > a,article p:nth-child(7) a").map { it.attr("href") }
+    return href
 }
 
 
@@ -1672,7 +1793,6 @@ suspend fun extracttopmoviestag2(url:String): String? {
 suspend fun decodesmashy(url:String): String {
     val doc= app.get(url, referer = "https://smashystream.xyz/").document
     val string=doc.toString().substringAfter("#2").substringBefore("\"").replace(Regex("//.{16}"), "").let { DecodeBase64(it) }
-    Log.d("Phisher Em",string)
     return string
 }
 
@@ -1681,4 +1801,37 @@ fun DecodeBase64(encodedString: String): String {
     val decodedBytes = Base64.decode(encodedString, Base64.DEFAULT)
     // Convert the byte array into a string
     return String(decodedBytes)
+}
+
+//Catflix
+
+fun CathexToBinary(hex: String): String {
+    val binary = StringBuilder()
+    for (i in hex.indices step 2) {
+        val hexPair = hex.substring(i, i + 2)
+        val charValue = hexPair.toInt(16).toChar()
+        binary.append(charValue)
+    }
+    return binary.toString()
+}
+
+fun CatxorDecrypt(binary: String, key: String): String {
+    val decrypted = StringBuilder()
+    val keyLength = key.length
+
+    for (i in binary.indices) {
+        val decryptedChar = binary[i].code xor key[i % keyLength].code
+        decrypted.append(decryptedChar.toChar())
+    }
+
+    return decrypted.toString()
+}
+
+fun CatdecryptHexWithKey(hex: String, key: String): String {
+    val binary = CathexToBinary(hex)
+    return CatxorDecrypt(binary, key)
+}
+
+fun getfullURL(url: String,mainUrl:String): String {
+    return "$mainUrl$url"
 }

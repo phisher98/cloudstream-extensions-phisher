@@ -2,6 +2,7 @@ package com.Toonstream
 
 //import android.util.Log
 import android.annotation.SuppressLint
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -142,6 +143,7 @@ class Toonstream : MainAPI() {
                 }
             }
             else
+                Log.d("Phisher",truelink)
             loadExtractor(truelink,subtitleCallback, callback)
         }
         return true

@@ -27,6 +27,12 @@ class Tooniboy : MainAPI() {
         "category/sony-yay" to "Sony Yay",
     )
 
+
+    companion object
+    {
+        val header= mapOf("Cookie" to com.Phisher98.BuildConfig.TooniboyCookie)
+    }
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/page/$page/").document
         val home     = document.select("#site article").mapNotNull { it.toSearchResult() }
@@ -44,7 +50,7 @@ class Tooniboy : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("figure > img").attr("src").toString())
+        val posterUrl = fixUrlNull(this.select("figure > img").attr("data-src").toString())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -81,15 +87,15 @@ class Tooniboy : MainAPI() {
 
     @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
-        val title= document.selectFirst("#site header h2.title")?.text()?.trim().toString().replace("Watch Online","")
+        val document = app.get(url, headers = header).document
+        val title= document.selectFirst("h2.title")?.text()?.trim().toString().replace("Watch Online","")
         val poster = document.select("figure.im.brd1 img").attr("src")
-        val description = document.selectFirst("#site article p")?.text()?.trim()
-        val tags = document.select("div.rght.fg1 > a").map { it.text() }
+        val description = document.selectFirst("div.entry p")?.text()?.trim()
+        val tags = document.select("div.rght.fg1").map { it.text() }
         val tvtag=if (url.contains("series")) TvType.TvSeries else TvType.Movie
         return if (tvtag == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
-                document.select("div.serie-sidebar article").forEach {
+                document.select("div.serie-sidebar article").map {
                         val href = it.selectFirst("a")?.attr("href") ?:""
                         val posterUrl=it.selectFirst("figure > img")?.attr("data-src")
                         val episode = it.select("header h2").text().toString()
@@ -111,7 +117,7 @@ class Tooniboy : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data, headers=header).document
         document.select("div.op-srv.brd1").forEach {
             val encodedlink=it.attr("data-src")
             val serverurl=base64ToUtf8(encodedlink) ?:""

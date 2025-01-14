@@ -1,13 +1,13 @@
 // use an integer for version numbers
-version = 19
+version = 133
 
 
 cloudstream {
     language = "hi"
     // All of these properties are optional, you can safely remove them
 
-     description = "Includes: Hdmovie2"
-     authors = listOf("HindiProvider")
+     description = "Includes: Hdmovie2,hdmovie22"
+     authors = listOf("Phisher98,hexated")
 
     /**
      * Status int as the following:
@@ -22,5 +22,5 @@ cloudstream {
         "Movie",
     )
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=movierulzhd.green&sz=%size%"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/Movierulzhd/faviconV2.png"
 }

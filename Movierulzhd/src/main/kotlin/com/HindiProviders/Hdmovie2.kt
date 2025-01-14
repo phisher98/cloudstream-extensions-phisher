@@ -1,23 +1,30 @@
-package com.HindiProviders
+package com.Phisher98
 
 //import android.util.Log
+import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.apmap
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import okhttp3.Headers
+import okhttp3.Interceptor
+import okhttp3.Response
 import org.jsoup.Jsoup
+import java.time.Year
 
-class Hdmovie2 : Movierulzhd() {
+open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.fm"
+    override var mainUrl = "https://hdmovie2.ninja"
     override var name = "Hdmovie2"
+    @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
         "trending" to "Trending",
+        "release/${Year.now().value}" to "Latest",
         "movies" to "Movies",
         "genre/hindi-webseries" to "Hindi Web Series",
         "genre/netflix" to "Netflix",
@@ -53,7 +60,7 @@ class Hdmovie2 : Movierulzhd() {
             val type = if (data.contains("/movies/")) "movie" else "tv"
             document.select("ul#playeroptionsul > li").map {
                 it.attr("data-nume")
-            }.apmap { nume ->
+            }.amap { nume ->
                 val source = app.post(
                     url = "$directUrl/wp-admin/admin-ajax.php", data = mapOf(
                         "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
@@ -76,7 +83,7 @@ class Hdmovie2 : Movierulzhd() {
                         subtitleCallback,
                         callback
                     )
-                    else -> return@apmap
+                    else -> ""
                 }
             }
         }
@@ -97,4 +104,5 @@ class Hdmovie2 : Movierulzhd() {
         @JsonProperty("embed_url") val embed_url: String,
         @JsonProperty("type") val type: String?,
     )
+
 }

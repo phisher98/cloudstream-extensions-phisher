@@ -9,11 +9,13 @@ class BollyzoneProvider : DesicinemasProvider() {
     )
     override var lang = "hi"
 
-    override var mainUrl = "https://www.bollyzone.tv"
+    override var mainUrl = "https://www.bollyzone.to"
     override var name = "Bollyzone"
 
     override val mainPage = mainPageOf(
-        "$mainUrl/series/" to "Series"
+        "$mainUrl/series/" to "Series",
+        "$mainUrl/director_tv/star-plus" to "Star Plus",
+        "$mainUrl/director_tv/zee-tv" to "Zee TV"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

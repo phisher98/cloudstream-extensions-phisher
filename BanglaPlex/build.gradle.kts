@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 5
+version = 8
 
 
 cloudstream {
@@ -7,7 +7,7 @@ cloudstream {
 
     description = "BanglaPlex"
     language    = "hi"
-    authors = listOf("HindiProviders")
+    authors = listOf("Phisher98")
 
     /**
     * Status int as the following:
@@ -19,9 +19,9 @@ cloudstream {
     status = 1 // will be 3 if unspecified
 
     // List of video source types. Users are able to filter for extensions in a given category.
-    // You can find a list of avaliable types here:
+    // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie")
 
-    iconUrl="https://banglaplex.art/uploads/system_logo/logo_619305d7d016f.png"
+    iconUrl="https://banglaplex.lol/uploads/system_logo/logo_619305d7d016f.png"
 }

@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 //import android.util.Log
 import com.lagradost.cloudstream3.*
@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class Bolly2Tolly : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://www.bolly2tolly.live"
+    override var mainUrl = "https://www.bolly2tolly.gold"
     override var name = "Bolly2Tolly"
     override val hasMainPage = true
     override var lang = "hi"
@@ -88,7 +88,7 @@ class Bolly2Tolly : MainAPI() { // all providers must be an instance of MainAPI
 
         return if (tvType == TvType.TvSeries) {
             val episodes = document.select("tbody tr").mapNotNull {
-                val href = fixUrl(it.select(".MvTbTtl a").attr("href") ?: return null)
+                val href = fixUrl(it.select(".MvTbTtl a").attr("href"))
                 val name = it.select(".MvTbTtl a").text().trim()
                 val thumbs = "https:" + it.select("img").attr("src")
                 val season = document.select(".AA-Season").attr("data-tab").toInt()

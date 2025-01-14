@@ -1,9 +1,9 @@
-version = 18
+version = 34
 
 cloudstream {
     language = "hi"
     authors = listOf("Hindi Provider")
-    description = "Anime Dekho"
+    description = "Includes AnimeDekho,OnePace(DUB,SUB) and HindiSubAnime"
     /**
      * Status int as the following:
      * 0: Down

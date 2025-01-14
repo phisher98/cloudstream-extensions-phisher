@@ -1,164 +1,86 @@
 package com.KimCartoon
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
-import com.lagradost.cloudstream3.extractors.Vidguardto
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 class KimCartoon : MainAPI() {
-    override var mainUrl = "https://kimcartoon.li"
+    override var mainUrl = "https://kimcartoon.si"
     override var name = "KimCartoon"
-    override val supportedTypes = setOf(
-        TvType.Cartoon
-    )
-
+    override val supportedTypes = setOf(TvType.Cartoon)
     override var lang = "en"
-
-    // enable this when your provider has a main page
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        Pair(mainUrl, "Latest update"),
-        Pair("tab-top-day", "Top day"),
-        Pair("tab-top-week", "Top week"),
-        Pair("tab-top-month", "Top month"),
-        Pair("tab-newest-series", "New cartoons")
+        "Status/Ongoing/MostPopular" to "MostPopular Cartoons",
+        "Status/Ongoing/LatestUpdate" to "Latest Updated Cartoons",
+        "Status/Ongoing" to "Ongoing Cartoons",
+        "Status/Ongoing/Newest" to "Newest Cartoons",
     )
 
-    private data class NewSearchItem (
-        val name: String,
-        val url: String,
-        val type: TvType,
-        val posterurl: String?
-    )
 
-    private fun checkSelector(selector: Set<String>): String? {
-        selector.forEach { check ->
-            if (check.isNotEmpty()) {
-                return check
-            }
-        }
+    private fun Element.toSearchResult(): SearchResponse? {
+        val title = selectFirst("a h2")?.text() ?: return null
+        val href = fixUrlNull(selectFirst("div a")?.attr("href")) ?: return null
+        val posterUrl = fixUrlNull(selectFirst("a img")?.attr("src"))
 
-        return null
-    }
-
-    private fun Element.toSearchResponse(name: String) : SearchResponse {
-        val items = mutableListOf<NewSearchItem>()
-        val lname = name.lowercase()
-        if (lname.contains("latest update")) {
-            val url = fixUrlNull(this.attr("href")) ?: ""
-            val poster = checkSelector(
-                setOf(
-                    this.select("> img").attr("src"),
-                    this.select("> img").attr("srctemp")
-                )
-            )
-            val posterUrl = fixUrlNull(poster)
-            val title = if (lname.contains("search")) this.selectFirst("span.title")?.text() ?: ""
-            else this.selectFirst("div.item-title")?.ownText() ?: ""
-
-            items.add(NewSearchItem(title, url, TvType.Cartoon, posterUrl))
-
-        }
-        else {
-            val url = fixUrlNull(this.select("a").attr("href")) ?: ""
-            val poster = checkSelector(
-                setOf(
-                    this.select("a img").attr("src"),
-                    this.select("a img").attr("srctemp")
-                )
-            )
-            val posterUrl = fixUrlNull(poster)
-            val title = this.select("a:nth-child(2) span.title").text()
-
-            items.add(NewSearchItem(title, url, TvType.Cartoon, posterUrl))
-        }
-
-        return newAnimeSearchResponse(
-            name = items[0].name,
-            url = items[0].url,
-            type = items[0].type
-        ) {
-            this.posterUrl = items[0].posterurl
+        return newMovieSearchResponse(title, LoadUrl(href, posterUrl).toJson()) {
+            this.posterUrl = posterUrl
         }
     }
+
+
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val list = mutableListOf<HomePageList>()
-        if (page <= 1) {
-            try {
-                if (request.name == "Latest update") {
-                    val html = app.get(request.data).document
-                    val soup = html.select("div#container")
-                    val items = soup.select("div.bigBarContainer div.items > div > a").mapNotNull { item ->
-                        item.toSearchResponse("Latest update")
-                    }
-
-                    list.add(HomePageList(request.name, items))
-                } else {
-                    val html = app.get(mainUrl).document
-                    val divName = request.data
-                    val soup = html.select("div#container")
-                    val items = soup.select("div#subcontent div#$divName > div").mapNotNull { item ->
-                        item.toSearchResponse(divName)
-                    }
-
-                    list.add(HomePageList(request.name, items))
-                }
-
-            } catch (e: Exception) {
-                throw Error("$e")
-            }
+        val document = app.get("$mainUrl/${request.data}?page=$page").document
+        val items = document.select("div.list-cartoon div.item").mapNotNull {
+            it.toSearchResult()
         }
 
-        return newHomePageResponse(
-            list = list,
-            hasNext = false
-        )
+        return newHomePageResponse(request.name, items)
     }
 
-    override suspend fun load(url: String): LoadResponse {
-        try {
-            val html = app.get(url).document
-            val soup = html.select("div#container")
-            val title = soup.select("div.barContent > div:nth-child(2) > a").text()
-            val tags = soup.select("div.barContent > div:nth-child(2) > p:nth-child(8) > a")
-                .mapNotNull { it.text() }
-            val episodes = soup.select("div.barContent table.listing > tbody td a").reversed().mapNotNull {
-                Episode(
-                    data = fixUrl(it.attr("href")),
-                    name = it.text()
-                )
-            }
-            val plot = checkSelector(
-                setOf(
-                    soup.select("div.barContent > div:nth-child(2) > p:nth-child(6)").text()
-                )
-            )
-            val poster = checkSelector(
-                setOf(
-                    soup.select("div.barContent > div > img").attr("src")
-                )
-            )
-            val posterUrl = fixUrlNull(poster)
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchResponse = mutableListOf<SearchResponse>()
 
-            return newTvSeriesLoadResponse(
-                name = title,
-                url = url,
-                type = TvType.Cartoon,
-                episodes
-            ) {
-                this.plot = plot.toString()
-                this.posterUrl = posterUrl
-                this.tags = tags
+        for (i in 1..3) {
+            val document = app.get("${mainUrl}/Search/?s=$query&page=$i").document
+
+            val results = document.select("div.list-cartoon div.item").mapNotNull { it.toSearchResult() }
+
+            if (!searchResponse.containsAll(results)) {
+                searchResponse.addAll(results)
+            } else {
+                break
             }
 
-        } catch (e: Exception) {
-            throw Error("$e")
+            if (results.isEmpty()) break
         }
+
+        return searchResponse
+    }
+
+
+    override suspend fun load(url: String): LoadResponse? {
+        val data = tryParseJson<LoadUrl>(url) ?: return null
+        val document = app.get(data.url).document
+        val title       = document.selectFirst("div.barContent.full h1 a")?.text()?.trim() ?: "No Title"
+        val poster = fixUrl(data.posterUrl!!)
+        val description = document.select("div.summary p").text().trim()
+        val genre = document.select("div.barContent.full p a").map { it.text() }
+            val episodes=document.select("div.listing div.full.item_ep").map { info->
+                val href = info.select("h3 a").attr("href") ?:""
+                val episode = info.select("h3 a").text()
+                Episode(href, episode)
+            }
+            return newTvSeriesLoadResponse(title, data.url, TvType.Anime, episodes.reversed()) {
+                this.posterUrl = poster
+                this.plot = description
+                this.tags=genre
+            }
     }
 
     override suspend fun loadLinks(
@@ -167,41 +89,31 @@ class KimCartoon : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        val html = app.get(data).document
-        val soup = html.select("div#container")
-        val servers = soup.select("div.barContent select#selectServer option").mapNotNull {
-            fixUrlNull(it.attr("value"))
-        }
-        servers.amap {
-                val link = app.get(it).document.select("div#container div.barContent iframe#my_video_1")
-                    .attr("src")
-                loadExtractor(link,subtitleCallback, callback)
+        val id=data.substringAfter("id=")
+        app.get(data).document.select("#info_player #selectServer option").map { s ->
+            val server=s.attr("sv")
+            val href=app.post("${mainUrl}/ajax/anime/load_episodes_v2?s=$server", data = mapOf("episode_id" to id)).document.selectFirst("iframe")?.attr("src")?.replace("\\\"","")  ?:""
+            val response= app.get(href, referer = mainUrl).toString()
+            val m3u8 =Regex("file\":\"(.*?m3u8.*?)\"").find(response)?.groupValues?.getOrNull(1)
+            if (m3u8!=null)
+            {
+                callback.invoke(
+                    ExtractorLink(
+                        "$name ${server.uppercase()}",
+                        "$name ${server.uppercase()}",
+                        m3u8,
+                        "$mainUrl/",
+                        Qualities.P1080.value,
+                        INFER_TYPE
+                    )
+                )
+            }
         }
         return true
     }
-
-    override suspend fun search(query: String): List<SearchResponse> {
-        val html = app.post("$mainUrl/Search/Cartoon", data = mapOf("keyword" to query)).document
-        return html.select("div#container div.barContent div.list-cartoon > div.item > a")
-            .mapNotNull { item ->
-            item.toSearchResponse("latest update|search")
-        }
-    }
 }
 
-class Bembed : Vidguardto() {
-    override var name = "Bebed"
-    override var mainUrl = "https://bembed.net"
-}
-
-
-class Listeamed : Vidguardto() {
-    override var name = "Listeamed"
-    override var mainUrl = "https://listeamed.net"
-}
-
-class streamwish : StreamWishExtractor() {
-    override var name = "StreamWish"
-    override var mainUrl = "https://streamwish.to"
-}
+data class LoadUrl(
+    val url: String,
+    val posterUrl: String?
+)

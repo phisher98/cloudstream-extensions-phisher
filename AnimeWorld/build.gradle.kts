@@ -1,4 +1,4 @@
-version = 5
+version = 9
 
 
 cloudstream {
@@ -6,7 +6,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Anime/Cartoon in Hindi"
-    authors = listOf("HindiProviders, RowdyRushya")
+    authors = listOf("Phisher98, RowdyRushya")
 
     /**
      * Status int as the following:
@@ -17,7 +17,6 @@ cloudstream {
      * */
     status = 1 // will be 3 if unspecified
     tvTypes = listOf(
-        "TvSeries",
         "Movie",
         "Anime",
         "Cartoon"

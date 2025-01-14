@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.*
@@ -15,7 +15,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.random.Random
 
 class ShowFlixProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://showflix.xyz"
+    override var mainUrl = "https://showflix.site"
     override var name = "ShowFlix"
     override val hasMainPage = true
     override var lang = "hi"
@@ -45,7 +45,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         @JsonProperty("createdAt"         ) var createdAt         : String?,
         @JsonProperty("updatedAt"         ) var updatedAt         : String?,
         @JsonProperty("Note"              ) var Note              : String?,
-        @JsonProperty("streamhide"        ) var streamhide        : Seasons = Seasons(),
+        @JsonProperty("streamhide"        ) var streamhide        : Seasons? = Seasons(),
         @JsonProperty("streamwish"        ) var streamwish        : Seasons = Seasons(),
         @JsonProperty("hdlink"            ) var hdlink            : String?,
         @JsonProperty("streamruby"        ) var streamruby        : Seasons = Seasons(),
@@ -354,7 +354,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 TVit.seriesCategory.toString().contains("Malayalam") -> """\\QMalayalam\\E"""
                 else -> ""
             }
-            // Log.d("request", recQuery)
+            Log.d("Phisher query", recQuery)
             val recommendations = queryTVApi(
                 Random.nextInt(0, 100),
                 recQuery
@@ -371,22 +371,20 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             // Log.d("TVResult", recommendations.toString())
 
             val seasonDataList = listOf(TVit.Seasons.Seasons,
-                TVit.streamwish.Seasons, TVit.filelions.Seasons, TVit.streamruby.Seasons, TVit.streamhide.Seasons)
+                TVit.streamwish.Seasons, TVit.filelions.Seasons, TVit.streamruby.Seasons, TVit.streamhide?.Seasons)
             val combinedSeasons = mutableMapOf<String, MutableMap<Int, List<String?>>>()
             val episodes = TVit.Seasons.Seasons.map { (seasonName, episodes) ->
                 val seasonNum = Regex("\\d+").find(seasonName)?.value?.toInt()
-
                 episodes.mapIndexed { epNum, data ->
-
                     Episode(
                         data = data.toString(),
                         season = seasonNum,
                         episode = epNum,
                         posterUrl = backdrop,
                     )
-                }
+                }.filter { it.episode != 0 }
             }.flatten()
-
+            Log.d("Phisher TVResult", "${TVit.objectId} $episodes")
             return newTvSeriesLoadResponse(
                 title,
                 "$mainUrl/series/${TVit.objectId}",
@@ -399,9 +397,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 //this.tags = tags
                 this.rating = rating
                 this.backgroundPosterUrl = backdrop
-                //addActors(actors)
                 this.recommendations = recommendations
-                //addTrailer(trailer)
             }
         }
     }
@@ -413,10 +409,10 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher url",data)
         if (data.contains("sharedisk")) {
             val sources = mutableListOf<String>()
             val m = parseJson<MovieLinks>(data)
-            Log.d("Test555",m.toString())
             val filelions = "https://filelions.to/v/" + m.filelions
             val streamwish = "https://streamwish.to/e/" + m.streamwish
             val streamruby = "https://streamruby.com/" + m.streamruby
@@ -424,9 +420,20 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             sources.add(streamwish)
             sources.add(streamruby)
             //sources.add(streamsb)
-            Log.d("Phisher",sources.toString())
             sources.forEach { url->
              loadExtractor(url,subtitleCallback,callback)
+            }
+        }
+        else
+        {
+            if (data.contains("streamwish"))
+            {
+                val href=data.replace("streamwish","embedwish")
+                loadExtractor(href,subtitleCallback, callback)
+            }
+            else
+            {
+                loadExtractor(data,subtitleCallback, callback)
             }
         }
         return true

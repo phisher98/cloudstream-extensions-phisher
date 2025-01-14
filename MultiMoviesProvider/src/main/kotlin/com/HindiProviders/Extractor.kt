@@ -1,11 +1,23 @@
-package com.HindiProviders
+package com.Phisher98
 
+import com.google.gson.JsonElement
+import com.lagradost.api.Log
+import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.serialization.json.Json
+import java.net.URI
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.loadExtractor
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -42,7 +54,7 @@ class CdnwishCom : StreamWishExtractor() {
     override val mainUrl = "https://cdnwish.com"
     override val requiresReferer = true
 }
-/*
+
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
@@ -51,16 +63,103 @@ class GDMirrorbot : ExtractorApi() {
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit) {
-        Log.d("Phisher url","$url")
-        app.get(url).document.select("ul#videoLinks li").map {
-            val link=it.attr("data-link")
-            Log.d("Phisher url","$link")
-            loadExtractor(link,"https://multimovies.sbs",subtitleCallback, callback)
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val host = getBaseUrl(app.get(url).url)
+        val embed = url.substringAfter("embed/")
+        val data = mapOf("sid" to embed)
+        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").toString()
+        val regex = """"(\w+)":"([^"]+)"""".toRegex()
+        val mresultMap = regex.findAll(mresult).associate {
+            it.groupValues[1] to it.groupValues[2]
+        }
+
+        val matchingResults = mutableListOf<Pair<String, String>>()
+        siteUrls.keySet().forEach { key ->
+            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
+                val value1 = siteUrls.get(key).asString
+                Log.d("Phisher",value1)
+                val value2 = mresultMap[key].orEmpty()
+                matchingResults.add(Pair(value1, value2))
+            }
+        }
+
+        matchingResults.amap { (siteUrl, result) ->
+            val href = "$siteUrl$result"
+            android.util.Log.d("Phisher", "Generated Href: $href")
+            loadExtractor(href, subtitleCallback, callback)
+        }
+
+    }
+
+    fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
     }
 }
- */
+
+
+class FilemoonV2 : ExtractorApi() {
+    override var name = "Filemoon"
+    override var mainUrl = "https://movierulz2025.bar"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
+        val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val m3u8= JsUnpacker(res).unpack()?.let { unPacked ->
+            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+        }
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8 ?:"",
+                url,
+                Qualities.P1080.value,
+                type = ExtractorLinkType.M3U8,
+            )
+        )
+    }
+}
+
+class Streamcasthub : ExtractorApi() {
+    override var name = "Streamcasthub"
+    override var mainUrl = "https://multimovies.streamcasthub.store"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val id=url.substringAfterLast("/#")
+        val m3u8= "https://ss1.rackcloudservice.cyou/ic/$id/master.txt"
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8,
+                url,
+                Qualities.Unknown.value,
+                type = ExtractorLinkType.M3U8,
+            )
+        )
+    }
+}
+
+
+
 class Strwishcom : StreamWishExtractor() {
     override val name = "Strwish"
     override val mainUrl = "https://strwish.com"

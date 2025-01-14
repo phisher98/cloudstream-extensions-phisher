@@ -1,8 +1,308 @@
-package com.HindiProviders
+package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+//Vidsrccc
+
+data class Vidsrccc(
+    val id: String,
+    val vrf: String,
+    val timestamp: String,
+)
+
+data class Vidsrcccservers(
+    val data: List<VidsrcccDaum>,
+    val success: Boolean,
+)
+
+data class VidsrcccDaum(
+    val name: String,
+    val hash: String,
+)
+
+data class Vidsrcccm3u8(
+    val data: VidsrcccData,
+    val success: Boolean,
+)
+
+data class VidsrcccData(
+    val source: String,
+    val subtitles: List<VidsrcccSubtitle>,
+)
+
+data class VidsrcccSubtitle(
+    val kind: String,
+    val file: String,
+    val label: String,
+    val default: Boolean?,
+)
+
+
+//FlixHQAPI
+
+data class SearchFlixAPI(
+    val items: List<Item>,
+    val pagination: Pagination,
+)
+
+data class Item(
+    val id: String,
+    val title: String,
+    val poster: String,
+    val stats: Stats,
+)
+
+data class Stats(
+    val seasons: String?,
+    val rating: String,
+    val year: String?,
+    val duration: String?,
+)
+
+data class Pagination(
+    val current: Long,
+    val total: Long,
+)
+
+//SeasonResponse
+
+data class SeasonResponseFlixHQAPI(
+    val seasons: List<SeasonFlixHQAPI>,
+)
+
+data class SeasonFlixHQAPI(
+    val id: String,
+    val number: Long,
+)
+
+//EpisodeResponseFlixHQAPI
+
+
+data class EpisodeResponseFlixHQAPI(
+    val episodes: List<EpisodeFlixHQAPI>,
+)
+
+data class EpisodeFlixHQAPI(
+    val id: String,
+    val number: Long,
+    val title: String,
+)
+
+
+data class MoviedetailsResponse(
+    val title: String,
+    val description: String,
+    val type: String,
+    val stats: List<Stat>,
+    val related: List<Related>,
+    val episodeId: String,
+)
+
+data class Stat(
+    val name: String,
+    val value: Any?,
+)
+
+data class Related(
+    val id: String,
+    val title: String,
+    val poster: String,
+    val stats: MovieStats,
+)
+
+data class MovieStats(
+    val year: String?,
+    val duration: String?,
+    val rating: String,
+    val seasons: String?,
+)
+
+
+data class FlixServers(
+    val servers: List<Server>,
+)
+
+data class Server(
+    val id: String,
+    val name: String,
+)
+
+
+data class FlixHQsources(
+    val sources: List<FlixSource>,
+    val tracks: List<Track>,
+    val t: Long,
+    val server: Long,
+)
+
+data class FlixSource(
+    val file: String,
+    val type: String,
+)
+
+data class Track(
+    val file: String,
+    val label: String,
+    val kind: String,
+    val default: Boolean?,
+)
+
+
+data class Seasonresponse(
+    val seasons: List<Seasondata>,
+)
+
+data class Seasondata(
+    val id: String,
+    val number: Long,
+)
+
+
+data class Episoderesponse(
+    val episodes: List<Episodedata>,
+)
+
+data class Episodedata(
+    val id: String,
+    val number: Long,
+    val title: String,
+)
+
+
+//HinAuto
+
+typealias HinAuto = List<HinAutoRoot2>;
+
+data class HinAutoRoot2(
+    val file: String,
+    val label: String,
+    val type: String,
+)
+
+
+//Anichi
+
+data class Anichi(
+    val data: AnichiData,
+)
+
+data class AnichiData(
+    val shows: AnichiShows,
+)
+
+data class AnichiShows(
+    val pageInfo: PageInfo,
+    val edges: List<Edge>,
+)
+
+data class PageInfo(
+    val total: Long,
+)
+
+data class Edge(
+    @JsonProperty("_id")
+    val id: String,
+    val name: String,
+    val englishName: String,
+    val nativeName: String,
+)
+
+data class LastEpisodeInfo(
+    val sub: Sub,
+    val dub: Dub,
+)
+
+data class Sub(
+    val episodeString: String,
+)
+
+data class Dub(
+    val episodeString: String,
+)
+
+data class LastEpisodeDate(
+    val sub: Sub2,
+    val dub: Dub2,
+    val raw: Map<String, Any>,
+)
+
+data class Sub2(
+    val hour: Long,
+    val minute: Long,
+    val year: Long,
+    val month: Long,
+    val date: Long,
+)
+
+data class Dub2(
+    val hour: Long,
+    val minute: Long,
+    val year: Long,
+    val month: Long,
+    val date: Long,
+)
+
+data class Season(
+    val quarter: String,
+    val year: Long,
+)
+
+data class AiredStart(
+    val year: Long,
+    val month: Long,
+    val date: Long,
+    val hour: Long,
+    val minute: Long,
+)
+
+data class AvailableEpisodes(
+    val sub: Long,
+    val dub: Long,
+    val raw: Long,
+)
+
+//Anichi Ep Parser
+
+data class AnichiEP(
+    val data: AnichiEPData,
+)
+
+data class AnichiEPData(
+    val episode: AnichiEpisode,
+)
+
+data class AnichiEpisode(
+    val sourceUrls: List<SourceUrl>,
+)
+
+data class SourceUrl(
+    val sourceUrl: String,
+    val sourceName: String,
+    val downloads: AnichiDownloads?,
+)
+
+data class AnichiDownloads(
+    val sourceName: String,
+    val downloadUrl: String,
+)
+
+//Anichi Download URL Parser
+
+data class AnichiDownload(
+    val links: List<AnichiDownloadLink>,
+)
+
+data class AnichiDownloadLink(
+    val link: String,
+    val hls: Boolean,
+    val mp4: Boolean?,
+    val resolutionStr: String,
+    val priority: Long,
+    val src: String?,
+)
+
+
 
 data class CrunchyrollAccessToken(
     val accessToken: String? = null,
@@ -92,31 +392,26 @@ data class Link(
     val type: String,
     val url: String
 )
-//
 
-//Dramacool
+//Flicky
 
-
-data class StreamwishD(
-    val server: String,
-    val link: String,
-    val active: Long,
+data class FlickyStream(
+    val language: String,
+    val url: String,
 )
 
-data class Backup(
-    val server: String,
-    val link: String,
-)
+//WyZIESUBAPI
 
-
-data class KissasianAPISourceresponse(
-    @JsonProperty("type") val type: String,
-    @JsonProperty("link") val link: String? = null,
+data class WyZIESUB(
+    val id: String,
+    val url: String,
+    val flagUrl: String,
+    val format: String,
+    val display: String,
+    val language: String,
+    val media: String,
+    val isHearingImpaired: Boolean,
 )
-data class KissasianAPIResponse(
-        @JsonProperty("status") val status: Boolean,
-        @JsonProperty("html") val html: String
-    )
 
 data class UHDBackupUrl(
     @JsonProperty("url") val url: String? = null,
@@ -196,6 +491,31 @@ data class WatchsomuchSubResponses(
     @JsonProperty("subtitles") val subtitles: ArrayList<WatchsomuchSubtitles>? = arrayListOf(),
 )
 
+data class WHVXSubtitle(
+    val url: String,
+    val languageName: String,
+)
+
+//Catflix Juicey
+
+data class CatflixJuicy(
+    val action: String,
+    val success: Boolean,
+    val msg: String,
+    val juice: String,
+    val juicePost: String,
+)
+
+data class CatflixJuicydata(
+    val action: String,
+    val success: Boolean,
+    val msg: String,
+    val data: String,
+    val juice: String,
+)
+
+
+
 data class IndexMedia(
     @JsonProperty("id") val id: String? = null,
     @JsonProperty("driveId") val driveId: String? = null,
@@ -221,6 +541,7 @@ data class JikanExternal(
 data class JikanData(
     @JsonProperty("title") val title: String? = null,
     @JsonProperty("external") val external: ArrayList<JikanExternal>? = arrayListOf(),
+    val season: String,
 )
 
 data class JikanResponse(
@@ -317,10 +638,104 @@ data class CrunchyrollSourcesResponses(
         @JsonProperty("vo_adaptive_hls") val vo_adaptive_hls: HashMap<String, HashMap<String, String>>? = hashMapOf(),
     )
 }
+//Hianime
+
+
+data class Hianime(
+    val success: Boolean,
+    val results: HianimeResults,
+)
+
+data class HianimeResults(
+    val streamingLink: HianimeStreamingLink,
+    val servers: List<HianimeServer>,
+)
+
+data class HianimeStreamingLink(
+    val id: String,
+    val type: String,
+    val link: HianimeLink,
+    val tracks: List<HianimeTrack>,
+    val intro: Intro,
+    val outro: Outro,
+    val server: String,
+)
+
+data class HianimeLink(
+    val file: String,
+    val type: String,
+)
+
+data class HianimeTrack(
+    val file: String,
+    val label: String?,
+    val kind: String,
+    val default: Boolean?,
+)
+
+data class Intro(
+    val start: Long,
+    val end: Long,
+)
+
+data class Outro(
+    val start: Long,
+    val end: Long,
+)
+
+data class HianimeServer(
+    val type: String,
+    @JsonProperty("data_id")
+    val dataId: String,
+    @JsonProperty("server_id")
+    val serverId: String,
+    val serverName: String,
+)
+
+
+//anime animepahe parser
+
+data class animepahe(
+    val total: Long,
+    @JsonProperty("per_page")
+    val perPage: Long,
+    @JsonProperty("current_page")
+    val currentPage: Long,
+    @JsonProperty("last_page")
+    val lastPage: Long,
+    @JsonProperty("next_page_url")
+    val nextPageUrl: Any?,
+    @JsonProperty("prev_page_url")
+    val prevPageUrl: Any?,
+    val from: Long,
+    val to: Long,
+    val data: List<Daum>,
+)
+
+data class Daum(
+    val id: Long,
+    @JsonProperty("anime_id")
+    val animeId: Long,
+    val episode: Int,
+    val episode2: Long,
+    val edition: String,
+    val title: String,
+    val snapshot: String,
+    val disc: String,
+    val audio: String,
+    val duration: String,
+    val session: String,
+    val filler: Long,
+    @JsonProperty("created_at")
+    val createdAt: String,
+)
+
 
 data class MALSyncSites(
+    @JsonProperty("Gogoanime") val Gogoanime: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
     @JsonProperty("Zoro") val zoro: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
     @JsonProperty("9anime") val nineAnime: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
+    @JsonProperty("animepahe") val animepahe: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
 )
 
 data class MALSyncResponses(
@@ -343,6 +758,56 @@ data class GokuData(
 data class GokuServer(
     @JsonProperty("data") val data: GokuData? = GokuData(),
 )
+//Tom
+
+data class TomResponse (
+    var videoSource    : String,
+    var subtitles      : ArrayList<TomSubtitles> = arrayListOf(),
+)
+
+data class TomSubtitles (
+    var file    : String,
+    var label   : String
+)
+
+//Gojo
+
+data class Gojoresponseshashh(
+    val sources: List<shashhSource>,
+    val thumbs: String,
+    val skips: Any?,
+)
+
+data class shashhSource(
+    val quality: String,
+    val url: String,
+)
+
+data class Gojoresponsevibe(
+    val sources: List<vibeSource>,
+    val skips: Any?,
+)
+
+data class vibeSource(
+    val url: String,
+    val quality: String,
+    val type: String,
+)
+
+
+//MiruroanimeGogo
+
+data class MiruroanimeGogo(
+    val sources: List<MiruroSource>,
+    val download: String,
+)
+
+data class MiruroSource(
+    val url: String,
+    val isM3U8: Boolean,
+    val quality: String,
+)
+
 
 data class AllMovielandEpisodeFolder(
     @JsonProperty("title") val title: String? = null,
@@ -515,6 +980,31 @@ data class AoneroomResponse(
     }
 }
 
+//
+
+data class Aoneroomep(
+    val code: Long,
+    val message: String,
+    val data: AoneroomepData,
+)
+
+data class AoneroomepData(
+    val streams: List<AoneroomepStream>,
+    val title: String,
+)
+
+data class AoneroomepStream(
+    val format: String,
+    val id: String,
+    val url: String,
+    val resolutions: String,
+    val size: String,
+    val duration: Long,
+    val codecName: String,
+    val signCookie: String,
+)
+
+
 data class CinemaTvResponse(
     @JsonProperty("streams") val streams: HashMap<String, String>? = null,
     @JsonProperty("subtitles") val subtitles: ArrayList<Subtitles>? = arrayListOf(),
@@ -534,6 +1024,349 @@ data class NepuSearch(
         @JsonProperty("type") val type: String? = null,
     )
 }
-data class Bollyflixparse(
+
+data class ConsumetSources(
+    val sources: List<ConsumetSource>?,
+    val subtitles: List<ConsumetSubtitle>?,
+    val download: String?
+)
+
+data class ConsumetSource(
+    val url: String,
+    val isM3u8: Boolean
+)
+
+data class ConsumetSubtitle(
+    val url: String,
+    val lang: String
+)
+
+data class Vidbinge(
+    val token: String,
+)
+
+data class Vidbingesources(
+    val embedId: String,
     val url: String,
 )
+
+data class Vidbingeplaylist(
+    val stream: List<Streamplaylist>,
+)
+
+//SharmaFlix
+
+// Top-level list alias
+typealias SharmaFlixRoot = List<SharmaFlixRoot2>
+
+// Root2 data class
+data class SharmaFlixRoot2(
+    val id: String,
+    @JsonProperty("TMDB_ID")
+    val tmdbId: String,
+    val name: String,
+    val description: String,
+    val genres: String,
+    @JsonProperty("release_date")
+    val releaseDate: String,
+    val runtime: String,
+    val poster: String,
+    val banner: String,
+    @JsonProperty("youtube_trailer")
+    val youtubeTrailer: String,
+    val downloadable: String,
+    val type: String,
+    val status: String,
+    @JsonProperty("content_type")
+    val contentType: String,
+    @JsonProperty("custom_tag")
+    val customTag: CustomTag
+)
+
+// CustomTag data class
+data class CustomTag(
+    val id: String,
+    @JsonProperty("custom_tags_id")
+    val customTagsId: String,
+    @JsonProperty("content_id")
+    val contentId: String,
+    @JsonProperty("content_type")
+    val contentType: String,
+    @JsonProperty("custom_tags_name")
+    val customTagsName: String,
+    @JsonProperty("background_color")
+    val backgroundColor: String,
+    @JsonProperty("text_color")
+    val textColor: String
+)
+
+typealias SharmaFlixLinks = List<SharmaFlixLink>
+
+data class SharmaFlixLink(
+    val id: String,
+    val name: String,
+    val size: String,
+    val quality: String,
+    @JsonProperty("link_order")
+    val linkOrder: String,
+    @JsonProperty("movie_id")
+    val movieId: String,
+    val url: String,
+    val type: String,
+    val status: String,
+    @JsonProperty("skip_available")
+    val skipAvailable: String,
+    @JsonProperty("intro_start")
+    val introStart: String?,
+    @JsonProperty("intro_end")
+    val introEnd: String?,
+    @JsonProperty("end_credits_marker")
+    val endCreditsMarker: String,
+    @JsonProperty("link_type")
+    val linkType: String,
+    @JsonProperty("drm_uuid")
+    val drmUuid: String?,
+    @JsonProperty("drm_license_uri")
+    val drmLicenseUri: String?
+)
+
+
+data class Streamplaylist(
+    val id: String,
+    val type: String,
+    val playlist: String,
+    val flags: List<String>,
+    val captions: List<Captionplaylist>,
+)
+
+data class Captionplaylist(
+    val id: String,
+    val url: String,
+    val type: String,
+    val hasCorsRestrictions: Boolean,
+    val language: String,
+)
+
+//
+
+data class Embedsu(
+    val title: String,
+    val server: String,
+    val ref: String,
+    val xid: String,
+    val uwuId: String,
+    val episodeId: String,
+    val hash: String,
+    val poster: String,
+)
+
+data class EmbedsuItem(val name: String, val hash: String)
+
+
+data class Embedsuhref(
+    val source: String,
+    val subtitles: List<EmbedsuhrefSubtitle>,
+    val skips: List<Any?>,
+    val format: String,
+)
+
+data class EmbedsuhrefSubtitle(
+    val label: String,
+    val file: String,
+)
+
+
+
+
+data class SubtitlesAPI(
+    val subtitles: List<Subtitle>,
+    val cacheMaxAge: Long,
+)
+
+data class Subtitle(
+    val id: String,
+    val url: String,
+    @JsonProperty("SubEncoding")
+    val subEncoding: String,
+    val lang: String,
+    val m: String,
+    val g: String,
+)
+
+// Theyallsayflix
+
+data class Theyallsayflix(
+    val error: Boolean,
+    val title: String,
+    @JsonProperty("poster_url")
+    val posterUrl: String,
+    @JsonProperty("backdrop_url")
+    val backdropUrl: String,
+    @JsonProperty("release_date")
+    val releaseDate: String,
+    val rating: Double,
+    val desc: String,
+    @JsonProperty("original_lang")
+    val originalLang: String,
+    val minutes: Long,
+    val status: String,
+    @JsonProperty("status_desc")
+    val statusDesc: String,
+    val streams: List<TheyallsayflixStream>,
+    val subtitles: List<TheyallsayflixSubtitle>,
+)
+
+data class TheyallsayflixStream(
+    val quality: Long,
+    @JsonProperty("file_size")
+    val fileSize: Long,
+    @JsonProperty("file_name")
+    val fileName: String,
+    @JsonProperty("play_url")
+    val playUrl: String,
+)
+
+data class TheyallsayflixSubtitle(
+    @JsonProperty("lang_code")
+    val langCode: String,
+    @JsonProperty("lang_name")
+    val langName: String,
+    @JsonProperty("sub_name")
+    val subName: String,
+    @JsonProperty("is_hearing_impaired")
+    val isHearingImpaired: Boolean,
+    @JsonProperty("download_link")
+    val downloadLink: String,
+)
+
+//AnimeNexus
+
+data class AnimeNexus(
+    val data: List<AnimeNexusDaum>,
+    val links: AnimeNexusLinks,
+    val meta: AnimeNexusMeta,
+)
+
+data class AnimeNexusDaum(
+    val poster: AnimeNexusPoster,
+    val broadcast: Any?,
+    val description: String,
+    @JsonProperty("end_date")
+    val endDate: String,
+    val genres: List<AnimeNexusGenre>,
+    @JsonProperty("episode_count")
+    val episodeCount: Long,
+    val id: String,
+    val name: String,
+    @JsonProperty("name_alt")
+    val nameAlt: String,
+    @JsonProperty("parental_rating")
+    val parentalRating: String,
+    @JsonProperty("release_date")
+    val releaseDate: String,
+    val slug: String,
+    val status: String,
+    val type: String,
+)
+
+data class AnimeNexusPoster(
+    val original: String,
+    val medium: String,
+    val small: String,
+)
+
+data class AnimeNexusGenre(
+    val name: String,
+    val id: String,
+    val code: String,
+)
+
+data class AnimeNexusLinks(
+    val first: String,
+    val last: String,
+    val prev: Any?,
+    val next: Any?,
+)
+
+data class AnimeNexusMeta(
+    @JsonProperty("current_page")
+    val currentPage: Long,
+    val from: Long,
+    @JsonProperty("last_page")
+    val lastPage: Long,
+    @JsonProperty("per_page")
+    val perPage: Long,
+    val to: Long,
+    val total: Long,
+)
+
+
+data class AnimeNexusEp(
+    val data: List<AnimeNexusEpDaum>,
+    val links: AnimeNexusEpLinks,
+    val meta: AnimeNexusEpMeta,
+)
+
+data class AnimeNexusEpDaum(
+    val id: String,
+    val title: Any?,
+    val slug: String,
+    val number: Int,
+    val duration: Long,
+    val image: AnimeNexusEpImage,
+    @JsonProperty("video_meta")
+    val videoMeta: AnimeNexusEpVideoMeta,
+    @JsonProperty("is_filler")
+    val isFiller: Long,
+    @JsonProperty("is_recap")
+    val isRecap: Long,
+)
+
+data class AnimeNexusEpImage(
+    val id: String,
+    @JsonProperty("disk_name")
+    val diskName: String,
+    @JsonProperty("file_size")
+    val fileSize: Long,
+    @JsonProperty("content_type")
+    val contentType: String,
+    val title: Any?,
+    val description: Any?,
+    val field: String,
+    @JsonProperty("sort_order")
+    val sortOrder: Long,
+    @JsonProperty("created_at")
+    val createdAt: String,
+    @JsonProperty("updated_at")
+    val updatedAt: String,
+    val extension: String,
+    val path: String,
+)
+
+data class AnimeNexusEpVideoMeta(
+    @JsonProperty("subtitle_languages")
+    val subtitleLanguages: List<String>,
+    @JsonProperty("audio_languages")
+    val audioLanguages: List<String>,
+    val status: String,
+)
+
+data class AnimeNexusEpLinks(
+    val first: String,
+    val last: String,
+    val prev: Any?,
+    val next: Any?,
+)
+
+data class AnimeNexusEpMeta(
+    @JsonProperty("current_page")
+    val currentPage: Long,
+    val from: Long,
+    @JsonProperty("last_page")
+    val lastPage: Long,
+    @JsonProperty("per_page")
+    val perPage: Long,
+    val to: Long,
+    val total: Long,
+)
+

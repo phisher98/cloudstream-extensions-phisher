@@ -15,7 +15,7 @@ cloudstream {
 
     description = "Telugu Movies and TV Series"
     language = "te"
-    authors = listOf("HindiProviders")
+    authors = listOf("Phisher98")
 
     /**
     * Status int as the following:

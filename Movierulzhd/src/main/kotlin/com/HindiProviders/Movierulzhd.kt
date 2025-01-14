@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -13,7 +13,7 @@ import java.net.URI
 
 open class Movierulzhd : MainAPI() {
 
-    override var mainUrl = "https://1movierulzhd.fun"
+    override var mainUrl = "https://1movierulzhd.my"
     var directUrl = ""
     override var name = "Movierulzhd"
     override val hasMainPage = true
@@ -40,7 +40,7 @@ open class Movierulzhd : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url).document
+        val document = app.get(url, timeout = 20L).document
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -72,6 +72,7 @@ open class Movierulzhd : MainAPI() {
         val title = this.selectFirst("h3 > a")?.text() ?: return null
         val href = getProperLink(fixUrl(this.selectFirst("h3 > a")!!.attr("href")))
         var posterUrl = this.select("div.poster img").last()?.getImageAttr()
+       
         if (posterUrl != null) {
             if (posterUrl.contains(".gif")) {
                 posterUrl = fixUrlNull(this.select("div.poster img").attr("data-wpfc-original-src"))
@@ -104,12 +105,13 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        var posterUrl = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
-        if (posterUrl.isNullOrEmpty()) {
-            if (url.contains("movierulzhd")) {
-                posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
+        val background = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
+        val posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
+        /*if (backgroud.isNullOrEmpty()) {
+            if (background.contains("movierulzhd")) {
+                background = fixUrlNull(document.select("div.poster img").attr("src"))
             }
-        }
+        }*/
         val tags = document.select("div.sgeneros > a").map { it.text() }
         val year = Regex(",\\s?(\\d+)").find(
             document.select("span.date").text().trim()
@@ -162,19 +164,34 @@ open class Movierulzhd : MainAPI() {
                     )
                 }
             } else {
-                document.select("ul#playeroptionsul > li").map {
-                    val name = it.selectFirst("span.title")?.text()
-                    val type = it.attr("data-type")
-                    val post = it.attr("data-post")
-                    val nume = it.attr("data-nume")
-                    Episode(
-                        LinkData(name, type, post, nume).toJson(),
-                        name
-                    )
-                }
+            val check = document.select("ul#playeroptionsul > li").toString().contains("Super")
+				if (check) {
+				    document.select("ul#playeroptionsul > li").drop(1).map {
+				        val name = it.selectFirst("span.title")?.text()
+				        val type = it.attr("data-type")
+				        val post = it.attr("data-post")
+				        val nume = it.attr("data-nume")
+				        Episode(
+				            LinkData(name, type, post, nume).toJson(),
+				            name
+				        )
+				    }
+				} else {
+				    document.select("ul#playeroptionsul > li").map {
+				        val name = it.selectFirst("span.title")?.text()
+				        val type = it.attr("data-type")
+				        val post = it.attr("data-post")
+				        val nume = it.attr("data-nume")
+				        Episode(
+				            LinkData(name, type, post, nume).toJson(),
+				            name
+				        )
+				    }
+				}
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
+                this.backgroundPosterUrl= background
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -187,6 +204,7 @@ open class Movierulzhd : MainAPI() {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.year = year
+                this.backgroundPosterUrl= background
                 this.plot = description
                 this.tags = tags
                 this.rating = rating

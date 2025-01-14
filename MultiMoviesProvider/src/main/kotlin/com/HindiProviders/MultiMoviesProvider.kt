@@ -1,7 +1,8 @@
-package com.HindiProviders
+package com.Phisher98
 
 //import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
@@ -11,7 +12,7 @@ import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.sbs"
+    override var mainUrl = "https://multimovies.today"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -282,10 +283,8 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     !link.contains("youtube") -> {
                         if(link.contains("gdmirrorbot.nl"))
                             {
-                            app.get(link).document.select("ul#videoLinks li").map {
-                            @Suppress("NAME_SHADOWING") val link=it.attr("data-link")
+                            Log.d("Phisher",link)
                             loadExtractor(link,referer = mainUrl,subtitleCallback, callback)
-                            }
                         }
                         else
                             if (link.contains("deaddrive.xyz"))

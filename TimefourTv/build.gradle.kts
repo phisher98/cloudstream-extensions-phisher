@@ -16,10 +16,10 @@ cloudstream {
      * 2: Slow
      * 3: Beta only
      * */
-    status = 1 // will be 3 if unspecified
+    status = 0 // will be 3 if unspecified
     tvTypes = listOf(
         "Live",
     )
 
-    iconUrl = "https://cdn.discordapp.com/attachments/1109266606292488297/1193088870212976640/Untitled.jpg?ex=65ec0b19&is=65d99619&hm=0eaf0f1926b6eb787b80c2eb3000ec9d77e2e706ab0601cad053ad8f677b8cc8&"
+    iconUrl = "https://www.google.com/s2/favicons?domain=dlhd.so&sz=%size%"
 }

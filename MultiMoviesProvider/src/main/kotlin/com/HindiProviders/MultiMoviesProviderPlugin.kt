@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -22,11 +22,13 @@ class MultiMoviesProviderPlugin: Plugin() {
         registerExtractorAPI(Animezia())
         registerExtractorAPI(server2())
         registerExtractorAPI(MultimoviesAIO())
-        //registerExtractorAPI(GDMirrorbot())
+        registerExtractorAPI(GDMirrorbot())
         //registerExtractorAPI(VidhideExtractor())
         registerExtractorAPI(Asnwish())
         registerExtractorAPI(CdnwishCom())
         registerExtractorAPI(Strwishcom())
         registerExtractorAPI(VidHidePro6())
+        registerExtractorAPI(FilemoonV2())
+        registerExtractorAPI(Streamcasthub())
         }
 }

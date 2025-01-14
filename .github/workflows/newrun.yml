@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           path: "src"
 
       - name: Checkout builds
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           ref: "builds"
           path: "builds"
@@ -32,14 +32,14 @@ jobs:
       - name: Clean old builds
         run: rm $GITHUB_WORKSPACE/builds/*.cs3 || true
 
-      - name: Setup JDK 11
-        uses: actions/setup-java@v4
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4.6.0
         with:
           distribution: "adopt"
-          java-version: 11
+          java-version: 17
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v3.2.2
 
       - name: Access Secrets
         env:
@@ -61,14 +61,25 @@ jobs:
           SUPERSTREAM_THIRD_API: ${{ secrets.SUPERSTREAM_THIRD_API }}
           SUPERSTREAM_FOURTH_API: ${{ secrets.SUPERSTREAM_FOURTH_API }}
           MOVIE_API: ${{ secrets.MOVIE_API }}
-          MultiMovies_API: ${{ secrets.MultiMovies_API }}
-          MovieDrive_API: ${{ secrets.MovieDrive_API }}
           AsianDrama_API: ${{ secrets.AsianDrama_API }}
-          INDIANTV_TATA_API: ${{ secrets.INDIANTV_TATA_API }}
-          INDIANTV_Discovery_API: ${{ secrets.INDIANTV_Discovery_API }}
-          INDIANTV_Airtel_API: ${{ secrets.INDIANTV_Airtel_API }}
-          INDIANTV_JIO_API: ${{ secrets.INDIANTV_JIO_API }}
-          INDIANTV_Voot_API: ${{ secrets.INDIANTV_Voot_API }}
+          FanCode_API: ${{ secrets.FanCode_API }}
+          Whvx_API: ${{ secrets.Whvx_API }}
+          JapanIPTV: ${{ secrets.JapanIPTV }}
+          SonyIPTV: ${{ secrets.SonyIPTV }}
+          PirateIPTV: ${{ secrets.PirateIPTV }}
+          Su_sports: ${{ secrets.Su_sports }}
+          CatflixAPI: ${{ secrets.CatflixAPI }}
+          TooniboyCookie: ${{ secrets.TooniboyCookie }}
+          ConsumetAPI: ${{ secrets.ConsumetAPI }}
+          FlixHQAPI: ${{ secrets.FlixHQAPI }}
+          WhvxAPI: ${{ secrets.WhvxAPI }}
+          WhvxT: ${{ secrets.WhvxT }}
+          SharmaflixApikey: ${{ secrets.SharmaflixApikey }}
+          SharmaflixApi: ${{ secrets.SharmaflixApi }}
+          Theyallsayflix: ${{ secrets.Theyallsayflix }}
+          GojoAPI: ${{ secrets.GojoAPI }}
+          HianimeAPI: ${{ secrets.HianimeAPI }}
+          Vidsrccc: ${{ secrets.Vidsrccc }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -89,15 +100,24 @@ jobs:
           echo SUPERSTREAM_THIRD_API=$SUPERSTREAM_THIRD_API >> local.properties
           echo SUPERSTREAM_FOURTH_API=$SUPERSTREAM_FOURTH_API >> local.properties
           echo MOVIE_API=$MOVIE_API >> local.properties
-          echo MultiMovies_API=$MultiMovies_API >> local.properties
-          echo MovieDrive_API=$MovieDrive_API >> local.properties
           echo AsianDrama_API=$AsianDrama_API >> local.properties
-          echo INDIANTV_TATA_API=$INDIANTV_TATA_API >> local.properties
-          echo INDIANTV_Discovery_API=$INDIANTV_Discovery_API >> local.properties
-          echo INDIANTV_Airtel_API=$INDIANTV_Airtel_API >> local.properties
-          echo INDIANTV_JIO_API=$INDIANTV_JIO_API >> local.properties
-          echo INDIANTV_Voot_API=$INDIANTV_Voot_API >> local.properties
-
+          echo FanCode_API=$FanCode_API >> local.properties
+          echo Whvx_API=$Whvx_API >> local.properties
+          echo Su_sports=$Su_sports >> local.properties
+          echo PirateIPTV=$PirateIPTV >> local.properties
+          echo SonyIPTV=$SonyIPTV >> local.properties
+          echo JapanIPTV=$JapanIPTV >> local.properties
+          echo CatflixAPI=$CatflixAPI >> local.properties
+          echo TooniboyCookie=$TooniboyCookie >> local.properties
+          echo ConsumetAPI=$ConsumetAPI >> local.properties
+          echo FlixHQAPI=$FlixHQAPI >> local.properties
+          echo WhvxAPI=$WhvxAPI >> local.properties
+          echo WhvxT=$WhvxT >> local.properties
+          echo SharmaflixApi=$SharmaflixApi >> local.properties
+          echo SharmaflixApikey=$SharmaflixApikey >> local.properties
+          echo GojoAPI=$GojoAPI >> local.properties
+          echo HianimeAPI=$HianimeAPI >> local.properties
+          echo Vidsrccc=$Vidsrccc >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

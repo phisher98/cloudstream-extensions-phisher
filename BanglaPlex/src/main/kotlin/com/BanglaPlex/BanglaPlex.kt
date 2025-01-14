@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class Banglaplex : MainAPI() {
-    override var mainUrl              = "https://banglaplex.art"
+    override var mainUrl              = "https://banglaplex.lol"
     override var name                 = "Banglaplex"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -91,7 +91,7 @@ class Banglaplex : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString().substringBefore(" | Watch Online")
-        val poster      = document.select("#info > div > div > img").attr("src").toString()
+        val poster      = document.select("#info > div > div > img").attr("src")
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
 
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -103,8 +103,30 @@ class Banglaplex : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val iframeurl=document.select("div.video-embed-container > iframe").attr("src")
-        val link=iframeurl.replace("https://vectorx.top","https://bestx.stream")
-        loadExtractor(link,subtitleCallback, callback)
+        val DownloadURLs=document.select("#download a ").attr("href")
+        if (DownloadURLs.isNotEmpty())
+        {
+            val tokenres= app.get(DownloadURLs).document
+            val csrf_token=tokenres.selectFirst("form input")?.attr("name")
+            val csrf_token_vakue=tokenres.selectFirst("form input")?.attr("name")
+            app.post(DownloadURLs, data = mapOf("$csrf_token" to "$csrf_token_vakue")).document.select("div.row > div.col-sm-8 > a").amap {
+                val href=it.attr("href")
+                Log.d("Phisher",href)
+                if (href.contains("gdflix"))
+                {
+                    GDFlix().getUrl(href)
+                }
+                else
+                loadExtractor(href,subtitleCallback,callback)
+            }
+        }
+        else
+        if (iframeurl.contains("boosterx.stream"))
+        {
+            Chillx().getUrl(iframeurl,mainUrl)
+        }
+        else
+        loadExtractor(iframeurl,mainUrl,subtitleCallback, callback)
         return true
     }
 }

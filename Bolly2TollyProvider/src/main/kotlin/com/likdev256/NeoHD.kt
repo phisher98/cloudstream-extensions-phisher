@@ -1,4 +1,4 @@
-package com.HindiProviders
+package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log

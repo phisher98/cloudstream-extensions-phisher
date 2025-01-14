@@ -1,22 +1,12 @@
-import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
-version = 18
-
-
-android {
-    defaultConfig {
-        val properties = Properties()
-        properties.load(project.rootProject.file("local.properties").inputStream())
-        buildConfigField("String", "MultiMovies_API", "\"${properties.getProperty("MultiMovies_API")}\"")
-    }
-}
+version =26
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Indian Multi-language HD Provider"
     language = "hi"
-    authors = listOf("HindiProviders")
+    authors = listOf("Phisher98")
 
     /**
     * Status int as the following:
