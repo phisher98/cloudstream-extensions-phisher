@@ -1,7 +1,5 @@
 package com.TorraStream
 
-//import android.util.Log
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
@@ -18,14 +16,14 @@ class TorraStream() : TraktProvider() {
 
     companion object
     {
-        val ServerURL="https://torrentio.strem.fun"
+        const val TorrentioAPI="https://torrentio.strem.fun"
+        const val TorrentgalaxyAPI="https://torrentgalaxy.to"
+        const val TorrentmovieAPI="https://torrentmovie.net"
+        const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
+
     }
 
     private val traktApiUrl = base64Decode("aHR0cHM6Ly9hcGl6LnRyYWt0LnR2")
-
-    protected fun Any.toStringData(): String {
-        return mapper.writeValueAsString(this)
-    }
 
     override val mainPage =
         mainPageOf(
@@ -57,71 +55,33 @@ class TorraStream() : TraktProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
+        val title=AppUtils.parseJson<LinkData>(data).title
         val season =AppUtils.parseJson<LinkData>(data).season
         val episode =AppUtils.parseJson<LinkData>(data).episode
         val id =AppUtils.parseJson<LinkData>(data).imdbId
-        val torrentioAPI:String
-        if (mainUrl.contains(","))
+        argamap(
             {
-                val splitdata = mainUrl.split(",")
-                val service = splitdata[0]
-                val key= splitdata[1]
-                torrentioAPI="$ServerURL/$service=$key"
-                val url = if(season == null) {
-                    "$torrentioAPI/stream/movie/$id.json"
-                }
-                else {
-                    "$torrentioAPI/stream/series/$id:$season:$episode.json"
-                }
-                Log.d("Phisher",url)
-                val headers = mapOf(
-                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                    "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-                )
-                val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<DebianRoot>()
-                res?.streams?.forEach { stream ->
-                    callback.invoke(
-                        ExtractorLink(
-                            "Torrentio",
-                            stream.title,
-                            stream.url,
-                            "",
-                            getIndexQuality(stream.name),
-                            INFER_TYPE,
-                        )
-                    )
-                }
-            }
-            else
+                invokeTorrastream(
+                    TorrentioAPI,
+                    id,
+                    season,
+                    episode,
+                    callback
+            )
+            },
             {
-                torrentioAPI=ServerURL
-                val url = if(season == null) {
-                    "$torrentioAPI/stream/movie/$id.json"
-                }
-                else {
-                    "$torrentioAPI/stream/series/$id:$season:$episode.json"
-                }
-                Log.d("Phisher",url)
-                val headers = mapOf(
-                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                    "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+                invokeTorrentgalaxy(
+                    id,
+                    callback
                 )
-                val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
-                res?.streams?.forEach { stream ->
-                    val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
-                    callback.invoke(
-                        ExtractorLink(
-                            "Torrentio",
-                            stream.title ?: stream.name ?: "",
-                            magnet,
-                            "",
-                            getIndexQuality(stream.name),
-                            INFER_TYPE,
-                        )
-                    )
-                }
+            },
+            {
+                invokeTorrentmovie(
+                    title,
+                    callback
+                )
             }
+        )
         val SubAPI="https://opensubtitles-v3.strem.io"
         val url = if(season == null) {
             "$SubAPI/subtitles/movie/$id.json"
@@ -133,11 +93,9 @@ class TorraStream() : TraktProvider() {
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         )
-        Log.d("Phisher", url)
         app.get(url, headers = headers, timeout = 100L).parsedSafe<Subtitles>()?.subtitles?.amap {
             val lan=it.lang
             val suburl=it.url
-            Log.d("Phisher","$lan $suburl")
             subtitleCallback.invoke(
                 SubtitleFile(
                     lan.capitalize(),  // Use label for the name
@@ -147,19 +105,19 @@ class TorraStream() : TraktProvider() {
         }
         return true
     }
+}
 
-    suspend fun generateMagnetLink(url: String, hash: String?): String {
-        // Fetch the content of the file from the provided URL
-        val response = app.get(url)
-        val trackerList = response.text.trim().split("\n") // Assuming each tracker is on a new line
+suspend fun generateMagnetLink(url: String, hash: String?): String {
+    // Fetch the content of the file from the provided URL
+    val response = app.get(url)
+    val trackerList = response.text.trim().split("\n") // Assuming each tracker is on a new line
 
-        // Build the magnet link
-        return buildString {
-            append("magnet:?xt=urn:btih:$hash")
-            trackerList.forEach { tracker ->
-                if (tracker.isNotBlank()) {
-                    append("&tr=").append(tracker.trim())
-                }
+    // Build the magnet link
+    return buildString {
+        append("magnet:?xt=urn:btih:$hash")
+        trackerList.forEach { tracker ->
+            if (tracker.isNotBlank()) {
+                append("&tr=").append(tracker.trim())
             }
         }
     }
