@@ -56,6 +56,7 @@ open class Anisaga : MainAPI() {
             document.select("div#archive-content article,div.items.full article").mapNotNull {
                 it.toSearchResult()
             }
+        Log.d("Phisher",home.toString())
         return newHomePageResponse(request.name, home)
     }
 

@@ -30,6 +30,7 @@ import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+
 import java.util.Locale
 
 val session = Session(Requests().baseClient)
@@ -2661,22 +2662,107 @@ suspend fun invokeVidsrcsu(
         callback: (ExtractorLink) -> Unit
     ) {
         val url = if (season == null) {
-            "$FlickyAPI/Server-main.php?id=$id"
+            "$FlickyAPI/embed/movie/?id=$id"
         } else {
-            "$FlickyAPI/Server-main.php?id=$id&season=${season}&episode=${episode}"
+            "$FlickyAPI/embed/tv/?id=$id/${season}/${episode}"
         }
-        val res= app.get(url, referer = FlickyAPI, timeout = 50000).toString().substringAfter("const streams = ").substringBefore(";")
-        val gson = Gson()
-        val listType = object : TypeToken<List<FlickyStream>>() {}.type
-        val streams: List<FlickyStream> = gson.fromJson(res, listType)
-        streams.map {
-            val href=it.url
-            val name=it.language
-            M3u8Helper.generateM3u8(
-                "Flicky $name",
-                href,
-                "",
-            ).forEach(callback)
+        Log.d("phisher",url)
+        val regex = Regex("serverUrl\\s*=\\s*\"(.*?)\"")
+        val res= app.get(url, referer = FlickyAPI, timeout = 50000).toString()
+        val matches = regex.findAll(res).map { it.groupValues[1] }.toList()
+        Log.d("phisher", matches.toString())
+        matches.amap {
+            //Servers
+            val iframe=if (season==null)
+            {
+                it
+            }
+            else
+            {
+                "$it?id=$id&season=$season&episode=$episode"
+            }
+            if (iframe.contains("/nexa"))
+            {
+                val response=app.get(iframe, referer = FlickyAPI).toString()
+                val m3u8=Regex("file:\\s*\"(.*)\"").find(response)?.groupValues?.get(1) ?:return@amap
+                callback.invoke(
+                    ExtractorLink(
+                        "Flicky Nexa", "Flicky Nexa", m3u8, FlickyAPI, Qualities.P1080.value,isM3u8 = true
+                    )
+                )
+            }
+            else if (iframe.contains("/multi"))
+            {
+                val json= app.get(iframe, referer = FlickyAPI, timeout = 50000).toString().substringAfter("const streams = ").substringBefore(";")
+                val gson = Gson()
+                val type = object : TypeToken<List<FlickyStream>>() {}.type
+                val streams: List<FlickyStream> = gson.fromJson(json, type)
+                streams.map { vid->
+                    val href=vid.url
+                    val name=vid.language
+                    callback.invoke(
+                        ExtractorLink(
+                            "Flicky Multi $name", "Flicky Multi $name", href, FlickyAPI, Qualities.P1080.value,isM3u8 = true
+                        )
+                    )
+                }
+            }
+            else if (iframe.contains("/shukra"))
+            {
+                val json= app.get(iframe, referer = FlickyAPI, timeout = 50000).toString().substringAfter("const streams = ").substringBefore(";")
+                val gson = Gson()
+                val type = object : TypeToken<List<FlickyStream>>() {}.type
+                val streams: List<FlickyStream> = gson.fromJson(json, type)
+                streams.map { vid->
+                    val href=vid.url
+                    val name=vid.language
+                    callback.invoke(
+                        ExtractorLink(
+                            "Flicky Shukra $name", "Flicky Shukra $name", href, FlickyAPI, Qualities.P1080.value,isM3u8 = true
+                        )
+                    )
+                }
+            }
+            else if (iframe.contains("/desi"))
+            {
+                val json= app.get(iframe, referer = FlickyAPI, timeout = 50000).toString().substringAfter("const streams = ").substringBefore(";")
+                val gson = Gson()
+                val type = object : TypeToken<List<FlickyStream>>() {}.type
+                val streams: List<FlickyStream> = gson.fromJson(json, type)
+                streams.map { vid->
+                    val href=vid.url
+                    val name=vid.language
+                    callback.invoke(
+                        ExtractorLink(
+                            "Flicky Desi $name", "Flicky Desi $name", href, FlickyAPI, Qualities.P1080.value,isM3u8 = true
+                        )
+                    )
+                }
+            }
+            else if (iframe.contains("/vietflick"))
+            {
+                val m3u8=app.get(iframe, referer = FlickyAPI).toString().substringAfter("file: \"").substringBefore("\",")
+                if (m3u8.contains(""))
+                {
+                    Log.d("Error:","Not Found")
+                }
+                else
+                callback.invoke(
+                    ExtractorLink(
+                        "Flicky Vietflick (Viet Lang) $name", "Flicky Vietflick $name", m3u8, FlickyAPI, Qualities.P1080.value,isM3u8 = true
+                    )
+                )
+            }
+            else if (iframe.contains("/oyo"))
+            {
+                val m3u8=app.get(iframe, referer = FlickyAPI).toString().substringAfter("var streamLink = \"").substringBefore("\";")
+                callback.invoke(
+                    ExtractorLink(
+                        "Flicky OYO $name", "Flicky OYO $name", m3u8, FlickyAPI, Qualities.P1080.value,isM3u8 = true
+                    )
+                )
+            }
+
         }
     }
 
