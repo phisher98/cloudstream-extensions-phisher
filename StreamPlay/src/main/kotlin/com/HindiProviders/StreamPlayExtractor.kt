@@ -2532,7 +2532,24 @@ suspend fun invokeVidsrcsu(
         } else {
             "$vidsrcsu/embed/tv/$id/$season/$episode"
         }
-        val doc = app.get(url).document.toString()
+        val json= app.get(url).document.toString().substringAfter("const MultiLang = ").substringBefore(";").trim()
+        Log.d("Phisher",json)
+
+        val gson = Gson()
+        val type = object : TypeToken<List<Vidsrcsu>>() {}.type
+        val streams: List<Vidsrcsu> = gson.fromJson(json, type)
+        val objectMapper = jacksonObjectMapper()
+        val vidsrcsuList: List<Vidsrcsu> = objectMapper.readValue(json)
+
+        for (vid in vidsrcsuList) {
+            callback.invoke(
+                ExtractorLink(
+                    "VidsrcSU ${vid.language}", "VidsrcSU ${vid.language}", vid.m3u8Url, "", Qualities.P1080.value,isM3u8 = true
+                )
+            )
+        }
+
+    /*
         val regex = """Server\s*\d+',\surl:\s*'(.*?)'""".toRegex()
         val matches = regex.findAll(doc)
         for (match in matches) {
@@ -2545,6 +2562,7 @@ suspend fun invokeVidsrcsu(
                     )
                 )
         }
+     */
 }
 /*
     suspend fun invokeHdmovies4u(
