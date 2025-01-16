@@ -194,7 +194,6 @@ open class StreamPlay : TmdbProvider() {
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
-        const val BroflixVidlink="https://bombthe.irish"
         const val EmbedSu="https://embed.su"
         const val FlickyAPI="https://www.flicky.host"
         const val WyZIESUBAPI="https://sub.wyzie.ru"
@@ -842,16 +841,6 @@ open class StreamPlay : TmdbProvider() {
                     callback
                 )
     },
-            {
-
-                /*
-                if (!res.isAnime) invokeBroflixVidlink(
-                    res.id,
-                    subtitleCallback,
-                    callback
-                )
-                 */
-            },
     {
         invokeSharmaflix(
                     res.title,
@@ -1004,7 +993,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
 {
-    if (!res.isAnime) invokeMoviesdrive(
+    invokeMoviesdrive(
         res.title,
         res.season,
         res.episode,

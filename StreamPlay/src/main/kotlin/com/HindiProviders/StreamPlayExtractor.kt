@@ -2184,9 +2184,9 @@ object StreamPlayExtractor : StreamPlay() {
         val url = if (season == null) {
             "$api/?s=$imdbId"
         } else {
-            "$api/?s=$imdbId season $season"
+            "$api/?s=$title season $season"
         }
-        Log.d("Phisher url veg", "$api/?s=$imdbId")
+        Log.d("Phisher url veg", "$url")
         val domain= api.substringAfter("//").substringBefore(".")
         app.get(url, interceptor = cfInterceptor).document.select("article h3 a")
             .amap {
@@ -2224,7 +2224,6 @@ object StreamPlayExtractor : StreamPlay() {
                         } ?: emptyList()
                         val selector =
                             if (season == null) "p a:matches(V-Cloud|G-Direct)" else "h4:matches(0?$episode)"
-                        Log.d("Phisher href", href.toString())
                         if (href.isNotEmpty()) {
                             href.amap { url ->
                             if (season==null)
@@ -2245,9 +2244,8 @@ object StreamPlayExtractor : StreamPlay() {
                             }
                             else
                             {
-                                app.get(url, interceptor = wpRedisInterceptor).document.select("div.entry-content > $selector")
+                                app.get(url, interceptor = wpRedisInterceptor).document.select("div.entry-inner > $selector")
                                     .forEach { h4Element ->
-                                        Log.d("Phisher href veg", (h4Element ?: "").toString())
                                         var sibling = h4Element.nextElementSibling()
                                         while (sibling != null && sibling.tagName() != "p") {
                                             sibling = sibling.nextElementSibling()
@@ -2255,7 +2253,6 @@ object StreamPlayExtractor : StreamPlay() {
                                         while (sibling != null && sibling.tagName() == "p") {
                                             sibling.select("a:matches(V-Cloud|G-Direct)").forEach { sources ->
                                                 val server = sources.attr("href")
-                                                Log.d("Phisher href veg", server ?: "")
                                                 loadSourceNameExtractor(
                                                     "V-Cloud",
                                                     server,
@@ -2374,21 +2371,6 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
             }
-        }
-    }
-
-    suspend fun invokeBroflixVidlink(
-        tmdbId: Int?=null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = "$BroflixVidlink/embed/movie/$tmdbId"
-        app.get(url).document.select("div.menu a").amap {
-            val encoded=it.attr("data-url").substringAfter("url=")
-            val href=base64Decode(encoded)
-            loadSourceNameExtractor("Broflix Vidlink",href,"",subtitleCallback,callback,
-                getQualityFromName("")
-            )
         }
     }
 
@@ -4134,7 +4116,6 @@ suspend fun invokeVidsrcsu(
         val res1 =
             app.get(url).document.select("figure")
                 .toString()
-        Log.d("Phisher Moviedrive", res1)
         val hrefpattern =
             Regex("""(?i)<a\s+href="([^"]*\b$searchtitle\b[^"]*)"""").find(res1)?.groupValues?.get(1)
                 ?: ""
@@ -4142,9 +4123,9 @@ suspend fun invokeVidsrcsu(
             val document = app.get(hrefpattern, interceptor = cfInterceptor).document
             if (season == null) {
                 document.select("h5 > a").amap {
-                    Log.d("Phisher M href", it.toString())
+                    //Log.d("Phisher M href", it.toString())
                     val href = it.attr("href")
-                    Log.d("Phisher M href", href)
+                    //Log.d("Phisher M href", href)
                     val server = extractMdrive(href)
                     server.amap {
                         if (it.startsWith("https://hubcloud"))
@@ -4175,18 +4156,16 @@ suspend fun invokeVidsrcsu(
                         } else
                             doc.selectFirst("h5:matches((?i)$sep)")?.let { epElement ->
                                 val linklist = mutableListOf<String>()
-                                val firstHubCloudH5 = epElement.nextElementSibling()
-                                val secondHubCloudH5 = firstHubCloudH5?.nextElementSibling()
-                                val firstLink = secondHubCloudH5?.selectFirst("a")?.attr("href")
-                                val secondLink = secondHubCloudH5?.selectFirst("a")?.attr("href")
-                                if (firstLink != null) linklist.add(firstLink)
-                                if (secondLink != null) linklist.add(secondLink)
-                                Log.d("Phisher Moviedrive", linklist.toString())
-                                linklist.forEach { url ->
-                                    if (url.startsWith("https://hubcloud"))
-                                    {
-                                        HubCloud().getUrl(url, referer = "MoviesDrive")
+                                var currentH5 = epElement.nextElementSibling()
+                                while (currentH5 != null && currentH5.tagName() == "h5") {
+                                    val link = currentH5.selectFirst("a")?.attr("href")
+                                    if (link != null) {
+                                        linklist.add(link) // Add the link to the list if not null
                                     }
+                                    // Move to the next sibling
+                                    currentH5 = currentH5.nextElementSibling()
+                                }
+                                linklist.forEach { url ->
                                     loadExtractor(
                                         url,
                                         referer = "MoviesDrive",

@@ -1190,16 +1190,14 @@ open class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url=url.replace(".ink",".tel").replace(".art",".tel").replace(".art",".dad")
+        val url=replaceHubclouddomain(url)
         Log.d("Phisher real url", url)
         val href:String
         if (url.contains("hubcloud.php"))
         {
             href=url
-            Log.d("Phisher Hub", href)
         }
         else {
-            Log.d("Phisher else",url)
             val doc = app.get(url).text
             //val gamerlink=Regex("""hubcloud\.php\?([^'"]+)""").find(doc)?.groupValues?.get(1)
             href=doc.substringAfter("var url = '").substringBefore("\'")
@@ -1209,7 +1207,6 @@ open class HubCloud : ExtractorApi() {
                 Log.d("Error", "Not Found")
             }
         }
-        Log.d("Phisher href",href)
         if (href.isNotEmpty()) {
             val document = app.get(href).document
             val size = document.selectFirst("i#size")?.text()
