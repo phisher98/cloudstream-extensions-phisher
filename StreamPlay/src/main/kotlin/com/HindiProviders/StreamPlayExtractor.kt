@@ -1146,7 +1146,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     suspend fun invokeAnimes(
-        title: String? = null,
+        title: String?,
         jptitle:String? =null,
         epsTitle: String? = null,
         date: String?,
@@ -1163,12 +1163,9 @@ object StreamPlayExtractor : StreamPlay() {
             airedDate,
             if (season == null) TvType.AnimeMovie else TvType.Anime
         )
-        Log.d("Phisher Malid","$aniId $$malId")
         val Season=app.get("$jikanAPI/anime/${malId ?: return}").parsedSafe<JikanResponse>()?.data?.season ?:""
         val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
             .parsedSafe<MALSyncResponses>()?.sites
-        Log.d("Phisher Malid","\"$malsyncAPI/mal/anime/${malId ?: return}\"")
-
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val TMDBdate=date?.substringBefore("-")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
@@ -1181,7 +1178,7 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
             {
-                invokeAnimenexus(title, episode, subtitleCallback, callback)
+                //invokeAnimenexus(title, episode, subtitleCallback, callback)
             },
             {
                 val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
@@ -1195,7 +1192,10 @@ object StreamPlayExtractor : StreamPlay() {
                 if (animepahe!=null) invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
             },
             {
-                val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }
+                invokeGrani(title ?:"", episode, callback)
+            },
+            {
+                val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }?.toIntOrNull()
                 val jptitleslug=jptitle.createSlug()
                 invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
             },
@@ -1303,18 +1303,20 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     suspend fun invokeAnimepahe(
-        url: String? = null,
+        url: String,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        Log.d("Phisher",url.toString())
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        val id = app.get(url ?: "", headers).document.selectFirst("meta[property=og:url]")
+        val id = app.get(url, headers).document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
         val animeData =
             app.get("$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
                 .parsedSafe<animepahe>()?.data
-        val session = animeData?.find { it.episode == episode }?.session ?: ""
+        var session = animeData?.find { it.episode == episode }?.session ?: ""
+        if (session.isEmpty()) session=animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
         app.get("$animepaheAPI/play/$id/$session", headers).document.select("div.dropup button")
             .map {
                     Log.d("Phisher it",it.toString())
@@ -1325,7 +1327,7 @@ object StreamPlayExtractor : StreamPlay() {
                     Log.d("Phisher",quality.toString())
                     val href = it.attr("data-src")
                     if (href.contains("kwik.si")) {
-                    loadCustomExtractor(
+                        loadCustomExtractor(
                         "Animepahe [$lang]",
                         href,
                         "$quality",
@@ -1337,8 +1339,32 @@ object StreamPlayExtractor : StreamPlay() {
             }
     }
 
+    suspend fun invokeGrani(
+        title: String,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+            app.get("https://grani.me/search/$title").document.selectFirst("div.iep a")?.attr("href")?.let {
+                val document= app.get(it).document
+                val href = document.select("a.infovan")
+                .firstOrNull { it.selectFirst("div.infoept2 div.centerv")?.text() == episode.toString() }
+                ?.attr("href") ?:""
+                val iframe= app.get(href).document.select("#iframevideo").attr("src")
+                callback.invoke(
+                    ExtractorLink(
+                        "Grani",
+                        "Grani",
+                        iframe,
+                        "",
+                        Qualities.P1080.value,
+                        INFER_TYPE
+                    )
+                )
+            }
+      }
+
     suspend fun invokeGojo(
-        aniid: String? = null,
+        aniid: Int? = null,
         jptitle:String?=null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,

@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.util.Log
+import com.Phisher98.StreamPlayExtractor.invokeGrani
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -20,16 +21,6 @@ class StreamPlayTest : StreamPlay() {
         Log.d("Test1", "$res")
         argamap(
             {
-                if (!res.isAnime) invokeTopMovies(
-                    res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
             }
 
         )
