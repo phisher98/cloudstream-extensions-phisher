@@ -12,7 +12,7 @@ class Donghuastream : MainAPI() {
     override var mainUrl              = "https://donghuastream.org"
     override var name                 = "Donghuastream"
     override val hasMainPage          = true
-    override var lang                 = "cn"
+    override var lang                 = "zh"
     override val hasDownloadSupport   = true
     override val supportedTypes       = setOf(TvType.Anime)
 
@@ -71,7 +71,7 @@ class Donghuastream : MainAPI() {
         val document = app.get(url).document
         val title       = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         val href=document.selectFirst(".eplister li > a")?.attr("href") ?:""
-        var poster = document.select("div.ime > img").attr("data-src").toString()
+        var poster = document.select("div.ime > img").attr("data-src")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val type=document.selectFirst(".spe")?.text().toString()
         val tvtag=if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
@@ -79,7 +79,7 @@ class Donghuastream : MainAPI() {
             val Eppage= document.selectFirst(".eplister li > a")?.attr("href") ?:""
             val doc= app.get(Eppage).document
             @Suppress("NAME_SHADOWING") val episodes=doc.select("div.episodelist > ul > li").map { info->
-                        val href = info.select("a").attr("href") ?:""
+                        val href = info.select("a").attr("href")
                         val episode = info.select("a span").text().substringAfter("-").substringBeforeLast("-")
                         val poster=info.selectFirst("a img")?.attr("data-src") ?:""
                         Episode(href, episode, posterUrl = poster)
@@ -108,7 +108,7 @@ class Donghuastream : MainAPI() {
         val document = app.get(data).document
         document.select(".mobius option").amap { server->
             val base64 = server.attr("value")
-            Log.d("Phisher", base64.toString())
+            Log.d("Phisher", base64)
             val doc= base64Decode(base64).let { Jsoup.parse(it) }
             val url= httpsify(doc.select("iframe").attr("src"))
             if (url.contains("vidmoly"))
