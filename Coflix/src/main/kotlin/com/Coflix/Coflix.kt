@@ -25,6 +25,8 @@ class Coflix : MainAPI() {
     override val mainPage = mainPageOf(
         "movies" to "Movies",
         "series" to "Series",
+        "doramas" to "Doramas",
+        "animes" to "Animes",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

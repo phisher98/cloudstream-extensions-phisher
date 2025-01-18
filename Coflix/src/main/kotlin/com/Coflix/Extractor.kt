@@ -16,7 +16,7 @@ open class darkibox : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url,referer=mainUrl).toString()
+            val response = app.get(url,referer=mainUrl).toString()
             Regex("""sources:\s*\[\{src:\s*"(.*?)"""").find(response)?.groupValues?.get(1)?.let { link ->
                 return listOf(
                     ExtractorLink(
