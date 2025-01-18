@@ -39,7 +39,7 @@ open class Videzz : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val mp4 = app.get(url,referer=mainUrl).document.select("#vplayer > #player source").attr("src")
+            val mp4 = app.get(url,referer=mainUrl).document.select("#vplayer > #player source").attr("src")
             return listOf(
                 ExtractorLink(
                     this.name,

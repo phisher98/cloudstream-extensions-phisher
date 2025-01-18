@@ -70,26 +70,34 @@ class Animecloud : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
+        val animeslug=url.substringAfterLast("/")
         val title = document.selectFirst("#__nuxt h1")?.ownText()?.trim().toString()
         val imdburl=document.selectFirst("div.flex.flex-col.gap-4.w-full > div:nth-child(6) > a.btn.btn-warning.btn-sm")?.attr("href")
         val poster = document.select("#__nuxt img.fixed").attr("data-src")
         val description = document.selectFirst("div.flex.flex-col.gap-4.w-full > p > span")?.text()?.trim()
         val genres=document.select("div.flex.flex-wrap.gap-2 a.badge").map { it.text() }
-        val episodes=document.select("div.flex.flex-col.gap-4.w-full > div.grid.grid-cols-1.gap-4 button").map { info->
-             val season = info.select("span").text().substringAfter("S").substringBeforeLast("E").trim().toIntOrNull()
-             val episode = info.select("span").text().substringAfter("E").trim().toIntOrNull()
-             val epname="Episode $episode "
-             val epposter=info.selectFirst("img")?.attr("data-src") ?:""
-             val animename=url.substringAfterLast("/")
-             val href = "$mainUrl/api/anime/episode?slug=$animename&season=$season&episode=$episode"
-             Episode(href, epname,season,episode,epposter)
+        val animeSeasons= app.get("${mainUrl}/api/anime?$animeslug").parsedSafe<EpisodeParser>()?.data?.animeSeasons
+        val episodes = mutableListOf<Episode>()
+        animeSeasons?.map { info->
+             var season:String
+             season = info.season
+             if (season.contains("Filme")) season="0"
+             info.animeEpisodes.map {
+                 val episode=it.episode.toIntOrNull()
+                 val epname="Episode $episode "
+                 val epposter="${mainUrl}/img/thumbs/${it.image}"
+                 val animename=url.substringAfterLast("/")
+                 val searchSeason = if (season == "0") "Filme" else season
+                 val href = "$mainUrl/api/anime/episode?slug=$animename&season=$searchSeason&episode=$episode"
+                 episodes+=Episode(href, epname,season.toIntOrNull(),episode,epposter)
+             }
         }
         return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
                 this.posterUrl = poster
                 this.plot = description
                 this.tags = genres
                 addImdbUrl(imdburl)
-            }
+        }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
