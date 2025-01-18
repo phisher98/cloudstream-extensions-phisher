@@ -19,6 +19,7 @@ class Coflix : MainAPI() {
     override val hasMainPage          = true
     override var lang                 = "fr"
     override val hasDownloadSupport   = true
+    override val hasQuickSearch       = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
     private  val coflixAPI             = "https://coflix.app/wp-json/apiflix/v1"
 
@@ -70,6 +71,8 @@ class Coflix : MainAPI() {
             src
         }
     }
+
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
         val json = app.get("$mainUrl/suggest.php?query=$query").toString().toJson()
