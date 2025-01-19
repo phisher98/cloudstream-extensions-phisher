@@ -4500,6 +4500,43 @@ suspend fun invokenyaa(
         }
     }
 
+    suspend fun invokeRiveStream(
+        id: Int? = null,
+        year: Int?=null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val sourceApiUrl = "$RiveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive"
+            val sourceList = app.get(sourceApiUrl).parsedSafe<RiveStreamSource>()
+            val secretKey = getRiveSecretKey(id)
+            sourceList?.data?.forEach{ source ->
+               val sourceStreamLink  = if(season == null)
+                {
+                    "$RiveStreamAPI/api/backendfetch?requestID=movieVideoProvider&id=$id&service=$source&secretKey=${secretKey}"
+                }
+                else
+                {
+                    "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
+                }
+                val sourceJson = app.get(sourceStreamLink).parsedSafe<RiveStreamResponse>()
+                sourceJson?.data?.sources?.forEach { source ->
+                    callback.invoke(
+                        ExtractorLink(
+                            "RiveStream ${source.source} ${source.quality}",
+                            "RiveStream ${source.source} ${source.quality}",
+                            source.url,
+                            "",
+                            Qualities.P1080.value,
+                            ExtractorLinkType.M3U8
+                        )
+                    )
+                }
+
+            }
+
+    }
+
 }
 
 
