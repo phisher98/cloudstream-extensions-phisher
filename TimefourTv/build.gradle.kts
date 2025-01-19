@@ -1,13 +1,24 @@
 // use an integer for version numbers
-version = 24
+import org.jetbrains.kotlin.konan.properties.Properties
 
+version = 1
+
+
+android {
+    defaultConfig {
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
+        buildConfigField("String", "TimefourTv", "\"${properties.getProperty("TimefourTv")}\"")
+    }
+}
 
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
 
-    description = "Sport Live Stream"
-    authors = listOf("Hexated")
+    description = "Sports Live Stream (Multi Region)"
+    authors = listOf("Phisher")
 
     /**
      * Status int as the following:
@@ -16,10 +27,10 @@ cloudstream {
      * 2: Slow
      * 3: Beta only
      * */
-    status = 0 // will be 3 if unspecified
+    status = 1 // will be 3 if unspecified
     tvTypes = listOf(
         "Live",
     )
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=dlhd.so&sz=%size%"
+    iconUrl = "https://daddylivehd1.click/wp-content/uploads/2024/10/daddylive.webp"
 }
