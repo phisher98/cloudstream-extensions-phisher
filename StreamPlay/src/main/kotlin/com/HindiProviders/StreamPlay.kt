@@ -173,7 +173,7 @@ open class StreamPlay : TmdbProvider() {
         const val nepuAPI = "https://nepu.to"
         const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.bet"
-        const val topmoviesAPI = "https://topmovies.bet"
+        const val topmoviesAPI = "https://topmovies.beer"
         const val MoviesmodAPI= "https://moviesmod.red"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://vegamovies.ms"
@@ -195,9 +195,8 @@ open class StreamPlay : TmdbProvider() {
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
-        const val BroflixVidlink="https://bombthe.irish"
         const val EmbedSu="https://embed.su"
-        const val FlickyAPI="https://player.flicky.host"
+        const val FlickyAPI="https://www.flicky.host"
         const val WyZIESUBAPI="https://sub.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"
@@ -844,16 +843,6 @@ open class StreamPlay : TmdbProvider() {
                     callback
                 )
     },
-            {
-
-                /*
-                if (!res.isAnime) invokeBroflixVidlink(
-                    res.id,
-                    subtitleCallback,
-                    callback
-                )
-                 */
-            },
     {
         invokeSharmaflix(
                     res.title,
@@ -1006,7 +995,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
 {
-    if (!res.isAnime) invokeMoviesdrive(
+    invokeMoviesdrive(
         res.title,
         res.season,
         res.episode,

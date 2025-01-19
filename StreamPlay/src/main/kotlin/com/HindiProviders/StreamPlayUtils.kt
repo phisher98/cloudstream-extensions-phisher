@@ -134,6 +134,24 @@ suspend fun extractInstantUHD(url: String): String? {
     ).parsedSafe<Map<String, String>>()?.get("url")
 }
 
+fun replaceHubclouddomain(url: String): String {
+    return try {
+        val originalUrl = URL(url)
+        val domainParts = originalUrl.host.split(".").toMutableList()
+        if (domainParts.size > 1) {
+            domainParts[domainParts.lastIndex] = "dad"
+            val newDomain = domainParts.joinToString(".")
+
+            // Construct the new URL with the updated domain
+            URL(originalUrl.protocol, newDomain, originalUrl.port, originalUrl.file).toString()
+        } else {
+            throw IllegalArgumentException("Invalid domain structure in URL")
+        }
+    } catch (e: Exception) {
+        "Invalid URL: ${e.message}"
+    }
+}
+
 suspend fun extractDirectUHD(url: String, niceResponse: NiceResponse): String? {
     val document = niceResponse.document
     val script = document.selectFirst("script:containsData(cf_token)")?.data() ?: return null

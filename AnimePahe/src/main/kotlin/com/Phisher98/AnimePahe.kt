@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
@@ -10,6 +11,9 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.Jsoup
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 class AnimePahe : MainAPI() {
     companion object {
@@ -160,25 +164,27 @@ class AnimePahe : MainAPI() {
         }
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private suspend fun generateListOfEpisodes(session: String): ArrayList<Episode> {
+        val episodes = ArrayList<Episode>()
+        val semaphore = Semaphore(5) // Limit to 5 concurrent requests (adjust based on server capability)
+
         try {
             val uri = "$mainUrl/api?m=release&id=$session&sort=episode_asc&page=1"
             val req = app.get(uri, headers = headers).text
             val data = parseJson<AnimePaheAnimeData>(req)
+
             val lastPage = data.lastPage
             val perPage = data.perPage
             val total = data.total
-            var ep = 1
-            val episodes = ArrayList<Episode>()
+            var currentEpisode = 1
 
-            fun getEpisodeTitle(k: AnimeData): String {
-                return k.title.ifEmpty {
-                    "Episode ${k.episode}"
-                }
+            fun getEpisodeTitle(episodeData: AnimeData): String {
+                return episodeData.title.ifEmpty { "Episode ${episodeData.episode}" }
             }
-
+            // If only one page, process all episodes in that page
             if (lastPage == 1 && perPage > total) {
-                data.data.forEach {
+                data.data.forEach { episodeData ->
                     episodes.add(
                         newEpisode(
                             LinkLoadData(
@@ -187,42 +193,57 @@ class AnimePahe : MainAPI() {
                                 0,
                                 0,
                                 session,
-                                it.session
+                                episodeData.session
                             ).toJson()
                         ) {
-                            addDate(it.createdAt)
-                            this.name = getEpisodeTitle(it)
-                            this.posterUrl = it.snapshot
+                            addDate(episodeData.createdAt)
+                            this.name = getEpisodeTitle(episodeData)
+                            this.posterUrl = episodeData.snapshot
                         }
                     )
                 }
             } else {
-                for (page in 0 until lastPage) {
-                    for (i in 0 until perPage) {
-                        if (ep <= total) {
-                            episodes.add(
-                                Episode(
-                                    LinkLoadData(
-                                        mainUrl,
-                                        false,
-                                        ep,
-                                        page + 1,
-                                        session,
-                                        ""
-                                    ).toJson()
-                                )
-                            )
-                            ++ep
+                // Fetch multiple pages concurrently with limited threads
+                val deferredResults = (1..lastPage).map { page ->
+                    GlobalScope.async {
+                        semaphore.withPermit {
+                            try {
+                                val pageUri = "$mainUrl/api?m=release&id=$session&sort=episode_asc&page=$page"
+                                val pageReq = app.get(pageUri, headers = headers).text
+                                val pageData = parseJson<AnimePaheAnimeData>(pageReq)
+                                pageData.data.map { episodeData ->
+                                    newEpisode(
+                                        LinkLoadData(
+                                            mainUrl,
+                                            true,
+                                            currentEpisode++,
+                                            page,
+                                            session,
+                                            episodeData.session
+                                        ).toJson()
+                                    ) {
+                                        addDate(episodeData.createdAt)
+                                        this.name = getEpisodeTitle(episodeData)
+                                        this.posterUrl = episodeData.snapshot
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("generateListOfEpisodes", "Error on page $page: ${e.message}")
+                                emptyList<Episode>()
+                            }
                         }
                     }
                 }
-            }
-            return episodes
-        } catch (e: Exception) {
-            return ArrayList()
-        }
-    }
 
+                // Wait for all pages to load and combine results
+                episodes.addAll(deferredResults.awaitAll().flatten())
+            }
+
+        } catch (e: Exception) {
+            Log.e("generateListOfEpisodes", "Error generating episodes: ${e.message}")
+        }
+        return episodes
+    }
     /**
      * Required to make bookmarks work with a session system
      **/

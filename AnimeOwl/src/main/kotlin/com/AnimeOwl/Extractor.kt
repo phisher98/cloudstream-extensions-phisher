@@ -1,6 +1,7 @@
 package com.Animeowl
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -25,9 +26,11 @@ open class OwlExtractor : ExtractorApi() {
         val jwt=findFirstJwt(epJS?: throw Exception("Unable to get jwt")) ?:return
         val servers=app.get("$referer$datasrc").parsedSafe<Response>()
         val sources= mutableListOf<String>()
+        /*
         servers?.kaido?.let {
             sources+="$it$jwt"
         }
+         */
         servers?.luffy?.let {
             val m3u8= app.get("$it$jwt", allowRedirects = false).headers["location"] ?:return
             sources+=m3u8
@@ -38,6 +41,7 @@ open class OwlExtractor : ExtractorApi() {
             sources+=m3u8
             sources+=vtt
         }
+
         sources.amap { m3u8->
             if (m3u8.contains("vvt"))
             {
@@ -73,7 +77,6 @@ private fun findFirstJwt(text: String): String? {
 }
 
 data class Response(
-    val kaido: String,
     val luffy: String,
     val zoro: String,
 )

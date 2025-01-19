@@ -400,6 +400,15 @@ data class FlickyStream(
     val url: String,
 )
 
+
+//Vidsrcsu
+
+data class Vidsrcsu(
+    @JsonProperty("m3u8_url")
+    val m3u8Url: String,
+    val language: String,
+)
+
 //WyZIESUBAPI
 
 data class WyZIESUB(

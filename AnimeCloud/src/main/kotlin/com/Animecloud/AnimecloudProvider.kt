@@ -1,13 +1,13 @@
-package com.Phisher98
+package com.Animecloud
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class TimefourTvPlugin: Plugin() {
+class AnimecloudProvider: Plugin() {
     override fun load(context: Context) {
-        // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(TimefourTv())
+        registerMainAPI(Animecloud())
+        registerExtractorAPI(AnimeCloudProxy())
     }
 }

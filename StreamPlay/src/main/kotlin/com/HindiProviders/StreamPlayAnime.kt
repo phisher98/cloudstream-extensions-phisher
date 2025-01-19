@@ -2,12 +2,11 @@ package com.Phisher98
 
 import android.util.Log
 import com.Phisher98.StreamPlay.Companion.anilistAPI
-import com.Phisher98.StreamPlay.Companion.jikanAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlayExtractor.invokeAnimepahe
-import com.Phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.Phisher98.StreamPlayExtractor.invokeAnitaku
 import com.Phisher98.StreamPlayExtractor.invokeGojo
+import com.Phisher98.StreamPlayExtractor.invokeGrani
 import com.Phisher98.StreamPlayExtractor.invokeHianime
 import com.Phisher98.StreamPlayExtractor.invokeMiruroanimeGogo
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -152,6 +151,7 @@ class StreamPlayAnime : MainAPI() {
         val aniyear=data.startDate.year
         val anitype=TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
+        val jpTitle=data.title.romaji
         val episodes =
             (1..data.totalEpisodes()).map { i ->
                 val linkData =
@@ -159,6 +159,7 @@ class StreamPlayAnime : MainAPI() {
                         malId = ids.idMal ,
                         aniId = ids.id,
                         title = data.getTitle(),
+                        jpTitle = jpTitle,
                         year = data.startDate.year,
                         season = 1,
                         episode = i,
@@ -198,48 +199,44 @@ class StreamPlayAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val malId=mediaData.malId
-        val season=mediaData.season
+        val aniid=mediaData.aniId
         val episode=mediaData.episode
-        val Season=app.get("$jikanAPI/anime/${malId}").parsedSafe<JikanResponse>()?.data?.season ?:""
+        val jpTitle=mediaData.jpTitle
         val malsync = app.get("$malsyncAPI/mal/anime/${malId}")
             .parsedSafe<MALSyncResponses>()?.sites
-
         val zoroIds = malsync?.zoro?.keys?.map { it }
-        //val TMDBdate=date?.substringBefore("-")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         val hianimeurl=malsync?.zoro?.firstNotNullOf { it.value["url"] }
         argamap(
             {
-                invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
+                //invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
             },
             {
                 invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
             {
                 val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
-                if (animepahetitle!=null)
-                    invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
+                if (animepahetitle!=null) invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
             },
             {
                 val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
-                if (animepahe!=null)
-                    invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
+                if (animepahe!=null) invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
             },
             {
-                val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }
-                val jptitleslug="".createSlug()
-                invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
+                val jptitleslug=jpTitle.createSlug()
+                //invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
             },
             {
                 //invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
             },
             {
+                invokeGrani(zorotitle ?:"",episode, callback)
+            },
+            {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                if (Gogourl != null)
-                    invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
+                if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             }
         )
         return true
@@ -263,6 +260,7 @@ class StreamPlayAnime : MainAPI() {
             @JsonProperty("startDate") val startDate: StartDate,
             @JsonProperty("episodes") val episodes: Int?,
             @JsonProperty("title") val title: Title,
+            @JsonProperty("season") val season: String?,
             @JsonProperty("genres") val genres: List<String>,
             @JsonProperty("description") val description: String?,
             @JsonProperty("coverImage") val coverImage: CoverImage,
@@ -361,7 +359,6 @@ class StreamPlayAnime : MainAPI() {
         ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
         val res = app.post(anilistAPI, requestBody = data)
             .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
-        android.util.Log.d("Phisher", res?.idMal.toString())
         return AniIds(res?.id,res?.idMal)
 
     }
