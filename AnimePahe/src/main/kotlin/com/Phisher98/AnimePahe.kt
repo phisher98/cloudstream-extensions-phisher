@@ -182,12 +182,8 @@ class AnimePahe : MainAPI() {
             fun getEpisodeTitle(episodeData: AnimeData): String {
                 return episodeData.title.ifEmpty { "Episode ${episodeData.episode}" }
             }
-
-            Log.d("Phisher session", session)
-
             // If only one page, process all episodes in that page
             if (lastPage == 1 && perPage > total) {
-                Log.d("Phisher session data single page", data.toString())
                 data.data.forEach { episodeData ->
                     episodes.add(
                         newEpisode(
@@ -215,8 +211,6 @@ class AnimePahe : MainAPI() {
                                 val pageUri = "$mainUrl/api?m=release&id=$session&sort=episode_asc&page=$page"
                                 val pageReq = app.get(pageUri, headers = headers).text
                                 val pageData = parseJson<AnimePaheAnimeData>(pageReq)
-
-                                Log.d("Phisher session data page", "Page $page: $pageData")
                                 pageData.data.map { episodeData ->
                                     newEpisode(
                                         LinkLoadData(
