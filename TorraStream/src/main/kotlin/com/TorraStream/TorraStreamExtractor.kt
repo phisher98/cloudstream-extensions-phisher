@@ -1,9 +1,12 @@
 package com.TorraStream
 
+import com.TorraStream.TorraStream.Companion.OnethreethreesevenxAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
 import com.TorraStream.TorraStream.Companion.TorrentgalaxyAPI
 import com.TorraStream.TorraStream.Companion.TorrentioAPI
 import com.TorraStream.TorraStream.Companion.TorrentmovieAPI
+import com.lagradost.api.Log
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -123,4 +126,32 @@ suspend fun invokeTorrentmovie(
                 )
             }
     }
+}
+
+
+suspend fun invoke1337x(
+    title: String? = null,
+    year:Int?= null,
+    callback: (ExtractorLink) -> Unit
+) {
+
+        app.get("$OnethreethreesevenxAPI/category-search/${title?.replace(" ","+")}+$year/Movies/1/").document.select("tbody > tr > td a:nth-child(2)").amap {
+            val iframe=OnethreethreesevenxAPI+it.attr("href")
+            val doc= app.get(iframe).document
+            val magnet=doc.select("#openPopup").attr("href").trim()
+            val qualityraw=doc.select("div.box-info ul.list li:contains(Type) span").text()
+            val quality=getQuality(qualityraw)
+            Log.d("Phisher",magnet)
+            callback.invoke(
+                ExtractorLink(
+                    "Torrent1337x $qualityraw",
+                    "Torrent1337x $qualityraw",
+                    magnet,
+                    "",
+                    quality,
+                    INFER_TYPE,
+                )
+            )
+        }
+
 }

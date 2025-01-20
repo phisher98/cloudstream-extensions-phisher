@@ -1,7 +1,6 @@
 package com.TorraStream
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -19,6 +18,7 @@ class TorraStream() : TraktProvider() {
         const val TorrentioAPI="https://torrentio.strem.fun"
         const val TorrentgalaxyAPI="https://torrentgalaxy.to"
         const val TorrentmovieAPI="https://torrentmovie.net"
+        const val OnethreethreesevenxAPI="https://1337x.to"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -55,10 +55,12 @@ class TorraStream() : TraktProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val title=AppUtils.parseJson<LinkData>(data).title
-        val season =AppUtils.parseJson<LinkData>(data).season
-        val episode =AppUtils.parseJson<LinkData>(data).episode
-        val id =AppUtils.parseJson<LinkData>(data).imdbId
+        val data=AppUtils.parseJson<LinkData>(data)
+        val title=data.title
+        val season =data.season
+        val episode =data.episode
+        val id =data.imdbId
+        val year=data.year
         argamap(
             {
                 invokeTorrastream(
@@ -80,6 +82,13 @@ class TorraStream() : TraktProvider() {
                     title,
                     callback
                 )
+            },
+            {
+                invoke1337x(
+                    title,
+                    year,
+                    callback
+                )
             }
         )
         val SubAPI="https://opensubtitles-v3.strem.io"
@@ -94,11 +103,11 @@ class TorraStream() : TraktProvider() {
             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         )
         app.get(url, headers = headers, timeout = 100L).parsedSafe<Subtitles>()?.subtitles?.amap {
-            val lan=it.lang
+            val lan=getLanguage(it.lang) ?:it.lang
             val suburl=it.url
             subtitleCallback.invoke(
                 SubtitleFile(
-                    lan.capitalize(),  // Use label for the name
+                    lan,  // Use label for the name
                     suburl     // Use extracted URL
                 )
             )

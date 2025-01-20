@@ -2,11 +2,31 @@ package com.TorraStream
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.SubtitleHelper
+import com.lagradost.cloudstream3.utils.getQualityFromName
 
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "") ?. groupValues ?. getOrNull(1) ?. toIntOrNull()
         ?: Qualities.Unknown.value
 }
+
+
+fun getQuality(str: String): Int {
+    return when (str) {
+        "360p" -> Qualities.P240.value
+        "480p" -> Qualities.P360.value
+        "HD" -> Qualities.P720.value
+        "HEVC" -> Qualities.P1440.value
+        "UHD" -> Qualities.P2160.value
+        else -> getQualityFromName(str)
+    }
+}
+
+fun getLanguage(language: String?): String? {
+    return SubtitleHelper.fromTwoLettersToLanguage(language ?: return null)
+        ?: SubtitleHelper.fromTwoLettersToLanguage(language.substringBefore("-"))
+}
+
 
 data class TorrentioResponse(val streams: List<TorrentioStream>)
 
