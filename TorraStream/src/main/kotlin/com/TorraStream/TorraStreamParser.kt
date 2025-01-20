@@ -83,3 +83,37 @@ data class Seo(
     val text: String?,
 )
 
+
+//TorBox
+
+
+data class TorBox(
+    val streams: List<TorBoxStream>,
+)
+
+data class TorBoxStream(
+    val name: String,
+    val url: String,
+    val magnet: String?,
+    val nzb: String?,
+    val seeders: Long?,
+    val peers: Long?,
+    val quality: String?,
+    val resolution: String?,
+    val language: String?,
+    @JsonProperty("is_cached")
+    val isCached: Boolean,
+    val size: Long?,
+    val hash: String,
+    val adult: Boolean,
+    val description: String,
+    val type: String?,
+    val behaviorHints: TorBoxBehaviorHints?,
+)
+
+data class TorBoxBehaviorHints(
+    val notWebReady: Boolean,
+    val videoSize: Long,
+    val filename: String,
+)
+

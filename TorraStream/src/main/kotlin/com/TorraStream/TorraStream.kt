@@ -19,6 +19,7 @@ class TorraStream() : TraktProvider() {
         const val TorrentgalaxyAPI="https://torrentgalaxy.to"
         const val TorrentmovieAPI="https://torrentmovie.net"
         const val OnethreethreesevenxAPI="https://1337x.to"
+        const val TorBoxAPI="https://stremio.torbox.app"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -49,6 +50,7 @@ class TorraStream() : TraktProvider() {
             //"$traktApiUrl/shows/trending?extended=cloud9&genres=anime,full&limit=25&extended=full" to "Trending Animes"
         )
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -73,22 +75,35 @@ class TorraStream() : TraktProvider() {
             },
             {
                 invokeTorrentgalaxy(
+                    TorrentgalaxyAPI,
                     id,
                     callback
                 )
             },
             {
                 invokeTorrentmovie(
+                    TorrentmovieAPI,
                     title,
                     callback
                 )
             },
             {
                 invoke1337x(
+                    OnethreethreesevenxAPI,
                     title,
                     year,
                     callback
                 )
+            },
+            {
+                invokeTorbox(
+                    TorBoxAPI,
+                    id,
+                    season,
+                    episode,
+                    callback
+                )
+
             }
         )
         val SubAPI="https://opensubtitles-v3.strem.io"

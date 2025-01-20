@@ -1,15 +1,11 @@
 package com.TorraStream
 
-import com.TorraStream.TorraStream.Companion.OnethreethreesevenxAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
-import com.TorraStream.TorraStream.Companion.TorrentgalaxyAPI
-import com.TorraStream.TorraStream.Companion.TorrentioAPI
-import com.TorraStream.TorraStream.Companion.TorrentmovieAPI
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 
 suspend fun invokeTorrastream(
@@ -25,7 +21,7 @@ suspend fun invokeTorrastream(
         val splitdata = mainUrl.split(",")
         val service = splitdata[0]
         val key= splitdata[1]
-        torrentioAPI="$TorrentioAPI/$service=$key"
+        torrentioAPI="$mainUrl/$service=$key"
         val url = if(season == null) {
             "$torrentioAPI/stream/movie/$id.json"
         }
@@ -52,7 +48,7 @@ suspend fun invokeTorrastream(
     }
     else
     {
-        torrentioAPI= TorrentioAPI
+        torrentioAPI= mainUrl
         val url = if(season == null) {
             "$torrentioAPI/stream/movie/$id.json"
         }
@@ -81,6 +77,7 @@ suspend fun invokeTorrastream(
 }
 
 suspend fun invokeTorrentgalaxy(
+    TorrentgalaxyAPI: String? = null,
     id: String? = null,
     callback: (ExtractorLink) -> Unit
 ) {
@@ -104,6 +101,7 @@ suspend fun invokeTorrentgalaxy(
 
 
 suspend fun invokeTorrentmovie(
+    TorrentmovieAPI: String?=null,
     title: String? = null,
     callback: (ExtractorLink) -> Unit
 ) {
@@ -130,6 +128,7 @@ suspend fun invokeTorrentmovie(
 
 
 suspend fun invoke1337x(
+    OnethreethreesevenxAPI:String? = null,
     title: String? = null,
     year:Int?= null,
     callback: (ExtractorLink) -> Unit
@@ -141,7 +140,6 @@ suspend fun invoke1337x(
             val magnet=doc.select("#openPopup").attr("href").trim()
             val qualityraw=doc.select("div.box-info ul.list li:contains(Type) span").text()
             val quality=getQuality(qualityraw)
-            Log.d("Phisher",magnet)
             callback.invoke(
                 ExtractorLink(
                     "Torrent1337x $qualityraw",
@@ -153,5 +151,34 @@ suspend fun invoke1337x(
                 )
             )
         }
+}
 
+suspend fun invokeTorbox(
+    torBoxAPI: String? = null,
+    id: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if(season == null) {
+        "$torBoxAPI/38162763-0628-47e2-9f10-db9fa302527e/stream/movie/$id.json"
+    }
+    else {
+        "$torBoxAPI/38162763-0628-47e2-9f10-db9fa302527e/stream/series/$id:$season:$episode.json"
+    }
+    app.get(url).parsedSafe<TorBox>()?.streams?.amap {
+        val magnet=it.magnet ?: return@amap
+        val quality=it.resolution?.toIntOrNull()
+        val providername=it.behaviorHints?.filename?.substringAfterLast("-")
+        callback.invoke(
+            ExtractorLink(
+                "TorBox $providername",
+                "TorBox $providername",
+                magnet,
+                "",
+                quality ?: Qualities.Unknown.value,
+                INFER_TYPE,
+            )
+        )
+    }
 }
