@@ -102,8 +102,8 @@ class MxplayerProvider : MainAPI() {
             section.items.forEach { item ->
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
-                    val streamUrl: String? = item.stream?.hls?.high
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,item.stream).toJson()) {
+                    val streamUrl: String? = item.stream?.hls?.high.toString()
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,streamUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
                 } else {
@@ -139,7 +139,7 @@ class MxplayerProvider : MainAPI() {
         val title = video.title
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        var href = video.stream
+        var href = video.stream ?: video.alternativestream
         if(href==null)
         {
             href=video.alternativestream
@@ -224,6 +224,6 @@ data class LoadUrl(
     val tvType: String = "",  // Defaulting to empty string
     val stream: MovieStream? = null,  // Defaulting to null
     val description: String = "",  // Defaulting to empty string
-    val shareUrl: String? = null  // Defaulting to null
+    val shareUrl: String? = null,  // Defaulting to null
     val alternativestream: String? = null
 )
