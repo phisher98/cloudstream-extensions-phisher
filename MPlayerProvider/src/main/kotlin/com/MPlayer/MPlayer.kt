@@ -31,14 +31,34 @@ class MPlayer : MainAPI() {
         val res = app.get(mainUrl)
         userID = res.okhttpResponse.headers.getCookies()["UserID"]
             ?: throw ErrorLoadingException("load fail, geo blocked")
-        val drama = app.get(
-                "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&genreFilterIds=48efa872f6f17facebf6149dfc536ee1&type=2$endParam",
-                referer = "$mainUrl/"
-            ).parsedSafe<MXPlayer>()?.items?.map { item -> item.toSearchResult() } ?: throw ErrorLoadingException("Failed to load Drama data")
-        val comedy = app.get(
+
+        val dramaResponse = app.get(
             "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&genreFilterIds=48efa872f6f17facebf6149dfc536ee1&type=2$endParam",
             referer = "$mainUrl/"
-        ).parsedSafe<MXPlayer>()?.items?.map { item -> item.toSearchResult() } ?: throw ErrorLoadingException("Failed to load Drama data")
+        ).toString()
+        val dramaRoot: MXPlayer = Gson().fromJson(dramaResponse, object : TypeToken<MXPlayer>() {}.type)
+        val dramashows = dramaRoot.items.map { item ->
+            item.toSearchResult()
+        }
+
+        val crimeResponse = app.get(
+            "$webApi/detail/browseItem?&pageNum=1&pageSize=20&isCustomized=true&genreFilterIds=b413dff55bdad743c577a8bea3b65044&type=2$endParam",
+            referer = "$mainUrl/"
+        ).toString()
+        val crimeRoot: MXPlayer = Gson().fromJson(crimeResponse, object : TypeToken<MXPlayer>() {}.type)
+        val crime_shows = crimeRoot.items.map { item ->
+            item.toSearchResult()
+        }
+
+        val thrillerResponse = app.get(
+            "$webApi/detail/browseItem?&pageNum=1&pageSize=20&isCustomized=true&genreFilterIds=b413dff55bdad743c577a8bea3b65044&type=2$endParam",
+            referer = "$mainUrl/"
+        ).toString()
+        val thrillerRoot: MXPlayer = Gson().fromJson(thrillerResponse, object : TypeToken<MXPlayer>() {}.type)
+        val thriller_shows = thrillerRoot.items.map { item ->
+            item.toSearchResult()
+        }
+
         val hindimovieresponse = app.get(
             "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&browseLangFilterIds=hi&type=1$endParam",
             referer = "$mainUrl/").toString()
@@ -46,10 +66,21 @@ class MPlayer : MainAPI() {
         val hindi_Movies = movieRoot.items.map { item ->
             item.toSearchResult()
         }
-        val Dramashows = HomePageList("Drama Shows", drama)
-        val Comedyshows = HomePageList("Comedy Shows", comedy)
+
+        val telgumovieresponse = app.get(
+            "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&browseLangFilterIds=te&type=1$endParam",
+            referer = "$mainUrl/").toString()
+        val movieRootte: MovieRoot = Gson().fromJson(telgumovieresponse, object : TypeToken<MovieRoot>() {}.type)
+        val telgu_Movies = movieRootte.items.map { item ->
+            item.toSearchResult()
+        }
+        val Dramashows = HomePageList("Drama Shows", dramashows)
         val HindiMovies = HomePageList("Hindi Movies", hindi_Movies)
-        return newHomePageResponse(listOf(Dramashows,HindiMovies,Comedyshows),hasNext = true)
+        val telguMovies = HomePageList("Telgu Movies", telgu_Movies)
+        val crimeshows = HomePageList("Crime Shows", crime_shows)
+        val thrillershows = HomePageList("Thriller Shows", thriller_shows)
+
+        return newHomePageResponse(listOf(crimeshows,Dramashows,thrillershows,HindiMovies,telguMovies))
     }
 
     //Movie classes
@@ -139,7 +170,6 @@ class MPlayer : MainAPI() {
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo ?: video.alternativeposter
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
         val href = video.stream?.hls?.high ?: video.stream?.thirdParty?.hlsUrl ?: video.alternativestream
-        Log.d("Phisher",video.stream.toString())
         return if (type == TvType.TvSeries) {
             val epposter = getMovieBigPic(url)
             val id = getdataid("$mainUrl${video.shareUrl}")
@@ -180,6 +210,21 @@ class MPlayer : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        if (data.startsWith("video"))
+        {
+            val href=endpointurl+data
+            callback(
+                ExtractorLink(
+                    this.name,
+                    name,
+                    href,
+                    "$mainUrl/",
+                    Qualities.Unknown.value,
+                    true
+                )
+            )
+        }
+        else
         callback(
             ExtractorLink(
                 this.name,
