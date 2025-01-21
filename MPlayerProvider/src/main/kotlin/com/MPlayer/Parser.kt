@@ -1,4 +1,4 @@
-package com.Mxplayer
+package com.MPlayer
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
