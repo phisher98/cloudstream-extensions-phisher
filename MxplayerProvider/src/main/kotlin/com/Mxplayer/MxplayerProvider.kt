@@ -102,7 +102,7 @@ class MxplayerProvider : MainAPI() {
             section.items.forEach { item ->
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
-                    val streamUrl: String? = item.stream?.hls?.high.toString()
+                    val streamUrl: String? = "https://d3sgzbosmwirao.cloudfront.net/"+item.stream?.hls?.high.toString()
                     result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,streamUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
