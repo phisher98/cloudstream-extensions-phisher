@@ -20,7 +20,7 @@ class MxplayerProvider : MainAPI() {
     override var lang = "hi"
     private var mxplayer: MXPlayer? = null
     override var mainUrl = "https://www.mxplayer.in"
-    override var name = "Mxplayer"
+    override var name = "M-X Player"
     override val hasMainPage = true
     private var imageUrl="https://qqcdnpictest.mxplay.com/"
     private var userID: String? = null
@@ -57,14 +57,14 @@ class MxplayerProvider : MainAPI() {
     //Movie classes
     private fun MovieItem.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,this.stream,this.description,this.shareUrl).toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,this.stream,this.description,this.shareUrl,null).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
 
     private fun Item.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,null,this.description,this.shareUrl).toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,null,this.description,this.shareUrl,null).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
@@ -103,12 +103,12 @@ class MxplayerProvider : MainAPI() {
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
                     val streamUrl: String? = item.stream?.hls?.high
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl).toJson()) {
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,item.stream).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
                 } else {
                     // For non-movie types, handle them without the stream (or other special handling)
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl).toJson()) {
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,null).toJson()) {
                     })
                 }
             }
@@ -139,11 +139,11 @@ class MxplayerProvider : MainAPI() {
         val title = video.title
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        val href = when (val stream = video.stream) {
-            is MovieStream -> "https://d3sgzbosmwirao.cloudfront.net/" + stream.hls?.high  // Handle MovieStream type
-            else -> null  // If stream is neither MovieStream nor String, return null
+        var href = video.stream
+        if(href==null)
+        {
+            href=video.alternativestream
         }
-
         return if (type == TvType.TvSeries) {
             val epposter = getMovieBigPic(url)
             val id = getdataid("$mainUrl${video.shareUrl}")
@@ -225,4 +225,5 @@ data class LoadUrl(
     val stream: MovieStream? = null,  // Defaulting to null
     val description: String = "",  // Defaulting to empty string
     val shareUrl: String? = null  // Defaulting to null
+    val alternativestream: String? = null
 )
