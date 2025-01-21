@@ -20,7 +20,7 @@ class MPlayer : MainAPI() {
     override var lang = "hi"
     private var mxplayer: MXPlayer? = null
     override var mainUrl = "https://www.mxplayer.in"
-    override var name = "M-X Player"
+    override var name = "M Player"
     override val hasMainPage = true
     private var imageUrl="https://qqcdnpictest.mxplay.com/"
     private var userID: String? = null
