@@ -4,7 +4,6 @@ import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import okhttp3.Headers
@@ -18,7 +17,6 @@ class MPlayer : MainAPI() {
         TvType.AsianDrama,
     )
     override var lang = "hi"
-    private var mxplayer: MXPlayer? = null
     override var mainUrl = "https://www.mxplayer.in"
     override var name = "M Player"
     override val hasMainPage = true
@@ -33,26 +31,36 @@ class MPlayer : MainAPI() {
         val res = app.get(mainUrl)
         userID = res.okhttpResponse.headers.getCookies()["UserID"]
             ?: throw ErrorLoadingException("load fail, geo blocked")
-        val drama = app.get(
-                "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&genreFilterIds=48efa872f6f17facebf6149dfc536ee1&type=2$endParam",
-                referer = "$mainUrl/"
-            ).parsedSafe<MXPlayer>()?.items?.map { item -> item.toSearchResult() } ?: throw ErrorLoadingException("Failed to load Drama data")
-        val comedy = app.get(
-            "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&genreFilterIds=a24ddcadde26310ddfdb674e09e38eb5&type=2$endParam",
-            referer = "$mainUrl/"
-        ).parsedSafe<MXPlayer>()?.items?.map { item -> item.toSearchResult() } ?: throw ErrorLoadingException("Failed to load Comedy data")
+        //Movies Homepages
+
         val hindimovieresponse = app.get(
             "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&browseLangFilterIds=hi&type=1$endParam",
             referer = "$mainUrl/").toString()
-        val movieRoot: MovieRoot = Gson().fromJson(hindimovieresponse, object : TypeToken<MovieRoot>() {}.type)
-        val hindi_Movies = movieRoot.items.map { item ->
+        val movieRoothi: MovieRoot = Gson().fromJson(hindimovieresponse, object : TypeToken<MovieRoot>() {}.type)
+        val hindi_Movies = movieRoothi.items.map { item ->
             item.toSearchResult()
         }
 
+        val telgumovieresponse = app.get(
+            "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&browseLangFilterIds=te&type=1$endParam",
+            referer = "$mainUrl/").toString()
+        val movieRootte: MovieRoot = Gson().fromJson(telgumovieresponse, object : TypeToken<MovieRoot>() {}.type)
+        val telgu_Movies = movieRootte.items.map { item ->
+            item.toSearchResult()
+        }
+
+
+        //Series Homepage
+        val drama = app.get(
+            "$webApi/detail/browseItem?&pageNum=$page&pageSize=20&isCustomized=true&genreFilterIds=48efa872f6f17facebf6149dfc536ee1&type=2$endParam",
+            referer = "$mainUrl/"
+        ).parsedSafe<MXPlayer>()?.items?.map { item -> item.toSearchResult() } ?: throw ErrorLoadingException("Failed to load Drama data")
+
+        //Homelist
         val Dramashows = HomePageList("Drama Shows", drama)
-        val Comedyshows = HomePageList("Comedy Shows", comedy)
         val HindiMovies = HomePageList("Hindi Movies", hindi_Movies)
-        return newHomePageResponse(listOf(Dramashows,Comedyshows,HindiMovies),hasNext = true)
+        val telguMovies = HomePageList("Telgu Movies", telgu_Movies)
+        return newHomePageResponse(listOf(Dramashows,HindiMovies,telguMovies))
     }
 
     //Movie classes
@@ -103,13 +111,14 @@ class MPlayer : MainAPI() {
             section.items.forEach { item ->
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
-                    val streamUrl: String? = endpointurl +item.stream?.hls?.high.toString()
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,streamUrl).toJson()) {
+                    val streamUrl: String = endpointurl +item.stream?.hls?.high.toString()
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,streamUrl,portraitLargeImageUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
                 } else {
-                    // For non-movie types, handle them without the stream (or other special handling)
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,null).toJson()) {
+                    val portraitLargeImageUrl = getBigPic(item)
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,null,portraitLargeImageUrl).toJson()) {
+                        posterUrl = portraitLargeImageUrl
                     })
                 }
             }
@@ -138,7 +147,7 @@ class MPlayer : MainAPI() {
             return null
         }
         val title = video.title
-        val poster = getMovieBigPic(url) ?: video.titleContentImageInfo
+        val poster = getMovieBigPic(url) ?: video.titleContentImageInfo ?: video.alternativeposter
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
         var href = video.stream ?: video.alternativestream
         if(href==null)
@@ -166,8 +175,8 @@ class MPlayer : MainAPI() {
                 episodes += Episode(data = href1, name = name, season = season, episode = episode, posterUrl = image)
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                posterUrl = epposter
-                backgroundPosterUrl = epposter
+                posterUrl = epposter ?: video.alternativeposter
+                backgroundPosterUrl = epposter ?: video.alternativeposter
                 plot = video.description
             }
         } else {
@@ -198,7 +207,7 @@ class MPlayer : MainAPI() {
         return true
     }}
 
-private suspend fun getdataid(url: String): String? {
+private suspend fun getdataid(url: String): String {
     val data_id= app.get(url).document.select("div.hs__items-container > div").attr("data-id")
     return data_id
 }
@@ -222,9 +231,10 @@ private fun Headers.getCookies(cookieKey: String = "set-cookie"): Map<String, St
 data class LoadUrl(
     val title: String,
     val titleContentImageInfo: List<Any>? = emptyList(),  // Defaulting to an empty list
-    val tvType: String = "",  // Defaulting to empty string
-    val stream: MovieStream? = null,  // Defaulting to null
-    val description: String = "",  // Defaulting to empty string
-    val shareUrl: String? = null,  // Defaulting to null
-    val alternativestream: String? = null
+    val tvType: String,
+    val stream: MovieStream? = null,
+    val description: String,
+    val shareUrl: String? = null,
+    val alternativestream: String? = null,
+    val alternativeposter: String? = null
 )
