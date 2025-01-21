@@ -1,4 +1,4 @@
-package com.Mxplayer
+package com.MPlayer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
@@ -11,7 +11,7 @@ import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 
-class MxplayerProvider : MainAPI() {
+class MPlayer : MainAPI() {
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
@@ -25,6 +25,7 @@ class MxplayerProvider : MainAPI() {
     private var imageUrl="https://qqcdnpictest.mxplay.com/"
     private var userID: String? = null
     private val webApi = "https://api.mxplayer.in/v1/web"
+    private val endpointurl="https://d3sgzbosmwirao.cloudfront.net/"
     private val endParam
         get() = "&device-density=2&userid=$userID&platform=com.mxplay.desktop&content-languages=hi,en&kids-mode-enabled=false"
 
@@ -102,7 +103,7 @@ class MxplayerProvider : MainAPI() {
             section.items.forEach { item ->
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
-                    val streamUrl: String? = "https://d3sgzbosmwirao.cloudfront.net/"+item.stream?.hls?.high.toString()
+                    val streamUrl: String? = endpointurl +item.stream?.hls?.high.toString()
                     result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,streamUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
@@ -157,7 +158,7 @@ class MxplayerProvider : MainAPI() {
                 null
             }
             episodesParser?.items?.forEachIndexed { index, it ->
-                val href1 = "https://d3sgzbosmwirao.cloudfront.net/" + it.stream.hls.high
+                val href1 = endpointurl + it.stream.hls.high
                 val name = it.title ?: "Unknown Title"
                 val image = imageUrl + it.imageInfo.map { img -> img.url }.firstOrNull()
                 val episode = index + 1

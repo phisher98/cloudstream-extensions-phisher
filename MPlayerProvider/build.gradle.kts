@@ -1,12 +1,11 @@
 // use an integer for version numbers
-version = 3
+version = 4
 
 
 cloudstream {
     language = "hi"
     // All of these properties are optional, you can safely remove them
-
-//    description = "Watch MX player contents on cloudstream"
+    description = "Indian Movies/Series/Kdrama(Hindi Dubbed)"
     authors = listOf("Phisher98")
 
     /**

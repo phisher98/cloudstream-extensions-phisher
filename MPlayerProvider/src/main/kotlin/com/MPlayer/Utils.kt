@@ -1,4 +1,4 @@
-package com.Mxplayer
+package com.MPlayer
 import com.fasterxml.jackson.core.json.JsonReadFeature
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
