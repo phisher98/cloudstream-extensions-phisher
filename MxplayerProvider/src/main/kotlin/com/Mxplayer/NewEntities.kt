@@ -12,11 +12,39 @@ data class MXPlayer(
     val items: List<Item>,
 )
 
+
+data class SearchResult(
+    val sections: List<Section>,
+    val next: Any?,
+)
+
+
+data class Section(
+    val id: String,
+    val style: String,
+    val items: List<Item>,
+    val next: String?,
+    val previous: Any?,
+    val name: String,
+    val webUrl: Any?,
+    val channelDetails: Any?,
+    val features: Any?,
+    val tournament: Any?,
+    val ascend: Boolean,
+)
+
+data class SectionItem(
+    val description: String,
+    val title: String,
+    val releaseDate: String,
+    val stream: Stream?,
+)
+
 data class Item(
     val description: String,
     val title: String,
     val releaseDate: String,
-    val stream: Any?,
+    val stream: Stream?,
     val type: String,
     val tvodPackImageInfo: Any?,
     val tvodDetail: Any?,
@@ -272,6 +300,9 @@ data class ImageInfo2(
     val url: String,
     val height: Long,
 )
+
+//Loadtest
+
 
 
 

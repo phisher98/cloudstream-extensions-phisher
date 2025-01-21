@@ -4,9 +4,9 @@ import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.nicehttp.NiceResponse
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -57,14 +57,14 @@ class MxplayerProvider : MainAPI() {
     //Movie classes
     private fun MovieItem.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, this.toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,this.stream,this.description,this.shareUrl).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
 
     private fun Item.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, this.toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,null,this.description,this.shareUrl).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
@@ -82,14 +82,6 @@ class MxplayerProvider : MainAPI() {
             ?.url?.let { imageUrl + it }
     }
 
-    fun getBigPic(jsonString: String): String? {
-        val item = tryParseJson<Item>(jsonString)
-            ?: throw IllegalArgumentException("Invalid JSON or parsing failed")
-        val bigPicUrl = item.titleContentImageInfo.firstOrNull { it.type == "banner_and_static_bg_desktop" }?.url
-
-        return bigPicUrl?.let { "$imageUrl$it" }
-    }
-
     fun getMovieBigPic(jsonString: String): String? {
         val gson = Gson()
         val item = gson.fromJson(jsonString, MovieItem::class.java)
@@ -98,31 +90,46 @@ class MxplayerProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-
-        //Not Working as of now search
-        if (userID == null) {
-            val res = app.get(mainUrl)
-            userID = res.okhttpResponse.headers.getCookies()["UserID"]
-        }
-        val data = app.post(
+        val gson = Gson()
+        val response = app.post(
             "$webApi/search/resultv2?query=$query$endParam",
             referer = "$mainUrl/",
             requestBody = "{}".toRequestBody("application/json".toMediaType())
-        ).parsed<MXPlayer>()
-
-        // Map the data items to SearchResponse using the toSearchResult extension function
-        return data.items.map { entity ->
-            Log.d("Phisher",entity.toString())
-            entity.toSearchResult() // Ensure that `toSearchResult` maps the entity to the correct SearchResponse
+        ).body.string()
+        val searchResult = gson.fromJson(response, SearchResult::class.java)
+        val result = mutableListOf<SearchResponse>()
+        searchResult.sections.forEach { section ->
+            section.items.forEach { item ->
+                if (item.type.contains("movie", ignoreCase = true)) {
+                    val portraitLargeImageUrl = getBigPic(item)
+                    val streamUrl: String? = item.stream?.hls?.high
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl).toJson()) {
+                        posterUrl = portraitLargeImageUrl
+                    })
+                } else {
+                    // For non-movie types, handle them without the stream (or other special handling)
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl).toJson()) {
+                    })
+                }
+            }
         }
+
+        return result
     }
+
+    fun getBigPic(item: Item): String? {
+        return item.imageInfo
+            .firstOrNull { it.type == "bigpic" }
+            ?.url?.let { imageUrl + it }
+    }
+
 
     override suspend fun load(url: String): LoadResponse? {
         val gson = Gson()
-        val video: Entity? = try {
-            gson.fromJson(url, Entity::class.java)
+        val video: LoadUrl? = try {
+            gson.fromJson(url, LoadUrl::class.java)
         } catch (e: Exception) {
-            Log.e("Error", "Failed to parse JSON into Entity")
+            Log.e("Error", "Failed to parse JSON into Entity: ${e.message}")
             null
         }
         if (video == null) {
@@ -130,12 +137,15 @@ class MxplayerProvider : MainAPI() {
             return null
         }
         val title = video.title
-        val poster=getMovieBigPic(url)
-        val type = if (video.type.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        val href="https://d3sgzbosmwirao.cloudfront.net/"+video.stream?.hls?.high
-        Log.d("Phisher",href.toString())
+        val poster = getMovieBigPic(url) ?: video.titleContentImageInfo
+        val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
+        val href = when (val stream = video.stream) {
+            is MovieStream -> "https://d3sgzbosmwirao.cloudfront.net/" + stream.hls?.high  // Handle MovieStream type
+            else -> null  // If stream is neither MovieStream nor String, return null
+        }
+
         return if (type == TvType.TvSeries) {
-            val epposter = getBigPic(url) ?: return null
+            val epposter = getMovieBigPic(url)
             val id = getdataid("$mainUrl${video.shareUrl}")
             val apiUrl = "$webApi/detail/tab/tvshowepisodes?type=season&id=$id"
             val episodes = mutableListOf<Episode>()
@@ -143,16 +153,16 @@ class MxplayerProvider : MainAPI() {
             val episodesParser = try {
                 gson.fromJson(jsonResponse, EpisodesParser::class.java)
             } catch (e: Exception) {
-                Log.e("Error", "Failed to parse episodes JSON")
+                Log.e("Error", "Failed to parse episodes JSON: ${e.message}")
                 null
             }
             episodesParser?.items?.forEachIndexed { index, it ->
-                val href = "https://d3sgzbosmwirao.cloudfront.net/" + it.stream.hls.high
+                val href1 = "https://d3sgzbosmwirao.cloudfront.net/" + it.stream.hls.high
                 val name = it.title ?: "Unknown Title"
                 val image = imageUrl + it.imageInfo.map { img -> img.url }.firstOrNull()
                 val episode = index + 1
                 val season = 1
-                episodes += Episode(data = href, name = name, season = season, episode = episode, posterUrl = image)
+                episodes += Episode(data = href1, name = name, season = season, episode = episode, posterUrl = image)
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 posterUrl = epposter
@@ -161,8 +171,8 @@ class MxplayerProvider : MainAPI() {
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, href) {
-                posterUrl = poster
-                backgroundPosterUrl = poster
+                posterUrl = poster.toString()
+                backgroundPosterUrl = poster.toString()
                 plot = video.description
             }
         }
@@ -186,114 +196,6 @@ class MxplayerProvider : MainAPI() {
         )
         return true
     }}
-/*
-    private fun loadVideoLink(link: VideoLink?, callback: (ExtractorLink) -> Unit) {
-        link ?: return
-        link.base?.let {
-            addVideoLink(callback, it, "base")
-        }
-        link.main?.let {
-            addVideoLink(callback, it, "main")
-        }
-        link.high?.let {
-            addVideoLink(callback, it, "high")
-        }
-        link.hlsUrl?.let {
-            addVideoLink(callback, it, "thirdParty")
-        }
-    }
-
-    private fun addVideoLink(callback: (ExtractorLink) -> Unit, url: String, name: String) {
-        val newUrl = if (!url.startsWith("http")) {
-            mxplayer!!.config.videoCdnBaseUrl + url
-        } else {
-            url
-        }
-        callback(
-            ExtractorLink(
-                this.name,
-                name,
-                newUrl,
-                "$mainUrl/",
-                Qualities.Unknown.value,
-                true
-            )
-        )
-    }
-
-    private fun List<Image>.getUrl(type: String = "square"): String? {
-        return firstOrNull { it.type == type }?.let {
-            mxplayer!!.config.imageBaseUrl + "/" + it.url
-        }
-    }
-
-    private suspend fun getMxplayer(url: String): Mxplayer {
-        val res = app.get(url, referer = "$mainUrl/")
-        return getMxplayer(res)
-    }
-}
- */
-
-suspend fun getHlsLink(url: String): String? {
-    val gson = Gson()
-
-    // Parse the JSON into MovieRoot object
-    val movieRoot: MovieRoot? = try {
-        gson.fromJson(url, MovieRoot::class.java)
-    } catch (e: Exception) {
-        Log.e("Error", "Failed to parse JSON into MovieRoot: ${e.message}")
-        return null
-    }
-
-    // If parsing fails or the movieRoot is null, log the error and return null
-    if (movieRoot == null) {
-        Log.e("Error", "Failed to parse movie data from JSON")
-        return null
-    }
-
-    // Extract the first MovieItem (or iterate through items if you need more)
-    val movieItem = movieRoot.items.firstOrNull() ?: run {
-        Log.e("Error", "No movie items found in the response")
-        return null
-    }
-
-    // Extract the HLS link from the MovieStream
-    val hlsLink = movieItem.stream.hls?.high
-
-    // Log the HLS link (for debugging purposes)
-    Log.d("HLS Link", "Found HLS link: $hlsLink")
-
-    // Handle missing or null HLS link
-    if (hlsLink == null) {
-        Log.e("Error", "No HLS link found for the movie")
-        return null
-    }
-
-    // Return the HLS link
-    return hlsLink
-}
-
-fun getHlsLinkFromJson(jsonInput: String): String? {
-    val gson = Gson()
-    return try {
-        // Parse the JSON into the MovieStream data class
-        val movieStream = gson.fromJson(jsonInput, MovieStream::class.java)
-        movieStream.hls?.high
-    } catch (e: Exception) {
-        Log.e("Error", "Failed to parse JSON: ${e.message}")
-        null
-    }
-}
-
-private fun getMxplayer(res: NiceResponse): MXPlayer {
-    val data = res.document.select("script")
-        .firstOrNull { it.data().startsWith("window.__mxs__ = ") }
-        ?.data() ?: throw ErrorLoadingException("Failed to load data from the main page")
-    val jsonData = data.substringAfter("window.__mxs__ = ").trim()
-    return tryParseJson(jsonData)
-        ?: throw ErrorLoadingException("Failed to parse mxplayer data")
-}
-
 
 private suspend fun getdataid(url: String): String? {
     val data_id= app.get(url).document.select("div.hs__items-container > div").attr("data-id")
@@ -316,13 +218,11 @@ private fun Headers.getCookies(cookieKey: String = "set-cookie"): Map<String, St
     }.filter { it.key.isNotBlank() && it.value.isNotBlank() }
 }
 
-
-data class MoviesResponse(val movieList: List<Movie>)
-
-data class Movie(val name: String, val movieId: String) {
-    fun convertToDisplayMovie(): DisplayMovie {
-        return DisplayMovie(name, movieId)
-    }
-}
-
-data class DisplayMovie(val name: String, val movieId: String)
+data class LoadUrl(
+    val title: String,
+    val titleContentImageInfo: List<Any>? = emptyList(),  // Defaulting to an empty list
+    val tvType: String = "",  // Defaulting to empty string
+    val stream: MovieStream? = null,  // Defaulting to null
+    val description: String = "",  // Defaulting to empty string
+    val shareUrl: String? = null  // Defaulting to null
+)
