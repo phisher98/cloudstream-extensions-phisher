@@ -1,7 +1,6 @@
 package com.Anisaga
 
 
-import android.annotation.SuppressLint
 import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
@@ -10,14 +9,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
-import java.util.Base64
-import javax.crypto.Cipher
-import javax.crypto.Mac
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
-import org.json.JSONObject
+import android.util.Base64
 import java.util.zip.Inflater
 
 class AnisagaStream : Chillx() {
@@ -42,9 +34,8 @@ open class Chillx : ExtractorApi() {
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
         Log.d("Phisher",encodedString)
         val decoded = decodeEncryptedData(encodedString)
-        val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded)?.groupValues?.get(1) ?:""
-        val header =
-            mapOf(
+        val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded ?:"")?.groupValues?.get(1) ?:""
+        val header =mapOf(
                 "accept" to "*/*",
                 "accept-language" to "en-US,en;q=0.5",
                 "Origin" to mainUrl,
@@ -53,21 +44,20 @@ open class Chillx : ExtractorApi() {
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
                 "Sec-Fetch-Site" to "cross-site",
-                "user-agent" to USER_AGENT,
+                "user-agent" to USER_AGENT,)
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                m3u8,
+                mainUrl,
+                Qualities.P1080.value,
+                INFER_TYPE,
+                headers = header
             )
-                callback.invoke(
-                    ExtractorLink(
-                        name,
-                        name,
-                        m3u8,
-                        mainUrl,
-                        Qualities.P1080.value,
-                        INFER_TYPE,
-                        headers = header
-                    )
-                )
+        )
 
-        val subtitles = extractSrtSubtitles(decoded)
+        val subtitles = extractSrtSubtitles(decoded ?:"")
         subtitles.forEachIndexed { _, (language, url) ->
             subtitleCallback.invoke(
                 SubtitleFile(
@@ -87,38 +77,42 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    fun decodeEncryptedData(encryptedString: String?): String? {
-    if (encryptedString == null) return null
 
-    return try {
-        // Base64 decode
-        val decodedBytes = Base64.getDecoder().decode(encryptedString)
+    private fun decodeEncryptedData(encryptedString: String?): String? {
+        if (encryptedString == null) return null
 
-        // Reverse binary and decode characters
-        val decodedCharacters = decodedBytes.map { byte ->
-            val binaryRepresentation = byte.toUByte().toString(2).padStart(8, '0')
-            val reversedBinary = binaryRepresentation.reversed()
-            reversedBinary.toInt(2).toByte()
+        return try {
+            // Base64 decode using android.util.Base64
+            val decodedBytes = Base64.decode(encryptedString, Base64.DEFAULT)
+
+            // Reverse binary and decode characters
+            val decodedCharacters = decodedBytes.map { byte ->
+                val binaryRepresentation = byte.toUByte().toString(2).padStart(8, '0')
+                val reversedBinary = binaryRepresentation.reversed()
+                reversedBinary.toInt(2).toByte()
+            }
+            Log.d("Phisher",decodedCharacters.toString())
+
+            val byteArray = ByteArray(decodedCharacters.size) { decodedCharacters[it] }
+            val decompressedData = Inflater().run {
+                setInput(byteArray)
+                val output = ByteArray(1024 * 4)
+                val decompressedSize = inflate(output)
+                output.copyOf(decompressedSize).toString(Charsets.UTF_8)
+            }
+            val specialToAlphabetMap = mapOf(
+                '!' to 'a', '@' to 'b', '#' to 'c', '$' to 'd', '%' to 'e',
+                '^' to 'f', '&' to 'g', '*' to 'h', '(' to 'i', ')' to 'j'
+            )
+            val processedData = decompressedData.map { char ->
+                specialToAlphabetMap[char] ?: char
+            }.joinToString("")
+            val finalDecodedData = Base64.decode(processedData, Base64.DEFAULT).toString(Charsets.UTF_8)
+            Log.d("Phisher",finalDecodedData)
+            finalDecodedData
+        } catch (e: Exception) {
+            println("Error decoding string: ${e.message}")
+            null
         }
-        val byteArray = ByteArray(decodedCharacters.size) { decodedCharacters[it] }
-        val decompressedData = Inflater().run {
-            setInput(byteArray)
-            val output = ByteArray(1024 * 4)
-            val decompressedSize = inflate(output)
-            output.copyOf(decompressedSize).toString(Charsets.UTF_8)
-        }
-        val specialToAlphabetMap = mapOf(
-            '!' to 'a', '@' to 'b', '#' to 'c', '$' to 'd', '%' to 'e',
-            '^' to 'f', '&' to 'g', '*' to 'h', '(' to 'i', ')' to 'j'
-        )
-        val processedData = decompressedData.map { char ->
-            specialToAlphabetMap[char] ?: char
-        }.joinToString("")
-        val finalDecodedData = Base64.getDecoder().decode(processedData).toString(Charsets.UTF_8)
-        finalDecodedData
-    } catch (e: Exception) {
-        println("Error decoding string: ${e.message}")
-        null
     }
-   }
 }

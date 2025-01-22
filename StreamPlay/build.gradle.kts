@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 126
+version = 127
 android {
     defaultConfig {
         val properties = Properties()

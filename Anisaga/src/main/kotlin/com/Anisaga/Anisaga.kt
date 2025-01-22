@@ -1,8 +1,6 @@
 package com.Anisaga
 
-//import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -56,7 +54,6 @@ open class Anisaga : MainAPI() {
             document.select("div#archive-content article,div.items.full article").mapNotNull {
                 it.toSearchResult()
             }
-        Log.d("Phisher",home.toString())
         return newHomePageResponse(request.name, home)
     }
 
@@ -222,10 +219,8 @@ open class Anisaga : MainAPI() {
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
                 cookies = cookies
             ).parsed<ResponseHash>().embed_url
-            Log.d(" Phisher source",source)
             when {
                 !source.contains("youtube") -> {
-                    Log.d("Phisher",source)
                     loadExtractor(source, subtitleCallback, callback)
                 }
                 else -> return@apmap

@@ -16,14 +16,8 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.json.JSONObject
 import java.net.URI
-import java.util.Base64
-import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
+import java.util.zip.Inflater
 
 
 class FilemoonV2 : ExtractorApi() {
@@ -109,11 +103,20 @@ class VidStream : ExtractorApi() {
         val res = app.get(url,referer=referer).toString()
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
-        val decoded = decrypt(encodedString)
+        val decoded = decrypt(encodedString) ?:""
         val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
             ?.trim()
             ?:""
-        com.lagradost.api.Log.d("Phisher","$decoded $m3u8")
+
+        val subtitles = extractSrtSubtitles(decoded)
+        subtitles.forEachIndexed { _, (language, url) ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    language,
+                    url
+                )
+            )
+        }
 
         val header =
             mapOf(
@@ -140,33 +143,46 @@ class VidStream : ExtractorApi() {
         )
     }
 
-    fun decrypt(encrypted: String): String {
-        // Decode the Base64-encoded JSON string
-        val data = JSONObject(String(Base64.getDecoder().decode(encrypted)))
+    private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
+        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
 
-        // Function to derive the key
-        fun deriveKey(password: String, salt: String): ByteArray {
-            val saltBytes = if (salt.contains("=")) Base64.getDecoder().decode(salt) else salt.toByteArray()
-            val passwordBytes = (password + "sB0mZOqlRTy8CVpL").toCharArray()
-            val spec = PBEKeySpec(passwordBytes, saltBytes, 1000, 64 * 8) // 64 bytes = 512 bits
-            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-            return factory.generateSecret(spec).encoded
+        return regex.findAll(subtitle).map { match ->
+            val (language, url) = match.destructured
+            language.trim() to url.trim()
+        }.toList()
+    }
+
+    private fun decrypt(encryptedString: String?): String? {
+        if (encryptedString == null) return null
+
+        return try {
+            val decodedBytes = android.util.Base64.decode(encryptedString, android.util.Base64.DEFAULT)
+
+            val decodedCharacters = decodedBytes.map { byte ->
+                val binaryRepresentation = byte.toUByte().toString(2).padStart(8, '0')
+                val reversedBinary = binaryRepresentation.reversed()
+                reversedBinary.toInt(2).toByte()
+            }
+            val byteArray = ByteArray(decodedCharacters.size) { decodedCharacters[it] }
+            val decompressedData = Inflater().run {
+                setInput(byteArray)
+                val output = ByteArray(1024 * 4)
+                val decompressedSize = inflate(output)
+                output.copyOf(decompressedSize).toString(Charsets.UTF_8)
+            }
+            val specialToAlphabetMap = mapOf(
+                '!' to 'a', '@' to 'b', '#' to 'c', '$' to 'd', '%' to 'e',
+                '^' to 'f', '&' to 'g', '*' to 'h', '(' to 'i', ')' to 'j'
+            )
+            val processedData = decompressedData.map { char ->
+                specialToAlphabetMap[char] ?: char
+            }.joinToString("")
+            val finalDecodedData = android.util.Base64.decode(processedData, android.util.Base64.DEFAULT).toString(Charsets.UTF_8)
+            finalDecodedData
+        } catch (e: Exception) {
+            println("Error decoding string: ${e.message}")
+            null
         }
-
-        // Derive the key
-        val key = deriveKey("NMhG08LLwixKRmgx", data.getString("salt"))
-
-        // Decode IV and ciphertext
-        val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
-        val iv = IvParameterSpec(ivBytes)
-        val ciphertext = Base64.getDecoder().decode(data.getString("data"))
-
-        // Decrypt the ciphertext using AES
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key.copyOf(32), "AES"), iv)
-        val decrypted = cipher.doFinal(ciphertext)
-
-        return String(decrypted, Charsets.UTF_8)
     }
 }
 
