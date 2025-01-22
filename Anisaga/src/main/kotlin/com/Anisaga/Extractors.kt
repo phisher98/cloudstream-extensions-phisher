@@ -18,6 +18,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import org.json.JSONObject
+import java.util.zip.Inflater
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
@@ -30,7 +31,6 @@ open class Chillx : ExtractorApi() {
     override val requiresReferer = true
     private var key: String? = null
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -41,7 +41,7 @@ open class Chillx : ExtractorApi() {
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
         Log.d("Phisher",encodedString)
-        val decoded = decrypt(encodedString)
+        val decoded = decodeEncryptedData(encodedString)
         val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded)?.groupValues?.get(1) ?:""
         val header =
             mapOf(
@@ -68,7 +68,6 @@ open class Chillx : ExtractorApi() {
                 )
 
         val subtitles = extractSrtSubtitles(decoded)
-
         subtitles.forEachIndexed { _, (language, url) ->
             subtitleCallback.invoke(
                 SubtitleFile(
@@ -88,38 +87,37 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    fun decrypt(encrypted: String): String {
-        // Decode the Base64-encoded JSON string
-        val data = JSONObject(String(Base64.getDecoder().decode(encrypted)))
+    fun decodeEncryptedData(encryptedString: String): String? {
+     try {
+        // Base64 decode
+        val decodedBytes = Base64.getDecoder().decode(encryptedString)
 
-        // Function to derive the key
-        fun deriveKey(password: String, salt: String): ByteArray {
-            val saltBytes = if (salt.contains("=")) Base64.getDecoder().decode(salt) else salt.toByteArray()
-            val passwordBytes = (password + "sB0mZOqlRTy8CVpL").toCharArray()
-            val spec = PBEKeySpec(passwordBytes, saltBytes, 1000, 64 * 8) // 64 bytes = 512 bits
-            val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-            return factory.generateSecret(spec).encoded
+        // Reverse binary and decode characters
+        val decodedCharacters = decodedBytes.map { byte ->
+            val binaryRepresentation = byte.toUByte().toString(2).padStart(8, '0')
+            val reversedBinary = binaryRepresentation.reversed()
+            reversedBinary.toInt(2).toByte()
         }
-
-        // Derive the key
-        val key = deriveKey("NMhG08LLwixKRmgx", data.getString("salt"))
-
-        // Decode IV and ciphertext
-        val ivBytes = Base64.getDecoder().decode(data.getString("iv"))
-        val iv = IvParameterSpec(ivBytes)
-        val ciphertext = Base64.getDecoder().decode(data.getString("data"))
-
-        // Generate HMAC for integrity check (optional)
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(key, "HmacSHA256"))
-        val calculatedMac = mac.doFinal(ciphertext).joinToString("") { "%02x".format(it) }
-
-        // Decrypt the ciphertext using AES
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key.copyOf(32), "AES"), iv)
-        val decrypted = cipher.doFinal(ciphertext)
-
-        return String(decrypted, Charsets.UTF_8)
+        val byteArray = ByteArray(decodedCharacters.size) { decodedCharacters[it] }
+        val decompressedData = Inflater().run {
+            setInput(byteArray)
+            val output = ByteArray(1024 * 4)
+            val decompressedSize = inflate(output)
+            output.copyOf(decompressedSize).toString(Charsets.UTF_8)
+        }
+        val specialToAlphabetMap = mapOf(
+            '!' to 'a', '@' to 'b', '#' to 'c', '$' to 'd', '%' to 'e',
+            '^' to 'f', '&' to 'g', '*' to 'h', '(' to 'i', ')' to 'j'
+        )
+        val processedData = decompressedData.map { char ->
+            specialToAlphabetMap[char] ?: char
+        }.joinToString("")
+        val finalDecodedData = Base64.getDecoder().decode(processedData).toString(Charsets.UTF_8)
+        return finalDecodedData
+     } catch (e: Exception) {
+        println("Error decoding string: ${e.message}")
+        return null
+     }
     }
 
 }
