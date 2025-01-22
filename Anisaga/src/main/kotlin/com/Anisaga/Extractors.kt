@@ -89,6 +89,7 @@ open class Chillx : ExtractorApi() {
 
     fun decodeEncryptedData(encryptedString: String?): String? {
     if (encryptedString == null) return null
+
     return try {
         // Base64 decode
         val decodedBytes = Base64.getDecoder().decode(encryptedString)
@@ -119,6 +120,5 @@ open class Chillx : ExtractorApi() {
         println("Error decoding string: ${e.message}")
         null
     }
-}
-
+   }
 }
