@@ -72,7 +72,7 @@ class IndianTVPlugin : MainAPI() {
             val posterUrl=data?.posterUrl
             val title =data?.name ?: "Unknown"
             val description = "Live TV"
-            val href="https://amit.allinonereborn.in/jiotv/app/ts_live_$id.m3u8"
+            val href="https://amit1.allinonereborn.in/jiotv/app/ts_live_$id.m3u8"
             return newMovieLoadResponse(title, href, TvType.Live, href) {
                 this.posterUrl = posterUrl
                 this.plot = description
