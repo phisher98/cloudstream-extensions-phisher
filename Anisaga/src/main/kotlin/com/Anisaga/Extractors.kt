@@ -113,7 +113,7 @@ open class Chillx : ExtractorApi() {
             specialToAlphabetMap[char] ?: char
         }.joinToString("")
         val finalDecodedData = Base64.getDecoder().decode(processedData).toString(Charsets.UTF_8)
-        return finalDecodedData
+        return finalDecodedData.toString()
      } catch (e: Exception) {
         println("Error decoding string: ${e.message}")
         return null
