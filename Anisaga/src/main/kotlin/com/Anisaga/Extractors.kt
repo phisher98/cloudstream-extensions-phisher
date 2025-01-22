@@ -87,8 +87,9 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    fun decodeEncryptedData(encryptedString: String): String? {
-     try {
+    fun decodeEncryptedData(encryptedString: String?): String? {
+    if (encryptedString == null) return null
+    return try {
         // Base64 decode
         val decodedBytes = Base64.getDecoder().decode(encryptedString)
 
@@ -113,11 +114,11 @@ open class Chillx : ExtractorApi() {
             specialToAlphabetMap[char] ?: char
         }.joinToString("")
         val finalDecodedData = Base64.getDecoder().decode(processedData).toString(Charsets.UTF_8)
-        return finalDecodedData.toString()
-     } catch (e: Exception) {
+        finalDecodedData
+    } catch (e: Exception) {
         println("Error decoding string: ${e.message}")
-        return null
-     }
+        null
     }
+}
 
 }
