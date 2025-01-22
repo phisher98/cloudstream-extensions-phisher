@@ -86,14 +86,15 @@ class MPlayer : MainAPI() {
     //Movie classes
     private fun MovieItem.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,this.stream,this.description,this.shareUrl,null).toJson()) {
+        val bigpic=getMBigPic(this)
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,bigpic,this.type,this.stream,this.description,this.shareUrl,null).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
 
     private fun Item.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,this.type,null,this.description,this.shareUrl,null).toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,null,this.type,null,this.description,this.shareUrl,null).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
@@ -118,6 +119,12 @@ class MPlayer : MainAPI() {
         return bigPicUrl?.let { "$imageUrl$it" }
     }
 
+    fun getMBigPic(item: MovieItem): String? {
+        return item.imageInfo
+            .firstOrNull { it.type == "bigpic" }
+            ?.url?.let { imageUrl + it }
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
         val gson = Gson()
         val response = app.post(
@@ -132,12 +139,12 @@ class MPlayer : MainAPI() {
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
                     val streamUrl: String = endpointurl +item.stream?.hls?.high.toString()
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,streamUrl,portraitLargeImageUrl).toJson()) {
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo,null, item.type, null, item.description, item.shareUrl,streamUrl,portraitLargeImageUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
                 } else {
                     val portraitLargeImageUrl = getBigPic(item)
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo, item.type, null, item.description, item.shareUrl,null,portraitLargeImageUrl).toJson()) {
+                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo,null, item.type, null, item.description, item.shareUrl,null,portraitLargeImageUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
                 }
@@ -152,6 +159,7 @@ class MPlayer : MainAPI() {
             .firstOrNull { it.type == "bigpic" }
             ?.url?.let { imageUrl + it }
     }
+
 
 
     override suspend fun load(url: String): LoadResponse? {
@@ -169,26 +177,29 @@ class MPlayer : MainAPI() {
         val title = video.title
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo ?: video.alternativeposter
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        val href = video.stream?.hls?.high ?: video.stream?.thirdParty?.hlsUrl ?: video.alternativestream
+        val href = video.stream?.hls?.high ?: video.stream?.thirdParty?.hlsUrl ?:video.stream?.hls?.base ?: video.alternativestream
         return if (type == TvType.TvSeries) {
             val epposter = getMovieBigPic(url)
-            val id = getdataid("$mainUrl${video.shareUrl}")
-            val apiUrl = "$webApi/detail/tab/tvshowepisodes?type=season&id=$id"
+            val seasonData = getSeasonData("$mainUrl${video.shareUrl}")
             val episodes = mutableListOf<Episode>()
-            val jsonResponse = app.get(apiUrl).toString()
-            val episodesParser = try {
-                gson.fromJson(jsonResponse, EpisodesParser::class.java)
-            } catch (e: Exception) {
-                Log.e("Error", "Failed to parse episodes JSON: ${e.message}")
-                null
-            }
-            episodesParser?.items?.forEachIndexed { index, it ->
-                val href1 = endpointurl + it.stream.hls.high
-                val name = it.title ?: "Unknown Title"
-                val image = imageUrl + it.imageInfo.map { img -> img.url }.firstOrNull()
-                val episode = index + 1
-                val season = 1
-                episodes += Episode(data = href1, name = name, season = season, episode = episode, posterUrl = image)
+            seasonData.forEach { (season, id) ->
+                val apiUrl = "$webApi/detail/tab/tvshowepisodes?type=season&id=$id"
+                val jsonResponse = app.get(apiUrl).toString()
+
+                val episodesParser = try {
+                    gson.fromJson(jsonResponse, EpisodesParser::class.java)
+                } catch (e: Exception) {
+                    Log.e("Error", "Failed to parse episodes JSON: ${e.message}")
+                    null
+                }
+
+                episodesParser?.items?.forEachIndexed { index, it ->
+                    val href1 = endpointurl + it.stream.hls.high
+                    val name = it.title ?: "Unknown Title"
+                    val image = imageUrl + it.imageInfo.map { img -> img.url }.firstOrNull()
+                    val episode = index + 1
+                    episodes += Episode(data = href1, name = name, season = season + 1, episode = episode, posterUrl = image)
+                }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 posterUrl = epposter ?: video.alternativeposter
@@ -211,7 +222,7 @@ class MPlayer : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data.startsWith("video"))
-        {
+         {
             val href=endpointurl+data
             callback(
                 ExtractorLink(
@@ -238,9 +249,17 @@ class MPlayer : MainAPI() {
         return true
     }}
 
-private suspend fun getdataid(url: String): String {
-    val data_id= app.get(url).document.select("div.hs__items-container > div").attr("data-id")
-    return data_id
+private suspend fun getSeasonData(url: String): List<Pair<Int, String>> {
+    val document = app.get(url).document
+    return document.select("div.hs__items-container > div").mapNotNull { element ->
+        val tab = element.attr("data-tab").toIntOrNull()
+        val id = element.attr("data-id")
+        if (tab != null && id.isNotBlank()) {
+            tab to id
+        } else {
+            null
+        }
+    }
 }
 
 
@@ -261,7 +280,8 @@ private fun Headers.getCookies(cookieKey: String = "set-cookie"): Map<String, St
 
 data class LoadUrl(
     val title: String,
-    val titleContentImageInfo: List<Any>? = emptyList(),  // Defaulting to an empty list
+    val titleContentImageInfo: List<Any>? = emptyList(),
+    val bigpic:String? = null,
     val tvType: String,
     val stream: MovieStream? = null,
     val description: String,
