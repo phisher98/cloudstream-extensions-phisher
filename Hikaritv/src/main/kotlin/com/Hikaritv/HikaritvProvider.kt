@@ -10,5 +10,6 @@ class AnisagaProvider: Plugin() {
         registerMainAPI(Hikaritv())
         registerExtractorAPI(Ghbrisk())
         registerExtractorAPI(Swishsrv())
+        registerExtractorAPI(FilemoonV2())
     }
 }
