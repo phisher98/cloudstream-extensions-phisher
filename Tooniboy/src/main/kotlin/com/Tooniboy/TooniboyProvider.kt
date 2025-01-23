@@ -17,5 +17,6 @@ class TooniboyProvider: Plugin() {
         registerExtractorAPI(vidhidevip())
         registerExtractorAPI(Cdnwish())
         registerExtractorAPI(FileMoonnl())
+        registerExtractorAPI(GDMirrorbot())
     }
 }

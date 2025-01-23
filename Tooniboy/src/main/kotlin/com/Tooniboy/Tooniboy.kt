@@ -34,7 +34,7 @@ class Tooniboy : MainAPI() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page/").document
+        val document = app.get("$mainUrl/${request.data}/page/$page/", headers = header).document
         val home     = document.select("#site article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -50,7 +50,7 @@ class Tooniboy : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("figure > img").attr("data-src").toString())
+        val posterUrl = this.select("figure > img").attr("src")
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -59,7 +59,7 @@ class Tooniboy : MainAPI() {
     private fun Element.toSearch(): SearchResponse {
         val title     = this.select("header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("figure > img").attr("src").toString())
+        val posterUrl = fixUrlNull(this.select("figure > img").attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -69,7 +69,7 @@ class Tooniboy : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").document
+            val document = app.get("${mainUrl}/page/$i/?s=$query",headers = header).document
 
             val results = document.select("#site article").mapNotNull { it.toSearch() }
 
@@ -98,7 +98,7 @@ class Tooniboy : MainAPI() {
                 document.select("div.serie-sidebar article").map {
                         val href = it.selectFirst("a")?.attr("href") ?:""
                         val posterUrl=it.selectFirst("figure > img")?.attr("data-src")
-                        val episode = it.select("header h2").text().toString()
+                        val episode = it.select("header h2").text()
                         val seasonnumber= it.selectFirst("header span")?.text()?.substringBefore("-")?.trim()?.toInt()
                         episodes.add(Episode(href, episode, posterUrl = posterUrl, season = seasonnumber))
                     }
@@ -123,38 +123,15 @@ class Tooniboy : MainAPI() {
             val serverurl=base64ToUtf8(encodedlink) ?:""
             val truelink= app.get(serverurl).document.selectFirst("iframe")?.attr("src") ?:""
             Log.d("Phisher",truelink)
-            if (truelink.contains("gdmirrorbot"))
+            if (truelink.contains("streamruby"))
             {
-                val links=GDmirrorbot(truelink)
-                links.forEach { url->
-                    loadExtractor(url,subtitleCallback, callback)
-                }
-            }
-            else
-                if (truelink.contains("streamruby"))
-                {
                     StreamRuby().getUrl(truelink)
-                }
-            else
-                loadExtractor(truelink,subtitleCallback, callback)
+            }
+            else loadExtractor(truelink,subtitleCallback, callback)
         }
         return true
     }
 
-
-    suspend fun GDmirrorbot(url: String): MutableList<String> {
-        val urllist= mutableListOf<String>()
-        val links= app.get(url).text
-        val pattern="data-link='(.*?)'".toRegex()
-        val matches=pattern.findAll(links)
-        matches.forEach { matchResult ->
-            val link = matchResult.groups[1]?.value
-            link?.let {
-                urllist.add(it)
-            }
-        }
-        return urllist
-    }
 
     @SuppressLint("NewApi")
     fun base64ToUtf8(base64String: String): String? {
@@ -167,3 +144,5 @@ class Tooniboy : MainAPI() {
         }
     }
 }
+
+

@@ -1,8 +1,10 @@
 package com.Tooniboy
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.JsonParser
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
@@ -13,6 +15,8 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import java.net.URI
 import java.util.zip.Inflater
 
 class StreamSB8 : StreamSB() {
@@ -39,8 +43,9 @@ open class Chillx : ExtractorApi() {
         val res = app.get(url).toString()
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
-        android.util.Log.d("Phisher",encodedString)
         val decoded = decodeEncryptedData(encodedString)
+        android.util.Log.d("Phisher",decoded.toString())
+
         val m3u8 =Regex("file:\\s*\"(.*?)\"").find(decoded ?:"")?.groupValues?.get(1) ?:""
         val header =mapOf(
             "accept" to "*/*",
@@ -178,6 +183,49 @@ class FileMoonnl : Filesim() {
     override val name = "FileMoon"
 }
 
-data class Keys(
-    @JsonProperty("chillx") val key: List<String>
-)
+class GDMirrorbot : ExtractorApi() {
+    override var name = "GDMirrorbot"
+    override var mainUrl = "https://gdmirrorbot.nl"
+    override val requiresReferer = true
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val host = getBaseUrl(app.get(url).url)
+        val embed = url.substringAfter("embed/")
+        val data = mapOf("sid" to embed)
+        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
+        val mresult = jsonObject.getAsJsonObject("mresult").toString()
+        val regex = """"(\w+)":"([^"]+)"""".toRegex()
+        val mresultMap = regex.findAll(mresult).associate {
+            it.groupValues[1] to it.groupValues[2]
+        }
+
+        val matchingResults = mutableListOf<Pair<String, String>>()
+        siteUrls.keySet().forEach { key ->
+            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
+                val value1 = siteUrls.get(key).asString
+                Log.d("Phisher",value1)
+                val value2 = mresultMap[key].orEmpty()
+                matchingResults.add(Pair(value1, value2))
+            }
+        }
+
+        matchingResults.amap { (siteUrl, result) ->
+            val href = "$siteUrl$result"
+            android.util.Log.d("Phisher", "Generated Href: $href")
+            loadExtractor(href, subtitleCallback, callback)
+        }
+
+    }
+
+    fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
+        }
+    }
+}
