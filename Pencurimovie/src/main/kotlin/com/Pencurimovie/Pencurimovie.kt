@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 
 class Pencurimovie : MainAPI() {
-    override var mainUrl = "https://ww03.pencurimovie.bond"
+    override var mainUrl = "https://ww73.pencurimovie.bond"
     override var name = "Pencurimovie"
     override val hasMainPage = true
     override var lang = "id"
