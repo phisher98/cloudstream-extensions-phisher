@@ -25,6 +25,13 @@ class Swishsrv : Filesim() {
     override val mainUrl = "https://swishsrv.com"
 }
 
+
+class Boosterx : Chillx() {
+    override val name = "Boosterx"
+    override val mainUrl = "https://boosterx.stream"
+}
+
+
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
     override val mainUrl = "https://chillx.top"

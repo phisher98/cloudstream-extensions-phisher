@@ -11,5 +11,7 @@ class AnisagaProvider: Plugin() {
         registerExtractorAPI(Ghbrisk())
         registerExtractorAPI(Swishsrv())
         registerExtractorAPI(FilemoonV2())
+        registerExtractorAPI(Boosterx())
+        registerExtractorAPI(Chillx())
     }
 }
