@@ -14,8 +14,6 @@ import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import org.json.JSONObject
-import java.security.MessageDigest
-import java.util.zip.Inflater
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
@@ -53,9 +51,7 @@ open class Chillx : ExtractorApi() {
         val res = app.get(url).toString()
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
-        Log.d("Phisher",encodedString.toString())
         val decoded = decodeEncryptedData(encodedString) ?:""
-        Log.d("Phisher",decoded.toString())
         val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
             ?.trim()
             ?:""
@@ -81,7 +77,7 @@ open class Chillx : ExtractorApi() {
             )
         )
 
-        val subtitles = extractSrtSubtitles(decoded ?:"")
+        val subtitles = extractSrtSubtitles(decoded)
         subtitles.forEachIndexed { _, (language, url) ->
             subtitleCallback.invoke(
                 SubtitleFile(
@@ -102,7 +98,7 @@ open class Chillx : ExtractorApi() {
     }
 
 
-    private fun decodeEncryptedData(encryptedString: String): String? {
+    private fun decodeEncryptedData(encryptedString: String): String {
         val decodedData = Base64.decode(encryptedString, Base64.DEFAULT).toString(Charsets.UTF_8)
         val parsedJson = JSONObject(decodedData)
         val salt = stringTo32BitWords(parsedJson.getString("salt"))
