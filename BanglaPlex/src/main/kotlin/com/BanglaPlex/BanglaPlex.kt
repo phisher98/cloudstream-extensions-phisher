@@ -103,6 +103,7 @@ class Banglaplex : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         val iframeurl=document.select("div.video-embed-container > iframe").attr("src")
+        loadExtractor(iframeurl,mainUrl,subtitleCallback, callback)
         val DownloadURLs=document.select("#download a ").attr("href")
         if (DownloadURLs.isNotEmpty())
         {
@@ -119,11 +120,6 @@ class Banglaplex : MainAPI() {
                 else
                 loadExtractor(href,subtitleCallback,callback)
             }
-        }
-        else
-        if (iframeurl.contains("boosterx.stream"))
-        {
-            Chillx().getUrl(iframeurl,mainUrl)
         }
         else
         loadExtractor(iframeurl,mainUrl,subtitleCallback, callback)
