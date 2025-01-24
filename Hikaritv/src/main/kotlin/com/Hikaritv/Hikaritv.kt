@@ -2,6 +2,7 @@ package com.hikaritv
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
@@ -111,10 +112,14 @@ class Hikaritv : MainAPI() {
             val subbedEpisodes = mutableListOf<Episode>()
             val dubbedEpisodes = mutableListOf<Episode>()
 
-            episodeDocument.select("#episodes-load a, #episodes-page-1 a").amap { episodeElement ->
+            episodeDocument.select("a[class~=ep-item]").amap { episodeElement ->
                 val SubUrls=mutableListOf<String>()
                 val DubUrls=mutableListOf<String>()
-                val episodeNumber = episodeElement.attr("onclick").substringAfter("$animeId,").substringBefore(")").toIntOrNull()
+                val episodeNumber = episodeElement.selectFirst(".ssli-order")?.text()?.toIntOrNull()
+                    ?: episodeElement.attr("data-number").toIntOrNull()
+                    ?: episodeElement.selectFirst(".ssli-order")!!.text().toInt()
+                Log.d("Phisher",episodeNumber.toString())
+
                 val episodeName = episodeElement.selectFirst("div.ep-name")?.text()?.substringAfter(".")
 
                 val embedResponseHtml = app.get("$mainUrl/ajax/embedserver/$animeId/$episodeNumber").parsedSafe<TypeRes>()?.html.orEmpty()
@@ -130,9 +135,23 @@ class Hikaritv : MainAPI() {
                     }
                 }
 
-                if (SubUrls.isNotEmpty()) {
+                if (SubUrls.isEmpty()) {
+                    embedDocument.select("#items-category-multi-0 .server-item a").forEach { subElement ->
+                        val embedId = subElement.attr("id").substringAfter("embed-")
+                        if (embedId.toIntOrNull() != null) {
+                            val jsonResponse = app.get("$mainUrl/ajax/embed/$animeId/$episodeNumber/$embedId").toString()
+                            val href = extractIframeSrc(jsonResponse) ?: ""
+                            if (href.isNotEmpty()) {
+                                SubUrls.add(href)
+                            }
+                        }
+                    }
+                }
+
+                if (subbedEpisodes.none { it.episode == episodeNumber && it.data == SubUrls.joinToString(",") }) {
+                    Log.d("Phisher SubUrls",SubUrls.toString())
+
                     subbedEpisodes.add(Episode(LoadSeriesUrls("sub", SubUrls.toList()).toJson(), episodeName, 1, episodeNumber))
-                    SubUrls.clear()
                 }
 
                 embedDocument.select(".servers-dub .server-item a").forEach { dubElement ->
@@ -146,9 +165,8 @@ class Hikaritv : MainAPI() {
                     }
                 }
 
-                if (DubUrls.isNotEmpty()) {
+                if (dubbedEpisodes.none { it.episode == episodeNumber && it.data == DubUrls.joinToString(",") }) {
                     dubbedEpisodes.add(Episode(LoadSeriesUrls("dub", DubUrls.toList()).toJson(), episodeName, 1, episodeNumber))
-                    DubUrls.clear()
                 }
             }
             return newAnimeLoadResponse(animeTitle, url, TvType.TvSeries) {
@@ -182,6 +200,7 @@ class Hikaritv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         if (data.startsWith("["))
         {
             val videoList: List<LoadUrls>? = tryParseJson(data)
