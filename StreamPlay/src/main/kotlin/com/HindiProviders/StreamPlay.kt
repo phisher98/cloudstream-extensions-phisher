@@ -172,13 +172,13 @@ open class StreamPlay : TmdbProvider() {
         const val zoechipAPI = "https://www1.zoechip.to"
         const val nepuAPI = "https://nepu.to"
         const val fdMoviesAPI = "https://freedrivemovie.com"
-        const val uhdmoviesAPI = "https://uhdmovies.bet"
+        const val uhdmoviesAPI = "https://uhdmovies.beer"
         const val topmoviesAPI = "https://topmovies.beer"
-        const val MoviesmodAPI= "https://moviesmod.red"
+        const val MoviesmodAPI= "https://moviesmod.cash"
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://vegamovies.ms"
         const val dotmoviesAPI = "https://luxmovies.cam"
-        const val rogmoviesAPI = "https://rogmovies.com"
+        const val rogmoviesAPI = "https://rogmovies.art"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.pro"
@@ -188,7 +188,7 @@ open class StreamPlay : TmdbProvider() {
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
-        const val BollyflixVIP= "https://bollyflix.meme"
+        const val BollyflixVIP= "https://bollyflix.spa"
         const val FlixAPI= BuildConfig.FlixHQAPI
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.repair"
@@ -287,15 +287,12 @@ open class StreamPlay : TmdbProvider() {
     override suspend fun load(url: String): LoadResponse? {
         val data = parseJson<Data>(url)
         val type = getType(data.type)
-        Log.d("Test1","$type")
         val append = "alternative_titles,credits,external_ids,keywords,videos,recommendations"
         val resUrl = if (type == TvType.Movie) {
             "$tmdbAPI/movie/${data.id}?api_key=$apiKey&append_to_response=$append"
         } else {
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=$append"
         }
-        Log.d("Test1",resUrl)
-        println(resUrl)
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
 
@@ -461,8 +458,6 @@ open class StreamPlay : TmdbProvider() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LinkData>(data)
-        Log.d("Test1", "$res")
-        println(res)
         argamap({
                     invokeDumpStream(
                         res.title,

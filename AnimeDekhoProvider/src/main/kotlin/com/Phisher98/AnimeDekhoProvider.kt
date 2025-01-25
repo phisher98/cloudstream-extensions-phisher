@@ -137,6 +137,7 @@ open class AnimeDekhoProvider : MainAPI() {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
+            Log.d("Phisher",link)
             loadExtractor(link,subtitleCallback, callback)
         }
         return true

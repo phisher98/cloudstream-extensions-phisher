@@ -1776,6 +1776,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
 //Kindly don't copy this as well
     suspend fun invokeSubtitleAPI(
         id: String? = null,
@@ -1793,7 +1794,6 @@ object StreamPlayExtractor : StreamPlay() {
         val headers = mapOf(
             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         )
-    Log.d("Phisher", url)
     app.get(url, headers = headers, timeout = 100L).parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
             val lan=it.lang
             val suburl=it.url ?: null
@@ -1806,6 +1806,7 @@ object StreamPlayExtractor : StreamPlay() {
             )
         }
     }
+
 
     suspend fun invokeWyZIESUBAPI(
         id: String? = null,

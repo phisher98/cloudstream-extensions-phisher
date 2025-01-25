@@ -18,15 +18,8 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                invokeRiveStream(
-                    res.id,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    callback
-                )
-            }
 
+            }
         )
         return true
     }
