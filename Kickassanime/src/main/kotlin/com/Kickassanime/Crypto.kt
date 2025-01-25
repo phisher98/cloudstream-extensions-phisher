@@ -1,4 +1,4 @@
-package com.hexated
+package com.kickassanime
 /*
  * Copyright (C) The Tachiyomi Open Source Project
  *

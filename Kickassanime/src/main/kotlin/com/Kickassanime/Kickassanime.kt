@@ -1,8 +1,9 @@
-package com.hexated
+package com.kickassanime
 
+import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
-import com.hexated.CryptoAES.decodeHex
+import com.kickassanime.CryptoAES.decodeHex
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
@@ -13,9 +14,11 @@ import org.jsoup.Jsoup
 import java.security.MessageDigest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.net.URLEncoder
+import java.util.Calendar
 
 open class Kickassanime : MainAPI() {
-    final override var mainUrl = "https://www2.kickassanime.mx"
+    final override var mainUrl = "https://kaas.to"
     override var name = "Kickassanime"
     override val hasMainPage = true
     override var lang = "en"
@@ -33,17 +36,6 @@ open class Kickassanime : MainAPI() {
     )
 
     companion object {
-        const val kaast = "https://kaast1.com"
-        private const val consumetAnilist = "https://consumet-instance.vercel.app/meta/anilist"
-        private const val consumetMal = "https://consumet-instance.vercel.app/meta/mal"
-        fun getType(t: String): TvType {
-            return when {
-                t.contains("Ova", true) -> TvType.OVA
-                t.contains("Movie", true) -> TvType.AnimeMovie
-                else -> TvType.Anime
-            }
-        }
-
         fun getStatus(t: String): ShowStatus {
             return when (t) {
                 "Finished Airing" -> ShowStatus.Completed
@@ -54,6 +46,7 @@ open class Kickassanime : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
+        "filters=${generateFilterWithCurrentYear()}" to "Airing",
         "$mainUrl/api/show/trending" to "Trending",
         "$mainUrl/api/show/popular" to "Popular Animes",
     )
@@ -62,7 +55,15 @@ open class Kickassanime : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse? {
-        val home = app.get("${request.data}?page=$page").parsedSafe<ResponseHome>()?.result?.map { media ->
+        val url=if (request.data.startsWith("filter"))
+        {
+            "${mainUrl}/api/anime?page=$page&${request.data}"
+        }
+        else
+        {
+            "${request.data}?page=$page"
+        }
+        val home = app.get(url).parsedSafe<ResponseHome>()?.result?.map { media ->
             media.toSearchResponse()
         }
         return home?.let { newHomePageResponse(request.name, it) }
@@ -119,18 +120,14 @@ val json = """
 
     override suspend fun load(url: String): LoadResponse? {
         val showname=url.substringAfter(mainUrl)
-        Log.d("Phisher loadapi","${mainUrl}/api/show/$showname")
         val loadapi="${mainUrl}/api/show/$showname"
-        val loadjson= app.get(loadapi).parsedSafe<Loadresponse>()
-        Log.d("Phisher",loadjson.toString())
+        val loadjson= app.get(loadapi).parsedSafe<loadres>()
         var title= loadjson?.titleEn
         if (title.isNullOrEmpty())
         {
             title= loadjson?.title ?: "Unknown"
         }
-        Log.d("Phisher",title.toString())
-
-        val poster = getBannerUrl( loadjson?.banner?.hq)
+        val poster = getBannerUrl( loadjson?.banner?.hq) ?: getImageUrl(loadjson?.poster?.hq)
         val description= loadjson?.synopsis
         val tags= loadjson?.genres?.map { it }
         val json=app.get("$mainUrl/api/show$showname/episodes?ep=1&lang=ja-JP").toString()
@@ -161,23 +158,25 @@ val json = """
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         app.get(data).parsedSafe<ServersRes>()?.servers?.amap{ it ->
-            if(it.name.contains("VidStreaming"))
-            {
-                val host= getBaseUrl(it.src)
-                val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-                val key="e13d38099bf562e8b9851a652d2043d3".toByteArray()
-                val query=it.src.substringAfter("?id=").substringBefore("&")
-                val html= app.get(it.src).toString()
+            if(it.name.contains("VidStreaming")) {
+                val host = getBaseUrl(it.src)
+                val headers =
+                    mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+                val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
+                val query = it.src.substringAfter("?id=").substringBefore("&")
+                val html = app.get(it.src).toString()
                 val (sig, timeStamp, route) = getSignature(html, it.name, query, key) ?: return@amap
-                val sourceurl="$host$route?id=$query&e=$timeStamp&s=$sig"
-                val encjson=app.get(sourceurl,headers=headers).parsedSafe<Encrypted>()?.data ?:"Not Found"
+                val sourceurl = "$host$route?id=$query&e=$timeStamp&s=$sig"
+                val encjson = app.get(sourceurl, headers = headers).parsedSafe<Encrypted>()?.data
+                    ?: "Not Found"
                 val (encryptedData, ivhex) = encjson.substringAfter(":\"")
                     .substringBefore('"')
                     .replace("\\", "")
                     .split(":")
                 val iv = ivhex.decodeHex()
-                val decrypted = tryParseJson<m3u8>(CryptoAES.decrypt(encryptedData, key, iv).toJson())
-                val m3u8= httpsify(decrypted?.hls!!)
+                val decrypted =
+                    tryParseJson<m3u8>(CryptoAES.decrypt(encryptedData, key, iv).toJson())
+                val m3u8 = httpsify(decrypted?.hls!!)
                 val videoheaders = mapOf(
                     "Accept" to "*/*",
                     "Accept-Language" to "en-US,en;q=0.5",
@@ -205,10 +204,6 @@ val json = """
                         )
                     )
                 }
-                
-                //val decrypted = CryptoAES.decrypt(encryptedData, keystring, iv)
-                //Log.d("Phisher", "$decrypted $iv".toString())
-
             }
             else
             {
@@ -365,32 +360,27 @@ data class Thumbnail(
 
 //loadapi
 
-data class Loadresponse(
-    @JsonProperty("episode_duration")
-    val episodeDuration: Long,
-    val genres: List<String>,
-    val locales: List<String>,
-    val season: String,
-    val slug: String,
-    @JsonProperty("start_date")
-    val startDate: String,
-    val status: String,
-    val synopsis: String,
-    val title: String,
-    @JsonProperty("title_en")
-    val titleEn: String,
-    @JsonProperty("title_original")
-    val titleOriginal: String,
-    val type: String,
-    val year: Long,
-    val poster: LoadPoster,
-    val banner: Banner,
-    @JsonProperty("end_date")
-    val endDate: String,
-    val rating: String,
-    @JsonProperty("watch_uri")
-    val watchUri: String,
+data class loadres(
+        val episodeDuration: Long?,
+        val genres: List<String>?,
+        val locales: List<String>?,
+        val season: String?,
+        val slug: String?,
+        val startDate: String?,
+        val status: String?,
+        val synopsis: String?,
+        val title: String?,
+        val titleEn: String?,
+        val titleOriginal: String?,
+        val type: String?,
+        val year: Long?,
+        val poster: LoadPoster?,
+        val banner: Banner?,
+        val endDate: String?,
+        val rating: String?,
+        val watchUri: String?,
 )
+
 
 data class LoadPoster(
     val formats: List<String>,
@@ -431,14 +421,12 @@ data class Subtitle(
         val src: String,
 )
 
-
-data class LoadUrl(
-    val url: String,
-    val posterUrl: String?,
-    val title: String
-)
-
-
+private fun generateFilterWithCurrentYear(): String {
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    val jsonObject = """{"year":$currentYear,"status":"airing"}"""
+    val base64Encoded = Base64.encodeToString(jsonObject.toByteArray(), Base64.DEFAULT).trim()
+    return URLEncoder.encode(base64Encoded, "UTF-8")
+}
 
 // Encrypted
 data class Encrypted(

@@ -1,15 +1,10 @@
-package com.hexated
+package com.kickassanime
 
 import android.util.Base64
-import com.hexated.KickassanimeExtractor.mainUrl
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.AppUtils
+import com.kickassanime.KickassanimeExtractor.mainUrl
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import java.net.URI
 import java.net.URLDecoder
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
 
 
 fun String.base64Decode(): String {
@@ -40,7 +35,6 @@ fun getImageUrl(link: String?): String? {
 }
 
 fun getThumbnailUrl(link: String?): String? {
-    Log.d("Phisher",link.toString())
     if (link == null) return null
     return if (link.startsWith(mainUrl)) link else "$mainUrl/image/thumbnail/$link.webp"
 }

@@ -1,4 +1,4 @@
-package com.hexated
+package com.kickassanime
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
