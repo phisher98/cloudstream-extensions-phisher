@@ -3825,7 +3825,6 @@ suspend fun invokeVidsrcsu(
                 referer = "https://pressplay.top/"
             ).document.selectFirst("iframe")
                 ?.attr("src")
-        Log.d("Phisher",iframe.toString())
         loadExtractor(iframe ?: return, "$nineTvAPI/", subtitleCallback, callback)
     }
 

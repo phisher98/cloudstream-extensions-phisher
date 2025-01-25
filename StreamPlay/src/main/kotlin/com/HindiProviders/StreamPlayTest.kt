@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import com.Phisher98.StreamPlayExtractor.invokeNinetv
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -18,7 +19,13 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-
+                if (!res.isAnime) invokeNinetv(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
             }
         )
         return true
