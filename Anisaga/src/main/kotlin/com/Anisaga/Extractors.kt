@@ -11,8 +11,6 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import android.util.Base64
 import org.json.JSONObject
-import java.security.MessageDigest
-import java.util.zip.Inflater
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
@@ -40,7 +38,7 @@ open class Chillx : ExtractorApi() {
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
         Log.d("Phisher",encodedString)
-        val decoded = decodeEncryptedData(encodedString) ?:""
+        val decoded = decodeEncryptedData(encodedString)
         val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
             ?.trim()
             ?:""
@@ -66,7 +64,7 @@ open class Chillx : ExtractorApi() {
             )
         )
 
-        val subtitles = extractSrtSubtitles(decoded ?:"")
+        val subtitles = extractSrtSubtitles(decoded)
         subtitles.forEachIndexed { _, (language, url) ->
             subtitleCallback.invoke(
                 SubtitleFile(

@@ -38,8 +38,8 @@ open class Kickassanime : MainAPI() {
     companion object {
         fun getStatus(t: String): ShowStatus {
             return when (t) {
-                "Finished Airing" -> ShowStatus.Completed
-                "Currently Airing" -> ShowStatus.Ongoing
+                "finished_airing" -> ShowStatus.Completed
+                "currently_airing" -> ShowStatus.Ongoing
                 else -> ShowStatus.Completed
             }
         }
@@ -130,6 +130,9 @@ val json = """
         val poster = getBannerUrl( loadjson?.banner?.hq) ?: getImageUrl(loadjson?.poster?.hq)
         val description= loadjson?.synopsis
         val tags= loadjson?.genres?.map { it }
+        Log.d("Phisher",loadjson?.status ?: "")
+        val status=getStatus(loadjson?.status ?: "")
+        Log.d("Phisher",status.toString())
         val json=app.get("$mainUrl/api/show$showname/episodes?ep=1&lang=ja-JP").toString()
         val episodes = mutableListOf<Episode>()
         val jsonresponse = parseJsonToEpisodes(json)
@@ -141,12 +144,13 @@ val json = """
             episodes.add(Episode(href, name, episode = ep, posterUrl = epposter))
         }
 
-        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+        return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
             name = title
             posterUrl = poster
             backgroundPosterUrl = poster
             plot=description
             this.tags=tags
+            this.showStatus= status
         }
 
     }

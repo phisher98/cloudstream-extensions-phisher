@@ -27,7 +27,7 @@ class Animeowl : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}?page=$page").document
-        val home     = document.select("div.recent-anime a.post-thumb").mapNotNull { it.toSearchResult() }
+        val home     = document.select("div.recent-anime").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list    = HomePageList(
@@ -40,11 +40,14 @@ class Animeowl : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title     = this.select("img").attr("alt")
-        val href      = this.attr("href")
-        val posterUrl = fixUrlNull(this.select("img").attr("data-src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        val title     = this.select("a.post-thumb img").attr("alt")
+        val href      = this.select("a.post-thumb").attr("href")
+        val posterUrl = fixUrlNull(this.select("a.post-thumb img").attr("data-src"))
+        val subCount =this.selectFirst("div.d-flex div.bg-pink span")?.text()?.toIntOrNull()
+        val dubCount =this.selectFirst("div.d-flex div.bg-purple span")?.text()?.toIntOrNull()
+        return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
+            addDubStatus(dubCount != null, subCount != null, dubCount, subCount)
         }
     }
 
