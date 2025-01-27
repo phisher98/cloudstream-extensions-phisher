@@ -1057,7 +1057,7 @@ open class StreamPlay : TmdbProvider() {
      )
 },
  {
-     invokeRiveStream(
+     if (!res.isAnime) invokeRiveStream(
          res.id,
          res.year,
          res.season,

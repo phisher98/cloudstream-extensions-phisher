@@ -4619,9 +4619,9 @@ suspend fun invokenyaa(
         callback: (ExtractorLink) -> Unit,
     ) {
         val sourceApiUrl = "$RiveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive"
-            val sourceList = app.get(sourceApiUrl).parsedSafe<RiveStreamSource>()
-            val secretKey = getRiveSecretKey(id)
-            sourceList?.data?.forEach{ source ->
+        val sourceList = app.get(sourceApiUrl).parsedSafe<RiveStreamSource>()
+        val secretKey = "5"
+        sourceList?.data?.forEach{ source ->
                val sourceStreamLink  = if(season == null)
                 {
                     "$RiveStreamAPI/api/backendfetch?requestID=movieVideoProvider&id=$id&service=$source&secretKey=${secretKey}"
@@ -4630,6 +4630,7 @@ suspend fun invokenyaa(
                 {
                     "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
                 }
+                Log.d("Phisher",sourceStreamLink)
                 val sourceJson = app.get(sourceStreamLink).parsedSafe<RiveStreamResponse>()
                 sourceJson?.data?.sources?.forEach { source ->
                     callback.invoke(
