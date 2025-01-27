@@ -19,7 +19,6 @@ cloudstream {
     tvTypes = listOf(
         "AsianDrama",
         "TvSeries",
-        "Anime",
         "Movie",
     )
 

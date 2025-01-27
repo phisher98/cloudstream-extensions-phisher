@@ -21,7 +21,7 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("Movie")
+    tvTypes = listOf("Movie","TvSeries")
 
     iconUrl="https://banglaplex.lol/uploads/system_logo/logo_619305d7d016f.png"
 }

@@ -1638,22 +1638,24 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val apiurl="https://api.anime.nexus"
         val api="$apiurl/api/anime/shows?search=$title&sortBy=name+asc&page=1&includes%5B%5D=poster&includes%5B%5D=genres&hasVideos=1"
-        Log.d("Phisher api", api.toString())
         val apires=app.get(api).parsedSafe<AnimeNexus>()
         val id=apires?.data?.find { it.name.equals(
             "$title", true
         ) }?.id
-        val epres= app.get("$apiurl/api/anime/details/episodes?id=$id&page=1&perPage=24&order=asc").parsedSafe<AnimeNexusEp>()?.data
-        val epid= epres?.find { it.number==episode }?.id
+        val gson = Gson()
+        val epjson= app.get("$apiurl/api/anime/details/episodes?id=$id&page=1&perPage=24&order=asc").toString()
+        val animeNexusEp = gson.fromJson(epjson, AnimeNexusEp::class.java)
+        val epres = animeNexusEp.data
+        val epid= epres.find { it.number==episode }?.id
         Log.d("Phisher epid", "$epid")
-        val iframeurl="$apiurl/api/anime/details/episode/stream?id=$epid"
-        Log.d("Phisher", iframeurl.toString())
+        val iframe=app.get("$apiurl/api/anime/details/episode/stream?id=$epid").parsedSafe<AnimeNexusservers>()?.data
+        val m3u8=iframe?.hls ?:""
         val headers= mapOf("origin" to "https://anime.nexus")
         callback.invoke(
             ExtractorLink(
-                "Ling",
-                "Ling",
-                "https://api.anime.nexus/api/anime/video/9d48b18e-d9a0-4549-b2a4-4bfa5153ee37/stream/video.m3u8?token=1736709285_941d585bc707c9cac2f96bdf190f67a3cf9ed380",
+                "Animenexus",
+                "Animenexus",
+                m3u8,
                 "https://anime.nexus/",
                 Qualities.P720.value,
                 INFER_TYPE,

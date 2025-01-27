@@ -21,6 +21,6 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("Movie,Torrent")
+    tvTypes = listOf("Movie","Torrent")
 
     iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/yts.png"}

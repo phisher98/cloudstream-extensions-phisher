@@ -1252,17 +1252,13 @@ data class TheyallsayflixSubtitle(
 
 data class AnimeNexus(
     val data: List<AnimeNexusDaum>,
-    val links: AnimeNexusLinks,
-    val meta: AnimeNexusMeta,
 )
 
 data class AnimeNexusDaum(
-    val poster: AnimeNexusPoster,
     val broadcast: Any?,
     val description: String,
     @JsonProperty("end_date")
-    val endDate: String,
-    val genres: List<AnimeNexusGenre>,
+    val endDate: String?,
     @JsonProperty("episode_count")
     val episodeCount: Long,
     val id: String,
@@ -1278,42 +1274,10 @@ data class AnimeNexusDaum(
     val type: String,
 )
 
-data class AnimeNexusPoster(
-    val original: String,
-    val medium: String,
-    val small: String,
-)
-
-data class AnimeNexusGenre(
-    val name: String,
-    val id: String,
-    val code: String,
-)
-
-data class AnimeNexusLinks(
-    val first: String,
-    val last: String,
-    val prev: Any?,
-    val next: Any?,
-)
-
-data class AnimeNexusMeta(
-    @JsonProperty("current_page")
-    val currentPage: Long,
-    val from: Long,
-    @JsonProperty("last_page")
-    val lastPage: Long,
-    @JsonProperty("per_page")
-    val perPage: Long,
-    val to: Long,
-    val total: Long,
-)
 
 
 data class AnimeNexusEp(
     val data: List<AnimeNexusEpDaum>,
-    val links: AnimeNexusEpLinks,
-    val meta: AnimeNexusEpMeta,
 )
 
 data class AnimeNexusEpDaum(
@@ -1322,62 +1286,62 @@ data class AnimeNexusEpDaum(
     val slug: String,
     val number: Int,
     val duration: Long,
-    val image: AnimeNexusEpImage,
     @JsonProperty("video_meta")
-    val videoMeta: AnimeNexusEpVideoMeta,
-    @JsonProperty("is_filler")
     val isFiller: Long,
     @JsonProperty("is_recap")
     val isRecap: Long,
 )
 
-data class AnimeNexusEpImage(
-    val id: String,
-    @JsonProperty("disk_name")
-    val diskName: String,
-    @JsonProperty("file_size")
-    val fileSize: Long,
-    @JsonProperty("content_type")
-    val contentType: String,
-    val title: Any?,
-    val description: Any?,
-    val field: String,
-    @JsonProperty("sort_order")
-    val sortOrder: Long,
-    @JsonProperty("created_at")
-    val createdAt: String,
-    @JsonProperty("updated_at")
-    val updatedAt: String,
-    val extension: String,
-    val path: String,
+
+data class AnimeNexusservers(
+    val data: AnimeNexusserversData,
 )
 
-data class AnimeNexusEpVideoMeta(
-    @JsonProperty("subtitle_languages")
-    val subtitleLanguages: List<String>,
+data class AnimeNexusserversData(
+    val subtitles: List<AnimeNexusserversSubtitle>,
+    @JsonProperty("video_meta")
+    val videoMeta: AnimeNexusserversVideoMeta,
+    val hls: String,
+    val mpd: String,
+    val thumbnails: String,
+)
+
+data class AnimeNexusserversSubtitle(
+    val id: String,
+    val src: String,
+    val label: String,
+    val srcLang: String,
+)
+
+data class AnimeNexusserversVideoMeta(
+    val duration: Long,
+    val chapters: String,
     @JsonProperty("audio_languages")
     val audioLanguages: List<String>,
     val status: String,
+    val qualities: AnimeNexusserversQualities,
+    @JsonProperty("file_size_streams")
+    val fileSizeStreams: AnimeNexusserversFileSizeStreams,
 )
 
-data class AnimeNexusEpLinks(
-    val first: String,
-    val last: String,
-    val prev: Any?,
-    val next: Any?,
+data class AnimeNexusserversQualities(
+    @JsonProperty("1920x1080")
+    val n1920x1080: Long,
+    @JsonProperty("1280x720")
+    val n1280x720: Long,
+    @JsonProperty("848x480")
+    val n848x480: Long,
 )
 
-data class AnimeNexusEpMeta(
-    @JsonProperty("current_page")
-    val currentPage: Long,
-    val from: Long,
-    @JsonProperty("last_page")
-    val lastPage: Long,
-    @JsonProperty("per_page")
-    val perPage: Long,
-    val to: Long,
-    val total: Long,
+data class AnimeNexusserversFileSizeStreams(
+    @JsonProperty("848x480")
+    val n848x480: Long,
+    @JsonProperty("1280x720")
+    val n1280x720: Long,
+    @JsonProperty("1920x1080")
+    val n1920x1080: Long,
 )
+
 
 data class RiveStreamSource(
     val data: List<String>

@@ -10,9 +10,11 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.Coroutines.main
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Hikaritv : MainAPI() {
@@ -27,7 +29,7 @@ class Hikaritv : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
-        "ajax/getfilter?sort=recently_updated&page=" to "Recently Updated",
+        "${mainUrl}/recently-updated" to "Latest Episode",
         "ajax/getfilter?type=2&sort=default&page=" to "Movies",
         "ajax/getfilter?stats=2&sort=default&page=" to "Finished Airing",
         "ajax/getfilter?sort=score&page=" to "Most Popular",
@@ -37,8 +39,15 @@ class Hikaritv : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val res = app.get("$mainUrl/${request.data}$page").parsedSafe<HomePage>()?.html ?:""
-        val document= Jsoup.parse(res)
+        val document:Document
+        if (request.data.startsWith(mainUrl))
+        {
+            document= app.get(request.data).document
+        }
+        else {
+            val res = app.get("$mainUrl/${request.data}$page").parsedSafe<HomePage>()?.html ?: ""
+            document = Jsoup.parse(res)
+        }
         val home =
             document.select("div.flw-item").mapNotNull {
                 it.toSearchResult()
@@ -123,7 +132,6 @@ class Hikaritv : MainAPI() {
                 val episodeNumber = episodeElement.selectFirst(".ssli-order")?.text()?.toIntOrNull()
                     ?: episodeElement.attr("data-number").toIntOrNull()
                     ?: episodeElement.selectFirst(".ssli-order")!!.text().toInt()
-                Log.d("Phisher", episodeNumber.toString())
 
                 val episodeName = episodeElement.selectFirst("div.ep-name")?.text()?.substringAfter(".")
 
@@ -202,7 +210,6 @@ class Hikaritv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         if (data.startsWith("["))
         {
             val videoList: List<LoadUrls>? = tryParseJson(data)
