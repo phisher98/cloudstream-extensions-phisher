@@ -4620,7 +4620,10 @@ suspend fun invokenyaa(
     ) {
         val sourceApiUrl = "$RiveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive"
         val sourceList = app.get(sourceApiUrl).parsedSafe<RiveStreamSource>()
-        val secretKey = "5"
+        val js = app.get("$RiveStreamAPI/_next/static/chunks/pages/_app-1cc8dcaf7eca9b99.js").text
+        val keys = "let c=\\[(.*?)];".toRegex().find(js)?.groupValues?.get(1)
+        val lsKeys = keys?.split(",")?.map { it.replace("\"", "") }
+        val secretKey = lsKeys?.let { getRiveSecretKey(id, it) }
         sourceList?.data?.forEach{ source ->
                val sourceStreamLink  = if(season == null)
                 {
@@ -4630,7 +4633,6 @@ suspend fun invokenyaa(
                 {
                     "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
                 }
-                Log.d("Phisher",sourceStreamLink)
                 val sourceJson = app.get(sourceStreamLink).parsedSafe<RiveStreamResponse>()
                 sourceJson?.data?.sources?.forEach { source ->
                     callback.invoke(
