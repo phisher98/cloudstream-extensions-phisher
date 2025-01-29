@@ -4620,33 +4620,42 @@ suspend fun invokenyaa(
     ) {
         val sourceApiUrl = "$RiveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive"
         val sourceList = app.get(sourceApiUrl).parsedSafe<RiveStreamSource>()
-        val secretKey = "5"
-        sourceList?.data?.forEach{ source ->
-               val sourceStreamLink  = if(season == null)
-                {
-                    "$RiveStreamAPI/api/backendfetch?requestID=movieVideoProvider&id=$id&service=$source&secretKey=${secretKey}"
+        val js = app.get("$RiveStreamAPI/_next/static/chunks/pages/_app-1cc8dcaf7eca9b99.js").text
+        val keys = "let c=\\[(.*?)];".toRegex().find(js)?.groupValues?.get(1)
+        val lsKeys = keys?.split(",")?.map { it.replace("\"", "") }
+        val secretKey = lsKeys?.let { getRiveSecretKey(id, it) }
+        if (sourceList != null) {
+            for(source : String in sourceList.data)
+            {
+                try {
+                    val sourceStreamLink  = if(season == null)
+                    {
+                        "$RiveStreamAPI/api/backendfetch?requestID=movieVideoProvider&id=$id&service=$source&secretKey=${secretKey}"
+                    }
+                    else
+                    {
+                        "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
+                    }
+                    val sourceJson = app.get(sourceStreamLink, timeout = 10).parsedSafe<RiveStreamResponse>()
+                    if (sourceJson != null && sourceJson.data != null) {
+                        sourceJson.data.sources.forEach { source ->
+                            callback.invoke(
+                                ExtractorLink(
+                                    "RiveStream ${source.source} ${source.quality}",
+                                    "RiveStream ${source.source} ${source.quality}",
+                                    source.url,
+                                    "",
+                                    Qualities.P1080.value,
+                                    ExtractorLinkType.M3U8
+                                )
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    TODO("Not yet implemented")
                 }
-                else
-                {
-                    "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
-                }
-                Log.d("Phisher",sourceStreamLink)
-                val sourceJson = app.get(sourceStreamLink).parsedSafe<RiveStreamResponse>()
-                sourceJson?.data?.sources?.forEach { source ->
-                    callback.invoke(
-                        ExtractorLink(
-                            "RiveStream ${source.source} ${source.quality}",
-                            "RiveStream ${source.source} ${source.quality}",
-                            source.url,
-                            "",
-                            Qualities.P1080.value,
-                            ExtractorLinkType.M3U8
-                        )
-                    )
-                }
-
             }
-
+        }
     }
 
 }
