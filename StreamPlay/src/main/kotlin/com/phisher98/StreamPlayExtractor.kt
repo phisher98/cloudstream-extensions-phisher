@@ -4658,6 +4658,44 @@ suspend fun invokenyaa(
         }
     }
 
+    suspend fun invokeVidSrcViP(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null) {
+            "$VidSrcVip/hnd.php?id=$id"
+        } else {
+            "$VidSrcVip/hnd.php?id=${id}&s=${season}&e=${episode}"
+        }
+        val json = app.get(url).text
+        if(json != null)
+        {
+            try {
+                val objectMapper = jacksonObjectMapper()
+                val vidsrcsuList: List<VidSrcVipSource> = objectMapper.readValue(json)
+                for(source in vidsrcsuList)
+                {
+                    callback.invoke(
+                        ExtractorLink(
+                            "VidSrcVip ${source.language}",
+                            "VidSrcVip ${source.language}",
+                            source.m3u8Stream,
+                            "",
+                            Qualities.P1080.value,
+                            ExtractorLinkType.M3U8
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+
+            }
+        }
+    }
+
 }
 
 

@@ -1362,5 +1362,12 @@ data class RiveStreamSourceData(
     val format: String,
 )
 
+data class VidSrcVipSource(
+    val language: String,
+    @JsonProperty("m3u8_stream")
+    val m3u8Stream: String,
+)
+
+
 
 
