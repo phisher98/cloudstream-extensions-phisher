@@ -27,6 +27,7 @@ class StreamPlayPlugin: Plugin() {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(StreamPlay())
         registerMainAPI(StreamPlayLite())
+        registerMainAPI(StreamPlayTorrent())
         //registerMainAPI(StreamPlayTest())
         registerMainAPI(StreamPlayAnime())
         registerExtractorAPI(Animefever())
