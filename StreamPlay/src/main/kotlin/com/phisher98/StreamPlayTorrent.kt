@@ -22,7 +22,6 @@ class StreamPlayTorrent() : StreamPlay() {
         const val TorrentmovieAPI="https://torrentmovie.net"
         const val OnethreethreesevenxAPI="https://1337x.to"
         const val TorBoxAPI="https://stremio.torbox.app"
-        const val Animetosho="https://feed.animetosho.org/json?eid"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -83,13 +82,6 @@ override suspend fun loadLinks(
                 callback
             )
 
-        },
-        {
-            invokeAnimetosho(
-                Animetosho,
-                epid,
-                callback
-            )
         },
     )
     val SubAPI="https://opensubtitles-v3.strem.io"
