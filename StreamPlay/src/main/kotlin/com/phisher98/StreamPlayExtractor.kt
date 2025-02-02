@@ -4696,6 +4696,31 @@ suspend fun invokenyaa(
         }
     }
 
+    suspend fun invokePrimeWire(
+        id: Int? = null,
+        imdbId: String? = null,
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null) {
+            "$Primewire/embed/movie?imdb=$imdbId"
+        } else {
+            "$Primewire/embed/tv?imdb=$imdbId&season=$season&episode=$episode"
+        }
+        val doc = app.get(url, timeout = 10).document
+        val userData = doc.select("#user-data")
+        var decryptedLinks = decryptLinks(userData.attr("v"))
+        for (link in decryptedLinks) {
+            val url = "$Primewire/links/go/$link"
+            val oUrl = app.get(url)
+            loadExtractor(oUrl.url,subtitleCallback,callback)
+        }
+    }
+
 }
 
 
