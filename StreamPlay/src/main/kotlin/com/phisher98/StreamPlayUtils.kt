@@ -1860,3 +1860,25 @@ fun getfullURL(url: String,mainUrl:String): String {
 fun getRiveSecretKey(e: Int?,c : List<String>): String {
     return e?.let { c[it % c.size] } ?: "rive"
 }
+
+fun decryptBase64BlowfishEbc(base64Encrypted: String, key: String): String {
+    try {
+        val encryptedBytes =  Base64.decode(base64Encrypted, Base64.DEFAULT)
+        val secretKeySpec = SecretKeySpec(key.toByteArray(), "Blowfish")
+        val cipher = Cipher.getInstance("Blowfish/ECB/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec)
+        val decryptedBytes = cipher.doFinal(encryptedBytes)
+        return String(decryptedBytes)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return "Decryption failed: ${e.message}"
+    }
+}
+
+// Decrypt Links using Blowfish
+fun decryptLinks(data: String): List<String> {
+    val key = data.substring(data.length - 10)
+    val ct = data.substring(0, data.length - 10)
+    val pt = decryptBase64BlowfishEbc(ct, key)
+    return pt.chunked(5)
+}
