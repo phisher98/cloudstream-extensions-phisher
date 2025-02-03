@@ -4620,7 +4620,10 @@ suspend fun invokenyaa(
     ) {
         val sourceApiUrl = "$RiveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive"
         val sourceList = app.get(sourceApiUrl).parsedSafe<RiveStreamSource>()
-        val js = app.get("$RiveStreamAPI/_next/static/chunks/pages/_app-1cc8dcaf7eca9b99.js").text
+        val document = app.get(RiveStreamAPI,timeout = 20).document
+        val scripts = document.select("script")
+        val appScript = scripts.filter { element -> element.attr("src").contains("_app") }.first().attr("src")
+        val js = app.get("$RiveStreamAPI$appScript").text
         val keys = "let c=\\[(.*?)];".toRegex().find(js)?.groupValues?.get(1)
         val lsKeys = keys?.split(",")?.map { it.replace("\"", "") }
         val secretKey = lsKeys?.let { getRiveSecretKey(id, it) }
