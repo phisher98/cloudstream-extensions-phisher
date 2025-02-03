@@ -1,23 +1,21 @@
 package com.Anisaga
 
 
-import android.annotation.TargetApi
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import java.nio.ByteBuffer
-import java.util.Base64
 import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.spec.IvParameterSpec
+import android.util.Base64
+import com.lagradost.cloudstream3.USER_AGENT
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
@@ -40,21 +38,15 @@ open class Chillx : ExtractorApi() {
         try {
             // Fetch the raw response from the URL
             val res = app.get(url).toString() ?: throw Exception("Failed to fetch URL")
-            println("Response: $res")  // Debugging the raw HTML response
 
             // Extract the encoded string using regex
-            val encodedString = Regex("const\\s+Matrix\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("const\\sMatrixs\\s=\\s'(.*?)';").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
-            println("Encoded String: $encodedString")  // Debugging the extracted string
-
             // Decrypt the encoded string
-            val password = "0-4_xSb3ikmo]&v%D,&7"
-            val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            val decryptedData = decryptData(encodedString, password, userAgent)
-            println("Decrypted Data: $decryptedData")  // Debugging decrypted data
-
+            val password = "Fvv0O(0ep+X,q-Z+"
+            val decryptedData = decryptAES(encodedString, password)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -71,7 +63,7 @@ open class Chillx : ExtractorApi() {
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
                 "Sec-Fetch-Site" to "cross-site",
-                "user-agent" to userAgent
+                "user-agent" to USER_AGENT
             )
 
             // Return the extractor link
@@ -106,69 +98,53 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun decryptData(encodedString: String, password: String, userAgent: String): String {
-        // Decode the Base64 encoded string
-        val decodedBytes = Base64.getDecoder().decode(encodedString)
 
-        // Convert decoded bytes to 32-bit words
-        val result = bytesTo32BitWords(decodedBytes)
 
-        // Extract the first 4 words as the IV
-        val iv = result.take(4)
+    private fun decryptAES(encryptedData: String, password: String): String {
+        try {
+            // Decode Base64-encoded input
+            val decodedBytes = Base64.decode(encryptedData, Base64.DEFAULT)
 
-        // Convert each word to bytes using Big Endian
-        val ivBytes = iv.flatMap {
-            ByteBuffer.allocate(4).putInt(it).array().toList()
-        }.toByteArray()
+            // Convert bytes to 32-bit words (similar to bytes_to_32bit_words in Python)
+            val resultWords = bytesTo32BitWords(decodedBytes)
 
-        // Generate the dynamic password
-        val dynamicPassword = "$password$userAgent"
+            // Extract IV (first 16 bytes, 4 words)
+            val ivBytes = ByteBuffer.allocate(16).apply {
+                for (i in 0 until 4) putInt(resultWords[i])
+            }.array()
 
-        // Generate the key using SHA-256 hash of the dynamic password
-        val key = generateKey(dynamicPassword)
+            // Generate the key using SHA-256 hash of the password
+            val key = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
 
-        // Initialize the AES cipher in CBC mode
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        val ivSpec = IvParameterSpec(ivBytes)
-        cipher.init(Cipher.DECRYPT_MODE, key, ivSpec)
+            // Initialize AES Cipher in CBC mode
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(ivBytes))
 
-        // Extract the ciphertext (after the first 4 words)
-        val cipherText = result.drop(4).flatMap { it.toByteArray().toList() }.toByteArray()
+            // Extract ciphertext
+            val cipherText = ByteBuffer.allocate((resultWords.size - 4) * 4).apply {
+                for (i in 4 until resultWords.size) putInt(resultWords[i])
+            }.array()
 
-        // Decrypt and unpad the plaintext
-        val decryptedDataBytes = cipher.doFinal(cipherText)
-        return String(decryptedDataBytes) // Decoding as UTF-8 string
+            // Decrypt and return the plaintext
+            return String(cipher.doFinal(cipherText), Charsets.UTF_8)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return "Decryption Failed"
+        }
     }
 
-    fun generateKey(password: String): SecretKeySpec {
-        val sha256 = MessageDigest.getInstance("SHA-256")
-        val keyBytes = sha256.digest(password.toByteArray())
-        return SecretKeySpec(keyBytes, "AES")
-    }
-
-    fun bytesTo32BitWords(byteData: ByteArray): List<Int> {
+    // Convert byte array to 32-bit word array
+    private fun bytesTo32BitWords(byteData: ByteArray): IntArray {
         val words = mutableListOf<Int>()
-        var i = 0
-        while (i < byteData.size) {
+        for (i in byteData.indices step 4) {
             var word = 0
             for (j in 0 until 4) {
                 if (i + j < byteData.size) {
-                    word = word or (byteData[i + j].toInt() shl (24 - j * 8))
+                    word = word or (byteData[i + j].toInt() and 0xFF shl (24 - j * 8))
                 }
             }
             words.add(word)
-            i += 4
         }
-        return words
-    }
-
-    fun Int.toByteArray(): ByteArray {
-        return byteArrayOf(
-            (this shr 24 and 0xFF).toByte(),
-            (this shr 16 and 0xFF).toByte(),
-            (this shr 8 and 0xFF).toByte(),
-            (this and 0xFF).toByte()
-        )
+        return words.toIntArray()
     }
 }
