@@ -43,16 +43,16 @@ open class Chillx : ExtractorApi() {
             println("Response: $res")  // Debugging the raw HTML response
 
             // Extract the encoded string using regex
-            val encodedString = Regex("const\\s+Matrix\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
             println("Encoded String: $encodedString")  // Debugging the extracted string
 
             // Decrypt the encoded string
-            val password = "0-4_xSb3ikmo]&v%D,&7"
+            val password = "Fvv0O(0ep+X,q-Z+"
             val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            val decryptedData = decryptData(encodedString, password, userAgent)
+            val decryptedData = decryptData(encodedString, password)
             println("Decrypted Data: $decryptedData")  // Debugging decrypted data
 
             // Extract the m3u8 URL from decrypted data
@@ -107,7 +107,7 @@ open class Chillx : ExtractorApi() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun decryptData(encodedString: String, password: String, userAgent: String): String {
+    fun decryptData(encodedString: String, password: String): String {
         // Decode the Base64 encoded string
         val decodedBytes = Base64.getDecoder().decode(encodedString)
 
@@ -122,11 +122,8 @@ open class Chillx : ExtractorApi() {
             ByteBuffer.allocate(4).putInt(it).array().toList()
         }.toByteArray()
 
-        // Generate the dynamic password
-        val dynamicPassword = "$password$userAgent"
-
         // Generate the key using SHA-256 hash of the dynamic password
-        val key = generateKey(dynamicPassword)
+        val key = generateKey(password)
 
         // Initialize the AES cipher in CBC mode
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
