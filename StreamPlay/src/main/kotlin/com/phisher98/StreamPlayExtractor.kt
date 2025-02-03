@@ -4485,6 +4485,8 @@ suspend fun invokeVidsrcsu(
         }
     }
 
+
+    /*
 suspend fun invokeFlixAPIHQ(
         title: String? = null,
         year: Int?=null,
@@ -4550,6 +4552,67 @@ suspend fun invokeFlixAPIHQ(
     }
 
 }
+     */
+
+    suspend fun invokeFlixAPIHQ(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val fixTitle = title?.replace("–", "-")
+        val id = app.get("$consumetFlixhqAPI/$title")
+            .parsedSafe<ConsumetSearchResponse>()?.results?.find {
+                if (season == null) {
+                    it.title?.equals(
+                        "$fixTitle", true
+                    ) == true && it.releaseDate?.equals("$year") == true && it.type == "Movie"
+                } else {
+                    it.title?.equals("$fixTitle", true) == true && it.type == "TV Series"
+                }
+            }?.id ?: return
+        val episodeId =
+            app.get("$consumetFlixhqAPI/info?id=$id").parsedSafe<ConsumetDetails>()?.let {
+                if (season == null) {
+                    it.episodes?.first()?.id
+                } else {
+                    it.episodes?.find { ep -> ep.number == episode && ep.season == season }?.id
+                }
+            } ?: return
+        val sourcesjson = app.get(
+                "$consumetFlixhqAPI/servers?episodeId=$episodeId&mediaId=$id",
+                timeout = 120L
+            ).toString()
+            val gson = Gson()
+            val type = object : TypeToken<ConsumetServers>() {}.type
+            val servers: ConsumetServers = gson.fromJson(sourcesjson, type)
+            servers.forEach { server ->
+                val epid = server.url.substringAfterLast(".")
+                val head= mapOf("user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36")
+                val iframeUrl = app.get("https://goodproxy.goodproxy.workers.dev/fetch?url=https://flixhq.to/ajax/episode/sources/$epid", timeout = 5000L, headers = head)
+                .parsedSafe<FlixHQIframe>()
+                ?.link
+
+                val videoSource = iframeUrl?.let { iframe -> app.get("$WASMAPI$iframe&referrer=https://flixhq.to/")
+                    .parsedSafe<FlixHQIframeiframe>()
+                    ?.sources
+                    ?.firstOrNull()
+                    ?.file
+               }
+                callback.invoke(
+                    ExtractorLink(
+                        "FlixHQ",
+                        "FlixHQ",
+                        videoSource ?:"",
+                        "https://flixhq.to",
+                        Qualities.P1080.value,
+                        INFER_TYPE
+                    )
+                )
+        }
+    }
 
     suspend fun invokeHinAuto(
         id: Int? = null,
@@ -4583,7 +4646,6 @@ suspend fun invokeFlixAPIHQ(
     private fun parseJsonHinAuto(json: String): HinAuto {
         val gson = Gson()
 
-        // Deserialize the JSON into the Root type (List of Root2)
         return gson.fromJson(json, Array<HinAutoRoot2>::class.java).toList()
     }
 
