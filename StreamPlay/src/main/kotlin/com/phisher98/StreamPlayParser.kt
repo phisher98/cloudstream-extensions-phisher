@@ -1368,6 +1368,77 @@ data class VidSrcVipSource(
     val m3u8Stream: String,
 )
 
+data class ConsumetDetails(
+    @JsonProperty("episodes") val episodes: ArrayList<ConsumetEpisodes>? = arrayListOf(),
+)
+
+data class ConsumetResults(
+    @JsonProperty("id") val id: String? = null,
+    @JsonProperty("title") val title: String? = null,
+    @JsonProperty("releaseDate") val releaseDate: String? = null,
+    @JsonProperty("type") val type: String? = null,
+)
+
+data class ConsumetSearchResponse(
+    @JsonProperty("results") val results: ArrayList<ConsumetResults>? = arrayListOf(),
+)
+
+data class ConsumetEpisodes(
+    @JsonProperty("id") val id: String? = null,
+    @JsonProperty("type") val type: String? = null,
+    @JsonProperty("title") val title: String? = null,
+    @JsonProperty("number") val number: Int? = null,
+    @JsonProperty("season") val season: Int? = null,
+)
+
+data class ConsumetSourcesResponse(
+    @JsonProperty("headers") val headers: ConsumetHeaders? = null,
+    @JsonProperty("sources") val sources: ArrayList<ConsumetSources1>? = arrayListOf(),
+    @JsonProperty("subtitles") val subtitles: ArrayList<ConsumetSubtitles>? = arrayListOf(),
+)
 
 
+data class ConsumetHeaders(
+    @JsonProperty("Referer") val referer: String? = null,
+)
+
+data class ConsumetSubtitles(
+    @JsonProperty("url") val url: String? = null,
+    @JsonProperty("lang") val lang: String? = null,
+)
+
+data class ConsumetSources1(
+    @JsonProperty("url") val url: String? = null,
+    @JsonProperty("quality") val quality: String? = null,
+    @JsonProperty("isM3U8") val isM3U8: Boolean? = null,
+)
+
+
+typealias ConsumetServers = List<ConsumetServers2>;
+
+data class ConsumetServers2(
+    val name: String,
+    val url: String,
+)
+
+data class FlixHQIframe(
+    val type: String,
+    val link: String,
+)
+
+
+data class FlixHQIframeiframe(
+    val sources: List<Sourceiframe>,
+    val tracks: List<Trackiframe>,
+)
+
+data class Sourceiframe(
+    val file: String,
+    val type: String,
+)
+
+data class Trackiframe(
+    val file: String,
+    val label: String,
+)
 

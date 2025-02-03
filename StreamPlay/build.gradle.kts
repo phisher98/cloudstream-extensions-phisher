@@ -31,6 +31,8 @@ android {
         buildConfigField("String", "GojoAPI", "\"${properties.getProperty("GojoAPI")}\"")
         buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
         buildConfigField("String", "Vidsrccc", "\"${properties.getProperty("Vidsrccc")}\"")
+        buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
+
     }
 }
 

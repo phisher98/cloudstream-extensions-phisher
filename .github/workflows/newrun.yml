@@ -80,7 +80,7 @@ jobs:
           GojoAPI: ${{ secrets.GojoAPI }}
           HianimeAPI: ${{ secrets.HianimeAPI }}
           Vidsrccc: ${{ secrets.Vidsrccc }}
-          TimefourTv: ${{ secrets.TimefourTv }}
+          WASMAPI: ${{ secrets.WASMAPI }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -119,7 +119,8 @@ jobs:
           echo GojoAPI=$GojoAPI >> local.properties
           echo HianimeAPI=$HianimeAPI >> local.properties
           echo Vidsrccc=$Vidsrccc >> local.properties
-          echo TimefourTv=$TimefourTv >> local.properties
+          echo WASMAPI=$WASMAPI >> local.properties
+
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

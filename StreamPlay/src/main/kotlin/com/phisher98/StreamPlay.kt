@@ -206,6 +206,8 @@ open class StreamPlay : TmdbProvider() {
         const val RiveStreamAPI="https://rivestream.live"
         const val VidSrcVip="https://vidsrc.vip"
         const val Primewire="https://www.primewire.tf"
+        const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
+        const val WASMAPI=BuildConfig.WASMAPI
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
