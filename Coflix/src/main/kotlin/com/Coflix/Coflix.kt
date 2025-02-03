@@ -14,14 +14,14 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 class Coflix : MainAPI() {
-    override var mainUrl              = "https://coflix.app"
+    override var mainUrl              = "https://coflix.moe"
     override var name                 = "Coflix"
     override val hasMainPage          = true
     override var lang                 = "fr"
     override val hasDownloadSupport   = true
     override val hasQuickSearch       = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
-    private  val coflixAPI             = "https://coflix.app/wp-json/apiflix/v1"
+    private  val coflixAPI             = "$mainUrl/wp-json/apiflix/v1"
 
     override val mainPage = mainPageOf(
         "movies" to "Movies",
