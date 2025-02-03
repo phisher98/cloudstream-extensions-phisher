@@ -3,7 +3,7 @@ package com.Coflix
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import android.util.Base64
-import com.fasterxml.jackson.module.kotlin.jacksolnObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
@@ -21,7 +21,7 @@ class Coflix : MainAPI() {
     override val hasDownloadSupport   = true
     override val hasQuickSearch       = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
-    private  val coflixAPI             = "https://coflix.app/wp-json/apiflix/v1"
+    private  val coflixAPI             = "$mainUrl/wp-json/apiflix/v1"
 
     override val mainPage = mainPageOf(
         "movies" to "Movies",
