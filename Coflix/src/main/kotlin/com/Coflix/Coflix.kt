@@ -3,7 +3,7 @@ package com.Coflix
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import android.util.Base64
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksolnObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
@@ -14,7 +14,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 class Coflix : MainAPI() {
-    override var mainUrl              = "https://coflix.app"
+    override var mainUrl              = "https://coflix.moe"
     override var name                 = "Coflix"
     override val hasMainPage          = true
     override var lang                 = "fr"
