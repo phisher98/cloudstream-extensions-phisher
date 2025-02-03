@@ -4724,6 +4724,91 @@ suspend fun invokenyaa(
         }
     }
 
+    suspend fun invokeRgshows(
+        id: Int? = null,
+        imdbId: String? = null,
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val sources = listOf("vidlink","vidapi","spenembed","flixhq","vidsrc_vip","catflix_su","flicky","vidsrc_su","viet","embed_su","cineby")
+        for(source in sources)
+        {
+            val url = if (season == null) {
+                "$Rgshows/$source/movie/$id"
+            } else {
+                "$Rgshows/$source/tv/$id/$season/$episode"
+            }
+
+            if (source == "flicky") {
+                try {
+                    val response = app.get(url, timeout = 20, referer = "https://embed.rgshows.me/").parsedSafe<RgshowsFlickyStream>()
+                    for(streamSource in response?.stream!!)
+                    {
+                        val cSource = "${source} ${streamSource.quality}".split(" ").joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
+                        callback.invoke(
+                            ExtractorLink(
+                                "Rgshows $cSource",
+                                "Rgshows $cSource",
+                                streamSource.url,
+                                "",
+                                Qualities.P1080.value,
+                                ExtractorLinkType.M3U8
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                }
+            } else
+            {
+                try {
+                    val response = app.get(url, timeout = 20, referer = "https://embed.rgshows.me/").parsedSafe<RgshowsStream>()
+                    val cSource = source.split("_").joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
+                    callback.invoke(
+                        ExtractorLink(
+                            "Rgshows ${cSource}",
+                            "Rgshows ${cSource}",
+                            response?.stream?.url!!,
+                            "",
+                            Qualities.P1080.value,
+                            ExtractorLinkType.M3U8
+                        )
+                    )
+                } catch (e: Exception) {
+                }
+            }
+
+        }
+
+        val jsonData = app.get("$RgshowsHindi/api/v1/mediaInfo?id=$imdbId",headers = mapOf("Referer" to "https://embed.rgshows.me","Origin" to "https://embed.rgshows.me")).parsedSafe<RgshowsHindi>()
+        for(playlist in jsonData?.data?.playlist!!)
+        {
+            try {
+                val json = app.post(
+                    "$RgshowsHindi/api/v1/getStream",
+                    headers = mapOf("Referer" to "https://embed.rgshows.me","Origin" to "https://embed.rgshows.me","Content-Type" to "application/json"),
+                    json = mapOf("file" to playlist.file,"key" to jsonData.data.key)
+                ).parsedSafe<RgshowsHindiResponse>()
+            callback.invoke(
+                ExtractorLink(
+                    "Rgshows ${playlist.title}",
+                    "Rgshows ${playlist.title}",
+                    json?.data?.link!!,
+                    "",
+                    Qualities.P1080.value,
+                    ExtractorLinkType.M3U8
+                )
+            )
+            } catch (e: Exception) {
+            }
+        }
+
+
+    }
+
 }
 
 

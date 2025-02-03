@@ -1368,6 +1368,50 @@ data class VidSrcVipSource(
     val m3u8Stream: String,
 )
 
+data class RgshowsFlickyStream(
+    val stream: List<RgshowFlickySourceResponse>,
+)
+
+data class RgshowsStream(
+    val stream: RgshowSourceResponse,
+)
+
+data class RgshowFlickySourceResponse(
+    val url: String,
+    val quality: String,
+)
+
+data class RgshowSourceResponse(
+    val url: String,
+)
+
+data class RgshowsHindi(
+    val success: Boolean,
+    val data: RgshowsHindiData,
+)
+
+data class RgshowsHindiData(
+    val playlist: List<RgshowsHindiPlaylist>,
+    val key: String,
+)
+
+data class RgshowsHindiPlaylist(
+    val title: String,
+    val id: String,
+    val file: String,
+)
+
+data class RgshowsHindiResponse(
+    val success: Boolean,
+    val data: RgshowsHindiResponseData,
+)
+
+data class RgshowsHindiResponseData(
+    val link: String,
+)
+
+
+
 
 
 
