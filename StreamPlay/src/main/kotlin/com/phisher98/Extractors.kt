@@ -584,6 +584,10 @@ class do0od : DoodLaExtractor() {
     override var mainUrl = "https://do0od.com"
 }
 
+class doodre : DoodLaExtractor() {
+    override var mainUrl = "https://dood.re"
+}
+
 class TravelR : GMPlayer() {
     override val name = "TravelR"
     override val mainUrl = "https://travel-russia.xyz"
@@ -642,6 +646,10 @@ class Animezia : VidhideExtractor() {
 
 class MixDropSi : MixDrop(){
     override var mainUrl = "https://mixdrop.si"
+}
+
+class MixDropPs : MixDrop(){
+    override var mainUrl = "https://mixdrop.ps"
 }
 
 class Servertwo : VidhideExtractor() {
