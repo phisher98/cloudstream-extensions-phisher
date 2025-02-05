@@ -181,18 +181,17 @@ open class StreamPlay : TmdbProvider() {
         const val hdmovies4uAPI = "https://hdmovies4u.boston"
         const val vegaMoviesAPI = "https://m.vegamovies.ms"
         const val dotmoviesAPI = "https://luxmovies.cam"
-        const val rogmoviesAPI = "https://rogmovies.art"
+        const val rogmoviesAPI = "https://rogmovies.cfd"
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.pro"
         const val Asiandrama_API="https://asiandrama.fun"
-        const val bollyflixAPI = "https://bollyflix.diy"
+        const val bollyflixAPI = "https://bollyflix.africa"
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
-        const val BollyflixVIP= "https://bollyflix.spa"
-        const val FlixAPI= BuildConfig.FlixHQAPI
+        const val BollyflixVIP= "https://bollyflix.pet"
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.repair"
         const val WhvxAPI=BuildConfig.WhvxAPI
@@ -866,7 +865,7 @@ open class StreamPlay : TmdbProvider() {
         )
     },
             {
-                if (!res.isAnime) invokeRogmovies(
+                if (!res.isAnime && res.isBollywood) invokeRogmovies(
                     res.imdbId,
                     res.title,
                     res.year,
@@ -1009,6 +1008,8 @@ open class StreamPlay : TmdbProvider() {
     )
 },
 {
+    //Dead
+    /*
     if (res.isAsian) invokeAsiandrama(
         res.title,
         res.season,
@@ -1017,8 +1018,11 @@ open class StreamPlay : TmdbProvider() {
         subtitleCallback,
         callback
     )
+     */
 },
 {
+    //Dead
+    /*
       if(res.isAsian) invokeDramaCool(
           res.title,
           res.year,
@@ -1027,6 +1031,7 @@ open class StreamPlay : TmdbProvider() {
           subtitleCallback,
           callback
       )
+     */
 },
 {
     if (!res.isAnime) invokeFlixAPIHQ(

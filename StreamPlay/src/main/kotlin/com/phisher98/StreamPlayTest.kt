@@ -1,7 +1,11 @@
 package com.Phisher98
 
 import com.Phisher98.StreamPlayExtractor.invokeAnimenexus
+import com.Phisher98.StreamPlayExtractor.invokeBollyflix
+import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
+import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -20,10 +24,12 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                if (!res.isAnime) invokeFlixAPIHQ(
+                if (!res.isAnime) invokeBollyflix(
+                    res.imdbId,
                     res.title,
                     res.year,
                     res.season,
+                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback
