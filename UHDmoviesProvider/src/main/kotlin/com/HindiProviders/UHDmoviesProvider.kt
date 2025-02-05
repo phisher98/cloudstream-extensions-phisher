@@ -3,6 +3,7 @@ package com.Phisher98
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -65,14 +66,11 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     private fun Element.toSearchResult(): SearchResponse {
         val titleRaw = this.select("h1.sanket").text().trim().removePrefix("Download ")
-        //Log.d("titleRaw",titleRaw)
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
-        val href = fixUrl(this.select("div.entry-image > a").attr("href").toString())
-        //Log.d("href", href)
+        val href = fixUrl(this.select("div.entry-image > a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div.entry-image > a > img").attr("src"))
         val quality = getQualityFromString(title)
-        //Log.d("Quality", quality.toString())
         return if (titleRaw.contains("season|S0", true) || titleRaw.contains("episode", true) || titleRaw.contains("S0", true)) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
@@ -88,7 +86,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = cfKiller("$mainUrl/?s=$query ").document
-        //Log.d("document", document.toString())
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
@@ -102,18 +99,17 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
-        //Log.d("Phisher Doc", doc.toString())
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
-        Log.d("Phisher title", title)
         val poster = fixUrlNull(doc.selectFirst("div.entry-content  p  img")?.attr("src"))
-        Log.d("Phisher poster", poster.toString())
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(title)?.value?.toIntOrNull()
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
         val type = if (tvTags.contains("Season") || tvTags.contains("S0")) TvType.TvSeries else TvType.Movie
+        val trailer=doc.select("p iframe").attr("src")
+        Log.d("Phisher",trailer)
         return if (type == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
             var pTags = doc.select("p:has(a:contains(Episode))")
@@ -139,7 +135,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     seasonList.add(details to season)
                 }
                 val aTags = pTag.select("a:contains(Episode)")
-                Log.d("Phisher UHD", aTags.toString())
                 aTags.mapNotNull { aTag ->
                     val aTagText = aTag.text()
                     val link = aTag.attr("href")
@@ -159,6 +154,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 this.year = year
                 this.tags = tags
                 this.seasonNames = seasonList.map {(name, int) -> SeasonData(int, name)}
+                addTrailer(trailer)
             }
         } else {
             val iframeRegex = Regex("""\[.*]""")
@@ -171,11 +167,11 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     it.nextElementSibling()?.select("a.maxbutton-1")?.attr("href") ?: ""
                 )
             }
-            Log.d("phisher maxbutton",data.toString())
             newMovieLoadResponse(title, url, TvType.Movie, data) {
                 this.posterUrl = poster ?. trim()
                 this.year = year
                 this.tags = tags
+                addTrailer(trailer)
             }
         }
     }
@@ -298,10 +294,10 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         driveReq
                     )
 
-                    bitLink.isNullOrEmpty() -> {
+                    bitLink.isEmpty() -> {
                         val backupIframe =
                             driveRes.select("a.btn.btn-outline-warning").attr("href")
-                        extractBackupUHD(backupIframe ?: "")
+                        extractBackupUHD(backupIframe)
                     }
 
                     else -> {
@@ -328,7 +324,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 }
                 val DirectLink =
                     driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
-                Log.d("Phisher Directlink", DirectLink.toString())
+                Log.d("Phisher Directlink", DirectLink)
                 val CFExtract = extractCFUHD(DirectLink)
                 CFExtract.forEach { CFlinks ->
                     if (CFlinks.isNotEmpty())
@@ -377,11 +373,10 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         driveLink,
                         driveReq
                     )
-
-                    bitLink.isNullOrEmpty() -> {
+                    bitLink.isEmpty() -> {
                         val backupIframe =
                             driveRes.select("a.btn.btn-outline-warning").attr("href")
-                        extractBackupUHD(backupIframe ?: "")
+                        extractBackupUHD(backupIframe)
                     }
 
                     else -> {
@@ -405,7 +400,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     }
                 val DirectLink =
                     driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
-                Log.d("Phisher Directlink", DirectLink.toString())
+                Log.d("Phisher Directlink", DirectLink)
                 val CFExtract = extractCFUHD(DirectLink)
                 CFExtract.forEach { CFlinks ->
                     if (CFlinks.isNotEmpty()) {

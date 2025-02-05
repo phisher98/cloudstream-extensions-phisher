@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
-import org.json.JSONObject
 import java.net.*
 import org.jsoup.nodes.Document
 
@@ -179,7 +178,9 @@ open class UHDMovies : ExtractorApi() {
     }
 }
 
-class Driveseed : ExtractorApi() {
+/*
+
+open class Driveseed : ExtractorApi() {
     override val name: String = "Driveseed"
     override val mainUrl: String = "https://driveseed.org"
     override val requiresReferer = false
@@ -224,7 +225,7 @@ class Driveseed : ExtractorApi() {
         val jsonResponse = app.post(resumeBotBaseUrl + "/download?id=" + resumeBotPath,
             requestBody = requestBody,
             headers = mapOf(
-                "Accept" to "*/*",
+                "Accept" to "*//*",
                 "Origin" to resumeBotBaseUrl,
                 "Sec-Fetch-Site" to "same-origin"
             ),
@@ -335,3 +336,4 @@ class Driveseed : ExtractorApi() {
 
     }
 }
+        */
