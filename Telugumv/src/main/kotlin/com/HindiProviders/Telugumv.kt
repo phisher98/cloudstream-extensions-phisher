@@ -3,12 +3,12 @@ package com.Phisher98
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
+import org.jsoup.nodes.Element
 
 class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://telugumv.xyz"
@@ -280,20 +280,20 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                              app.get(link,referer=mainUrl).document.select("div.dropdown-menu > button").map {
                                  val encoded = it.attr("data-server")
                                  val link = base64Decode(encoded)
-                                 android.util.Log.d("Phisher", link)
+                                 Log.d("Phisher", link)
                                  if (link.contains("duka.autoembed.cc")) {
                                      val type=link.substringAfter("/").substringBefore("/")
                                      val id=link.substringAfter("/").substringAfter("/")
                                      val trueurl="https://duka.autoembed.cc/api/getVideoSource?type=$type&id=$id"
                                      val dukelink = app.get(trueurl).parsedSafe<Dukeresponse>()?.videoSource ?:""
-                                     android.util.Log.d("Phisher", dukelink)
+                                     Log.d("Phisher", dukelink)
                                  } else
                                      if (link.contains("hin.autoembed.cc")) {
                                          val linkdoc = app.get(link).document.toString()
                                          Regex("\"file\":\"(https?:\\/\\/[^\"]+)\"").find(linkdoc)?.groupValues?.get(
                                              1
                                          )?.let { link ->
-                                             android.util.Log.d("Phisher inside", link)
+                                             Log.d("Phisher inside", link)
                                              callback.invoke(
                                                  ExtractorLink(
                                                      this.name,

@@ -51,7 +51,7 @@ open class Chillx : ExtractorApi() {
         val res = app.get(url).toString()
         val encodedString =
             Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
-        android.util.Log.d("Phisher",encodedString)
+        Log.d("Phisher",encodedString)
         val decoded = decodeEncryptedData(encodedString) ?:""
         val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
             ?.trim()

@@ -1,8 +1,8 @@
 package com.BanglaPlex
 
+import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.extractors.StreamTape
 
 @CloudstreamPlugin
 class BanglaPlexProvider: BasePlugin() {

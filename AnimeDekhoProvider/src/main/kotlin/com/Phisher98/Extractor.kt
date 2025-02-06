@@ -1,7 +1,5 @@
 package com.Phisher98
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.USER_AGENT
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
@@ -94,7 +92,6 @@ open class VidStream : ExtractorApi() {
     override val mainUrl = "https://vidstreaming.xyz"
     override val requiresReferer = true
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,

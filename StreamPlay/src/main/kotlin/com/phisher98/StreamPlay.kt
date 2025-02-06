@@ -17,7 +17,6 @@ import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeEmovies
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
 import com.Phisher98.StreamPlayExtractor.invokeFDMovies
-import com.Phisher98.StreamPlayExtractor.invokeFilmxy
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeFlixon

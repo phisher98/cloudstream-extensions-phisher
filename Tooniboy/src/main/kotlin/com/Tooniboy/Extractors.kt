@@ -251,7 +251,7 @@ class GDMirrorbot : ExtractorApi() {
 
         matchingResults.amap { (siteUrl, result) ->
             val href = "$siteUrl$result"
-            android.util.Log.d("Phisher", "Generated Href: $href")
+            Log.d("Phisher", "Generated Href: $href")
             loadExtractor(href, subtitleCallback, callback)
         }
 

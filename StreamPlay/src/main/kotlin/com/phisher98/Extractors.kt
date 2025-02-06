@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
@@ -28,6 +27,7 @@ import okhttp3.FormBody
 import org.json.JSONObject
 import java.math.BigInteger
 import java.net.URI
+import java.security.MessageDigest
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -1729,7 +1729,7 @@ class GDMirrorbot : ExtractorApi() {
 
         matchingResults.amap { (siteUrl, result) ->
             val href = "$siteUrl$result"
-            android.util.Log.d("Phisher", "Generated Href: $href")
+            Log.d("Phisher", "Generated Href: $href")
             loadExtractor(href, subtitleCallback, callback)
         }
 

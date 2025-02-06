@@ -1,23 +1,19 @@
 package com.Phisher98
 
-import com.google.gson.JsonElement
+import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import kotlinx.serialization.json.Json
-import java.net.URI
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import java.net.URI
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -89,7 +85,7 @@ class GDMirrorbot : ExtractorApi() {
 
         matchingResults.amap { (siteUrl, result) ->
             val href = "$siteUrl$result"
-            android.util.Log.d("Phisher", "Generated Href: $href")
+            Log.d("Phisher", "Generated Href: $href")
             loadExtractor(href, subtitleCallback, callback)
         }
 
