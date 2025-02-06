@@ -110,5 +110,6 @@ class StreamPlayPlugin: BasePlugin() {
         registerExtractorAPI(HubCloudink())
         registerExtractorAPI(HubCloudtel())
         registerExtractorAPI(GDMirrorbot())
+        registerExtractorAPI(Boosterx())
     }
 }

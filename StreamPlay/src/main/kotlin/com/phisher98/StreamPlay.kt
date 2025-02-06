@@ -1,9 +1,5 @@
 package com.Phisher98
 
-//import com.Phisher98.StreamPlayExtractor.invokeWatchasian
-//import com.Phisher98.StreamPlayExtractor.invokeCinemaTv
-//import com.Phisher98.StreamPlayExtractor.invokeGoku
-//import com.Phisher98.StreamPlayExtractor.invokeHdmovies4u
 import com.Phisher98.StreamPlayExtractor.invoke2embed
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
@@ -138,7 +134,6 @@ open class StreamPlay : TmdbProvider() {
         const val kimcartoonAPI = "https://kimcartoon.li"
         const val hianimeAPI = "https://hianime.to"
         const val aniwaveAPI = "https://aniwave.to"
-        //const val anitaku = "https://anitaku.pe"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val crunchyrollAPI = "https://beta-api.crunchyroll.com"
         const val kissKhAPI = "https://kisskh.co"
@@ -154,11 +149,10 @@ open class StreamPlay : TmdbProvider() {
         const val Whvx_API = BuildConfig.Whvx_API
         const val nineTvAPI = "https://moviesapi.club"
         const val nowTvAPI = "https://myfilestorage.xyz"
-        //const val gokuAPI = "https://goku.sx"
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = "https://multimovies.lat"
+        const val multimoviesAPI = "https://multimovies.today"
         const val netmoviesAPI = "https://web.netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val doomoviesAPI = "https://doomovies.net"
@@ -525,15 +519,6 @@ open class StreamPlay : TmdbProvider() {
                     invokeNoverse(res.title, res.season, res.episode, callback)
                 },
                 {
-                    if (!res.isAnime) invokeFilmxy(
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-                {
                     if (!res.isAnime && res.isCartoon) invokeKimcartoon(
                         res.title,
                         res.season,
@@ -636,6 +621,7 @@ open class StreamPlay : TmdbProvider() {
                 },
                 {
                 if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
+                    res.imdbId,
                     res.title,
                     res.year,
                     res.season,

@@ -1,12 +1,8 @@
 package com.Phisher98
 
-import com.Phisher98.StreamPlayExtractor.invokeAnimenexus
-import com.Phisher98.StreamPlayExtractor.invokeBollyflix
-import com.Phisher98.StreamPlayExtractor.invokeDotmovies
-import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
-import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
-import com.Phisher98.StreamPlayExtractor.invokeVegamovies
-import com.Phisher98.StreamPlayExtractor.invokeVidbinge
+import com.Phisher98.StreamPlayExtractor.invokeMoviehubAPI
+import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
+import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -24,7 +20,7 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                if (!res.isAnime) invokeBollyflix(
+                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
                     res.imdbId,
                     res.title,
                     res.year,

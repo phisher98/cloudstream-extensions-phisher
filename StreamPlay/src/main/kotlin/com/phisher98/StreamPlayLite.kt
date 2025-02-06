@@ -7,7 +7,6 @@ import com.Phisher98.StreamPlayExtractor.invokeAoneroom
 //import com.Phisher98.StreamPlayExtractor.invokeDoomovies
 import com.Phisher98.StreamPlayExtractor.invokeDramaday
 import com.Phisher98.StreamPlayExtractor.invokeDreamfilm
-import com.Phisher98.StreamPlayExtractor.invokeFilmxy
 import com.Phisher98.StreamPlayExtractor.invokeFlixon
 import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeLing
@@ -107,15 +106,6 @@ class StreamPlayLite : StreamPlay() {
             {
                 if (!res.isAnime) invokeDreamfilm(
                     res.title,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeFilmxy(
-                    res.imdbId,
                     res.season,
                     res.episode,
                     subtitleCallback,

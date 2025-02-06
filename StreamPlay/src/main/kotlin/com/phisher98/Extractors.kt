@@ -28,11 +28,6 @@ import okhttp3.FormBody
 import org.json.JSONObject
 import java.math.BigInteger
 import java.net.URI
-import java.nio.ByteBuffer
-import java.security.MessageDigest
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -687,16 +682,17 @@ open class Chillx : ExtractorApi() {
     ) {
         try {
             // Fetch the raw response from the URL
-            val res = app.get(url).toString() ?: throw Exception("Failed to fetch URL")
+            val res = app.get(url).toString()
 
             // Extract the encoded string using regex
-            val encodedString = Regex("const\\sMatrixs\\s=\\s'(.*?)';").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
             // Decrypt the encoded string
-            val password = "Fvv0O(0ep+X,q-Z+"
-            val decryptedData = decryptAES(encodedString, password)
+            val password = "CQ0KveLh[lZN6jP5"
+            val decryptedData = decryptXOR(encodedString, password)
+            Log.d("Phisher",decryptedData)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -748,67 +744,43 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
+    private fun decryptXOR(encryptedData: String, password: String): String {
+        return try {
+            val passwordBytes = password.toByteArray(Charsets.UTF_8)
+            val decryptedBytes = (encryptedData.indices step 2)
+                .map { i ->
+                    val byteValue = encryptedData.substring(i, i + 2).toInt(16) // Convert hex to int
+                    byteValue xor passwordBytes[(i / 2) % passwordBytes.size].toInt() // XOR with repeating password
+                }
+                .map { it.toByte() } // Convert to Byte
+                .toByteArray() // Convert to ByteArray
 
-
-    private fun decryptAES(encryptedData: String, password: String): String {
-        try {
-            // Decode Base64-encoded input
-            val decodedBytes = base64DecodeArray(encryptedData)
-
-            // Convert bytes to 32-bit words (similar to bytes_to_32bit_words in Python)
-            val resultWords = bytesTo32BitWords(decodedBytes)
-
-            // Extract IV (first 16 bytes, 4 words)
-            val ivBytes = ByteBuffer.allocate(16).apply {
-                for (i in 0 until 4) putInt(resultWords[i])
-            }.array()
-
-            // Generate the key using SHA-256 hash of the password
-            val key = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
-
-            // Initialize AES Cipher in CBC mode
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(ivBytes))
-
-            // Extract ciphertext
-            val cipherText = ByteBuffer.allocate((resultWords.size - 4) * 4).apply {
-                for (i in 4 until resultWords.size) putInt(resultWords[i])
-            }.array()
-
-            // Decrypt and return the plaintext
-            return String(cipher.doFinal(cipherText), Charsets.UTF_8)
+            String(decryptedBytes, Charsets.UTF_8) // Convert ByteArray to String
         } catch (e: Exception) {
             e.printStackTrace()
-            return "Decryption Failed"
+            "Decryption Failed"
         }
-    }
-
-    // Convert byte array to 32-bit word array
-    private fun bytesTo32BitWords(byteData: ByteArray): IntArray {
-        val words = mutableListOf<Int>()
-        for (i in byteData.indices step 4) {
-            var word = 0
-            for (j in 0 until 4) {
-                if (i + j < byteData.size) {
-                    word = word or (byteData[i + j].toInt() and 0xFF shl (24 - j * 8))
-                }
-            }
-            words.add(word)
-        }
-        return words.toIntArray()
     }
 }
+
 
 class Bestx : Chillx() {
     override val name = "Bestx"
     override val mainUrl = "https://bestx.stream"
+    override val requiresReferer = true
 }
 
 class Vectorx : Chillx() {
     override val name = "Vectorx"
     override val mainUrl = "https://vectorx.top"
+    override val requiresReferer = true
 }
 
+class Boosterx : Chillx() {
+    override val name = "Vectorx"
+    override val mainUrl = "https://boosterx.stream"
+    override val requiresReferer = true
+}
 
 class Graceaddresscommunity : Voe() {
     override var mainUrl = "https://graceaddresscommunity.com"
