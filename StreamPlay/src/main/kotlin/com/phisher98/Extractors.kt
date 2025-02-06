@@ -31,13 +31,7 @@ import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
 import java.net.URI
-import java.nio.ByteBuffer
-import java.util.zip.Inflater
-import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
+
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -701,7 +695,7 @@ open class Chillx : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
             // Decrypt the encoded string
-            val password = "TGRKeQCC8yrxC;5)"
+            val password = "CQ0KveLh[lZN6jP5"
             val decryptedData = decryptXOR(encodedString, password)
             Log.d("Phisher",decryptedData)
             // Extract the m3u8 URL from decrypted data
@@ -757,14 +751,19 @@ open class Chillx : ExtractorApi() {
 
 
 
+
     private fun decryptXOR(encryptedData: String, password: String): String {
         return try {
-            val decryptedBytes = encryptedData.chunked(3) // Split into chunks of 3 characters
-                .map { it.toIntOrNull() ?: 0 } // Convert to integer, default to 0 if invalid
-                .mapIndexed { index, num -> (num xor password[index % password.length].code).toByte() } // XOR with repeating password
-                .toByteArray() // Convert to byte array
+            val passwordBytes = password.toByteArray(Charsets.UTF_8)
+            val decryptedBytes = (encryptedData.indices step 2)
+                .map { i ->
+                    val byteValue = encryptedData.substring(i, i + 2).toInt(16) // Convert hex to int
+                    byteValue xor passwordBytes[(i / 2) % passwordBytes.size].toInt() // XOR with repeating password
+                }
+                .map { it.toByte() } // Convert to Byte
+                .toByteArray() // Convert to ByteArray
 
-            String(decryptedBytes, Charsets.UTF_8) // Convert bytes to string
+            String(decryptedBytes, Charsets.UTF_8) // Convert ByteArray to String
         } catch (e: Exception) {
             e.printStackTrace()
             "Decryption Failed"
