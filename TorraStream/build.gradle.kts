@@ -23,4 +23,13 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","Torrent","AsianDrama","TvSeries","Anime")
 
-    iconUrl = "https://i.ibb.co/w4BnkC9/GwxAcDV.png"}
+    iconUrl = "https://i.ibb.co/w4BnkC9/GwxAcDV.png"
+
+    isCrossPlatform = false
+}
+
+dependencies {
+    // FIXME remove this when crossplatform is fully supported
+    val cloudstream by configurations
+    cloudstream("com.lagradost:cloudstream3:pre-release")
+}

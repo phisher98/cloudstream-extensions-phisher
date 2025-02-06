@@ -25,4 +25,12 @@ cloudstream {
     tvTypes = listOf(
         "TvSeries"
     )
+
+    isCrossPlatform = false
+}
+
+dependencies {
+    // FIXME remove this when crossplatform is fully supported
+    val cloudstream by configurations
+    cloudstream("com.lagradost:cloudstream3:pre-release")
 }

@@ -1,11 +1,10 @@
 package com.hindilink4u
+
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
-import android.util.Log
 
 class Hindilink4u : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://www.hindilinks4u.pics"

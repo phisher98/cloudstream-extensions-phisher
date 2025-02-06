@@ -23,4 +23,6 @@ cloudstream {
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=yomovies.onl&sz=%size%"
+
+    isCrossPlatform = true
 }

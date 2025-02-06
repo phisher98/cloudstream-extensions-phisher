@@ -1,11 +1,12 @@
 package com.BanglaPlex
 
-import android.util.Base64
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.Vtbe
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -99,14 +100,14 @@ open class Chillx : ExtractorApi() {
 
 
     private fun decodeEncryptedData(encryptedString: String): String {
-        val decodedData = Base64.decode(encryptedString, Base64.DEFAULT).toString(Charsets.UTF_8)
+        val decodedData = base64Decode(encryptedString)
         val parsedJson = JSONObject(decodedData)
         val salt = stringTo32BitWords(parsedJson.getString("salt"))
         val password = stringTo32BitWords("3%.tjS0K@K9{9rTc")
         val derivedKey = deriveKey(password, salt, keySize = 32, iterations = 999, hashAlgo = "SHA-512")
 
-        val iv = Base64.decode(parsedJson.getString("iv"), Base64.DEFAULT)
-        val encryptedContent = Base64.decode(parsedJson.getString("data"), Base64.DEFAULT)
+        val iv = base64DecodeArray(parsedJson.getString("iv"))
+        val encryptedContent = base64DecodeArray(parsedJson.getString("data"))
 
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
         val secretKeySpec = SecretKeySpec(derivedKey, "AES")
@@ -121,7 +122,7 @@ open class Chillx : ExtractorApi() {
     private fun stringTo32BitWords(text: String): IntArray {
         val words = IntArray((text.length + 3) / 4)
         for (i in text.indices) {
-            words[i shr 2] = words[i shr 2] or (text[i].toInt() and 255 shl (24 - (i % 4) * 8))
+            words[i shr 2] = words[i shr 2] or (text[i].code and 255 shl (24 - (i % 4) * 8))
         }
         return words
     }
@@ -132,7 +133,7 @@ open class Chillx : ExtractorApi() {
 
         // Use PBKDF2 with SHA-512 as the hash algorithm
         val keySpec = PBEKeySpec(
-            passwordBytes.map { it.toChar() }.toCharArray(), // Convert password to CharArray
+            passwordBytes.map { it.toInt().toChar() }.toCharArray(), // Convert password to CharArray
             saltBytes,
             iterations,
             keySize * 8 // The size in bits

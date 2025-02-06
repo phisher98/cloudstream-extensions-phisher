@@ -1,7 +1,6 @@
 package com.hikaritv
 
-
-import android.util.Log
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app

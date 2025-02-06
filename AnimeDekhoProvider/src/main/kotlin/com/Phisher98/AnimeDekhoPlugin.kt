@@ -1,16 +1,15 @@
 package com.Phisher98
 
+import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.plugins.Plugin
-import android.content.Context
 import com.lagradost.cloudstream3.extractors.FileMoon
 import com.lagradost.cloudstream3.extractors.Krakenfiles
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.Voe
 
 @CloudstreamPlugin
-class AnimeDekhoPlugin: Plugin() {
-    override fun load(context: Context) {
+class AnimeDekhoPlugin: BasePlugin() {
+    override fun load() {
         registerMainAPI(AnimeDekhoProvider())
         registerMainAPI(OnepaceProvider())
         registerMainAPI(HindiSubAnime())

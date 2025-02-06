@@ -21,4 +21,6 @@ cloudstream {
     )
 
     iconUrl = "https://mir-s3-cdn-cf.behance.net/projects/404/5488d0187090001.Y3JvcCw2MDAwLDQ2OTMsMCw2NTM.jpg"
+
+    isCrossPlatform = true
 }

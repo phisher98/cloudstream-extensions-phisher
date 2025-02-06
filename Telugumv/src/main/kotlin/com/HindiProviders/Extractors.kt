@@ -1,16 +1,10 @@
 package com.Phisher98
 
-import android.util.Log
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.Filesim
-import com.lagradost.cloudstream3.extractors.StreamSB
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.Qualities
 import okio.ByteString.Companion.decodeBase64
-import java.net.URI
 
 open class Autoembed : ExtractorApi() {
     override var name = "Autoembed"

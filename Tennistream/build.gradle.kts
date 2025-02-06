@@ -24,4 +24,6 @@ cloudstream {
     tvTypes = listOf("Live")
 
     iconUrl="https://www.google.com/s2/favicons?domain=tennistream.com&sz=%size%"
+
+    isCrossPlatform = true
 }

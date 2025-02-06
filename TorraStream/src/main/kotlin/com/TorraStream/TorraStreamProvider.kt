@@ -1,12 +1,11 @@
 package com.TorraStream
 
+import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.plugins.Plugin
-import android.content.Context
 
 @CloudstreamPlugin
-class TorraStreamProvider: Plugin() {
-    override fun load(context: Context) {
+class TorraStreamProvider: BasePlugin() {
+    override fun load() {
         registerMainAPI(TorraStream())
     }
 }

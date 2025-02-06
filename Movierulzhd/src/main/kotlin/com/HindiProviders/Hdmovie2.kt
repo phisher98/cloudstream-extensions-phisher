@@ -1,7 +1,5 @@
 package com.Phisher98
 
-//import android.util.Log
-import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
@@ -11,9 +9,6 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import okhttp3.Headers
-import okhttp3.Interceptor
-import okhttp3.Response
 import org.jsoup.Jsoup
 import java.time.Year
 
@@ -21,7 +16,7 @@ open class Hdmovie2 : Movierulzhd() {
 
     override var mainUrl = "https://hdmovie2.ninja"
     override var name = "Hdmovie2"
-    @SuppressLint("NewApi")
+    @Suppress("NewApi")
     override val mainPage = mainPageOf(
         "trending" to "Trending",
         "release/${Year.now().value}" to "Latest",

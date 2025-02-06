@@ -1,37 +1,35 @@
 package com.Phisher98
 
-import android.annotation.SuppressLint
-import android.os.Build
-import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.extractors.VidSrcTo
+import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
+import com.lagradost.cloudstream3.extractors.helper.GogoHelper
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
-import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
-import com.lagradost.cloudstream3.mvvm.safeApiCall
-import com.lagradost.nicehttp.RequestBodyTypes
 import kotlinx.coroutines.delay
 import okhttp3.Interceptor
-import java.time.Instant
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.*
-import org.jsoup.select.Elements
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import org.mozilla.javascript.Scriptable
-import com.lagradost.cloudstream3.extractors.VidSrcTo
-import com.lagradost.cloudstream3.extractors.helper.GogoHelper
-import com.lagradost.cloudstream3.network.CloudflareKiller
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
-
+import org.jsoup.select.Elements
+import org.mozilla.javascript.Scriptable
+import java.time.Instant
 import java.util.Locale
 
 val session = Session(Requests().baseClient)
@@ -152,6 +150,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    @Suppress("NewApi")
     suspend fun invokeMultiEmbed(
         imdbId: String? = null,
         season: Int? = null,
@@ -176,7 +175,7 @@ object StreamPlayExtractor : StreamPlay() {
         };
         """.trimIndent()
             val rhino = org.mozilla.javascript.Context.enter()
-            rhino.optimizationLevel = -1
+            rhino.setInterpretedMode(true)
             val scope: Scriptable = rhino.initSafeStandardObjects()
             rhino.evaluateString(scope, firstJS + script, "JavaScript", 1, null)
             val file =
@@ -1570,7 +1569,8 @@ object StreamPlayExtractor : StreamPlay() {
                                     )
                                 )
                             } catch (e: Exception) {
-                                Log.e("Phisher", "Error processing subtitle for language: $lang, file: ${track.file}", e)
+                                logError(e)
+                                Log.e("Phisher", "Error processing subtitle for language: $lang, file: ${track.file}")
                             }
                         } ?: Log.w("Phisher", "Skipping track due to missing label for file: ${track.file}")
                     }
@@ -2411,7 +2411,7 @@ object StreamPlayExtractor : StreamPlay() {
 
 // Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
     //Still in progress
-    @SuppressLint("NewApi")
+    @Suppress("NewApi")
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
@@ -2433,11 +2433,7 @@ object StreamPlayExtractor : StreamPlay() {
         val vrf= vrfres?.vrf
         val timetamp= vrfres?.timestamp
         val instant = Instant.parse(timetamp)
-        val unixTimeMs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            instant.toEpochMilli()
-        } else {
-            TODO("VERSION.SDK_INT < O")
-        }
+        val unixTimeMs = instant.toEpochMilli()
     val api_url=if (season==null)
         {
             "${vidsrctoAPI}/api/$id/servers?id=${id}&type=$type&v=$v_value&vrf=${vrf}"
@@ -2614,6 +2610,7 @@ suspend fun invokeVidsrcsu(
 
     }
 
+    @Suppress("SuspiciousIndentation")
     suspend fun invokeFlicky(
         id: Int? = null,
         season: Int? = null,
@@ -3145,6 +3142,7 @@ suspend fun invokeVidsrcsu(
 
     }
     //only sub
+    @Suppress("SuspiciousIndentation")
     suspend fun invokewhvx(
         imdbId: String? = null,
         season: Int? = null,

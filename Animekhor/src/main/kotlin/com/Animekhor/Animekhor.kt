@@ -1,14 +1,9 @@
 package com.Animekhor
 
-//import android.util.Log
-import android.annotation.SuppressLint
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Log
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import java.util.Base64
 
 class Animekhor : MainAPI() {
     override var mainUrl              = "https://animekhor.org"
@@ -82,7 +77,6 @@ class Animekhor : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title= document.selectFirst("h1.entry-title")?.text()?.trim().toString()
@@ -122,7 +116,7 @@ class Animekhor : MainAPI() {
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
             val regex = Regex("""src=["']([^"']+)["']""",RegexOption.IGNORE_CASE)
-            val decodedUrl = base64.decodeBase64()
+            val decodedUrl = base64Decode(base64)
             val matchResult = regex.find(decodedUrl)
             var url = matchResult?.groups?.get(1)?.value ?: "Not found"
             if (url.startsWith("//"))
@@ -134,10 +128,5 @@ class Animekhor : MainAPI() {
 
         }
         return true
-    }
-    @TargetApi(Build.VERSION_CODES.O)
-    fun String.decodeBase64(): String {
-        val decodedBytes = Base64.getDecoder().decode(this)
-        return String(decodedBytes, Charsets.UTF_8)
     }
 }

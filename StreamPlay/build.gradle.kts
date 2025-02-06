@@ -60,4 +60,12 @@ cloudstream {
     )
 
     iconUrl = "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1"
+
+    isCrossPlatform = false
+}
+
+dependencies {
+    // FIXME remove this when crossplatform is fully supported
+    val cloudstream by configurations
+    cloudstream("com.lagradost:cloudstream3:pre-release")
 }

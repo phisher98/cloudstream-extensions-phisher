@@ -1,15 +1,14 @@
 package com.Pinoymoviepedia
 
-import android.content.Context
 import com.lagradost.cloudstream3.extractors.Upstream
 import com.lagradost.cloudstream3.extractors.VidHidePro3
 import com.lagradost.cloudstream3.extractors.Voe
+import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class PinoymoviepediaProvider: Plugin() {
-    override fun load(context: Context) {
+class PinoymoviepediaProvider: BasePlugin() {
+    override fun load() {
         registerMainAPI(Pinoymoviepedia())
         registerMainAPI(Bluray())
         registerExtractorAPI(Ds2play())

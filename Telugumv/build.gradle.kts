@@ -34,4 +34,7 @@ cloudstream {
         "TvSeries",
     )
     iconUrl = "https://telugumv.xyz/wp-content/uploads/2024/05/20240509_195734-e1715265186634.png"
+
+    // Unknown if this will support it yet
+    isCrossPlatform = false
 }

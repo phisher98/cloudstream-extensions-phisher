@@ -24,4 +24,6 @@ cloudstream {
     language = "hi"
 
     iconUrl = "https://www.hindilinks4u.pics/wp-content/uploads/2021/04/favicon.png"
+
+    isCrossPlatform = true
 }

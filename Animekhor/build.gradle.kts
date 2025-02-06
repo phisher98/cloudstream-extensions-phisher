@@ -23,4 +23,6 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime")
     iconUrl="https://animekhor.org/wp-content/uploads/2021/11/AnimeKhor_darkmode.png"
+
+    isCrossPlatform = true
 }

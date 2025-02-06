@@ -1,13 +1,12 @@
 package com.Tooniboy
 
+import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.plugins.Plugin
-import android.content.Context
 import com.lagradost.cloudstream3.extractors.Vidmolyme
 
 @CloudstreamPlugin
-class TooniboyProvider: Plugin() {
-    override fun load(context: Context) {
+class TooniboyProvider: BasePlugin() {
+    override fun load() {
         registerMainAPI(Tooniboy())
         registerExtractorAPI(StreamSB8())
         registerExtractorAPI(Vidmolyme())

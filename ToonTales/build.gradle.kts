@@ -23,4 +23,6 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Cartoon")
     iconUrl="https://www.toontales.net/wp-content/themes/toontales/images/logo.png"
+
+    isCrossPlatform = true
 }

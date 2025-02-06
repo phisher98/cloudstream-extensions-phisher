@@ -25,4 +25,6 @@ cloudstream {
     language = "en"
 
     iconUrl = "https://img.cartooncdn.xyz/themes/kim/images/kimcartoon.png"
+
+    isCrossPlatform = true
 }

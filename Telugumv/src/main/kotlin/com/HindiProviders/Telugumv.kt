@@ -1,7 +1,5 @@
 package com.Phisher98
 
-//import android.util.Log
-import android.os.Build
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -11,7 +9,6 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
-import java.util.Base64
 
 class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://telugumv.xyz"
@@ -282,7 +279,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                             {
                              app.get(link,referer=mainUrl).document.select("div.dropdown-menu > button").map {
                                  val encoded = it.attr("data-server")
-                                 val link = encoded.decodeBase64().toString()
+                                 val link = base64Decode(encoded)
                                  android.util.Log.d("Phisher", link)
                                  if (link.contains("duka.autoembed.cc")) {
                                      val type=link.substringAfter("/").substringBefore("/")
@@ -336,13 +333,4 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         @JsonProperty("key") val key: String? = null,
         @JsonProperty("type") val type: String? = null,
     )
-
-    fun String.decodeBase64(): String {
-        val decodedBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Base64.getDecoder().decode(this)
-        } else {
-            TODO("VERSION.SDK_INT < O")
-        }
-        return String(decodedBytes, Charsets.UTF_8)
-    }
 }

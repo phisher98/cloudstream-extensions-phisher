@@ -1,12 +1,8 @@
 package com.Animenosub
 
-//import android.util.Log
-import android.annotation.SuppressLint
-import android.os.Build
-import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import java.util.Base64
+import org.jsoup.nodes.Element
 
 class Animenosub : MainAPI() {
     override var mainUrl              = "https://animenosub.com/"
@@ -68,7 +64,6 @@ class Animenosub : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
@@ -106,11 +101,12 @@ class Animenosub : MainAPI() {
         }
     }
 
+    @Suppress("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
-            val url=base64.decodeBase64()
+            val url=base64Decode(base64)
             if (url.contains("vidmoly"))
             {
                 val newurl=url.substringAfter("=\"").substringBefore("\"")
@@ -129,9 +125,5 @@ class Animenosub : MainAPI() {
             }
         }
         return true
-    }
-    fun String.decodeBase64(): String {
-        val decodedBytes = Base64.getDecoder().decode(this)
-        return String(decodedBytes, Charsets.UTF_8)
     }
 }

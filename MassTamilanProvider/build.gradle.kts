@@ -25,4 +25,6 @@ cloudstream {
         "Music","Movie"
     )
     iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/MassTamilanProvider/icon.png"
+
+    isCrossPlatform = true
 }

@@ -1,7 +1,6 @@
 package com.Donghuastream
 
-//import android.util.Log
-import android.annotation.SuppressLint
+
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -66,7 +65,6 @@ class Donghuastream : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("h1.entry-title")?.text()?.trim().toString()

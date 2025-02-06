@@ -1,13 +1,6 @@
 package com.Phisher98
 
-import android.os.Build
-import android.util.Base64
-import androidx.annotation.RequiresApi
 import com.Phisher98.StreamPlay.Companion.animepaheAPI
-import com.lagradost.cloudstream3.extractors.Filesim
-import com.lagradost.cloudstream3.extractors.GMPlayer
-import com.lagradost.cloudstream3.extractors.StreamSB
-import com.lagradost.cloudstream3.extractors.Voe
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
@@ -16,27 +9,29 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.extractors.Filesim
+import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.Jeniusplay
-import com.lagradost.cloudstream3.extractors.VidhideExtractor
-import com.lagradost.cloudstream3.utils.*
-import java.math.BigInteger
-import java.security.MessageDigest
 import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.extractors.Voe
+import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
+import java.math.BigInteger
 import java.net.URI
 import java.nio.ByteBuffer
-import java.util.zip.Inflater
+import java.security.MessageDigest
 import javax.crypto.Cipher
-import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 open class Playm4u : ExtractorApi() {
@@ -684,7 +679,6 @@ open class Chillx : ExtractorApi() {
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -759,7 +753,7 @@ open class Chillx : ExtractorApi() {
     private fun decryptAES(encryptedData: String, password: String): String {
         try {
             // Decode Base64-encoded input
-            val decodedBytes = Base64.decode(encryptedData, Base64.DEFAULT)
+            val decodedBytes = base64DecodeArray(encryptedData)
 
             // Convert bytes to 32-bit words (similar to bytes_to_32bit_words in Python)
             val resultWords = bytesTo32BitWords(decodedBytes)

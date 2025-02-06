@@ -15,4 +15,6 @@ cloudstream {
     status  = 1 // will be 3 if unspecified
     tvTypes = listOf("Movie","TvSeries")
     iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://pinoymoviepedia.ru&size=16"
+
+    isCrossPlatform = true
 }

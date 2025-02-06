@@ -1,14 +1,13 @@
 package com.Desicinemas
 
-import android.os.Build
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
-import java.util.Base64
 
 class Tvlogyflow(val source:String) : ExtractorApi() {
     override val mainUrl = "https://flow.tvlogy.to"
@@ -40,7 +39,7 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
         }
         else {
             val script =
-                doc.substringAfter("JuicyCodes.Run(\"").substringBefore("\");").replace("\"+\"", "").decodeBase64()
+                base64Decode(doc.substringAfter("JuicyCodes.Run(\"").substringBefore("\");").replace("\"+\"", ""))
                 val unpacked= JsUnpacker(script).unpack().toString()
             Log.d("Phisher scrit",script)
             Log.d("Phisher scrit unpacked",unpacked)
@@ -101,13 +100,4 @@ class Tvlogy(private val source:String) : ExtractorApi() {
         val videoSource: String
     )
 
-}
-
-fun String.decodeBase64(): String {
-    val decodedBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        Base64.getDecoder().decode(this)
-    } else {
-        TODO("VERSION.SDK_INT < O")
-    }
-    return String(decodedBytes, Charsets.UTF_8)
 }
