@@ -138,7 +138,10 @@ class MPlayer : MainAPI() {
             section.items.forEach { item ->
                 if (item.type.contains("movie", ignoreCase = true)) {
                     val portraitLargeImageUrl = getBigPic(item)
-                    val streamUrl: String = endpointurl +item.stream?.hls?.high.toString()
+                    val streamUrl: String = item.stream?.hls?.high?.let { endpointurl + it }
+                        ?: item.stream?.thirdParty?.hlsUrl
+                        ?: item.stream?.thirdParty?.dashUrl
+                        ?: ""
                     result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo,null, item.type, null, item.description, item.shareUrl,streamUrl,portraitLargeImageUrl).toJson()) {
                         posterUrl = portraitLargeImageUrl
                     })
@@ -177,7 +180,7 @@ class MPlayer : MainAPI() {
         val title = video.title
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo ?: video.alternativeposter
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        val href = video.stream?.hls?.high ?: video.stream?.thirdParty?.hlsUrl ?:video.stream?.hls?.base ?: video.alternativestream
+        val href = video.stream?.hls?.high ?: video.stream?.thirdParty?.hlsUrl ?:video.stream?.hls?.base?: video.stream?.thirdParty?.hlsUrl ?: video.stream?.thirdParty?.dashUrl ?:video.alternativestream
         return if (type == TvType.TvSeries) {
             val epposter = getMovieBigPic(url)
             val seasonData = getSeasonData("$mainUrl${video.shareUrl}")
@@ -236,16 +239,16 @@ class MPlayer : MainAPI() {
             )
         }
         else
-        callback(
-            ExtractorLink(
-                this.name,
-                name,
-                data,
-                "$mainUrl/",
-                Qualities.Unknown.value,
-                true
+            callback(
+                    ExtractorLink(
+                    this.name,
+                    name,
+                    data,
+                    "$mainUrl/",
+                    Qualities.Unknown.value,
+                    true
+                )
             )
-        )
         return true
     }}
 

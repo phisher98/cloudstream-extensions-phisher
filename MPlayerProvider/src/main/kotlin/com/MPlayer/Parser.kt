@@ -209,12 +209,23 @@ data class Stream(
     val youtube: Any?,
     val sony: Any?,
     val altBalaji: Any?,
-    val thirdParty: Any?,
+    val thirdParty: ThirdParty?,
     val videoHash: String,
     val adTagProvider: String,
     val download: Download,
     val watermark: Any?,
     val aspectRatio: String,
+)
+
+data class ThirdParty(
+    val dashUrl: String?,
+    val hlsUrl: String?,
+    val contentId: String?,
+    val hlsId: String?,
+    val dashId: String?,
+    val webHlsUrl: String?,
+    val validUntil: String?,
+    val name: String
 )
 
 data class Dash(
