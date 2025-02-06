@@ -101,7 +101,6 @@ class Hikaritv : MainAPI() {
         val animeId = url.substringAfter("/anime/").substringBefore("/").toIntOrNull()
         val response = app.get(url)
         val document = response.document
-
         val animeTitle = document.selectFirst("h2.film-name.dynamic-name")?.text()?.trim().orEmpty()
         val posterUrl = document.select("div.anis-cover").attr("style").substringAfter("(").substringBefore(")")
         val genreTags = document.select("div.sgeneros > a").map { it.text() }
@@ -126,13 +125,15 @@ class Hikaritv : MainAPI() {
             // Create a mutex for thread-safe access
             val mutex = Mutex()
 
+            // List to accumulate episodes before sorting
+            val episodes = mutableListOf<Pair<Int, Episode>>()
+
             episodeDocument.select("a[class~=ep-item]").amap { episodeElement ->
                 val SubUrls = mutableListOf<String>()
                 val DubUrls = mutableListOf<String>()
                 val episodeNumber = episodeElement.selectFirst(".ssli-order")?.text()?.toIntOrNull()
                     ?: episodeElement.attr("data-number").toIntOrNull()
                     ?: episodeElement.selectFirst(".ssli-order")!!.text().toInt()
-
                 val episodeName = episodeElement.selectFirst("div.ep-name")?.text()?.substringAfter(".")
 
                 val embedResponseHtml = app.get("$mainUrl/ajax/embedserver/$animeId/$episodeNumber").parsedSafe<TypeRes>()?.html.orEmpty()
@@ -143,7 +144,7 @@ class Hikaritv : MainAPI() {
                     val embedId = subElement.attr("id").substringAfter("embed-")
                     if (embedId.toIntOrNull() != null) {
                         val href = "$mainUrl/ajax/embed/$animeId/$episodeNumber/$embedId"
-                        SubUrls.add(href) // Add the constructed URL directly
+                        SubUrls.add(href)
                     }
                 }
 
@@ -152,14 +153,14 @@ class Hikaritv : MainAPI() {
                         val embedId = subElement.attr("id").substringAfter("embed-")
                         if (embedId.toIntOrNull() != null) {
                             val href = "$mainUrl/ajax/embed/$animeId/$episodeNumber/$embedId"
-                            SubUrls.add(href) // Add the constructed URL directly
+                            SubUrls.add(href)
                         }
                     }
                 }
 
                 mutex.withLock {
                     if (subbedEpisodes.none { it.episode == episodeNumber && it.data == SubUrls.joinToString(",") }) {
-                        subbedEpisodes.add(Episode(LoadSeriesUrls("sub", SubUrls).toJson(), episodeName, 1, episodeNumber))
+                        episodes.add(episodeNumber to Episode(LoadSeriesUrls("sub", SubUrls).toJson(), episodeName, 1, episodeNumber))
                     }
                 }
 
@@ -168,14 +169,26 @@ class Hikaritv : MainAPI() {
                     val embedId = dubElement.attr("id").substringAfter("embed-")
                     if (embedId.toIntOrNull() != null) {
                         val href = "$mainUrl/ajax/embed/$animeId/$episodeNumber/$embedId"
-                        DubUrls.add(href) // Add the constructed URL directly
+                        DubUrls.add(href)
                     }
                 }
 
                 mutex.withLock {
                     if (dubbedEpisodes.none { it.episode == episodeNumber && it.data == DubUrls.joinToString(",") }) {
-                        dubbedEpisodes.add(Episode(LoadSeriesUrls("dub", DubUrls).toJson(), episodeName, 1, episodeNumber))
+                        episodes.add(episodeNumber to Episode(LoadSeriesUrls("dub", DubUrls).toJson(), episodeName, 1, episodeNumber))
                     }
+                }
+            }
+
+            // Sort episodes in ascending order by episode number
+            val sortedEpisodes = episodes.sortedBy { it.first }
+
+            // Add to subbed and dubbed episodes
+            sortedEpisodes.forEach { (_, episode) ->
+                if (episode.data.contains("sub")) {
+                    subbedEpisodes.add(episode)
+                } else {
+                    dubbedEpisodes.add(episode)
                 }
             }
 
@@ -201,6 +214,7 @@ class Hikaritv : MainAPI() {
                 addDuration(animeDuration)
             }
         }
+
     }
 
 
