@@ -70,7 +70,7 @@ subprojects {
     dependencies {
         val implementation by configurations
 
-        implementation("com.github.recloudstream.cloudstream:library-jvm:pre-release")
+        implementation("com.github.recloudstream.cloudstream:library-jvm:master-SNAPSHOT")
 
         // Other dependencies
         implementation(kotlin("stdlib"))
