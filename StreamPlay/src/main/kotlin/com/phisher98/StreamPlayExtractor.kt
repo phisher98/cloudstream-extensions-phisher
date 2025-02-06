@@ -905,7 +905,7 @@ object StreamPlayExtractor : StreamPlay() {
             val subDub = if (url!!.contains("-dub")) "Dub" else "Sub"
             val epUrl = url.replace("category/", "").plus("-episode-${episode}")
             val epRes = app.get(epUrl).document
-        epRes.select("div.anime_muti_link > ul > li").forEach {
+            epRes.select("div.anime_muti_link > ul > li").forEach {
                 val sourcename = it.selectFirst("a")?.ownText() ?: return@forEach
                 val iframe = it.selectFirst("a")?.attr("data-video") ?: return@forEach
                 if(iframe.contains("s3taku"))
@@ -1079,9 +1079,8 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeGrani(title ?:"", episode, callback)
             },
             {
-                val aniid=malsync?.Gogoanime?.firstNotNullOf { it.value["aniId"] }?.toIntOrNull()
                 val jptitleslug=jptitle.createSlug()
-                invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
+                invokeGojo(aniId,jptitleslug, episode, subtitleCallback, callback)
             },
             {
                 invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
@@ -1389,7 +1388,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeHianime(
+    fun invokeHianime(
         animeIds: List<String?>? = null,
         url: String?,
         episode: Int? = null,
@@ -1420,38 +1419,34 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
             servers?.map servers@{ server ->
-                val iframe = app.get(
-                    "$hianimeAPI/ajax/v2/episode/sources?id=${server.second ?: return@servers}",
-                    headers = headers
-                ).parsedSafe<HianimeResponses>()?.link
-                    ?: return@servers
-                val audio = if (server.third == "sub") "Raw" else "English Dub"
                 val animeEpisodeId=url?.substringAfter("to/")
-                val api="${BuildConfig.HianimeAPI}/api/stream?id=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&type=${server.third}"
-                app.get(api, referer = api).parsedSafe<Hianime>()?.results?.streamingLink?.let { streamingLink ->
-                    val m3u8 = streamingLink.link.file
-                    loadNameExtractor(
-                        "HiAnime ${streamingLink.server.uppercase()} [${audio.capitalize()}]",
-                        m3u8,
-                        "",
-                        subtitleCallback,
-                        callback,
-                        Qualities.P1080.value
-                    )
+                val api="${BuildConfig.HianimeAPI}/${server.third}.php?id=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&embed=true"
+                app.get(api, referer = api).toString().let { responseText ->
+                    val m3u8Regex = """url\s*:\s*'([^']+\.m3u8)'""".toRegex()
+                    val m3u8Url = m3u8Regex.find(responseText)?.groups?.get(1)?.value
+                    m3u8Url?.let { m3u8 ->
+                        callback.invoke(
+                            ExtractorLink(
+                                "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
+                                "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
+                                m3u8,
+                                mainUrl,
+                                Qualities.P1080.value,
+                                isM3u8 = true,
+                            )
+                        )
+                    }
 
-                    streamingLink.tracks.forEach { track ->
-                        track.label?.let { lang -> // Proceed only if the label is not null
-                            try {
-                                subtitleCallback.invoke(
-                                    SubtitleFile(
-                                        getLanguage(lang),
-                                        track.file
-                                    )
-                                )
-                            } catch (e: Exception) {
-                                Log.e("Phisher", "Error processing subtitle for language: $lang, file: ${track.file}", e)
-                            }
-                        } ?: Log.w("Phisher", "Skipping track due to missing label for file: ${track.file}")
+                    val trackRegex = """html:\s*'([^']+)',\s*url:\s*'([^']+)'""".toRegex()
+                    trackRegex.findAll(responseText).forEach { matchResult ->
+                        val lang = matchResult.groups[1]?.value ?: ""
+                        val file = matchResult.groups[2]?.value ?: ""
+                        subtitleCallback.invoke(
+                            SubtitleFile(
+                                lang,
+                                file
+                            )
+                        )
                     }
                 }
             }
