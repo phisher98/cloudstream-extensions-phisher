@@ -39,5 +39,6 @@ cloudstream {
 
     iconUrl = "https://www.google.com/s2/favicons?domain=kisskh.co&sz=%size%"
 
-    isCrossPlatform = true
+    // Unknown if this will support it yet
+    isCrossPlatform = false
 }
