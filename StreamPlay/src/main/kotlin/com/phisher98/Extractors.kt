@@ -1,7 +1,6 @@
 package com.Phisher98
 
 import android.os.Build
-import android.util.Base64
 import androidx.annotation.RequiresApi
 import com.Phisher98.StreamPlay.Companion.animepaheAPI
 import com.lagradost.cloudstream3.extractors.Filesim

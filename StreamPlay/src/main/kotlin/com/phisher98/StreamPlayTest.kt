@@ -22,11 +22,14 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                if (res.isAsian && !res.isAnime) invokeKisskh(
+                if (res.isAnime) invokeAnimes(
                     res.title,
+                    res.jpTitle,
+                    res.epsTitle,
+                    res.date,
+                    res.airedDate,
                     res.season,
                     res.episode,
-                    res.lastSeason,
                     subtitleCallback,
                     callback
                 )

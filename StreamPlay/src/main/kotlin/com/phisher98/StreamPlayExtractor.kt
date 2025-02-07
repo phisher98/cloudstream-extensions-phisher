@@ -1085,6 +1085,9 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
             },
             {
+                invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback)
+            },
+            {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
                 Log.d("Phisher",Gogourl.toString())
                 if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
@@ -1182,6 +1185,29 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             }
+        }
+    }
+
+    suspend fun invokeAnimeOwl(
+        name: String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val fixtitle=name.createSlug()
+        val url="$AnimeOwlAPI/anime/$fixtitle"
+        app.get(url).document.select("#anime-cover-sub-content, #anime-cover-dub-content").amap {
+            val subtype=if (it.id() == "anime-cover-sub-content") "SUB" else "DUB"
+            val href = it.select(".episode-node").firstOrNull { element -> element.text().contains("$episode") }?.select("a")?.attr("href")
+            if (href!=null)
+            loadCustomExtractor(
+                "AnimeOwl [$subtype]",
+                href,
+                AnimeOwlAPI,
+                subtitleCallback,
+                callback,
+                Qualities.P1080.value
+            )
         }
     }
 

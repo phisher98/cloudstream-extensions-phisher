@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import kotlin.text.Regex
 
-open class OwlExtractor : ExtractorApi() {
+class OwlExtractor : ExtractorApi() {
     override var name = "OwlExtractor"
     override var mainUrl = "https://whguides.com"
     override val requiresReferer = false
@@ -24,13 +24,13 @@ open class OwlExtractor : ExtractorApi() {
             Deobfuscator.deobfuscateScript(it)
         }
         val jwt=findFirstJwt(epJS?: throw Exception("Unable to get jwt")) ?:return
+
         val servers=app.get("$referer$datasrc").parsedSafe<Response>()
         val sources= mutableListOf<String>()
-        /*
         servers?.kaido?.let {
             sources+="$it$jwt"
         }
-         */
+
         servers?.luffy?.let {
             val m3u8= app.get("$it$jwt", allowRedirects = false).headers["location"] ?:return
             sources+=m3u8
@@ -77,8 +77,9 @@ private fun findFirstJwt(text: String): String? {
 }
 
 data class Response(
-    val luffy: String,
-    val zoro: String,
+    val kaido: String? = null,
+    val luffy: String? = null,
+    val zoro: String? = null,
 )
 
 data class Zoro(

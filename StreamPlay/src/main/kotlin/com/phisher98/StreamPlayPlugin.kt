@@ -3,6 +3,7 @@ package com.Phisher98
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
+import com.Animeowl.OwlExtractor
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
 import com.lagradost.cloudstream3.extractors.Gofile
@@ -112,5 +113,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(HubCloudtel())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Boosterx())
+        registerExtractorAPI(OwlExtractor())
     }
 }

@@ -3,6 +3,7 @@ package com.Phisher98
 import android.util.Log
 import com.Phisher98.StreamPlay.Companion.anilistAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
+import com.Phisher98.StreamPlayExtractor.invokeAnimeOwl
 import com.Phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.Phisher98.StreamPlayExtractor.invokeAnitaku
 import com.Phisher98.StreamPlayExtractor.invokeGojo
@@ -237,7 +238,10 @@ class StreamPlayAnime : MainAPI() {
             {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
                 if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
-            }
+            },
+            {
+                invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback)
+            },
         )
         return true
     }

@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 145
+version = 146
 android {
     defaultConfig {
         val properties = Properties()
@@ -35,6 +35,9 @@ android {
         buildConfigField("String", "KissKh", "\"${properties.getProperty("KissKh")}\"")
         buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
     }
+}
+dependencies {
+    implementation(project(":AnimeOwl"))
 }
 
 cloudstream {
