@@ -1,7 +1,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
-version = 4
+version = 5
 
 android {
     defaultConfig {
@@ -20,7 +20,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     // description = "Lorem Ipsum"
-     authors = listOf("Phisher98,Hexated")
+     authors = listOf("Phisher98,Hexated,Peerless")
 
     /**
      * Status int as the following:
