@@ -1,15 +1,14 @@
 package com.AnimeKai
 
-import android.annotation.SuppressLint
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import java.util.Base64
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64Encode
+import com.lagradost.cloudstream3.utils.StringUtils.decodeUri
+import com.lagradost.cloudstream3.utils.StringUtils.encodeUri
 
 //Credit: Special Thanks to Toasty for the Code
 class AnimekaiDecoder {
     fun generateToken(input: String): String {
-        val encodedInput = URLEncoder.encode(input, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        val encodedInput = input.encodeUri().replace("+", "%20")
         var temp = base64UrlEncode(transform("gEUzYavPrGpj", reverseIt(encodedInput)))
         temp = substitute(temp, "U8nv0tEFGTb", "bnGvE80UtTF")
         temp = substitute(temp, "9ysoRqBZHV", "oqsZyVHBR9")
@@ -27,7 +26,7 @@ class AnimekaiDecoder {
         val temp4 = transform("CSk63F7PwBHJKa", base64UrlDecode(temp3))
         val temp5 = substitute(temp4, "oqsZyVHBR9", "9ysoRqBZHV")
         val temp6 = base64UrlDecode(substitute(temp5, "bnGvE80UtTF", "U8nv0tEFGTb"))
-        return URLDecoder.decode(reverseIt(transform("gEUzYavPrGpj", temp6)), "UTF-8")
+        return reverseIt(transform("gEUzYavPrGpj", temp6)).decodeUri()
     }
 
     fun decode(n: String): String {
@@ -48,19 +47,17 @@ class AnimekaiDecoder {
                 "oSgyJUfizcTx3"
             )
         )
-        return URLDecoder.decode(temp1, "UTF-8")
+        return temp1.decodeUri()
     }
-    @SuppressLint("NewApi")
     private fun base64UrlEncode(str: String): String {
-        val base64Encoded = Base64.getEncoder().encodeToString(str.toByteArray(Charsets.ISO_8859_1))
+        val base64Encoded = base64Encode(str.toByteArray(Charsets.ISO_8859_1))
         return base64Encoded.replace("+", "-").replace("/", "_").replace(Regex("=+$"), "")
     }
-    @SuppressLint("NewApi")
     fun base64UrlDecode(n: String): String {
         val padded = n.padEnd(n.length + ((4 - (n.length % 4)) % 4), '=')
             .replace('-', '+')
             .replace('_', '/')
-        return String(Base64.getDecoder().decode(padded), Charsets.ISO_8859_1)
+        return base64Decode(padded)
     }
 
 
@@ -98,6 +95,4 @@ class AnimekaiDecoder {
         }
         return result.toString()
     }
-
-
 }
