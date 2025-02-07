@@ -1,14 +1,5 @@
-import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
 version = 1
-
-
-android {
-    defaultConfig {
-        val properties = Properties()
-        properties.load(project.rootProject.file("local.properties").inputStream())
-    }
-}
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -35,6 +26,5 @@ cloudstream {
     )
     iconUrl = "https://telugumv.xyz/wp-content/uploads/2024/05/20240509_195734-e1715265186634.png"
 
-    // Unknown if this will support it yet
-    isCrossPlatform = false
+    isCrossPlatform = true
 }
