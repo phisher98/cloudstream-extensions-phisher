@@ -1,4 +1,4 @@
-package com.hexated
+package com.Phisher98
 
 import com.lagradost.cloudstream3.base64DecodeArray
 import javax.crypto.Cipher

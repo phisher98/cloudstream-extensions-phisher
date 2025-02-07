@@ -1458,6 +1458,11 @@ data class RgshowsHindiResponseData(
 )
 
 
+data class KisskhKey(
+    val id: String,
+    val version: String,
+    val key: String,
+)
 
 
 data class ConsumetServers2(

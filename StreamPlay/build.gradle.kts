@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 144
+version = 147
 android {
     defaultConfig {
         val properties = Properties()
@@ -32,8 +32,12 @@ android {
         buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
         buildConfigField("String", "Vidsrccc", "\"${properties.getProperty("Vidsrccc")}\"")
         buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
-
+        buildConfigField("String", "KissKh", "\"${properties.getProperty("KissKh")}\"")
+        buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
     }
+}
+dependencies {
+    implementation(project(":AnimeOwl"))
 }
 
 cloudstream {
@@ -56,7 +60,8 @@ cloudstream {
         "TvSeries",
         "Anime",
         "Movie",
-        "Cartoon"
+        "Cartoon",
+        "AnimeMovie"
     )
 
     iconUrl = "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1"

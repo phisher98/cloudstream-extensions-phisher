@@ -1,5 +1,18 @@
+
+import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
-version = 3
+version = 5
+
+android {
+    defaultConfig {
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
+        buildConfigField("String", "KissKh", "\"${properties.getProperty("KissKh")}\"")
+        buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
+
+    }
+}
 
 
 cloudstream {
@@ -7,7 +20,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     // description = "Lorem Ipsum"
-     authors = listOf("Phisher,Hexated")
+     authors = listOf("Phisher98,Hexated,Peerless")
 
     /**
      * Status int as the following:

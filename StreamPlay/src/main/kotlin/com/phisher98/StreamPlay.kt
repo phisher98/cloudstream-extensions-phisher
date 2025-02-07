@@ -182,7 +182,6 @@ open class StreamPlay : TmdbProvider() {
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
-        const val BollyflixVIP= "https://bollyflix.pet"
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.repair"
         const val WhvxAPI=BuildConfig.WhvxAPI
@@ -201,6 +200,7 @@ open class StreamPlay : TmdbProvider() {
         const val WASMAPI=BuildConfig.WASMAPI
         const val Rgshows="https://api.rgshows.me"
         const val RgshowsHindi="https://hindi.rgshows.me"
+        const val AnimeOwlAPI="https://animeowl.live"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -457,29 +457,7 @@ open class StreamPlay : TmdbProvider() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LinkData>(data)
-        argamap({
-                    invokeDumpStream(
-                        res.title,
-                        res.year,
-                        res.season,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                    )
-                },
-            /*
-                {
-                   invokeGoku(
-                       res.title,
-                       res.year,
-                        res.season,
-                        res.lastSeason,
-                        res.episode,
-                        subtitleCallback,
-                        callback
-                   )
-                },
-             */
+        argamap(
             {
                 invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
             },
