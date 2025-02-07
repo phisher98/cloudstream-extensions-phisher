@@ -1,12 +1,9 @@
 package com.Tooniboy
 
-//import android.util.Log
-import android.annotation.SuppressLint
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import java.util.Base64
 
 class Tooniboy : MainAPI() {
     override var mainUrl              = "https://www.tooniboy.com"
@@ -85,7 +82,7 @@ class Tooniboy : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url, headers = header).document
         val title= document.selectFirst("h2.title")?.text()?.trim().toString().replace("Watch Online","")
@@ -120,7 +117,7 @@ class Tooniboy : MainAPI() {
         val document = app.get(data, headers=header).document
         document.select("div.op-srv.brd1").forEach {
             val encodedlink=it.attr("data-src")
-            val serverurl=base64ToUtf8(encodedlink) ?:""
+            val serverurl= base64Decode(encodedlink)
             val truelink= app.get(serverurl).document.selectFirst("iframe")?.attr("src") ?:""
             Log.d("Phisher",truelink)
             if (truelink.contains("streamruby"))
@@ -130,18 +127,6 @@ class Tooniboy : MainAPI() {
             else loadExtractor(truelink,subtitleCallback, callback)
         }
         return true
-    }
-
-
-    @SuppressLint("NewApi")
-    fun base64ToUtf8(base64String: String): String? {
-        return try {
-            val decodedBytes = Base64.getDecoder().decode(base64String)
-            String(decodedBytes, Charsets.UTF_8)
-        } catch (e: IllegalArgumentException) {
-            println("Error decoding Base64: ${e.message}")
-            null
-        }
     }
 }
 

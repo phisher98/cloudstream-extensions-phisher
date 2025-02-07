@@ -1,6 +1,5 @@
 package com.Topstreamfilm
 
-import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -37,7 +36,7 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
         return newHomePageResponse(request.name, home)
     }
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("h3")?.text()?.trim() ?: return null
         val href = this.selectFirst("a")?.attr("href") ?: return null

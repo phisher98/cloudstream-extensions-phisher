@@ -1,11 +1,8 @@
 package com.Animexin
 
-//import android.util.Log
-import android.annotation.SuppressLint
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import android.util.Base64
 import org.jsoup.Jsoup
 
 class Animexin : MainAPI() {
@@ -68,7 +65,7 @@ class Animexin : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
@@ -110,16 +107,12 @@ class Animexin : MainAPI() {
         val document = app.get(data).document
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
-            val decoded=base64.base64Decode()
+            val decoded=base64Decode(base64)
             val doc = Jsoup.parse(decoded)
             val href=doc.select("iframe").attr("src")
             val url=Http(href)
             loadExtractor(url,subtitleCallback, callback)
         }
         return true
-    }
-
-    fun String.base64Decode(): String {
-        return Base64.decode(this, Base64.DEFAULT).toString(Charsets.UTF_8)
     }
 }

@@ -1,6 +1,6 @@
 package com.Phisher98
 
-import android.util.Base64
+import com.lagradost.cloudstream3.base64DecodeArray
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -22,7 +22,7 @@ fun decrypt(data: String): String {
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
     cipher.init(Cipher.DECRYPT_MODE, key, iv)
 
-    val encryptedBytes = Base64.decode(data, Base64.DEFAULT)
+    val encryptedBytes = base64DecodeArray(data)
     return String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
 }
 

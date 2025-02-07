@@ -1,6 +1,6 @@
 package com.Pinoymoviepedia
 
-//import android.util.Log
+
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.SubtitleFile

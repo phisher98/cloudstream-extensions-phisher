@@ -22,4 +22,6 @@ cloudstream {
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=bolly2tolly.gold/&sz=%size%"
+
+    isCrossPlatform = true
 }

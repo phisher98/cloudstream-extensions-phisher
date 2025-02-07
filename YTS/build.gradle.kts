@@ -23,4 +23,7 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","Torrent")
 
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/yts.png"}
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/yts.png"
+
+    isCrossPlatform = true
+}

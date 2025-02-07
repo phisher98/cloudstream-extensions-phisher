@@ -24,4 +24,6 @@ cloudstream {
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=www2.kickassanime.ro&sz=%size%"
+
+    isCrossPlatform = true
 }

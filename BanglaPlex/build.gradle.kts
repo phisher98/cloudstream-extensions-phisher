@@ -24,4 +24,6 @@ cloudstream {
     tvTypes = listOf("Movie","TvSeries")
 
     iconUrl="https://banglaplex.lol/uploads/system_logo/logo_619305d7d016f.png"
+
+    isCrossPlatform = true
 }

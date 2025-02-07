@@ -1,6 +1,5 @@
 package com.ToonTales
 
-import android.annotation.SuppressLint
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -65,7 +64,7 @@ class ToonTales : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url, referer = url).document
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()

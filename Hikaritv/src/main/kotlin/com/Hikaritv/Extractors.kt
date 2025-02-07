@@ -1,9 +1,6 @@
 package com.hikaritv
 
-
-import android.os.Build
-import android.util.Log
-import androidx.annotation.RequiresApi
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
@@ -37,7 +34,6 @@ open class Chillx : ExtractorApi() {
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -56,7 +52,7 @@ open class Chillx : ExtractorApi() {
             // Decrypt the encoded string
             val password = "CQ0KveLh[lZN6jP5"
             val decryptedData = decryptXOR(encodedString, password)
-            com.lagradost.api.Log.d("Phisher",decryptedData)
+            Log.d("Phisher",decryptedData)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -107,9 +103,6 @@ open class Chillx : ExtractorApi() {
             language.trim() to url.trim()
         }.toList()
     }
-
-
-
 
     private fun decryptXOR(encryptedData: String, password: String): String {
         return try {

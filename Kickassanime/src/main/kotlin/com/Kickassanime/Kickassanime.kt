@@ -1,6 +1,5 @@
 package com.kickassanime
 
-import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.kickassanime.CryptoAES.decodeHex
@@ -428,7 +427,7 @@ data class Subtitle(
 private fun generateFilterWithCurrentYear(): String {
     val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val jsonObject = """{"year":$currentYear,"status":"airing"}"""
-    val base64Encoded = Base64.encodeToString(jsonObject.toByteArray(), Base64.DEFAULT).trim()
+    val base64Encoded = base64Encode(jsonObject.toByteArray()).trim()
     return URLEncoder.encode(base64Encoded, "UTF-8")
 }
 

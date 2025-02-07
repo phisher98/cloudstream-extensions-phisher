@@ -1,12 +1,11 @@
 package com.Phisher98
 
-import android.content.Context
+import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class OnePacePlugin : Plugin() {
-    override fun load(context: Context) {
+class OnePacePlugin : BasePlugin() {
+    override fun load() {
         registerMainAPI(OnePace())
         registerMainAPI(OnepaceProvider())
         registerExtractorAPI(Streamruby())

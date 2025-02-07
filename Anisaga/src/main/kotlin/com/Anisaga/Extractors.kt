@@ -1,8 +1,5 @@
 package com.Anisaga
 
-
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -23,7 +20,6 @@ open class Chillx : ExtractorApi() {
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,

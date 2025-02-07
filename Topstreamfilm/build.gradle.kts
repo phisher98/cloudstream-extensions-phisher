@@ -24,4 +24,6 @@ cloudstream {
     language = "de"
 
     iconUrl = "https://www.topstreamfilm.live/templates/topstreamfilm/images/logo-1.png"
+
+    isCrossPlatform = true
 }

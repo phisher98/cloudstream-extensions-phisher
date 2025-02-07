@@ -1,16 +1,11 @@
 package com.Phisher98
 
-import android.annotation.SuppressLint
-import android.os.Build
-import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import java.util.Base64
 
 class FMHD : Filesim() {
     override val name = "FMHD"
@@ -65,7 +60,7 @@ open class FMX : ExtractorApi() {
     override var mainUrl = "https://fmx.lol"
     override val requiresReferer = true
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response = app.get(url,referer=mainUrl).document
         val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()

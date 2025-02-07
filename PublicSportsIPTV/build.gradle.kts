@@ -36,4 +36,7 @@ cloudstream {
     tvTypes = listOf("Live")
 
     iconUrl="https://www.thestatesman.com/wp-content/uploads/2021/05/fancode.jpg"
+
+    // Unknown if this will support it yet
+    isCrossPlatform = false
 }

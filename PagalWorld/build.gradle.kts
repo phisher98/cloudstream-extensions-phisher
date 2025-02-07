@@ -25,4 +25,6 @@ cloudstream {
         "Music","Movie"
     )
     iconUrl = "https://pagalnew.com/images/logo-pagal.webp"
+
+    isCrossPlatform = true
 }

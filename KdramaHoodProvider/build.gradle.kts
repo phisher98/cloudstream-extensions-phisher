@@ -26,4 +26,6 @@ cloudstream {
     language = "en"
 
     iconUrl = "https://www.google.com/s2/favicons?domain=kdramahood.com&sz=%size%"
+
+    isCrossPlatform = true
 }

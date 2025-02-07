@@ -1,19 +1,16 @@
 package com.Phisher98
 
-//import android.util.Log
-import android.util.Log
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.network.DdosGuardKiller
-import org.jsoup.nodes.Element
-import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
-import com.lagradost.cloudstream3.extractors.FileMoon
-import com.lagradost.cloudstream3.extractors.Filesim
+import com.lagradost.cloudstream3.network.DdosGuardKiller
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
+import org.jsoup.nodes.Element
 
 class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://noxx.to"

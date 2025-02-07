@@ -1,15 +1,10 @@
 package com.kickassanime
 
-import android.util.Base64
 import com.kickassanime.KickassanimeExtractor.mainUrl
+//mark
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import java.net.URI
 import java.net.URLDecoder
-
-
-fun String.base64Decode(): String {
-    return Base64.decode(this, Base64.DEFAULT).toString(Charsets.UTF_8)
-}
 
 fun decode(input: String): String =
     URLDecoder.decode(input, "utf-8").replace(" ", "%20")

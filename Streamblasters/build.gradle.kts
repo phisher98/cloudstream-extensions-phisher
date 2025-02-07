@@ -24,4 +24,6 @@ cloudstream {
     tvTypes = listOf("Movie,TvSeries")
 
     iconUrl="https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/Telugumv/faviconV2.png"
+
+    isCrossPlatform = true
 }

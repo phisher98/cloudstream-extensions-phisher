@@ -1,19 +1,15 @@
 package com.Phisher98
 
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Base64
-import android.util.Log
 import com.Phisher98.DumpUtils.queryApi
 import com.Phisher98.StreamPlay.Companion.anilistAPI
 import com.Phisher98.StreamPlay.Companion.crunchyrollAPI
 import com.Phisher98.StreamPlay.Companion.filmxyAPI
 import com.Phisher98.StreamPlay.Companion.gdbot
 import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
-//import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlay.Companion.tvMoviesAPI
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -21,6 +17,7 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.StringUtils.encodeUri
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.requestCreator
@@ -434,25 +431,16 @@ suspend fun extractCovyn(url: String?): Pair<String?, String?>? {
 
 //EmbedSu
 fun simpleDecodeProcess(mEncrypt: String): String? {
-    // Define base64Decode() as a private function inside simpleDecodeProcess()
-    @TargetApi(Build.VERSION_CODES.O)
-    fun base64Decode(input: String): ByteArray {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            java.util.Base64.getDecoder().decode(input)
-        } else {
-            TODO("VERSION.SDK_INT < O")
-        }
-    }
 
     return try {
         // Step 1: Decode from Base64 using base64Decode()
-        val firstDecode = String(base64Decode(mEncrypt))  // Decode and convert ByteArray to String
+        val firstDecode = base64Decode(mEncrypt)  // Decode and convert ByteArray to String
 
         // Step 2: Reverse each part of the decoded string after splitting by "."
         val reversed = firstDecode.split(".").map { it.reversed() }.joinToString("")
 
         // Step 3: Reverse the entire string and decode it again
-        val finalDecoded = String(base64Decode(reversed.reversed()))
+        val finalDecoded = base64Decode(reversed.reversed())
 
         finalDecoded
     } catch (e: Exception) {
@@ -1217,7 +1205,7 @@ fun String.xorDecrypt(key: String): String {
 fun VidsrcCCEncode(input: String): String {
     val key = "78B22E5E862BC"
     val encrypted = rc4(key, input)
-    val base64Encoded = base64Encode(base64Encode(encrypted))
+    val base64Encoded = base64Encode(encrypted.encodeToByteArray())
     return urlEncode(base64Encoded)
 }
 
@@ -1248,10 +1236,6 @@ private fun rc4(key: String, input: String): String {
     return result.toString()
 }
 
-private fun base64Encode(input: String): String {
-    return Base64.encodeToString(input.toByteArray(), Base64.NO_WRAP) // Android's Base64 encoding
-}
-
 private fun urlEncode(input: String): String {
     return URLEncoder.encode(input, Charsets.UTF_8.name())
 }
@@ -1263,7 +1247,7 @@ fun encodeURIComponent(value: String): String {
 //
 
 fun vidsrctoDecrypt(text: String): String {
-    val parse = Base64.decode(text.toByteArray(), Base64.URL_SAFE)
+    val parse = base64DecodeArray(text)
     val cipher = Cipher.getInstance("RC4")
     cipher.init(
         Cipher.DECRYPT_MODE,
@@ -1477,19 +1461,17 @@ object AniwaveUtils {
         cipher.init(Cipher.DECRYPT_MODE, rc4Key, cipher.parameters)
 
         var vrf = cipher.doFinal(input.toByteArray())
-        vrf = Base64.encode(vrf, Base64.URL_SAFE or Base64.NO_WRAP)
-        vrf = Base64.encode(vrf, Base64.DEFAULT or Base64.NO_WRAP)
+        vrf = base64Encode(vrf).encodeToByteArray()
         vrf = vrfShift(vrf)
         // vrf = rot13(vrf)
         vrf = vrf.reversed().toByteArray()
-        vrf = Base64.encode(vrf, Base64.URL_SAFE or Base64.NO_WRAP)
+        vrf = base64Encode(vrf).encodeToByteArray()
         val stringVrf = vrf.toString(Charsets.UTF_8)
-        return "vrf=${java.net.URLEncoder.encode(stringVrf, "utf-8")}"
+        return "vrf=${stringVrf.encodeUri()}"
     }
 
     fun vrfDecrypt(input: String): String {
-        var vrf = input.toByteArray()
-        vrf = Base64.decode(vrf, Base64.URL_SAFE)
+        var vrf = base64DecodeArray(input)
 
         val rc4Key = SecretKeySpec("LUyDrL4qIxtIxOGs".toByteArray(), "RC4")
         val cipher = Cipher.getInstance("RC4")
@@ -1602,7 +1584,7 @@ object RSAEncryptionHelper {
     fun getPublicKeyFromString(publicKeyString: String): PublicKey? =
         try {
             val keySpec =
-                X509EncodedKeySpec(Base64.decode(publicKeyString.toByteArray(), Base64.NO_WRAP))
+                X509EncodedKeySpec(base64DecodeArray(publicKeyString))
             keyFactory.generatePublic(keySpec)
         } catch (exception: Exception) {
             exception.printStackTrace()
@@ -1612,7 +1594,7 @@ object RSAEncryptionHelper {
     fun getPrivateKeyFromString(privateKeyString: String): PrivateKey? =
         try {
             val keySpec =
-                PKCS8EncodedKeySpec(Base64.decode(privateKeyString.toByteArray(), Base64.DEFAULT))
+                PKCS8EncodedKeySpec(base64DecodeArray(privateKeyString))
             keyFactory.generatePrivate(keySpec)
         } catch (exception: Exception) {
             exception.printStackTrace()
@@ -1622,7 +1604,7 @@ object RSAEncryptionHelper {
     fun encryptText(plainText: String, publicKey: PublicKey): String? =
         try {
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-            Base64.encodeToString(cipher.doFinal(plainText.toByteArray()), Base64.NO_WRAP)
+            base64Encode(cipher.doFinal(plainText.toByteArray()))
         } catch (exception: Exception) {
             exception.printStackTrace()
             null
@@ -1631,7 +1613,7 @@ object RSAEncryptionHelper {
     fun decryptText(encryptedText: String, privateKey: PrivateKey): String? =
         try {
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
-            String(cipher.doFinal(Base64.decode(encryptedText, Base64.DEFAULT)))
+            String(cipher.doFinal(base64DecodeArray(encryptedText)))
         } catch (exception: Exception) {
             exception.printStackTrace()
             null
@@ -1678,7 +1660,7 @@ object CryptoJS {
         System.arraycopy(sBytes, 0, b, 0, sBytes.size)
         System.arraycopy(saltBytes, 0, b, sBytes.size, saltBytes.size)
         System.arraycopy(cipherText, 0, b, sBytes.size + saltBytes.size, cipherText.size)
-        val bEncode = Base64.encode(b, Base64.NO_WRAP)
+        val bEncode = base64Encode(b).encodeToByteArray()
         return String(bEncode)
     }
 
@@ -1689,7 +1671,7 @@ object CryptoJS {
      * @param cipherText encrypted string
      */
     fun decrypt(password: String, cipherText: String): String {
-        val ctBytes = Base64.decode(cipherText.toByteArray(), Base64.NO_WRAP)
+        val ctBytes = base64DecodeArray(cipherText)
         val saltBytes = Arrays.copyOfRange(ctBytes, 8, 16)
         val cipherTextBytes = Arrays.copyOfRange(ctBytes, 16, ctBytes.size)
         val key = ByteArray(KEY_SIZE / 8)
@@ -1818,7 +1800,7 @@ suspend fun decodesmashy(url:String): String {
 
 fun DecodeBase64(encodedString: String): String {
     // Decode the Base64 encoded string into a byte array
-    val decodedBytes = Base64.decode(encodedString, Base64.DEFAULT)
+    val decodedBytes = base64DecodeArray(encodedString)
     // Convert the byte array into a string
     return String(decodedBytes)
 }
@@ -1863,7 +1845,7 @@ fun getRiveSecretKey(e: Int?,c : List<String>): String {
 
 fun decryptBase64BlowfishEbc(base64Encrypted: String, key: String): String {
     try {
-        val encryptedBytes =  Base64.decode(base64Encrypted, Base64.DEFAULT)
+        val encryptedBytes =  base64DecodeArray(base64Encrypted)
         val secretKeySpec = SecretKeySpec(key.toByteArray(), "Blowfish")
         val cipher = Cipher.getInstance("Blowfish/ECB/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec)

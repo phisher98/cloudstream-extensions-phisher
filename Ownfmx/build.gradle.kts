@@ -24,4 +24,6 @@ cloudstream {
     language = "hi"
 
     iconUrl = "https://ownfmx.com/assets/favicon/favicon-32x32.png"
+
+    isCrossPlatform = true
 }

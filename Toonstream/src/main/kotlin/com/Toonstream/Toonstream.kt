@@ -1,7 +1,6 @@
 package com.Toonstream
 
-//import android.util.Log
-import android.annotation.SuppressLint
+
 import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
@@ -89,7 +88,7 @@ class Toonstream : MainAPI() {
         return searchResponse
     }
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
@@ -129,7 +128,7 @@ class Toonstream : MainAPI() {
         }
     }
 
-    @SuppressLint("SuspiciousIndentation")
+    @Suppress("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select("#aa-options > div > iframe").forEach {

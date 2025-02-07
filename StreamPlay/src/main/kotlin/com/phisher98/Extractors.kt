@@ -1,12 +1,6 @@
 package com.Phisher98
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.Phisher98.StreamPlay.Companion.animepaheAPI
-import com.lagradost.cloudstream3.extractors.Filesim
-import com.lagradost.cloudstream3.extractors.GMPlayer
-import com.lagradost.cloudstream3.extractors.StreamSB
-import com.lagradost.cloudstream3.extractors.Voe
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
@@ -16,20 +10,24 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.extractors.Filesim
+import com.lagradost.cloudstream3.extractors.GMPlayer
 import com.lagradost.cloudstream3.extractors.Jeniusplay
-import com.lagradost.cloudstream3.extractors.VidhideExtractor
-import com.lagradost.cloudstream3.utils.*
-import java.math.BigInteger
-import java.security.MessageDigest
 import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.extractors.Voe
+import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.FormBody
 import org.json.JSONObject
+import java.math.BigInteger
 import java.net.URI
+import java.security.MessageDigest
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -676,7 +674,6 @@ open class Chillx : ExtractorApi() {
     override val mainUrl = "https://chillx.top"
     override val requiresReferer = true
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -746,9 +743,6 @@ open class Chillx : ExtractorApi() {
             language.trim() to url.trim()
         }.toList()
     }
-
-
-
 
     private fun decryptXOR(encryptedData: String, password: String): String {
         return try {
@@ -1603,7 +1597,7 @@ class GDMirrorbot : ExtractorApi() {
 
         matchingResults.amap { (siteUrl, result) ->
             val href = "$siteUrl$result"
-            android.util.Log.d("Phisher", "Generated Href: $href")
+            Log.d("Phisher", "Generated Href: $href")
             loadExtractor(href, subtitleCallback, callback)
         }
 

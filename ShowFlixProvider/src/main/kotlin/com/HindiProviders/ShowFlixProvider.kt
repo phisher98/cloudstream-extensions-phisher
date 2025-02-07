@@ -1,7 +1,7 @@
 package com.Phisher98
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.*
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson

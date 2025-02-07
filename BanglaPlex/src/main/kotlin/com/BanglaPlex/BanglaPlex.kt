@@ -1,6 +1,6 @@
 package com.BanglaPlex
 
-import android.util.Log
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*

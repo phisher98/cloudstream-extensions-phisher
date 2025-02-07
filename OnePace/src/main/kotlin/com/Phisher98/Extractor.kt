@@ -1,16 +1,12 @@
 package com.Phisher98
 
-//import android.util.Log
-import android.annotation.SuppressLint
-import android.annotation.TargetApi
-import android.os.Build
-import android.util.Log
-import com.lagradost.cloudstream3.USER_AGENT
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -18,9 +14,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import java.security.MessageDigest
-import java.util.Base64
 
 open class Streamruby : ExtractorApi() {
     override var name = "Streamruby"
@@ -122,7 +116,6 @@ class VidStream : ExtractorApi() {
         return unsignedIntArray
     }
 
-    @TargetApi(Build.VERSION_CODES.O)
     private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
         // Ensure padding for Base64 encoding (if necessary)
         var paddedString = xIdJ2lG
@@ -131,7 +124,7 @@ class VidStream : ExtractorApi() {
         }
 
         // Decode using standard Base64 (RFC4648)
-        return Base64.getDecoder().decode(paddedString)
+        return base64DecodeArray(paddedString)
     }
 
     private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {

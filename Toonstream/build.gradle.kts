@@ -23,4 +23,6 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
     iconUrl="https://toonstream.day/wp-content/uploads/2024/01/TOONSTREAM.png"
+
+    isCrossPlatform = true
 }

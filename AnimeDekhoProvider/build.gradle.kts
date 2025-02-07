@@ -19,4 +19,6 @@ cloudstream {
     )
 
     iconUrl = "https://animedekho.net/wp-content/uploads/2023/07/AnimeDekho-Logo-300x-1.png"
+
+    isCrossPlatform = true
 }

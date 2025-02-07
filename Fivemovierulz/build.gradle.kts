@@ -22,5 +22,6 @@ cloudstream {
     )
 
     iconUrl = "https://i.ibb.co/SwQRhsn/20241016-074942.jpg"
-    
-    }
+
+    isCrossPlatform = true
+}

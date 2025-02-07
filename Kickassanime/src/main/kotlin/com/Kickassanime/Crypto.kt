@@ -9,7 +9,8 @@ package com.kickassanime
 
 // Thanks to Vlad on Stackoverflow: https://stackoverflow.com/a/63701411
 
-import android.util.Base64
+import com.lagradost.cloudstream3.base64DecodeArray
+import com.lagradost.cloudstream3.base64Encode
 import java.security.MessageDigest
 import java.util.Arrays
 import javax.crypto.Cipher
@@ -40,7 +41,7 @@ object CryptoAES {
      */
     fun decrypt(cipherText: String, password: String): String {
         return try {
-            val ctBytes = Base64.decode(cipherText, Base64.DEFAULT)
+            val ctBytes = base64DecodeArray(cipherText)
             val saltBytes = Arrays.copyOfRange(ctBytes, SALT_SIZE, IV_SIZE)
             val cipherTextBytes = Arrays.copyOfRange(ctBytes, IV_SIZE, ctBytes.size)
             val md5 = MessageDigest.getInstance("MD5")
@@ -57,7 +58,7 @@ object CryptoAES {
 
     fun decryptWithSalt(cipherText: String, salt: String, password: String): String {
         return try {
-            val ctBytes = Base64.decode(cipherText, Base64.DEFAULT)
+            val ctBytes = base64DecodeArray(cipherText)
             val md5: MessageDigest = MessageDigest.getInstance("MD5")
             val keyAndIV = generateKeyAndIV(
                 KEY_SIZE,
@@ -86,7 +87,7 @@ object CryptoAES {
      */
     fun decrypt(cipherText: String, keyBytes: ByteArray, ivBytes: ByteArray): String {
         return try {
-            val cipherTextBytes = Base64.decode(cipherText, Base64.DEFAULT)
+            val cipherTextBytes = base64DecodeArray(cipherText)
             decryptAES(cipherTextBytes, keyBytes, ivBytes)
         } catch (e: Exception) {
             ""
@@ -143,7 +144,7 @@ object CryptoAES {
             } catch (e: Throwable) { Cipher.getInstance(HASH_CIPHER_FALLBACK) }
             val keyS = SecretKeySpec(keyBytes, AES)
             cipher.init(Cipher.ENCRYPT_MODE, keyS, IvParameterSpec(ivBytes))
-            Base64.encodeToString(cipher.doFinal(plainTextBytes), Base64.DEFAULT)
+            base64Encode(cipher.doFinal(plainTextBytes))
         } catch (e: Exception) {
             ""
         }
