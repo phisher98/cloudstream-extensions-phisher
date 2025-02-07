@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 144
+version = 145
 android {
     defaultConfig {
         val properties = Properties()
@@ -32,7 +32,8 @@ android {
         buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
         buildConfigField("String", "Vidsrccc", "\"${properties.getProperty("Vidsrccc")}\"")
         buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
-
+        buildConfigField("String", "KissKh", "\"${properties.getProperty("KissKh")}\"")
+        buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
     }
 }
 

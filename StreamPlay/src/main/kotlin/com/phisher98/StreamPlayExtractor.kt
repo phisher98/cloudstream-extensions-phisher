@@ -902,37 +902,35 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-            val subDub = if (url!!.contains("-dub")) "Dub" else "Sub"
-            val epUrl = url.replace("category/", "").plus("-episode-${episode}")
-            val epRes = app.get(epUrl).document
-            epRes.select("div.anime_muti_link > ul > li").forEach {
-                val sourcename = it.selectFirst("a")?.ownText() ?: return@forEach
-                val iframe = it.selectFirst("a")?.attr("data-video") ?: return@forEach
-                if(iframe.contains("s3taku"))
-                {
-                    val iv = "3134003223491201"
-                    val secretKey = "37911490979715163134003223491201"
-                    val secretDecryptKey = "54674138327930866480207815084989"
-                    GogoHelper.extractVidstream(
-                        iframe,
-                        "Anitaku Vidstreaming [$subDub]",
-                        callback,
-                        iv,
-                        secretKey,
-                        secretDecryptKey,
-                        isUsingAdaptiveKeys = false,
-                        isUsingAdaptiveData = true
-                    )
-                }
-                else
+        val subDub = if (url?.contains("-dub") == true) "Dub" else "Sub"
+        val epUrl = url?.replace("category/", "")?.plus("-episode-${episode}") ?: return
+        val epRes = app.get(epUrl).document
+
+        epRes.select("div.anime_muti_link > ul > li").forEach { item ->
+            val iframe = item.selectFirst("a")?.attr("data-video") ?: return@forEach
+            val sourceName = item.className()
+            if (sourceName.contains("anime")) {
+                GogoHelper.extractVidstream(
+                    iframe,
+                    "Anitaku Vidstreaming [$subDub]",
+                    callback,
+                    "3134003223491201",
+                    "37911490979715163134003223491201",
+                    "54674138327930866480207815084989",
+                    isUsingAdaptiveKeys = false,
+                    isUsingAdaptiveData = true
+                )
+            } else {
                 loadCustomExtractor(
-                    "Anitaku $sourcename [$subDub]",
+                    "Anitaku $sourceName [$subDub]",
                     iframe,
                     "",
                     subtitleCallback,
                     callback
                 )
             }
+        }
+
     }
 
 
@@ -983,8 +981,9 @@ object StreamPlayExtractor : StreamPlay() {
             } else {
                 resDetail.episodes?.find { it.number == episode }?.id
             }
+            val kkey=app.get("${BuildConfig.KissKh}${epsId}&version=2.8.10", timeout = 10000).parsedSafe<KisskhKey>()?.key ?:""
             app.get(
-                "$kissKhAPI/api/DramaList/Episode/$epsId.png?err=false&ts=&time=",
+                "$kissKhAPI/api/DramaList/Episode/$epsId.png?err=false&ts=&time=&kkey=$kkey",
                 referer = "$kissKhAPI/Drama/${getKisskhTitle(contentTitle)}/Episode-${episode ?: 0}?id=$id&ep=$epsId&page=0&pageSize=100"
             ).parsedSafe<KisskhSources>()?.let { source ->
                 listOf(source.video, source.thirdParty).apmap { link ->
@@ -1015,8 +1014,8 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             }
-
-            app.get("$kissKhAPI/api/Sub/$epsId").text.let { resSub ->
+            val kkey1=app.get("${BuildConfig.KisskhSub}${epsId}&version=2.8.10", timeout = 10000).parsedSafe<KisskhKey>()?.key ?:""
+            app.get("$kissKhAPI/api/Sub/$epsId&kkey=$kkey1").text.let { resSub ->
                 tryParseJson<List<KisskhSubtitle>>(resSub)?.map { sub ->
                     subtitleCallback.invoke(
                         SubtitleFile(
@@ -1087,6 +1086,7 @@ object StreamPlayExtractor : StreamPlay() {
             },
             {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
+                Log.d("Phisher",Gogourl.toString())
                 if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             }
         )

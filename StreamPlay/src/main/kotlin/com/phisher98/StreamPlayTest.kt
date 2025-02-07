@@ -1,5 +1,7 @@
 package com.Phisher98
 
+import com.Phisher98.StreamPlayExtractor.invokeAnimes
+import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeMoviehubAPI
 import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
@@ -20,13 +22,11 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                if (!res.isAnime && !res.isBollywood) invokeMoviesmod(
-                    res.imdbId,
+                if (res.isAsian && !res.isAnime) invokeKisskh(
                     res.title,
-                    res.year,
                     res.season,
-                    res.lastSeason,
                     res.episode,
+                    res.lastSeason,
                     subtitleCallback,
                     callback
                 )

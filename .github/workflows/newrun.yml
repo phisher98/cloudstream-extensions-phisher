@@ -81,6 +81,8 @@ jobs:
           HianimeAPI: ${{ secrets.HianimeAPI }}
           Vidsrccc: ${{ secrets.Vidsrccc }}
           WASMAPI: ${{ secrets.WASMAPI }}
+          KissKh: ${{ secrets.KissKh }}
+          KisskhSub: ${{ secrets.KisskhSub }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -120,7 +122,8 @@ jobs:
           echo HianimeAPI=$HianimeAPI >> local.properties
           echo Vidsrccc=$Vidsrccc >> local.properties
           echo WASMAPI=$WASMAPI >> local.properties
-
+          echo KissKh=$KissKh >> local.properties
+          echo KisskhSub=$KisskhSub >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
