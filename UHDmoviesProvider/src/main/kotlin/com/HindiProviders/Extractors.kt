@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 import okhttp3.FormBody
+import com.lagradost.api.Log
 
 class Driveleech : Driveseed() {
     override val name: String = "Driveleech"
@@ -61,7 +62,7 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun instantLink(finallink: String): String {
         val url = if(finallink.contains("video-leech")) "video-leech.xyz" else "video-seed.xyz"
-        val token = finallink.substringAfter("https://$url/?url=")
+        val token = finallink.substringAfter("url=")
         val downloadlink = app.post(
             url = "https://$url/api",
             data = mapOf(
@@ -69,9 +70,7 @@ open class Driveseed : ExtractorApi() {
             ),
             referer = finallink,
             headers = mapOf(
-                "x-token" to url,
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
-            )
+                "x-token" to url            )
         )
         val finaldownloadlink =
             downloadlink.toString().substringAfter("url\":\"")
@@ -102,16 +101,20 @@ open class Driveseed : ExtractorApi() {
             val href = element.attr("href")
             when {
                 text.contains("Instant Download") -> {
-                    val instant = instantLink(href)
-                    callback.invoke(
-                        ExtractorLink(
-                            "$name Instant(Download)",
-                            "$name Instant(Download) - $fileName",
-                            instant,
-                            "",
-                            getIndexQuality(quality)
+                    try {
+                        val instant = instantLink(href)
+                        callback.invoke(
+                            ExtractorLink(
+                                "$name Instant(Download)",
+                                "$name Instant(Download) - $fileName",
+                                instant,
+                                "",
+                                getIndexQuality(quality)
+                            )
                         )
-                    )
+                    } catch (e: Exception) {
+                        Log.d("Error:", e.toString())
+                    }
                 }
                 text.contains("Resume Worker Bot") -> {
                     val resumeLink = resumeBot(href)
