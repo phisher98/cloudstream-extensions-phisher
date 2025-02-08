@@ -1,6 +1,5 @@
 package com.Phisher98
 
-import com.Animeowl.OwlExtractor
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor

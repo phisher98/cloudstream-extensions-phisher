@@ -1269,7 +1269,7 @@ open class HubCloud : ExtractorApi() {
             val header = document.selectFirst("div.card-header")?.text()
             div?.select("div.card-body a.btn")?.amap {
                 val link = it.attr("href")
-                val text = it.text()
+                it.text()
                 if (link.contains("www-google-com"))
                 {
                     Log.d("Error:","Not Found")
@@ -1556,10 +1556,8 @@ open class Embtaku : ExtractorApi() {
         val responsecode= app.get(url)
         val serverRes = responsecode.document
         serverRes.select("ul.list-server-items").amap {
-            val href=it.attr("data-video") ?: null
-            if (href != null) {
-                loadCustomExtractor("Anichi [Embtaku]",href,"",subtitleCallback,callback)
-            }
+            val href=it.attr("data-video")
+            loadCustomExtractor("Anichi [Embtaku]",href,"",subtitleCallback,callback)
         }
     }
 }
@@ -1609,3 +1607,82 @@ class GDMirrorbot : ExtractorApi() {
         }
     }
 }
+
+
+class OwlExtractor : ExtractorApi() {
+    override var name = "OwlExtractor"
+    override var mainUrl = "https://whguides.com"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
+        val response = app.get(url).document
+        val datasrc=response.select("button#hot-anime-tab").attr("data-source")
+        val id=datasrc.substringAfterLast("/")
+        val epJS= app.get("$referer/players/$id.v2.js").text.let {
+            Deobfuscator.deobfuscateScript(it)
+        }
+        val jwt=findFirstJwt(epJS?: throw Exception("Unable to get jwt")) ?:return
+
+        val servers=app.get("$referer$datasrc").parsedSafe<Response>()
+        val sources= mutableListOf<String>()
+        servers?.kaido?.let {
+            sources+="$it$jwt"
+        }
+
+        servers?.luffy?.let {
+            val m3u8= app.get("$it$jwt", allowRedirects = false).headers["location"] ?:return
+            sources+=m3u8
+        }
+        servers?.zoro?.let {
+            val m3u8= app.get("$it$jwt").parsedSafe<Zoro>()?.url ?:return
+            val vtt= app.get("$it$jwt").parsedSafe<Zoro>()?.subtitle ?:return
+            sources+=m3u8
+            sources+=vtt
+        }
+
+        sources.amap { m3u8->
+            if (m3u8.contains("vvt"))
+            {
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        "English",
+                        m3u8
+                    )
+                )
+            }
+            else
+            {
+                callback.invoke(
+                    ExtractorLink(
+                        name,
+                        name,
+                        m3u8,
+                        mainUrl,
+                        Qualities.P1080.value,
+                        INFER_TYPE,
+                    )
+                )
+            }
+        }
+
+        return
+    }
+}
+
+private fun findFirstJwt(text: String): String? {
+    val jwtPattern = Regex("['\"]([A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+)['\"]")
+    return jwtPattern.find(text)?.groupValues?.get(1)
+}
+
+data class Response(
+    val kaido: String? = null,
+    val luffy: String? = null,
+    val zoro: String? = null,
+)
+
+data class Zoro(
+    val url: String,
+    val subtitle: String,
+)
+
+
