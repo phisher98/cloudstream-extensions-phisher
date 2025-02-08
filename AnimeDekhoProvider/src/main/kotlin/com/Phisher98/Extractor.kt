@@ -108,7 +108,7 @@ open class VidStream : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
             // Decrypt the encoded string
-            val password = "CQ0KveLh[lZN6jP5"
+            val password = "HG1I}V!u\$IR6Rxdf"
             val decryptedData = decryptXOR(encodedString, password)
             Log.d("Phisher",decryptedData)
             // Extract the m3u8 URL from decrypted data
