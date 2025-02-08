@@ -1,32 +1,32 @@
 package com.Phisher98
 
 import com.lagradost.cloudstream3.base64DecodeArray
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
+import javax.crypto.IllegalBlockSizeException
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-private val KEY = intArrayOf(942683446, 876098358, 875967282, 943142451)
-private val IV = intArrayOf(909653298, 909193779, 925905208, 892483379)
+private const val KEY = "AmSmZVcH93UQUezi"
+private val IV = intArrayOf(1382367819, 1465333859, 1902406224, 1164854838)
 
-// Function to get the AES key from the array of integers
-private fun getKey(words: IntArray): SecretKeySpec {
-    val keyBytes = words.toByteArray()
-    return SecretKeySpec(keyBytes, "AES")
+fun decrypt(encryptedB64: String): String {
+    return try {
+        val keyBytes = KEY.toByteArray(Charsets.UTF_8)
+        val ivBytes = IV.toByteArray()
+        val encryptedBytes = base64DecodeArray(encryptedB64) // Decode Base64 input
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(ivBytes))
+        String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
+    } catch (ex: BadPaddingException) {
+        "Decryption failed: Invalid padding"
+    } catch (ex: IllegalBlockSizeException) {
+        "Decryption failed: Incorrect block size"
+    } catch (ex: Exception) {
+        "Decryption failed: ${ex.message}"
+    }
 }
 
-// AES decryption function
-fun decrypt(data: String): String {
-    val key = getKey(KEY)
-    val iv = IvParameterSpec(IV.toByteArray())
-
-    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.DECRYPT_MODE, key, iv)
-
-    val encryptedBytes = base64DecodeArray(data)
-    return String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
-}
-
-// Convert an IntArray to ByteArray
 private fun IntArray.toByteArray(): ByteArray {
     return ByteArray(size * 4).also { bytes ->
         forEachIndexed { index, value ->

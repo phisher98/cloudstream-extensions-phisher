@@ -173,7 +173,7 @@ class KisskhProvider : MainAPI() {
         val kkey1=app.get("$KisskhSub${loadData.epsId}&version=2.8.10", timeout = 10000).parsedSafe<Key>()?.key ?:""
         app.get("$mainUrl/api/Sub/${loadData.epsId}?kkey=$kkey1").text.let { res ->
             tryParseJson<List<Subtitle>>(res)?.map { sub ->
-                if (sub.src!!.endsWith("txt")) {
+                if (sub.src!!.contains(".txt")) {
                     subtitleCallback.invoke(
                         SubtitleFile(
                             getLanguage(sub.label ?: return@map),
@@ -204,7 +204,7 @@ class KisskhProvider : MainAPI() {
                     .newBuilder()
                     .build()
                 val response = chain.proceed(request)
-                if (response.request.url.toString().endsWith(".txt")) {
+                if (response.request.url.toString().contains(".txt")) {
                     val responseBody = response.body.string()
                     val chunks = responseBody.split(CHUNK_REGEX1)
                         .filter(String::isNotBlank)
