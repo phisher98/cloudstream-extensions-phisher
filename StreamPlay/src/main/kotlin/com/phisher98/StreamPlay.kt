@@ -139,7 +139,7 @@ open class StreamPlay : TmdbProvider() {
         const val lingAPI = "https://ling-online.net"
         const val AsianhdAPI = "https://asianhdplay.in"
         const val m4uhdAPI = "https://ww1.streamm4u.ws"
-        const val flixonAPI = "https://myflixer.lol"
+        const val flixonAPI = "https://flixon.ovh"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
         const val smashyStreamAPI = "https://api.smashystream.top"

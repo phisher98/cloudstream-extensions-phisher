@@ -2772,7 +2772,7 @@ suspend fun invokeVidsrcsu(
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        onionUrl: String = "https://onionplay.se/"
+        onionUrl: String = "https://onionplay.asia/"
     ) {
         val request = if (season == null) {
             val res = app.get("$flixonAPI/$imdbId", referer = onionUrl)
@@ -2783,7 +2783,6 @@ suspend fun invokeVidsrcsu(
         } else {
             app.get("$flixonAPI/$tmdbId-$season-$episode", referer = onionUrl)
         }
-
         val script =
             request.document.selectFirst("script:containsData(= \"\";)")?.data()
         val collection = script?.substringAfter("= [")?.substringBefore("];")
@@ -2805,19 +2804,17 @@ suspend fun invokeVidsrcsu(
             ?.substringAfter("JuicyCodes.Run(")?.substringBefore(");")?.split("+")
             ?.joinToString("") { it.replace("\"", "").trim() }
             ?.let { getAndUnpack(base64Decode(it)) }
-
         val link = Regex("[\"']file[\"']:[\"'](.+?)[\"'],").find(
             unPacker
                 ?: return
         )?.groupValues?.getOrNull(1)
-
         callback.invoke(
             ExtractorLink(
                 "Flixon",
                 "Flixon",
                 link
                     ?: return,
-                "https://onionplay.stream/",
+                "https://onionflux.com/",
                 Qualities.P720.value,
                 link.contains(".m3u8")
             )
@@ -4462,7 +4459,7 @@ suspend fun invokenyaa(
                         "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
                     }
                     val sourceJson = app.get(sourceStreamLink, timeout = 10).parsedSafe<RiveStreamResponse>()
-                    if (sourceJson != null && sourceJson.data != null) {
+                    if (sourceJson?.data != null) {
                         sourceJson.data.sources.forEach { source ->
                             callback.invoke(
                                 ExtractorLink(
@@ -4497,27 +4494,24 @@ suspend fun invokenyaa(
             "$VidSrcVip/hnd.php?id=${id}&s=${season}&e=${episode}"
         }
         val json = app.get(url).text
-        if(json != null)
-        {
-            try {
-                val objectMapper = jacksonObjectMapper()
-                val vidsrcsuList: List<VidSrcVipSource> = objectMapper.readValue(json)
-                for(source in vidsrcsuList)
-                {
-                    callback.invoke(
-                        ExtractorLink(
-                            "VidSrcVip ${source.language}",
-                            "VidSrcVip ${source.language}",
-                            source.m3u8Stream,
-                            "",
-                            Qualities.P1080.value,
-                            ExtractorLinkType.M3U8
-                        )
+        try {
+            val objectMapper = jacksonObjectMapper()
+            val vidsrcsuList: List<VidSrcVipSource> = objectMapper.readValue(json)
+            for(source in vidsrcsuList)
+            {
+                callback.invoke(
+                    ExtractorLink(
+                        "VidSrcVip ${source.language}",
+                        "VidSrcVip ${source.language}",
+                        source.m3u8Stream,
+                        "",
+                        Qualities.P1080.value,
+                        ExtractorLinkType.M3U8
                     )
-                }
-            } catch (e: Exception) {
-
+                )
             }
+        } catch (e: Exception) {
+
         }
     }
 
