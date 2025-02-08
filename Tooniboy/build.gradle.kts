@@ -38,6 +38,5 @@ cloudstream {
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
     iconUrl="https://www.google.com/s2/favicons?domain=tooniboy.com&sz=%size%"
 
-    // Unknown if this will support it yet
-    isCrossPlatform = false
+    isCrossPlatform = true
 }
