@@ -4443,8 +4443,8 @@ suspend fun invokenyaa(
         val scripts = document.select("script")
         val appScript = scripts.filter { element -> element.attr("src").contains("_app") }.first().attr("src")
         val js = app.get("$RiveStreamAPI$appScript").text
-        val keys = "let c=\\[(.*?)];".toRegex().find(js)?.groupValues?.get(1)
-        val lsKeys = keys?.split(",")?.map { it.replace("\"", "") }
+        val keys = """\["([^"]+)"(,\s?"([^"]+)")*\]""".toRegex().findAll(js).toList().get(1).value
+        val lsKeys = keys.substringAfter("[").substringBefore("]")?.split(",")?.map { it.replace("\"", "") }
         val secretKey = lsKeys?.let { getRiveSecretKey(id, it) }
         if (sourceList != null) {
             for(source : String in sourceList.data)
