@@ -89,7 +89,13 @@ class Animecloud : MainAPI() {
                  val animename=url.substringAfterLast("/")
                  val searchSeason = if (season == "0") "Filme" else season
                  val href = "$mainUrl/api/anime/episode?slug=$animename&season=$searchSeason&episode=$episode"
-                 episodes+=Episode(href, epname,season.toIntOrNull(),episode,epposter)
+                 episodes+= newEpisode(href)
+                     {
+                         this.name=epname
+                         this.season=season.toIntOrNull()
+                         this.episode=episode
+                         this.posterUrl=epposter
+                     }
              }
         }
         return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {

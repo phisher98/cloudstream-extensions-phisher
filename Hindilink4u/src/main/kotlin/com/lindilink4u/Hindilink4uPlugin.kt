@@ -1,14 +1,17 @@
-package com.hindilink4u
+package com.lindilink4u
 
+import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 
 @CloudstreamPlugin
 class Hindilink4uPlugin : BasePlugin() {
     override fun load() {
-        // All providers should be added in this manner. Please don't edit the providers list directly.
-        
         registerMainAPI(Hindilink4u())
         registerExtractorAPI(StreamT())
+        registerExtractorAPI(Mxdrop())
+        registerExtractorAPI(StreamTape())
+        registerExtractorAPI(MixDrop())
     }
 }

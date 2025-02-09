@@ -104,8 +104,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         val home = document.select("article.short-mid").mapNotNull {
                     it.toHomeSearchResult()
                 }
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
+        return newHomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
@@ -170,7 +169,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
         Log.d("Doc", doc.toString())
-        val title = doc.selectFirst("h1.fs__title")?.text()?.toString()?.trim()
+        val title = doc.selectFirst("h1.fs__title")?.text()?.trim()
             ?: return null
         Log.d("title", title)
         val poster = fixUrlNull(mainUrl + doc.selectFirst("img.fs__poster-img")?.attr("src"))
@@ -228,25 +227,24 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                         //Log.d("mybadSnum", Snum.toString())
                         Seasons.folder.map { ep ->
                             val eNum = ep.episode.toIntOrNull()
-                            Episode(
-                                ep.folder.toJson(),
-                                ep.title,
-                                sNum,
-                                eNum,
-                                poster
-                            )
+                            newEpisode(ep.folder.toJson())
+                            {
+                                this.name=ep.title
+                                this.episode=eNum
+                                this.season=sNum
+                                this.posterUrl=poster
+                            }
                         }
                     }.flatten()
                 } else {
-                    //Log.d("mybadepisode", jsonReceive)
                     episodes = parseJson<Array<Extract>>(jsonReceive).map {
-                        Episode(
-                            jsonReceive.toJson(),
-                            "1 episode",
-                            1,
-                            1,
-                            poster
-                        )
+                        newEpisode(jsonReceive.toJson())
+                        {
+                            this.name="1 episode"
+                            this.season=1
+                            this.episode=1
+                            this.posterUrl=poster
+                        }
                     }
             }
         } else {

@@ -15,6 +15,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
@@ -94,13 +95,13 @@ class AnimeWorld : MainAPI() {
                         val image = ep.select("div.post-thumbnail img").attr("src")
                         val episode =ep.select("header.entry-header span").text().substringAfter("x").toIntOrNull()
                         val season =ep.select("header.entry-header span").text().substringBefore("x").toIntOrNull()
-                        episodes.add(Episode(
-                            href,
-                            name,
-                            season,
-                            episode,
-                            image
-                        ))
+                        episodes.add(newEpisode(href)
+                        {
+                            this.name=name
+                            this.season=season
+                            this.episode=episode
+                            this.posterUrl=image
+                        })
                     }
                 }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
@@ -128,7 +129,7 @@ class AnimeWorld : MainAPI() {
     ): Boolean {
         app.get(data).document.select("section.section.player iframe").amap {
             val href=it.attr("data-src")
-            Log.d("Phisher",href.toString())
+            Log.d("Phisher",href)
             if (href.contains("awstream"))
             {
 

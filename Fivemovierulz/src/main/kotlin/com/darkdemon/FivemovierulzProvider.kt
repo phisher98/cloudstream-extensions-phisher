@@ -1,6 +1,5 @@
 package com.darkdemon
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -90,7 +89,6 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
     ): Boolean {
         val fl = app.get(data).document.select("a[href*='https://filelions.to']").first()?.attr("href")
             .toString()
-        Log.d("vidhidelink",fl)
         loadExtractor(
                 fl,
                 "$mainUrl/",

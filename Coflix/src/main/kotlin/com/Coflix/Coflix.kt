@@ -114,12 +114,13 @@ class Coflix : MainAPI() {
                     val eptitle=ep.title
                     val epposter=fetchImageUrl(ep.image)
                     val ephref=ep.links
-                    episodes+=Episode(
-                        ephref,
-                        eptitle,
-                        season,
-                        epnumber,
-                        epposter)
+                    episodes+=newEpisode(ephref)
+                    {
+                        this.name=eptitle
+                        this.season=season
+                        this.episode=epnumber
+                        this.posterUrl=epposter
+                    }
                 }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

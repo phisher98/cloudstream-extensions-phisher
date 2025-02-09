@@ -99,7 +99,12 @@ open class AnimeDekhoProvider : MainAPI() {
                 val poster=it.selectFirst("div > div > figure > img")?.attr("src")
                 val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
                 val season=seasonnumber.toIntOrNull()
-                Episode(Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
+                newEpisode(Media(href, mediaType = 2).toJson())
+                {
+                    this.name=name
+                    this.posterUrl=poster
+                    this.season=season
+                }
             }
             val recommendations = document.select("div.swiper-wrapper article").map {
                 val recName = it.selectFirst("h2")?.text() ?: "Unknown"

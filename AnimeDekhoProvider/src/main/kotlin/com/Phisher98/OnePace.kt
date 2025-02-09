@@ -106,7 +106,12 @@ open class OnepaceProvider : MainAPI() {
                 val poster= "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/OnePack.png"
                 val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
                 val season=seasonnumber.toIntOrNull()
-                Episode(Media(href, mediaType = 2).toJson(), name, posterUrl = poster,season = season)
+                newEpisode(AnimeDekhoProvider.Media(href, mediaType = 2).toJson())
+                {
+                    this.name=name
+                    this.posterUrl=poster
+                    this.season=season
+                }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster

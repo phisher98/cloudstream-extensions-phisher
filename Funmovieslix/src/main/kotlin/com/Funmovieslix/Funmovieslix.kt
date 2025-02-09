@@ -70,19 +70,19 @@ class Funmovieslix : MainAPI() {
         return if (type == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
             document.select("div.gmr-listseries a").forEach { info ->
-                if (info.text().contains("All episodes", ignoreCase = true)) return@forEach
+                    if (info.text().contains("All episodes", ignoreCase = true)) return@forEach
                     val text=info.text()
                     val season = Regex("S(\\d+)").find(text)?.groupValues?.get(1)?.toIntOrNull()
                     val ep=Regex("Eps(\\d+)").find(text)?.groupValues?.get(1)?.toIntOrNull()
                     val name = "Episode $ep"
                     val href = info.attr("href")
                     episodes.add(
-                        Episode(
-                            data = href,
-                            episode = ep,
-                            name = name,
-                            season = season
-                        )
+                        newEpisode(href)
+                        {
+                            this.episode=ep
+                            this.name=name
+                            this.season=season
+                        }
                     )
             }
 

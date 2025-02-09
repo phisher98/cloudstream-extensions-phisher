@@ -31,8 +31,7 @@ class BollyzoneProvider : DesicinemasProvider() {
             ?.toHomePageList(request.name)
 
         val hasNext = pages?.list?.isNotEmpty() == true
-
-        return HomePageResponse(arrayListOf(pages).filterNotNull(), hasNext)
+        return newHomePageResponse(arrayListOf(pages).filterNotNull(),hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {

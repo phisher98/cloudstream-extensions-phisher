@@ -1,7 +1,6 @@
 package com.Desicinemas
 
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import okhttp3.Interceptor
@@ -51,8 +50,7 @@ open class DesicinemasProvider : MainAPI() {
         } else null
 
         val hasNext = request.name != "Home" && pages3?.list?.isNotEmpty() == true
-
-        return HomePageResponse(arrayListOf(pages1, pages2, pages3).filterNotNull(), hasNext)
+        return newHomePageResponse(arrayListOf(pages1, pages2, pages3).filterNotNull(), hasNext)
     }
 
     private fun Element.toHomePageList(name: String): HomePageList {
@@ -109,14 +107,11 @@ open class DesicinemasProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val doc = app.get(data, referer = "$mainUrl/").document
-        Log.d("Phisher Test",data)
         doc.select(".MovieList .OptionBx").amap {
             val name=it.select("p.AAIco-dns").text()
             val link = it.select("a").attr("href")
-            Log.d("Phisher Test",name)
             val doc2 = app.get(link, referer = data).document
             val src = doc2.select("iframe").attr("src")
-            Log.d("Phisher Test",src)
             loadExtractor(src, subtitleCallback, callback,name)
         }
         return true

@@ -91,10 +91,10 @@ class KisskhProvider : MainAPI() {
             ?: throw ErrorLoadingException("Invalid Json reponse")
 
         val episodes = res.episodes?.map { eps ->
-            Episode(
-                data = Data(res.title, eps.number, res.id, eps.id).toJson(),
-                episode = eps.number
-            )
+            newEpisode(Data(res.title, eps.number, res.id, eps.id).toJson())
+            {
+                this.episode=eps.number
+            }
         } ?: throw ErrorLoadingException("No Episode")
 
         return newTvSeriesLoadResponse(

@@ -72,9 +72,12 @@ class KimCartoon : MainAPI() {
         val description = document.select("div.summary p").text().trim()
         val genre = document.select("div.barContent.full p a").map { it.text() }
             val episodes=document.select("div.listing div.full.item_ep").map { info->
-                val href = info.select("h3 a").attr("href") ?:""
+                val href = info.select("h3 a").attr("href")
                 val episode = info.select("h3 a").text()
-                Episode(href, episode)
+                newEpisode(href)
+                {
+                    this.name=episode
+                }
             }
             return newTvSeriesLoadResponse(title, data.url, TvType.Anime, episodes.reversed()) {
                 this.posterUrl = poster

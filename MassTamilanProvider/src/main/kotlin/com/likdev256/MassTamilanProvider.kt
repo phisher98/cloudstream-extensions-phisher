@@ -38,8 +38,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
         val home = document.select("div.a-i").mapNotNull {
                 it.toSearchResult()
             }
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
+        return newHomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
@@ -83,9 +82,6 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
         doc.select("#movie-handle b + a").map { me ->
             tags = me.select("a[href~=-songs]").map { it.text() }
             year = me.select("a[href~=year]").text().trim().toIntOrNull()
-            //Log.d("mybadyear1", me.select("b, a").toString())
-            //Log.d("mybadyear2", me.select("b + a").toString())
-            //Log.d("mybadyear3", me.text())
             if (!me.select("a[href~=artist]").isEmpty()) {
                 actors = me.select("a[href~=artist]").map {
                     ActorData(
@@ -107,7 +103,6 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
                 }
             }
         }
-        //Log.d("mybadinfo", info.toString())
 
         val episodes = ArrayList<Episode>()
         doc.select("#tlist > tbody > tr[itemprop]").map { me ->
@@ -122,14 +117,14 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
                     "Downloads: ${me.select("td > span[itemprop~=item] > span[class~=dl-count]").text()}\n"
 
             episodes.add(
-                Episode(
-                    data = links.toJson(),
-                    name = me.select("td > span > h2 > span[itemprop~=name] > a").text(),
-                    season = 1,
-                    episode = me.select("td > span[itemprop~=position]").text().toInt(),
-                    posterUrl = poster,
-                    description = epPlot
-                )
+                newEpisode(links.toJson())
+                {
+                    this.name=me.select("td > span > h2 > span[itemprop~=name] > a").text()
+                    this.season=1
+                    this.episode=me.select("td > span[itemprop~=position]").text().toInt()
+                    this.posterUrl=poster
+                    this.description=epPlot
+                }
             )
         }
         val zipLinks = doc.select("h2.ziparea > a.dlink").map {

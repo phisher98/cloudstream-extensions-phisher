@@ -41,7 +41,7 @@ class Animekhor : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("div.bsx > a").attr("title")
         val href      = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src").toString())
+        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -50,7 +50,7 @@ class Animekhor : MainAPI() {
     private fun Element.toSearchquery(): SearchResponse {
         val title     = this.select("div.bsx > a").attr("title")
         val href      = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src").toString())
+        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -81,18 +81,22 @@ class Animekhor : MainAPI() {
         val document = app.get(url).document
         val title= document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         val href=document.selectFirst(".eplister li > a")?.attr("href") ?:""
-        var poster = document.select("meta[property=og:image]").attr("content").toString()
+        var poster = document.select("meta[property=og:image]").attr("content")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val type=document.selectFirst(".spe")?.text().toString()
         val tvtag=if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
             val Eppage= document.selectFirst(".eplister li > a")?.attr("href") ?:""
             val doc= app.get(Eppage).document
-            val epposter = doc.select("meta[property=og:image]").attr("content").toString()
-            @Suppress("NAME_SHADOWING") val episodes=doc.select("div.episodelist > ul > li").map { info->
-                        val href = info.select("a").attr("href") ?:""
+            val epposter = doc.select("meta[property=og:image]").attr("content")
+            val episodes=doc.select("div.episodelist > ul > li").map { info->
+                        val href1 = info.select("a").attr("href")
                         val episode = info.select("a span").text().substringAfter("-").substringBeforeLast("-")
-                        Episode(href, episode, posterUrl = epposter)
+                        newEpisode(href1)
+                        {
+                            this.name=episode
+                            this.posterUrl=epposter
+                        }
             }
             newTvSeriesLoadResponse(title, url, TvType.Anime, episodes.reversed()) {
                 this.posterUrl = poster

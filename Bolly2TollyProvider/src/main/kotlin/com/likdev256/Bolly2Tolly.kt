@@ -78,7 +78,7 @@ class Bolly2Tolly : MainAPI() { // all providers must be an instance of MainAPI
         val tags = document.select(".InfoList li:eq(2) a").map { it.text() }
         val year = document.select("span.Date").text().trim().toIntOrNull()
         val tvType =
-            if (document.select(".AA-cont").isNullOrEmpty()) TvType.Movie else TvType.TvSeries
+            if (document.select(".AA-cont").isEmpty()) TvType.Movie else TvType.TvSeries
         val description = document.selectFirst(".Description p")?.text()?.trim()
         //val rating = document.select(".post-ratings strong").last()!!.text().toRatingInt()
         val actors = document.select(".ListCast a").map { it.text().trim() }
@@ -93,13 +93,13 @@ class Bolly2Tolly : MainAPI() { // all providers must be an instance of MainAPI
                 val thumbs = "https:" + it.select("img").attr("src")
                 val season = document.select(".AA-Season").attr("data-tab").toInt()
                 val episode = it.select("span.Num").text().toInt()
-                Episode(
-                    href,
-                    name,
-                    season,
-                    episode,
-                    thumbs
-                )
+                newEpisode(href)
+                {
+                    this.name=name
+                    this.season=season
+                    this.episode=episode
+                    this.posterUrl=thumbs
+                }
             }
 
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

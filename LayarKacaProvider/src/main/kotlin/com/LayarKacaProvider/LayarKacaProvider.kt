@@ -124,14 +124,13 @@ class LayarKacaProvider : MainAPI() {
             val episodes = document.select("div.episode-list > a:matches(\\d+)").map {
                 val href = fixUrl(it.attr("href"))
                 val episode = it.text().toIntOrNull()
-                val season =
-                        it.attr("href").substringAfter("season-").substringBefore("-").toIntOrNull()
-                Episode(
-                        href,
-                        "Episode $episode",
-                        season,
-                        episode,
-                )
+                val season = it.attr("href").substringAfter("season-").substringBefore("-").toIntOrNull()
+                newEpisode(href)
+                {
+                    this.name="Episode $episode"
+                    this.season=season
+                    this.episode=episode
+                }
             }.reversed()
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster

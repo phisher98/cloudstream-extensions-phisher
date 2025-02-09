@@ -38,7 +38,7 @@ class DoraBash : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title = this.select("div.bsx > a").attr("title")
         val href = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src").toString())
+        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -70,7 +70,7 @@ class DoraBash : MainAPI() {
         val document = app.get(url).document
         val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         val href = document.selectFirst(".eplister li > a")?.attr("href") ?: ""
-        var poster = document.select("div.ime > img").attr("src").toString()
+        var poster = document.select("div.ime > img").attr("src")
         val description = document.selectFirst("div.entry-content")?.text()?.trim()
         val type = document.selectFirst(".spe")?.text().toString()
         val tvtag = if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
@@ -79,11 +79,16 @@ class DoraBash : MainAPI() {
             val doc = app.get(Eppage).document
             @Suppress("NAME_SHADOWING") val episodes =
                 doc.select("div.episodelist > ul > li").map { info ->
-                    val href = info.select("a").attr("href") ?: ""
+                    val href = info.select("a").attr("href")
                     val Rawepisode=info.select("a span").text().substringAfter("Episode").substringBeforeLast("-").trim()
                     val episode ="Episode $Rawepisode"
                     val poster = info.selectFirst("a img")?.attr("src") ?: ""
-                    Episode(href, episode, posterUrl = poster)
+                    newEpisode(href)
+                    {
+                        this.episode=Rawepisode.toIntOrNull()
+                        this.name=episode
+                        this.posterUrl=poster
+                    }
                 }
             if (poster.isEmpty()) {
                 poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim()
@@ -150,9 +155,6 @@ class DoraBash : MainAPI() {
         val Fileurl=JsUnpacker(Filedata).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
         }
-        Log.d("Phisher", filemoon.toString())
-        Log.d("Phisher", Filedata.toString())
-        Log.d("Phisher", Fileurl.toString())
         return Fileurl
     }
 

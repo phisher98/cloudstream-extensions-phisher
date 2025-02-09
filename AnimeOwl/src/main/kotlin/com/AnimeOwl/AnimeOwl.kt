@@ -124,7 +124,12 @@ class Animeowl : MainAPI() {
                 val href = info.select("a").attr("href")
                 val episode = info.attr("title")
                 val epno=episode.toIntOrNull()
-                Episode(href, "Episode $episode",1,epno)
+                newEpisode(href)
+                {
+                    this.name="Episode $episode"
+                    this.episode=epno
+                    this.season=1
+                }
             }
             newAnimeLoadResponse(title, url, TvType.Anime) {
                 this.posterUrl = poster

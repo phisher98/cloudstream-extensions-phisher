@@ -25,13 +25,6 @@ class AnimePahe : MainAPI() {
             else if (t.contains("Movie")) TvType.AnimeMovie
             else TvType.Anime
         }
-
-        //val YTSM = Regex("ysmm = '([^']+)")
-
-        //val KWIK_PARAMS_RE = Regex("""\("(\w+)",\d+,"(\w+)",(\d+),(\d+),\d+\)""")
-        //val KWIK_D_URL = Regex("action=\"([^\"]+)\"")
-        //val KWIK_D_TOKEN = Regex("value=\"([^\"]+)\"")
-        //val YOUTUBE_VIDEO_LINK = Regex("""(^(?:https?:)?(?://)?(?:www\.)?(?:youtu\.be/|youtube(?:-nocookie)?\.(?:[A-Za-z]{2,4}|[A-Za-z]{2,3}\.[A-Za-z]{2})/)(?:watch|embed/|vi?/)*(?:\?[\w=&]*vi?=)?[^#&?/]{11}.*${'$'})""")
     }
 
     override var mainUrl = MAIN_URL
@@ -75,8 +68,14 @@ class AnimePahe : MainAPI() {
                 addDubStatus(DubStatus.Subbed, it.episode)
             }
         }
-
-        return HomePageResponse(listOf(HomePageList(request.name, episodes, request.horizontalImages)), episodes.isNotEmpty())
+        return newHomePageResponse(
+            list    = HomePageList(
+                name               = request.name,
+                list               = episodes,
+                isHorizontalImages = true
+            ),
+            hasNext = true
+        )
     }
 
     data class AnimePaheSearchData(
