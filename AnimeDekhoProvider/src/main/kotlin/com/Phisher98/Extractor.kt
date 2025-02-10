@@ -6,6 +6,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
@@ -108,7 +109,7 @@ open class VidStream : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
             // Decrypt the encoded string
-            val password = "HG1I}V!u\$IR6Rxdf"
+            val password = "~%aRg@&H3&QEK1QV"
             val decryptedData = decryptXOR(encodedString, password)
             Log.d("Phisher",decryptedData)
             // Extract the m3u8 URL from decrypted data
@@ -162,21 +163,18 @@ open class VidStream : ExtractorApi() {
         }.toList()
     }
 
-
-
-
     private fun decryptXOR(encryptedData: String, password: String): String {
         return try {
+            val decodedBytes = base64DecodeArray(encryptedData)
+            val keyBytes = decodedBytes.sliceArray(0 until 16)
+            val dataBytes = decodedBytes.sliceArray(16 until decodedBytes.size)
             val passwordBytes = password.toByteArray(Charsets.UTF_8)
-            val decryptedBytes = (encryptedData.indices step 2)
-                .map { i ->
-                    val byteValue = encryptedData.substring(i, i + 2).toInt(16) // Convert hex to int
-                    byteValue xor passwordBytes[(i / 2) % passwordBytes.size].toInt() // XOR with repeating password
-                }
-                .map { it.toByte() } // Convert to Byte
-                .toByteArray() // Convert to ByteArray
 
-            String(decryptedBytes, Charsets.UTF_8) // Convert ByteArray to String
+            val decryptedBytes = dataBytes.mapIndexed { i, byte ->
+                byte.toInt() xor passwordBytes[i % passwordBytes.size].toInt() xor keyBytes[i % keyBytes.size].toInt()
+            }.map { it.toByte() }.toByteArray()
+
+            String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {
             e.printStackTrace()
             "Decryption Failed"
