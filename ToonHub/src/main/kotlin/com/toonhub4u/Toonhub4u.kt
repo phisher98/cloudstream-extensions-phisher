@@ -1,7 +1,6 @@
 package com.toonhub4u
 
 
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -17,10 +16,18 @@ class Toonhub4u : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.Cartoon)
 
     override val mainPage = mainPageOf(
+        "category/anime/anime-series" to "Anime Series",
+        "category/anime/anime-movies" to "Anime Movies",
+        "category/animated/animation-movies" to "Animated Movies",
         "category/animated/animated-series" to "Animated Series",
         "category/channel-list/cartoon-network" to "Cartoon Network",
         "category/channel-list/disney-xd-india" to "Disney XD India",
-        "category/channel-list/disney" to "Disney"
+        "category/channel-list/disney" to "Disney",
+        "category/ott-network/crunchyroll" to "Crunchyroll",
+        "category/ott-network/amazon-prime-video" to "Amazon Prime Video",
+        "category/ott-network/netflix" to "Netflix",
+        "category/ott-network/jio-cinema" to "Jio Cinema",
+        "category/language/hindi" to "Hindi Language"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -116,12 +123,7 @@ class Toonhub4u : MainAPI() {
         val jsonArray = JSONArray(data)
         val links = List(jsonArray.length()) { jsonArray.getString(it) }
         links.forEach {
-            if (it.contains("gdmirrorbot"))
-            {
-                Log.d("Phisher:",it)
-                loadExtractor(it,subtitleCallback, callback)
-            }
-            else Log.d("Error:","Not Found")
+            loadExtractor(it,subtitleCallback, callback)
         }
         return true
     }
