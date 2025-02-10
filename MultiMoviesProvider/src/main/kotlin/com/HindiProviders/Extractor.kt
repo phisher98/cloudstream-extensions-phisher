@@ -1,9 +1,9 @@
 package com.Phisher98
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.network.WebViewResolver
@@ -55,6 +55,7 @@ class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
     override val requiresReferer = true
+
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -62,36 +63,41 @@ class GDMirrorbot : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val host = getBaseUrl(app.get(url).url)
-        val embed = url.substringAfter("embed/")
+        val embed = url.substringAfterLast("/")
         val data = mapOf("sid" to embed)
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
-        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
-        val mresult = jsonObject.getAsJsonObject("mresult").toString()
-        val regex = """"(\w+)":"([^"]+)"""".toRegex()
-        val mresultMap = regex.findAll(mresult).associate {
-            it.groupValues[1] to it.groupValues[2]
+        val jsonElement: JsonElement = JsonParser.parseString(jsonString)
+        if (!jsonElement.isJsonObject) {
+            Log.e("Error:", "Unexpected JSON format: Response is not a JSON object")
+            return
         }
-
-        val matchingResults = mutableListOf<Pair<String, String>>()
-        siteUrls.keySet().forEach { key ->
-            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
-                val value1 = siteUrls.get(key).asString
-                Log.d("Phisher",value1)
-                val value2 = mresultMap[key].orEmpty()
-                matchingResults.add(Pair(value1, value2))
+        val jsonObject = jsonElement.asJsonObject
+        val siteUrls = jsonObject["siteUrls"]?.takeIf { it.isJsonObject }?.asJsonObject
+        val mresult = jsonObject["mresult"]?.takeIf { it.isJsonObject }?.asJsonObject
+        val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.takeIf { it.isJsonObject }?.asJsonObject
+        if (siteUrls == null || siteFriendlyNames == null || mresult == null) {
+            return
+        }
+        val commonKeys = siteUrls.keySet().intersect(mresult.keySet())
+        commonKeys.forEach { key ->
+            val siteName = siteFriendlyNames[key]?.asString
+            if (siteName == null) {
+                Log.e("Error:", "Skipping key: $key because siteName is null")
+                return@forEach
             }
-        }
-
-        matchingResults.amap { (siteUrl, result) ->
-            val href = "$siteUrl$result"
-            Log.d("Phisher", "Generated Href: $href")
+            val siteUrl = siteUrls[key]?.asString
+            val resultUrl = mresult[key]?.asString
+            if (siteUrl == null || resultUrl == null) {
+                Log.e("Error:", "Skipping key: $key because siteUrl or resultUrl is null")
+                return@forEach
+            }
+            val href = siteUrl + resultUrl
             loadExtractor(href, subtitleCallback, callback)
         }
 
     }
 
-    fun getBaseUrl(url: String): String {
+    private fun getBaseUrl(url: String): String {
         return URI(url).let {
             "${it.scheme}://${it.host}"
         }

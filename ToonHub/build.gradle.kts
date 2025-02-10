@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 19
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "ToonStream Multi Language"
+    description = "ToonHub Multi Language"
     language    = "hi"
     authors = listOf("Phisher98")
 
@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
-    iconUrl="https://toonstream.day/wp-content/uploads/2024/01/TOONSTREAM.png"
+    iconUrl="https://toonhub4u.me/wp-content/uploads/2024/02/Untitled.png"
 
     isCrossPlatform = true
 }

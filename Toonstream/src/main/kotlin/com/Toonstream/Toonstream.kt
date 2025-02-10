@@ -1,7 +1,5 @@
 package com.Toonstream
 
-
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -23,7 +21,6 @@ class Toonstream : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/page/$page/").document
         val home     = document.select("#movies-a > ul > li").mapNotNull { it.toSearchResult() }
-
         return newHomePageResponse(
             list    = HomePageList(
                 name               = request.name,
@@ -37,35 +34,22 @@ class Toonstream : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("article  > header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("article  > a").attr("href"))
-        val posterUrlRaw = this.select("article  > div.post-thumbnail > figure > img").attr("data-src").toString()
-        return if (posterUrlRaw.contains("http")) {
-            val posterUrl=posterUrlRaw
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
+        val posterUrlRaw = this.select("article  > div.post-thumbnail > figure > img").attr("data-src")
+        val poster:String = if (posterUrlRaw.startsWith("http")) { posterUrlRaw } else "https:$posterUrlRaw"
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = poster
             }
-        } else {
-            val posterUrl="https:$posterUrlRaw"
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
-            }
-        }
     }
 
     private fun Element.toSearch(): SearchResponse {
         val title     = this.select("article  > header > h2").text().trim().replace("Watch Online","")
         val href      = fixUrl(this.select("article  > a").attr("href"))
-        val posterUrlRaw = this.select("article figure img").attr("src").toString()
-        return if (posterUrlRaw.contains("http")) {
-            val posterUrl=posterUrlRaw
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
+        val posterUrlRaw = this.select("article figure img").attr("src")
+        val poster:String = if (posterUrlRaw.startsWith("http")) { posterUrlRaw } else "https:$posterUrlRaw"
+
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = poster
             }
-        } else {
-            val posterUrl="https:$posterUrlRaw"
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
-            }
-        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -88,12 +72,11 @@ class Toonstream : MainAPI() {
         return searchResponse
     }
 
-    @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
         val posterraw = document.select("div.bghd > img").attr("data-src")
-        val poster="https:$posterraw"
+        val poster:String = if (posterraw.startsWith("http")) { posterraw } else "https:$posterraw"
         val description = document.selectFirst("div.description > p")?.text()?.trim()
         val tvtag=if (url.contains("series")) TvType.TvSeries else TvType.Movie
         return if (tvtag == TvType.TvSeries) {
@@ -110,10 +93,16 @@ class Toonstream : MainAPI() {
                     season.select("article").forEach {
                         val href = it.selectFirst("article >a")?.attr("href") ?:""
                         val posterRaw=it.selectFirst("article > div.post-thumbnail > figure > img")?.attr("src")
-                        @Suppress("NAME_SHADOWING") val poster="https:$posterRaw"
-                        val episode = it.select("article > header.entry-header > h2").text().toString()
+                        val poster1="https:$posterRaw"
+                        val episode = it.select("article > header.entry-header > h2").text()
                         val seasonnumber=season.toString().substringAfter("<span class=\"num-epi\">").substringBefore("x").toIntOrNull()
-                        episodes.add(Episode(href, episode, posterUrl = poster, season = seasonnumber))
+                        episodes.add(
+                            newEpisode(href)
+                            {
+                                this.name=episode
+                                this.posterUrl=poster1
+                                this.season=seasonnumber
+                            })
                     }
             }
             newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
@@ -128,38 +117,13 @@ class Toonstream : MainAPI() {
         }
     }
 
-    @Suppress("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
         document.select("#aa-options > div > iframe").forEach {
             val serverlink=it.attr("data-src")
             val truelink= app.get(serverlink).document.selectFirst("iframe")?.attr("src") ?:""
-            if (truelink.contains("gdmirrorbot"))
-            {
-                val links=GDmirrorbot(truelink)
-                links.forEach { url->
-                    loadExtractor(url,subtitleCallback, callback)
-                }
-            }
-            else
-                Log.d("Phisher",truelink)
             loadExtractor(truelink,subtitleCallback, callback)
         }
         return true
-    }
-
-
-    suspend fun GDmirrorbot(url: String): MutableList<String> {
-        val urllist= mutableListOf<String>()
-        val links= app.get(url).text
-        val pattern="data-link='(.*?)'".toRegex()
-        val matches=pattern.findAll(links)
-        matches.forEach { matchResult ->
-            val link = matchResult.groups[1]?.value
-            link?.let {
-                urllist.add(it)
-            }
-        }
-        return urllist
     }
 }

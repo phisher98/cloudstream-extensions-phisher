@@ -1,0 +1,129 @@
+package com.toonhub4u
+
+
+import com.lagradost.api.Log
+import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import org.json.JSONArray
+
+class Toonhub4u : MainAPI() {
+    override var mainUrl              = "https://toonhub4u.me"
+    override var name                 = "ToonHub4u"
+    override val hasMainPage          = true
+    override var lang                 = "hi"
+    override val hasDownloadSupport   = true
+    override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.Cartoon)
+
+    override val mainPage = mainPageOf(
+        "category/animated/animated-series" to "Animated Series",
+        "category/channel-list/cartoon-network" to "Cartoon Network",
+        "category/channel-list/disney-xd-india" to "Disney XD India",
+        "category/channel-list/disney" to "Disney"
+    )
+
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val document = app.get("$mainUrl/${request.data}/page/$page/").document
+        val home     = document.select("li.post-item").mapNotNull { it.toSearchResult() }
+
+        return newHomePageResponse(
+            list    = HomePageList(
+                name               = request.name,
+                list               = home,
+                isHorizontalImages = true
+            ),
+            hasNext = true
+        )
+    }
+
+    private fun Element.toSearchResult(): SearchResponse {
+        val title     = this.select("a").text().trim().substringBefore("[")
+        val href      = fixUrl(this.select("a").attr("href"))
+        val posterUrl = this.select("a img").attr("data-src").ifEmpty { this.select("a img").attr("src") }
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = posterUrl
+        }
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchResponse = mutableListOf<SearchResponse>()
+
+        for (i in 1..3) {
+            val document = app.get("${mainUrl}/?s=$query").document
+            val results = document.select("li.post-item").mapNotNull { it.toSearchResult() }
+            if (!searchResponse.containsAll(results)) {
+                searchResponse.addAll(results)
+            } else {
+                break
+            }
+
+            if (results.isEmpty()) break
+        }
+        return searchResponse
+    }
+
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url).document
+        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("[")?.substringBefore("1080")?.trim().toString()
+        val poster = document.select("meta[property=og:image]").attr("content")
+        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
+        val tvtag=if (document.select("div.entry-content p strong").text().contains("TV Series")) TvType.TvSeries else TvType.Movie
+        val hrefs = document.select("div.mks_toggle_content a").map { it.attr("href") }.toJson()
+        return if (tvtag == TvType.TvSeries) {
+            val episodes = mutableListOf<Episode>()
+            document.select(".entry-content.entry.clearfix").forEach { content ->
+                content.select("p").forEach { pTag ->
+                    val episodeMatch = Regex("Episode\\s*(\\d+)").find(pTag.text())
+                    if (episodeMatch != null) {
+                        val episodeNumber = episodeMatch.groupValues[1].toIntOrNull()
+                        val episodeLinks = mutableListOf<String>()
+                        var nextSibling = pTag.nextElementSibling()
+                        while (nextSibling != null && nextSibling.tagName() != "hr") {
+                            if (nextSibling.tagName() == "p") {
+                                nextSibling.select("a[href]").forEach { aTag ->
+                                    episodeLinks.add(aTag.attr("href"))
+                                }
+                            }
+                            nextSibling = nextSibling.nextElementSibling()
+                        }
+                        episodes+=newEpisode(episodeLinks.toJson())
+                        {
+                            this.name="Episode $episodeNumber"
+                        }
+                    }
+                }
+            }
+            newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
+                this.posterUrl = poster
+                this.plot = description
+            }
+        }
+        else {
+            newMovieLoadResponse(title, url, TvType.Movie, hrefs) {
+                this.posterUrl = poster
+                this.plot = description
+            }
+        }
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val jsonArray = JSONArray(data)
+        val links = List(jsonArray.length()) { jsonArray.getString(it) }
+        links.forEach {
+            if (it.contains("gdmirrorbot"))
+            {
+                Log.d("Phisher:",it)
+                loadExtractor(it,subtitleCallback, callback)
+            }
+            else Log.d("Error:","Not Found")
+        }
+        return true
+    }
+
+}
