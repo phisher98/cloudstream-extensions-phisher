@@ -72,6 +72,13 @@ class MultimoviesAIO: StreamWishExtractor() {
     override var requiresReferer = true
 }
 
+
+class Dhtpre : VidhideExtractor() {
+    override var name = "Animezia"
+    override var mainUrl = "https://dhtpre.com"
+    override var requiresReferer = true
+}
+
 class Multimovies: StreamWishExtractor() {
     override var name = "Multimovies Cloud"
     override var mainUrl = "https://multimovies.cloud"

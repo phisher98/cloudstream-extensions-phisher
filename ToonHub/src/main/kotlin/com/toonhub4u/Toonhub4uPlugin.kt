@@ -17,5 +17,6 @@ class Toonhub4uPlugin: BasePlugin() {
         registerExtractorAPI(CdnwishCom())
         registerExtractorAPI(Multimovies())
         registerExtractorAPI(MixDrop())
+        registerExtractorAPI(Dhtpre())
     }
 }
