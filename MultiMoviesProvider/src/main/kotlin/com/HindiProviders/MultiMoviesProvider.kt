@@ -165,6 +165,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         val description = doc.selectFirst("#info div.wp-content p")?.text()?.trim()
         val type = if (url.contains("tvshows")) TvType.TvSeries else TvType.Movie
         val trailerRegex = Regex("\"http.*\"")
+        /*
         var trailer = if (type == TvType.Movie)
             fixUrlNull(
                 getEmbed(
@@ -175,6 +176,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 ).parsed<TrailerUrl>().embedUrl
             )
         else fixUrlNull(doc.select("iframe.rptss").attr("src").toString())
+        */
         trailer = trailerRegex.find(trailer.toString())?.value.toString()
         val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
         val duration =
@@ -236,7 +238,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
-                addTrailer(trailer)
+                //addTrailer(trailer)
             }
         }
     }
