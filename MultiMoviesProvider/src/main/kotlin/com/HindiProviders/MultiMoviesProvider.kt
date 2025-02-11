@@ -177,7 +177,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             )
         else fixUrlNull(doc.select("iframe.rptss").attr("src").toString())
         */
-        trailer = trailerRegex.find(trailer.toString())?.value.toString()
+        //trailer = trailerRegex.find(trailer.toString())?.value.toString()
         val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
         val duration =
             doc.selectFirst("span.runtime")?.text()?.toString()?.removeSuffix(" Min.")?.trim()
