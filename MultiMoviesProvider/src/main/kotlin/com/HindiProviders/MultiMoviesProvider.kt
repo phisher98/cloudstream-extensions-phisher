@@ -104,19 +104,14 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         return document.select("div.result-item").mapNotNull {
             val title =
                 it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
-            //Log.d("title", titleS)
             val href = fixUrl(
                 it.selectFirst("article > div.details > div.title > a")?.attr("href").toString()
             )
-            //Log.d("href", href)
             val posterUrl = fixUrlNull(
                 it.selectFirst("article > div.image > div.thumbnail > a > img")?.attr("src")
             )
-            //Log.d("posterUrl", posterUrl.toString())
-            //Log.d("QualityN", qualityN)
             val quality =
                 getQualityFromString(it.select("div.poster > div.mepo > span").text().toString())
-            //Log.d("Quality", quality.toString())
             val type = it.select("article > div.image > div.thumbnail > a > span").text().toString()
             if (type.contains("Movie")) {
                 newMovieSearchResponse(title, href, TvType.Movie) {
@@ -164,14 +159,11 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             doc.select("#contenedor").toString().substringAfter("background-image:url(")
                 .substringBefore(");")
         )
-        //Log.d("poster", poster.toString())
         val tags = doc.select("div.sgeneros > a").map { it.text() }
         val year =
             doc.selectFirst("span.date")?.text()?.toString()?.substringAfter(",")?.trim()?.toInt()
-        //Log.d("year", year.toString())
         val description = doc.selectFirst("#info div.wp-content p")?.text()?.trim()
         val type = if (url.contains("tvshows")) TvType.TvSeries else TvType.Movie
-        //Log.d("desc", description.toString())
         val trailerRegex = Regex("\"http.*\"")
         var trailer = if (type == TvType.Movie)
             fixUrlNull(
@@ -184,13 +176,10 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             )
         else fixUrlNull(doc.select("iframe.rptss").attr("src").toString())
         trailer = trailerRegex.find(trailer.toString())?.value.toString()
-        //Log.d("trailer", trailer.toString())
         val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
-        //Log.d("rating", rating.toString())
         val duration =
             doc.selectFirst("span.runtime")?.text()?.toString()?.removeSuffix(" Min.")?.trim()
                 ?.toInt()
-        //Log.d("dur", duration.toString())
         val actors =
             doc.select("div.person").map {
                 ActorData(
@@ -235,7 +224,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
-                addTrailer(trailer)
+                //addTrailer(trailer)
             }
         } else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
