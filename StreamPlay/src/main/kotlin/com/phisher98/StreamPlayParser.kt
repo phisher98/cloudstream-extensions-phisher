@@ -1362,6 +1362,21 @@ data class RiveStreamSourceData(
     val format: String,
 )
 
+data class RivestreamEmbedResponse(
+    val data: RivestreamEmbedData,
+)
+
+data class RivestreamEmbedData(
+    val sources: List<RivestreamEmbedSource>,
+)
+
+data class RivestreamEmbedSource(
+    val host: String,
+    @JsonProperty("host_id")
+    val hostId: Long,
+    val link: String,
+)
+
 data class VidSrcVipSource(
     val language: String,
     @JsonProperty("m3u8_stream")

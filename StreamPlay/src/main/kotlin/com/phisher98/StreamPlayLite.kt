@@ -270,6 +270,7 @@ class StreamPlayLite : StreamPlay() {
                     res.year,
                     res.season,
                     res.episode,
+                    subtitleCallback,
                     callback
                 )
 

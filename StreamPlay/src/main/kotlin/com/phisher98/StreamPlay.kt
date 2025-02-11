@@ -194,6 +194,7 @@ open class StreamPlay : TmdbProvider() {
         const val TomAPI="https://tom.autoembed.cc"
         const val HinAutoAPI="https://hin.autoembed.cc"
         const val RiveStreamAPI="https://rivestream.live"
+        const val RiveStreamScraperAPI="https://scrapper.rivestream.live"
         const val VidSrcVip="https://vidsrc.vip"
         const val Primewire="https://www.primewire.tf"
         const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
@@ -1037,6 +1038,7 @@ open class StreamPlay : TmdbProvider() {
          res.year,
          res.season,
          res.episode,
+         subtitleCallback,
          callback
      )
 

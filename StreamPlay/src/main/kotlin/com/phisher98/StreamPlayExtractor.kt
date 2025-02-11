@@ -4435,6 +4435,7 @@ suspend fun invokenyaa(
         year: Int?=null,
         season: Int? = null,
         episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
         val sourceApiUrl = "$RiveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive"
@@ -4478,6 +4479,41 @@ suspend fun invokenyaa(
                 }
             }
         }
+
+        val embedApi = "$RiveStreamScraperAPI/api/embeds?api_key=d64117f26031a428449f102ced3aba73"
+        val embedSourceList = app.get(embedApi).parsedSafe<RiveStreamSource>()
+        if(embedSourceList != null)
+        {
+            for(source in embedSourceList.data) {
+
+                val sourceStreamLink = if (season == null) {
+                    "$RiveStreamScraperAPI/api/embed?provider=$source&id=$id&api_key=d64117f26031a428449f102ced3aba73"
+                } else {
+                    "$RiveStreamScraperAPI/api/embed?provider=$source&id=$id&season=$season&episode=$episode&api_key=d64117f26031a428449f102ced3aba73"
+                }
+
+                val sourceJson = app.get(sourceStreamLink, timeout = 10).parsedSafe<RivestreamEmbedResponse>()
+                try {
+                    if (sourceJson?.data != null)
+                    {
+                        for(source in sourceJson.data.sources)
+                        {
+                            loadSourceNameExtractor(
+                                "Rivestream",
+                                source.link,
+                                "",
+                                subtitleCallback,
+                                callback
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    TODO("Not yet implemented")
+                }
+            }
+        }
+
+
     }
 
     suspend fun invokeVidSrcViP(
