@@ -1506,3 +1506,10 @@ data class Trackiframe(
     val label: String,
 )
 
+data class SeasonDetail
+    (
+    val quality:String?,
+    val episodeLinkMap:MutableMap<String,MutableList<String>>?,
+    val season:String?,
+)
+

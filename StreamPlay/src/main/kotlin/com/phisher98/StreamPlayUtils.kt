@@ -1866,6 +1866,86 @@ fun decryptLinks(data: String): List<String> {
     return pt.chunked(5)
 }
 
+suspend fun loadHindMoviezLinks(
+    data: String,
+    callback: (ExtractorLink) -> Unit
+): Boolean {
+
+    val links = data.split("+")
+    links.forEach { item->
+        val res = app.get(item, timeout = 30, allowRedirects = true)
+        val doc = res.document
+        if(res.url.contains("hpage.site"))
+        {
+            val quality = getVideoQuality(doc.select(".container h2").text())
+            val links = doc.select(".container a");
+            links.forEach { item->
+                callback.invoke(ExtractorLink(
+                    "HindMoviez [H-Cloud]",
+                    "HindMoviez [H-Cloud]",
+                    url = item.attr("href"),
+                    "",
+                    quality = quality,
+                ))
+            }
+        }
+        else if (res.url.contains("hindshare.site"))
+        {
+            val quality = getVideoQuality(doc.select(".container p:nth-of-type(1) strong").text())
+            val links = doc.select(".btn-group a");
+            links.forEach { item->
+                if(item.text().contains("HCloud"))
+                {
+                    callback.invoke(ExtractorLink(
+                        "HindMoviez [H-Cloud]",
+                        "HindMoviez [H-Cloud]",
+                        url = item.attr("href"),
+                        "",
+                        quality = quality,
+                    ))
+                }
+                else if (item.attr("href").contains("hindcdn.site"))
+                {
+                    val doc = app.get(item.attr("href"), timeout =  30, allowRedirects = true).document
+                    val links = doc.select(".container a");
+                    links.forEach{ item->
+                        val host = if (item.text().lowercase().contains("google")) {item.text()} else {"HindCdn H-Cloud"}
+                        callback.invoke(ExtractorLink(
+                            "HindMoviez [$host]",
+                            "HindMoviez [$host]",
+                            url = item.attr("href"),
+                            "",
+                            quality = quality,
+                        ))
+                    }
+                }
+                else if (item.attr("href").contains("gdirect.cloud"))
+                {
+                    val doc = app.get(item.attr("href"), timeout = 30, allowRedirects = true, referer = "https://hindshare.site/").document
+                    android.util.Log.d("salman731 html",doc.html())
+                    val link = doc.select("a")
+                    callback.invoke(ExtractorLink(
+                        "HindMoviez [GDirect]",
+                        "HindMoviez [GDirect]",
+                        url = link.attr("href"),
+                        "",
+                        quality = quality,
+                    ))
+                }
+            }
+        }
+
+
+    }
+
+    return true
+}
+
+private fun getVideoQuality(string: String?): Int {
+    return Regex("(\\d{3,4})[pP]").find(string ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
+        ?: Qualities.Unknown.value
+}
+
 object Deobfuscator {
     suspend fun deobfuscateScript(source: String): String? {
         val originalScript = app.get("https://raw.githubusercontent.com/Kohi-den/extensions-source/9328d12fcfca686becfb3068e9d0be95552c536f/lib/synchrony/src/main/assets/synchrony-v2.4.5.1.js").text
