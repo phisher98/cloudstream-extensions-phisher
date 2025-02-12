@@ -49,6 +49,7 @@ import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
 import com.Phisher98.StreamPlayExtractor.invokeSmashyStream
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
 import com.Phisher98.StreamPlayExtractor.invokeTom
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
@@ -206,6 +207,8 @@ open class StreamPlay : TmdbProvider() {
         const val AnimeOwlAPI="https://animeowl.live"
         const val Film1kApi="https://www.film1k.com"
         const val HindMoviezApi= "https://hindmoviez.foo"
+        const val thrirdAPI=BuildConfig.SUPERSTREAM_THIRD_API
+        const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -1106,11 +1109,15 @@ open class StreamPlay : TmdbProvider() {
                     subtitleCallback,
                     callback
                 )
+            },
+            {
+                invokeSuperstream(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    callback
+                )
             }
-
-
-
-
 )
 return true
 }

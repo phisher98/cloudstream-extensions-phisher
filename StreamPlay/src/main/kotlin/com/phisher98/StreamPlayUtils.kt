@@ -5,9 +5,11 @@ import com.Phisher98.DumpUtils.queryApi
 import com.Phisher98.StreamPlay.Companion.anilistAPI
 import com.Phisher98.StreamPlay.Companion.crunchyrollAPI
 import com.Phisher98.StreamPlay.Companion.filmxyAPI
+import com.Phisher98.StreamPlay.Companion.fourthAPI
 import com.Phisher98.StreamPlay.Companion.gdbot
 import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
+import com.Phisher98.StreamPlay.Companion.thrirdAPI
 import com.Phisher98.StreamPlay.Companion.tvMoviesAPI
 import com.google.gson.Gson
 import com.lagradost.api.Log
@@ -27,6 +29,9 @@ import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.math.BigInteger
 import java.net.*
@@ -1970,5 +1975,78 @@ object Deobfuscator {
     @Suppress("unused")
     private interface TestInterface {
         fun getValue(): String
+    }
+}
+
+suspend fun invokeExternalSource(
+    mediaId: Int? = null,
+    type: Int? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit,
+) {
+    val thirdAPI= thrirdAPI
+    val fourthAPI=fourthAPI
+    val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+    val headers = mapOf("Accept-Language" to "en")
+    val shareKey = app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type",headers=headers)
+        .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
+
+    val shareRes = app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
+        .parsedSafe<ExternalResponse>()?.data ?: return
+
+    val fids = if (season == null) {
+        shareRes.fileList // Updated from `file_list`
+    } else {
+        shareRes.fileList?.find { it.fileName.equals("season $season", true) }?.fid?.let { parentId ->
+            app.get("$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1", headers = headers)
+                .parsedSafe<ExternalResponse>()?.data?.fileList?.filterNotNull()?.filter {
+                    it.fileName?.contains("s${seasonSlug}e${episodeSlug}", true) == true
+                }
+        }
+    } ?: return
+    fids.apmapIndexed { index, fileList ->
+        val token= app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/token.txt").text
+        val player = app.get("$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey", headers = mapOf("Cookie" to token)).text
+        val json = JSONObject(player)
+        val htmlContent = json.getString("html")
+        val document: Document = Jsoup.parse(htmlContent)
+        val sourcesWithQualities = mutableListOf<Pair<String, String>>()
+        document.select("div.file_quality").forEach {
+            val url = it.attr("data-url").takeIf { it.isNotEmpty() }
+            val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }?.let { if (it == "ORG") "2160p" else it }
+            if (url != null && quality != null) {
+                sourcesWithQualities.add(url to quality)
+            }
+        }
+
+        val sourcesJsonArray = JSONArray().apply {
+            sourcesWithQualities.forEach { (url, quality) ->
+                put(JSONObject().apply {
+                    put("file", url)
+                    put("label", quality)
+                    put("type", "video/mp4") // Modify this if needed
+                })
+            }
+        }
+        val jsonObject = JSONObject().put("sources", sourcesJsonArray)
+        listOf(jsonObject.toString()).forEach {
+            val parsedSources = tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
+            parsedSources.forEach org@{ source ->
+                val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                val label = if (format == ExtractorLinkType.M3U8) "Hls" else "Mp4"
+                if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
+                callback.invoke(
+                    ExtractorLink(
+                        "SuperStream",
+                        "SuperStream [Server ${index + 1}]",
+                        (source.file)?.replace("\\/", "/") ?: return@org,
+                        "",
+                        getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
+                        type = format,
+                    )
+                )
+            }
+        }
     }
 }

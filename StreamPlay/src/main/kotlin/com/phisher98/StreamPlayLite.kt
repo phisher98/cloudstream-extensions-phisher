@@ -27,6 +27,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
+import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.lagradost.cloudstream3.SubtitleFile
@@ -274,6 +275,14 @@ class StreamPlayLite : StreamPlay() {
                     callback
                 )
 
+            },
+            {
+                invokeSuperstream(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    callback
+                )
             }
         )
         return true

@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 152
+version = 153
 android {
     defaultConfig {
         val properties = Properties()
@@ -34,10 +34,10 @@ android {
         buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
         buildConfigField("String", "KissKh", "\"${properties.getProperty("KissKh")}\"")
         buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
+        buildConfigField("String", "SUPERSTREAM_THIRD_API", "\"${properties.getProperty("SUPERSTREAM_THIRD_API")}\"")
+        buildConfigField("String", "SUPERSTREAM_FOURTH_API", "\"${properties.getProperty("SUPERSTREAM_FOURTH_API")}\"")
+
     }
-}
-dependencies {
-    implementation(project(":AnimeOwl"))
 }
 
 cloudstream {
