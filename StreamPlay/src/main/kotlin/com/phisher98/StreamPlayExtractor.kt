@@ -22,6 +22,7 @@ import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.delay
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.*
@@ -4660,6 +4661,55 @@ suspend fun invokenyaa(
 
 
     }
+
+    suspend fun invokeFilm1k(
+        id: Int? = null,
+        imdbId: String? = null,
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        if (season == null) {
+            try {
+                val fixTitle = title?.replace(":","")?.replace(" ", "+")
+                val doc = app.get("$Film1kApi/?s=$fixTitle", cacheTime = 60, timeout = 30).document
+                val posts = doc.select("header.entry-header").filter { element -> element.selectFirst(".entry-title")?.text().toString().contains("${title?.replace(":","")}") && element.selectFirst(".entry-title")?.text().toString().contains(year.toString()) }.toList()
+                val url = posts.firstOrNull()?.select("a:nth-child(1)")?.attr("href")
+                val postDoc = url?.let { app.get(it, cacheTime = 60, timeout = 30).document }
+                val id = postDoc?.select("a.Button.B.on")?.attr("data-ide")
+                repeat(5) { i ->
+                    val mediaType = "application/x-www-form-urlencoded".toMediaType()
+                    val body = "action=action_change_player_eroz&ide=$id&key=$i".toRequestBody(mediaType)
+                    val ajaxUrl = "$Film1kApi/wp-admin/admin-ajax.php"
+                    val doc = app.post(ajaxUrl, requestBody = body, cacheTime = 60, timeout = 30).document
+                    var url = doc.select("iframe").attr("src").replace("\\", "").replace("\"","") // It is necessary because it returns link with double qoutes like this ("https://voe.sx/e/edpgpjsilexe")
+                    val film1kRegex = Regex("https://film1k\\.xyz/e/([^/]+)/.*")
+                    if (url.contains("https://film1k.xyz")) {
+                        val matchResult = film1kRegex.find(url)
+                        if (matchResult != null) {
+                            val code = matchResult.groupValues[1]
+                            url = "https://filemoon.sx/e/$code"
+                        }
+                    }
+                    url = url.replace("https://films5k.com","https://mwish.pro")
+                    loadSourceNameExtractor(
+                        "Film1k",
+                        url,
+                        "",
+                        subtitleCallback,
+                        callback
+                    )
+                }
+            } catch (e: Exception) { }
+
+        }
+
+
+    }
+
 
 }
 
