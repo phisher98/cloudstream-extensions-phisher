@@ -1,5 +1,6 @@
 package com.animez
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
@@ -67,6 +68,7 @@ open class Animez : MainAPI() {
         val year = Regex(",\\s?(\\d+)").find(
             document.select("span.date").text().trim()
         )?.groupValues?.get(1).toString().toIntOrNull()
+        val hrefm= mainUrl+document.select("ul.version-chap li a").attr("href")
         val tvType = if (document.select("ul.version-chap li").size > 1) TvType.TvSeries else TvType.Movie
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val trailer = document.selectFirst("div.embed iframe")?.attr("src")
@@ -115,7 +117,7 @@ open class Animez : MainAPI() {
                 this.showStatus = getStatus(status)
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
+            newMovieLoadResponse(title, url, TvType.Movie, hrefm) {
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
@@ -134,6 +136,7 @@ open class Animez : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val document = app.get(data).document
         val token=document.select("iframe").attr("src").substringAfter("/embed/")
         document.select("#list_sv a").map {
