@@ -3567,10 +3567,9 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val doc = app.get("$allmovielandAPI/5499-love-lies-bleeding.html").toString()
+        val doc = app.get("https://allmovieland.link/player.js?v=60%20128").toString()
         val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
         val host = domainRegex.find(doc)?.groups?.get(1)?.value ?: ""
-        //val host="https://kioled326aps.com"
         val res = app.get(
             "$host/play/$imdbId",
             referer = "$allmovielandAPI/"
