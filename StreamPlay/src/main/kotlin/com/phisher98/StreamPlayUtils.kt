@@ -1313,11 +1313,11 @@ fun getIndexSize(str: String?): String? {
     return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
 }
 
-suspend fun extractMdrive(url: String): List<String> {
-    val doc= app.get(url).document
-    val href=doc.select("h5 > a, h3 > a,article p:nth-child(7) a").map { it.attr("href") }
-    return href
+suspend fun extractMdrive(url: String): List<String> =
+    app.get(url).document.select("a[href]").mapNotNull {
+        it.takeIf { a -> a.attr("href").contains(Regex("hubcloud|gdflix", RegexOption.IGNORE_CASE)) }?.attr("href")
 }
+
 
 
 fun getQuality(str: String): Int {
