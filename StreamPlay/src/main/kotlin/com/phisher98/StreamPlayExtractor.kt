@@ -4413,6 +4413,7 @@ suspend fun invokeFlixAPIHQ(
         }
     }
 
+    /*
     suspend fun invokeRgshows(
         id: Int? = null,
         imdbId: String? = null,
@@ -4516,9 +4517,9 @@ suspend fun invokeFlixAPIHQ(
             } catch (e: Exception) {
             }
         }
-
-
     }
+
+     */
 
     suspend fun invokeFilm1k(
         id: Int? = null,
