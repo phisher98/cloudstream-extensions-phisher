@@ -2006,7 +2006,7 @@ suspend fun invokeExternalSource(
         }
     } ?: return
     fids.apmapIndexed { index, fileList ->
-        val token= app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/token.txt").text
+        val token= base64Decode("dWk9ZXlKMGVYQWlPaUpLVjFRaUxDSmhiR2NpT2lKSVV6STFOaUo5LmV5SnBZWFFpT2pFM016azBOelF3TURRc0ltNWlaaUk2TVRjek9UUTNOREF3TkN3aVpYaHdJam94Tnpjd05UYzRNREkwTENKa1lYUmhJanA3SW5WcFpDSTZOak0wTURjMExDSjBiMnRsYmlJNklqQTFNekl5WmpOalpHVTROamcyWVRkak1EVTNaRGcyTXpsak56STBZMkkxSW4xOS5oZHdBU1paSVh4UzF0ZTZMWXZ0WmVUTUpuWU9TN3EtNXhiWUtuenlRbW04")
         val player = app.get("$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey", headers = mapOf("Cookie" to token)).text
         val json = JSONObject(player)
         val htmlContent = json.getString("html")
