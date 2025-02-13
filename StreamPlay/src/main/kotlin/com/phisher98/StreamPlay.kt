@@ -39,7 +39,6 @@ import com.Phisher98.StreamPlayExtractor.invokeNoverse
 import com.Phisher98.StreamPlayExtractor.invokeNowTv
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokePrimeWire
-import com.Phisher98.StreamPlayExtractor.invokeRgshows
 import com.Phisher98.StreamPlayExtractor.invokeRidomovies
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
 import com.Phisher98.StreamPlayExtractor.invokeRogmovies
@@ -70,7 +69,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -177,7 +175,6 @@ open class StreamPlay : TmdbProvider() {
         const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.pro"
-        const val Asiandrama_API="https://asiandrama.fun"
         const val bollyflixAPI = "https://bollyflix.africa"
         const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
@@ -200,8 +197,8 @@ open class StreamPlay : TmdbProvider() {
         const val Primewire="https://www.primewire.tf"
         const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
         const val WASMAPI=BuildConfig.WASMAPI
-        const val Rgshows="https://api.rgshows.me"
-        const val RgshowsHindi="https://hindi.rgshows.me"
+        //const val Rgshows="https://api.rgshows.me"
+        //const val RgshowsHindi="https://hindi.rgshows.me"
         const val AnimeOwlAPI="https://animeowl.live"
         const val Film1kApi="https://www.film1k.com"
         const val HindMoviezApi= "https://hindmoviez.foo"
@@ -1008,6 +1005,7 @@ open class StreamPlay : TmdbProvider() {
             )
         },
             {
+                /*
                 invokeRgshows(
                     res.id,
                     res.imdbId,
@@ -1018,6 +1016,7 @@ open class StreamPlay : TmdbProvider() {
                     subtitleCallback,
                     callback
                 )
+                 */
             },
             {
                 if(!res.isAnime) invokeFilm1k(
