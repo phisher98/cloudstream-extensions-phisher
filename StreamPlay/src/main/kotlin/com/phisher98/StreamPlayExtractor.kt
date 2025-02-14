@@ -2187,10 +2187,12 @@ object StreamPlayExtractor : StreamPlay() {
         val jsonencoded = Regex("atob\\(`(.*?)`\\)")
             .find(scriptData)?.groupValues?.getOrNull(1)?.let(::base64Decode)?.toJson() ?: return
         val json = Gson().fromJson(jsonencoded, Embedsu::class.java)
-        val decodedResult = simpleDecodeProcess(json.hash) ?: return
+        val encodedHash = base64Decode("${json.hash}==")
+        val decodedResult = encodedHash.split(".").joinToString("") { it.reversed() }
+            .reversed()
+            .let { base64Decode("$it=") }
 
         EmbedSuitemparseJson(decodedResult).forEach {
-            Log.d("Phisher","$EmbedSu/api/e/${it.hash}")
             app.get("$EmbedSu/api/e/${it.hash}", referer = EmbedSu)
                 .parsedSafe<Embedsuhref>()?.source?.let { m3u8 ->
                     callback(

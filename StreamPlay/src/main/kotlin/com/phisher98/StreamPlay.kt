@@ -461,7 +461,7 @@ open class StreamPlay : TmdbProvider() {
         val res = parseJson<LinkData>(data)
         argamap(
             {
-                if (!res.isAnime) invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
+                invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
             },
             {
                 invokeTheyallsayflix(res.imdbId, res.season, res.episode,callback)
