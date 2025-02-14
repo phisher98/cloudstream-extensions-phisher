@@ -1,6 +1,5 @@
 package com.Phisher98
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -10,7 +9,6 @@ import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
@@ -127,71 +125,37 @@ class AnimeWorld : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("section.section.player iframe").amap {
-            val href=it.attr("data-src")
-            Log.d("Phisher",href)
-            if (href.contains("awstream"))
-            {
-
-                val host=href.substringBefore("/video")
-                val hash = href.substringAfter("video/")
-                val form= mapOf("hash" to hash,"r" to mainUrl)
-                val postreq= app.post("$host/player/index.php?data=$hash&do=getVideo", data = form, headers = mapOf("X-Requested-With" to "XMLHttpRequest","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")).parsedSafe<Response>()
-                val m3u8= postreq?.securedLink
-                    if (m3u8.isNullOrBlank())
-                    {
-                    val regex = Regex("""m3u8\\/(.*?)\\/""")
-                    val res= app.get(href).toString()
-                    val hash1 = regex.find(res)?.groupValues?.get(1)
-                    val lang=href.substringAfterLast("=")
-                    callback.invoke(
-                        ExtractorLink(
-                            "$name ${lang.capitalize()}",
-                            "$name ${lang.capitalize()}",
-                            "$API/m3u8/$hash1/master.txt?s=1&lang=$lang&cache=1",
-                            "",
-                            Qualities.P1080.value,
-                            ExtractorLinkType.M3U8
-                        )
-                    )
-                    subtitleCallback.invoke(
-                        SubtitleFile(
-                            "English",  // Use label for the name
-                            "$API/subs/m3u8/$hash/subtitles-eng.vtt"     // Use extracted URL
-                        )
-                    )
+        val languages = listOf("hin", "tel", "tam", "eng")
+        app.get(data).document.select("section.section.player iframe").forEach { iframeElement ->
+            iframeElement.attr("data-src").let { src ->
+                app.get(src).document.select("div.modal-option").forEach { modalOption ->
+                    val iframeUrl = modalOption.attr("data-link")
+                    val hash = app.get(iframeUrl).text.let { text ->
+                        """sniff\([^,]+,\s*"([a-f0-9]{32})"""".toRegex().find(text)?.groupValues?.get(1)
                     }
-                else
-                callback.invoke(
-                    ExtractorLink(
-                        name,
-                        name,
-                        m3u8,
-                        "",
-                        Qualities.P1080.value,
-                        ExtractorLinkType.M3U8
-                    )
-                )
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        "English",
-                        "$API/subs/m3u8/$hash/subtitles-eng.vtt"
-                    )
-                )
+                    hash?.let { extractedHash ->
+                        languages.forEach { lang ->
+                            callback.invoke(
+                                ExtractorLink(
+                                    "$name ${lang.capitalize()}",
+                                    "$name ${lang.capitalize()}",
+                                    "$API/m3u8/$extractedHash/master.txt?s=1&lang=$lang&cache=1",
+                                    "",
+                                    Qualities.P1080.value,
+                                    ExtractorLinkType.M3U8
+                                )
+                            )
+                        }
+                        subtitleCallback.invoke(
+                            SubtitleFile(
+                                "English",
+                                "$API/subs/m3u8/$extractedHash/subtitles-eng.vtt"
+                            )
+                        )
+                    }
+                }
             }
         }
         return true
     }
-
-    data class Response(
-        val hls: Boolean,
-        val videoImage: String,
-        val videoSource: String,
-        val securedLink: String,
-        val downloadLinks: List<Any?>,
-        val attachmentLinks: List<Any?>,
-        val ck: String,
-    )
-
-
 }
