@@ -21,7 +21,6 @@ import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeFlixon
 import com.Phisher98.StreamPlayExtractor.invokeHinAuto
-import com.Phisher98.StreamPlayExtractor.invokeHindMoviez
 import com.Phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeLing
@@ -462,7 +461,7 @@ open class StreamPlay : TmdbProvider() {
         val res = parseJson<LinkData>(data)
         argamap(
             {
-                invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
+                if (!res.isAnime) invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
             },
             {
                 invokeTheyallsayflix(res.imdbId, res.season, res.episode,callback)
@@ -1029,7 +1028,7 @@ open class StreamPlay : TmdbProvider() {
                     subtitleCallback,
                     callback
                 )
-            },
+            },/*
             {
                 invokeHindMoviez(
                     res.id,
@@ -1042,6 +1041,7 @@ open class StreamPlay : TmdbProvider() {
                     callback
                 )
             },
+*/
             {
                 invokeSuperstream(
                     res.imdbId,

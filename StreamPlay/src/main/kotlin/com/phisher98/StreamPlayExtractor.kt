@@ -1337,6 +1337,8 @@ object StreamPlayExtractor : StreamPlay() {
                         it.attr("data-type"),
                     )
                 }
+            Log.d("Phisher",servers.toString())
+
             servers?.map servers@{ server ->
                 val animeEpisodeId = url?.substringAfter("to/")
                 val api =
@@ -2179,45 +2181,30 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url = if (season == null) {
-            "$EmbedSu/embed/movie/$id"
-        } else {
-            "$EmbedSu/embed/tv/$id/$season/$episode"
-        }
-        val res = app.get(
-            url,
-            referer = EmbedSu
-        ).document.selectFirst("script:containsData(window.vConfig)")?.data()
-            .toString()
-        val jsonencoded =
-            Regex("JSON\\.parse\\(atob\\(`(.*?)`\\)\\);").find(res)?.groupValues?.getOrNull(1) ?: ""
-        val decodedjson = base64Decode(jsonencoded).toJson()
-        val gson = Gson()
-        val json = gson.fromJson(decodedjson, Embedsu::class.java)
-        val hash = json.hash
-        val decodedResult = simpleDecodeProcess(hash) ?: ""
-        val items = EmbedSuitemparseJson(decodedResult)
-        items.map {
-            val sourceurl = "${EmbedSu}/api/e/${it.hash}"
-            app.get(sourceurl, referer = EmbedSu).parsedSafe<Embedsuhref>()?.let { href ->
-                val m3u8 = href.source
-                val headers = mapOf(
-                    "Origin" to "https://embed.su",
-                    "Referer" to "https://embed.su/",
-                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-                )
-                callback.invoke(
-                    ExtractorLink(
-                        "Embedsu Viper",
-                        "Embedsu Viper",
-                        m3u8,
-                        EmbedSu,
-                        Qualities.P1080.value,
-                        ExtractorLinkType.M3U8,
-                        headers = headers
+        val url = "$EmbedSu/embed/${if (season == null) "movie/$id" else "tv/$id/$season/$episode"}"
+        val scriptData = app.get(url, referer = EmbedSu)
+            .document.selectFirst("script:containsData(window.vConfig)")?.data() ?: return
+        val jsonencoded = Regex("atob\\(`(.*?)`\\)")
+            .find(scriptData)?.groupValues?.getOrNull(1)?.let(::base64Decode)?.toJson() ?: return
+        val json = Gson().fromJson(jsonencoded, Embedsu::class.java)
+        val decodedResult = simpleDecodeProcess(json.hash) ?: return
+
+        EmbedSuitemparseJson(decodedResult).forEach {
+            Log.d("Phisher","$EmbedSu/api/e/${it.hash}")
+            app.get("$EmbedSu/api/e/${it.hash}", referer = EmbedSu)
+                .parsedSafe<Embedsuhref>()?.source?.let { m3u8 ->
+                    callback(
+                        ExtractorLink(
+                            "Embedsu Viper", "Embedsu Viper", m3u8, EmbedSu,
+                            Qualities.P1080.value, ExtractorLinkType.M3U8,
+                            headers = mapOf(
+                                "Origin" to "https://embed.su",
+                                "Referer" to "https://embed.su/",
+                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                            )
+                        )
                     )
-                )
-            }
+                }
         }
     }
 
@@ -4776,7 +4763,6 @@ suspend fun invokeFlixAPIHQ(
 
 
     }
-
 
     suspend fun invokeSuperstream(
         imdbId: String? = null,

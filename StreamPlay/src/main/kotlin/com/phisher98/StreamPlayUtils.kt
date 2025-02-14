@@ -437,23 +437,13 @@ suspend fun extractCovyn(url: String?): Pair<String?, String?>? {
 
 //EmbedSu
 fun simpleDecodeProcess(mEncrypt: String): String? {
-
-    return try {
-        // Step 1: Decode from Base64 using base64Decode()
-        val firstDecode = base64Decode(mEncrypt)  // Decode and convert ByteArray to String
-
-        // Step 2: Reverse each part of the decoded string after splitting by "."
-        val reversed = firstDecode.split(".").map { it.reversed() }.joinToString("")
-
-        // Step 3: Reverse the entire string and decode it again
-        val finalDecoded = base64Decode(reversed.reversed())
-
-        finalDecoded
-    } catch (e: Exception) {
-        e.printStackTrace()  // Handle any decoding errors
-        null
-    }
+    return runCatching {
+        val firstDecode = base64DecodeAPI(mEncrypt)
+        val reversed = firstDecode.split(".").joinToString("") { it.reversed() }
+        base64Decode(reversed.reversed())
+    }.getOrNull()
 }
+
 
 fun EmbedSuitemparseJson(jsonString: String): List<EmbedsuItem> {
     // Create a Gson instance
