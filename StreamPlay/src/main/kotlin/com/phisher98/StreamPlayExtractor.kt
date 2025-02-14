@@ -846,6 +846,35 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
+    private suspend fun invokeTokyoInsider(
+        jptitle: String? = null,
+        title: String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        fun formatString(input: String?) = input?.replace(" ", "_").orEmpty()
+
+        val jpFixTitle = formatString(jptitle)
+        val fixTitle = formatString(title)
+        val ep = episode ?: ""
+
+        if (jpFixTitle.isBlank() && fixTitle.isBlank()) return
+
+        var doc = app.get("https://www.tokyoinsider.com/anime/S/${jpFixTitle}_(TV)/episode/$ep").document
+        if (doc.select("div.c_h2").text().contains("We don't have any files for this episode")) {
+            doc = app.get("https://www.tokyoinsider.com/anime/S/${fixTitle}_(TV)/episode/$ep").document
+        }
+
+        val href = doc.select("div.c_h2 > div:nth-child(1) > a").attr("href")
+        if (href.isNotBlank()) {
+            callback.invoke(
+                ExtractorLink("TokyoInsider", "TokyoInsider", href, "", Qualities.P1080.value, INFER_TYPE)
+            )
+        }
+    }
+
+
 
     suspend fun invokeKisskh(
         title: String? = null,
@@ -1019,6 +1048,9 @@ object StreamPlayExtractor : StreamPlay() {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
                 Log.d("Phisher", Gogourl.toString())
                 if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
+            },
+            {
+                invokeTokyoInsider(jptitle,title, episode, subtitleCallback, callback)
             }
         )
     }
@@ -1206,7 +1238,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
     }
 
-    suspend fun invokeGojo(
+    private suspend fun invokeGojo(
         aniid: Int? = null,
         jptitle: String? = null,
         episode: Int? = null,
@@ -1256,7 +1288,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeAnimetosho(
+    private suspend fun invokeAnimetosho(
         malId: Int? = null,
         season: Int? = null,
         episode: Int? = null,
