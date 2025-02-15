@@ -5,6 +5,7 @@ import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlayExtractor.invokeAnimeOwl
 import com.Phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.Phisher98.StreamPlayExtractor.invokeAnitaku
+import com.Phisher98.StreamPlayExtractor.invokeAnizone
 import com.Phisher98.StreamPlayExtractor.invokeGrani
 import com.Phisher98.StreamPlayExtractor.invokeHianime
 import com.Phisher98.StreamPlayExtractor.invokeMiruroanimeGogo
@@ -240,6 +241,9 @@ class StreamPlayAnime : MainAPI() {
             {
                 invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback)
             },
+            {
+                invokeAnizone(jpTitle, episode, callback)
+            }
         )
         return true
     }

@@ -876,6 +876,35 @@ object StreamPlayExtractor : StreamPlay() {
 
 
 
+    suspend fun invokeAnizone(
+        jptitle: String? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href = app.get("https://anizone.to/anime?search=${jptitle}")
+            .document
+            .select("div.h-6.inline.truncate a")
+            .firstOrNull {
+                val text = it.text()
+                text.equals(jptitle, ignoreCase = true)
+            }?.attr("href")
+        val m3u8 = href?.let {
+            app.get("$it/$episode").document.select("media-player").attr("src")
+        } ?: ""
+        callback.invoke(
+            ExtractorLink(
+                "Anizone",
+                "Anizone",
+                m3u8,
+                "",
+                Qualities.P1080.value,
+                INFER_TYPE
+            )
+        )
+    }
+
+
+
     suspend fun invokeKisskh(
         title: String? = null,
         season: Int? = null,
@@ -1046,11 +1075,13 @@ object StreamPlayExtractor : StreamPlay() {
             },
             {
                 val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                Log.d("Phisher", Gogourl.toString())
                 if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
             },
             {
                 invokeTokyoInsider(jptitle,title, episode, subtitleCallback, callback)
+            },
+            {
+                invokeAnizone(jptitle, episode, callback)
             }
         )
     }
