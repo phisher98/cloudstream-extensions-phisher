@@ -41,17 +41,22 @@ open class Chillx : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language" to "en-US,en;q=0.9",
+        )
+
         try {
             // Fetch the raw response from the URL
-            val res = app.get(url).toString()
+            val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            // Extract the encoded string using regex
             val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
+
             // Decrypt the encoded string
-            val password = "~%aRg@&H3&QEK1QV"
+            val password = "l%sn3@bJvcg0IuJV"
             val decryptedData = decryptXOR(encodedString, password)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
@@ -107,20 +112,21 @@ open class Chillx : ExtractorApi() {
     private fun decryptXOR(encryptedData: String, password: String): String {
         return try {
             val decodedBytes = base64DecodeArray(encryptedData)
-            val keyBytes = decodedBytes.sliceArray(0 until 16)
-            val dataBytes = decodedBytes.sliceArray(16 until decodedBytes.size)
+            val keyBytes = decodedBytes.copyOfRange(0, 16)
+            val dataBytes = decodedBytes.copyOfRange(16, decodedBytes.size)
             val passwordBytes = password.toByteArray(Charsets.UTF_8)
 
-            val decryptedBytes = dataBytes.mapIndexed { i, byte ->
-                byte.toInt() xor passwordBytes[i % passwordBytes.size].toInt() xor keyBytes[i % keyBytes.size].toInt()
-            }.map { it.toByte() }.toByteArray()
+            val decryptedBytes = ByteArray(dataBytes.size) { i ->
+                (dataBytes[i].toInt() xor passwordBytes[i % passwordBytes.size].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
+            }
 
             String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {
-            e.printStackTrace()
             "Decryption Failed"
         }
     }
+
+
 }
 
 class FilemoonV2 : ExtractorApi() {
