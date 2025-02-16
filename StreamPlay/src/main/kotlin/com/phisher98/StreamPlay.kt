@@ -1020,7 +1020,7 @@ open class StreamPlay : TmdbProvider() {
                  */
             },
             {
-                if(!res.isAnime) invokeFilm1k(
+                if(!res.isAnime && !res.isBollywood && !res.isCartoon) invokeFilm1k(
                     res.id,
                     res.imdbId,
                     res.title,
@@ -1034,6 +1034,7 @@ open class StreamPlay : TmdbProvider() {
             {
                 if (!res.isAnime)invokeHindMoviez(
                     res.title,
+                    res.imdbId,
                     res.season,
                     res.episode,
                     callback
