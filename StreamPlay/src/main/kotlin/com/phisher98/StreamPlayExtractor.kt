@@ -28,6 +28,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.*
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import org.mozilla.javascript.Scriptable
 import java.time.Instant
@@ -4640,166 +4641,205 @@ suspend fun invokeFlixAPIHQ(
 
     suspend fun invokeHindMoviez(
         title: String? = null,
+        imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
         try {
             val fixTitle = if (season == null) {
-                title?.replace(" ", "+")
+                imdbId
             } else {
                 "$title season $season".replace(" ", "+")
             }
             val doc = app.get("$HindMoviezApi/?s=$fixTitle", cacheTime = 60, timeout = 30).document
-            val postUrl =
-                doc.select(".post").firstOrNull()?.select(".entry-title-link")?.attr("href")
-            val postDoc = postUrl?.let { app.get(it, cacheTime = 60, timeout = 30).document }
-            val title = postDoc?.selectFirst(".entry-title")?.text() ?: ""
-            val qualityRegex2 = "(\\d{3,4})[pP]".toRegex()
-            if (title.lowercase().contains("season") && season != null) {
-                val elements = postDoc?.selectFirst(".entry-content")
-                val qualityRegex = ">(\\d{3,4}p).*<".toRegex()
-                val seasonRegex = "(\\d)-(\\d)"
-                val isMultiSeason = seasonRegex.toRegex().containsMatchIn(title)
-                var startSeason: Int? = 1
-                var endSeason: Int? = 1
-                if (isMultiSeason) {
-                    startSeason = seasonRegex.toRegex().find(title)?.groups?.get(1)?.value?.toInt()
-                    endSeason = seasonRegex.toRegex().find(title)?.groups?.get(2)?.value?.toInt()
+            var filterpost: Element? = null
+            if (season != null) {
+
+                //doc.select(".post").filter { element -> element.select(".entry-title-link").text().contains(title.toString()) }.firstOrNull()
+                for (element in doc.select(".post"))
+                {
+                    val title =  element.select(".entry-title-link").text()
+                    if (title.contains(title)) {
+                        val multiSeasonRegex = "(\\d)-(\\d)"
+                        val seasonRegex = "([S|s]eason\\s*(\\d{1,3}))"
+                        val isMultiSeason = multiSeasonRegex.toRegex().containsMatchIn(title)
+                        var startSeasonFilter: Int? = 1
+                        var endSeasonFilter: Int? = 1
+                        if (isMultiSeason) {
+                            startSeasonFilter = multiSeasonRegex.toRegex().find(title)?.groups?.get(1)?.value?.toInt()
+                            endSeasonFilter = multiSeasonRegex.toRegex().find(title)?.groups?.get(2)?.value?.toInt()
+                            if (startSeasonFilter != null && endSeasonFilter != null) {
+                                if(season >= startSeasonFilter && season <= endSeasonFilter) {
+                                    filterpost = element
+                                }
+                            }
+                        }
+                        else
+                        {
+                            val postSeason = seasonRegex.toRegex().find(title)?.groups?.get(2)?.value?.toInt()
+                            if(season == postSeason)
+                            {
+                                filterpost = element
+                            }
+                        }
+                    }
                 }
-                if (startSeason != null && endSeason != null) {
-                    val seasonList = mutableListOf<SeasonDetail>()
-                    for (i in startSeason..endSeason) {
-                        if (elements != null) {
-                            for (j in 0..<elements.children().size) {
-                                val item = elements.children().get(j)
-                                val currentSeason = "Season $i"
+            }
+            else
+            {
+                filterpost = doc.select(".post").firstOrNull()
+            }
+            if (filterpost != null) {
+                val postUrl = filterpost?.select(".entry-title-link")?.attr("href")
+                val postDoc = postUrl?.let { app.get(it, cacheTime = 60, timeout = 30).document }
+                val title = postDoc?.selectFirst(".entry-title")?.text() ?: ""
+                val qualityRegex2 = "(\\d{3,4})[pP]".toRegex()
+                if (title.lowercase().contains("season") && season != null) {
+                    val elements = postDoc?.selectFirst(".entry-content")
+                    val qualityRegex = ">(\\d{3,4}p).*<".toRegex()
+                    val seasonRegex = "(\\d)-(\\d)"
+                    val isMultiSeason = seasonRegex.toRegex().containsMatchIn(title)
+                    var startSeason: Int? = 1
+                    var endSeason: Int? = 1
+                    if (isMultiSeason) {
+                        startSeason = seasonRegex.toRegex().find(title)?.groups?.get(1)?.value?.toInt()
+                        endSeason = seasonRegex.toRegex().find(title)?.groups?.get(2)?.value?.toInt()
+                    }
+                    if (startSeason != null && endSeason != null) {
+                        val seasonList = mutableListOf<SeasonDetail>()
+                        for (i in startSeason..endSeason) {
+                            if (elements != null) {
+                                for (j in 0..<elements.children().size) {
+                                    val item = elements.children().get(j)
+                                    val currentSeason = "Season $i"
+                                    if (item.tagName() == "h3" && (qualityRegex.containsMatchIn(item.html()) || qualityRegex2.containsMatchIn(
+                                            item.html()
+                                        ))
+                                    ) {
+                                        if (item.text().lowercase()
+                                                .contains(currentSeason.lowercase())
+                                        ) {
+
+                                            val quality =
+                                                item.select("span[style=\"color: #ff00ff;\"]")
+                                                    .text()
+                                            val episodeUrls = item.nextElementSibling()?.select("a")
+                                            val episodeLinksMap =
+                                                mutableMapOf<String, MutableList<String>>()
+                                            if (episodeUrls != null) {
+                                                episodeUrls.forEach { item ->
+                                                    val episodeUrl = item.attr("href")
+                                                    if (episodeUrl.isNotEmpty()) {
+                                                        val doc = app.get(
+                                                            episodeUrl,
+                                                            allowRedirects = true,
+                                                            timeout = 30
+                                                        ).document
+                                                        val episodelinks =
+                                                            doc.select(".entry-content h3")
+                                                        episodelinks.forEach { item ->
+                                                            val url = item.select("a").attr("href")
+                                                            val episodeName =
+                                                                item.select("a").text()
+                                                            if (!episodeName.lowercase()
+                                                                    .contains("batch")
+                                                            ) {
+                                                                if (!episodeLinksMap[episodeName].isNullOrEmpty()) {
+                                                                    episodeLinksMap[episodeName]?.add(
+                                                                        url
+                                                                    )
+                                                                } else {
+                                                                    val links =
+                                                                        mutableListOf<String>()
+                                                                    links.add(url)
+                                                                    episodeLinksMap[episodeName] =
+                                                                        links
+
+                                                                }
+                                                            }
+                                                        }
+
+
+                                                    }
+                                                }
+                                            }
+                                            seasonList.add(
+                                                SeasonDetail(
+                                                    quality,
+                                                    episodeLinksMap,
+                                                    currentSeason
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        val seasonListFilter = seasonList.filter { Season ->
+                            Season.season == "Season $season"
+                        }
+                        val episodeMap = mutableMapOf<String, MutableList<String>>()
+                        seasonListFilter.forEach { item ->
+                            val episodeList = item.episodeLinkMap
+                            if (episodeList != null) {
+                                for ((k, v) in episodeList) {
+                                    if (!episodeMap[k].isNullOrEmpty()) {
+                                        episodeMap[k]?.addAll(v)
+                                    } else {
+                                        episodeMap[k] = v
+                                    }
+                                }
+
+                            }
+                        }
+                        for ((k, v) in episodeMap) {
+                            val episodeNo = "([E|e]pisode\\s*(\\d{1,3}))".toRegex()
+                                .find(k)?.groups?.get(2)?.value.toString().toInt()
+                            if (episodeNo == episode) {
+                                loadHindMoviezLinks(v.joinToString("+"), callback)
+                            }
+                        }
+                    }
+                } else {
+                    val elements = postDoc?.selectFirst(".entry-content")
+                    val qualityRegex = ">(\\d{3,4}p).*<".toRegex()
+                    val movieLinksList = mutableListOf<String>()
+                    if (elements != null) {
+                        for (j in 0..(elements.children().size - 1)) {
+
+                            val item = elements?.children()?.get(j)
+                            if (item != null) {
                                 if (item.tagName() == "h3" && (qualityRegex.containsMatchIn(item.html()) || qualityRegex2.containsMatchIn(
                                         item.html()
                                     ))
                                 ) {
-                                    if (item.text().lowercase()
-                                            .contains(currentSeason.lowercase())
-                                    ) {
-
-                                        val quality =
-                                            item.select("span[style=\"color: #ff00ff;\"]")
-                                                .text()
-                                        val episodeUrls = item.nextElementSibling()?.select("a")
-                                        val episodeLinksMap =
-                                            mutableMapOf<String, MutableList<String>>()
-                                        if (episodeUrls != null) {
-                                            episodeUrls.forEach { item ->
-                                                val episodeUrl = item.attr("href")
-                                                if (episodeUrl.isNotEmpty()) {
-                                                    val doc = app.get(
-                                                        episodeUrl,
-                                                        allowRedirects = true,
-                                                        timeout = 30
-                                                    ).document
-                                                    val episodelinks =
-                                                        doc.select(".entry-content h3")
-                                                    episodelinks.forEach { item ->
-                                                        val url = item.select("a").attr("href")
-                                                        val episodeName =
-                                                            item.select("a").text()
-                                                        if (!episodeName.lowercase()
-                                                                .contains("batch")
-                                                        ) {
-                                                            if (!episodeLinksMap[episodeName].isNullOrEmpty()) {
-                                                                episodeLinksMap[episodeName]?.add(
-                                                                    url
-                                                                )
-                                                            } else {
-                                                                val links =
-                                                                    mutableListOf<String>()
-                                                                links.add(url)
-                                                                episodeLinksMap[episodeName] =
-                                                                    links
-
-                                                            }
-                                                        }
-                                                    }
-
-
-                                                }
+                                    item.nextElementSibling()?.select("a")?.forEach { item ->
+                                        val episodeUrl =
+                                            if (item.attr("href").contains("href.li")) {
+                                                item.attr("href").substringAfter("/?")
+                                            } else {
+                                                item.attr("href")
+                                            }
+                                        if (episodeUrl.isNotEmpty()) {
+                                            val doc = app.get(
+                                                episodeUrl,
+                                                allowRedirects = true,
+                                                timeout = 30
+                                            ).document
+                                            val episodelinks = doc.select(".entry-content h3")
+                                            episodelinks.forEach { item ->
+                                                val url = item.select("a").attr("href")
+                                                movieLinksList.add(url)
                                             }
                                         }
-                                        seasonList.add(
-                                            SeasonDetail(
-                                                quality,
-                                                episodeLinksMap,
-                                                currentSeason
-                                            )
-                                        )
                                     }
                                 }
                             }
                         }
                     }
-                    val seasonListFilter = seasonList.filter { Season ->
-                        Season.season == "Season $season"
-                    }
-                    val episodeMap = mutableMapOf<String, MutableList<String>>()
-                    seasonListFilter.forEach { item ->
-                        val episodeList = item.episodeLinkMap
-                        if (episodeList != null) {
-                            for ((k, v) in episodeList) {
-                                if (!episodeMap[k].isNullOrEmpty()) {
-                                    episodeMap[k]?.addAll(v)
-                                } else {
-                                    episodeMap[k] = v
-                                }
-                            }
-
-                        }
-                    }
-                    for ((k, v) in episodeMap) {
-                        val episodeNo = "([E|e]pisode\\s*(\\d{1,3}))".toRegex()
-                            .find(k)?.groups?.get(2)?.value.toString().toInt()
-                        if (episodeNo == episode) {
-                            loadHindMoviezLinks(v.joinToString("+"), callback)
-                        }
-                    }
+                    loadHindMoviezLinks(movieLinksList.joinToString("+"), callback)
                 }
-            } else {
-                val elements = postDoc?.selectFirst(".entry-content")
-                val qualityRegex = ">(\\d{3,4}p).*<".toRegex()
-                val movieLinksList = mutableListOf<String>()
-                if (elements != null) {
-                    for (j in 0..(elements.children().size - 1)) {
-
-                        val item = elements?.children()?.get(j)
-                        if (item != null) {
-                            if (item.tagName() == "h3" && (qualityRegex.containsMatchIn(item.html()) || qualityRegex2.containsMatchIn(
-                                    item.html()
-                                ))
-                            ) {
-                                item.nextElementSibling()?.select("a")?.forEach { item ->
-                                    val episodeUrl =
-                                        if (item.attr("href").contains("href.li")) {
-                                            item.attr("href").substringAfter("/?")
-                                        } else {
-                                            item.attr("href")
-                                        }
-                                    if (episodeUrl.isNotEmpty()) {
-                                        val doc = app.get(
-                                            episodeUrl,
-                                            allowRedirects = true,
-                                            timeout = 30
-                                        ).document
-                                        val episodelinks = doc.select(".entry-content h3")
-                                        episodelinks.forEach { item ->
-                                            val url = item.select("a").attr("href")
-                                            movieLinksList.add(url)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                loadHindMoviezLinks(movieLinksList.joinToString("+"), callback)
             }
         } catch (e: Exception) {
             println("Error: No Links found for HindMoviezLinks")

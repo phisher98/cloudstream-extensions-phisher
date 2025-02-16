@@ -1907,7 +1907,6 @@ suspend fun loadHindMoviezLinks(
                 else if (item.attr("href").contains("gdirect.cloud"))
                 {
                     val doc = app.get(item.attr("href"), timeout = 30, allowRedirects = true, referer = "https://hindshare.site/").document
-                    android.util.Log.d("salman731 html",doc.html())
                     val link = doc.select("a")
                     callback.invoke(ExtractorLink(
                         "HindMoviez [GDirect]",
