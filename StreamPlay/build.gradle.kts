@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 160
+version = 161
 android {
     defaultConfig {
         val properties = Properties()
@@ -35,7 +35,6 @@ android {
         buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
         buildConfigField("String", "SUPERSTREAM_THIRD_API", "\"${properties.getProperty("SUPERSTREAM_THIRD_API")}\"")
         buildConfigField("String", "SUPERSTREAM_FOURTH_API", "\"${properties.getProperty("SUPERSTREAM_FOURTH_API")}\"")
-
     }
 }
 

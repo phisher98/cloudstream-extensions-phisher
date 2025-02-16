@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import android.annotation.SuppressLint
 import app.cash.quickjs.QuickJs
 import com.Phisher98.DumpUtils.queryApi
 import com.Phisher98.StreamPlay.Companion.anilistAPI

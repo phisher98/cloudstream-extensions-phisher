@@ -21,6 +21,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeFlixon
 import com.Phisher98.StreamPlayExtractor.invokeHinAuto
+import com.Phisher98.StreamPlayExtractor.invokeHindMoviez
 import com.Phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeLing
@@ -201,7 +202,7 @@ open class StreamPlay : TmdbProvider() {
         //const val RgshowsHindi="https://hindi.rgshows.me"
         const val AnimeOwlAPI="https://animeowl.live"
         const val Film1kApi="https://www.film1k.com"
-        const val HindMoviezApi= "https://hindmoviez.foo"
+        const val HindMoviezApi= "https://hindmoviez.ink"
         const val thrirdAPI=BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
         fun getType(t: String?): TvType {
@@ -1029,20 +1030,15 @@ open class StreamPlay : TmdbProvider() {
                     subtitleCallback,
                     callback
                 )
-            },/*
+            },
             {
-                invokeHindMoviez(
-                    res.id,
-                    res.imdbId,
+                if (!res.isAnime)invokeHindMoviez(
                     res.title,
                     res.season,
                     res.episode,
-                    res.year,
-                    subtitleCallback,
                     callback
                 )
             },
-*/
             {
                 invokeSuperstream(
                     res.imdbId,
