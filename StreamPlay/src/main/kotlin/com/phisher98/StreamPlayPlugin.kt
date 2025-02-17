@@ -112,5 +112,7 @@ class StreamPlayPlugin: BasePlugin() {
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Boosterx())
         registerExtractorAPI(OwlExtractor())
+        registerExtractorAPI(Rapidplayers())
+        registerExtractorAPI(Maxfinishseveral())
     }
 }
