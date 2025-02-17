@@ -1957,6 +1957,7 @@ object Deobfuscator {
     }
 }
 
+
 suspend fun invokeExternalSource(
     mediaId: Int? = null,
     type: Int? = null,
@@ -1964,18 +1965,18 @@ suspend fun invokeExternalSource(
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit,
 ) {
-    val thirdAPI= thrirdAPI
-    val fourthAPI=fourthAPI
+    val thirdAPI = thrirdAPI
+    val fourthAPI = fourthAPI
     val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
     val headers = mapOf("Accept-Language" to "en")
-    val shareKey = app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type",headers=headers)
+    val shareKey = app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
         .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
 
     val shareRes = app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
         .parsedSafe<ExternalResponse>()?.data ?: return
 
     val fids = if (season == null) {
-        shareRes.fileList // Updated from `file_list`
+        shareRes.fileList
     } else {
         shareRes.fileList?.find { it.fileName.equals("season $season", true) }?.fid?.let { parentId ->
             app.get("$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1", headers = headers)
@@ -1984,44 +1985,31 @@ suspend fun invokeExternalSource(
                 }
         }
     } ?: return
-    fids.apmapIndexed { index, fileList ->
-        val token= base64Decode("dWk9ZXlKMGVYQWlPaUpLVjFRaUxDSmhiR2NpT2lKSVV6STFOaUo5LmV5SnBZWFFpT2pFM016azBOelF3TURRc0ltNWlaaUk2TVRjek9UUTNOREF3TkN3aVpYaHdJam94Tnpjd05UYzRNREkwTENKa1lYUmhJanA3SW5WcFpDSTZOak0wTURjMExDSjBiMnRsYmlJNklqQTFNekl5WmpOalpHVTROamcyWVRkak1EVTNaRGcyTXpsak56STBZMkkxSW4xOS5oZHdBU1paSVh4UzF0ZTZMWXZ0WmVUTUpuWU9TN3EtNXhiWUtuenlRbW04")
-        val player = app.get("$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey", headers = mapOf("Cookie" to token)).text
-        val json = JSONObject(player)
-        val htmlContent = json.getString("html")
-        val document: Document = Jsoup.parse(htmlContent)
-        val sourcesWithQualities = mutableListOf<Pair<String, String>>()
-        document.select("div.file_quality").forEach {
-            val url = it.attr("data-url").takeIf { it.isNotEmpty() }
-            val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }?.let { if (it == "ORG") "2160p" else it }
-            if (url != null && quality != null) {
-                sourcesWithQualities.add(url to quality)
-            }
-        }
 
-        val sourcesJsonArray = JSONArray().apply {
-            sourcesWithQualities.forEach { (url, quality) ->
-                put(JSONObject().apply {
-                    put("file", url)
-                    put("label", quality)
-                    put("type", "video/mp4") // Modify this if needed
-                })
-            }
-        }
-        val jsonObject = JSONObject().put("sources", sourcesJsonArray)
-        listOf(jsonObject.toString()).forEach {
-            val parsedSources = tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
-            parsedSources.forEach org@{ source ->
-                val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
-                val label = if (format == ExtractorLinkType.M3U8) "Hls" else "Mp4"
-                if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
+    fids.apmapIndexed { index, fileList ->
+        val playerUrl = "${BuildConfig.SUPERSTREAM_FIRST_API}${fileList.fid}&share_key=$shareKey"
+        val rawResponse = app.get(playerUrl).text
+        val jsonString = Jsoup.parse(rawResponse).select("script").firstOrNull()?.data()?.trim()
+            ?.substringAfter("var sources = ")
+            ?.substringBefore(";\n")
+            ?: return@apmapIndexed
+
+        val sources = JSONArray(jsonString)
+
+        for (i in 0 until sources.length()) {
+            val source = sources.getJSONObject(i)
+            val fileUrl = source.getString("file")
+            val quality = source.getString("label").let { if (it == "ORG") "2160p" else it }
+            val format = if (source.getString("type") == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+
+            if (quality != "AUTO" && format == ExtractorLinkType.VIDEO) {
                 callback.invoke(
                     ExtractorLink(
                         "SuperStream",
                         "SuperStream [Server ${index + 1}]",
-                        (source.file)?.replace("\\/", "/") ?: return@org,
+                        fileUrl.replace("\\/", "/"),
                         "",
-                        getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
+                        getIndexQuality(quality),
                         type = format,
                     )
                 )
@@ -2029,3 +2017,6 @@ suspend fun invokeExternalSource(
         }
     }
 }
+
+
+

@@ -3,6 +3,7 @@ package com.Phisher98
 
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
+import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -20,15 +21,10 @@ class StreamPlayTest : StreamPlay() {
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                if (res.isAnime) invokeAnimes(
-                    res.title,
-                    res.jpTitle,
-                    res.epsTitle,
-                    res.date,
-                    res.airedDate,
+                invokeSuperstream(
+                    res.imdbId,
                     res.season,
                     res.episode,
-                    subtitleCallback,
                     callback
                 )
             }
