@@ -3526,7 +3526,6 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$nineTvAPI/tv/$tmdbId-$season-$episode"
         }
-
         val iframe =
             app.get(
                 url,

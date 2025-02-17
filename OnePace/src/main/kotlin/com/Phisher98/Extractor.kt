@@ -56,11 +56,16 @@ open class Streamruby : ExtractorApi() {
 }
 
 
-class VidStream : ExtractorApi() {
+class VidStream : Chillx() {
     override val name = "Vidstreaming"
     override val mainUrl = "https://vidstreamnew.xyz"
     override val requiresReferer = true
-    private var key: String? = null
+}
+
+open class Chillx : ExtractorApi() {
+    override val name = "Chillx"
+    override val mainUrl = "https://chillx.top"
+    override val requiresReferer = true
 
     override suspend fun getUrl(
         url: String,
@@ -68,24 +73,31 @@ class VidStream : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url,referer=referer).toString()
-        val encodedString =
-            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1)?.replace("_", "/")
-                ?.replace("-", "+")?.trim()
-                ?: ""
-        val fetchkey = fetchKey() ?: throw ErrorLoadingException("Unable to get key")
-        val key = logSha256Checksum(fetchkey)
-        val decodedBytes: ByteArray = decodeBase64WithPadding(encodedString)
-        val byteList: List<Int> = decodedBytes.map { it.toInt() and 0xFF }
-        val processedResult = decryptWithXor(byteList, key)
-        val decoded= base64Decode(processedResult)
-        val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
-            ?.trim()
-            ?:""
-        com.lagradost.api.Log.d("Phisher","$decoded $m3u8")
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language" to "en-US,en;q=0.9",
+        )
 
-        val header =
-            mapOf(
+        try {
+            // Fetch the raw response from the URL
+            val res = app.get(url,referer=mainUrl,headers=headers).toString()
+
+            val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            if (encodedString.isEmpty()) {
+                throw Exception("Encoded string not found")
+            }
+
+            // Decrypt the encoded string
+            val password = "l%sn3@bJvcg0IuJV"
+            val decryptedData = decryptXOR(encodedString, password)
+            // Extract the m3u8 URL from decrypted data
+            val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
+            if (m3u8.isEmpty()) {
+                throw Exception("m3u8 URL not found")
+            }
+
+            // Prepare headers
+            val header = mapOf(
                 "accept" to "*/*",
                 "accept-language" to "en-US,en;q=0.5",
                 "Origin" to mainUrl,
@@ -94,59 +106,59 @@ class VidStream : ExtractorApi() {
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
                 "Sec-Fetch-Site" to "cross-site",
-                "user-agent" to USER_AGENT,
+                "user-agent" to USER_AGENT
             )
-        callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                m3u8,
-                mainUrl,
-                Qualities.P1080.value,
-                INFER_TYPE,
-                headers = header
+
+            // Return the extractor link
+            callback.invoke(
+                ExtractorLink(
+                    name,
+                    name,
+                    m3u8,
+                    mainUrl,
+                    Qualities.P1080.value,
+                    INFER_TYPE,
+                    headers = header
+                )
             )
-        )
-    }
 
-    private fun logSha256Checksum(input: String): List<Int> {
-        val messageDigest = MessageDigest.getInstance("SHA-256")
-        val sha256Hash = messageDigest.digest(input.toByteArray())
-        val unsignedIntArray = sha256Hash.map { it.toInt() and 0xFF }
-        return unsignedIntArray
-    }
+            // Extract and return subtitles
+            val subtitles = extractSrtSubtitles(decryptedData)
+            subtitles.forEachIndexed { _, (language, url) ->
+                subtitleCallback.invoke(SubtitleFile(language, url))
+            }
 
-    private fun decodeBase64WithPadding(xIdJ2lG: String): ByteArray {
-        // Ensure padding for Base64 encoding (if necessary)
-        var paddedString = xIdJ2lG
-        while (paddedString.length % 4 != 0) {
-            paddedString += '=' // Add necessary padding
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
         }
-
-        // Decode using standard Base64 (RFC4648)
-        return base64DecodeArray(paddedString)
     }
 
-    private fun decryptWithXor(byteList: List<Int>, xorKey: List<Int>): String {
-        val result = StringBuilder()
-        val length = byteList.size
+    private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
+        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
+        return regex.findAll(subtitle).map { match ->
+            val (language, url) = match.destructured
+            language.trim() to url.trim()
+        }.toList()
+    }
 
-        for (i in 0 until length) {
-            val byteValue = byteList[i]
-            val keyValue = xorKey[i % xorKey.size]  // Modulo operation to cycle through NDlDrF
-            val xorResult = byteValue xor keyValue  // XOR operation
-            result.append(xorResult.toChar())  // Convert result to char and append to the result string
+    private fun decryptXOR(encryptedData: String, password: String): String {
+        return try {
+            val decodedBytes = base64DecodeArray(encryptedData)
+            val keyBytes = decodedBytes.copyOfRange(0, 16)
+            val dataBytes = decodedBytes.copyOfRange(16, decodedBytes.size)
+            val passwordBytes = password.toByteArray(Charsets.UTF_8)
+
+            val decryptedBytes = ByteArray(dataBytes.size) { i ->
+                (dataBytes[i].toInt() xor passwordBytes[i % passwordBytes.size].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
+            }
+
+            String(decryptedBytes, Charsets.UTF_8)
+        } catch (e: Exception) {
+            "Decryption Failed"
         }
-
-        return result.toString()
     }
 
-    private suspend fun fetchKey(): String? {
-        return app.get("https://raw.githubusercontent.com/Rowdy-Avocado/multi-keys/refs/heads/keys/index.html")
-            .parsedSafe<Keys>()?.key?.get(0)?.also { key = it }
-    }
-    data class Keys(
-        @JsonProperty("chillx") val key: List<String>)
+
 }
 
 
