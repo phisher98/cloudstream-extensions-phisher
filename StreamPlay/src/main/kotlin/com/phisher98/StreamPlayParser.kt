@@ -1565,4 +1565,23 @@ data class ExternalSources(
     @JsonProperty("type") val type: String? = null,
 )
 
+data class UiraResponse(
+    val sourceId: String,
+    val stream: UiraStream,
+)
+
+data class UiraStream(
+    val id: String,
+    val playlist: String,
+    val type: String,
+    val flags: List<String>,
+    val captions: List<UiraCaption>,
+)
+
+data class UiraCaption(
+    val id: String,
+    val language: String,
+    val url: String,
+)
+
 
