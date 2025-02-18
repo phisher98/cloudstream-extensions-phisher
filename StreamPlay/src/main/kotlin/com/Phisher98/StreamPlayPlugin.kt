@@ -1,5 +1,7 @@
 package com.Phisher98
 
+import android.content.Context
+import androidx.appcompat.app.AppCompatActivity
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
@@ -19,10 +21,11 @@ import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.Vidmolyme
 import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.Voe
+import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class StreamPlayPlugin: BasePlugin() {
-    override fun load() {
+class StreamPlayPlugin: Plugin() {
+    override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(StreamPlay())
         registerMainAPI(StreamPlayLite())
@@ -114,5 +117,11 @@ class StreamPlayPlugin: BasePlugin() {
         registerExtractorAPI(OwlExtractor())
         registerExtractorAPI(Rapidplayers())
         registerExtractorAPI(Maxfinishseveral())
+
+        val activity = context as AppCompatActivity
+        openSettings = {
+            val frag = SettingsFragment(this, sharedPref)
+            frag.show(activity.supportFragmentManager, "Frag")
+        }
     }
 }

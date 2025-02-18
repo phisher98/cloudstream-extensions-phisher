@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="header_tw">Insert token</string>
+    <string name="text_hint">Token</string>
+    <string name="button">Add</string>
+</resources>
