@@ -4,6 +4,10 @@ import org.jetbrains.kotlin.konan.properties.Properties
 
 version = 165
 android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
@@ -66,11 +70,14 @@ cloudstream {
 
     iconUrl = "https://i3.wp.com/yt3.googleusercontent.com/ytc/AIdro_nCBArSmvOc6o-k2hTYpLtQMPrKqGtAw_nC20rxm70akA=s900-c-k-c0x00ffffff-no-rj?ssl=1"
 
+    requiresResources = true
     isCrossPlatform = false
+
 }
 
 dependencies {
     // FIXME remove this when crossplatform is fully supported
     val cloudstream by configurations
+    implementation("com.google.android.material:material:1.12.0")
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
