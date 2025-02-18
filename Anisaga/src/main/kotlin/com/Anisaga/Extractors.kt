@@ -15,7 +15,7 @@ class AnisagaStream : Chillx() {
     override val mainUrl = "https://plyrxcdn.site"
 }
 
-// Why are so mad at us Cracking it
+// What do you think hiding getters will solve problems?
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
     override val mainUrl = "https://chillx.top"
@@ -42,7 +42,7 @@ open class Chillx : ExtractorApi() {
             }
 
             // Decrypt the encoded string
-            val password = "CbrP~To{lEc1i$,+"
+            val password = "YawPUx3_xJuL)fLF"
             val decryptedData = rc4Decrypt(password, hexToBytes(encodedString))
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
