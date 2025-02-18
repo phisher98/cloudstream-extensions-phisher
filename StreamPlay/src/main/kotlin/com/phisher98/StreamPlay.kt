@@ -52,6 +52,7 @@ import com.Phisher98.StreamPlayExtractor.invokeTom
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeTvMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
+import com.Phisher98.StreamPlayExtractor.invokeUira
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeVidSrcViP
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
@@ -205,6 +206,7 @@ open class StreamPlay : TmdbProvider() {
         const val HindMoviezApi= "https://hindmoviez.ink"
         const val thrirdAPI=BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
+        const val UiraApi= "https://xj4h5qkz7v2mlr9s.uira.live"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -1042,6 +1044,14 @@ open class StreamPlay : TmdbProvider() {
             },
             {
                 invokeSuperstream(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
+            {
+                invokeUira(
                     res.imdbId,
                     res.season,
                     res.episode,

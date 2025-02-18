@@ -4461,7 +4461,13 @@ suspend fun invokeFlixAPIHQ(
         for (link in decryptedLinks) {
             val url = "$Primewire/links/go/$link"
             val oUrl = app.get(url)
-            loadExtractor(oUrl.url, subtitleCallback, callback)
+            loadSourceNameExtractor(
+                "Primewire",
+                oUrl.url,
+                "",
+                subtitleCallback,
+                callback
+            )
         }
     }
 
@@ -4860,6 +4866,35 @@ suspend fun invokeFlixAPIHQ(
         }
         mediaId?.let {
             invokeExternalSource(it, if (season == null) 1 else 2, season, episode, callback)
+        }
+    }
+
+    suspend fun invokeUira(
+        imdbId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val sources = listOf("embedsu","vidsrcsu","flixhq","vidapi","soapertv","4k","flicky","vidsrcvip","viet","catflix")
+        for(source in sources)
+        {
+            try {
+                val url = if(season == null) {"$UiraApi/$source/$imdbId"} else {"$UiraApi/$source/$imdbId?s=$season&e=$episode"}
+                val response = app.get(url, timeout = 10).parsedSafe<UiraResponse>()
+                if (response != null) {
+                    val sourceTxt = response?.sourceId?.split("_")?.joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
+                    callback.invoke(
+                        ExtractorLink(
+                            "Uira [${sourceTxt}]",
+                            "Uira [${sourceTxt}]",
+                            response?.stream?.playlist.toString(),
+                            "",
+                            Qualities.P1080.value,
+                            ExtractorLinkType.M3U8
+                        )
+                    )
+                }
+            } catch (e: Exception) {}
         }
     }
 
