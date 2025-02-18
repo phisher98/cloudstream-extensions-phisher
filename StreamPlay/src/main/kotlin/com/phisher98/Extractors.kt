@@ -663,6 +663,10 @@ class MultimoviesAIO: StreamWishExtractor() {
     override var mainUrl = "https://allinonedownloader.fun"
 }
 
+class Rapidplayers: StreamWishExtractor() {
+    override var mainUrl = "https://rapidplayers.com"
+}
+
 class Flaswish : Ridoo() {
     override val name = "Flaswish"
     override var mainUrl = "https://flaswish.com"
@@ -797,6 +801,10 @@ class Graceaddresscommunity : Voe() {
 
 class Sethniceletter : Voe() {
     override var mainUrl = "https://sethniceletter.com"
+}
+
+class Maxfinishseveral : Voe() {
+    override var mainUrl = "https://maxfinishseveral.com"
 }
 
 
