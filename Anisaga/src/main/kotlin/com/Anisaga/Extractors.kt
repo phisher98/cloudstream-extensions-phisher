@@ -36,14 +36,14 @@ open class Chillx : ExtractorApi() {
             // Fetch the raw response from the URL
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("""(?:const|let|var)\s+\w+\s*=\s*'(.*?)'""").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val password = "l%sn3@bJvcg0IuJV"
-            val decryptedData = decryptXOR(encodedString, password)
+            val password = "CbrP~To{lEc1i$,+"
+            val decryptedData = rc4Decrypt(password, hexToBytes(encodedString))
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -95,20 +95,29 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    private fun decryptXOR(encryptedData: String, password: String): String {
-        return try {
-            val decodedBytes = base64DecodeArray(encryptedData)
-            val keyBytes = decodedBytes.copyOfRange(0, 16)
-            val dataBytes = decodedBytes.copyOfRange(16, decodedBytes.size)
-            val passwordBytes = password.toByteArray(Charsets.UTF_8)
+    private fun hexToBytes(hex: String): ByteArray {
+        return ByteArray(hex.length / 2) { i -> hex.substring(2 * i, 2 * i + 2).toInt(16).toByte() }
+    }
 
-            val decryptedBytes = ByteArray(dataBytes.size) { i ->
-                (dataBytes[i].toInt() xor passwordBytes[i % passwordBytes.size].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
-            }
-
-            String(decryptedBytes, Charsets.UTF_8)
-        } catch (e: Exception) {
-            "Decryption Failed"
+    private fun rc4Decrypt(key: String, encryptedData: ByteArray): String {
+        val s = IntArray(256) { it }
+        var j = 0
+        for (i in 0 until 256) {
+            j = (j + s[i] + key[i % key.length].code) % 256
+            s[i] = s[j].also { s[j] = s[i] }
         }
+
+        var i = 0
+        j = 0
+        val decryptedData = ByteArray(encryptedData.size)
+        for (index in encryptedData.indices) {
+            i = (i + 1) % 256
+            j = (j + s[i]) % 256
+            s[i] = s[j].also { s[j] = s[i] }
+            val k = s[(s[i] + s[j]) % 256]
+            decryptedData[index] = (encryptedData[index].toInt() xor k).toByte()
+        }
+
+        return String(decryptedData)
     }
 }
