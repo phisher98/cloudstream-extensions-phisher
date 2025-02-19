@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.base64Decode
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
@@ -40,7 +41,8 @@ open class Chillx : ExtractorApi() {
             }
 
             // Decrypt the encoded string
-            val password = "3%{EEGhrgoWo}^Rz"
+            val key="MyV7RUVHaHJnb1dvfV5Seg=="
+            val password = base64Decode(key)
             val decryptedData = rc4Decrypt(password, hexToBytes(encodedString))
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
