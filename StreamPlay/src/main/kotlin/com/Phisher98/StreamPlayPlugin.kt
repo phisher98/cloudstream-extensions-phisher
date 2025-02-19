@@ -26,11 +26,11 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class StreamPlayPlugin: Plugin() {
     override fun load(context: Context) {
-        // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(StreamPlay())
+        val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
+        registerMainAPI(StreamPlay(sharedPref))
         registerMainAPI(StreamPlayLite())
         registerMainAPI(StreamPlayTorrent())
-        //registerMainAPI(StreamPlayTest())
+        //registerMainAPI(StreamPlayTest(sharedPref))
         registerMainAPI(StreamPlayAnime())
         registerExtractorAPI(Animefever())
         registerExtractorAPI(Multimovies())
@@ -120,7 +120,7 @@ class StreamPlayPlugin: Plugin() {
 
         val activity = context as AppCompatActivity
         openSettings = {
-            val frag = SettingsFragment(this)
+            val frag = SettingsFragment(this, sharedPref)
             frag.show(activity.supportFragmentManager, "Frag")
         }
     }

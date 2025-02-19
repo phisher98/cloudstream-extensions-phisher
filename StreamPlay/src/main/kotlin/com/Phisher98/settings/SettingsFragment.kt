@@ -17,6 +17,7 @@ import androidx.core.content.res.ResourcesCompat
 import com.Phisher98.StreamPlayPlugin
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.Phisher98.BuildConfig
+import com.lagradost.cloudstream3.CommonActivity.showToast
 
 /**
  * A simple [Fragment] subclass.
@@ -25,6 +26,7 @@ import com.Phisher98.BuildConfig
  */
 class SettingsFragment(
     private val plugin: StreamPlayPlugin,
+    private val sharedPref: SharedPreferences,
 ) : BottomSheetDialogFragment() {
     private val res = plugin.resources ?: throw Exception("Unable to read resources")
 
@@ -79,13 +81,41 @@ class SettingsFragment(
         tokeninput.hint = getString("text_hint")
 
         val addButton = view.findView<Button>("addButton")
-        addButton.text = getString("button")
+        addButton.text = getString("addbutton")
+
+        val resetButton = view.findView<Button>("resetButton")
+        resetButton.text = getString("resetbutton")
+
+        // Load the existing token when the fragment opens
+        val savedToken = sharedPref.getString("token", "")
+        tokeninput.setText(savedToken)
 
         addButton.setOnClickListener {
-            val superStreamToken = tokeninput.text.toString()
+            val superStreamToken = tokeninput.text.toString().trim()
+
+            if (superStreamToken.isNotEmpty()) {
+                sharedPref.edit()?.apply {
+                    putString("token", superStreamToken)
+                    apply() // Apply changes asynchronously
+                }
+
+                tokeninput.setText(superStreamToken) // Ensure UI updates immediately
+                showToast("Token saved successfully Restart the App")
+                dismiss() // Close the fragment
+            } else {
+                showToast("Please enter a valid token")
+            }
         }
 
-        // Your code
-
+        resetButton.setOnClickListener {
+            sharedPref.edit()?.apply {
+                remove("token")
+                apply() // Apply changes asynchronously
+            }
+            tokeninput.setText("") // Clear the input field immediately
+            showToast("Token reset successfully Restart the App")
+            dismiss() // Close the fragment
+        }
     }
+
 }

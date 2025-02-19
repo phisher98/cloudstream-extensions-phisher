@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
+import android.content.SharedPreferences
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
@@ -30,6 +31,7 @@ import org.jsoup.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.time.Instant
 import java.util.Locale
@@ -4911,6 +4913,7 @@ suspend fun invokeFlixAPIHQ(
     }
 
     suspend fun invokeSuperstream(
+        token: String? = null,
         imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -4924,7 +4927,7 @@ suspend fun invokeFlixAPIHQ(
                 ?.substringAfterLast("/")?.toIntOrNull()
         }
         mediaId?.let {
-            invokeExternalSource(it, if (season == null) 1 else 2, season, episode, callback)
+            invokeExternalSource(it, if (season == null) 1 else 2, season, episode, callback,token)
         }
     }
 

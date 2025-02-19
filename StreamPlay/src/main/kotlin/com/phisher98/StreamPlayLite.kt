@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import android.content.SharedPreferences
 import com.Phisher98.StreamPlayExtractor.invoke2embed
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
@@ -27,12 +28,13 @@ import com.Phisher98.StreamPlayExtractor.invokeRiveStream
 import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
+import com.Phisher98.StreamPlayExtractor.sharedPref
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
-class StreamPlayLite : StreamPlay() {
+class StreamPlayLite() : StreamPlay(sharedPref) {
     override var name = "StreamPlay-Lite"
 
     override suspend fun loadLinks(
@@ -41,7 +43,7 @@ class StreamPlayLite : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
+        val token = sharedPref?.getString("token", null)
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
@@ -266,6 +268,7 @@ class StreamPlayLite : StreamPlay() {
             },
             {
                 invokeSuperstream(
+                    token,
                     res.imdbId,
                     res.season,
                     res.episode,

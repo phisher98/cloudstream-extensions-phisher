@@ -1964,6 +1964,7 @@ suspend fun invokeExternalSource(
     season: Int? = null,
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit,
+    token:String? =null,
 ) {
     val thirdAPI = thrirdAPI
     val fourthAPI = fourthAPI
@@ -1987,29 +1988,55 @@ suspend fun invokeExternalSource(
     } ?: return
 
     fids.apmapIndexed { index, fileList ->
-        val playerUrl = "${BuildConfig.SUPERSTREAM_FIRST_API}${fileList.fid}&share_key=$shareKey"
-        val rawResponse = app.get(playerUrl).text
-        val jsonString = Jsoup.parse(rawResponse).select("script").firstOrNull()?.data()?.trim()
-            ?.substringAfter("var sources = ")
-            ?.substringBefore(";\n")
-            ?: return@apmapIndexed
+        val superToken = token ?: ""
+        Log.d("Phisher", superToken)
 
-        val sources = JSONArray(jsonString)
+        val player = app.get("$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey", headers = mapOf("Cookie" to superToken)).text
 
-        for (i in 0 until sources.length()) {
-            val source = sources.getJSONObject(i)
-            val fileUrl = source.getString("file")
-            val quality = source.getString("label").let { if (it == "ORG") "2160p" else it }
-            val format = if (source.getString("type") == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+        val json = try {
+            JSONObject(player)
+        } catch (e: Exception) {
+            Log.e("Phisher", "Invalid JSON response $e")
+            return@apmapIndexed
+        }
+        val htmlContent = json.optString("html", "")
+        if (htmlContent.isEmpty()) return@apmapIndexed
 
-            if (quality != "AUTO" && format == ExtractorLinkType.VIDEO) {
+        val document: Document = Jsoup.parse(htmlContent)
+        val sourcesWithQualities = mutableListOf<Pair<String, String>>()
+
+        document.select("div.file_quality").forEach {
+            val url = it.attr("data-url").takeIf { it.isNotEmpty() }
+            val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }?.let { if (it == "ORG") "2160p" else it }
+            if (url != null && quality != null) {
+                sourcesWithQualities.add(url to quality)
+            }
+        }
+
+        val sourcesJsonArray = JSONArray().apply {
+            sourcesWithQualities.forEach { (url, quality) ->
+                put(JSONObject().apply {
+                    put("file", url)
+                    put("label", quality)
+                    put("type", "video/mp4")
+                })
+            }
+        }
+        val jsonObject = JSONObject().put("sources", sourcesJsonArray)
+        listOf(jsonObject.toString()).forEach {
+            val parsedSources = tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
+            parsedSources.forEach org@{ source ->
+                val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                val label = if (format == ExtractorLinkType.M3U8) "Hls" else "Mp4"
+                if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
+
                 callback.invoke(
                     ExtractorLink(
                         "SuperStream",
                         "SuperStream [Server ${index + 1}]",
-                        fileUrl.replace("\\/", "/"),
+                        source.file?.replace("\\/", "/") ?: return@org,
                         "",
-                        getIndexQuality(quality),
+                        getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
                         type = format,
                     )
                 )
