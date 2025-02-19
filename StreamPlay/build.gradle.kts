@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 166
+version = 167
 android {
     buildFeatures {
         buildConfig = true
@@ -49,7 +49,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
      description = "#1 best extention based on MultiAPI"
-     authors = listOf("Phisher98", "Hexated")
+     authors = listOf("Phisher98", "Hexated","salman731")
 
     /**
      * Status int as the following:
