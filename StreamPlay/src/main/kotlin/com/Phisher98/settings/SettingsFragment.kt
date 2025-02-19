@@ -1,7 +1,6 @@
 package com.Phisher98.settings
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -18,7 +17,6 @@ import androidx.core.content.res.ResourcesCompat
 import com.Phisher98.StreamPlayPlugin
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.Phisher98.BuildConfig
-import com.lagradost.cloudstream3.CommonActivity.showToast
 
 /**
  * A simple [Fragment] subclass.
@@ -29,7 +27,6 @@ class SettingsFragment(
     private val plugin: StreamPlayPlugin,
 ) : BottomSheetDialogFragment() {
     private val res = plugin.resources ?: throw Exception("Unable to read resources")
-    private val sharedPref = activity?.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -85,15 +82,7 @@ class SettingsFragment(
         addButton.text = getString("button")
 
         addButton.setOnClickListener {
-            val superStreamToken = tokeninput.text.toString().trim()
-
-            // Saves the token in the shared preferences in a "variable" named token
-            with(sharedPref?.edit()){
-                this?.putString("token", superStreamToken)
-                this?.apply()
-            }
-            showToast("Token saved succesfully")
-            tokeninput.text.clear()
+            val superStreamToken = tokeninput.text.toString()
         }
 
         // Your code

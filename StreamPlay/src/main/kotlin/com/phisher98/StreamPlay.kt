@@ -1,6 +1,5 @@
 package com.Phisher98
 
-import android.content.Context
 import com.Phisher98.StreamPlayExtractor.invoke2embed
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
@@ -102,7 +101,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlin.math.roundToInt
 
-open class StreamPlay(context: Context) : TmdbProvider() {
+open class StreamPlay : TmdbProvider() {
     override var name = "StreamPlay"
     override val hasMainPage = true
     override val instantLinkLoading = true
@@ -114,11 +113,6 @@ open class StreamPlay(context: Context) : TmdbProvider() {
         TvType.Anime,
         TvType.Cartoon,
     )
-    private val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
-
-    // token is the name of the string "variable" saved in the preferences.
-    // null is what it returns if there's no token saved
-    private val token = sharedPref.getString("token", null)
 
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
