@@ -3,7 +3,6 @@ package com.Phisher98
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import com.Phisher98.settings.SettingsFragment
-import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
@@ -28,7 +27,7 @@ import com.lagradost.cloudstream3.plugins.Plugin
 class StreamPlayPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(StreamPlay(context))
+        registerMainAPI(StreamPlay())
         registerMainAPI(StreamPlayLite())
         registerMainAPI(StreamPlayTorrent())
         //registerMainAPI(StreamPlayTest())
