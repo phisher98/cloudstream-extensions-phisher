@@ -6,9 +6,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.base64DecodeArray
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
@@ -29,12 +27,11 @@ open class Chillx : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf(
+            "priority" to "u=0, i",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Language" to "en-US,en;q=0.9",
         )
-
         try {
-            // Fetch the raw response from the URL
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
             val encodedString = Regex("""(?:const|let|var)\s+\w+\s*=\s*'(.*?)'""").find(res)?.groupValues?.get(1) ?: ""
