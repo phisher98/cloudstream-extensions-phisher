@@ -8,6 +8,7 @@ import com.Phisher98.StreamPlayExtractor.invokeAnitaku
 import com.Phisher98.StreamPlayExtractor.invokeAnizone
 import com.Phisher98.StreamPlayExtractor.invokeGrani
 import com.Phisher98.StreamPlayExtractor.invokeHianime
+import com.Phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.Phisher98.StreamPlayExtractor.invokeMiruroanimeGogo
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
@@ -209,10 +210,8 @@ class StreamPlayAnime : MainAPI() {
         val zoroIds = malsync?.zoro?.keys?.map { it }
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
         val hianimeurl=malsync?.zoro?.firstNotNullOf { it.value["url"] }
+        val kaasslug=malsync?.KickAssAnime?.firstNotNullOf { it.value["identifier"] }
         argamap(
-            {
-                //invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
-            },
             {
                 invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
             },
@@ -223,13 +222,6 @@ class StreamPlayAnime : MainAPI() {
             {
                 val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
                 if (animepahe!=null) invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
-            },
-            {
-                val jptitleslug=jpTitle.createSlug()
-                //invokeGojo(aniid,jptitleslug, episode, subtitleCallback, callback)
-            },
-            {
-                //invokeAnichi(zorotitle,Season,TMDBdate, episode, subtitleCallback, callback)
             },
             {
                 invokeGrani(zorotitle ?:"",episode, callback)
@@ -243,7 +235,10 @@ class StreamPlayAnime : MainAPI() {
             },
             {
                 invokeAnizone(jpTitle, episode, callback)
-            }
+            },
+            {
+                invokeKickAssAnime(kaasslug, episode, subtitleCallback, callback)
+            },
         )
         return true
     }

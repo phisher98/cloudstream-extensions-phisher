@@ -745,6 +745,7 @@ data class MALSyncSites(
     @JsonProperty("Zoro") val zoro: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
     @JsonProperty("9anime") val nineAnime: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
     @JsonProperty("animepahe") val animepahe: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
+    @JsonProperty("KickAssAnime") val KickAssAnime: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),
 )
 
 data class MALSyncResponses(
@@ -1583,5 +1584,51 @@ data class UiraCaption(
     val language: String,
     val url: String,
 )
+//Kickass
+
+data class EpisoderesponseKAA(
+    val slug: String,
+    val title: String,
+    val duration_ms: Long,
+    val episode_number: Number,
+    val episode_string: String,
+    val thumbnail: ThumbnailKAA
+)
+
+data class ThumbnailKAA(
+    val formats: List<String>,
+    val sm: String,
+    val aspectRatio: Double,
+    val hq: String
+)
 
 
+data class ServersResKAA(
+    val servers: List<ServerKAA>,
+
+    )
+data class ServerKAA(
+    val name: String,
+    val shortName: String,
+    val src: String,
+)
+
+
+data class EncryptedKAA(
+    val data: String,
+)
+
+
+data class m3u8KAA(
+    val hls: String,
+    val subtitles: List<SubtitleKAA>,
+    val key: String,
+)
+
+data class SubtitleKAA(
+    val language: String,
+    val name: String,
+    val src: String,
+)
+
+//

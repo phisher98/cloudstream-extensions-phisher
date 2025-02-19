@@ -207,6 +207,7 @@ open class StreamPlay : TmdbProvider() {
         const val thrirdAPI=BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
         const val UiraApi= "https://xj4h5qkz7v2mlr9s.uira.live"
+        const val KickassAPI="https://kaa.mx"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

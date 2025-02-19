@@ -2018,5 +2018,277 @@ suspend fun invokeExternalSource(
     }
 }
 
+fun parseJsonToEpisodes(json: String): List<EpisoderesponseKAA> {
+    val gson = Gson()
+    data class Response(val result: List<EpisoderesponseKAA>)
+    val response = gson.fromJson(json, Response::class.java)
+    return response.result
+}
+
+
+
+fun getSignature(
+    html: String,
+    server: String,
+    query: String,
+    key: ByteArray
+): Triple<String, String, String>? {
+    // Define the order based on the server type
+    val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+    val order = when (server) {
+        "VidStreaming", "DuckStream" -> listOf("IP", "USERAGENT", "ROUTE", "MID", "TIMESTAMP", "KEY")
+        "BirdStream" -> listOf("IP", "USERAGENT", "ROUTE", "MID", "KEY")
+        else -> return null
+    }
+
+    // Parse the HTML using Jsoup
+    val document = Jsoup.parse(html)
+    val cidRaw = document.select("script:containsData(cid:)").firstOrNull()
+        ?.html()?.substringAfter("cid: '")?.substringBefore("'")?.decodeHex()
+        ?: return null
+    val cid = String(cidRaw).split("|")
+
+    // Generate timestamp
+    val timeStamp = (System.currentTimeMillis() / 1000 + 60).toString()
+
+    // Update route
+    val route = cid[1].replace("player.php", "source.php")
+
+    val signature = buildString {
+        order.forEach {
+            when (it) {
+                "IP" -> append(cid[0])
+                "USERAGENT" -> append(headers["User-Agent"] ?: "")
+                "ROUTE" -> append(route)
+                "MID" -> append(query)
+                "TIMESTAMP" -> append(timeStamp)
+                "KEY" -> append(String(key))
+                "SIG" -> append(html.substringAfter("signature: '").substringBefore("'"))
+                else -> {}
+            }
+        }
+    }
+    // Compute SHA-1 hash of the signature
+    return Triple(sha1sum(signature), timeStamp, route)
+}
+
+// Helper function to decode a hexadecimal string
+
+private fun sha1sum(value: String): String {
+    return try {
+        val md = MessageDigest.getInstance("SHA-1")
+        val bytes = md.digest(value.toByteArray())
+        bytes.joinToString("") { "%02x".format(it) }
+    } catch (e: Exception) {
+        throw Exception("Attempt to create the signature failed miserably.")
+    }
+}
+
+fun String.decodeHex(): ByteArray {
+    check(length % 2 == 0) { "Must have an even length" }
+    return chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+}
+
+
+object CryptoAES {
+
+    private const val KEY_SIZE = 32 // 256 bits
+    private const val IV_SIZE = 16 // 128 bits
+    private const val SALT_SIZE = 8 // 64 bits
+    private const val HASH_CIPHER = "AES/CBC/PKCS7PADDING"
+    private const val HASH_CIPHER_FALLBACK = "AES/CBC/PKCS5PADDING"
+    private const val AES = "AES"
+    private const val KDF_DIGEST = "MD5"
+
+    /**
+     * Decrypt using CryptoJS defaults compatible method.
+     * Uses KDF equivalent to OpenSSL's EVP_BytesToKey function
+     *
+     * http://stackoverflow.com/a/29152379/4405051
+     * @param cipherText base64 encoded ciphertext
+     * @param password passphrase
+     */
+    fun decrypt(cipherText: String, password: String): String {
+        return try {
+            val ctBytes = base64DecodeArray(cipherText)
+            val saltBytes = Arrays.copyOfRange(ctBytes, SALT_SIZE, IV_SIZE)
+            val cipherTextBytes = Arrays.copyOfRange(ctBytes, IV_SIZE, ctBytes.size)
+            val md5 = MessageDigest.getInstance("MD5")
+            val keyAndIV = generateKeyAndIV(KEY_SIZE, IV_SIZE, 1, saltBytes, password.toByteArray(Charsets.UTF_8), md5)
+            decryptAES(
+                cipherTextBytes,
+                keyAndIV?.get(0) ?: ByteArray(KEY_SIZE),
+                keyAndIV?.get(1) ?: ByteArray(IV_SIZE),
+            )
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    fun decryptWithSalt(cipherText: String, salt: String, password: String): String {
+        return try {
+            val ctBytes = base64DecodeArray(cipherText)
+            val md5: MessageDigest = MessageDigest.getInstance("MD5")
+            val keyAndIV = generateKeyAndIV(
+                KEY_SIZE,
+                IV_SIZE,
+                1,
+                salt.decodeHex(),
+                password.toByteArray(Charsets.UTF_8),
+                md5,
+            )
+            decryptAES(
+                ctBytes,
+                keyAndIV?.get(0) ?: ByteArray(KEY_SIZE),
+                keyAndIV?.get(1) ?: ByteArray(IV_SIZE),
+            )
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Decrypt using CryptoJS defaults compatible method.
+     *
+     * @param cipherText base64 encoded ciphertext
+     * @param keyBytes key as a bytearray
+     * @param ivBytes iv as a bytearray
+     */
+    fun decrypt(cipherText: String, keyBytes: ByteArray, ivBytes: ByteArray): String {
+        return try {
+            val cipherTextBytes = base64DecodeArray(cipherText)
+            decryptAES(cipherTextBytes, keyBytes, ivBytes)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Encrypt using CryptoJS defaults compatible method.
+     *
+     * @param plainText plaintext
+     * @param keyBytes key as a bytearray
+     * @param ivBytes iv as a bytearray
+     */
+    fun encrypt(plainText: String, keyBytes: ByteArray, ivBytes: ByteArray): String {
+        return try {
+            val cipherTextBytes = plainText.toByteArray()
+            encryptAES(cipherTextBytes, keyBytes, ivBytes)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Decrypt using CryptoJS defaults compatible method.
+     *
+     * @param cipherTextBytes encrypted text as a bytearray
+     * @param keyBytes key as a bytearray
+     * @param ivBytes iv as a bytearray
+     */
+    private fun decryptAES(cipherTextBytes: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): String {
+        return try {
+            val cipher = try {
+                Cipher.getInstance(HASH_CIPHER)
+            } catch (e: Throwable) { Cipher.getInstance(HASH_CIPHER_FALLBACK) }
+            val keyS = SecretKeySpec(keyBytes, AES)
+            cipher.init(Cipher.DECRYPT_MODE, keyS, IvParameterSpec(ivBytes))
+            cipher.doFinal(cipherTextBytes).toString(Charsets.UTF_8)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Encrypt using CryptoJS defaults compatible method.
+     *
+     * @param plainTextBytes encrypted text as a bytearray
+     * @param keyBytes key as a bytearray
+     * @param ivBytes iv as a bytearray
+     */
+    private fun encryptAES(plainTextBytes: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): String {
+        return try {
+            val cipher = try {
+                Cipher.getInstance(HASH_CIPHER)
+            } catch (e: Throwable) { Cipher.getInstance(HASH_CIPHER_FALLBACK) }
+            val keyS = SecretKeySpec(keyBytes, AES)
+            cipher.init(Cipher.ENCRYPT_MODE, keyS, IvParameterSpec(ivBytes))
+            base64Encode(cipher.doFinal(plainTextBytes))
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Generates a key and an initialization vector (IV) with the given salt and password.
+     *
+     * https://stackoverflow.com/a/41434590
+     * This method is equivalent to OpenSSL's EVP_BytesToKey function
+     * (see https://github.com/openssl/openssl/blob/master/crypto/evp/evp_key.c).
+     * By default, OpenSSL uses a single iteration, MD5 as the algorithm and UTF-8 encoded password data.
+     *
+     * @param keyLength the length of the generated key (in bytes)
+     * @param ivLength the length of the generated IV (in bytes)
+     * @param iterations the number of digestion rounds
+     * @param salt the salt data (8 bytes of data or `null`)
+     * @param password the password data (optional)
+     * @param md the message digest algorithm to use
+     * @return an two-element array with the generated key and IV
+     */
+    private fun generateKeyAndIV(
+        keyLength: Int,
+        ivLength: Int,
+        iterations: Int,
+        salt: ByteArray,
+        password: ByteArray,
+        md: MessageDigest,
+    ): Array<ByteArray?>? {
+        val digestLength = md.digestLength
+        val requiredLength = (keyLength + ivLength + digestLength - 1) / digestLength * digestLength
+        val generatedData = ByteArray(requiredLength)
+        var generatedLength = 0
+        return try {
+            md.reset()
+
+            // Repeat process until sufficient data has been generated
+            while (generatedLength < keyLength + ivLength) {
+                // Digest data (last digest if available, password data, salt if available)
+                if (generatedLength > 0) md.update(generatedData, generatedLength - digestLength, digestLength)
+                md.update(password)
+                md.update(salt, 0, SALT_SIZE)
+                md.digest(generatedData, generatedLength, digestLength)
+
+                // additional rounds
+                for (i in 1 until iterations) {
+                    md.update(generatedData, generatedLength, digestLength)
+                    md.digest(generatedData, generatedLength, digestLength)
+                }
+                generatedLength += digestLength
+            }
+
+            // Copy key and IV into separate byte arrays
+            val result = arrayOfNulls<ByteArray>(2)
+            result[0] = generatedData.copyOfRange(0, keyLength)
+            if (ivLength > 0) result[1] = generatedData.copyOfRange(keyLength, keyLength + ivLength)
+            result
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            // Clean out temporary data
+            Arrays.fill(generatedData, 0.toByte())
+        }
+    }
+
+    // Stolen from AnimixPlay(EN) / GogoCdnExtractor
+    fun String.decodeHex(): ByteArray {
+        check(length % 2 == 0) { "Must have an even length" }
+        return chunked(2)
+            .map { it.toInt(16).toByte() }
+            .toByteArray()
+    }
+}
+
 
 

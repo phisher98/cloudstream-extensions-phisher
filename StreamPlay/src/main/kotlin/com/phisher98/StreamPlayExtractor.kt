@@ -1030,6 +1030,7 @@ object StreamPlayExtractor : StreamPlay() {
         val TMDBdate = date?.substringBefore("-")
         val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":", " ")
         val hianimeurl = malsync?.zoro?.firstNotNullOf { it.value["url"] }
+        val kaasslug=malsync?.KickAssAnime?.firstNotNullOf { it.value["identifier"] }
         argamap(
             {
                 invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
@@ -1051,7 +1052,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             },
             {
-                //invokeAniwave(aniwaveId, episode, subtitleCallback, callback)
+                invokeKickAssAnime(kaasslug, episode, subtitleCallback, callback)
             },
             {
                 val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
@@ -1439,6 +1440,64 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+
+    suspend fun invokeKickAssAnime(
+        slug: String?,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val json = app.get("$KickassAPI/api/show/$slug/episodes?ep=1&lang=ja-JP").toString()
+        val jsonresponse = parseJsonToEpisodes(json)
+
+        val matchedSlug = jsonresponse.firstOrNull {
+            it.episode_number.toString().substringBefore(".").toIntOrNull() == episode
+        }?.slug ?: return
+
+        val href = "$KickassAPI/api/show/$slug/episode/ep-$episode-$matchedSlug"
+        val servers = app.get(href).parsedSafe<ServersResKAA>()?.servers ?: return
+
+        servers.firstOrNull { it.name.contains("VidStreaming") }?.let { server ->
+            val host = getBaseUrl(server.src)
+            val headers = mapOf(
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            )
+
+            val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
+            val query = server.src.substringAfter("?id=").substringBefore("&")
+            val html = app.get(server.src).toString()
+
+            val (sig, timeStamp, route) = getSignature(html, server.name, query, key) ?: return
+            val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
+
+            val encJson = app.get(sourceUrl, headers = headers).parsedSafe<EncryptedKAA>()?.data ?: return
+            val (encryptedData, ivHex) = encJson.substringAfter(":\"").substringBefore('"').split(":")
+            val decrypted = tryParseJson<m3u8KAA>(CryptoAES.decrypt(encryptedData, key, ivHex.decodeHex()).toJson()) ?: return
+
+            val m3u8 = httpsify(decrypted.hls)
+            val videoHeaders = mapOf(
+                "Accept" to "*/*",
+                "Accept-Language" to "en-US,en;q=0.5",
+                "Origin" to host,
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "cross-site"
+            )
+
+            callback(
+                ExtractorLink(
+                    "VidStreaming", "VidStreaming", m3u8, "", Qualities.P1080.value,
+                    type = ExtractorLinkType.M3U8, headers = videoHeaders
+                )
+            )
+
+            decrypted.subtitles.forEach { subtitle ->
+                subtitleCallback(SubtitleFile(subtitle.name, subtitle.src))
+            }
+        } ?: Log.d("Error:", "Not Found")
+    }
+
 
     suspend fun invokeMiruroanimeGogo(
         animeIds: List<String?>? = null,

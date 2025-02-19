@@ -441,7 +441,7 @@ data class Encrypted(
     val data: String,
 )
 
-    fun parseJsonToEpisodes(json: String): List<Episoderesponse> {
+    private fun parseJsonToEpisodes(json: String): List<Episoderesponse> {
     val gson = Gson()
 
     // First, create a class that represents the structure containing the result field
