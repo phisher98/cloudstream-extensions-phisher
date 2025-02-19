@@ -22,6 +22,10 @@ class StreamPlayTorrent() : StreamPlay() {
         const val TorrentmovieAPI="https://torrentmovie.net"
         const val OnethreethreesevenxAPI="https://1337x.to"
         const val TorBoxAPI="https://stremio.torbox.app"
+        const val BitsearchApi="https://bitsearch.to"
+        const val MediafusionApi="https://mediafusion.elfhosted.com"
+        const val ThePirateBayApi="https://thepiratebay-plus.strem.fun"
+        const val PeerflixApi="https://peerflix.mov"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -83,6 +87,46 @@ override suspend fun loadLinks(
             )
 
         },
+        {
+            invokeBitsearch(
+                BitsearchApi,
+                title,
+                season,
+                episode,
+                callback
+            )
+
+        },
+        {
+            invokeMediaFusion(
+                MediafusionApi,
+                id,
+                season,
+                episode,
+                callback
+            )
+
+        },
+        {
+            invokeThepiratebay(
+                ThePirateBayApi,
+                id,
+                season,
+                episode,
+                callback
+            )
+
+        },
+        {
+            invokePeerFlix(
+                PeerflixApi,
+                id,
+                season,
+                episode,
+                callback
+            )
+
+        }
     )
     val SubAPI="https://opensubtitles-v3.strem.io"
     val url = if(season == null) {
@@ -120,6 +164,20 @@ suspend fun generateMagnetLink(url: String, hash: String?): String {
         trackerList.forEach { tracker ->
             if (tracker.isNotBlank()) {
                 append("&tr=").append(tracker.trim())
+            }
+        }
+    }
+}
+
+suspend fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
+    // Fetch the content of the file from the provided URL
+
+    // Build the magnet link
+    return buildString {
+        append("magnet:?xt=urn:btih:$hash")
+        for (index in 0 until trackersList.size - 1) {
+            if (trackersList[index].isNotBlank()) {
+                append("&tr=").append(trackersList[index].trim())
             }
         }
     }
