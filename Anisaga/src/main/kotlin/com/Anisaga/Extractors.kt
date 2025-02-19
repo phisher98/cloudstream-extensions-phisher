@@ -40,7 +40,7 @@ open class Chillx : ExtractorApi() {
             }
 
             // Decrypt the encoded string
-            val password = "^F2,[o8}txnv97TP"
+            val password = "3%{EEGhrgoWo}^Rz"
             val decryptedData = rc4Decrypt(password, hexToBytes(encodedString))
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
