@@ -1,6 +1,8 @@
 package com.Animeowl
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -24,49 +26,47 @@ class OwlExtractor : ExtractorApi() {
             Deobfuscator.deobfuscateScript(it)
         }
         val jwt=findFirstJwt(epJS?: throw Exception("Unable to get jwt")) ?:return
+        val jsonString=app.get("$referer$datasrc").toString()
+        val mapper = jacksonObjectMapper()
+        val servers: Map<String, List<VideoData>> = mapper.readValue(jsonString)
+        val sources = mutableListOf<Pair<String, String>>()
 
-        val servers=app.get("$referer$datasrc").parsedSafe<Response>()
-        val sources= mutableListOf<String>()
-        servers?.kaido?.let {
-            sources+="$it$jwt"
+        servers["kaido"]?.firstOrNull()?.url?.let {
+            val finalUrl = "$it$jwt"
+            sources += "Kaido" to finalUrl
         }
 
-        servers?.luffy?.let {
-            val m3u8= app.get("$it$jwt", allowRedirects = false).headers["location"] ?:return
-            sources+=m3u8
-        }
-        servers?.zoro?.let {
-            val m3u8= app.get("$it$jwt").parsedSafe<Zoro>()?.url ?:return
-            val vtt= app.get("$it$jwt").parsedSafe<Zoro>()?.subtitle ?:return
-            sources+=m3u8
-            sources+=vtt
+        servers["luffy"]?.firstOrNull()?.url?.let {
+            val finalUrl = "$it$jwt"
+            val m3u8 = getRedirectedUrl(finalUrl)
+            sources += "Luffy" to m3u8
         }
 
-        sources.amap { m3u8->
-            if (m3u8.contains("vvt"))
-            {
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        "English",
-                        m3u8
-                    )
-                )
-            }
-            else
-            {
+        servers["zoro"]?.firstOrNull()?.url?.let {
+            val finalUrl = "$it$jwt"
+            val jsonResponse = getZoroJson(finalUrl) ?: return
+            val (m3u8, vtt) = fetchZoroUrl(jsonResponse) ?: return
+            sources += "Zoro" to m3u8
+            sources += "Zoro" to vtt
+        }
+
+
+        sources.amap { (key, url) ->
+            if (url.endsWith(".vvt")) {
+                subtitleCallback.invoke(SubtitleFile("English", url))
+            } else {
                 callback.invoke(
                     ExtractorLink(
-                        name,
-                        name,
-                        m3u8,
+                        "AnimeOwl $key",
+                        "AnimeOwl $key",
+                        url,
                         mainUrl,
                         Qualities.P1080.value,
-                        INFER_TYPE,
+                        INFER_TYPE
                     )
                 )
             }
         }
-
         return
     }
 }
@@ -76,16 +76,30 @@ private fun findFirstJwt(text: String): String? {
     return jwtPattern.find(text)?.groupValues?.get(1)
 }
 
-data class Response(
-    val kaido: String? = null,
-    val luffy: String? = null,
-    val zoro: String? = null,
-)
 
-data class Zoro(
-    val url: String,
-    val subtitle: String,
-)
+fun getRedirectedUrl(url: String): String {
+    return url
+}
+
+data class ZoroResponse(val url: String, val subtitle: String)
+
+suspend fun getZoroJson(url: String): String {
+    return app.get(url).text
+}
+
+fun fetchZoroUrl(jsonResponse: String): Pair<String, String>? {
+    return try {
+        val response = jacksonObjectMapper().readValue<ZoroResponse>(jsonResponse)
+        response.url to response.subtitle
+    } catch (e: Exception) {
+        Log.e("Error:", "Error parsing Zoro JSON: ${e.message}")
+        null
+    }
+}
+
+
+data class VideoData(val resolution: String, val url: String)
+
 
 //Searchresponse
 

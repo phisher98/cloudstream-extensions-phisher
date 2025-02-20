@@ -149,7 +149,6 @@ class Animeowl : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        Log.d("Phisher",data)
         if (data.startsWith("["))
         {
             data.substringAfter("[\"").substringBefore("\"]").split("\",\"").map {
