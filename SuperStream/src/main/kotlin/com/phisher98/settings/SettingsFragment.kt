@@ -5,13 +5,14 @@ import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -19,11 +20,6 @@ import com.Phisher98.BuildConfig
 import com.Phisher98.SuperStreamPlugin
 import com.lagradost.cloudstream3.CommonActivity.showToast
 
-/**
- * A simple [Fragment] subclass.
- * Use the [SettingsFragment] factory method to
- * create an instance of this fragment.
- */
 class SettingsFragment(
     private val plugin: SuperStreamPlugin,
     private val sharedPref: SharedPreferences,
@@ -35,33 +31,11 @@ class SettingsFragment(
         return this.findViewById(id)
     }
 
-    private fun View.makeTvCompatible() {
-        this.setPadding(
-            this.paddingLeft + 10,
-            this.paddingTop + 10,
-            this.paddingRight + 10,
-            this.paddingBottom + 10
-        )
-        this.background = getDrawable("outline")
-    }
-
-    private fun getDrawable(name: String): Drawable? {
-        val id =
-            res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        return ResourcesCompat.getDrawable(res, id, null)
-    }
-
-    private fun getString(name: String): String? {
-        val id =
-            res.getIdentifier(name, "string", BuildConfig.LIBRARY_PACKAGE_NAME)
-        return res.getString(id)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        // Inflate the layout for this fragment
         val id = res.getIdentifier(
             "settings_fragment",
             "layout",
@@ -71,37 +45,64 @@ class SettingsFragment(
         return inflater.inflate(layout, container, false)
     }
 
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    @SuppressLint("UseSwitchCompatOrMaterialCode", "SetJavaScriptEnabled")
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val headerTw = view.findView<TextView>("header")
-        headerTw.text = getString("header_tw")
-
-        val tokeninput = view.findView<EditText>("tokenInput")
-        tokeninput.hint = getString("text_hint")
-
+        val webView = view.findView<WebView>("febboxWebView")
+        val tokenInput = view.findView<EditText>("tokenInput")
         val addButton = view.findView<Button>("addButton")
-        addButton.text = getString("addbutton")
-
         val resetButton = view.findView<Button>("resetButton")
-        resetButton.text = getString("resetbutton")
 
-        // Load the existing token when the fragment opens
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.settings.setSupportMultipleWindows(true)
+
+        // ✅ FIX: Set a custom User-Agent
+        webView.settings.userAgentString =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+
+                // ✅ Only capture cookies after authentication
+                if (url?.contains("febbox.com/login") == false) {
+                    val cookieManager = CookieManager.getInstance()
+                    val cookies = cookieManager.getCookie("https://www.febbox.com")
+
+                    if (!cookies.isNullOrEmpty()) {
+                        tokenInput.setText(cookies)
+
+                        sharedPref.edit()?.apply {
+                            putString("token", cookies)
+                            apply()
+                        }
+
+                        showToast("Token (Cookie) saved successfully!")
+                    }
+                }
+            }
+        }
+
+        webView.loadUrl("https://www.febbox.com/")
+
         val savedToken = sharedPref.getString("token", "")
-        tokeninput.setText(savedToken)
+        if (savedToken?.isNotEmpty() == true) {
+            tokenInput.setText(savedToken)
+        }
 
         addButton.setOnClickListener {
-            val superStreamToken = tokeninput.text.toString().trim()
+            val superStreamToken = tokenInput.text.toString().trim()
 
             if (superStreamToken.isNotEmpty()) {
                 sharedPref.edit()?.apply {
                     putString("token", superStreamToken)
-                    apply() // Apply changes asynchronously
+                    apply()
                 }
 
-                tokeninput.setText(superStreamToken) // Ensure UI updates immediately
-                showToast("Token saved successfully Restart the App")
-                dismiss() // Close the fragment
+                tokenInput.setText(superStreamToken)
+                showToast("Token saved successfully. Restart the app.")
+                dismiss()
             } else {
                 showToast("Please enter a valid token")
             }
@@ -110,12 +111,11 @@ class SettingsFragment(
         resetButton.setOnClickListener {
             sharedPref.edit()?.apply {
                 remove("token")
-                apply() // Apply changes asynchronously
+                apply()
             }
-            tokeninput.setText("") // Clear the input field immediately
-            showToast("Token reset successfully Restart the App")
-            dismiss() // Close the fragment
+            tokenInput.setText("")
+            showToast("Token reset successfully. Restart the app.")
+            dismiss()
         }
     }
-
 }
