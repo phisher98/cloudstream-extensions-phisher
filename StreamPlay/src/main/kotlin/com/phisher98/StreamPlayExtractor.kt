@@ -1721,9 +1721,8 @@ object StreamPlayExtractor : StreamPlay() {
         )
         app.get(url, headers = headers, timeout = 100L)
             .parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
-            val lan = it.lang
-            val suburl = it.url ?: null
-            if (suburl != null)
+                val lan = getLanguage(it.lang) ?:"Unknown"
+                val suburl = it.url
                 subtitleCallback.invoke(
                     SubtitleFile(
                         lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name

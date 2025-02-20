@@ -22,8 +22,10 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmapIndexed
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.mvvm.logError
@@ -40,6 +42,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.SubtitleHelper
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -324,12 +327,25 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LinkData>(data)
-        invokeSuperstream(
-            token,
-            res.imdbId,
-            res.season,
-            res.episode,
-            callback
+        argamap(
+            {
+                invokeSubtitleAPI(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                invokeSuperstream(
+                    token,
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            }
         )
         return true
     }
@@ -436,7 +452,118 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         }
     }
 
-data class LinkData(
+    private suspend fun invokeSubtitleAPI(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "https://opensubtitles-v3.strem.io/subtitles/movie/$id.json"
+        } else {
+            "https://opensubtitles-v3.strem.io/subtitles/series/$id:$season:$episode.json"
+        }
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        )
+        app.get(url, headers = headers, timeout = 100L)
+            .parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
+                val lan = getLanguage(it.lang) ?:"Unknown"
+                val suburl = it.url ?: null
+                if (suburl != null)
+                    subtitleCallback.invoke(
+                        SubtitleFile(
+                            lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
+                            suburl     // Use extracted URL
+                        )
+                    )
+            }
+    }
+
+    private fun getLanguage(language: String?): String? {
+        language ?: return null
+        val normalizedLang = language.substringBefore("-")
+        return languageMap.entries.find { it.value.first == normalizedLang || it.value.second == normalizedLang }?.key
+    }
+
+
+    private val languageMap = mapOf(
+        "Afrikaans" to Pair("af", "afr"),
+        "Albanian" to Pair("sq", "sqi"),
+        "Amharic" to Pair("am", "amh"),
+        "Arabic" to Pair("ar", "ara"),
+        "Armenian" to Pair("hy", "hye"),
+        "Azerbaijani" to Pair("az", "aze"),
+        "Basque" to Pair("eu", "eus"),
+        "Belarusian" to Pair("be", "bel"),
+        "Bengali" to Pair("bn", "ben"),
+        "Bosnian" to Pair("bs", "bos"),
+        "Bulgarian" to Pair("bg", "bul"),
+        "Catalan" to Pair("ca", "cat"),
+        "Chinese" to Pair("zh", "zho"),
+        "Croatian" to Pair("hr", "hrv"),
+        "Czech" to Pair("cs", "ces"),
+        "Danish" to Pair("da", "dan"),
+        "Dutch" to Pair("nl", "nld"),
+        "English" to Pair("en", "eng"),
+        "Estonian" to Pair("et", "est"),
+        "Filipino" to Pair("tl", "tgl"),
+        "Finnish" to Pair("fi", "fin"),
+        "French" to Pair("fr", "fra"),
+        "Galician" to Pair("gl", "glg"),
+        "Georgian" to Pair("ka", "kat"),
+        "German" to Pair("de", "deu"),
+        "Greek" to Pair("el", "ell"),
+        "Gujarati" to Pair("gu", "guj"),
+        "Hebrew" to Pair("he", "heb"),
+        "Hindi" to Pair("hi", "hin"),
+        "Hungarian" to Pair("hu", "hun"),
+        "Icelandic" to Pair("is", "isl"),
+        "Indonesian" to Pair("id", "ind"),
+        "Italian" to Pair("it", "ita"),
+        "Japanese" to Pair("ja", "jpn"),
+        "Kannada" to Pair("kn", "kan"),
+        "Kazakh" to Pair("kk", "kaz"),
+        "Korean" to Pair("ko", "kor"),
+        "Latvian" to Pair("lv", "lav"),
+        "Lithuanian" to Pair("lt", "lit"),
+        "Macedonian" to Pair("mk", "mkd"),
+        "Malay" to Pair("ms", "msa"),
+        "Malayalam" to Pair("ml", "mal"),
+        "Maltese" to Pair("mt", "mlt"),
+        "Marathi" to Pair("mr", "mar"),
+        "Mongolian" to Pair("mn", "mon"),
+        "Nepali" to Pair("ne", "nep"),
+        "Norwegian" to Pair("no", "nor"),
+        "Persian" to Pair("fa", "fas"),
+        "Polish" to Pair("pl", "pol"),
+        "Portuguese" to Pair("pt", "por"),
+        "Punjabi" to Pair("pa", "pan"),
+        "Romanian" to Pair("ro", "ron"),
+        "Russian" to Pair("ru", "rus"),
+        "Serbian" to Pair("sr", "srp"),
+        "Sinhala" to Pair("si", "sin"),
+        "Slovak" to Pair("sk", "slk"),
+        "Slovenian" to Pair("sl", "slv"),
+        "Spanish" to Pair("es", "spa"),
+        "Swahili" to Pair("sw", "swa"),
+        "Swedish" to Pair("sv", "swe"),
+        "Tamil" to Pair("ta", "tam"),
+        "Telugu" to Pair("te", "tel"),
+        "Thai" to Pair("th", "tha"),
+        "Turkish" to Pair("tr", "tur"),
+        "Ukrainian" to Pair("uk", "ukr"),
+        "Urdu" to Pair("ur", "urd"),
+        "Uzbek" to Pair("uz", "uzb"),
+        "Vietnamese" to Pair("vi", "vie"),
+        "Welsh" to Pair("cy", "cym"),
+        "Yiddish" to Pair("yi", "yid")
+    )
+
+
+
+    data class LinkData(
 val id: Int? = null,
 val imdbId: String? = null,
 val tvdbId: Int? = null,
