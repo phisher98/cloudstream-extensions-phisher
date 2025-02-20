@@ -30,21 +30,21 @@ class OwlExtractor : ExtractorApi() {
         val mapper = jacksonObjectMapper()
         val servers: Map<String, List<VideoData>> = mapper.readValue(jsonString)
         val sources = mutableListOf<Pair<String, String>>()
-
+        Log.d("Phisher","I' here")
         servers["kaido"]?.firstOrNull()?.url?.let {
             val finalUrl = "$it$jwt"
             sources += "Kaido" to finalUrl
         }
 
-        servers["luffy"]?.firstOrNull()?.url?.let {
-            val finalUrl = "$it$jwt"
+        servers["luffy"]?.forEach { video ->
+            val finalUrl = "${video.url}$jwt"
             val m3u8 = getRedirectedUrl(finalUrl)
-            sources += "Luffy" to m3u8
+            Log.d("Phisher", "Luffy ${video.resolution} M3U8 Added: $m3u8")
+            sources += "Luffy-${video.resolution}" to m3u8
         }
-
         servers["zoro"]?.firstOrNull()?.url?.let {
             val finalUrl = "$it$jwt"
-            val jsonResponse = getZoroJson(finalUrl) ?: return
+            val jsonResponse = getZoroJson(finalUrl)
             val (m3u8, vtt) = fetchZoroUrl(jsonResponse) ?: return
             sources += "Zoro" to m3u8
             sources += "Zoro" to vtt
@@ -61,10 +61,18 @@ class OwlExtractor : ExtractorApi() {
                         "AnimeOwl $key",
                         url,
                         mainUrl,
-                        Qualities.P1080.value,
+                        when {
+                            key.contains("480") -> Qualities.P480.value
+                            key.contains("720") -> Qualities.P720.value
+                            key.contains("1080") -> Qualities.P1080.value
+                            key.contains("1440") -> Qualities.P1440.value
+                            key.contains("2160") -> Qualities.P2160.value
+                            else -> Qualities.P1080.value
+                        },
                         INFER_TYPE
                     )
                 )
+
             }
         }
         return
