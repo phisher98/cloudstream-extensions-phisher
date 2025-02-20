@@ -994,9 +994,10 @@ object StreamPlayExtractor : StreamPlay() {
                 .parsedSafe<KisskhKey>()?.key ?: ""
             app.get("$kissKhAPI/api/Sub/$epsId&kkey=$kkey1").text.let { resSub ->
                 tryParseJson<List<KisskhSubtitle>>(resSub)?.map { sub ->
+                    val lang= getLanguage(sub.label) ?:"UnKnown"
                     subtitleCallback.invoke(
                         SubtitleFile(
-                            getLanguage(sub.label ?: return@map), sub.src
+                                lang, sub.src
                                 ?: return@map
                         )
                     )

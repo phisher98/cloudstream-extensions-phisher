@@ -1250,10 +1250,6 @@ fun String?.createSlug(): String? {
         ?.lowercase()
 }
 
-fun getLanguage(str: String): String {
-    return if (str.contains("(in_ID)")) "Indonesian" else str
-}
-
 fun bytesToGigaBytes(number: Double): Double = number / 1024000000
 
 fun getKisskhTitle(str: String?): String? {
