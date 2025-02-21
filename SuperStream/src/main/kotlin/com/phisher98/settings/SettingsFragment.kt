@@ -49,6 +49,11 @@ class SettingsFragment(
         val loginButton = view.findView<Button>("loginButton")
         val webView = view.findView<WebView>("authWebView")
 
+        val savedToken = sharedPref.getString("token", null)
+        if (!savedToken.isNullOrEmpty()) {
+            tokenInput.setText(savedToken)
+        }
+
         setupWebView(webView) // ✅ FIX: Setup WebView properly
 
         loginButton.setOnClickListener {

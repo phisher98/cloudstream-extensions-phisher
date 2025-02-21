@@ -49,6 +49,11 @@ class SettingsFragment(
         val loginButton = view.findView<Button>("loginButton")
         val webView = view.findView<WebView>("authWebView")
 
+        val savedToken = sharedPref.getString("token", null)
+        if (!savedToken.isNullOrEmpty()) {
+            tokenInput.setText(savedToken)
+        }
+
         setupWebView(webView) // ✅ FIX: Setup WebView properly
 
         loginButton.setOnClickListener {
@@ -88,10 +93,7 @@ class SettingsFragment(
         webView.settings.userAgentString =
             "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Mobile Safari/537.36"
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true) // ✅ Fix for Android 9+
-        }
-
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 val cookieManager = CookieManager.getInstance()
