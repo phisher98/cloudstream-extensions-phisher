@@ -152,7 +152,7 @@ class KisskhProvider : MainAPI() {
                                 this.name,
                                 this.name,
                                 fixUrl( link),
-                                "",
+                                mainUrl,
                                 Qualities.P720.value,
                                 INFER_TYPE
                             )
