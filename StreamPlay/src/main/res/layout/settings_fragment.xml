@@ -28,18 +28,27 @@
                 android:layout_centerVertical="true" />
         </RelativeLayout>
 
-        <androidx.cardview.widget.CardView
+        <!-- New Login Button -->
+        <Button
+            android:id="@+id/loginButton"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_marginBottom="8dp">
+            android:layout_height="wrap_content"
+            android:text="Login with Google"
+            android:backgroundTint="#4285F4"
+            android:textColor="#FFFFFF"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp" />
 
-            <WebView
-                android:id="@+id/febboxWebView"
-                android:layout_width="match_parent"
-                android:layout_height="280dp" />
-        </androidx.cardview.widget.CardView>
+        <!-- WebView for Authentication (Initially Hidden) -->
+        <WebView
+            android:id="@+id/authWebView"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:visibility="gone"
+            android:background="#FFFFFF"
+            android:layout_marginBottom="8dp" />
 
+        <!-- Token Input Field -->
         <EditText
             android:id="@+id/tokenInput"
             android:layout_width="match_parent"
@@ -48,27 +57,30 @@
             android:padding="12dp"
             android:background="@android:drawable/editbox_background"
             android:textSize="16sp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            android:hint="Enter or Paste Token" />
 
+        <!-- Save Token Button -->
         <Button
             android:id="@+id/addButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:text="Save Token"
             android:backgroundTint="#6200EE"
             android:textColor="#FFFFFF"
-            android:padding="12dp" />
+            android:padding="12dp"
+            android:layout_marginTop="8dp" />
 
+        <!-- Reset Token Button -->
         <Button
             android:id="@+id/resetButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:text="Reset Token"
             android:backgroundTint="#D32F2F"
             android:textColor="#FFFFFF"
-            android:padding="12dp" />
+            android:padding="12dp"
+            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 </ScrollView>
