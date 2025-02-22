@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class Dramacool2 : Dramacool() {
-    override var mainUrl = "https://dramacool.ba"
+    override var mainUrl = "https://dramacool.com.tr"
     override var name = "Dramacool2"
 }
 
@@ -19,7 +19,7 @@ open class Dramacool : MainAPI() {
     )
     override var lang = "en"
 
-    override var mainUrl = "https://dramacool.bg"
+    override var mainUrl = "https://dramacool.com.tr"
     override var name = "Dramacool"
 
     override val hasMainPage = true
@@ -49,7 +49,7 @@ open class Dramacool : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchtitle=query.createSlug()
-        val url = "$mainUrl/search?type=drama&keyword=$searchtitle"
+        val url = "$mainUrl/search?type=movies&keyword=$searchtitle"
         val document = app.get(url, referer = "$mainUrl/").document
         val items = document.select("ul.switch-block.list-episode-item li").mapNotNull {
             it.toSearchResult()
