@@ -31,11 +31,7 @@ class SettingsFragment(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        val id = res.getIdentifier(
-            "settings_fragment",
-            "layout",
-            BuildConfig.LIBRARY_PACKAGE_NAME
-        )
+        val id = res.getIdentifier("settings_fragment", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
         val layout = res.getLayout(id)
         return inflater.inflate(layout, container, false)
     }
@@ -54,7 +50,7 @@ class SettingsFragment(
             tokenInput.setText(savedToken)
         }
 
-        setupWebView(webView) // ✅ FIX: Setup WebView properly
+        setupWebView(webView)
 
         loginButton.setOnClickListener {
             webView.visibility = View.VISIBLE
@@ -62,8 +58,11 @@ class SettingsFragment(
         }
 
         addButton.setOnClickListener {
-            val token = tokenInput.text.toString().trim()
+            var token = tokenInput.text.toString().trim()
             if (token.isNotEmpty()) {
+                if (!token.startsWith("ui=")) {
+                    token = "ui=$token"
+                }
                 sharedPref.edit()?.apply {
                     putString("token", token)
                     apply()
@@ -80,7 +79,7 @@ class SettingsFragment(
                 remove("token")
                 apply()
             }
-            tokenInput.setText("")
+            tokenInput.setText("ui=")
             showToast("Token reset successfully. Restart the app.")
             dismiss()
         }
@@ -94,35 +93,36 @@ class SettingsFragment(
             "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Mobile Safari/537.36"
 
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookie(url ?: "")
-                val token = extractUICookie(cookies)
+
+                val token = cookies?.split(";")
+                    ?.map { it.trim() }
+                    ?.find { it.startsWith("ui=") }
+                    ?.removePrefix("ui=")
 
                 if (!token.isNullOrEmpty() && view != null) {
+                    val finalToken = "ui=$token"
+
                     activity?.runOnUiThread {
                         val tokenInput = requireView().findViewById<EditText>(
                             res.getIdentifier("tokenInput", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
                         )
-                        tokenInput.setText(token)
+                        tokenInput.setText(finalToken)
 
                         sharedPref.edit()?.apply {
-                            putString("token", token)
+                            putString("token", finalToken)
                             apply()
                         }
 
-                        showToast("Login successful! Token retrieved.")
-                        webView.visibility = View.GONE // Hide WebView after login
+                        showToast("Login successful!")
+                        webView.visibility = View.GONE
                     }
                 }
             }
         }
-    }
-
-    private fun extractUICookie(cookies: String?): String? {
-        if (cookies.isNullOrEmpty()) return null
-        val cookieList = cookies.split(";").map { it.trim() }
-        return cookieList.find { it.startsWith("ui=") }
     }
 }
