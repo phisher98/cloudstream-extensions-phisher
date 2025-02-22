@@ -1,5 +1,7 @@
 package com.Phisher98
 
+import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -125,7 +127,22 @@ override suspend fun loadLinks(
                 episode,
                 callback
             )
+        },
 
+
+
+
+
+
+
+        //Subtitles Invokes
+        {
+            invokeWyZIESUBAPI(
+                id,
+                season,
+                episode,
+                subtitleCallback,
+            )
         }
     )
     val SubAPI="https://opensubtitles-v3.strem.io"

@@ -25,9 +25,11 @@ import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
+import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
+import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.Phisher98.StreamPlayExtractor.sharedPref
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
@@ -273,6 +275,28 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.season,
                     res.episode,
                     callback
+                )
+            },
+
+
+
+
+            //Subtitles Invokes
+            {
+                invokeSubtitleAPI(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                invokeWyZIESUBAPI(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
                 )
             }
         )

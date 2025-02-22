@@ -4,6 +4,8 @@ import android.content.SharedPreferences
 import com.Phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
 import com.Phisher98.BuildConfig.SUPERSTREAM_THIRD_API
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
@@ -479,6 +481,36 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
                         )
                     )
             }
+    }
+
+
+    suspend fun invokeWyZIESUBAPI(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+    ) {
+        val WyZIESUBAPI="https://sub.wyzie.ru"
+        val url = if (season == null) {
+            "$WyZIESUBAPI/search?id=$id"
+        } else {
+            "$WyZIESUBAPI/search?id=$id&season=$season&episode=$episode"
+        }
+
+        val res = app.get(url).toString()
+        val gson = Gson()
+        val listType = object : TypeToken<List<WyZIESUB>>() {}.type
+        val subtitles: List<WyZIESUB> = gson.fromJson(res, listType)
+        subtitles.map {
+            val lan = it.display
+            val suburl = it.url
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
+                    suburl     // Use extracted URL
+                )
+            )
+        }
     }
 
     private fun getLanguage(language: String?): String? {

@@ -1739,12 +1739,11 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
             "$WyZIESUBAPI/search?id=$id"
         } else {
-            "$WyZIESUBAPI/search?id=$id/$season/$episode"
+            "$WyZIESUBAPI/search?id=$id&season=$season&episode=$episode"
         }
 
         val res = app.get(url).toString()

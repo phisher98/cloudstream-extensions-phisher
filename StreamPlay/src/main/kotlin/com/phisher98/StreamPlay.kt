@@ -958,24 +958,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         callback
     )
 },
-{
-    invokeSubtitleAPI(
-        res.imdbId,
-        res.season,
-        res.episode,
-        subtitleCallback,
-        callback
-    )
-},
-{
-     invokeWyZIESUBAPI(
-        res.imdbId,
-        res.season,
-         res.episode,
-         subtitleCallback,
-         callback
-     )
-},
  {
      if (!res.isAnime) invokeRiveStream(
          res.id,
@@ -1062,7 +1044,29 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.episode,
                     callback
                 )
-            }
+            },
+
+
+
+
+            //Subtitles Invokes
+            {
+                invokeSubtitleAPI(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                invokeWyZIESUBAPI(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                )
+            },
 )
 return true
 }

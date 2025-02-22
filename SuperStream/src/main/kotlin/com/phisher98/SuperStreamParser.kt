@@ -68,3 +68,14 @@ data class Subtitle(
     val m: String,
     val g: String,
 )
+
+data class WyZIESUB(
+    val id: String,
+    val url: String,
+    val flagUrl: String,
+    val format: String,
+    val display: String,
+    val language: String,
+    val media: String,
+    val isHearingImpaired: Boolean,
+)
