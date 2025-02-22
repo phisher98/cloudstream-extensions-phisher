@@ -74,7 +74,6 @@ open class Dramacool : MainAPI() {
 
         return newTvSeriesLoadResponse(title, detailsUrl, TvType.TvSeries, episodes) {
             posterUrl = posterurl
-            addActors(actors)
             this.plot=description
         }
     }
