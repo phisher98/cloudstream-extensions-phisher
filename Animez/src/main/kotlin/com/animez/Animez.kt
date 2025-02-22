@@ -1,9 +1,16 @@
 package com.animez
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 open class Animez : MainAPI() {
@@ -52,7 +59,7 @@ open class Animez : MainAPI() {
     }
 
 
-    fun getStatus(t: String): ShowStatus {
+    private fun getStatus(t: String): ShowStatus {
         return when (t) {
             "Finished Airing" -> ShowStatus.Completed
             "Updating" -> ShowStatus.Ongoing
@@ -86,22 +93,76 @@ open class Animez : MainAPI() {
         return if (tvType == TvType.TvSeries) {
             val subEpisodes = mutableListOf<Episode>()
             val dubEpisodes = mutableListOf<Episode>()
-            document.select("ul.version-chap li").amap {
-                val href = it.select("a").attr("href")
-                val name = fixTitle(it.select("a").text().trim())
-                val image = it.selectFirst("div.imagen > img")?.getImageAttr()
-                val episode = it.select("div.numerando").text().replace(" ", "").split("-").last().toIntOrNull()
-                val season = it.select("div.numerando").text().replace(" ", "").split("-").first().toIntOrNull()
-                val episodeObj = newEpisode(href) {
-                    this.name = "Episode ${if (name.contains("dub", ignoreCase = true)) name.substringBefore("-") else name}"
-                    this.season = season
-                    this.episode = episode
-                    this.posterUrl = image
+            val regex = Regex("""load_list_chapter\((\d+)\)""")
+            val lastPageNum = document.select("#nav_list_chapter_id_detail a.page-link")
+                .mapNotNull { regex.find(it.attr("onclick"))?.groupValues?.get(1)?.toIntOrNull() }
+                .maxOrNull()
+                if (lastPageNum != null) {
+                    runBlocking {
+                    val malid = document.select("h2.SubTitle").attr("data-manga").takeIf { it.isNotEmpty() }
+                    if (!malid.isNullOrEmpty()) {
+                        coroutineScope {
+                            val jobs = (lastPageNum downTo 1).map { page ->
+                                async(Dispatchers.IO) {
+                                    try {
+                                        val rawres = app.get("https://animez.org/?act=ajax&code=load_list_chapter&manga_id=$malid&page_num=$page&chap_id=0&keyword=").text
+                                        val listChapHtml = JSONObject(rawres).getString("list_chap")
+                                        val parsedHtml: Document = Jsoup.parse(listChapHtml)
+
+                                        parsedHtml.select("li.wp-manga-chapter a").forEach { element ->
+                                            val href = element.attr("href").trim()
+                                            val episodeName = element.text().trim()
+                                            val episode = episodeName.filter { it.isDigit() }.toIntOrNull()
+
+                                            val episodeObj = newEpisode(href) {
+                                                this.name = "Episode $episodeName"
+                                                this.season = 1
+                                                this.episode = episode
+                                            }
+
+                                            synchronized(subEpisodes) {
+                                                if (episodeName.contains("dub", ignoreCase = true)) {
+                                                    dubEpisodes += episodeObj
+                                                } else {
+                                                    subEpisodes += episodeObj
+                                                }
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            }
+                            jobs.awaitAll() // Wait for all requests to complete
+                        }
+                    }
                 }
-                if (name.contains("dub", ignoreCase = true)) {
-                    dubEpisodes += episodeObj
-                } else {
-                    subEpisodes += episodeObj
+            }
+            else {
+                document.select("ul.version-chap li").amap {
+                    val href = it.select("a").attr("href")
+                    val name = fixTitle(it.select("a").text().trim())
+                    val image = it.selectFirst("div.imagen > img")?.getImageAttr()
+                    val episode = it.select("div.numerando").text().replace(" ", "").split("-").last().toIntOrNull()
+                    val season = it.select("div.numerando").text().replace(" ", "").split("-").first()
+                        .toIntOrNull()
+                    val episodeObj = newEpisode(href) {
+                        this.name = "Episode ${
+                            if (name.contains(
+                                    "dub",
+                                    ignoreCase = true
+                                )
+                            ) name.substringBefore("-") else name
+                        }"
+                        this.season = season
+                        this.episode = episode
+                        this.posterUrl = image
+                    }
+                    if (name.contains("dub", ignoreCase = true)) {
+                        dubEpisodes += episodeObj
+                    } else {
+                        subEpisodes += episodeObj
+                    }
                 }
             }
             newAnimeLoadResponse(title, url, TvType.Anime) {
@@ -136,7 +197,6 @@ open class Animez : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         val document = app.get(data).document
         val token=document.select("iframe").attr("src").substringAfter("/embed/")
         document.select("#list_sv a").map {
