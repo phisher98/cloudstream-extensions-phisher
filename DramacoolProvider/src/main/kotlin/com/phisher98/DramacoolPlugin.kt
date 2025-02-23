@@ -16,6 +16,7 @@ class DramacoolPlugin: BasePlugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(MixDropSi())
         registerExtractorAPI(DramacoolExtractor())
+        registerExtractorAPI(asianload())
         registerExtractorAPI(dhtpre())
         registerExtractorAPI(nikaplayerr())
         registerExtractorAPI(peytonepre())
