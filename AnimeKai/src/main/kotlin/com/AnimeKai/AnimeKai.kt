@@ -115,8 +115,8 @@ class AnimeKai : MainAPI() {
         val poster = document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")?.substringBefore(")")
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
 
-        val subCount = document.selectFirst("div.info span.sub")?.text()?.toIntOrNull()
-        val dubCount = document.selectFirst("div.info span.dub")?.text()?.toIntOrNull()
+        val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
+        val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
         val decoder=AnimekaiDecoder()
