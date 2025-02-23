@@ -4959,6 +4959,44 @@ suspend fun invokeFlixAPIHQ(
         }
     }
 
+    suspend fun invokePlayer4U(
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    )
+    {
+        try {
+            val linkDataList = mutableListOf<Player4uLinkData>()
+            val queryUrl = if(season == null) {
+                val fixQuery = title?.replace(" ","+")
+                "$Player4uApi/embed?key=$fixQuery+$year"
+            }
+            else {
+                val fixQuery = "$title S${String.format("%02d", season)}E${String.format("%02d", episode)}".replace(" ","+")
+                "$Player4uApi/embed?key=$fixQuery"
+            }
+            val doc = app.get(queryUrl, timeout = 10).document
+            val linkList = doc.select(".playbtnx")
+            for(link in linkList)
+            {
+                linkDataList.add(Player4uLinkData(name = link.text(), url = link.attr("onclick")))
+            }
+            val distinctList = linkDataList.distinctBy {it.name}
+            distinctList.forEach { link ->
+                try {
+                    val name = "P4u [${link.name.split("|").reversed().joinToString("-").trim()}]"
+                    val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
+                    val vDoc = app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi).document
+                    val iframeSource = vDoc.select("iframe").attr("src")
+                    val emebedUrl = "https://uqloads.xyz/e/$iframeSource";
+                    getPlayer4uUrl(name,emebedUrl,Player4uApi,callback)
+                } catch (e: Exception) { }
+            }
+        } catch (e: Exception) {}
+    }
+
 }
 
 
