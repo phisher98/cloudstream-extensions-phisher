@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.Dwish
 import com.lagradost.cloudstream3.extractors.StreamTape
 
+
 @CloudstreamPlugin
 class DramacoolPlugin: BasePlugin() {
     override fun load() {
@@ -14,9 +15,9 @@ class DramacoolPlugin: BasePlugin() {
         registerExtractorAPI(Dwish())
         registerExtractorAPI(dlions())
         registerExtractorAPI(StreamTape())
+        registerExtractorAPI(asianload())
         registerExtractorAPI(MixDropSi())
         registerExtractorAPI(DramacoolExtractor())
-        registerExtractorAPI(asianload())
         registerExtractorAPI(dhtpre())
         registerExtractorAPI(nikaplayerr())
         registerExtractorAPI(peytonepre())
