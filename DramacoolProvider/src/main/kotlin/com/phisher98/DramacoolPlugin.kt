@@ -19,5 +19,6 @@ class DramacoolPlugin: BasePlugin() {
         registerExtractorAPI(dhtpre())
         registerExtractorAPI(nikaplayerr())
         registerExtractorAPI(peytonepre())
+        registerExtractorAPI(AsianloadCFD())
     }
 }

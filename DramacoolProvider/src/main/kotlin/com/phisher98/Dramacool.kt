@@ -1,9 +1,6 @@
 package com.phisher98
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -25,20 +22,25 @@ open class Dramacool : MainAPI() {
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        "/" to "Recent Dramas",
+        "recently-added-drama" to "Recent Dramas",
+        "recently-added-movie" to "Recent Movies",
+        "country/korean" to "Korean Dramas",
+        "country/chinese" to "Chinese Dramas",
+        "country/thailand" to "Thailand Dramas",
+        "most-popular-drama" to "Popular Dramas"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}?page=$page", timeout = 30L).document
+        val url=if (page==1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
+        val document = app.get(url, timeout = 30L).document
         val items = document.select("ul.switch-block.list-episode-item li").mapNotNull {
             it.toSearchResult()
         }
-
         return newHomePageResponse(request.name, items)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = selectFirst("h2")?.text() ?: return null
+        val title = selectFirst("h3")?.text() ?: return null
         val href = fixUrlNull(selectFirst("a")?.attr("href")) ?: return null
         val posterUrl = fixUrlNull(selectFirst("a img")?.attr("data-original"))
         return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
@@ -63,18 +65,22 @@ open class Dramacool : MainAPI() {
             url.substringBefore("-episode").replace("video-watch", "drama-detail")
         val detailsDocument = app.get(detailsUrl, referer = "$mainUrl/", timeout = 10L).document
         val title = detailsDocument.selectFirst("h1")?.text()?.trim() ?: ""
-        
+        val tag = detailsDocument.select("div.info > p:nth-of-type(10) a").map { it.text().trim() }
         val description= detailsDocument.selectFirst("div.info > p:nth-of-type(3)")?.text()?.trim() ?: ""
         val posterurl = detailsDocument.selectFirst("div.details img")?.attr("src")
         val episodes = detailsDocument.select("ul.list-episode-item-2 li").mapNotNull { el ->
             val name=el.selectFirst("a h3")?.text()?.substringAfter("Episode")?.trim()
             val href=el.selectFirst("a")?.attr("href") ?: ""
-            Episode(href, "Episode $name")
+            newEpisode(href)
+            {
+                this.name="Episode $name"
+            }
         }.reversed()
 
         return newTvSeriesLoadResponse(title, detailsUrl, TvType.TvSeries, episodes) {
             posterUrl = posterurl
             this.plot=description
+            this.tags=tag
         }
     }
 

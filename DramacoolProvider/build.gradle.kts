@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 6
+version = 7
 
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
 
     description = "Asian Dramas"
-    authors = listOf("Phisher98","kerimmkirac")
+    authors = listOf("Phisher98")
 
     /**
      * Status int as the following:

@@ -3,6 +3,7 @@ package com.phisher98
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.extractors.AsianLoad
 
 class dlions : VidhideExtractor() {
     override var name = "Dlions"
@@ -16,6 +17,11 @@ class MixDropSi : MixDrop() {
 class DramacoolExtractor : StreamWishExtractor() {
     override var name = "Dramacool"
     override var mainUrl = "https://dramacool.men"
+}
+
+class AsianloadCFD : AsianLoad() {
+    override var name = "AsianLoad"
+    override var mainUrl = "https://asianload.cfd/"
 }
 
 class dhtpre : StreamWishExtractor() {
