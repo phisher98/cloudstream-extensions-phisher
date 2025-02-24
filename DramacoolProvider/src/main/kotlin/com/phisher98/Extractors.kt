@@ -3,6 +3,7 @@ package com.phisher98
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.extractors.AsianLoadExtractor
 
 class dlions : VidhideExtractor() {
     override var name = "Dlions"
