@@ -1631,4 +1631,10 @@ data class SubtitleKAA(
     val src: String,
 )
 
+data class Player4uLinkData(
+    val name: String,
+    val url: String,
+)
+
+
 //

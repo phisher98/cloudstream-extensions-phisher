@@ -39,6 +39,7 @@ import com.Phisher98.StreamPlayExtractor.invokeNinetv
 import com.Phisher98.StreamPlayExtractor.invokeNoverse
 import com.Phisher98.StreamPlayExtractor.invokeNowTv
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
+import com.Phisher98.StreamPlayExtractor.invokePlayer4U
 import com.Phisher98.StreamPlayExtractor.invokePrimeWire
 import com.Phisher98.StreamPlayExtractor.invokeRidomovies
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
@@ -211,6 +212,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
         const val UiraApi= "https://xj4h5qkz7v2mlr9s.uira.live"
         const val KickassAPI="https://kaa.mx"
+        const val Player4uApi="https://player4u.xyz"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -1042,6 +1044,15 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.imdbId,
                     res.season,
                     res.episode,
+                    callback
+                )
+            },
+            {
+                invokePlayer4U(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    res.year,
                     callback
                 )
             },

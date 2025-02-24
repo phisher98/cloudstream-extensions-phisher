@@ -63,6 +63,7 @@ open class Dramacool : MainAPI() {
             url.substringBefore("-episode").replace("video-watch", "drama-detail")
         val detailsDocument = app.get(detailsUrl, referer = "$mainUrl/", timeout = 10L).document
         val title = detailsDocument.selectFirst("h1")?.text()?.trim() ?: ""
+
         val description= detailsDocument.selectFirst("div.info > p:nth-of-type(3)")?.text()?.trim() ?: ""
         val posterurl = detailsDocument.selectFirst("div.details img")?.attr("src")
         val episodes = detailsDocument.select("ul.list-episode-item-2 li").mapNotNull { el ->
@@ -74,7 +75,7 @@ open class Dramacool : MainAPI() {
         return newTvSeriesLoadResponse(title, detailsUrl, TvType.TvSeries, episodes) {
             posterUrl = posterurl
             this.plot=description
-            
+
         }
     }
 
