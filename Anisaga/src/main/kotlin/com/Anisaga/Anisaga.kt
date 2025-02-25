@@ -13,7 +13,7 @@ open class Anisaga : MainAPI() {
     override var name = "Anisaga"
     override val hasMainPage = true
     override var lang = "hi"
-    var directUrl = ""
+    private var directUrl = ""
     override val supportedTypes = setOf(
         TvType.Anime,
         TvType.AnimeMovie,

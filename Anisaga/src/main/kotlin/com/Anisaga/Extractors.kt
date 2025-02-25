@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import java.nio.charset.Charset
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -100,23 +101,28 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    fun decryptData(base64Key: String, encryptedData: String): String {
+    private fun decryptData(base64Key: String, encryptedData: String): String {
         // Method: AES (CBC)
         return try {
-            val keyHex = String(Base64.decode(base64Key, Base64.DEFAULT), Charset.forName("UTF-8"))
+            val keyHex = base64Decode(base64Key)
             val keyBytes = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            val bytesData = Base64.decode(encryptedData, Base64.DEFAULT)
 
+            val bytesData = base64DecodeArray(encryptedData)
+
+            // Extract the IV and ciphertext
             val iv = bytesData.copyOfRange(0, 16)
             val ciphertext = bytesData.copyOfRange(16, bytesData.size)
 
+            // Initialize the cipher for AES CBC decryption
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(iv))
 
+            // Perform decryption and return the result as a string
             String(cipher.doFinal(ciphertext), Charset.forName("UTF-8"))
         } catch (e: Exception) {
             e.printStackTrace()
             "Decryption failed"
         }
     }
+
 }
