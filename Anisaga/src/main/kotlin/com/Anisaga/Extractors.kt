@@ -14,8 +14,10 @@ class AnisagaStream : Chillx() {
     override val mainUrl = "https://plyrxcdn.site"
 }
 
-// Are you guys decreasing security?
-// Its now more easy than previous one
+// @Chillx, did you really think I spared (left) you?
+// No, I had exams, that's why! 😁 But now, I'm back for you!
+// Using modules? That's good, but nothing can stop me.
+
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
     override val mainUrl = "https://chillx.top"
