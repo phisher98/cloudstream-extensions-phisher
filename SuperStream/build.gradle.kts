@@ -3,6 +3,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 version = 7
+
 android {
     buildFeatures {
         buildConfig = true
@@ -22,7 +23,7 @@ android {
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
-     description = "SuperStream (Retrieve the cookie starting from ui=value from Febbox to properly utilize SuperStream."
+     description = "SuperStream (Retrieve the cookie using Login with Google to properly utilize SuperStream."
      authors = listOf("Phisher98")
 
     /**
