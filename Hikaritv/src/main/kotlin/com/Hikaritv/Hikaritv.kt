@@ -2,15 +2,14 @@ package com.hikaritv
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
-import com.lagradost.cloudstream3.utils.Coroutines.main
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jsoup.Jsoup
@@ -26,6 +25,10 @@ class Hikaritv : MainAPI() {
         TvType.Anime,
         TvType.AnimeMovie,
         TvType.OVA
+    )
+
+    override val supportedSyncNames = setOf(
+        SyncIdName.MyAnimeList,
     )
 
     override val mainPage = mainPageOf(
@@ -160,7 +163,14 @@ class Hikaritv : MainAPI() {
 
                 mutex.withLock {
                     if (subbedEpisodes.none { it.episode == episodeNumber && it.data == SubUrls.joinToString(",") }) {
-                        episodes.add(episodeNumber to Episode(LoadSeriesUrls("sub", SubUrls).toJson(), episodeName, 1, episodeNumber))
+                        episodes.add(
+                            episodeNumber to
+                                    newEpisode(LoadSeriesUrls("sub", SubUrls).toJson())
+                                    {
+                                        this.name=episodeName
+                                        this.season=1
+                                        this.episode=episodeNumber
+                                    })
                     }
                 }
 
@@ -175,7 +185,13 @@ class Hikaritv : MainAPI() {
 
                 mutex.withLock {
                     if (dubbedEpisodes.none { it.episode == episodeNumber && it.data == DubUrls.joinToString(",") }) {
-                        episodes.add(episodeNumber to Episode(LoadSeriesUrls("dub", DubUrls).toJson(), episodeName, 1, episodeNumber))
+                        episodes.add(episodeNumber to
+                                newEpisode(LoadSeriesUrls("dub", DubUrls).toJson())
+                                {
+                                    this.name=episodeName
+                                    this.season=1
+                                    this.episode=episodeNumber
+                                })
                     }
                 }
             }

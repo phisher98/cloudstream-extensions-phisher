@@ -3,7 +3,6 @@ package com.Animeowl
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -12,7 +11,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class Animeowl : MainAPI() {
-    override var mainUrl              = "https://animeowl.live"
+    override var mainUrl              = "https://animeowl.me"
     override var name                 = "Animeowl"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -118,7 +117,12 @@ class Animeowl : MainAPI() {
                         val href = info.select("a").attr("href")
                         val episode = info.attr("title")
                         val epno=episode.toIntOrNull()
-                        Episode(href, "Episode $episode",1,epno)
+                        newEpisode(href)
+                        {
+                            this.name="Episode $episode"
+                            this.season=1
+                            this.episode=epno
+                        }
             }
             val dubEpisodes=doc.select("#anime-cover-dub-content .episode-node").map { info->
                 val href = info.select("a").attr("href")
