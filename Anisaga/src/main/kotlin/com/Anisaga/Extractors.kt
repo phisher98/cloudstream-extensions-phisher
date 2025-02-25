@@ -35,15 +35,14 @@ open class Chillx : ExtractorApi() {
         try {
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            val encodedString = Regex("""(?:const|let|var)\s+\w+\s*=\s*'(.*?)'""").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val key="MyV7RUVHaHJnb1dvfV5Seg=="
-            val password = base64Decode(key)
-            val decryptedData = rc4Decrypt(password, hexToBytes(encodedString))
+            val keyBase64 = "ZmJlYTcyMGU5MDY0NDE3Mzg1MDc0MjMzOThiYTcwMjg5ZTQwNjJmZTU2NGFhNTU5OTY5OWZhNjA2NDVmNzdjZA=="
+            val decryptedData = decryptData(keyBase64, encodedString)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -95,29 +94,23 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    private fun hexToBytes(hex: String): ByteArray {
-        return ByteArray(hex.length / 2) { i -> hex.substring(2 * i, 2 * i + 2).toInt(16).toByte() }
-    }
+    fun decryptData(base64Key: String, encryptedData: String): String {
+        // Method: AES (CBC)
+        return try {
+            val keyHex = String(Base64.decode(base64Key, Base64.DEFAULT), Charset.forName("UTF-8"))
+            val keyBytes = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            val bytesData = Base64.decode(encryptedData, Base64.DEFAULT)
 
-    private fun rc4Decrypt(key: String, encryptedData: ByteArray): String {
-        val s = IntArray(256) { it }
-        var j = 0
-        for (i in 0 until 256) {
-            j = (j + s[i] + key[i % key.length].code) % 256
-            s[i] = s[j].also { s[j] = s[i] }
+            val iv = bytesData.copyOfRange(0, 16)
+            val ciphertext = bytesData.copyOfRange(16, bytesData.size)
+
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(iv))
+
+            String(cipher.doFinal(ciphertext), Charset.forName("UTF-8"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Decryption failed"
         }
-
-        var i = 0
-        j = 0
-        val decryptedData = ByteArray(encryptedData.size)
-        for (index in encryptedData.indices) {
-            i = (i + 1) % 256
-            j = (j + s[i]) % 256
-            s[i] = s[j].also { s[j] = s[i] }
-            val k = s[(s[i] + s[j]) % 256]
-            decryptedData[index] = (encryptedData[index].toInt() xor k).toByte()
-        }
-
-        return String(decryptedData)
     }
 }
