@@ -4969,16 +4969,23 @@ suspend fun invokeFlixAPIHQ(
     {
         try {
             val linkDataList = mutableListOf<Player4uLinkData>()
+            val fixTitle = title?.replace(Regex("[^A-Za-z0-9]+"), " ")?.replace(Regex("\\s+"), " ")?.trim()
             val queryUrl = if(season == null) {
-                val fixQuery = title?.replace(" ","+")
+                val fixQuery = fixTitle?.replace(" ","+")
                 "$Player4uApi/embed?key=$fixQuery+$year"
             }
             else {
-                val fixQuery = "$title S${String.format("%02d", season)}E${String.format("%02d", episode)}".replace(" ","+")
+                val fixQuery = "$fixTitle S${String.format("%02d", season)}E${String.format("%02d", episode)}".replace(" ","+")
                 "$Player4uApi/embed?key=$fixQuery"
             }
             val doc = app.get(queryUrl, timeout = 10).document
-            val linkList = doc.select(".playbtnx")
+            var linkList = doc.select(".playbtnx")
+            if(linkList.size == 0 && season == null)
+            {
+                val fixQuery = fixTitle?.replace(" ","+")
+                val doc = app.get("$Player4uApi/embed?key=$fixQuery", timeout = 10).document
+                linkList = doc.select(".playbtnx")
+            }
             for(link in linkList)
             {
                 linkDataList.add(Player4uLinkData(name = link.text(), url = link.attr("onclick")))
