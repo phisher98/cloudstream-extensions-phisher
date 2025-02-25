@@ -1,7 +1,9 @@
 package com.Animenosub
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class Animenosub : MainAPI() {
@@ -73,18 +75,16 @@ class Animenosub : MainAPI() {
         val type=document.selectFirst(".spe")?.text().toString()
         val tvtag=if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
-            val Eppage= document.selectFirst(".eplister li > a")?.attr("href") ?:""
-            val doc= app.get(Eppage).document
-            val episodes=doc.select("div.episodelist > ul > li").map { info->
+            val episodes=document.select("div.eplister > ul > li").map { info->
                         val href1 = info.select("a").attr("href")
-                        val episode = info.select("a span").text().substringAfter("-").substringBeforeLast("-")
+                        val episode = info.select("a div.epl-title").text().substringAfter("-").substringBeforeLast("-")
                         val posterr=info.selectFirst("a img")?.attr("src") ?:""
                         newEpisode(href1)
                         {
                             this.name=episode
                             this.posterUrl=posterr
                         }
-            }
+            }.reversed()
             if (poster.isEmpty())
             {
                 poster=document.selectFirst("meta[property=og:image]")?.attr("content")?.trim().toString()
@@ -105,27 +105,19 @@ class Animenosub : MainAPI() {
         }
     }
 
-    @Suppress("SuspiciousIndentation")
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select(".mobius option").forEach { server->
+        document.select(".mobius option").amap { server ->
             val base64 = server.attr("value")
-            val url=base64Decode(base64)
-            if (url.contains("vidmoly"))
+            val iframe = Jsoup.parse(base64Decode(base64)).select("iframe").attr("src")
+            if (iframe.startsWith("//"))
             {
-                val newurl=url.substringAfter("=\"").substringBefore("\"")
-                val link= "http:$newurl"
-                loadExtractor(link,referer = url,subtitleCallback, callback)
+                val fixiframe=fixUrl(iframe)
+                loadExtractor(fixiframe,referer = fixiframe,subtitleCallback, callback)
             }
             else {
-                val link = url.substringAfter("src=\"").substringBefore("\"")
-                if (!link.contains("http"))
-                {
-                    @Suppress("NAME_SHADOWING") val link = url.substringAfter("SRC=\"").substringBefore("\"")
-                    loadExtractor(link, referer = link, subtitleCallback, callback)
-                }
-                else
-                loadExtractor(link, referer = link, subtitleCallback, callback)
+                Log.d("Phisher",iframe)
+                loadExtractor(iframe, referer = iframe, subtitleCallback, callback)
             }
         }
         return true

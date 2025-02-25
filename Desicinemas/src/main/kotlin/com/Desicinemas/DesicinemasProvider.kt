@@ -13,16 +13,16 @@ open class DesicinemasProvider : MainAPI() {
     )
     override var lang = "hi"
 
-    override var mainUrl = "https://desicinemas.tv"
+    override var mainUrl = "https://desicinemas.to"
     override var name = "Desicinemas"
 
     override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        "https://desicinemas.tv/" to "Home",
-        "https://desicinemas.tv/category/punjabi/" to "Punjabi",
-        "https://desicinemas.tv/category/bollywood/" to "Bollywood",
-        "https://desicinemas.tv/category/hindi-dubbed/" to "Hindi Dubbed"
+        "https://desicinemas.to/" to "Home",
+        "https://desicinemas.to/category/punjabi/" to "Punjabi",
+        "https://desicinemas.to/category/bollywood/" to "Bollywood",
+        "https://desicinemas.to/category/hindi-dubbed/" to "Hindi Dubbed"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
