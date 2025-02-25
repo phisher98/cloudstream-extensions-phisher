@@ -8,6 +8,10 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.base64Decode
+import java.nio.charset.Charset
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
