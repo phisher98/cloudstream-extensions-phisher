@@ -2415,16 +2415,24 @@ suspend  fun getPlayer4uUrl(
         }
         else return
     }
-
-    val m3u8 =
-        Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
+    val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
+    val qualityMap = mapOf(
+        "2160" to Qualities.P2160.value,
+        "1080" to Qualities.P1080.value,
+        "720" to Qualities.P720.value,
+        "480" to Qualities.P480.value,
+        "360" to Qualities.P360.value,
+        "240" to Qualities.P240.value
+    )
+    val matchedQuality = qualityMap.keys.find { Regex(it, RegexOption.IGNORE_CASE).containsMatchIn(name) }
+    val selectedQuality = matchedQuality?.let { qualityMap[it] } ?: Qualities.Unknown.value
     callback.invoke(
         ExtractorLink(
         name,
         name,
         m3u8.toString(),
         "",
-        Qualities.P1080.value,
+        selectedQuality,
         ExtractorLinkType.M3U8
     ))
 }

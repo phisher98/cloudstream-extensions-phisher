@@ -4965,46 +4965,54 @@ suspend fun invokeFlixAPIHQ(
         episode: Int? = null,
         year: Int? = null,
         callback: (ExtractorLink) -> Unit
-    )
-    {
+    ) {
         try {
-            val linkDataList = mutableListOf<Player4uLinkData>()
-            val fixTitle = title?.replace(Regex("[^A-Za-z0-9]+"), " ")?.replace(Regex("\\s+"), " ")?.trim()
-            val queryUrl = if(season == null) {
-                val fixQuery = fixTitle?.replace(" ","+")
-                "$Player4uApi/embed?key=$fixQuery+$year"
-            }
-            else {
-                val fixQuery = "$fixTitle S${String.format("%02d", season)}E${String.format("%02d", episode)}".replace(" ","+")
-                "$Player4uApi/embed?key=$fixQuery"
-            }
-            val doc = app.get(queryUrl, timeout = 10).document
-            var linkList = doc.select(".playbtnx")
-            if(linkList.size == 0 && season == null)
-            {
-                val fixQuery = fixTitle?.replace(" ","+")
-                val doc = app.get("$Player4uApi/embed?key=$fixQuery", timeout = 10).document
-                linkList = doc.select(".playbtnx")
-            }
-            for(link in linkList)
-            {
-                linkDataList.add(Player4uLinkData(name = link.text(), url = link.attr("onclick")))
-            }
-            val distinctList = linkDataList.distinctBy {it.name}
-            distinctList.forEach { link ->
-                try {
-                    val name = "P4u [${link.name.split("|").reversed().joinToString("-").trim()}]"
-                    val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
-                    val vDoc = app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi).document
-                    val iframeSource = vDoc.select("iframe").attr("src")
-                    val emebedUrl = "https://uqloads.xyz/e/$iframeSource";
-                    getPlayer4uUrl(name,emebedUrl,Player4uApi,callback)
-                } catch (e: Exception) { }
-            }
-        } catch (e: Exception) {}
-    }
+            val fixTitle =
+                title?.replace(Regex("[^A-Za-z0-9]+"), " ")?.replace("\\s+".toRegex(), " ")?.trim()
+            val fixQuery = season?.let {
+                "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}"
+            } ?: "$fixTitle+$year"
 
-}
+            val linkDataList = mutableSetOf<Player4uLinkData>()
+            val urlsToTry = listOfNotNull(
+                "$Player4uApi/embed?key=${fixQuery.replace(" ", "+")}",
+                if (season == null) "$Player4uApi/embed?key=${
+                    fixTitle?.replace(
+                        " ",
+                        "+"
+                    )?.replace("-"," ")
+                }" else null
+            )
+
+            urlsToTry.forEach { queryUrl ->
+                val linkList = app.get(queryUrl, timeout = 10).document.select(".playbtnx")
+                linkList.mapTo(linkDataList) {
+                    Player4uLinkData(name = it.text(), url = it.attr("onclick"))
+                }
+                if (linkDataList.isNotEmpty()) return@forEach
+            }
+
+            linkDataList.distinctBy { it.name }.forEach { link ->
+                try {
+                    val nameFormatted =
+                        "$name P4U [${link.name.split("|").reversed().joinToString("-").trim()}]"
+                    val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
+                        ?: return@forEach
+                    val iframeSource =
+                        app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
+                            .document.select("iframe").attr("src")
+
+                    getPlayer4uUrl(
+                        nameFormatted,
+                        "https://uqloads.xyz/e/$iframeSource",
+                        Player4uApi,
+                        callback
+                    )
+                } catch (_: Exception) {
+                }
+            }
+        } catch (_: Exception) { } }
+    }
 
 
 
