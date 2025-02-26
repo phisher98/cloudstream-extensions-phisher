@@ -1270,14 +1270,13 @@ open class HubCloud : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val realUrl = replaceHubclouddomain(url)
-        Log.d("Phisher real url", realUrl)
-
         val href = if (realUrl.contains("hubcloud.php")) {
             realUrl
         } else {
-            app.get(realUrl).document.selectFirst(".vd.d-none a[href]")?.attr("href").orEmpty()
+            val regex = "var url = '([^']*)'".toRegex()
+            val regexdata=app.get(realUrl).document.selectFirst("script:containsData(url)")?.toString() ?: ""
+            regex.find(regexdata)?.groupValues?.get(1).orEmpty()
         }
-
         if (href.isEmpty()) {
             Log.d("Error", "Not Found")
             return

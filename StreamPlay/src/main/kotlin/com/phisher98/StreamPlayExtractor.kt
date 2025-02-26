@@ -2080,9 +2080,9 @@ object StreamPlayExtractor : StreamPlay() {
         api: String
     ) {
         val cfInterceptor = CloudflareKiller()
-        val query = if (season == null) "?s=$imdbId" else "?s=$title season $season"
+        val query = if (season == null) "search/$imdbId" else "search/$imdbId season $season"
         val url = "$api/$query"
-
+        Log.d("Phisher",url)
         try {
             val document = app.get(url, interceptor = cfInterceptor).document
             val searchResults = document.select("article h3 a")
@@ -2093,7 +2093,6 @@ object StreamPlayExtractor : StreamPlay() {
                 val href = element.attr("href")
 
                 val doc = app.get(href).document
-
                 if (season == null) {
                     processMovieLinks(doc, api, subtitleCallback, callback)
                 } else {
@@ -2140,7 +2139,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val seasonPattern = "(?i)(Season $season)"
-        val episodePattern = "(?i)(V-Cloud|Single|Episode|G-Direct)"
+        val episodePattern = "(?i)(V-Cloud|Single|Episode|G-Direct|Download Now)"
 
         doc.select("h4:matches($seasonPattern), h3:matches($seasonPattern)").forEach { h4 ->
             val episodeLinks = h4.nextElementSibling()?.select("a:matches($episodePattern)") ?: return@forEach
