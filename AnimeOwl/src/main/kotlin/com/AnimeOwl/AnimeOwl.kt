@@ -20,9 +20,12 @@ class Animeowl : MainAPI() {
 
     override val mainPage = mainPageOf(
         "trending" to "Trending",
-        "genre/action" to "Action",
-        "genre/adventure" to "Adventure",
-        "type/movie" to "Movies"
+        "recent-episode/sub" to "Recently Updated SUB",
+        "recent-episode/dub" to "Recently Updated DUB",
+        "recent-episode/chinese" to "Recently Updated Chinese",
+        "type/movie" to "Movies",
+        "type/ova" to "OVA",
+        "type/special" to "Special",
     )
 
     override val supportedSyncNames = setOf(
@@ -50,8 +53,10 @@ class Animeowl : MainAPI() {
         val posterUrl = fixUrlNull(this.select("a.post-thumb img").attr("data-src"))
         val subCount =this.selectFirst("div.d-flex div.bg-pink span")?.text()?.toIntOrNull()
         val dubCount =this.selectFirst("div.d-flex div.bg-purple span")?.text()?.toIntOrNull()
+        val twok=this.select("img.badge-2k")
         return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
+            if (twok.isNotEmpty()) this.quality = SearchQuality.FourK
             addDubStatus(dubCount != null, subCount != null, dubCount, subCount)
         }
     }

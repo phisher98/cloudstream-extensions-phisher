@@ -49,17 +49,17 @@ class SuiSports : ExtractorApi() {
         val hash=url.substringAfterLast("#")
         val encoded= app.get("$mainUrl/api/v1/video?id=$hash",headers=headers).text.trim()
         val decryptedText = AesHelper.decryptAES(encoded, "kiemtienmua911ca", "0123456789abcdef")
-            val m3u8=Regex("\"source\":\"(.*?)\"").find(decryptedText)?.groupValues?.get(1)?.replace("\\/","/") ?:""
-                return listOf(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        m3u8,
-                        url,
-                        Qualities.Unknown.value,
-                        isM3u8 = true
-                    )
-                )
+        val m3u8=Regex("\"source\":\"(.*?)\"").find(decryptedText)?.groupValues?.get(1)?.replace("\\/","/") ?:""
+        return listOf(
+             ExtractorLink(
+                 this.name,
+                 this.name,
+                 m3u8,
+                 url,
+                 Qualities.Unknown.value,
+                 isM3u8 = true
+            )
+        )
     }
 }
 
