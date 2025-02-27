@@ -62,10 +62,14 @@ class GDMirrorbot : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        Log.d("Phisher","I'm here")
+
         val host = getBaseUrl(app.get(url).url)
         val embed = url.substringAfterLast("/")
         val data = mapOf("sid" to embed)
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        Log.d("Phisher",jsonString)
+
         val jsonElement: JsonElement = JsonParser.parseString(jsonString)
         if (!jsonElement.isJsonObject) {
             Log.e("Error:", "Unexpected JSON format: Response is not a JSON object")

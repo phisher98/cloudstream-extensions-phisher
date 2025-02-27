@@ -12,7 +12,7 @@ import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.life"
+    override var mainUrl = "https://multimovies.world"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -243,7 +243,6 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
                 val link = source.substringAfter("\"").substringBefore("\"")
-                Log.d("Phisher",link)
                 when {
                     !link.contains("youtube") -> {
                         if(link.contains("gdmirrorbot.nl"))
