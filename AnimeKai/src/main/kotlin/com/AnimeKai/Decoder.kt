@@ -2,58 +2,120 @@ package com.AnimeKai
 
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64Encode
-import com.lagradost.cloudstream3.utils.StringUtils.decodeUri
-import com.lagradost.cloudstream3.utils.StringUtils.encodeUri
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 //Credit: Special Thanks to Toasty for the Code
+@Suppress("NAME_SHADOWING")
 class AnimekaiDecoder {
-    fun generateToken(input: String): String {
-        val encodedInput = input.encodeUri().replace("+", "%20")
-        var temp = base64UrlEncode(transform("gEUzYavPrGpj", reverseIt(encodedInput)))
-        temp = substitute(temp, "U8nv0tEFGTb", "bnGvE80UtTF")
-        temp = substitute(temp, "9ysoRqBZHV", "oqsZyVHBR9")
-        temp = reverseIt(base64UrlEncode(transform("CSk63F7PwBHJKa", temp)))
-        temp = substitute(temp, "cKj9BMN15LsdH", "NL5cdKs1jB9MH")
-        temp = base64UrlEncode(reverseIt(base64UrlEncode(transform("T2zEp1WHL9CsSk7", temp))))
-        return temp
+    fun generateToken(n: String): String {
+        var n = encodeURIComponent(n)
+        n = base64UrlEncode(
+            substitute(
+                base64UrlEncode(
+                    transform("sXmH96C4vhRrgi8",
+                        reverseIt(
+                            reverseIt(
+                                base64UrlEncode(
+                                    transform("kOCJnByYmfI",
+                                        substitute(
+                                            substitute(
+                                                reverseIt(base64UrlEncode(transform("0DU8ksIVlFcia2", n))),
+                                                "1wctXeHqb2",
+                                                "1tecHq2Xbw"
+                                            ),
+                                            "48KbrZx1ml",
+                                            "Km8Zb4lxr1"
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                "hTn79AMjduR5",
+                "djn5uT7AMR9h"
+            )
+        )
+        return n
     }
 
-
     fun decodeIframeData(n: String): String {
-        val temp1 = base64UrlDecode(reverseIt(base64UrlDecode(n)))
-        val temp2 = transform("T2zEp1WHL9CsSk7", temp1)
-        val temp3 = reverseIt(substitute(temp2, "NL5cdKs1jB9MH", "cKj9BMN15LsdH"))
-        val temp4 = transform("CSk63F7PwBHJKa", base64UrlDecode(temp3))
-        val temp5 = substitute(temp4, "oqsZyVHBR9", "9ysoRqBZHV")
-        val temp6 = base64UrlDecode(substitute(temp5, "bnGvE80UtTF", "U8nv0tEFGTb"))
-        return reverseIt(transform("gEUzYavPrGpj", temp6)).decodeUri()
+        return decodeURIComponent(
+            transform(
+                "0DU8ksIVlFcia2",
+                base64UrlDecode(
+                    reverseIt(
+                        substitute(
+                            substitute(
+                                transform(
+                                    "kOCJnByYmfI",
+                                    base64UrlDecode(
+                                        reverseIt(
+                                            reverseIt(
+                                                transform(
+                                                    "sXmH96C4vhRrgi8",
+                                                    base64UrlDecode(
+                                                        substitute(
+                                                            base64UrlDecode(n),
+                                                            "djn5uT7AMR9h",
+                                                            "hTn79AMjduR5"
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                "Km8Zb4lxr1", "48KbrZx1ml"
+                            ),
+                            "1tecHq2Xbw", "1wctXeHqb2"
+                        )
+                    )
+                )
+            )
+        )
     }
 
     fun decode(n: String): String {
-        var temp1 = base64UrlDecode(base64UrlDecode(n))
-        temp1 = reverseIt(transform("E438hS1W9oRmB", temp1))
-        temp1 = reverseIt(substitute(temp1, "D5qdzkGANMQZEi", "Q5diEGMADkZzNq"))
-        temp1 = base64UrlDecode(
-            substitute(
-                transform("NZcfoMD7JpIrgQE", base64UrlDecode(temp1)),
-                "kTr0pjKzBqZV",
-                "kZpjzTV0KqBr"
+        return decodeUri(
+            reverseIt(
+                substitute(
+                    transform(
+                        "5ygxI8hjLiuDQ0",
+                        base64UrlDecode(
+                            transform(
+                                "z9cWnXuoDtx",
+                                base64UrlDecode(
+                                    substitute(
+                                        reverseIt(
+                                            substitute(
+                                                transform(
+                                                    "EZnfG1IL6DF",
+                                                    base64UrlDecode(
+                                                        reverseIt(base64UrlDecode(n))
+                                                    )
+                                                ),
+                                                "M2DCEbQmWOe", "bEDCeOQ2mWM"
+                                            )
+                                        ),
+                                        "Lw7nfcTNz3FbWy", "TFf37zywcNWnLb"
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    "HK0TOgYzU1C", "T1CHYU0OKgz"
+                )
             )
         )
-        temp1 = reverseIt(
-            substitute(
-                transform("Gay7bxj5B81TJFM", temp1),
-                "zcUxoJTi3fgyS",
-                "oSgyJUfizcTx3"
-            )
-        )
-        return temp1.decodeUri()
     }
+
     private fun base64UrlEncode(str: String): String {
         val base64Encoded = base64Encode(str.toByteArray(Charsets.ISO_8859_1))
         return base64Encoded.replace("+", "-").replace("/", "_").replace(Regex("=+$"), "")
     }
-    fun base64UrlDecode(n: String): String {
+    private fun base64UrlDecode(n: String): String {
         val padded = n.padEnd(n.length + ((4 - (n.length % 4)) % 4), '=')
             .replace('-', '+')
             .replace('_', '/')
@@ -94,5 +156,17 @@ class AnimekaiDecoder {
             result.append(map[char] ?: char)
         }
         return result.toString()
+    }
+
+    private fun encodeURIComponent(value: String): String {
+        return URLEncoder.encode(value, "UTF-8")
+    }
+
+    private fun decodeURIComponent(value: String): String {
+        return URLDecoder.decode(value, Charsets.UTF_8.name())
+    }
+
+    private fun decodeUri(value: String): String {
+        return URLDecoder.decode(value, Charsets.UTF_8.name())
     }
 }
