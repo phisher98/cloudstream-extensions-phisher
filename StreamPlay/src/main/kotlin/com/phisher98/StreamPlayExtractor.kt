@@ -4989,7 +4989,7 @@ suspend fun invokeFlixAPIHQ(
 
             nextPageExists = document.select("div a").any { it.text().contains("Next", true) }
             page++
-        } while (nextPageExists)
+        } while (nextPageExists && page <= 10)
 
         allLinks.forEach { link ->
             try {
