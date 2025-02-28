@@ -930,7 +930,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         )
     },
 {
-    invokeMoviesdrive(
+    if (!res.isAnime) invokeMoviesdrive(
         res.title,
         res.season,
         res.episode,

@@ -3882,7 +3882,7 @@ object StreamPlayExtractor : StreamPlay() {
         if (hrefPattern.isEmpty()) return
         val document = app.get(hrefPattern, interceptor = cfInterceptor).document
         if (season == null) {
-            document.select("h5 > a").forEach { element ->
+            document.select("h5 > a").amap { element ->
                 extractMdrive(element.attr("href")).forEach { serverUrl ->
                     loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
                 }
