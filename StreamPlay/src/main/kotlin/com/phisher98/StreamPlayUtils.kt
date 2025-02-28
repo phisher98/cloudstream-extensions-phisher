@@ -2403,7 +2403,7 @@ fun getLanguage(language: String?): String? {
 
 suspend fun getPlayer4uUrl(
     name: String,
-    quality: String,
+    selectedQuality: Int,
     url: String,
     referer: String?,
     callback: (ExtractorLink) -> Unit
@@ -2420,27 +2420,6 @@ suspend fun getPlayer4uUrl(
 
     val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
 
-    val qualityFromName = Regex("""(\d{3,4}p|4K|CAM|HQ|HD|SD|WEBRip|DVDRip|BluRay|HDRip|TVRip)""", RegexOption.IGNORE_CASE)
-            .find(name)?.value?.uppercase() ?: "UNKNOWN"
-
-    val selectedQuality = when (qualityFromName) {
-            "4K", "2160P" -> Qualities.P2160.value
-            "FHD", "1080P" -> Qualities.P1080.value
-            "HQ", "HD", "720P","DVDRIP","TVRIP" -> Qualities.P720.value
-            "480P" -> Qualities.P480.value
-            "360P","CAM" -> Qualities.P360.value
-            "DS" -> Qualities.P144.value
-            "SD" -> Qualities.P480.value
-            "WEBRIP" -> Qualities.P720.value
-            "BLURAY", "BRRIP" -> Qualities.P1080.value
-            "HDRIP" -> Qualities.P1080.value
-            "TS" -> Qualities.P480.value
-            "R5" -> Qualities.P480.value
-            "SCR" -> Qualities.P480.value
-            "TC" -> Qualities.P480.value
-            else -> Qualities.Unknown.value
-    }
-    if (selectedQuality >= Qualities.P1080.value) {
         callback.invoke(
             ExtractorLink(
                 name,
@@ -2451,6 +2430,27 @@ suspend fun getPlayer4uUrl(
                 ExtractorLinkType.M3U8
             )
         )
+
+}
+
+fun getPlayer4UQuality (quality :String) : Int
+{
+    return when (quality) {
+        "4K", "2160P" -> Qualities.P2160.value
+        "FHD", "1080P" -> Qualities.P1080.value
+        "HQ", "HD", "720P","DVDRIP","TVRIP","HDTC","PREDVD" -> Qualities.P720.value
+        "480P" -> Qualities.P480.value
+        "360P","CAM" -> Qualities.P360.value
+        "DS" -> Qualities.P144.value
+        "SD" -> Qualities.P480.value
+        "WEBRIP" -> Qualities.P720.value
+        "BLURAY", "BRRIP" -> Qualities.P1080.value
+        "HDRIP" -> Qualities.P1080.value
+        "TS" -> Qualities.P480.value
+        "R5" -> Qualities.P480.value
+        "SCR" -> Qualities.P480.value
+        "TC" -> Qualities.P480.value
+        else -> Qualities.Unknown.value
     }
 }
 
