@@ -24,6 +24,7 @@ import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeNepu
+import com.Phisher98.StreamPlayExtractor.invokePlayer4U
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeSuperstream
@@ -277,10 +278,15 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     callback
                 )
             },
-
-
-
-
+            {
+                invokePlayer4U(
+                    res.title,
+                    res.season,
+                    res.episode,
+                    res.year,
+                    callback
+                )
+            },
             //Subtitles Invokes
             {
                 invokeSubtitleAPI(

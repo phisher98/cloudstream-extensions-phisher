@@ -2393,49 +2393,36 @@ fun getLanguage(language: String?): String? {
     return languageMap.entries.find { it.value.first == normalizedLang || it.value.second == normalizedLang }?.key
 }
 
-suspend  fun getPlayer4uUrl(
+suspend fun getPlayer4uUrl(
     name: String,
+    quality: String,
     url: String,
     referer: String?,
     callback: (ExtractorLink) -> Unit
 ) {
     val response = app.get(url, referer = referer)
-    var script = if (!getPacked(response.text).isNullOrEmpty()) {
-        getAndUnpack(response.text)
-    } else {
-        response.document.selectFirst("script:containsData(sources:)")?.data()
+    var script = getAndUnpack(response.text).takeIf { it.isNotEmpty() }
+        ?: response.document.selectFirst("script:containsData(sources:)")?.data()
+    if (script == null) {
+        val iframeUrl = Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1)
+            ?: return
+        val iframeResponse = app.get(iframeUrl, referer = null, headers = mapOf("Accept-Language" to "en-US,en;q=0.5"))
+        script = getAndUnpack(iframeResponse.text).takeIf { it.isNotEmpty() } ?: return
     }
+    val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
 
-    //In my case packed function is not directly available in the first response, instead it is in iframe response
-    if(script == null){
-        val iframeUrl = Regex("""<iframe src="(.*?)"""").find(response.text,0)?.groupValues?.getOrNull(1)
-        if(iframeUrl != null){
-            val iframeResponse = app.get(iframeUrl,referer=null, headers = mapOf("Accept-Language" to "en-US,en;q=0.5"))
-            script = if (!getPacked(iframeResponse.text).isNullOrEmpty()) { getAndUnpack(iframeResponse.text) } else return
-        }
-        else return
-    }
-    val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
-    val qualityMap = mapOf(
-        "2160" to Qualities.P2160.value,
-        "1080" to Qualities.P1080.value,
-        "720" to Qualities.P720.value,
-        "480" to Qualities.P480.value,
-        "360" to Qualities.P360.value,
-        "240" to Qualities.P240.value
-    )
-    val matchedQuality = qualityMap.keys.find { Regex(it, RegexOption.IGNORE_CASE).containsMatchIn(name) }
-    val selectedQuality = matchedQuality?.let { qualityMap[it] } ?: Qualities.Unknown.value
     callback.invoke(
         ExtractorLink(
-        name,
-        name,
-        m3u8.toString(),
-        "",
-        selectedQuality,
-        ExtractorLinkType.M3U8
-    ))
+            name,
+            name,
+            m3u8,
+            "",
+            getQualityFromName(quality),
+            ExtractorLinkType.M3U8
+        )
+    )
 }
+
 
 
 

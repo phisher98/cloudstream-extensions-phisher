@@ -54,7 +54,6 @@ import com.Phisher98.StreamPlayExtractor.invokeTom
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeTvMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
-import com.Phisher98.StreamPlayExtractor.invokeUira
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeVidSrcViP
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
@@ -210,7 +209,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val HindMoviezApi= "https://hindmoviez.ink"
         const val thrirdAPI=BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
-        const val UiraApi= "https://xj4h5qkz7v2mlr9s.uira.live"
         const val KickassAPI="https://kaa.mx"
         const val Player4uApi="https://player4u.xyz"
         fun getType(t: String?): TvType {
@@ -1040,14 +1038,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 )
             },
             {
-                invokeUira(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    callback
-                )
-            },
-            {
                 invokePlayer4U(
                     res.title,
                     res.season,
@@ -1056,10 +1046,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
-
-
-
-
             //Subtitles Invokes
             {
                 invokeSubtitleAPI(

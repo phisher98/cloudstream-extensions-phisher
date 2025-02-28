@@ -4929,20 +4929,21 @@ suspend fun invokeFlixAPIHQ(
         }
     }
 
+    /*
     suspend fun invokeUira(
         imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val sources = listOf("embedsu","vidsrcsu","flixhq","vidapi","soapertv","4k","flicky","vidsrcvip","viet","catflix")
+        val sources = listOf("vidsrcsu","vidapi","soapertv","4k","vidsrcvip","viet")
         for(source in sources)
         {
             try {
                 val url = if(season == null) {"$UiraApi/$source/$imdbId"} else {"$UiraApi/$source/$imdbId?s=$season&e=$episode"}
                 val response = app.get(url, timeout = 10).parsedSafe<UiraResponse>()
                 if (response != null) {
-                    val sourceTxt = response?.sourceId?.split("_")?.joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
+                    val sourceTxt = response.sourceId?.split("_")?.joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
                     callback.invoke(
                         ExtractorLink(
                             "Uira [${sourceTxt}]",
@@ -4957,7 +4958,8 @@ suspend fun invokeFlixAPIHQ(
             } catch (e: Exception) {}
         }
     }
-
+    //We should try to crack source and most of its sources are already available in StreamPlay like catflix,FlixHQ Etc also API url is dynamic keeps on changing
+     */
     suspend fun invokePlayer4U(
         title: String? = null,
         season: Int? = null,
@@ -4965,53 +4967,40 @@ suspend fun invokeFlixAPIHQ(
         year: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        try {
-            val fixTitle =
-                title?.replace(Regex("[^A-Za-z0-9]+"), " ")?.replace("\\s+".toRegex(), " ")?.trim()
-            val fixQuery = season?.let {
-                "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}"
-            } ?: "$fixTitle+$year"
+        val fixTitle = title?.replace(":", "")?.replace("-", "")?.createSlug().orEmpty()
+        val fixQuery = season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" } ?: "$fixTitle-$year"
+        val url = "$Player4uApi/embed?key=$fixQuery"
 
-            val linkDataList = mutableSetOf<Player4uLinkData>()
-            val urlsToTry = listOfNotNull(
-                "$Player4uApi/embed?key=${fixQuery.replace(" ", "+")}",
-                if (season == null) "$Player4uApi/embed?key=${
-                    fixTitle?.replace(
-                        " ",
-                        "+"
-                    )?.replace("-"," ")
-                }" else null
-            )
+        val linkDataList = app.get(url, timeout = 10)
+            .document.select(".playbtnx")
+            .map { Player4uLinkData(name = it.text(), url = it.attr("onclick")) }
+            .distinctBy { it.url }
 
-            urlsToTry.forEach { queryUrl ->
-                val linkList = app.get(queryUrl, timeout = 10).document.select(".playbtnx")
-                linkList.mapTo(linkDataList) {
-                    Player4uLinkData(name = it.text(), url = it.attr("onclick"))
-                }
-                if (linkDataList.isNotEmpty()) return@forEach
-            }
+        linkDataList.amap { link ->
+            try {
+                val splitName = link.name.split("|").reversed()
+                val firstPart = splitName.getOrNull(0)?.replace("+", " ")?.replace(title.orEmpty(), "").orEmpty()
+                val thirdPart = splitName.getOrNull(2).orEmpty()
 
-            linkDataList.distinctBy { it.name }.forEach { link ->
-                try {
-                    val nameFormatted =
-                        "$name P4U [${link.name.split("|").reversed().joinToString("-").trim()}]"
-                    val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
-                        ?: return@forEach
-                    val iframeSource =
-                        app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
-                            .document.select("iframe").attr("src")
+                val nameFormatted = "$name P4U [$firstPart]"
 
-                    getPlayer4uUrl(
-                        nameFormatted,
-                        "https://uqloads.xyz/e/$iframeSource",
-                        Player4uApi,
-                        callback
-                    )
-                } catch (_: Exception) {
-                }
-            }
-        } catch (_: Exception) { } }
+                val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
+                    ?: return@amap
+
+                val iframeSource = app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
+                    .document.select("iframe").attr("src")
+
+                getPlayer4uUrl(
+                    nameFormatted,
+                    thirdPart,
+                    "https://uqloads.xyz/e/$iframeSource",
+                    Player4uApi,
+                    callback
+                )
+            } catch (_: Exception) { }
+        }
     }
+}
 
 
 
