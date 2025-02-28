@@ -1250,6 +1250,14 @@ fun String?.createSlug(): String? {
         ?.lowercase()
 }
 
+fun String?.createPlayerSlug(): String? {
+    return this?.trim()
+        ?.lowercase()
+        ?.replace("[^a-z0-9\\s-]".toRegex(), "") // Remove special characters except spaces & hyphens
+        ?.replace("\\s+".toRegex(), "-") // Replace spaces with hyphens
+}
+
+
 fun bytesToGigaBytes(number: Double): Double = number / 1024000000
 
 fun getKisskhTitle(str: String?): String? {
@@ -2403,25 +2411,48 @@ suspend fun getPlayer4uUrl(
     val response = app.get(url, referer = referer)
     var script = getAndUnpack(response.text).takeIf { it.isNotEmpty() }
         ?: response.document.selectFirst("script:containsData(sources:)")?.data()
+
     if (script == null) {
-        val iframeUrl = Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1)
-            ?: return
+        val iframeUrl = Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1) ?: return
         val iframeResponse = app.get(iframeUrl, referer = null, headers = mapOf("Accept-Language" to "en-US,en;q=0.5"))
         script = getAndUnpack(iframeResponse.text).takeIf { it.isNotEmpty() } ?: return
     }
+
     val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
 
-    callback.invoke(
-        ExtractorLink(
-            name,
-            name,
-            m3u8,
-            "",
-            getQualityFromName(quality),
-            ExtractorLinkType.M3U8
+    val qualityFromName = Regex("""(\d{3,4}p|4K|CAM|HQ|HD|SD|WEBRip|DVDRip|BluRay|HDRip|TVRip)""", RegexOption.IGNORE_CASE)
+            .find(name)?.value?.uppercase() ?: "UNKNOWN"
+
+    val selectedQuality = when (qualityFromName) {
+            "4K", "2160P" -> Qualities.P2160.value
+            "FHD", "1080P" -> Qualities.P1080.value
+            "HQ", "HD", "720P","DVDRIP","TVRIP" -> Qualities.P720.value
+            "480P" -> Qualities.P480.value
+            "360P","CAM" -> Qualities.P360.value
+            "DS" -> Qualities.P144.value
+            "SD" -> Qualities.P480.value
+            "WEBRIP" -> Qualities.P720.value
+            "BLURAY", "BRRIP" -> Qualities.P1080.value
+            "HDRIP" -> Qualities.P1080.value
+            "TS" -> Qualities.P480.value
+            "R5" -> Qualities.P480.value
+            "SCR" -> Qualities.P480.value
+            "TC" -> Qualities.P480.value
+            else -> Qualities.Unknown.value
+    }
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                m3u8,
+                "",
+                selectedQuality,
+                ExtractorLinkType.M3U8
+            )
         )
-    )
 }
+
+
 
 
 

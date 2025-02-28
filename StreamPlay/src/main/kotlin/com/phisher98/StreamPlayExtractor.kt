@@ -35,6 +35,9 @@ import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.time.Instant
 import java.util.Locale
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 val session = Session(Requests().baseClient)
 
@@ -4967,25 +4970,35 @@ suspend fun invokeFlixAPIHQ(
         year: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title?.replace(":", "")?.replace("-", "")?.createSlug().orEmpty()
-        val fixQuery = season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" } ?: "$fixTitle-$year"
-        val url = "$Player4uApi/embed?key=$fixQuery"
+        val fixTitle = title?.replace(":", "")?.createPlayerSlug().orEmpty()
+        val fixQuery = season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" } ?: fixTitle
+        val allLinks = HashSet<Player4uLinkData>()
 
-        val linkDataList = app.get(url, timeout = 10)
-            .document.select(".playbtnx")
-            .map { Player4uLinkData(name = it.text(), url = it.attr("onclick")) }
-            .distinctBy { it.url }
+        var page = 0
+        var nextPageExists: Boolean
 
-        linkDataList.amap { link ->
+        do {
+            val url = "$Player4uApi/embed?key=$fixQuery&page=$page"
+            val document = app.get(url, timeout = 10).document
+
+            allLinks.addAll(
+                document.select(".playbtnx").map {
+                    Player4uLinkData(name = it.text(), url = it.attr("onclick"))
+                }
+            )
+
+            nextPageExists = document.select("div a").any { it.text().contains("Next", true) }
+            page++
+        } while (nextPageExists && page <= 10)
+
+        allLinks.forEach { link ->
             try {
                 val splitName = link.name.split("|").reversed()
                 val firstPart = splitName.getOrNull(0)?.replace("+", " ")?.replace(title.orEmpty(), "").orEmpty()
                 val thirdPart = splitName.getOrNull(2).orEmpty()
-
                 val nameFormatted = "$name P4U [$firstPart]"
 
-                val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
-                    ?: return@amap
+                val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value ?: return@forEach
 
                 val iframeSource = app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
                     .document.select("iframe").attr("src")
@@ -5000,6 +5013,7 @@ suspend fun invokeFlixAPIHQ(
             } catch (_: Exception) { }
         }
     }
+
 }
 
 
