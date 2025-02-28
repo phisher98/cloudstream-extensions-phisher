@@ -2440,6 +2440,7 @@ suspend fun getPlayer4uUrl(
             "TC" -> Qualities.P480.value
             else -> Qualities.Unknown.value
     }
+    if (selectedQuality >= Qualities.P1080.value) {
         callback.invoke(
             ExtractorLink(
                 name,
@@ -2450,6 +2451,7 @@ suspend fun getPlayer4uUrl(
                 ExtractorLinkType.M3U8
             )
         )
+    }
 }
 
 
