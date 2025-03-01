@@ -30,10 +30,10 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
-import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
@@ -75,7 +75,7 @@ class StreamPlayAnime : MainAPI() {
         return res
     }
 
-    private fun AniListApi.Media.toSearchResponse(): SearchResponse {
+    private fun Media.toSearchResponse(): SearchResponse {
         val title = this.title.english ?: this.title.romaji ?: ""
         val url = "$mainUrl/anime/${this.id}"
         val posterUrl = this.coverImage.large
@@ -167,7 +167,11 @@ class StreamPlayAnime : MainAPI() {
                         isAnime = true
                     )
                         .toStringData()
-                Episode(linkData, season = 1, episode = i)
+                newEpisode(linkData)
+                {
+                    this.season=1
+                    this.episode=1
+                }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
             addAniListId(id.toInt())

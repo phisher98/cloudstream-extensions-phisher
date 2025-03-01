@@ -9,14 +9,12 @@ import com.Phisher98.StreamPlayExtractor.invokeAsianHD
 import com.Phisher98.StreamPlayExtractor.invokeBollyflix
 import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.Phisher98.StreamPlayExtractor.invokeDahmerMovies
-import com.Phisher98.StreamPlayExtractor.invokeDoomovies
 import com.Phisher98.StreamPlayExtractor.invokeDotmovies
 import com.Phisher98.StreamPlayExtractor.invokeDramaday
 import com.Phisher98.StreamPlayExtractor.invokeDreamfilm
 import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.Phisher98.StreamPlayExtractor.invokeEmovies
 import com.Phisher98.StreamPlayExtractor.invokeExtramovies
-import com.Phisher98.StreamPlayExtractor.invokeFDMovies
 import com.Phisher98.StreamPlayExtractor.invokeFilm1k
 import com.Phisher98.StreamPlayExtractor.invokeFlicky
 import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
@@ -26,7 +24,6 @@ import com.Phisher98.StreamPlayExtractor.invokeHindMoviez
 import com.Phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.Phisher98.StreamPlayExtractor.invokeKisskh
 import com.Phisher98.StreamPlayExtractor.invokeLing
-import com.Phisher98.StreamPlayExtractor.invokeM4uhd
 import com.Phisher98.StreamPlayExtractor.invokeMoflix
 import com.Phisher98.StreamPlayExtractor.invokeMoviehubAPI
 import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
@@ -34,9 +31,7 @@ import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
 import com.Phisher98.StreamPlayExtractor.invokeMultimovies
 import com.Phisher98.StreamPlayExtractor.invokeNepu
-import com.Phisher98.StreamPlayExtractor.invokeNetmovies
 import com.Phisher98.StreamPlayExtractor.invokeNinetv
-import com.Phisher98.StreamPlayExtractor.invokeNoverse
 import com.Phisher98.StreamPlayExtractor.invokeNowTv
 import com.Phisher98.StreamPlayExtractor.invokePlaydesi
 import com.Phisher98.StreamPlayExtractor.invokePlayer4U
@@ -46,13 +41,11 @@ import com.Phisher98.StreamPlayExtractor.invokeRiveStream
 import com.Phisher98.StreamPlayExtractor.invokeRogmovies
 import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.Phisher98.StreamPlayExtractor.invokeShowflix
-import com.Phisher98.StreamPlayExtractor.invokeSmashyStream
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
 import com.Phisher98.StreamPlayExtractor.invokeTom
 import com.Phisher98.StreamPlayExtractor.invokeTopMovies
-import com.Phisher98.StreamPlayExtractor.invokeTvMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeVidSrcViP
@@ -66,7 +59,6 @@ import com.Phisher98.StreamPlayExtractor.invokeZoechip
 import com.Phisher98.StreamPlayExtractor.invokeZshow
 import com.Phisher98.StreamPlayExtractor.invokeazseries
 import com.Phisher98.StreamPlayExtractor.invokecatflix
-import com.Phisher98.StreamPlayExtractor.invokemovies4u
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -132,7 +124,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val dreamfilmAPI = "https://dreamfilmsw.info"
-        const val noverseAPI = "https://www.thenollyverse.com"
         const val filmxyAPI = "https://www.filmxy.online"
         const val MOVIE_API = BuildConfig.MOVIE_API
         const val kimcartoonAPI = "https://kimcartoon.li"
@@ -142,11 +133,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val kissKhAPI = "https://kisskh.co"
         const val lingAPI = "https://ling-online.net"
         const val AsianhdAPI = "https://asianhdplay.in"
-        const val m4uhdAPI = "https://ww1.streamm4u.ws"
         const val flixonAPI = "https://flixon.ovh"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
-        const val smashyStreamAPI = "https://api.smashystream.top"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val cinemaTvAPI = BuildConfig.CINEMATV_API
         const val Whvx_API = BuildConfig.Whvx_API
@@ -156,9 +145,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
         const val multimoviesAPI = "https://multimovies.world"
-        const val netmoviesAPI = "https://web.netmovies.to"
         const val allmovielandAPI = "https://allmovieland.fun"
-        const val doomoviesAPI = "https://doomovies.net"
         const val vidsrctoAPI = "https://vidsrc.cc"
         const val vidsrcsu = "https://vidsrc.su"
         const val dramadayAPI = "https://dramaday.me"
@@ -169,7 +156,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
         const val nepuAPI = "https://nepu.to"
-        const val fdMoviesAPI = "https://freedrivemovie.com"
         const val uhdmoviesAPI = "https://uhdmovies.fyi"
         const val topmoviesAPI = "https://topmovies.nexus"
         const val MoviesmodAPI= "https://moviesmod.how"
@@ -177,11 +163,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vegaMoviesAPI = "https://vegamovies.rs"
         const val dotmoviesAPI = "https://luxmovies.cam"
         const val rogmoviesAPI = "https://rogmovies.cfd"
-        const val tvMoviesAPI = "https://www.tvseriesnmovies.com"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
         const val MovieDrive_API="https://moviesdrive.club"
         const val bollyflixAPI = "https://bollyflix.africa"
-        const val movies4u = "https://movies4u.gb.net"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
         const val ConsumetAPI=BuildConfig.ConsumetAPI
@@ -202,8 +186,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Primewire="https://www.primewire.tf"
         const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
         const val WASMAPI=BuildConfig.WASMAPI
-        //const val Rgshows="https://api.rgshows.me"
-        //const val RgshowsHindi="https://hindi.rgshows.me"
         const val AnimeOwlAPI="https://animeowl.me"
         const val Film1kApi="https://www.film1k.com"
         const val HindMoviezApi= "https://hindmoviez.ink"
@@ -292,7 +274,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 media.toSearchResponse()
             }
     }
-// do we need to put token each time ? No
     override suspend fun load(url: String): LoadResponse? {
         val data = parseJson<Data>(url)
         val type = getType(data.type)
@@ -503,9 +484,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     )
                 },
                 {
-                    invokeNoverse(res.title, res.season, res.episode, callback)
-                },
-                {
                     if (!res.isAnime && res.isCartoon) invokeKimcartoon(
                         res.title,
                         res.season,
@@ -623,45 +601,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 )
             },
             {
-                if (!res.isAnime && !res.isAsian) invokemovies4u(
-                    res.title,
-                    res.episode,
-                    res.season,
-                    res.year,
-                    subtitleCallback,
-                    callback
-                )
-            },
-        {
-        invokeFDMovies(res.title, res.season, res.episode, callback)
-    },
-            {
                 if (!res.isAnime) invokeFlicky(res.id, res.season, res.episode, callback)
             },
-    {
-        if (!res.isAnime) invokeM4uhd(
-            res.title, res.airedYear
-                ?: res.year, res.season, res.episode, subtitleCallback, callback
-        )
-    },
-    {
-        if (!res.isAnime) invokeTvMovies(res.title, res.season, res.episode, callback)
-    },
     {
         if (!res.isAnime) invokeFlixon(
             res.id,
             res.imdbId,
             res.season,
             res.episode,
-            callback
-        )
-    },
-    {
-          if (!res.isAnime) invokeSmashyStream(
-            res.id,
-            res.season,
-            res.episode,
-            subtitleCallback,
             callback
         )
     },
@@ -831,23 +778,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         )
     },
     {
-        invokeNetmovies(
-            res.title,
-            res.year,
-            res.season,
-            res.episode,
-            subtitleCallback,
-            callback
-        )
-    },
-    {
-        if (!res.isAnime && res.season == null) invokeDoomovies(
-            res.title,
-            subtitleCallback,
-            callback
-        )
-    },
-    {
         if (res.isAsian) invokeDramaday(
             res.title,
             res.year,
@@ -980,9 +910,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
          callback
      )
  },
-
  {
-            invokePrimeWire(
+     if(!res.isAnime) invokePrimeWire(
                 res.id,
                 res.imdbId,
                 res.title,
@@ -1029,7 +958,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 )
             },
             {
-                invokeSuperstream(
+                if (!res.isAnime) invokeSuperstream(
                     token,
                     res.imdbId,
                     res.season,
