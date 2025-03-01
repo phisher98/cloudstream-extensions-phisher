@@ -13,7 +13,6 @@ import com.Phisher98.StreamPlayExtractor.invokeMiruroanimeGogo
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -57,8 +56,8 @@ class StreamPlayAnime : MainAPI() {
     override val hasQuickSearch = false
     private val api = AccountManager.aniListApi
     private val apiUrl = "https://graphql.anilist.co"
-    private final val mediaLimit = 20
-    private final val isAdult = false
+    private val mediaLimit = 20
+    private val isAdult = false
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
 
@@ -114,7 +113,7 @@ class StreamPlayAnime : MainAPI() {
         return res.data.page?.media?.map { it.toSearchResponse() }
     }
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         if (request.name.contains("Personal")) {
             // Reading and manipulating personal library
             api.loginInfo()
@@ -165,12 +164,11 @@ class StreamPlayAnime : MainAPI() {
                         season = 1,
                         episode = i,
                         isAnime = true
-                    )
-                        .toStringData()
+                    ).toStringData()
                 newEpisode(linkData)
                 {
                     this.season=1
-                    this.episode=1
+                    this.episode=i
                 }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
@@ -206,7 +204,6 @@ class StreamPlayAnime : MainAPI() {
     ): Boolean {
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val malId=mediaData.malId
-        val aniid=mediaData.aniId
         val episode=mediaData.episode
         val jpTitle=mediaData.jpTitle
         val malsync = app.get("$malsyncAPI/mal/anime/${malId}")
