@@ -84,12 +84,8 @@ suspend fun invokeAnimetosho(
     callback: (ExtractorLink) -> Unit
 ) {
     val url = "$mainUrl=$id"
-    Log.d("Phisher", "Fetching: $url")
         val jsonResponse = app.get(url).parsedSafe<Animetosho>()
         jsonResponse?.forEach { item ->
-            Log.d("Phisher", "Found torrent: Name=${item.torrent_name}")
-            Log.d("Phisher", "Found torrent: Name=${item.title}")
-            Log.d("Phisher", "Found torrent: Name=${item.magnet_uri}")
             val name = item.torrent_name
             val magnet = item.magnet_uri
                 callback.invoke(
@@ -281,7 +277,7 @@ suspend fun invokeMediaFusion(
                 )
             )
         }
-    } catch (e: Exception) { }
+    } catch (_: Exception) { }
 }
 
 suspend fun invokeThepiratebay(
@@ -313,7 +309,7 @@ suspend fun invokeThepiratebay(
                 )
             )
         }
-    } catch (e: Exception) { }
+    } catch (_: Exception) { }
 }
 
 suspend fun invokePeerFlix(
@@ -345,5 +341,37 @@ suspend fun invokePeerFlix(
                 )
             )
         }
-    } catch (e: Exception) { }
+    } catch (_: Exception) { }
+}
+
+suspend fun invokeComet(
+    CometAPI: String? = null,
+    imdbId: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    try {
+        val url = if(season == null) {
+            "$CometAPI/stream/movie/$imdbId.json"
+        }
+        else {
+            "$CometAPI/stream/series/$imdbId:$season:$episode.json"
+        }
+        val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
+        for(stream in res?.streams!!)
+        {
+            val magnetLink = generateMagnetLinkFromSource(stream.sources,stream.infoHash)
+            callback.invoke(
+                ExtractorLink(
+                    "Comet",
+                    stream.description,
+                    magnetLink,
+                    "",
+                    getIndexQuality(stream.description),
+                    ExtractorLinkType.MAGNET,
+                )
+            )
+        }
+    } catch (_: Exception) { }
 }

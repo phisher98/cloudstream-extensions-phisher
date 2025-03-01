@@ -117,3 +117,67 @@ data class TorBoxBehaviorHints(
     val filename: String,
 )
 
+data class MediafusionResponse(
+    val streams: List<MediafusionStream>,
+)
+
+data class MediafusionStream(
+    val name: String,
+    val description: String,
+    val infoHash: String,
+    val fileIdx: Long?,
+    val behaviorHints: MediafusionBehaviorHints,
+    val sources: List<String>,
+)
+
+data class MediafusionBehaviorHints(
+    val bingeGroup: String,
+    val filename: String,
+    val videoSize: Long,
+)
+
+data class TBPResponse(
+    val streams: List<TBPStream>,
+    val cacheMaxAge: Long,
+    val staleRevalidate: Long,
+    val staleError: Long,
+)
+
+data class TBPStream(
+    val name: String,
+    val title: String,
+    val infoHash: String,
+    val tag: String,
+)
+
+data class PeerflixResponse(
+    val streams: List<PeerflixStream>,
+)
+
+data class PeerflixStream(
+    val name: String,
+    val description: String,
+    val infoHash: String,
+    val sources: List<String>,
+    val fileIdx: Long?,
+    val language: String,
+    val quality: String,
+    val seed: Long,
+    val sizebytes: Long?,
+)
+
+data class SubtitlesAPI(
+    val subtitles: List<Subtitle1>,
+    val cacheMaxAge: Long,
+)
+
+data class Subtitle1(
+    val id: String,
+    val url: String,
+    @JsonProperty("SubEncoding")
+    val subEncoding: String,
+    val lang: String,
+    val m: String,
+    val g: String,
+)
+

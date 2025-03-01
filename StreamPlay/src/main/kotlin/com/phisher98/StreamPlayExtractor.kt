@@ -97,7 +97,7 @@ object StreamPlayExtractor : StreamPlay() {
         globalArgument = arg;
         };
         """.trimIndent()
-            val rhino = org.mozilla.javascript.Context.enter()
+            val rhino = Context.enter()
             rhino.setInterpretedMode(true)
             val scope: Scriptable = rhino.initSafeStandardObjects()
             rhino.evaluateString(scope, firstJS + script, "JavaScript", 1, null)
@@ -3228,38 +3228,35 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val mediaSlug = app.get("$ridomoviesAPI/core/api/search?q=$imdbId")
+        val mediaSlug = app.get("$ridomoviesAPI/core/api/search?q=$imdbId", interceptor = wpRedisInterceptor)
             .parsedSafe<RidoSearch>()?.data?.items?.find {
                 it.contentable?.tmdbId == tmdbId || it.contentable?.imdbId == imdbId
             }?.slug ?: return
 
         val id = season?.let {
             val episodeUrl = "$ridomoviesAPI/tv/$mediaSlug/season-$it/episode-$episode"
-            app.get(episodeUrl).text.substringAfterLast("""postid\":\"""")
-                .substringBefore("""\""")
+            app.get(episodeUrl, interceptor = wpRedisInterceptor).text.substringAfterLast("""postid\":\"""").substringBefore("\"")
         } ?: mediaSlug
 
-        val url =
-            "$ridomoviesAPI/core/api/${if (season == null) "movies" else "episodes"}/$id/videos"
-        app.get(url).parsedSafe<RidoResponses>()?.data?.apmap { link ->
-            val iframe =
-                Jsoup.parse(link.url ?: return@apmap).select("iframe").attr("data-src")
+        val url = "$ridomoviesAPI/core/api/${if (season == null) "movies" else "episodes"}/$id/videos"
+        app.get(url, interceptor = wpRedisInterceptor).parsedSafe<RidoResponses>()?.data?.apmap { link ->
+            val iframe = Jsoup.parse(link.url ?: return@apmap).select("iframe").attr("data-src")
             if (iframe.startsWith("https://closeload.top")) {
-                val unpacked =
-                    getAndUnpack(app.get(iframe, referer = "$ridomoviesAPI/").text)
-                val video = Regex("=\"(aHR.*?)\";").find(unpacked)?.groupValues?.get(1)
+                val unpacked = getAndUnpack(app.get(iframe, referer = "$ridomoviesAPI/", interceptor = wpRedisInterceptor).text)
+                val encodeHash = Regex("\\(\"([^\"]+)\"\\);").find(unpacked)?.groupValues?.get(1) ?: ""
+                val video = base64Decode(base64Decode(encodeHash).reversed()).split("|").get(1)
                 callback.invoke(
                     ExtractorLink(
                         "Ridomovies",
                         "Ridomovies",
-                        base64Decode(video ?: return@apmap),
+                        video,
                         "${getBaseUrl(iframe)}/",
                         Qualities.P1080.value,
                         isM3u8 = true
                     )
                 )
             } else {
-                loadExtractor(iframe, "$ridomoviesAPI/", subtitleCallback, callback)
+                loadSourceNameExtractor("Ridomovies", iframe, "$ridomoviesAPI/", subtitleCallback, callback)
             }
         }
     }

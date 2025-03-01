@@ -12,7 +12,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 
 class StreamPlayTorrent() : StreamPlay() {
     override var name = "StreamPlay-Torrent"
-    override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama,TvType.Torrent)
+    override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.AsianDrama,TvType.Torrent)
     override var lang = "en"
     override val hasMainPage = true
     override val hasQuickSearch = false
@@ -26,6 +26,7 @@ class StreamPlayTorrent() : StreamPlay() {
         const val TorBoxAPI="https://stremio.torbox.app"
         const val BitsearchApi="https://bitsearch.to"
         const val MediafusionApi="https://mediafusion.elfhosted.com"
+        const val CometAPI = "https://comet.elfhosted.com"
         const val ThePirateBayApi="https://thepiratebay-plus.strem.fun"
         const val PeerflixApi="https://peerflix.mov"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
@@ -128,13 +129,18 @@ override suspend fun loadLinks(
                 callback
             )
         },
+        {
+            invokeComet(
+                CometAPI,
+                id,
+                season,
+                episode,
+                callback
+            )
 
+        },
 
-
-
-
-
-
+        //Source till here
         //Subtitles Invokes
         {
             invokeWyZIESUBAPI(
@@ -143,29 +149,17 @@ override suspend fun loadLinks(
                 episode,
                 subtitleCallback,
             )
+        },
+        {
+            invokeSubtitleAPI(
+                id,
+                season,
+                episode,
+                subtitleCallback,
+                callback
+            )
         }
     )
-    val SubAPI="https://opensubtitles-v3.strem.io"
-    val url = if(season == null) {
-        "$SubAPI/subtitles/movie/$id.json"
-    }
-    else {
-        "$SubAPI/subtitles/series/$id:$season:$episode.json"
-    }
-    val headers = mapOf(
-        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    )
-    app.get(url, headers = headers, timeout = 100L).parsedSafe<Subtitles>()?.subtitles?.amap {
-        val lan=getLanguage(it.lang) ?:"Unknown"
-        val suburl=it.url
-        subtitleCallback.invoke(
-            SubtitleFile(
-                lan,  // Use label for the name
-                suburl     // Use extracted URL
-            )
-        )
-    }
     return true
 }
 }

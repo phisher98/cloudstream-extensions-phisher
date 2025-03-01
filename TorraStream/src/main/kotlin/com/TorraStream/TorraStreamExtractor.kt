@@ -1,12 +1,16 @@
 package com.TorraStream
 
+import com.TorraStream.TorraStream.Companion.SubtitlesAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
+import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import java.util.Locale
 
 suspend fun invokeTorrastream(
     mainUrl:String,
@@ -181,4 +185,198 @@ suspend fun invokeTorbox(
             )
         )
     }
+}
+
+suspend fun invokeBitsearch(
+    bitSearchApi: String? = null,
+    title: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if(season == null) {
+        val fixQuery = title?.replace(" ","+")
+        "$bitSearchApi/search?q=$fixQuery"
+    }
+    else {
+        val fixQuery = "$title S${String.format("%02d", season)}E${String.format("%02d", episode)}".replace(" ","+")
+        "$bitSearchApi/search?q=$fixQuery"
+    }
+    val doc = app.get(url, timeout = 10).document
+    val searchList = doc.select(".card.search-result.my-2")
+    searchList.forEach{item ->
+        val title = item.select(".title.w-100.truncate a").text()
+        val statusElement = item.select(".stats div")
+        val downloadSize = statusElement[1].text();
+        val seeders = statusElement[2].select("font").text()
+        val leechers = statusElement[3].select("font").text()
+        val magnetLink = item.select(".dl-magnet").attr("href")
+        callback.invoke(
+            ExtractorLink(
+                "Bitsearch [${title} $downloadSize \uD83D\uDD3C $seeders \uD83D\uDD3D $leechers]",
+                "Bitsearch [${title} $downloadSize \uD83D\uDD3C $seeders \uD83D\uDD3D $leechers]",
+                magnetLink,
+                "",
+                getQuality(title),
+                ExtractorLinkType.MAGNET,
+            )
+        )
+
+    }
+}
+
+suspend fun invokeMediaFusion(
+    mediaFusionApi: String? = null,
+    imdbId: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    try {
+        val url = if(season == null) {
+            "$mediaFusionApi/stream/movie/$imdbId.json"
+        }
+        else {
+            "$mediaFusionApi/stream/series/$imdbId:$season:$episode.json"
+        }
+        val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
+        for(stream in res?.streams!!)
+        {
+            val magnetLink = generateMagnetLinkFromSource(stream.sources,stream.infoHash)
+            callback.invoke(
+                ExtractorLink(
+                    "MediaFusion",
+                    stream.description,
+                    magnetLink,
+                    "",
+                    getIndexQuality(stream.description),
+                    INFER_TYPE,
+                )
+            )
+        }
+    } catch (e: Exception) { }
+}
+
+suspend fun invokeThepiratebay(
+    thepiratebayApi: String? = null,
+    imdbId: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    try {
+        val url = if(season == null) {
+            "$thepiratebayApi/stream/movie/$imdbId.json"
+        }
+        else {
+            "$thepiratebayApi/stream/series/$imdbId:$season:$episode.json"
+        }
+        val res = app.get(url, timeout = 10).parsedSafe<TBPResponse>()
+        for(stream in res?.streams!!)
+        {
+            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
+            callback.invoke(
+                ExtractorLink(
+                    "ThePirateBay",
+                    "ThePirateBay [${stream.title}]",
+                    magnetLink,
+                    "",
+                    getIndexQuality(stream.title),
+                    INFER_TYPE,
+                )
+            )
+        }
+    } catch (e: Exception) { }
+}
+
+suspend fun invokePeerFlix(
+    peerflixApi: String? = null,
+    imdbId: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    try {
+        val url = if (season == null) {
+            "$peerflixApi/stream/movie/$imdbId.json"
+        } else {
+            "$peerflixApi/stream/series/$imdbId:$season:$episode.json"
+        }
+        val res = app.get(url, timeout = 10).parsedSafe<PeerflixResponse>()
+        for (stream in res?.streams!!) {
+            val magnetLink = generateMagnetLinkFromSource(stream.sources, stream.infoHash)
+            callback.invoke(
+                ExtractorLink(
+                    "Peerflix",
+                    stream.description,
+                    magnetLink,
+                    "",
+                    getIndexQuality(stream.description),
+                    INFER_TYPE,
+                )
+            )
+        }
+    } catch (e: Exception) {
+    }
+}
+
+
+suspend fun invokeComet(
+    CometAPI: String? = null,
+    imdbId: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    try {
+        val url = if(season == null) {
+            "$CometAPI/stream/movie/$imdbId.json"
+        }
+        else {
+            "$CometAPI/stream/series/$imdbId:$season:$episode.json"
+        }
+        val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
+        for(stream in res?.streams!!)
+        {
+            val magnetLink = generateMagnetLinkFromSource(stream.sources,stream.infoHash)
+            callback.invoke(
+                ExtractorLink(
+                    "Comet",
+                    stream.description,
+                    magnetLink,
+                    "",
+                    getIndexQuality(stream.description),
+                    ExtractorLinkType.MAGNET,
+                )
+            )
+        }
+    } catch (_: Exception) { }
+}
+
+suspend fun invokeSubtitleAPI(
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+) {
+    val url = if (season == null) {
+        "$SubtitlesAPI/subtitles/movie/$id.json"
+    } else {
+        "$SubtitlesAPI/subtitles/series/$id:$season:$episode.json"
+    }
+    val headers = mapOf(
+        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+    app.get(url, headers = headers, timeout = 100L)
+        .parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
+            val lan = getLanguage(it.lang) ?:"Unknown"
+            val suburl = it.url
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
+                    suburl     // Use extracted URL
+                )
+            )
+        }
 }

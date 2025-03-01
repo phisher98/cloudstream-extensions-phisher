@@ -99,3 +99,16 @@ data class Subtitle(
     val g: String,
 )
 
+suspend fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
+    // Fetch the content of the file from the provided URL
+
+    // Build the magnet link
+    return buildString {
+        append("magnet:?xt=urn:btih:$hash")
+        for (index in 0 until trackersList.size - 1) {
+            if (trackersList[index].isNotBlank()) {
+                append("&tr=").append(trackersList[index].trim())
+            }
+        }
+    }
+}
