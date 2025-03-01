@@ -11,7 +11,6 @@ import com.Phisher98.StreamPlay.Companion.gdbot
 import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlay.Companion.thrirdAPI
-import com.Phisher98.StreamPlay.Companion.tvMoviesAPI
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -399,41 +398,6 @@ fun deobfstr(hash: String, index: String): String {
         result += (j.toInt(16) xor index[(i / 2) % index.length].code).toChar()
     }
     return result
-}
-
-suspend fun extractCovyn(url: String?): Pair<String?, String?>? {
-    val request = session.get(url ?: return null, referer = "${tvMoviesAPI}/")
-    val filehosting = session.baseClient.cookieJar.loadForRequest(url.toHttpUrl())
-        .find { it.name == "filehosting" }?.value
-    val headers = mapOf(
-        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Connection" to "keep-alive",
-        "Cookie" to "filehosting=$filehosting",
-    )
-
-    val iframe = request.document.findTvMoviesIframe()
-    delay(10500)
-    val request2 = session.get(
-        iframe ?: return null, referer = url, headers = headers
-    )
-
-    val iframe2 = request2.document.findTvMoviesIframe()
-    delay(10500)
-    val request3 = session.get(
-        iframe2 ?: return null, referer = iframe, headers = headers
-    )
-
-    val response = request3.document
-    val videoLink = response.selectFirst("button.btn.btn--primary")?.attr("onclick")
-        ?.substringAfter("location = '")?.substringBefore("';")?.let {
-            app.get(
-                it, referer = iframe2, headers = headers
-            ).url
-        }
-    val size = response.selectFirst("ul.row--list li:contains(Filesize) span:last-child")
-        ?.text()
-
-    return Pair(videoLink, size)
 }
 
 //EmbedSu
