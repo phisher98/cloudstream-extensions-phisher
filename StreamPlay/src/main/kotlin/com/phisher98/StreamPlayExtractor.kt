@@ -4033,7 +4033,7 @@ suspend fun invokeFlixAPIHQ(
         var decryptedLinks = decryptLinks(userData.attr("v"))
         for (link in decryptedLinks) {
             val url = "$Primewire/links/go/$link"
-            val oUrl = app.get(url)
+            val oUrl = app.get(url,timeout = 10)
             loadSourceNameExtractor(
                 "Primewire",
                 oUrl.url,
@@ -4481,46 +4481,53 @@ suspend fun invokeFlixAPIHQ(
         year: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title?.replace(":", "")?.createPlayerSlug().orEmpty()
-        val fixQuery = season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" } ?: fixTitle
+        val fixTitle = title?.createPlayerSlug().orEmpty()
+        val fixQuery = (season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" } ?: "$fixTitle $year").replace(" ","+") // It is necessary for query with year otherwise it will give wrong movie
         val allLinks = HashSet<Player4uLinkData>()
 
         var page = 0
         var nextPageExists: Boolean
 
         do {
-            val url = "$Player4uApi/embed?key=$fixQuery&page=$page"
-            val document = app.get(url, timeout = 10).document
+                val url = if(page == 0) {"$Player4uApi/embed?key=$fixQuery"} else {"$Player4uApi/embed?key=$fixQuery&page=$page"}
+                val document = app.get(url, timeout = 20).document
+                allLinks.addAll(
+                    document.select(".playbtnx").map {
+                        Player4uLinkData(name = it.text(), url = it.attr("onclick"))
+                    }
+                )
 
-            allLinks.addAll(
-                document.select(".playbtnx").map {
-                    Player4uLinkData(name = it.text(), url = it.attr("onclick"))
-                }
-            )
-
-            nextPageExists = document.select("div a").any { it.text().contains("Next", true) }
-            page++
+                nextPageExists = document.select("div a").any { it.text().contains("Next", true) }
+                page++
         } while (nextPageExists && page <= 10)
 
-        allLinks.forEach { link ->
+        val sizeAllLinks = allLinks.distinctBy { it.name }.size
+        allLinks.distinctBy { it.name }.forEach { link ->
             try {
+
                 val splitName = link.name.split("|").reversed()
-                val firstPart = splitName.getOrNull(0)?.replace("+", " ")?.replace(title.orEmpty(), "").orEmpty()
-                val thirdPart = splitName.getOrNull(2).orEmpty()
-                val nameFormatted = "$name P4U [$firstPart]"
+                val firstPart = splitName.getOrNull(0)?.replace(title.toString(),"")?.replace(year.toString(),"")?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
+                val nameFormatted = "Player4U ${if(firstPart.isNullOrEmpty()) { "" } else { "{$firstPart}" }}"
 
-                val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value ?: return@forEach
+                val qualityFromName = Regex("""(\d{3,4}p|4K|CAM|HQ|HD|SD|WEBRip|DVDRip|BluRay|HDRip|TVRip|HDTC|PREDVD)""", RegexOption.IGNORE_CASE)
+                    .find(nameFormatted)?.value?.uppercase() ?: "UNKNOWN"
 
-                val iframeSource = app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
-                    .document.select("iframe").attr("src")
 
-                getPlayer4uUrl(
-                    nameFormatted,
-                    thirdPart,
-                    "https://uqloads.xyz/e/$iframeSource",
-                    Player4uApi,
-                    callback
-                )
+                val selectedQuality = getPlayer4UQuality(qualityFromName)
+
+                if (selectedQuality >= Qualities.P1080.value || sizeAllLinks < 10) { // For less links
+                    val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value ?: return@forEach
+                    val iframeSource = app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
+                        .document.select("iframe").attr("src")
+
+                    getPlayer4uUrl(
+                        nameFormatted,
+                        selectedQuality,
+                        "https://uqloads.xyz/e/$iframeSource",
+                        Player4uApi,
+                        callback
+                    )
+                }
             } catch (_: Exception) { }
         }
     }
