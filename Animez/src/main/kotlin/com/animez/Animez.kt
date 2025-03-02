@@ -105,7 +105,7 @@ open class Animez : MainAPI() {
                             val jobs = (lastPageNum downTo 1).map { page ->
                                 async(Dispatchers.IO) {
                                     try {
-                                        val rawres = app.get("https://animez.org/?act=ajax&code=load_list_chapter&manga_id=$malid&page_num=$page&chap_id=0&keyword=").text
+                                        val rawres = app.get("$mainUrl/?act=ajax&code=load_list_chapter&manga_id=$malid&page_num=$page&chap_id=0&keyword=").text
                                         val listChapHtml = JSONObject(rawres).getString("list_chap")
                                         val parsedHtml: Document = Jsoup.parse(listChapHtml)
 
@@ -115,7 +115,7 @@ open class Animez : MainAPI() {
                                             val episode = episodeName.filter { it.isDigit() }.toIntOrNull()
 
                                             val episodeObj = newEpisode(href) {
-                                                this.name = "Episode $episodeName"
+                                                this.name = "Episode ${episodeName.substringBefore("-")}"
                                                 this.season = 1
                                                 this.episode = episode
                                             }
@@ -141,11 +141,10 @@ open class Animez : MainAPI() {
             else {
                 document.select("ul.version-chap li").amap {
                     val href = it.select("a").attr("href")
-                    val name = fixTitle(it.select("a").text().trim())
+                    val name = it.select("a").text().trim()
                     val image = it.selectFirst("div.imagen > img")?.getImageAttr()
-                    val episode = it.select("div.numerando").text().replace(" ", "").split("-").last().toIntOrNull()
-                    val season = it.select("div.numerando").text().replace(" ", "").split("-").first()
-                        .toIntOrNull()
+                    val episode = it.select("div.numerando").text().replace(" ", "").split("-").last().toIntOrNull() ?: name.toIntOrNull()
+                    val season = it.select("div.numerando").text().replace(" ", "").split("-").first().toIntOrNull() ?: 1
                     val episodeObj = newEpisode(href) {
                         this.name = "Episode ${
                             if (name.contains(
