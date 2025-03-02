@@ -1,9 +1,11 @@
 package com.TorraStream
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 
 class TorraStream() : TraktProvider() {
     override var name = "TorraStream"
@@ -26,6 +28,7 @@ class TorraStream() : TraktProvider() {
         const val PeerflixApi="https://peerflix.mov"
         const val CometAPI = "https://comet.elfhosted.com"
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
+        const val AnimetoshoAPI= "https://feed.animetosho.org"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -69,6 +72,8 @@ class TorraStream() : TraktProvider() {
         val episode =data.episode
         val id =data.imdbId
         val year=data.year
+        val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+        val anidbEid = getAnidbEid(anijson, episode)
         argamap(
             {
                 invokeTorrastream(
@@ -158,7 +163,12 @@ class TorraStream() : TraktProvider() {
                     episode,
                     callback
                 )
-
+            },
+            {
+                invokeAnimetosho(
+                    anidbEid,
+                    callback
+                )
             },
             {
                 invokeSubtitleAPI(

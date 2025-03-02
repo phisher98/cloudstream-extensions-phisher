@@ -1,6 +1,11 @@
 package com.TorraStream
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -111,4 +116,11 @@ suspend fun generateMagnetLinkFromSource(trackersList: List<String>, hash: Strin
             }
         }
     }
+}
+
+
+fun getAnidbEid(json: String, episodeNumber: Int?): Int? {
+    val objectMapper = ObjectMapper().registerKotlinModule().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    val root = objectMapper.readValue<AnidbEid>(json)
+    return root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
 }

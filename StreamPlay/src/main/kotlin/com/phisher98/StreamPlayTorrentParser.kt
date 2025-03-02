@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.annotations.SerializedName
 
 data class Torrentmovie(
     val results: List<Result>,
@@ -164,37 +165,56 @@ data class SubtitleTorrent(
 )
 
 
-class Animetosho : ArrayList<Animetosho.Animetosho2>() {
-    data class Animetosho2(
-        val anidb_aid: Int,
-        val anidb_eid: Int?,
-        val anidb_fid: Int?,
-        val anidex_id: Any?,
-        val article_title: String?,
-        val article_url: String?,
-        val id: Int,
-        val info_hash: String,
-        val info_hash_v2: Any?,
-        val leechers: Int,
-        val link: String,
-        val magnet_uri: String,
-        val num_files: Int,
-        val nyaa_id: Int,
-        val nyaa_subdom: Any?,
-        val nzb_url: String?,
-        val seeders: Int,
-        val status: String,
-        val timestamp: Int,
-        val title: String,
-        val torrent_downloaded_count: Int,
-        val torrent_name: String,
-        val torrent_url: String,
-        val tosho_id: Int?,
-        val total_size: Long,
-        val tracker_updated: Int,
-        val website_url: String?
-    )
-}
+data class AnimetoshoItem(
+    val id: Long,
+    val title: String,
+    val link: String,
+    val timestamp: Long,
+    val status: String,
+    @SerializedName("tosho_id")
+    val toshoId: Long?,
+    @SerializedName("nyaa_id")
+    val nyaaId: Long,
+    @SerializedName("nyaa_subdom")
+    val nyaaSubdom: Any?,
+    @SerializedName("anidex_id")
+    val anidexId: Any?,
+    @SerializedName("torrent_url")
+    val torrentUrl: String,
+    @SerializedName("torrent_name")
+    val torrentName: String,
+    @SerializedName("info_hash")
+    val infoHash: String,
+    @SerializedName("info_hash_v2")
+    val infoHashV2: Any?,
+    @SerializedName("magnet_uri")
+    val magnetUri: String,
+    val seeders: Long,
+    val leechers: Long,
+    @SerializedName("torrent_downloaded_count")
+    val torrentDownloadedCount: Long,
+    @SerializedName("tracker_updated")
+    val trackerUpdated: Long?,
+    @SerializedName("nzb_url")
+    val nzbUrl: String,
+    @SerializedName("total_size")
+    val totalSize: Long,
+    @SerializedName("num_files")
+    val numFiles: Long,
+    @SerializedName("anidb_aid")
+    val anidbAid: Long,
+    @SerializedName("anidb_eid")
+    val anidbEid: Long,
+    @SerializedName("anidb_fid")
+    val anidbFid: Long?,
+    @SerializedName("article_url")
+    val articleUrl: Any?,
+    @SerializedName("article_title")
+    val articleTitle: Any?,
+    @SerializedName("website_url")
+    val websiteUrl: String?
+)
+
 
 data class MediafusionResponse(
     val streams: List<MediafusionStream>,
@@ -244,6 +264,17 @@ data class PeerflixStream(
     val seed: Long,
     val sizebytes: Long?,
 )
+
+
+data class AnidbEidEpisode(
+    @JsonProperty("episodeNumber") val episodeNumber: Int?,
+    @JsonProperty("anidbEid") val anidbEid: Int?
+)
+
+data class AnidbEid(
+    @JsonProperty("episodes") val episodes: Map<String, AnidbEidEpisode>
+)
+
 
 
 

@@ -2,6 +2,7 @@ package com.Phisher98
 
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -29,6 +30,7 @@ class StreamPlayTorrent() : StreamPlay() {
         const val CometAPI = "https://comet.elfhosted.com"
         const val ThePirateBayApi="https://thepiratebay-plus.strem.fun"
         const val PeerflixApi="https://peerflix.mov"
+        const val AnimetoshoAPI="https://feed.animetosho.org"
         const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
 
     }
@@ -41,13 +43,14 @@ override suspend fun loadLinks(
     callback: (ExtractorLink) -> Unit
 ): Boolean {
     val data= AppUtils.parseJson<LinkData>(data)
-    val epid=data.epid
     val title=data.title
     val season =data.season
     val episode =data.episode
     val id =data.imdbId
     val year=data.year
-
+    val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+    val anidbEid = getAnidbEid(anijson, episode)
+    Log.d("Phisher",anidbEid.toString())
     argamap(
         {
             invokeTorrastream(
@@ -137,7 +140,12 @@ override suspend fun loadLinks(
                 episode,
                 callback
             )
-
+        },
+        {
+            invokeAnimetosho(
+                anidbEid,
+                callback
+            )
         },
 
         //Source till here

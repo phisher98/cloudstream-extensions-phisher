@@ -11,6 +11,10 @@ import com.Phisher98.StreamPlay.Companion.gdbot
 import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlay.Companion.thrirdAPI
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -2418,8 +2422,11 @@ fun getPlayer4UQuality (quality :String) : Int
     }
 }
 
-
-
+fun getAnidbEid(json: String, episodeNumber: Int?): Int? {
+    val objectMapper = ObjectMapper().registerKotlinModule().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    val root = objectMapper.readValue<AnidbEid>(json)
+    return root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
+}
 
 
 

@@ -1,6 +1,9 @@
 package com.Phisher98
 
+import com.Phisher98.StreamPlayTorrent.Companion.AnimetoshoAPI
 import com.Phisher98.StreamPlayTorrent.Companion.TRACKER_LIST_URL
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -79,27 +82,29 @@ suspend fun invokeTorrastream(
 }
 
 suspend fun invokeAnimetosho(
-    mainUrl: String,
     id: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val url = "$mainUrl=$id"
-        val jsonResponse = app.get(url).parsedSafe<Animetosho>()
-        jsonResponse?.forEach { item ->
-            val name = item.torrent_name
-            val magnet = item.magnet_uri
-                callback.invoke(
-                    ExtractorLink(
-                        "Animetosho",
-                        "Animetosho $name",
-                        magnet,
-                        "",
-                        getIndexQuality(name),
-                        INFER_TYPE,
-                    )
-                )
-        }
+    val url="$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22|%22TrueHD%22|%22[EMBER]%22)((e*|a*|r*|i*|o*|%221080%22)%20!%22720%22%20!%22540%22%20!%22480%22)"
+    val gson = Gson()
+    val jsonResponse = app.get(url).toString()
+    val listType = object : TypeToken<List<AnimetoshoItem>>() {}.type
+    val parsedList: List<AnimetoshoItem>? = gson.fromJson(jsonResponse, listType)
 
+    parsedList?.sortedByDescending { it.seeders }?.forEach { item ->
+        val name = item.torrentName
+        val magnet = item.magnetUri
+        callback.invoke(
+            ExtractorLink(
+                "Animetosho",
+                "Animetosho $name",
+                magnet,
+                "",
+                getIndexQuality(name),
+                INFER_TYPE,
+            )
+        )
+    }
 }
 
 suspend fun invokeTorrentgalaxy(
