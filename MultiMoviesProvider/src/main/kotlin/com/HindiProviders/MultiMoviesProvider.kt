@@ -2,6 +2,8 @@ package com.Phisher98
 
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.JsonElement
+import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -10,6 +12,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
+import java.net.URI
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://multimovies.world"
@@ -242,16 +245,54 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                val link = source.substringAfter("\"").substringBefore("\"")
+                val link = source.substringAfter("\"").substringBefore("\"").trim()
                 when {
                     !link.contains("youtube") -> {
                         if(link.contains("gdmirrorbot.nl"))
                             {
-                            Log.d("Phisher",link)
-                            loadExtractor(link,referer = mainUrl,subtitleCallback, callback)
+
+                                val host = getBaseUrl(app.get(link).url)
+                                val embed = link.substringAfterLast("/")
+                                val data = mapOf("sid" to embed)
+                                val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+                                Log.d("Phisher", "$host/embedhelper.php")
+
+                                val jsonElement: JsonElement = JsonParser.parseString(jsonString)
+                                if (!jsonElement.isJsonObject) {
+                                    Log.e("Error:", "Unexpected JSON format: Response is not a JSON object")
+                                    return@apmap
+                                }
+                                val jsonObject = jsonElement.asJsonObject
+                                val siteUrls = jsonObject["siteUrls"]?.takeIf { it.isJsonObject }?.asJsonObject
+                                val mresultEncoded = jsonObject["mresult"]?.takeIf { it.isJsonPrimitive }?.asString
+                                val mresult = mresultEncoded?.let {
+                                    val decodedString = base64Decode(it) // Decode from Base64
+                                    JsonParser.parseString(decodedString).asJsonObject // Convert to JSON object
+                                }
+                                val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.takeIf { it.isJsonObject }?.asJsonObject
+                                if (siteUrls == null || siteFriendlyNames == null || mresult == null) {
+                                    return@apmap
+                                }
+                                val commonKeys = siteUrls.keySet().intersect(mresult.keySet())
+                                commonKeys.forEach { key ->
+                                    val siteName = siteFriendlyNames[key]?.asString
+                                    if (siteName == null) {
+                                        Log.e("Error:", "Skipping key: $key because siteName is null")
+                                        return@forEach
+                                    }
+                                    val siteUrl = siteUrls[key]?.asString
+                                    val resultUrl = mresult[key]?.asString
+                                    if (siteUrl == null || resultUrl == null) {
+                                        Log.e("Error:", "Skipping key: $key because siteUrl or resultUrl is null")
+                                        return@forEach
+                                    }
+                                    val href = siteUrl + resultUrl
+                                    Log.d("Phisher",href)
+
+                                    loadExtractor(href, subtitleCallback, callback)
+                                }
                         }
-                        else
-                            if (link.contains("deaddrive.xyz"))
+                        else if (link.contains("deaddrive.xyz"))
                             {
                                 app.get(link).document.select("ul.list-server-items > li").map {
                                     val server = it.attr("data-video")
@@ -273,4 +314,11 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         @JsonProperty("key") val key: String? = null,
         @JsonProperty("type") val type: String? = null,
     )
+
+
+private fun getBaseUrl(url: String): String {
+    return URI(url).let {
+        "${it.scheme}://${it.host}"
+    }
+}
 }

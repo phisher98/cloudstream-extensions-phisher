@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.GMPlayer
@@ -1596,7 +1597,11 @@ class GDMirrorbot : ExtractorApi() {
         }
         val jsonObject = jsonElement.asJsonObject
         val siteUrls = jsonObject["siteUrls"]?.takeIf { it.isJsonObject }?.asJsonObject
-        val mresult = jsonObject["mresult"]?.takeIf { it.isJsonObject }?.asJsonObject
+        val mresultEncoded = jsonObject["mresult"]?.takeIf { it.isJsonPrimitive }?.asString
+        val mresult = mresultEncoded?.let {
+            val decodedString = base64Decode(it) // Decode from Base64
+            JsonParser.parseString(decodedString).asJsonObject // Convert to JSON object
+        }
         val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.takeIf { it.isJsonObject }?.asJsonObject
         if (siteUrls == null || siteFriendlyNames == null || mresult == null) {
             return
