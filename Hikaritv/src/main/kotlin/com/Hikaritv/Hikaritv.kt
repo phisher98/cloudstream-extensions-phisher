@@ -17,8 +17,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Hikaritv : MainAPI() {
-    override var mainUrl = "https://hikari.gg"
-    override var name = "Hikaritv"
+    override var mainUrl = "https://watch.hikaritv.xyz"
+    override var name = "HikariTV"
     override val hasMainPage = true
     override var lang = "en"
     override val supportedTypes = setOf(
