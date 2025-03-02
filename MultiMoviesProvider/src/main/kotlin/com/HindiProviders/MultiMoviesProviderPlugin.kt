@@ -22,6 +22,7 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(server2())
         registerExtractorAPI(MultimoviesAIO())
         registerExtractorAPI(GDMirrorbot())
+        registerExtractorAPI(MultimoviesVidstack())
         //registerExtractorAPI(VidhideExtractor())
         registerExtractorAPI(Asnwish())
         registerExtractorAPI(CdnwishCom())
