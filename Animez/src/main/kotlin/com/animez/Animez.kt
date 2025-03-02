@@ -173,7 +173,7 @@ open class Animez : MainAPI() {
                 this.rating = rating
                 this.recommendations = recommendations
                 addTrailer(trailer)
-                addEpisodes(DubStatus.Subbed, subEpisodes)
+                addEpisodes(DubStatus.Subbed, subEpisodes.reversed())
                 addEpisodes(DubStatus.Dubbed, dubEpisodes.reversed())
                 this.showStatus = getStatus(status)
             }
