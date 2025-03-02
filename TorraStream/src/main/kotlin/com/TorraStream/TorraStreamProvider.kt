@@ -7,5 +7,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 class TorraStreamProvider: BasePlugin() {
     override fun load() {
         registerMainAPI(TorraStream())
+        registerMainAPI(TorraStreamAnime())
     }
 }

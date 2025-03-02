@@ -135,14 +135,14 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
         }
 
         episodes.add(
-            Episode(
-                data = zipLinks.toJson(),
-                name = "Full Zip",
-                season = 1,
-                episode = episodes.count()+1,
-                posterUrl = "https://miro.medium.com/v2/resize:fit:720/format:webp/1*nCwjG9N0CkYXOkznDB7kSw.png",
-                description = "Zip/Rar links"
-            )
+            newEpisode(zipLinks.toJson())
+            {
+                this.name="Full Zip"
+                this.season=1
+                this.episode=episodes.count()+1
+                this.posterUrl="https://miro.medium.com/v2/resize:fit:720/format:webp/1*nCwjG9N0CkYXOkznDB7kSw.png"
+                this.description= "Zip/Rar links"
+            }
         )
 
         return newTvSeriesLoadResponse(title, docLink, TvType.TvSeries, episodes) {

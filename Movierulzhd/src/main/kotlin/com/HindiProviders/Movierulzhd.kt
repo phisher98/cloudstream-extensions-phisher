@@ -155,13 +155,13 @@ open class Movierulzhd : MainAPI() {
                     val season =
                         it.select("div.numerando").text().replace(" ", "").split("-").first()
                             .toIntOrNull()
-                    Episode(
-                        href,
-                        name,
-                        season,
-                        episode,
-                        image
-                    )
+                    newEpisode(href)
+                    {
+                        this.name=name
+                        this.episode=episode
+                        this.season=season
+                        this.posterUrl=image
+                    }
                 }
             } else {
             val check = document.select("ul#playeroptionsul > li").toString().contains("Super")
@@ -171,10 +171,10 @@ open class Movierulzhd : MainAPI() {
 				        val type = it.attr("data-type")
 				        val post = it.attr("data-post")
 				        val nume = it.attr("data-nume")
-				        Episode(
-				            LinkData(name, type, post, nume).toJson(),
-				            name
-				        )
+                        newEpisode(LinkData(name, type, post, nume).toJson())
+                        {
+                            this.name=name
+                        }
 				    }
 				} else {
 				    document.select("ul#playeroptionsul > li").map {
@@ -182,10 +182,10 @@ open class Movierulzhd : MainAPI() {
 				        val type = it.attr("data-type")
 				        val post = it.attr("data-post")
 				        val nume = it.attr("data-nume")
-				        Episode(
-				            LinkData(name, type, post, nume).toJson(),
-				            name
-				        )
+                        newEpisode(LinkData(name, type, post, nume).toJson())
+                        {
+                            this.name=name
+                        }
 				    }
 				}
             }

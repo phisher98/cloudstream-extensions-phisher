@@ -120,7 +120,15 @@ suspend fun generateMagnetLinkFromSource(trackersList: List<String>, hash: Strin
 
 
 fun getAnidbEid(json: String, episodeNumber: Int?): Int? {
-    val objectMapper = ObjectMapper().registerKotlinModule().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    val root = objectMapper.readValue<AnidbEid>(json)
-    return root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
+    if (json.startsWith("\"") && json.endsWith("\"")) return null // Handles "Not Found" or other plain string responses
+
+    val objectMapper = ObjectMapper().registerKotlinModule()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
+    return try {
+        val root = objectMapper.readValue<AnidbEid>(json)
+        root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
+    } catch (e: Exception) {
+        null // Return null for invalid JSON
+    }
 }

@@ -81,7 +81,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val home = TVlist.select("a.block").mapNotNull {
             it.toSearchResult()
         }
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
+        return newHomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
@@ -100,17 +100,11 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val TVlist = queryTVsearchApi(
             query
         ).document
-        //Log.d("document", document.toString())
-
         return TVlist.select("a[href^=\"/tv\"]").mapNotNull {
             val title = it.selectFirst("div > h2")?.text().toString().trim()
-            //Log.d("title", title)
             val href = fixUrl(mainUrl + it.attr("href").toString())
-            //Log.d("href", href)
             val posterUrl = fixUrlNull(it.selectFirst("img")?.attr("src"))
-            //Log.d("posterUrl", posterUrl.toString())
             val quality = SearchQuality.HD
-            //Log.d("Quality", quality.toString())
 
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
@@ -124,9 +118,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val title = doc.selectFirst("h1.px-5")?.text()?.toString()?.trim() ?: return null
         val poster = fixUrlNull(doc.selectFirst("img.relative")?.attr("src"))
         val tags = doc.select("div.relative a[class*=\"py-0.5\"]").map { it.text() }
-        //val year = doc.selectFirst("h1.px-5 span.text-gray-400")?.text().toString().removePrefix("(").removeSuffix(")").toInt()
         val description = doc.selectFirst("p.leading-tight")?.text()?.trim()
-        //val trailer = fixUrlNull(document.select("iframe#iframe-trailer").attr("src"))
         val rating = doc.select("span.text-xl").text().toRatingInt()
         val actors = doc.select("div.font-semibold span.text-blue-300").map { it.text() }
         val recommendations = doc.select("a.block").mapNotNull {
@@ -139,12 +131,12 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             val seasonNum = me.select("button > span").text()
             me.select("div.season-list > a").forEach {
                 episodes.add(
-                    Episode(
-                        data = mainUrl + it.attr("href").toString(),
-                        name = it.ownText().toString().removePrefix("Episode ").substring(2),//.replaceFirst(epName.first().toString(), ""),
-                        season = titRegex.find(seasonNum)?.value?.toInt(),
-                        episode = titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
-                    )
+                    newEpisode(mainUrl + it.attr("href"))
+                    {
+                        this.name=it.ownText().toString().removePrefix("Episode ").substring(2)
+                        this.season=titRegex.find(seasonNum)?.value?.toInt()
+                        this.episode=titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
+                    }
                 )
             }
         }
@@ -155,7 +147,6 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             this.rating = rating
             addActors(actors)
             this.recommendations = recommendations
-            //addTrailer(trailer)
         }
     }
 
@@ -168,7 +159,6 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val links = app.get(data, interceptor = ddosGuardKiller).document.select("div.h-vw-65 iframe.w-full").attr("src").toString()
         val sourcelink= app.get(links, referer = mainUrl).document.selectFirst("iframe")?.attr("src")
         if (sourcelink != null) {
-            Log.d("Phisher",sourcelink)
             val embedUrl = sourcelink.replace("/download/", "/e/")
             val response = app.get(embedUrl, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
             val script = if (!getPacked(response.text).isNullOrEmpty()) {
@@ -176,7 +166,6 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             } else {
                 response.document.selectFirst("script:containsData(sources:)")?.data()
             }
-            Log.d("Phisher",script.toString())
             val m3u8 =
                 Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: "")?.groupValues?.getOrNull(1)
             generateM3u8(

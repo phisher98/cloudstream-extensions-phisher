@@ -88,7 +88,6 @@ open class OnepaceProvider : MainAPI() {
             ?: document.selectFirst("meta[property=og:updated_time]")?.attr("content")
                 ?.substringBefore("-"))?.toIntOrNull()
         val lst = element?.select("ul.seasons-lst.anm-a li")
-        Log.d("Phisher","$ArcINT $element $title $lst")
         return if (lst!!.isEmpty()) {
             newMovieLoadResponse(title, url, TvType.Movie, Media(
                 media.url,
@@ -99,13 +98,18 @@ open class OnepaceProvider : MainAPI() {
                 this.year = year
             }
         } else {
-            @Suppress("NAME_SHADOWING") val episodes = element.select("ul.seasons-lst.anm-a li").mapNotNull {
+                val episodes = element.select("ul.seasons-lst.anm-a li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.ownText() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
                 val poster= "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/OnePack.png"
                 val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
                 val season=seasonnumber.toIntOrNull()
-                Episode(Media(href, mediaType = 2.toString()).toJson(), name, posterUrl = poster,season = season)
+                newEpisode(Media(href, mediaType = 2.toString()).toJson())
+                {
+                    this.name=name
+                    this.posterUrl=poster
+                    this.season=season
+                }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -128,7 +132,6 @@ open class OnepaceProvider : MainAPI() {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
-            Log.d("Phisher",link)
             loadExtractor(link,subtitleCallback, callback)
         }
         return true

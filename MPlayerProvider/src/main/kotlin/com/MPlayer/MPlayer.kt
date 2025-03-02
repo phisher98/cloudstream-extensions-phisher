@@ -201,7 +201,13 @@ class MPlayer : MainAPI() {
                     val name = it.title ?: "Unknown Title"
                     val image = imageUrl + it.imageInfo.map { img -> img.url }.firstOrNull()
                     val episode = index + 1
-                    episodes += Episode(data = href1, name = name, season = season + 1, episode = episode, posterUrl = image)
+                    episodes += newEpisode(href1)
+                    {
+                        this.name=name
+                        this.season=season+1
+                        this.episode=episode
+                        this.posterUrl=image
+                    }
                 }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

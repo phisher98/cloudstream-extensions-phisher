@@ -106,14 +106,14 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
                     songposter= poster.toString()
                 }
                 episodes.add(
-                    Episode(
-                        data = links,
-                        name = name,
-                        season = 1,
-                        episode = index,
-                        posterUrl = songposter,
-                        description=Description
-                    )
+                    newEpisode(links)
+                    {
+                        this.name=name
+                        this.season=1
+                        this.episode=index
+                        this.posterUrl=songposter
+                        this.description=Description
+                    }
                 )
                 index++
             }
@@ -121,14 +121,14 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
         else
         {
             episodes.add(
-                    Episode(
-                        data = url.substringBefore(",,"),
-                        name = title,
-                        season = 1,
-                        episode = 1,
-                        posterUrl = poster,
-                    )
-                )
+                newEpisode(url.substringBefore(",,"))
+                {
+                    this.name=title
+                    this.season=1
+                    this.episode=1
+                    this.posterUrl=poster
+                }
+            )
         }
 
 
@@ -147,7 +147,6 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         app.get(data).document.select("div.downloaddiv a").map {
             var href=it.attr("href")
             val quality=it.text().substringBefore("Song")

@@ -24,7 +24,7 @@ class IPTVPlayer : MainAPI() {
         request : MainPageRequest
     ): HomePageResponse {
         val data = IptvPlaylistParser().parseM3U(app.get(mainUrl).text)
-        return HomePageResponse(data.items.groupBy{it.attributes["group-title"]}.map { group ->
+        return newHomePageResponse(data.items.groupBy{it.attributes["group-title"]}.map { group ->
             val title = group.key ?: ""
             val show = group.value.map { channel ->
                 val streamurl = channel.url.toString()
@@ -33,14 +33,12 @@ class IPTVPlayer : MainAPI() {
                 val nation = channel.attributes["group-title"].toString()
                 val key=channel.attributes["key"].toString()
                 val keyid=channel.attributes["keyid"].toString()
-                LiveSearchResponse(
-                    channelname,
-                    LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
-                    this@IPTVPlayer.name,
-                    TvType.Live,
-                    posterurl,
-                    lang = channel.attributes["group-title"]
-                )
+                newLiveSearchResponse(channelname, LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(), TvType.Live)
+                {
+                    this.posterUrl=posterurl
+                    this.apiName
+                    this.lang=channel.attributes["group-title"]
+                }
             }
             HomePageList(
                 title,
@@ -59,26 +57,22 @@ class IPTVPlayer : MainAPI() {
                 val nation = channel.attributes["group-title"].toString()
                 val key=channel.attributes["key"].toString()
                 val keyid=channel.attributes["keyid"].toString()
-                LiveSearchResponse(
-                    channelname,
-                    LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
-                    this@IPTVPlayer.name,
-                    TvType.Live,
-                    posterurl,
-                )
+            newLiveSearchResponse(channelname, LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(), TvType.Live)
+            {
+                this.posterUrl=posterurl
+                this.apiName
+                this.lang=channel.attributes["group-title"]
+            }
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
         val data = parseJson<LoadData>(url)
-        return LiveStreamLoadResponse(
-            data.title,
-            data.url,
-            this.name,
-            url,
-            data.poster,
-            plot = data.nation,
-        )
+        return newLiveStreamLoadResponse(data.title,data.url,url)
+        {
+            this.posterUrl=data.poster
+            this.plot=data.nation
+        }
     }
     data class LoadData(
         val url: String,

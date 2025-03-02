@@ -84,17 +84,16 @@ class Pencurimovie : MainAPI() {
                     Log.d("Phis","$it")
                     val name = it.select("a").text().substringAfter("-").trim()
                     val href = it.select("a").attr("href") ?: ""
-                    val Rawepisode =
-                        it.select("a").text().substringAfter("Episode")
+                    val Rawepisode = it.select("a").text().substringAfter("Episode")
                             .substringBefore("-")
                             .trim().toIntOrNull()
                     episodes.add(
-                        Episode(
-                            data = href,
-                            episode = Rawepisode,
-                            name = name,
-                            season = season
-                        )
+                        newEpisode(href)
+                        {
+                            this.episode=Rawepisode
+                            this.name=name
+                            this.season=season
+                        }
                     )
                 }
             }

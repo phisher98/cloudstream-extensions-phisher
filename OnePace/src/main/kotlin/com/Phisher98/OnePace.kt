@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newAnimeSearchResponse
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -55,7 +56,12 @@ class OnePace : MainAPI() { // all providers must be an instance of MainAPI
             val episode=Ep.selectFirst("a")?.text()
             if (href.isNotEmpty())
             {
-                episodes.add(Episode(href, episode, posterUrl = poster))
+                episodes.add(
+                    newEpisode(href)
+                    {
+                        this.name=episode
+                        this.posterUrl=poster
+                    })
             }
         }
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
