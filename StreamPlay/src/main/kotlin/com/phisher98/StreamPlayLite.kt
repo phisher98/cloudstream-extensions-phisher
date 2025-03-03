@@ -24,6 +24,7 @@ import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.Phisher98.StreamPlayExtractor.invokeNepu
 import com.Phisher98.StreamPlayExtractor.invokePlayer4U
 import com.Phisher98.StreamPlayExtractor.invokeRiveStream
+import com.Phisher98.StreamPlayExtractor.invokeStreamPlay
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeSuperstream
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
@@ -269,6 +270,20 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     callback
                 )
             },
+            {
+                if (!res.isAnime) invokeStreamPlay(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+
+
+
+
+
             //Subtitles Invokes
             {
                 invokeSubtitleAPI(

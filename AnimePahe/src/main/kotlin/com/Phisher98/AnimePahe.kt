@@ -507,6 +507,20 @@ class AnimePahe : MainAPI() {
                             quality
                         )
             }
+        document.select("div#pickDownload > a").amap {
+            val href = it.attr("href")
+            var type = "SUB"
+            if(it.select("span").text().contains("eng"))
+                type="DUB"
+            loadSourceNameExtractor(
+                "Animepahe Download [$type]",
+                href,
+                "",
+                subtitleCallback,
+                callback,
+                it.text()
+            )
+        }
         return true
     }
 }

@@ -1638,3 +1638,49 @@ data class Player4uLinkData(
 
 
 //
+//StremplayAPI
+
+data class StremplayAPI(
+    val name: String,
+    val fields: StremplayFields,
+    val createTime: String,
+    val updateTime: String,
+)
+
+data class StremplayFields(
+    val links: StremplayLinks,
+)
+
+data class StremplayLinks(
+    val arrayValue: StremplayArrayValue,
+)
+
+data class StremplayArrayValue(
+    val values: List<StremplayValue>,
+)
+
+data class StremplayValue(
+    val mapValue: StremplayMapValue,
+)
+
+data class StremplayMapValue(
+    val fields: StremplayFields2,
+)
+
+data class StremplayFields2(
+    val href: StremplayHref,
+    val quality: StremplayQuality,
+    val source: StremplaySource,
+)
+
+data class StremplayHref(
+    val stringValue: String,
+)
+
+data class StremplayQuality(
+    val stringValue: String,
+)
+
+data class StremplaySource(
+    val stringValue: String,
+)

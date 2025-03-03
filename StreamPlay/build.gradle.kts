@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 192
+version = 193
 android {
     buildFeatures {
         buildConfig = true
@@ -40,7 +40,7 @@ android {
         buildConfigField("String", "SUPERSTREAM_THIRD_API", "\"${properties.getProperty("SUPERSTREAM_THIRD_API")}\"")
         buildConfigField("String", "SUPERSTREAM_FOURTH_API", "\"${properties.getProperty("SUPERSTREAM_FOURTH_API")}\"")
         buildConfigField("String", "SUPERSTREAM_FIRST_API", "\"${properties.getProperty("SUPERSTREAM_FIRST_API")}\"")
-
+        buildConfigField("String", "StreamPlayAPI", "\"${properties.getProperty("StreamPlayAPI")}\"")
     }
 }
 

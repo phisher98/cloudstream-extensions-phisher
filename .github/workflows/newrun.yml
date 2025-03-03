@@ -85,6 +85,7 @@ jobs:
           WASMAPI: ${{ secrets.WASMAPI }}
           KissKh: ${{ secrets.KissKh }}
           KisskhSub: ${{ secrets.KisskhSub }}
+          StreamPlayAPI: ${{ secrets.StreamPlayAPI }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -126,6 +127,8 @@ jobs:
           echo WASMAPI=$WASMAPI >> local.properties
           echo KissKh=$KissKh >> local.properties
           echo KisskhSub=$KisskhSub >> local.properties
+          echo StreamPlayAPI=$StreamPlayAPI >> local.properties
+
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

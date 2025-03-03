@@ -4529,6 +4529,24 @@ suspend fun invokeFlixAPIHQ(
         }
     }
 
+    suspend fun invokeStreamPlay(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url=if (season==null) "${BuildConfig.StreamPlayAPI}/$tmdbId" else "${BuildConfig.StreamPlayAPI}/$tmdbId/seasons/$season/episodes/$episode"
+        app.get(url).parsedSafe<StremplayAPI>()?.fields?.links?.arrayValue?.values?.amap {
+            val source=it.mapValue.fields.source.stringValue
+            val href=it.mapValue.fields.href.stringValue
+            val quality=it.mapValue.fields.quality.stringValue
+            loadCustomExtractor("StreamPlay $source",href, "",subtitleCallback,callback, getQualityFromName(quality))
+        }
+    }
+
+
+
 }
 
 
