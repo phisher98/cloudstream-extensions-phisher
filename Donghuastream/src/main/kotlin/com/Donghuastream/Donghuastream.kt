@@ -1,13 +1,12 @@
 package com.Donghuastream
 
 
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.Jsoup
 
-class Donghuastream : MainAPI() {
+open class Donghuastream : MainAPI() {
     override var mainUrl              = "https://donghuastream.org"
     override var name                 = "Donghuastream"
     override val hasMainPage          = true
@@ -82,7 +81,8 @@ class Donghuastream : MainAPI() {
                         val posterr=info.selectFirst("a img")?.attr("data-src") ?:""
                         newEpisode(href1)
                         {
-                            this.name=episode
+                            this.name=episode.replace(title,"",ignoreCase = true)
+                            this.episode=episode.toIntOrNull()
                             this.posterUrl=posterr
                         }
             }
@@ -110,7 +110,6 @@ class Donghuastream : MainAPI() {
         val document = app.get(data).document
         document.select(".mobius option").amap { server->
             val base64 = server.attr("value")
-            Log.d("Phisher", base64)
             val doc= base64Decode(base64).let { Jsoup.parse(it) }
             val url= httpsify(doc.select("iframe").attr("src"))
             if (url.contains("vidmoly"))

@@ -1,7 +1,6 @@
 package com.Donghuastream
 
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
@@ -74,7 +73,6 @@ open class Ultrahd : ExtractorApi() {
             Regex("\\\$\\.\\s*ajax\\(\\s*\\{\\s*url:\\s*\"(.*?)\"").find(extractedpack)?.groupValues?.get(1)?.let { link ->
                 app.get(link).parsedSafe<Root>()?.sources?.map {
                     val m3u8= httpsify( it.file)
-                    Log.d("Phisher Ultrahd",m3u8)
                     if (m3u8.contains(".mp4"))
                     {
                         callback.invoke(
@@ -122,8 +120,6 @@ class Rumble : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher Rumbel","i Here")
-
         val response = app.get(
             url, referer = referer ?: "$mainUrl/"
         )
@@ -131,7 +127,6 @@ class Rumble : ExtractorApi() {
             response.document.selectFirst("script:containsData(mp4)")?.data()
                 ?.substringAfter("{\"mp4")?.substringBefore("\"evt\":{") ?:""
         val regex = """"url":"(.*?)"|h":(.*?)\}""".toRegex()
-        Log.d("Phisher Rumbel",playerScript)
         val matches = regex.findAll(playerScript)
         for (match in matches) {
             val href = match.groupValues[1].replace("\\/", "/")
