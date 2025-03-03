@@ -118,7 +118,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(OwlExtractor())
         registerExtractorAPI(Rapidplayers())
         registerExtractorAPI(Maxfinishseveral())
-
+        registerExtractorAPI(Pahe())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = SettingsFragment(this, sharedPref)

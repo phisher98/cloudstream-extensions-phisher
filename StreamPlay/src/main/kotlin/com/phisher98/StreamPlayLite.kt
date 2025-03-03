@@ -271,7 +271,7 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                if (!res.isAnime) invokeStreamPlay(
+                invokeStreamPlay(
                     res.id,
                     res.season,
                     res.episode,
@@ -279,10 +279,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     callback
                 )
             },
-
-
-
-
 
             //Subtitles Invokes
             {
