@@ -1,7 +1,7 @@
 package com.Phisher98
 
-import android.annotation.SuppressLint
-import android.content.SharedPreferences
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
@@ -10,7 +10,6 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
-import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -35,9 +34,6 @@ import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.time.Instant
 import java.util.Locale
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 
 val session = Session(Requests().baseClient)
 
@@ -705,23 +701,6 @@ object StreamPlayExtractor : StreamPlay() {
                 loadExtractor(link, referer = MOVIE_API, subtitleCallback, callback)
         }
     }
-
-    suspend fun invokeVidsrcto(
-        imdbId: String?,
-        season: Int?,
-        episode: Int?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = if (season == null) {
-            "$vidsrctoAPI/embed/movie/$imdbId"
-        } else {
-            "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
-        }
-        VidSrcTo().getUrl(url, url, subtitleCallback, callback)
-
-    }
-
 
     suspend fun invokeAnitaku(
         url: String? = null,
@@ -2278,12 +2257,11 @@ object StreamPlayExtractor : StreamPlay() {
 
     // Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
     //Still in progress
-    @Suppress("NewApi")
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val url = if (season == null) {
@@ -2293,10 +2271,9 @@ object StreamPlayExtractor : StreamPlay() {
         }
         val type = if (season == null) "movie" else "tv"
         val doc = app.get(url).document.toString()
-        //val new_data_id= Regex("data-id=\"(.*?)\".*data-number=").find(doc)?.groupValues?.get(1).toString()
         val v_value = Regex("var.v.=.\"(.*?)\"").find(doc)?.groupValues?.get(1).toString()
         val vrfres = app.get("${BuildConfig.Vidsrccc}/vrf/$id").parsedSafe<Vidsrccc>()
-        val vrf = vrfres?.vrf
+        val vrf = generateVidsrcVrf(id)
         val timetamp = vrfres?.timestamp
         val instant = Instant.parse(timetamp)
         val unixTimeMs = instant.toEpochMilli()
@@ -2318,7 +2295,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
     }
-
 
     suspend fun invokeVidsrcsu(
         id: Int? = null,

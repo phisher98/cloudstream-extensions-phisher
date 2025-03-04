@@ -1,6 +1,5 @@
 package com.Phisher98
 
-import android.content.SharedPreferences
 import com.Phisher98.StreamPlayExtractor.invoke2embed
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.Phisher98.StreamPlayExtractor.invokeAnimes
@@ -237,7 +236,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.id,
                     res.season,
                     res.episode,
-                    subtitleCallback,
                     callback
                 )
             },

@@ -508,7 +508,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                         res.id,
                         res.season,
                         res.episode,
-                        subtitleCallback,
                         callback
                     )
                 },
