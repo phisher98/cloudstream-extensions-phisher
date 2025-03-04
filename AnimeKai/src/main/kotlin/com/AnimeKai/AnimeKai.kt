@@ -1,6 +1,7 @@
 package com.AnimeKai
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -168,25 +169,33 @@ class AnimeKai : MainAPI() {
     }
 
     override suspend fun loadLinks(
-            data: String,
-            isCasting: Boolean,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val decoder=AnimekaiDecoder()
-        val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
+        val decoder = AnimekaiDecoder()
         val token = data.split("|").last().split("=").last()
-        val servers: List<String> =
-                app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
-                    .parsed<Response>()
-                    .getDocument()
-                    .select("div.server-items[data-id=$dubType] span[data-lid]")
-                    .map { it.attr("data-lid") }
-        servers.distinct().apmapIndexed { index, it ->
-            val result = app.get("$mainUrl/ajax/links/view?id=$it&_=${decoder.generateToken(it)}")
+        val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
+        val types = if ("sub" in data) listOf(dubType, "softsub") else listOf(dubType)
+
+        val servers = types.flatMap { type ->
+            app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
+                .parsed<Response>()
+                .getDocument()
+                .select("div.server-items[data-id=$type] span[data-lid]")
+                .map { lid -> type to lid.attr("data-lid") }
+        }
+
+        servers.distinct().apmapIndexed { index, (type, lid) ->
+            val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
                 .parsed<Response>().result
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
-            val name="AnimeKai HD-${index + 1}"
+            val nameSuffix = when (type) {
+                "softsub" -> "[Soft Sub]"
+                else -> ""
+            }
+            val name = "AnimeKai HD-${index + 1} ${nameSuffix.trim().capitalize()}".trim()
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
         return true
@@ -219,9 +228,17 @@ class AnimeKai : MainAPI() {
 
     data class M3U8(
         val sources: List<Source>,
+        val tracks: List<Track>,
         val download: String,
     )
     data class Source(
         val file: String,
+    )
+
+    data class Track(
+        val file: String,
+        val label: String?,
+        val kind: String,
+        val default: Boolean?,
     )
 }

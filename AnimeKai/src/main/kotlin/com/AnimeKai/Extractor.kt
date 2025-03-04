@@ -1,6 +1,7 @@
 package com.AnimeKai
 
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -39,6 +40,9 @@ class MegaUp : ExtractorApi() {
             m3u8,
             mainUrl,
         ).forEach(callback)
+        m3u8data.tracks.amap {
+            subtitleCallback.invoke(SubtitleFile(it.label!!, it.file))
+        }
         return
     }
 }
