@@ -1868,8 +1868,9 @@ class MegaUp : ExtractorApi() {
             m3u8,
             mainUrl,
         ).forEach(callback)
-        m3u8data.tracks.amap {
-            subtitleCallback.invoke(SubtitleFile(it.label!!, it.file))
+        m3u8data.tracks.forEach { track ->
+            val label = track.label ?: return@forEach
+            subtitleCallback(SubtitleFile(label, track.file))
         }
         return
     }

@@ -194,7 +194,6 @@ class StreamplayTorrentAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data.toString())
         val data = AppUtils.parseJson<LinkData>(data)
         val episode =data.episode
         val aniid =data.aniId

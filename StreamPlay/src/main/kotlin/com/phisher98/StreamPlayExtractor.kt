@@ -905,80 +905,45 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val (aniId, malId) = convertTmdbToAnimeId(
-            title,
-            date,
-            airedDate,
-            if (season == null) TvType.AnimeMovie else TvType.Anime
+            title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
         )
-        val Season =
-            app.get("$jikanAPI/anime/${malId ?: return}").parsedSafe<JikanResponse>()?.data?.season
-                ?: ""
-        val malsync = app.get("$malsyncAPI/mal/anime/${malId ?: return}")
-            .parsedSafe<MALSyncResponses>()?.sites
-        val zoroIds = malsync?.zoro?.keys?.map { it }
-        val TMDBdate = date?.substringBefore("-")
-        val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":", " ")
-        val hianimeurl = malsync?.zoro?.firstNotNullOf { it.value["url"] }
-        val kaasslug=malsync?.KickAssAnime?.firstNotNullOf { it.value["identifier"] }
+
+        val jikanResponse = runCatching {
+            app.get("$jikanAPI/anime/${malId ?: return@runCatching null}").parsedSafe<JikanResponse>()?.data?.season
+        }.getOrNull().orEmpty()
+
+        val malsync = runCatching {
+            app.get("$malsyncAPI/mal/anime/${malId ?: return@runCatching null}").parsedSafe<MALSyncResponses>()?.sites
+        }.getOrNull()
+
+        val zoroIds = malsync?.zoro?.keys?.toList().orEmpty()
+        val TMDBdate = date?.substringBefore("-").orEmpty()
+        val zorotitle = malsync?.zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
+        val hianimeurl = malsync?.zoro?.values?.firstNotNullOfOrNull { it["url"] }
+        val animepaheTitle = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["title"] }
+        val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
+        val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
+        val gogoUrl = malsync?.Gogoanime?.values?.firstNotNullOfOrNull { it["url"] }
+        val jptitleslug = jptitle.createSlug()
+
         argamap(
-            {
-                invokeAnimetosho(malId, season, episode, subtitleCallback, callback)
-            },
-            {
-                invokeHianime(zoroIds, hianimeurl, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnimeKai(malId, episode, subtitleCallback, callback)
-            },
-            {
-                val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
-                if (animepahetitle != null) invokeMiruroanimeGogo(
-                    zoroIds,
-                    animepahetitle,
-                    episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                invokeKickAssAnime(kaasslug, episode, subtitleCallback, callback)
-            },
-            {
-                val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
-                if (animepahe != null) invokeAnimepahe(
-                    animepahe,
-                    episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                invokeGrani(title ?: "", episode, callback)
-            },
-            {
-                val jptitleslug = jptitle.createSlug()
-                invokeGojo(aniId, jptitleslug, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnichi(zorotitle, Season, TMDBdate, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback)
-            },
-            {
-                val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
-            },
-            {
-                invokeTokyoInsider(jptitle,title, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnizone(jptitle, episode, callback)
-            }
+            { if (malId != null) invokeAnimetosho(malId, season, episode, subtitleCallback, callback) },
+            { invokeHianime(zoroIds, hianimeurl, episode, subtitleCallback, callback) },
+            { if (malId != null) invokeAnimeKai(malId, episode, subtitleCallback, callback) },
+            { if (animepaheTitle != null) invokeMiruroanimeGogo(zoroIds, animepaheTitle, episode, subtitleCallback, callback) },
+            { if (kaasSlug != null) invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
+            { if (animepaheUrl != null) invokeAnimepahe(animepaheUrl, episode, subtitleCallback, callback) },
+            { invokeGrani(title ?: "", episode, callback) },
+            { invokeGojo(aniId, jptitleslug, episode, subtitleCallback, callback) },
+            { invokeAnichi(zorotitle, jikanResponse, TMDBdate, episode, subtitleCallback, callback) },
+            { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
+            { if (gogoUrl != null) invokeAnitaku(gogoUrl, episode, subtitleCallback, callback) },
+            { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
+            { invokeAnizone(jptitle, episode, callback) }
         )
     }
+
 
     private suspend fun invokeAnichi(
         name: String? = null,
@@ -1673,29 +1638,26 @@ object StreamPlayExtractor : StreamPlay() {
         id: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit
     ) {
-        val url = if (season == null) {
-            "$WyZIESUBAPI/search?id=$id"
-        } else {
-            "$WyZIESUBAPI/search?id=$id&season=$season&episode=$episode"
+        if (id.isNullOrBlank()) return  // Prevents API call with invalid ID
+
+        val url = buildString {
+            append("$WyZIESUBAPI/search?id=$id")
+            if (season != null && episode != null) append("&season=$season&episode=$episode")
         }
 
-        val res = app.get(url).toString()
-        val gson = Gson()
-        val listType = object : TypeToken<List<WyZIESUB>>() {}.type
-        val subtitles: List<WyZIESUB> = gson.fromJson(res, listType)
-        subtitles.map {
-            val lan = it.display
-            val suburl = it.url
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
-                    suburl     // Use extracted URL
-                )
-            )
+        val subtitles = runCatching {
+            val res = app.get(url).toString()
+            Gson().fromJson<List<WyZIESUB>>(res, object : TypeToken<List<WyZIESUB>>() {}.type)
+        }.getOrElse { emptyList() }
+
+        subtitles.forEach {
+            val language = it.display.replaceFirstChar { ch -> ch.titlecase(Locale.getDefault()) }
+            subtitleCallback(SubtitleFile(language, it.url))
         }
     }
+
 
     suspend fun invokeTopMovies(
         imdbId: String? = null,
