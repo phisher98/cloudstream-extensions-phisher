@@ -1281,7 +1281,6 @@ object StreamPlayExtractor : StreamPlay() {
         ).parsedSafe<MiroTV>()
             ?.ANIMEKAI
             ?.asSequence()
-            ?.filterNotNull()
             ?.mapNotNull { it.value.episodeList.episodes.find { ep -> ep.number == episode }?.id }
             ?.firstOrNull() ?: return
 
