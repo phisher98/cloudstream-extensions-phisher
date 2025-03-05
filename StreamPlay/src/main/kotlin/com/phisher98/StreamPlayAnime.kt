@@ -2,6 +2,7 @@ package com.Phisher98
 
 import com.Phisher98.StreamPlay.Companion.anilistAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
+import com.Phisher98.StreamPlayExtractor.invokeAnimeKai
 import com.Phisher98.StreamPlayExtractor.invokeAnimeOwl
 import com.Phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.Phisher98.StreamPlayExtractor.invokeAnitaku
@@ -240,6 +241,9 @@ class StreamPlayAnime : MainAPI() {
             {
                 invokeKickAssAnime(kaasslug, episode, subtitleCallback, callback)
             },
+            {
+                invokeAnimeKai(malId, episode, subtitleCallback, callback)
+            }
         )
         return true
     }

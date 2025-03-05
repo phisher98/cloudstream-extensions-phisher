@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import com.Phisher98.StreamPlayExtractor.invoke2embed
 import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
@@ -129,6 +130,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val MOVIE_API = BuildConfig.MOVIE_API
         const val kimcartoonAPI = "https://kimcartoon.li"
         const val hianimeAPI = "https://hianime.to"
+        const val AnimeKai= "https://animekai.to"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val crunchyrollAPI = "https://beta-api.crunchyroll.com"
         const val kissKhAPI = "https://kisskh.co"
@@ -442,6 +444,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         }
     }
 // you opened streamplay lite //yes but it inheri this Stremplay
+    @SuppressLint("NewApi")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,

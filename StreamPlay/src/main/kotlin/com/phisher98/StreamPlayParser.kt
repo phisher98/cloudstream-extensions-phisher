@@ -1684,3 +1684,138 @@ data class StremplayQuality(
 data class StremplaySource(
     val stringValue: String,
 )
+
+
+//MiroTv
+
+data class MiroTV(
+    val ANIMEKAI: Map<String, AnimeKaiDetails>,
+    val ANIMEZ: Map<String, AnimeZDetails>
+) {
+    data class AnimeKaiDetails(
+        val altTitle: String,
+        val description: String,
+        val details: Details,
+        val episodeList: EpisodeList,
+        val genres: List<Any>,
+        val poster: String,
+        val rateBox: RateBox,
+        val rating: String,
+        val recommendedAnime: List<RecommendedAnime>,
+        val relatedAnime: List<Any>,
+        val seasons: List<Any>,
+        val title: String
+    ) {
+        data class Details(
+            val broadcast: String,
+            val country: String,
+            val dateAired: String,
+            val duration: String,
+            val episodes: String,
+            val malScore: String,
+            val premiered: String,
+            val producers: List<String>,
+            val status: String,
+            val studios: List<String>
+        )
+
+        data class EpisodeList(
+            val episodes: List<Episode>,
+            val totalEpisodes: Int
+        ) {
+            data class Episode(
+                val dub: Boolean,
+                val id: String,
+                val number: Int,
+                val slug: String,
+                val title: String
+            )
+        }
+
+        data class RateBox(
+            val value: String,
+            val voteStats: String
+        )
+
+        data class RecommendedAnime(
+            val dub: Int,
+            val sub: Int,
+            val title: String,
+            val total: Int,
+            val type: String,
+            val url: String
+        )
+    }
+
+    data class AnimeZDetails(
+        val altTitle: String,
+        val episodeList: EpisodeList,
+        val genres: List<String>,
+        val id: String,
+        val image: String,
+        val status: String,
+        val summary: String,
+        val title: String,
+        val type: String,
+        val views: String
+    ) {
+        data class EpisodeList(
+            val episodes: Episodes,
+            val totalEpisodes: Int
+        ) {
+            data class Episodes(
+                val dub: List<Any>,
+                val sub: List<Sub>
+            ) {
+                data class Sub(
+                    val id: String,
+                    val number: Int,
+                    val title: String,
+                    val url: String
+                )
+            }
+        }
+    }
+}
+
+
+data class AnimeKaiResponse(
+    @JsonProperty("status") val status: Boolean,
+    @JsonProperty("result") val result: String
+) {
+    fun getDocument(): Document {
+        return Jsoup.parse(result)
+    }
+}
+
+data class VideoData(
+    val url: String,
+    val skip: Skip,
+)
+
+data class Skip(
+    val intro: List<Long>,
+    val outro: List<Long>,
+)
+
+fun extractVideoUrlFromJson(jsonData: String): String {
+    val gson = com.google.gson.Gson()
+    val videoData = gson.fromJson(jsonData, VideoData::class.java)
+    return videoData.url
+}
+
+data class AnimeKaiM3U8(
+    val sources: List<AnimekaiSource>,
+    val tracks: List<AnimekaiTrack>,
+    val download: String,
+)
+data class AnimekaiSource(
+    val file: String,
+)
+
+data class AnimekaiTrack(
+    val file: String,
+    val label: String?,
+    val kind: String,
+    val default: Boolean?,
+)

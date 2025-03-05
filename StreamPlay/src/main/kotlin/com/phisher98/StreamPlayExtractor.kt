@@ -293,7 +293,6 @@ object StreamPlayExtractor : StreamPlay() {
                     referer = url,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                Log.d("Phisher", source)
                 val link = source.substringAfter("\"").substringBefore("\"")
                 when {
                     !link.contains("youtube") -> {
@@ -931,7 +930,7 @@ object StreamPlayExtractor : StreamPlay() {
                 invokeHianime(zoroIds, hianimeurl, episode, subtitleCallback, callback)
             },
             {
-                //invokeAnimenexus(title, episode, subtitleCallback, callback)
+                invokeAnimeKai(malId, episode, subtitleCallback, callback)
             },
             {
                 val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
@@ -1265,6 +1264,50 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokeAnimeKai(
+        malId: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers = mapOf(
+            "x-atx" to "12RmYtJexlqnNym38z4ahwy+g1g0la/El8nkkMOVtiQ=",
+            "Origin" to "https://www.miruro.tv"
+        )
+
+        val token = app.get(
+            "https://epsilon.yamista.xyz/?url=https:%2F%2Fdio.miruro.tv%2Fi%3Fid%3D$malId%26provider%3Dmal%26type%3Danime",
+            headers = headers
+        ).parsedSafe<MiroTV>()
+            ?.ANIMEKAI
+            ?.asSequence()
+            ?.filterNotNull()
+            ?.mapNotNull { it.value.episodeList.episodes.find { ep -> ep.number == episode }?.id }
+            ?.firstOrNull() ?: return
+
+        val decoder = AnimekaiDecoder()
+        val servers = listOf("sub", "dub", "softsub").flatMap { type ->
+            val url = "$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token)}"
+            Log.d("Phisher", url)
+            app.get(url)
+                .parsed<AnimeKaiResponse>()
+                .getDocument()
+                .select("div.server-items[data-id=$type] span[data-lid]")
+                .map { lid -> type to lid.attr("data-lid") }
+        }.distinct()
+
+        servers.apmapIndexed { index, (type, lid) ->
+            val result = app.get("$AnimeKai/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
+                .parsed<AnimeKaiResponse>().result
+
+            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
+            val name = "AnimeKai HD-${index + 1}${if (type == "softsub") " [Soft Sub]" else ""}"
+                .replaceFirstChar { it.titlecase(Locale.ROOT) }
+            loadExtractor(iframe, name, subtitleCallback, callback)
+        }
+    }
+
+
     fun invokeHianime(
         animeIds: List<String?>? = null,
         url: String?,
@@ -1295,7 +1338,6 @@ object StreamPlayExtractor : StreamPlay() {
                         it.attr("data-type"),
                     )
                 }
-            Log.d("Phisher",servers.toString())
 
             servers?.map servers@{ server ->
                 val animeEpisodeId = url?.substringAfter("to/")
@@ -1575,7 +1617,6 @@ object StreamPlayExtractor : StreamPlay() {
 
                 iframeList.amap { (quality, link) ->
                     val driveLink = bypassHrefli(link) ?: return@amap
-                    Log.d("Phisher",driveLink)
                     loadSourceNameExtractor(
                         "UHDMovies",
                         driveLink,
@@ -1971,7 +2012,6 @@ object StreamPlayExtractor : StreamPlay() {
         val cfInterceptor = CloudflareKiller()
         val query = if (season == null) "search/$imdbId" else "search/$imdbId season $season"
         val url = "$api/$query"
-        Log.d("Phisher",url)
         try {
             val document = app.get(url, interceptor = cfInterceptor).document
             val searchResults = document.select("article h3 a")
