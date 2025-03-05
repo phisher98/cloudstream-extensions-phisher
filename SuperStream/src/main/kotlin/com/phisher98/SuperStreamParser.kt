@@ -79,3 +79,22 @@ data class WyZIESUB(
     val media: String,
     val isHearingImpaired: Boolean,
 )
+
+
+//Catflix Juicey
+
+data class CatflixJuicy(
+    val action: String,
+    val success: Boolean,
+    val msg: String,
+    val juice: String,
+    val juicePost: String,
+)
+
+data class CatflixJuicydata(
+    val action: String,
+    val success: Boolean,
+    val msg: String,
+    val data: String,
+    val juice: String,
+)

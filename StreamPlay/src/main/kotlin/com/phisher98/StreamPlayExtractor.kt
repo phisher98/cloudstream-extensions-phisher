@@ -1291,19 +1291,25 @@ object StreamPlayExtractor : StreamPlay() {
             app.get(url)
                 .parsed<AnimeKaiResponse>()
                 .getDocument()
-                .select("div.server-items[data-id=$type] span[data-lid]")
-                .map { lid -> type to lid.attr("data-lid") }
+                .select("div.server-items[data-id=$type] span.server[data-lid]") // Selects spans with server info
+                .map { server ->
+                    val lid = server.attr("data-lid")
+                    val serverName = server.text()
+                    Triple(type, lid, serverName)
+                }
         }.distinct()
 
-        servers.apmapIndexed { index, (type, lid) ->
+        servers.apmap { (type, lid, serverName) ->
             val result = app.get("$AnimeKai/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
                 .parsed<AnimeKaiResponse>().result
 
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
-            val name = "AnimeKai HD-${index + 1}${if (type == "softsub") " [Soft Sub]" else ""}"
+            val name = "AnimeKai $serverName ${if (type == "softsub") " [Soft Sub]" else ""}"
                 .replaceFirstChar { it.titlecase(Locale.ROOT) }
+
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
+
     }
 
 

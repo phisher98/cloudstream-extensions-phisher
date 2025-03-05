@@ -1,6 +1,7 @@
 package com.AnimeKai
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
@@ -16,6 +17,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.apmapIndexed
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
@@ -179,23 +181,25 @@ class AnimeKai : MainAPI() {
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
         val types = if ("sub" in data) listOf(dubType, "softsub") else listOf(dubType)
 
-        val servers = types.flatMap { type ->
-            app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
-                .parsed<Response>()
-                .getDocument()
-                .select("div.server-items[data-id=$type] span[data-lid]")
-                .map { lid -> type to lid.attr("data-lid") }
-        }
+        val document = app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
+            .parsed<Response>()
+            .getDocument()
 
-        servers.distinct().apmapIndexed { index, (type, lid) ->
+        val servers = types.flatMap { type ->
+            document.select("div.server-items[data-id=$type] span.server[data-lid]")
+                .map { server ->
+                    val lid = server.attr("data-lid")
+                    val serverName = server.text()
+                    Triple(type, lid, serverName)
+                }
+        }.distinct()
+
+        servers.apmap { (type, lid, serverName) ->
             val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
                 .parsed<Response>().result
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
-            val nameSuffix = when (type) {
-                "softsub" -> "[Soft Sub]"
-                else -> ""
-            }
-            val name = "AnimeKai HD-${index + 1} ${nameSuffix.trim().capitalize()}".trim()
+            val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
+            val name = "AnimeKai $serverName $nameSuffix".trim()
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
         return true
