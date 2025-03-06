@@ -107,7 +107,7 @@ class Animecloud : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        app.get(data).parsedSafe<AnimecloudEP>()?.data?.animeEpisodeLinks?.map {
+        app.get(data).parsedSafe<AnimecloudEP>()?.data?.anime_episode_links?.map {
             val dubtype=it.lang
             val href=it.link
             loadSourceNameExtractor("$name ${dubtype.uppercase()}",href, "", subtitleCallback, callback)

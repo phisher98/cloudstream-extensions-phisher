@@ -8,5 +8,6 @@ class AnimecloudProvider: BasePlugin() {
     override fun load() {
         registerMainAPI(Animecloud())
         registerExtractorAPI(AnimeCloudProxy())
+        registerExtractorAPI(LuluStream())
     }
 }
