@@ -2420,10 +2420,19 @@ fun getPlayer4UQuality (quality :String) : Int
 }
 
 fun getAnidbEid(json: String, episodeNumber: Int?): Int? {
-    val objectMapper = ObjectMapper().registerKotlinModule().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    val root = objectMapper.readValue<AnidbEid>(json)
-    return root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
+    if (json.startsWith("\"") && json.endsWith("\"")) return null // Handle "Not Found" case
+
+    val objectMapper = ObjectMapper()
+        .registerKotlinModule()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    return try {
+        val root = objectMapper.readValue<AnidbEid>(json)
+        root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
+    } catch (e: Exception) {
+        null // Return null in case of deserialization failure
+    }
 }
+
 
 
 fun generateVidsrcVrf(n: Int?): String {
