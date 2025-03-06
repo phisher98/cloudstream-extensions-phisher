@@ -1,8 +1,6 @@
 package com.AnimeKai
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -18,7 +16,6 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.apmap
-import com.lagradost.cloudstream3.apmapIndexed
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
@@ -27,8 +24,10 @@ import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -112,12 +111,12 @@ class AnimeKai : MainAPI() {
         val document = app.get(url).document
         val malid=document.select("div.watch-section").attr("data-mal-id")
         val aniid=document.select("div.watch-section").attr("data-al-id")
-
+        val syncData= app.get("https://api.ani.zip/mappings?mal_id=$malid").toString()
+        val animeData = parseAnimeData(syncData)
         val title = document.selectFirst("div.title")?.text().toString()
         val jptitle=document.selectFirst("div.title")?.attr("data-jp").toString()
-        val poster = document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")?.substringBefore(")")
+        val poster = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")?.substringBefore(")")
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
-
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
@@ -134,6 +133,9 @@ class AnimeKai : MainAPI() {
                             newEpisode("sub|" + ep.attr("token")) {
                                 name = ep.selectFirst("span")?.text()
                                 episode = ep.attr("num").toIntOrNull()
+                                this.rating=animeData.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                                this.posterUrl= animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                             }
                 }
             }
@@ -143,6 +145,9 @@ class AnimeKai : MainAPI() {
                             newEpisode("dub|" + ep.attr("token")) {
                                 name = ep.selectFirst("span")?.text()
                                 episode = ep.attr("num").toIntOrNull()
+                                this.rating=animeData.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                                this.posterUrl= animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                             }
                 }
             }
@@ -214,20 +219,9 @@ class AnimeKai : MainAPI() {
         }
     }
 
-    data class VideoData(
-        val url: String,
-        val skip: Skip,
-    )
-
-    data class Skip(
-        val intro: List<Long>,
-        val outro: List<Long>,
-    )
-
     private fun extractVideoUrlFromJson(jsonData: String): String {
-        val gson = com.google.gson.Gson()
-        val videoData = gson.fromJson(jsonData, VideoData::class.java)
-        return videoData.url
+        val jsonObject = JSONObject(jsonData)
+        return jsonObject.getString("url")
     }
 
     data class M3U8(
@@ -235,6 +229,7 @@ class AnimeKai : MainAPI() {
         val tracks: List<Track>,
         val download: String,
     )
+
     data class Source(
         val file: String,
     )
