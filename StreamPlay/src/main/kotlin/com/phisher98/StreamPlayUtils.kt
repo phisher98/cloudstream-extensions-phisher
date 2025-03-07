@@ -10,10 +10,6 @@ import com.Phisher98.StreamPlay.Companion.gdbot
 import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.Phisher98.StreamPlay.Companion.malsyncAPI
 import com.Phisher98.StreamPlay.Companion.thrirdAPI
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -2419,21 +2415,16 @@ fun getPlayer4UQuality (quality :String) : Int
     }
 }
 
-fun getAnidbEid(json: String, episodeNumber: Int?): Int? {
-    if (json.startsWith("\"") && json.endsWith("\"")) return null // Handle "Not Found" case
+fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
+    val jsonObject = JSONObject(jsonString)
+    val episodes = jsonObject.getJSONObject("episodes")
 
-    val objectMapper = ObjectMapper()
-        .registerKotlinModule()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    return try {
-        val root = objectMapper.readValue<AnidbEid>(json)
-        root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
-    } catch (e: Exception) {
-        null // Return null in case of deserialization failure
+    return if (episodes.has(episodeNumber.toString())) {
+        episodes.getJSONObject(episodeNumber.toString()).getInt("anidbEid")
+    } else {
+        null
     }
 }
-
-
 
 fun generateVidsrcVrf(n: Int?): String {
     val secret = "j8MDyaub7B"

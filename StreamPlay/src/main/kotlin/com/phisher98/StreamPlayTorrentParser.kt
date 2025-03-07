@@ -149,21 +149,6 @@ data class BehaviorHints(
 
 //Subtitles
 
-data class Subtitles(
-    val subtitles: List<SubtitleTorrent>,
-    val cacheMaxAge: Long,
-)
-
-data class SubtitleTorrent(
-    val id: String,
-    val url: String,
-    @JsonProperty("SubEncoding")
-    val subEncoding: String,
-    val lang: String,
-    val m: String,
-    val g: String,
-)
-
 
 data class AnimetoshoItem(
     val id: Long,
@@ -266,13 +251,13 @@ data class PeerflixStream(
 )
 
 
+data class AnidbEidEpisodeWrapper(
+    @JsonProperty("episode") val episode: AnidbEidEpisode
+)
+
 data class AnidbEidEpisode(
     @JsonProperty("episodeNumber") val episodeNumber: Int?,
     @JsonProperty("anidbEid") val anidbEid: Int?
-)
-
-data class AnidbEid(
-    @JsonProperty("episodes") val episodes: Map<String, AnidbEidEpisode>
 )
 
 

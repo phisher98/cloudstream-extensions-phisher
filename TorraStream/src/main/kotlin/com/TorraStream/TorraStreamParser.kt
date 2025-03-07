@@ -182,7 +182,6 @@ data class Subtitle1(
     val g: String,
 )
 
-
 data class AnimetoshoItem(
     val id: Long,
     val title: String,
@@ -231,14 +230,5 @@ data class AnimetoshoItem(
     val articleTitle: Any?,
     @SerializedName("website_url")
     val websiteUrl: String?
-)
-
-data class AnidbEidEpisode(
-    @JsonProperty("episodeNumber") val episodeNumber: Int?,
-    @JsonProperty("anidbEid") val anidbEid: Int?
-)
-
-data class AnidbEid(
-    @JsonProperty("episodes") val episodes: Map<String, AnidbEidEpisode>
 )
 

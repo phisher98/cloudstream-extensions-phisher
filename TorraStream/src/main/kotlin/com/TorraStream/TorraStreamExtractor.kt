@@ -3,9 +3,6 @@ package com.TorraStream
 import com.TorraStream.TorraStream.Companion.AnimetoshoAPI
 import com.TorraStream.TorraStream.Companion.SubtitlesAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -14,6 +11,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import org.json.JSONArray
 import java.util.Locale
 
 suspend fun invokeTorrastream(
@@ -390,13 +388,47 @@ suspend fun invokeAnimetosho(
     id: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val url="$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22|%22TrueHD%22|%22[EMBER]%22)((e*|a*|r*|i*|o*|%221080%22)%20!%22720%22%20!%22540%22%20!%22480%22)"
-    val gson = Gson()
+    val url = "$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22|%22TrueHD%22|%22[EMBER]%22)((e*|a*|r*|i*|o*|%221080%22)%20!%22720%22%20!%22540%22%20!%22480%22)"
     val jsonResponse = app.get(url).toString()
-    val listType = object : TypeToken<List<AnimetoshoItem>>() {}.type
-    val parsedList: List<AnimetoshoItem>? = gson.fromJson(jsonResponse, listType)
 
-    parsedList?.sortedByDescending { it.seeders }?.forEach { item ->
+    val jsonArray = JSONArray(jsonResponse)
+    val parsedList = mutableListOf<AnimetoshoItem>()
+
+    for (i in 0 until jsonArray.length()) {
+        val jsonObject = jsonArray.getJSONObject(i)
+        val item = AnimetoshoItem(
+            id = jsonObject.getLong("id"),
+            title = jsonObject.getString("title"),
+            link = jsonObject.getString("link"),
+            timestamp = jsonObject.getLong("timestamp"),
+            status = jsonObject.getString("status"),
+            toshoId = jsonObject.optLong("tosho_id"),
+            nyaaId = jsonObject.optLong("nyaa_id"),
+            nyaaSubdom = jsonObject.opt("nyaa_subdom"),
+            anidexId = jsonObject.opt("anidex_id"),
+            torrentUrl = jsonObject.getString("torrent_url"),
+            torrentName = jsonObject.getString("torrent_name"),
+            infoHash = jsonObject.getString("info_hash"),
+            infoHashV2 = jsonObject.opt("info_hash_v2"),
+            magnetUri = jsonObject.getString("magnet_uri"),
+            seeders = jsonObject.getLong("seeders"),
+            leechers = jsonObject.getLong("leechers"),
+            torrentDownloadedCount = jsonObject.getLong("torrent_downloaded_count"),
+            trackerUpdated = jsonObject.optLong("tracker_updated"),
+            nzbUrl = jsonObject.getString("nzb_url"),
+            totalSize = jsonObject.getLong("total_size"),
+            numFiles = jsonObject.getLong("num_files"),
+            anidbAid = jsonObject.getLong("anidb_aid"),
+            anidbEid = jsonObject.getLong("anidb_eid"),
+            anidbFid = jsonObject.optLong("anidb_fid"),
+            articleUrl = jsonObject.opt("article_url"),
+            articleTitle = jsonObject.opt("article_title"),
+            websiteUrl = jsonObject.optString("website_url", null)
+        )
+        parsedList.add(item)
+    }
+
+    parsedList.sortedByDescending { it.seeders }.forEach { item ->
         val name = item.torrentName
         val magnet = item.magnetUri
         callback.invoke(
@@ -406,7 +438,7 @@ suspend fun invokeAnimetosho(
                 magnet,
                 "",
                 getIndexQuality(name),
-                INFER_TYPE,
+                INFER_TYPE
             )
         )
     }

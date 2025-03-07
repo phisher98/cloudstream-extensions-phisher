@@ -1,14 +1,10 @@
 package com.TorraStream
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import org.json.JSONObject
 
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "") ?. groupValues ?. getOrNull(1) ?. toIntOrNull()
@@ -42,31 +38,6 @@ data class TorrentioStream(
     val fileIdx: Int?,
 )
 
-data class LinkData(
-    @JsonProperty("simklId") val simklId: Int? = null,
-    @JsonProperty("traktId") val traktId: Int? = null,
-    @JsonProperty("imdbId") val imdbId: String? = null,
-    @JsonProperty("tmdbId") val tmdbId: Int? = null,
-    @JsonProperty("tvdbId") val tvdbId: Int? = null,
-    @JsonProperty("type") val type: String? = null,
-    @JsonProperty("season") val season: Int? = null,
-    @JsonProperty("episode") val episode: Int? = null,
-    @JsonProperty("aniId") val aniId: String? = null,
-    @JsonProperty("malId") val malId: String? = null,
-    @JsonProperty("title") val title: String? = null,
-    @JsonProperty("year") val year: Int? = null,
-    @JsonProperty("orgTitle") val orgTitle: String? = null,
-    @JsonProperty("isAnime") val isAnime: Boolean = false,
-    @JsonProperty("airedYear") val airedYear: Int? = null,
-    @JsonProperty("lastSeason") val lastSeason: Int? = null,
-    @JsonProperty("epsTitle") val epsTitle: String? = null,
-    @JsonProperty("jpTitle") val jpTitle: String? = null,
-    @JsonProperty("date") val date: String? = null,
-    @JsonProperty("airedDate") val airedDate: String? = null,
-    @JsonProperty("isAsian") val isAsian: Boolean = false,
-    @JsonProperty("isBollywood") val isBollywood: Boolean = false,
-    @JsonProperty("isCartoon") val isCartoon: Boolean = false,
-)
 
 data class DebianRoot(
     val streams: List<Stream>,
@@ -104,7 +75,7 @@ data class Subtitle(
     val g: String,
 )
 
-suspend fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
+fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
     // Fetch the content of the file from the provided URL
 
     // Build the magnet link
@@ -119,16 +90,13 @@ suspend fun generateMagnetLinkFromSource(trackersList: List<String>, hash: Strin
 }
 
 
-fun getAnidbEid(json: String, episodeNumber: Int?): Int? {
-    if (json.startsWith("\"") && json.endsWith("\"")) return null // Handles "Not Found" or other plain string responses
+fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
+    val jsonObject = JSONObject(jsonString)
+    val episodes = jsonObject.getJSONObject("episodes")
 
-    val objectMapper = ObjectMapper().registerKotlinModule()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-
-    return try {
-        val root = objectMapper.readValue<AnidbEid>(json)
-        root.episodes.values.firstOrNull { it.episodeNumber == episodeNumber }?.anidbEid
-    } catch (e: Exception) {
-        null // Return null for invalid JSON
+    return if (episodes.has(episodeNumber.toString())) {
+        episodes.getJSONObject(episodeNumber.toString()).getInt("anidbEid")
+    } else {
+        null
     }
 }
