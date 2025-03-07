@@ -11,7 +11,6 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import java.nio.charset.Charset
 import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 /** 
@@ -109,10 +108,10 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
     
-    fun decryptData(base64Key: String, encryptedData: String): String {
+    private fun decryptData(base64Key: String, encryptedData: String): String {
         return try {
             // Decode Base64-encoded encrypted data
-            val decodedBytes = Base64.decode(encryptedData, Base64.DEFAULT)
+            val decodedBytes = base64DecodeArray(encryptedData)
 
             // Extract IV, Authentication Tag, and Ciphertext
             val iv = decodedBytes.copyOfRange(0, 12)
@@ -120,8 +119,7 @@ open class Chillx : ExtractorApi() {
             val ciphertext = decodedBytes.copyOfRange(28, decodedBytes.size)
 
             // Convert Base64-encoded password to a SHA-256 encryption key
-            val password =
-                String(Base64.decode(base64Key, Base64.DEFAULT), Charset.forName("UTF-8"))
+            val password = base64Decode(base64Key)
             val keyBytes =
                 MessageDigest.getInstance("SHA-256")
                     .digest(password.toByteArray(Charset.forName("UTF-8")))
