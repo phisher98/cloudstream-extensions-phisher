@@ -4,6 +4,8 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -11,6 +13,12 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import java.nio.charset.Charset
+import java.security.MessageDigest
+import javax.crypto.Cipher
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class Ghbrisk : Filesim() {
     override val name = "Streamwish"
@@ -41,22 +49,21 @@ open class Chillx : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf(
+            "priority" to "u=0, i",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Language" to "en-US,en;q=0.9",
         )
-
         try {
-            // Fetch the raw response from the URL
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val password = "CbrP~To{lEc1i$,+"
-            val decryptedData = rc4Decrypt(password, hexToBytes(encodedString))
+            val keyBase64 = "fnBmd19PVzRyfSFmdWV0ZQ=="
+            val decryptedData = decryptData(keyBase64, encodedString)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -108,33 +115,38 @@ open class Chillx : ExtractorApi() {
         }.toList()
     }
 
-    private fun hexToBytes(hex: String): ByteArray {
-        return ByteArray(hex.length / 2) { i -> hex.substring(2 * i, 2 * i + 2).toInt(16).toByte() }
+    private fun decryptData(base64Key: String, encryptedData: String): String {
+        return try {
+            // Decode Base64-encoded encrypted data
+            val decodedBytes = base64DecodeArray(encryptedData)
+
+            // Extract IV, Authentication Tag, and Ciphertext
+            val iv = decodedBytes.copyOfRange(0, 12)
+            val authTag = decodedBytes.copyOfRange(12, 28)
+            val ciphertext = decodedBytes.copyOfRange(28, decodedBytes.size)
+
+            // Convert Base64-encoded password to a SHA-256 encryption key
+            val password = base64Decode(base64Key)
+            val keyBytes =
+                MessageDigest.getInstance("SHA-256")
+                    .digest(password.toByteArray(Charset.forName("UTF-8")))
+
+            // Decrypt the data using AES-GCM
+            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val gcmSpec = GCMParameterSpec(128, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
+
+            // Perform decryption
+            val decryptedBytes = cipher.doFinal(ciphertext + authTag)
+            String(decryptedBytes, Charset.forName("UTF-8"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Decryption failed"
+        }
     }
 
-    private fun rc4Decrypt(key: String, encryptedData: ByteArray): String {
-        val s = IntArray(256) { it }
-        var j = 0
-        for (i in 0 until 256) {
-            j = (j + s[i] + key[i % key.length].code) % 256
-            s[i] = s[j].also { s[j] = s[i] }
-        }
-
-        var i = 0
-        j = 0
-        val decryptedData = ByteArray(encryptedData.size)
-        for (index in encryptedData.indices) {
-            i = (i + 1) % 256
-            j = (j + s[i]) % 256
-            s[i] = s[j].also { s[j] = s[i] }
-            val k = s[(s[i] + s[j]) % 256]
-            decryptedData[index] = (encryptedData[index].toInt() xor k).toByte()
-        }
-
-        return String(decryptedData)
-    }
-
-
+    /** End **/
 }
 
 class FilemoonV2 : ExtractorApi() {
