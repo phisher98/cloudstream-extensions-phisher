@@ -1,8 +1,8 @@
 package com.AnimeKai
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Image(
@@ -13,11 +13,8 @@ data class Image(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Episode(
     @JsonProperty("episode") val episode: String?,
-    @JsonProperty("airdate") val airdate: String?,
-    @JsonProperty("airDate") val airDate: String?,
-    @JsonProperty("airDateUtc") val airDateUtc: String?,
-    @JsonProperty("length") val length: Int?,
-    @JsonProperty("runtime") val runtime: Int?,
+    @JsonProperty("airDate") val airDate: String?,  // Keeping only one field
+    @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
     @JsonProperty("image") val image: String?,
     @JsonProperty("title") val title: Map<String, String>?,
     @JsonProperty("overview") val overview: String?,
@@ -32,7 +29,13 @@ data class AnimeData(
     @JsonProperty("episodes") val episodes: Map<String, Episode>?
 )
 
-fun parseAnimeData(jsonString: String): AnimeData {
-    val objectMapper = ObjectMapper()
-    return objectMapper.readValue(jsonString, AnimeData::class.java)
+fun parseAnimeData(jsonString: String): AnimeData? {
+    return try {
+        val objectMapper = ObjectMapper()
+        objectMapper.readValue(jsonString, AnimeData::class.java)
+    } catch (e: Exception) {
+        null // Return null for invalid JSON instead of crashing
+    }
 }
+
+

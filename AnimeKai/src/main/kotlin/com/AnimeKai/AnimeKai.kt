@@ -115,7 +115,7 @@ class AnimeKai : MainAPI() {
         val animeData = parseAnimeData(syncData)
         val title = document.selectFirst("div.title")?.text().toString()
         val jptitle=document.selectFirst("div.title")?.attr("data-jp").toString()
-        val poster = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")?.substringBefore(")")
+        val poster = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")?.substringBefore(")")
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
@@ -133,8 +133,8 @@ class AnimeKai : MainAPI() {
                             newEpisode("sub|" + ep.attr("token")) {
                                 name = ep.selectFirst("span")?.text()
                                 episode = ep.attr("num").toIntOrNull()
-                                this.rating=animeData.episodes?.get(episode?.toString())?.rating.toRatingInt()
-                                this.posterUrl= animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                                this.rating=animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                                this.posterUrl= animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                                 this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                             }
                 }
@@ -145,8 +145,8 @@ class AnimeKai : MainAPI() {
                             newEpisode("dub|" + ep.attr("token")) {
                                 name = ep.selectFirst("span")?.text()
                                 episode = ep.attr("num").toIntOrNull()
-                                this.rating=animeData.episodes?.get(episode?.toString())?.rating.toRatingInt()
-                                this.posterUrl= animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                                this.rating=animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                                this.posterUrl= animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                                 this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                             }
                 }
@@ -204,7 +204,7 @@ class AnimeKai : MainAPI() {
                 .parsed<Response>().result
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
-            val name = "AnimeKai $serverName $nameSuffix".trim()
+            val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
         return true
