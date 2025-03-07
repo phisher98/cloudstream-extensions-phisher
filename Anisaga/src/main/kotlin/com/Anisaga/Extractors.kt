@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
+import org.json.JSONArray
 import java.nio.charset.Charset
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
@@ -101,11 +102,23 @@ open class Chillx : ExtractorApi() {
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
-        return regex.findAll(subtitle).map { match ->
-            val (language, url) = match.destructured
-            language.trim() to url.trim()
-        }.toList()
+        val regex = """tracks:\s*\[(.*?)]""".toRegex()
+        val match = regex.find(subtitle)?.groupValues?.get(1) ?: return emptyList()
+
+        return try {
+            val subtitles = JSONArray("[$match]") // Wrap in brackets to form valid JSON
+            (0 until subtitles.length()).mapNotNull { i ->
+                val obj = subtitles.optJSONObject(i) ?: return@mapNotNull null
+                val kind = obj.optString("kind")
+                if (kind == "captions") {
+                    val label = obj.optString("label")
+                    val file = obj.optString("file")
+                    label to file
+                } else null
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
     
     private fun decryptData(base64Key: String, encryptedData: String): String {

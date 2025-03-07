@@ -2,10 +2,10 @@ package com.Phisher98
 
 import com.lagradost.cloudstream3.USER_AGENT
 import com.google.gson.JsonParser
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
@@ -18,7 +18,14 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.json.JSONArray
 import java.net.URI
+import java.nio.charset.Charset
+import java.security.MessageDigest
+import javax.crypto.Cipher
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class FilemoonV2 : ExtractorApi() {
     override var name = "Filemoon"
@@ -106,22 +113,21 @@ open class Chillx : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf(
+            "priority" to "u=0, i",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
             "Accept-Language" to "en-US,en;q=0.9",
         )
-
         try {
-            // Fetch the raw response from the URL
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            val encodedString = Regex("const\\s+\\w+\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val password = "l%sn3@bJvcg0IuJV"
-            val decryptedData = decryptXOR(encodedString, password)
+            val keyBase64 = "fnBmd19PVzRyfSFmdWV0ZQ=="
+            val decryptedData = decryptData(keyBase64, encodedString)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -166,30 +172,59 @@ open class Chillx : ExtractorApi() {
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
-        return regex.findAll(subtitle).map { match ->
-            val (language, url) = match.destructured
-            language.trim() to url.trim()
-        }.toList()
-    }
+        val regex = """tracks:\s*\[(.*?)]""".toRegex()
+        val match = regex.find(subtitle)?.groupValues?.get(1) ?: return emptyList()
 
-    private fun decryptXOR(encryptedData: String, password: String): String {
         return try {
-            val decodedBytes = base64DecodeArray(encryptedData)
-            val keyBytes = decodedBytes.copyOfRange(0, 16)
-            val dataBytes = decodedBytes.copyOfRange(16, decodedBytes.size)
-            val passwordBytes = password.toByteArray(Charsets.UTF_8)
-
-            val decryptedBytes = ByteArray(dataBytes.size) { i ->
-                (dataBytes[i].toInt() xor passwordBytes[i % passwordBytes.size].toInt() xor keyBytes[i % keyBytes.size].toInt()).toByte()
+            val subtitles = JSONArray("[$match]") // Wrap in brackets to form valid JSON
+            (0 until subtitles.length()).mapNotNull { i ->
+                val obj = subtitles.optJSONObject(i) ?: return@mapNotNull null
+                val kind = obj.optString("kind")
+                if (kind == "captions") {
+                    val label = obj.optString("label")
+                    val file = obj.optString("file")
+                    label to file
+                } else null
             }
-
-            String(decryptedBytes, Charsets.UTF_8)
         } catch (e: Exception) {
-            "Decryption Failed"
+            emptyList()
         }
     }
+
+    private fun decryptData(base64Key: String, encryptedData: String): String {
+        return try {
+            // Decode Base64-encoded encrypted data
+            val decodedBytes = base64DecodeArray(encryptedData)
+
+            // Extract IV, Authentication Tag, and Ciphertext
+            val iv = decodedBytes.copyOfRange(0, 12)
+            val authTag = decodedBytes.copyOfRange(12, 28)
+            val ciphertext = decodedBytes.copyOfRange(28, decodedBytes.size)
+
+            // Convert Base64-encoded password to a SHA-256 encryption key
+            val password = base64Decode(base64Key)
+            val keyBytes =
+                MessageDigest.getInstance("SHA-256")
+                    .digest(password.toByteArray(Charset.forName("UTF-8")))
+
+            // Decrypt the data using AES-GCM
+            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val gcmSpec = GCMParameterSpec(128, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
+
+            // Perform decryption
+            val decryptedBytes = cipher.doFinal(ciphertext + authTag)
+            String(decryptedBytes, Charset.forName("UTF-8"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Decryption failed"
+        }
+    }
+
+    /** End **/
 }
+
 
 class Multimovies: StreamWishExtractor() {
     override var name = "Multimovies Cloud"

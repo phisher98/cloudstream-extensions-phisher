@@ -10,9 +10,12 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.getPacked
+import org.json.JSONArray
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import javax.crypto.Cipher
@@ -108,11 +111,23 @@ open class Chillx : ExtractorApi() {
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
-        return regex.findAll(subtitle).map { match ->
-            val (language, url) = match.destructured
-            language.trim() to url.trim()
-        }.toList()
+        val regex = """tracks:\s*\[(.*?)\]""".toRegex()
+        val match = regex.find(subtitle)?.groupValues?.get(1) ?: return emptyList()
+
+        return try {
+            val subtitles = JSONArray("[$match]") // Wrap in brackets to form valid JSON
+            (0 until subtitles.length()).mapNotNull { i ->
+                val obj = subtitles.optJSONObject(i) ?: return@mapNotNull null
+                val kind = obj.optString("kind")
+                if (kind == "captions") {
+                    val label = obj.optString("label")
+                    val file = obj.optString("file")
+                    label to file
+                } else null
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     private fun decryptData(base64Key: String, encryptedData: String): String {
@@ -161,13 +176,10 @@ class FilemoonV2 : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
-        Log.d("Phisher",href)
         val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         val m3u8= JsUnpacker(res).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
         }
-        Log.d("Phisher",m3u8.toString())
-
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -178,5 +190,65 @@ class FilemoonV2 : ExtractorApi() {
                 type = ExtractorLinkType.M3U8,
             )
         )
+    }
+}
+
+
+open class Filesim : ExtractorApi() {
+    override val name = "Filesim"
+    override val mainUrl = "https://files.im"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        var response = app.get(url.replace("/download/", "/e/"), referer = referer)
+        val iframe = response.document.selectFirst("iframe")
+        if (iframe != null) {
+            response = app.get(
+                iframe.attr("src"), headers = mapOf(
+                    "Accept-Language" to "en-US,en;q=0.5",
+                    "Sec-Fetch-Dest" to "iframe"
+                ), referer = response.url
+            )
+        }
+
+        var script = if (!getPacked(response.text).isNullOrEmpty()) {
+            getAndUnpack(response.text)
+        } else {
+            response.document.selectFirst("script:containsData(sources:)")?.data()
+        }
+
+        if (script == null) {
+            val iframeUrl = Regex("""<iframe src=\"(.*?)\"""").find(response.text, 0)?.groupValues?.getOrNull(1)
+            if (iframeUrl != null) {
+                val iframeResponse = app.get(iframeUrl, referer = null, headers = mapOf("Accept-Language" to "en-US,en;q=0.5"))
+                script = if (!getPacked(iframeResponse.text).isNullOrEmpty()) {
+                    getAndUnpack(iframeResponse.text)
+                } else return
+            } else return
+        }
+
+        val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1)
+        generateM3u8(name, m3u8 ?: return, mainUrl).forEach(callback)
+
+        // Extract subtitles
+        val tracksJson = Regex("tracks:\\s*\\[(.*?)]", RegexOption.DOT_MATCHES_ALL).find(script)?.groupValues?.getOrNull(1) ?: return
+        val tracksArray = JSONArray("[$tracksJson]")
+
+        for (i in 0 until tracksArray.length()) {
+            val track = tracksArray.getJSONObject(i)
+            if (track.optString("kind") == "captions") {
+                subtitleCallback(
+                    SubtitleFile(
+                        track.optString("label"),
+                        track.optString("file")
+                    )
+                )
+            }
+        }
     }
 }
