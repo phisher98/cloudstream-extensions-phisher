@@ -102,10 +102,12 @@ class Hikaritv : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val animeId = url.substringAfter("/anime/").substringBefore("/").toIntOrNull()
+        val syncData= app.get("https://api.ani.zip/mappings?mal_id=$animeId").toString()
+        val animeData = parseAnimeData(syncData)
         val response = app.get(url)
         val document = response.document
         val animeTitle = document.selectFirst("h2.film-name.dynamic-name")?.text()?.trim().orEmpty()
-        val posterUrl = document.select("div.anis-cover").attr("style").substringAfter("(").substringBefore(")")
+        val posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: document.select("div.anis-cover").attr("style").substringAfter("(").substringBefore(")")
         val genreTags = document.select("div.sgeneros > a").map { it.text() }
         val animeDuration = document.selectFirst("span.item-head:contains(Duration:)")?.nextElementSibling()?.text()?.substringBefore("per")?.trim()
         val releaseYear = document.selectFirst("span.item-head:contains(Aired:)")?.nextElementSibling()?.text()?.substringBefore("-")?.trim()?.toIntOrNull()
@@ -170,6 +172,8 @@ class Hikaritv : MainAPI() {
                                         this.name=episodeName
                                         this.season=1
                                         this.episode=episodeNumber
+                                        this.posterUrl= animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                                        this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                                     })
                     }
                 }
@@ -191,6 +195,8 @@ class Hikaritv : MainAPI() {
                                     this.name=episodeName
                                     this.season=1
                                     this.episode=episodeNumber
+                                    this.posterUrl= animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                                    this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                                 })
                     }
                 }
