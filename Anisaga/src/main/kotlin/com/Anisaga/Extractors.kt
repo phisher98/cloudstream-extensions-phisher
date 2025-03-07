@@ -14,6 +14,13 @@ import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
+/** 
+New Imports
+**/
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import java.security.MessageDigest
+
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
     override val mainUrl = "https://plyrxcdn.site"
@@ -42,13 +49,13 @@ open class Chillx : ExtractorApi() {
         try {
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val keyBase64 = "ZmJlYTcyMGU5MDY0NDE3Mzg1MDc0MjMzOThiYTcwMjg5ZTQwNjJmZTU2NGFhNTU5OTY5OWZhNjA2NDVmNzdjZA=="
+            val keyBase64 = "fnBmd19PVzRyfSFmdWV0ZQ=="
             val decryptedData = decryptData(keyBase64, encodedString)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
@@ -100,29 +107,38 @@ open class Chillx : ExtractorApi() {
             language.trim() to url.trim()
         }.toList()
     }
-
-    private fun decryptData(base64Key: String, encryptedData: String): String {
-        // Method: AES (CBC)
+    
+    fun decryptData(base64Key: String, encryptedData: String): String {
         return try {
-            val keyHex = base64Decode(base64Key)
-            val keyBytes = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            // Decode Base64-encoded encrypted data
+            val decodedBytes = Base64.decode(encryptedData, Base64.DEFAULT)
 
-            val bytesData = base64DecodeArray(encryptedData)
+            // Extract IV, Authentication Tag, and Ciphertext
+            val iv = decodedBytes.copyOfRange(0, 12)
+            val authTag = decodedBytes.copyOfRange(12, 28)
+            val ciphertext = decodedBytes.copyOfRange(28, decodedBytes.size)
 
-            // Extract the IV and ciphertext
-            val iv = bytesData.copyOfRange(0, 16)
-            val ciphertext = bytesData.copyOfRange(16, bytesData.size)
+            // Convert Base64-encoded password to a SHA-256 encryption key
+            val password =
+                String(Base64.decode(base64Key, Base64.DEFAULT), Charset.forName("UTF-8"))
+            val keyBytes =
+                MessageDigest.getInstance("SHA-256")
+                    .digest(password.toByteArray(Charset.forName("UTF-8")))
 
-            // Initialize the cipher for AES CBC decryption
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(iv))
+            // Decrypt the data using AES-GCM
+            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val gcmSpec = GCMParameterSpec(128, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
 
-            // Perform decryption and return the result as a string
-            String(cipher.doFinal(ciphertext), Charset.forName("UTF-8"))
+            // Perform decryption
+            val decryptedBytes = cipher.doFinal(ciphertext + authTag)
+            String(decryptedBytes, Charset.forName("UTF-8"))
         } catch (e: Exception) {
             e.printStackTrace()
             "Decryption failed"
         }
     }
-
+    
+    /** End **/
 }
