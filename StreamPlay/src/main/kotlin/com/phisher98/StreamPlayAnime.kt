@@ -204,46 +204,38 @@ class StreamPlayAnime : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val mediaData = AppUtils.parseJson<LinkData>(data)
-        val malId=mediaData.malId
-        val episode=mediaData.episode
-        val jpTitle=mediaData.jpTitle
-        val malsync = app.get("$malsyncAPI/mal/anime/${malId}")
-            .parsedSafe<MALSyncResponses>()?.sites
-        val zoroIds = malsync?.zoro?.keys?.map { it }
-        val zorotitle = malsync?.zoro?.firstNotNullOf { it.value["title"] }?.replace(":"," ")
-        val hianimeurl=malsync?.zoro?.firstNotNullOf { it.value["url"] }
-        val kaasslug=malsync?.KickAssAnime?.firstNotNullOf { it.value["identifier"] }
+        val malId = mediaData.malId
+        val episode = mediaData.episode
+        val jpTitle = mediaData.jpTitle
+
+        val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
+        val zoro = malsync?.zoro
+        val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
+        val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
+        val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
+
         argamap(
+            { invokeHianime(zoro?.keys?.toList(), hianimeUrl, episode, subtitleCallback, callback) },
             {
-                invokeHianime(zoroIds,hianimeurl, episode, subtitleCallback, callback)
+                malsync?.animepahe?.values?.firstNotNullOfOrNull { it["title"] }?.let {
+                    invokeMiruroanimeGogo(zoro?.keys?.toList(), it, episode, subtitleCallback, callback)
+                }
             },
             {
-                val animepahetitle = malsync?.animepahe?.firstNotNullOf { it.value["title"] }
-                if (animepahetitle!=null) invokeMiruroanimeGogo(zoroIds,animepahetitle, episode, subtitleCallback, callback)
+                malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let {
+                    invokeAnimepahe(it, episode, subtitleCallback, callback)
+                }
             },
+            { invokeGrani(zorotitle ?: "", episode, callback) },
             {
-                val animepahe = malsync?.animepahe?.firstNotNullOfOrNull { it.value["url"] }
-                if (animepahe!=null) invokeAnimepahe(animepahe, episode, subtitleCallback, callback)
+                malsync?.Gogoanime?.values?.firstNotNullOfOrNull { it["url"] }?.let {
+                    invokeAnitaku(it, episode, subtitleCallback, callback)
+                }
             },
-            {
-                invokeGrani(zorotitle ?:"",episode, callback)
-            },
-            {
-                val Gogourl = malsync?.Gogoanime?.firstNotNullOfOrNull { it.value["url"] }
-                if (Gogourl != null) invokeAnitaku(Gogourl, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnizone(jpTitle, episode, callback)
-            },
-            {
-                invokeKickAssAnime(kaasslug, episode, subtitleCallback, callback)
-            },
-            {
-                invokeAnimeKai(malId, episode, subtitleCallback, callback)
-            }
+            { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
+            { invokeAnizone(jpTitle, episode, callback) },
+            { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
+            { invokeAnimeKai(malId, episode, subtitleCallback, callback) }
         )
         return true
     }

@@ -909,36 +909,39 @@ object StreamPlayExtractor : StreamPlay() {
             title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
         )
 
-        val jikanResponse = runCatching {
-            app.get("$jikanAPI/anime/${malId ?: return@runCatching null}").parsedSafe<JikanResponse>()?.data?.season
-        }.getOrNull().orEmpty()
+        val jikanSeason = malId?.let {
+            runCatching { app.get("$jikanAPI/anime/$it").parsedSafe<JikanResponse>()?.data?.season }
+                .getOrNull()
+        }
 
-        val malsync = runCatching {
-            app.get("$malsyncAPI/mal/anime/${malId ?: return@runCatching null}").parsedSafe<MALSyncResponses>()?.sites
-        }.getOrNull()
+        val malsync = malId?.let {
+            runCatching { app.get("$malsyncAPI/mal/anime/$it").parsedSafe<MALSyncResponses>()?.sites }
+                .getOrNull()
+        }
 
-        val zoroIds = malsync?.zoro?.keys?.toList().orEmpty()
-        val TMDBdate = date?.substringBefore("-").orEmpty()
-        val zorotitle = malsync?.zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
-        val hianimeurl = malsync?.zoro?.values?.firstNotNullOfOrNull { it["url"] }
+        val zoro = malsync?.zoro
+        val zoroIds = zoro?.keys?.toList().orEmpty()
+        val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
+        val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
         val animepaheTitle = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["title"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
         val gogoUrl = malsync?.Gogoanime?.values?.firstNotNullOfOrNull { it["url"] }
-        val jptitleslug = jptitle.createSlug()
+        val tmdbYear = date?.substringBefore("-").orEmpty()
+        val jptitleSlug = jptitle.createSlug()
 
         argamap(
-            { if (malId != null) invokeAnimetosho(malId, season, episode, subtitleCallback, callback) },
-            { invokeHianime(zoroIds, hianimeurl, episode, subtitleCallback, callback) },
-            { if (malId != null) invokeAnimeKai(malId, episode, subtitleCallback, callback) },
-            { if (animepaheTitle != null) invokeMiruroanimeGogo(zoroIds, animepaheTitle, episode, subtitleCallback, callback) },
-            { if (kaasSlug != null) invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
-            { if (animepaheUrl != null) invokeAnimepahe(animepaheUrl, episode, subtitleCallback, callback) },
-            { invokeGrani(title ?: "", episode, callback) },
-            { invokeGojo(aniId, jptitleslug, episode, subtitleCallback, callback) },
-            { invokeAnichi(zorotitle, jikanResponse, TMDBdate, episode, subtitleCallback, callback) },
+            { malId?.let { invokeAnimetosho(it, season, episode, subtitleCallback, callback) } },
+            { invokeHianime(zoroIds, hianimeUrl, episode, subtitleCallback, callback) },
+            { malId?.let { invokeAnimeKai(it, episode, subtitleCallback, callback) } },
+            { animepaheTitle?.let { invokeMiruroanimeGogo(zoroIds, it, episode, subtitleCallback, callback) } },
+            { kaasSlug?.let { invokeKickAssAnime(it, episode, subtitleCallback, callback) } },
+            { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
+            { invokeGrani(title.orEmpty(), episode, callback) },
+            { invokeGojo(aniId, jptitleSlug, episode, subtitleCallback, callback) },
+            { invokeAnichi(zorotitle, jikanSeason, tmdbYear, episode, subtitleCallback, callback) },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
-            { if (gogoUrl != null) invokeAnitaku(gogoUrl, episode, subtitleCallback, callback) },
+            { gogoUrl?.let { invokeAnitaku(it, episode, subtitleCallback, callback) } },
             { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
             { invokeAnizone(jptitle, episode, callback) }
         )
