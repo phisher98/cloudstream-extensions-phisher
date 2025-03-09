@@ -1,14 +1,14 @@
-package com.Phisher98
+package com.phisher98
 
 import app.cash.quickjs.QuickJs
-import com.Phisher98.DumpUtils.queryApi
-import com.Phisher98.StreamPlay.Companion.anilistAPI
-import com.Phisher98.StreamPlay.Companion.filmxyAPI
-import com.Phisher98.StreamPlay.Companion.fourthAPI
-import com.Phisher98.StreamPlay.Companion.gdbot
-import com.Phisher98.StreamPlay.Companion.hdmovies4uAPI
-import com.Phisher98.StreamPlay.Companion.malsyncAPI
-import com.Phisher98.StreamPlay.Companion.thrirdAPI
+import com.phisher98.DumpUtils.queryApi
+import com.phisher98.StreamPlay.Companion.anilistAPI
+import com.phisher98.StreamPlay.Companion.filmxyAPI
+import com.phisher98.StreamPlay.Companion.fourthAPI
+import com.phisher98.StreamPlay.Companion.gdbot
+import com.phisher98.StreamPlay.Companion.hdmovies4uAPI
+import com.phisher98.StreamPlay.Companion.malsyncAPI
+import com.phisher98.StreamPlay.Companion.thrirdAPI
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*

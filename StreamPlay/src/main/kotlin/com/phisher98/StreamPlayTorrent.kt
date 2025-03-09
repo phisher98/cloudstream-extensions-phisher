@@ -1,7 +1,7 @@
-package com.Phisher98
+package com.phisher98
 
-import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
-import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app

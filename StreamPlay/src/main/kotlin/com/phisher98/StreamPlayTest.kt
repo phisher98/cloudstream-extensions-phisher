@@ -1,8 +1,8 @@
-package com.Phisher98
+package com.phisher98
 
 
 import android.content.SharedPreferences
-import com.Phisher98.StreamPlayExtractor.invokeVidSrcXyz
+import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils

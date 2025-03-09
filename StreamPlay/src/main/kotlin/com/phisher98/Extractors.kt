@@ -1,6 +1,6 @@
-package com.Phisher98
+package com.phisher98
 
-import com.Phisher98.StreamPlay.Companion.animepaheAPI
+import com.phisher98.StreamPlay.Companion.animepaheAPI
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue

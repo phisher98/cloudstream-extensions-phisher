@@ -1,8 +1,8 @@
-package com.Phisher98
+package com.phisher98
 
 
 import android.content.SharedPreferences
-import com.Phisher98.SuperStreamExtractor.invokeSuperstream
+import com.phisher98.SuperStreamExtractor.invokeSuperstream
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink

@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.phisher98
 
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.Episode

@@ -1,7 +1,7 @@
-package com.Phisher98
+package com.phisher98
 
-import com.Phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
-import com.Phisher98.BuildConfig.SUPERSTREAM_THIRD_API
+import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
+import com.phisher98.BuildConfig.SUPERSTREAM_THIRD_API
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log

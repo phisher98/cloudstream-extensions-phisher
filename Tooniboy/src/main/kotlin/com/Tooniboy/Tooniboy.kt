@@ -27,7 +27,7 @@ class Tooniboy : MainAPI() {
 
     companion object
     {
-        val header= mapOf("Cookie" to com.Phisher98.BuildConfig.TooniboyCookie)
+        val header= mapOf("Cookie" to com.phisher98.BuildConfig.TooniboyCookie)
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
