@@ -51,6 +51,7 @@ import com.Phisher98.StreamPlayExtractor.invokeTopMovies
 import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.Phisher98.StreamPlayExtractor.invokeVegamovies
 import com.Phisher98.StreamPlayExtractor.invokeVidSrcViP
+import com.Phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.Phisher98.StreamPlayExtractor.invokeVidbinge
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
@@ -132,7 +133,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val hianimeAPI = "https://hianime.to"
         const val AnimeKai= "https://animekai.to"
         const val MultiEmbedAPI = "https://multiembed.mov"
-        const val crunchyrollAPI = "https://beta-api.crunchyroll.com"
         const val kissKhAPI = "https://kisskh.co"
         const val lingAPI = "https://ling-online.net"
         const val AsianhdAPI = "https://asianhdplay.in"
@@ -196,6 +196,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val fourthAPI=BuildConfig.SUPERSTREAM_FOURTH_API
         const val KickassAPI="https://kaa.mx"
         const val Player4uApi="https://player4u.xyz"
+        const val Vidsrcxyz= "https://vidsrc.xyz"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -984,6 +985,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.season,
                     res.episode,
                     subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeVidSrcXyz(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
                     callback
                 )
             },

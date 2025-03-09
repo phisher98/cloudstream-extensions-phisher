@@ -1,7 +1,5 @@
 package com.Phisher98
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
@@ -2267,7 +2265,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     // Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
     //Still in progress
-    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
@@ -3991,10 +3988,68 @@ suspend fun invokeFlixAPIHQ(
                     )
                 )
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
 
         }
     }
+
+
+    suspend fun invokeVidSrcXyz(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null) {
+            "$Vidsrcxyz/embed/movie?imdb=$id"
+        } else {
+            "$Vidsrcxyz/embed/tv?imdb=$id&season=$season&episode=$episode"
+        }
+        val iframeUrl = extractIframeUrl(url) ?: return
+        val prorcpUrl = extractProrcpUrl(iframeUrl) ?: return
+        val decryptedSource = extractAndDecryptSource(prorcpUrl) ?: return
+
+        val referer = prorcpUrl.substringBefore("rcp")
+        callback(ExtractorLink("Vidsrc", "Vidsrc", decryptedSource, referer, Qualities.P1080.value, ExtractorLinkType.M3U8))
+    }
+
+    private suspend fun extractIframeUrl(url: String): String? {
+        return httpsify(app.get(url).document.select("iframe").attr("src")).takeIf { it.isNotEmpty() }
+    }
+
+    private suspend fun extractProrcpUrl(iframeUrl: String): String? {
+        val doc = app.get(iframeUrl).document
+        val regex = Regex("src:\\s+'(.*?)'")
+        val matchedSrc = regex.find(doc.html())?.groupValues?.get(1) ?: return null
+        val host = getBaseUrl(iframeUrl)
+        val newDoc = app.get(host + matchedSrc).document
+
+        val regex1 = Regex("""(https?://.*?/prorcp.*?)["']\)""")
+        return regex1.find(newDoc.html())?.groupValues?.get(1)
+    }
+
+    private suspend fun extractAndDecryptSource(prorcpUrl: String): String? {
+        val responseText = app.get(prorcpUrl).text
+
+        val playerJsRegex = Regex("""Playerjs\(\{.*?file:"(.*?)".*?\}\)""")
+        val temp = playerJsRegex.find(responseText)?.groupValues?.get(1)
+
+        val encryptedURLNode = if (!temp.isNullOrEmpty()) {
+            mapOf("id" to "playerjs", "content" to temp)
+        } else {
+            val document = Jsoup.parse(responseText)
+            val node = document.select("#reporting_content").next()
+            mapOf("id" to node.attr("id"), "content" to node.text())
+        }
+
+        return encryptedURLNode["id"]?.let { id ->
+            encryptedURLNode["content"]?.let { content ->
+                decryptMethods[id]?.invoke(content)
+            }
+        }
+    }
+
+
 
     suspend fun invokePrimeWire(
         id: Int? = null,

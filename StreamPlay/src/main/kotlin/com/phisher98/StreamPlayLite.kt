@@ -26,6 +26,7 @@ import com.Phisher98.StreamPlayExtractor.invokeRiveStream
 import com.Phisher98.StreamPlayExtractor.invokeStreamPlay
 import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.Phisher98.StreamPlayExtractor.invokeSuperstream
+import com.Phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
@@ -274,6 +275,14 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.season,
                     res.episode,
                     subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeVidSrcXyz(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
                     callback
                 )
             },

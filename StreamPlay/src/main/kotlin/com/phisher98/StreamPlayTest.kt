@@ -2,7 +2,7 @@ package com.Phisher98
 
 
 import android.content.SharedPreferences
-import com.Phisher98.StreamPlayExtractor.invokeSuperstream
+import com.Phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -19,8 +19,7 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         argamap(
             {
-                invokeSuperstream(
-                    token,
+                if (!res.isAnime) invokeVidSrcXyz(
                     res.imdbId,
                     res.season,
                     res.episode,
