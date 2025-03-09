@@ -768,45 +768,45 @@ fun Document.findTvMoviesIframe(): String? {
 }
 
 //modified code from https://github.com/jmir1/aniyomi-extensions/blob/master/src/all/kamyroll/src/eu/kanade/tachiyomi/animeextension/all/kamyroll/AccessTokenInterceptor.kt
-suspend fun getCrunchyrollToken(): CrunchyrollAccessToken {
-    val client = app.baseClient.newBuilder()
-        .proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress("cr-unblocker.us.to", 1080)))
-        .build()
-
-    Authenticator.setDefault(object : Authenticator() {
-        override fun getPasswordAuthentication(): PasswordAuthentication {
-            return PasswordAuthentication("crunblocker", "crunblocker".toCharArray())
-        }
-    })
-
-    val request = requestCreator(
-        method = "POST",
-        url = "$crunchyrollAPI/auth/v1/token",
-        headers = mapOf(
-            "User-Agent" to "Crunchyroll/3.26.1 Android/11 okhttp/4.9.2",
-            "Content-Type" to "application/x-www-form-urlencoded",
-            "Authorization" to "Basic ${BuildConfig.CRUNCHYROLL_BASIC_TOKEN}"
-        ),
-        data = mapOf(
-            "refresh_token" to app.get(BuildConfig.CRUNCHYROLL_REFRESH_TOKEN).text,
-            "grant_type" to "refresh_token",
-            "scope" to "offline_access"
-        )
-    )
-
-    val token = tryParseJson<CrunchyrollToken>(client.newCall(request).execute().body.string())
-    val headers = mapOf("Authorization" to "${token?.tokenType} ${token?.accessToken}")
-    val cms =
-        app.get("$crunchyrollAPI/index/v2", headers = headers).parsedSafe<CrunchyrollToken>()?.cms
-    return CrunchyrollAccessToken(
-        token?.accessToken,
-        token?.tokenType,
-        cms?.bucket,
-        cms?.policy,
-        cms?.signature,
-        cms?.key_pair_id,
-    )
-}
+//suspend fun getCrunchyrollToken(): CrunchyrollAccessToken {
+//    val client = app.baseClient.newBuilder()
+//        .proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress("cr-unblocker.us.to", 1080)))
+//        .build()
+//
+//    Authenticator.setDefault(object : Authenticator() {
+//        override fun getPasswordAuthentication(): PasswordAuthentication {
+//            return PasswordAuthentication("crunblocker", "crunblocker".toCharArray())
+//        }
+//    })
+//
+//    val request = requestCreator(
+//        method = "POST",
+//        url = "$crunchyrollAPI/auth/v1/token",
+//        headers = mapOf(
+//            "User-Agent" to "Crunchyroll/3.26.1 Android/11 okhttp/4.9.2",
+//            "Content-Type" to "application/x-www-form-urlencoded",
+//            "Authorization" to "Basic ${BuildConfig.CRUNCHYROLL_BASIC_TOKEN}"
+//        ),
+//        data = mapOf(
+//            "refresh_token" to app.get(BuildConfig.CRUNCHYROLL_REFRESH_TOKEN).text,
+//            "grant_type" to "refresh_token",
+//            "scope" to "offline_access"
+//        )
+//    )
+//
+//    val token = tryParseJson<CrunchyrollToken>(client.newCall(request).execute().body.string())
+//    val headers = mapOf("Authorization" to "${token?.tokenType} ${token?.accessToken}")
+//    val cms =
+//        app.get("$crunchyrollAPI/index/v2", headers = headers).parsedSafe<CrunchyrollToken>()?.cms
+//    return CrunchyrollAccessToken(
+//        token?.accessToken,
+//        token?.tokenType,
+//        cms?.bucket,
+//        cms?.policy,
+//        cms?.signature,
+//        cms?.key_pair_id,
+//    )
+//}
 
 suspend fun getCrunchyrollId(aniId: String?): String? {
     val query = """
@@ -2416,14 +2416,12 @@ fun getPlayer4UQuality (quality :String) : Int
 }
 
 fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
-    val jsonObject = JSONObject(jsonString)
-    val episodes = jsonObject.getJSONObject("episodes")
+    if (episodeNumber == null) return null
 
-    return if (episodes.has(episodeNumber.toString())) {
-        episodes.getJSONObject(episodeNumber.toString()).getInt("anidbEid")
-    } else {
-        null
-    }
+    val jsonObject = JSONObject(jsonString)
+    val episodes = jsonObject.optJSONObject("episodes") ?: return null
+
+    return episodes.optJSONObject(episodeNumber.toString())?.optInt("anidbEid", -1)?.takeIf { it != -1 }
 }
 
 fun generateVidsrcVrf(n: Int?): String {

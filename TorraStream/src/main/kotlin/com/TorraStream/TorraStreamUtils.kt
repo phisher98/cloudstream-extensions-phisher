@@ -91,12 +91,11 @@ fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): Str
 
 
 fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
-    val jsonObject = JSONObject(jsonString)
-    val episodes = jsonObject.getJSONObject("episodes")
+    if (episodeNumber == null) return null
 
-    return if (episodes.has(episodeNumber.toString())) {
-        episodes.getJSONObject(episodeNumber.toString()).getInt("anidbEid")
-    } else {
-        null
-    }
+    val jsonObject = JSONObject(jsonString)
+    val episodes = jsonObject.optJSONObject("episodes") ?: return null
+
+    return episodes.optJSONObject(episodeNumber.toString())?.optInt("anidbEid", -1)?.takeIf { it != -1 }
 }
+
