@@ -1,11 +1,9 @@
 package com.TorraStream
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 
 class TorraStream() : TraktProvider() {
     override var name = "TorraStream"
@@ -176,7 +174,6 @@ class TorraStream() : TraktProvider() {
                     season,
                     episode,
                     subtitleCallback,
-                    callback
                 )
             }
         )

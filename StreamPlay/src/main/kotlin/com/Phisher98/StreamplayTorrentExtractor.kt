@@ -1,5 +1,7 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
+import com.google.gson.Gson
 import com.phisher98.StreamPlayTorrent.Companion.AnimetoshoAPI
 import com.phisher98.StreamPlayTorrent.Companion.TRACKER_LIST_URL
 import com.lagradost.cloudstream3.amap
@@ -9,7 +11,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import org.json.JSONArray
 
 suspend fun invokeTorrastream(
     mainUrl:String,
@@ -85,57 +86,20 @@ suspend fun invokeAnimetosho(
 ) {
     val url = "$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22|%22TrueHD%22|%22[EMBER]%22)((e*|a*|r*|i*|o*|%221080%22)%20!%22720%22%20!%22540%22%20!%22480%22)"
     val jsonResponse = app.get(url).toString()
-
-    val jsonArray = JSONArray(jsonResponse)
-    val parsedList = mutableListOf<AnimetoshoItem>()
-
-    for (i in 0 until jsonArray.length()) {
-        val jsonObject = jsonArray.getJSONObject(i)
-        val item = AnimetoshoItem(
-            id = jsonObject.getLong("id"),
-            title = jsonObject.getString("title"),
-            link = jsonObject.getString("link"),
-            timestamp = jsonObject.getLong("timestamp"),
-            status = jsonObject.getString("status"),
-            toshoId = jsonObject.optLong("tosho_id"),
-            nyaaId = jsonObject.optLong("nyaa_id"),
-            nyaaSubdom = jsonObject.opt("nyaa_subdom"),
-            anidexId = jsonObject.opt("anidex_id"),
-            torrentUrl = jsonObject.getString("torrent_url"),
-            torrentName = jsonObject.getString("torrent_name"),
-            infoHash = jsonObject.getString("info_hash"),
-            infoHashV2 = jsonObject.opt("info_hash_v2"),
-            magnetUri = jsonObject.getString("magnet_uri"),
-            seeders = jsonObject.getLong("seeders"),
-            leechers = jsonObject.getLong("leechers"),
-            torrentDownloadedCount = jsonObject.getLong("torrent_downloaded_count"),
-            trackerUpdated = jsonObject.optLong("tracker_updated"),
-            nzbUrl = jsonObject.getString("nzb_url"),
-            totalSize = jsonObject.getLong("total_size"),
-            numFiles = jsonObject.getLong("num_files"),
-            anidbAid = jsonObject.getLong("anidb_aid"),
-            anidbEid = jsonObject.getLong("anidb_eid"),
-            anidbFid = jsonObject.optLong("anidb_fid"),
-            articleUrl = jsonObject.opt("article_url"),
-            articleTitle = jsonObject.opt("article_title"),
-            websiteUrl = jsonObject.optString("website_url", null)
-        )
-        parsedList.add(item)
-    }
-
+    val parsedList = Gson().fromJson(jsonResponse, Array<AnimetoshoItem>::class.java)?.toList() ?: emptyList()
     parsedList.sortedByDescending { it.seeders }.forEach { item ->
-        val name = item.torrentName
-        val magnet = item.magnetUri
-        callback.invoke(
-            ExtractorLink(
-                "Animetosho",
-                "Animetosho $name",
-                magnet,
-                "",
-                getIndexQuality(name),
-                INFER_TYPE
+        item.magnetUri.let { magnet ->
+            callback.invoke(
+                ExtractorLink(
+                    "Animetosho",
+                    "Animetosho ${item.torrentName}",
+                    magnet,
+                    "",
+                    getIndexQuality(item.torrentName),
+                    INFER_TYPE
+                )
             )
-        )
+        }
     }
 }
 
@@ -248,6 +212,7 @@ suspend fun invokeTorbox(
 }
 
 
+@SuppressLint("DefaultLocale")
 suspend fun invokeBitsearch(
     bitSearchApi: String? = null,
     title: String? =null,
@@ -266,9 +231,9 @@ suspend fun invokeBitsearch(
     val doc = app.get(url, timeout = 10).document
     val searchList = doc.select(".card.search-result.my-2")
     searchList.forEach{item ->
-        val title = item.select(".title.w-100.truncate a").text()
+        @Suppress("NAME_SHADOWING") val title = item.select(".title.w-100.truncate a").text()
         val statusElement = item.select(".stats div")
-        val downloadSize = statusElement[1].text();
+        val downloadSize = statusElement[1].text()
         val seeders = statusElement[2].select("font").text()
         val leechers = statusElement[3].select("font").text()
         val magnetLink = item.select(".dl-magnet").attr("href")

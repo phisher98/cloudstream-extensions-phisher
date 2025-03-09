@@ -10,7 +10,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 open class YomoviesProvider : MainAPI() {
-    override var mainUrl = "https://yomovies.onl"
+    override var mainUrl = "https://yomovies.land"
     private var directUrl = ""
     override var name = "YoMovies"
     override val hasMainPage = true
@@ -86,17 +86,17 @@ open class YomoviesProvider : MainAPI() {
             ) {
                 document.select("ul.idTabs li").map {
                     val id = it.select("a").attr("href")
-                    Episode(
-                        data = fixUrl(document.select("div$id iframe").attr("src")),
-                        name = it.select("strong").text(),
-                    )
+                    newEpisode(fixUrl(document.select("div$id iframe").attr("src")))
+                    {
+                        this.name=it.select("strong").text()
+                    }
                 }
             } else {
                 document.select("div.les-content a").map {
-                    Episode(
-                        data = it.attr("href"),
-                        name = it.text().trim(),
-                    )
+                    newEpisode(it.attr("href"))
+                    {
+                        this.name=it.text().trim()
+                    }
                 }
             }
 

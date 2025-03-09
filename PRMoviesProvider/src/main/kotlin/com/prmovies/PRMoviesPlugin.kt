@@ -9,5 +9,6 @@ class PRMoviesPlugin: BasePlugin() {
         registerMainAPI(PRMoviesProvider())
         registerExtractorAPI(Waaw())
         registerExtractorAPI(Minoplres())
+        registerExtractorAPI(Embdproxy())
     }
 }

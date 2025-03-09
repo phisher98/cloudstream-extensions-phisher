@@ -10,7 +10,7 @@ import org.jsoup.nodes.Element
 
 class PRMoviesProvider : MainAPI() {
 
-    override var mainUrl = "https://prmovies.pet"
+    override var mainUrl = "https://prmovies.email"
     override var name = "PRMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -96,18 +96,18 @@ class PRMoviesProvider : MainAPI() {
             ) {
                 document.select("ul.idTabs li").map {
                     val id = it.select("a").attr("href")
-                    Episode(
-                        data = fixUrl(document.select("div$id iframe").attr("src")),
-                        name = it.select("strong").text().replace("Server Ep", "Episode")
-                    )
+                    newEpisode(fixUrl(document.select("div$id iframe").attr("src")))
+                    {
+                        this.name=it.select("strong").text().replace("Server Ep", "Episode")
+                    }
                 }
 
             } else {
                 document.select("div.les-content a").map {
-                    Episode(
-                        data = it.attr("href"),
-                        name = it.text().replace("Server Ep", "Episode").trim(),
-                    )
+                    newEpisode(it.attr("href"))
+                    {
+                        this.name=it.text().replace("Server Ep", "Episode").trim()
+                    }
                 }
             }
 
@@ -143,7 +143,6 @@ class PRMoviesProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
         if (data.startsWith(mainUrl)) {
             app.get(data).document.select("div.movieplay iframe").map { fixUrl(it.attr("src")) }
                 .apmap { source ->
@@ -161,13 +160,11 @@ class PRMoviesProvider : MainAPI() {
                                         callback
                                     )
                                 }
-
                             else -> loadExtractor(source, "$mainUrl/", subtitleCallback, callback)
                         }
                     }
                 }
         } else {
-
             loadExtractor(data, "$mainUrl/", subtitleCallback, callback)
         }
         return true
