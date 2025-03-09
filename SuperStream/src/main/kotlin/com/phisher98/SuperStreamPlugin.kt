@@ -1,8 +1,8 @@
-package com.Phisher98
+package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
-import com.Phisher98.settings.SettingsFragment
+import com.phisher98.settings.SettingsFragment
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon

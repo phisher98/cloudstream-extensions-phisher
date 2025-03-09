@@ -1,67 +1,67 @@
-package com.Phisher98
+package com.phisher98
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
-import com.Phisher98.StreamPlayExtractor.invoke2embed
-import com.Phisher98.StreamPlayExtractor.invokeAllMovieland
-import com.Phisher98.StreamPlayExtractor.invokeAnimes
-import com.Phisher98.StreamPlayExtractor.invokeAoneroom
-import com.Phisher98.StreamPlayExtractor.invokeAsianHD
-import com.Phisher98.StreamPlayExtractor.invokeBollyflix
-import com.Phisher98.StreamPlayExtractor.invokeBollyflixvip
-import com.Phisher98.StreamPlayExtractor.invokeDahmerMovies
-import com.Phisher98.StreamPlayExtractor.invokeDotmovies
-import com.Phisher98.StreamPlayExtractor.invokeDramaday
-import com.Phisher98.StreamPlayExtractor.invokeDreamfilm
-import com.Phisher98.StreamPlayExtractor.invokeEmbedsu
-import com.Phisher98.StreamPlayExtractor.invokeEmovies
-import com.Phisher98.StreamPlayExtractor.invokeExtramovies
-import com.Phisher98.StreamPlayExtractor.invokeFilm1k
-import com.Phisher98.StreamPlayExtractor.invokeFlicky
-import com.Phisher98.StreamPlayExtractor.invokeFlixAPIHQ
-import com.Phisher98.StreamPlayExtractor.invokeFlixon
-import com.Phisher98.StreamPlayExtractor.invokeHinAuto
-import com.Phisher98.StreamPlayExtractor.invokeHindMoviez
-import com.Phisher98.StreamPlayExtractor.invokeKimcartoon
-import com.Phisher98.StreamPlayExtractor.invokeKisskh
-import com.Phisher98.StreamPlayExtractor.invokeLing
-import com.Phisher98.StreamPlayExtractor.invokeMoflix
-import com.Phisher98.StreamPlayExtractor.invokeMoviehubAPI
-import com.Phisher98.StreamPlayExtractor.invokeMoviesdrive
-import com.Phisher98.StreamPlayExtractor.invokeMoviesmod
-import com.Phisher98.StreamPlayExtractor.invokeMultiEmbed
-import com.Phisher98.StreamPlayExtractor.invokeMultimovies
-import com.Phisher98.StreamPlayExtractor.invokeNepu
-import com.Phisher98.StreamPlayExtractor.invokeNinetv
-import com.Phisher98.StreamPlayExtractor.invokeNowTv
-import com.Phisher98.StreamPlayExtractor.invokePlaydesi
-import com.Phisher98.StreamPlayExtractor.invokePlayer4U
-import com.Phisher98.StreamPlayExtractor.invokePrimeWire
-import com.Phisher98.StreamPlayExtractor.invokeRidomovies
-import com.Phisher98.StreamPlayExtractor.invokeRiveStream
-import com.Phisher98.StreamPlayExtractor.invokeRogmovies
-import com.Phisher98.StreamPlayExtractor.invokeSharmaflix
-import com.Phisher98.StreamPlayExtractor.invokeShowflix
-import com.Phisher98.StreamPlayExtractor.invokeStreamPlay
-import com.Phisher98.StreamPlayExtractor.invokeSubtitleAPI
-import com.Phisher98.StreamPlayExtractor.invokeSuperstream
-import com.Phisher98.StreamPlayExtractor.invokeTheyallsayflix
-import com.Phisher98.StreamPlayExtractor.invokeTom
-import com.Phisher98.StreamPlayExtractor.invokeTopMovies
-import com.Phisher98.StreamPlayExtractor.invokeUhdmovies
-import com.Phisher98.StreamPlayExtractor.invokeVegamovies
-import com.Phisher98.StreamPlayExtractor.invokeVidSrcViP
-import com.Phisher98.StreamPlayExtractor.invokeVidSrcXyz
-import com.Phisher98.StreamPlayExtractor.invokeVidbinge
-import com.Phisher98.StreamPlayExtractor.invokeVidsrccc
-import com.Phisher98.StreamPlayExtractor.invokeVidsrcsu
-import com.Phisher98.StreamPlayExtractor.invokeWatchCartoon
-import com.Phisher98.StreamPlayExtractor.invokeWatchsomuch
-import com.Phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.Phisher98.StreamPlayExtractor.invokeZoechip
-import com.Phisher98.StreamPlayExtractor.invokeZshow
-import com.Phisher98.StreamPlayExtractor.invokeazseries
-import com.Phisher98.StreamPlayExtractor.invokecatflix
+import com.phisher98.StreamPlayExtractor.invoke2embed
+import com.phisher98.StreamPlayExtractor.invokeAllMovieland
+import com.phisher98.StreamPlayExtractor.invokeAnimes
+import com.phisher98.StreamPlayExtractor.invokeAoneroom
+import com.phisher98.StreamPlayExtractor.invokeAsianHD
+import com.phisher98.StreamPlayExtractor.invokeBollyflix
+import com.phisher98.StreamPlayExtractor.invokeBollyflixvip
+import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
+import com.phisher98.StreamPlayExtractor.invokeDotmovies
+import com.phisher98.StreamPlayExtractor.invokeDramaday
+import com.phisher98.StreamPlayExtractor.invokeDreamfilm
+import com.phisher98.StreamPlayExtractor.invokeEmbedsu
+import com.phisher98.StreamPlayExtractor.invokeEmovies
+import com.phisher98.StreamPlayExtractor.invokeExtramovies
+import com.phisher98.StreamPlayExtractor.invokeFilm1k
+import com.phisher98.StreamPlayExtractor.invokeFlicky
+import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.phisher98.StreamPlayExtractor.invokeFlixon
+import com.phisher98.StreamPlayExtractor.invokeHinAuto
+import com.phisher98.StreamPlayExtractor.invokeHindMoviez
+import com.phisher98.StreamPlayExtractor.invokeKimcartoon
+import com.phisher98.StreamPlayExtractor.invokeKisskh
+import com.phisher98.StreamPlayExtractor.invokeLing
+import com.phisher98.StreamPlayExtractor.invokeMoflix
+import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
+import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
+import com.phisher98.StreamPlayExtractor.invokeMoviesmod
+import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
+import com.phisher98.StreamPlayExtractor.invokeMultimovies
+import com.phisher98.StreamPlayExtractor.invokeNepu
+import com.phisher98.StreamPlayExtractor.invokeNinetv
+import com.phisher98.StreamPlayExtractor.invokeNowTv
+import com.phisher98.StreamPlayExtractor.invokePlaydesi
+import com.phisher98.StreamPlayExtractor.invokePlayer4U
+import com.phisher98.StreamPlayExtractor.invokePrimeWire
+import com.phisher98.StreamPlayExtractor.invokeRidomovies
+import com.phisher98.StreamPlayExtractor.invokeRiveStream
+import com.phisher98.StreamPlayExtractor.invokeRogmovies
+import com.phisher98.StreamPlayExtractor.invokeSharmaflix
+import com.phisher98.StreamPlayExtractor.invokeShowflix
+import com.phisher98.StreamPlayExtractor.invokeStreamPlay
+import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.phisher98.StreamPlayExtractor.invokeSuperstream
+import com.phisher98.StreamPlayExtractor.invokeTheyallsayflix
+import com.phisher98.StreamPlayExtractor.invokeTom
+import com.phisher98.StreamPlayExtractor.invokeTopMovies
+import com.phisher98.StreamPlayExtractor.invokeUhdmovies
+import com.phisher98.StreamPlayExtractor.invokeVegamovies
+import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
+import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
+import com.phisher98.StreamPlayExtractor.invokeVidbinge
+import com.phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
+import com.phisher98.StreamPlayExtractor.invokeWatchCartoon
+import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
+import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import com.phisher98.StreamPlayExtractor.invokeZoechip
+import com.phisher98.StreamPlayExtractor.invokeZshow
+import com.phisher98.StreamPlayExtractor.invokeazseries
+import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -96,6 +96,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlin.math.roundToInt
 
+@Suppress("ConstPropertyName", "PropertyName")
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "StreamPlay"
     override val hasMainPage = true
@@ -111,7 +112,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
     // token is the name of the string "variable" saved in the preferences.
     // null is what it returns if there's no token saved
-    val token = sharedPref?.getString("token", null)
+    private val token = sharedPref?.getString("token", null)
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
     /** AUTHOR : hexated & Code */
@@ -444,7 +445,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
         }
     }
-// you opened streamplay lite //yes but it inheri this Stremplay
     @SuppressLint("NewApi")
     override suspend fun loadLinks(
         data: String,

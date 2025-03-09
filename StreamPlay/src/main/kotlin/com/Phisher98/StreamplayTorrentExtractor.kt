@@ -1,7 +1,7 @@
-package com.Phisher98
+package com.phisher98
 
-import com.Phisher98.StreamPlayTorrent.Companion.AnimetoshoAPI
-import com.Phisher98.StreamPlayTorrent.Companion.TRACKER_LIST_URL
+import com.phisher98.StreamPlayTorrent.Companion.AnimetoshoAPI
+import com.phisher98.StreamPlayTorrent.Companion.TRACKER_LIST_URL
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink

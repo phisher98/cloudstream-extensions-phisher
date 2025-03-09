@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.phisher98
 
 class Hdmovie6 : Hdmovie2() {
     override var mainUrl = "https://hdmovie6.net"

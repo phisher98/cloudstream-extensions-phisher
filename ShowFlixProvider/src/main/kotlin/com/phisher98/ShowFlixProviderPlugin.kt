@@ -1,15 +1,15 @@
-package com.Phisher98
+package com.phisher98
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 
 @CloudstreamPlugin
-class UHDmoviesProviderPlugin: BasePlugin() {
+class ShowFlixProviderPlugin: BasePlugin() {
     override fun load() {
         // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(UHDmoviesProvider())
-        registerExtractorAPI(Driveleech())
-        registerExtractorAPI(Driveseed())
-        registerExtractorAPI(UHDMovies())
+        registerMainAPI(ShowFlixProvider())
+        registerExtractorAPI(Streamwish())
+        registerExtractorAPI(Filelion())
+        registerExtractorAPI(StreamRuby())
     }
 }
