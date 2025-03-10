@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -19,8 +18,7 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class AnimeWorld : MainAPI() {
@@ -125,36 +123,8 @@ class AnimeWorld : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val languages = listOf("hin", "tel", "tam", "eng")
         app.get(data).document.select("section.section.player iframe").forEach { iframeElement ->
-            iframeElement.attr("data-src").let { src ->
-                app.get(src).document.select("div.modal-option").forEach { modalOption ->
-                    val iframeUrl = modalOption.attr("data-link")
-                    val hash = app.get(iframeUrl).text.let { text ->
-                        """sniff\([^,]+,\s*"([a-f0-9]{32})"""".toRegex().find(text)?.groupValues?.get(1)
-                    }
-                    hash?.let { extractedHash ->
-                        languages.forEach { lang ->
-                            callback.invoke(
-                                ExtractorLink(
-                                    "$name ${lang.capitalize()}",
-                                    "$name ${lang.capitalize()}",
-                                    "$API/m3u8/$extractedHash/master.txt?s=1&lang=$lang&cache=1",
-                                    "",
-                                    Qualities.P1080.value,
-                                    ExtractorLinkType.M3U8
-                                )
-                            )
-                        }
-                        subtitleCallback.invoke(
-                            SubtitleFile(
-                                "English",
-                                "$API/subs/m3u8/$extractedHash/subtitles-eng.vtt"
-                            )
-                        )
-                    }
-                }
-            }
+            loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true
     }
