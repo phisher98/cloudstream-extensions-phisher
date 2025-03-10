@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
@@ -937,7 +938,7 @@ object StreamPlayExtractor : StreamPlay() {
             { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeGrani(title.orEmpty(), episode, callback) },
             { invokeGojo(aniId, jptitleSlug, episode, subtitleCallback, callback) },
-            { invokeAnichi(zorotitle, jikanSeason, tmdbYear, episode, subtitleCallback, callback) },
+            { invokeAnichi(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { gogoUrl?.let { invokeAnitaku(it, episode, subtitleCallback, callback) } },
             { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
@@ -946,42 +947,35 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    private suspend fun invokeAnichi(
+    suspend fun invokeAnichi(
         name: String? = null,
-        Season: String? = null,
-        year: String? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val api = BuildConfig.ANICHI_API
-        var season = Season?.replaceFirstChar { it.uppercase() }
-        val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
         var type = ""
         if (episode == null) {
             type = "Movie"
-            season = ""
         } else {
             type = "TV"
         }
-        val query =
-            """$api?variables={"search":{"types":["$type"],"year":$year,"season":"$season","query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
-        val response =
-            app.get(query, referer = privatereferer).parsedSafe<Anichi>()?.data?.shows?.edges
+        //val query = """$api?variables={"search":{"types":["$type"],"year":$year,"season":"$season","query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+        val query="""$api?variables={"search":{"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+        val response = app.get(query, referer = "https://allmanga.to").parsedSafe<AnichiRoot>()?.data?.shows?.edges
         if (response != null) {
-            val id = response.firstOrNull {
-                it.name.contains("$name", ignoreCase = true) || it.englishName.contains(
-                    "$name",
-                    ignoreCase = true
-                )
-            }?.id
+            val matchedEdge = response.find {
+                it.name.equals(name?.replace(":","")?.replace("","")?.trim(), ignoreCase = true) ||
+                        it.name.contains(name?.replace(":"," ").orEmpty(), ignoreCase = true)
+            }
+            val id = matchedEdge?._id
             val langType = listOf("sub", "dub")
             for (i in langType) {
                 val epData =
                     """$api?variables={"showId":"$id","translationType":"$i","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
-                val eplinks = app.get(epData, referer = privatereferer)
+                val eplinks = app.get(epData, referer = "https://allmanga.to")
                     .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
                 eplinks?.apmap { source ->
                     safeApiCall {
@@ -2265,6 +2259,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     // Thanks to Repo for code https://github.com/giammirove/videogatherer/blob/main/src/sources/vidsrc.cc.ts#L34
     //Still in progress
+    @SuppressLint("NewApi")
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,

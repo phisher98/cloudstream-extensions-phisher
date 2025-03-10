@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -201,7 +202,6 @@ data class PageInfo(
 )
 
 data class Edge(
-    @JsonProperty("_id")
     val id: String,
     val name: String,
     val englishName: String,
@@ -261,6 +261,101 @@ data class AvailableEpisodes(
     val dub: Long,
     val raw: Long,
 )
+
+data class AnichiRoot(
+    val data: Data
+) {
+    data class Data(
+        val shows: Shows
+    ) {
+        data class Shows(
+            val edges: List<Edge>,
+            val pageInfo: PageInfo
+        )
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Edge(
+            val _id: String,
+            val name: String,
+            val englishName: String,
+            val nativeName: String,
+            val thumbnail: String,
+            val slugTime: String?, // Nullable
+            val type: String,
+            val score: Double,
+            val lastUpdateEnd: String,
+            val episodeCount: String?, // Nullable
+            val episodeDuration: String?, // Nullable
+            val season: Season,
+            val airedStart: AiredStart,
+            val availableEpisodes: AvailableEpisodes,
+            val lastEpisodeInfo: LastEpisodeInfo?,
+            val lastEpisodeDate: LastEpisodeDate?
+        )
+
+        data class Season(
+            val quarter: String,
+            val year: Int
+        )
+
+        data class AiredStart(
+            val year: Int,
+            val month: Int,
+            val date: Int,
+            val hour: Int,
+            val minute: Int
+        )
+
+        data class AvailableEpisodes(
+            val sub: Int,
+            val dub: Int,
+            val raw: Int
+        )
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class LastEpisodeInfo(
+            val sub: Sub?,
+            val dub: Dub?
+        ) {
+            data class Sub(
+                val episodeString: String,
+                val notes: String? // Nullable
+            )
+
+            data class Dub(
+                val episodeString: String,
+                val notes: String? // Nullable
+            )
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class LastEpisodeDate(
+            val sub: Sub?,
+            val dub: Dub?,
+            val raw: Map<String, Any> // Keep it as a flexible map for unexpected fields
+        ) {
+            data class Sub(
+                val year: Int,
+                val month: Int,
+                val date: Int,
+                val hour: Int,
+                val minute: Int
+            )
+
+            data class Dub(
+                val year: Int,
+                val month: Int,
+                val date: Int,
+                val hour: Int,
+                val minute: Int
+            )
+        }
+
+        data class PageInfo(
+            val total: Int
+        )
+    }
+}
 
 //Anichi Ep Parser
 

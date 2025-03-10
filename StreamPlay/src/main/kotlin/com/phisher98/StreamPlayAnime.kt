@@ -44,6 +44,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlayExtractor.invokeAnichi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -234,6 +235,7 @@ class StreamPlayAnime : MainAPI() {
             },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnizone(jpTitle, episode, callback) },
+            { invokeAnichi(jpTitle, episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
             { invokeAnimeKai(malId, episode, subtitleCallback, callback) }
         )

@@ -125,7 +125,6 @@ class AnimeWorld : MainAPI() {
             callback: (ExtractorLink) -> Unit
     ): Boolean {
         app.get(data).document.select("section.section.player iframe").forEach { iframeElement ->
-            Log.d("Phisher",iframeElement.attr("data-src"))
             loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true
