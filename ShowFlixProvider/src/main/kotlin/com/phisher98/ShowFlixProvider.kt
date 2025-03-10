@@ -212,7 +212,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 }
             elements.add(HomePageList(request.name, home))
         }
-        return HomePageResponse(elements, hasNext = true)
+        return newHomePageResponse(elements, hasNext = true)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -376,15 +376,14 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val episodes = TVit.Seasons.Seasons.map { (seasonName, episodes) ->
                 val seasonNum = Regex("\\d+").find(seasonName)?.value?.toInt()
                 episodes.mapIndexed { epNum, data ->
-                    Episode(
-                        data = data.toString(),
-                        season = seasonNum,
-                        episode = epNum,
-                        posterUrl = backdrop,
-                    )
+                    newEpisode(data.toString())
+                    {
+                        this.season=seasonNum
+                        this.episode=epNum
+                        this.posterUrl=backdrop
+                    }
                 }.filter { it.episode != 0 }
             }.flatten()
-            Log.d("Phisher TVResult", "${TVit.objectId} $episodes")
             return newTvSeriesLoadResponse(
                 title,
                 "$mainUrl/series/${TVit.objectId}",
@@ -409,7 +408,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher url",data)
         if (data.contains("sharedisk")) {
             val sources = mutableListOf<String>()
             val m = parseJson<MovieLinks>(data)
@@ -419,7 +417,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             sources.add(filelions)
             sources.add(streamwish)
             sources.add(streamruby)
-            //sources.add(streamsb)
             sources.forEach { url->
              loadExtractor(url,subtitleCallback,callback)
             }
