@@ -1,6 +1,7 @@
 package com.AnimeKai
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -205,6 +206,7 @@ class AnimeKai : MainAPI() {
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
+            Log.d("Phisher",iframe)
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
         return true
