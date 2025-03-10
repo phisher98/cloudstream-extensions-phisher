@@ -227,7 +227,7 @@ class VCloudGDirect : ExtractorApi() {
         val source = app.get(url).document.selectFirst("#vd")?.attr("href") ?: ""
         if (source.isBlank()) {
             Log.e("Error:", "Failed to extract video link from $url")
-            loadExtractor(url, subtitleCallback, callback) // Passes original URL, not an empty string
+            //loadExtractor(url, subtitleCallback, callback) // Passes original URL, not an empty string
             return
         }
         callback.invoke(
