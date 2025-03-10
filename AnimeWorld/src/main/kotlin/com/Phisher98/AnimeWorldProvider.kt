@@ -11,5 +11,6 @@ class AnimeWorldPlugin : BasePlugin() {
         registerMainAPI(AnimeWorld())
         registerExtractorAPI(Pixdrive())
         registerExtractorAPI(Ghbrisk())
+        registerExtractorAPI(AWSStream())
     }
 }

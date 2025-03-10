@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -30,7 +31,7 @@ class AnimeWorld : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.Anime, TvType.Cartoon)
     companion object
     {
-        const val API="https://beta.awstream.net"
+        const val API="https://z.awstream.net"
     }
 
     override val mainPage =
@@ -124,6 +125,7 @@ class AnimeWorld : MainAPI() {
             callback: (ExtractorLink) -> Unit
     ): Boolean {
         app.get(data).document.select("section.section.player iframe").forEach { iframeElement ->
+            Log.d("Phisher",iframeElement.attr("data-src"))
             loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true
