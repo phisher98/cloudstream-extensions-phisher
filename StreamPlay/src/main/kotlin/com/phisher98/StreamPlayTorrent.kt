@@ -30,7 +30,7 @@ class StreamPlayTorrent() : StreamPlay() {
         const val ThePirateBayApi="https://thepiratebay-plus.strem.fun"
         const val PeerflixApi="https://peerflix.mov"
         const val AnimetoshoAPI="https://feed.animetosho.org"
-        const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
+        const val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
 
     }
 

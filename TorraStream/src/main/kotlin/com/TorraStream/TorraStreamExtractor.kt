@@ -5,6 +5,7 @@ import com.TorraStream.TorraStream.Companion.AnimetoshoAPI
 import com.TorraStream.TorraStream.Companion.SubtitlesAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -22,46 +23,14 @@ suspend fun invokeTorrastream(
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val torrentioAPI:String
-    if (mainUrl.contains(","))
-    {
-        val splitdata = mainUrl.split(",")
-        val service = splitdata[0]
-        val key= splitdata[1]
-        torrentioAPI="$mainUrl/$service=$key"
+        val torrentioAPI:String = mainUrl
         val url = if(season == null) {
             "$torrentioAPI/stream/movie/$id.json"
         }
         else {
             "$torrentioAPI/stream/series/$id:$season:$episode.json"
         }
-        val headers = mapOf(
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        )
-        val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<DebianRoot>()
-        res?.streams?.forEach { stream ->
-            callback.invoke(
-                ExtractorLink(
-                    "Torrentio",
-                    stream.title,
-                    stream.url,
-                    "",
-                    getIndexQuality(stream.name),
-                    INFER_TYPE,
-                )
-            )
-        }
-    }
-    else
-    {
-        torrentioAPI= mainUrl
-        val url = if(season == null) {
-            "$torrentioAPI/stream/movie/$id.json"
-        }
-        else {
-            "$torrentioAPI/stream/series/$id:$season:$episode.json"
-        }
+        Log.d("Phisher",url)
         val headers = mapOf(
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
@@ -69,6 +38,7 @@ suspend fun invokeTorrastream(
         val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
         res?.streams?.forEach { stream ->
             val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
+            Log.d("Phisher",magnet)
             callback.invoke(
                 ExtractorLink(
                     "Torrentio",
@@ -80,7 +50,6 @@ suspend fun invokeTorrastream(
                 )
             )
         }
-    }
 }
 
 suspend fun invokeTorrentgalaxy(

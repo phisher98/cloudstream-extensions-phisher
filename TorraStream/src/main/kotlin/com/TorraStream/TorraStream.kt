@@ -27,7 +27,7 @@ class TorraStream() : TraktProvider() {
         const val CometAPI = "https://comet.elfhosted.com"
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val AnimetoshoAPI= "https://feed.animetosho.org"
-        const val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
+        const val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
 
     }
 
@@ -70,8 +70,6 @@ class TorraStream() : TraktProvider() {
         val episode =data.episode
         val id =data.imdbId
         val year=data.year
-        val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-        val anidbEid = getAnidbEid(anijson, episode)
         argamap(
             {
                 invokeTorrastream(
@@ -163,12 +161,6 @@ class TorraStream() : TraktProvider() {
                 )
             },
             {
-                invokeAnimetosho(
-                    anidbEid,
-                    callback
-                )
-            },
-            {
                 invokeSubtitleAPI(
                     id,
                     season,
@@ -203,7 +195,6 @@ class TorraStream() : TraktProvider() {
 }
 
 suspend fun generateMagnetLink(url: String, hash: String?): String {
-    // Fetch the content of the file from the provided URL
     val response = app.get(url)
     val trackerList = response.text.trim().split("\n") // Assuming each tracker is on a new line
 
