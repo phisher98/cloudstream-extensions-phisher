@@ -1,6 +1,7 @@
 package com.Streamblasters
 
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 
@@ -17,8 +18,16 @@ class wishonly : StreamWishExtractor() {
     override var mainUrl = "https://wishonly.site"
 }
 
+class cybervynx : Filesim() {
+    override var mainUrl = "https://cybervynx.com"
+}
+
 class vidhidevip : VidhideExtractor() {
     override var mainUrl = "https://vidhidevip.com"
+}
+
+class smoothpre : VidhideExtractor() {
+    override var mainUrl = "https://smoothpre.com"
 }
 
 class vidhidepre : VidhideExtractor() {
