@@ -47,8 +47,8 @@ override suspend fun loadLinks(
     val episode =data.episode
     val id =data.imdbId
     val year=data.year
-    val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-    val anidbEid = getAnidbEid(anijson, episode)
+    //val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+    //val anidbEid = getAnidbEid(anijson, episode)
     argamap(
         {
             invokeTorrastream(
@@ -139,12 +139,6 @@ override suspend fun loadLinks(
                 callback
             )
         },
-        {
-            invokeAnimetosho(
-                anidbEid,
-                callback
-            )
-        },
 
         //Source till here
         //Subtitles Invokes
@@ -186,6 +180,7 @@ suspend fun generateMagnetLink(url: String, hash: String?): String {
     }
 }
 
+/*
 fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
     // Fetch the content of the file from the provided URL
 
@@ -199,3 +194,4 @@ fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): Str
         }
     }
 }
+ */
