@@ -206,7 +206,6 @@ class AnimeKai : MainAPI() {
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
-            Log.d("Phisher",iframe)
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
         return true

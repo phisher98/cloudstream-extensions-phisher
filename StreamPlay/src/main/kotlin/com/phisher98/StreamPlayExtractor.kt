@@ -1264,9 +1264,8 @@ object StreamPlayExtractor : StreamPlay() {
                 .parsed<AnimeKaiResponse>().result
 
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
-            val name = "AnimeKai $serverName ${if (type == "softsub") " [Soft Sub]" else ""}"
-                .replaceFirstChar { it.titlecase(Locale.ROOT) }
-
+            val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
+            val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
             loadExtractor(iframe, name, subtitleCallback, callback)
         }
 

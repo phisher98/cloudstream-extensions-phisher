@@ -261,7 +261,7 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                invokePlayer4U(
+                if (!res.isAnime) invokePlayer4U(
                     res.title,
                     res.season,
                     res.episode,

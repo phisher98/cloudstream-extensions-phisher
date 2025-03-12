@@ -549,7 +549,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     )
                 },
                 {
-                    if (!res.isBollywood)invokeUhdmovies(
+                    if (!res.isBollywood && !res.isAnime)invokeUhdmovies(
                         res.title,
                         res.year,
                         res.season,
@@ -971,7 +971,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 )
             },
             {
-                invokePlayer4U(
+                if (!res.isAnime) invokePlayer4U(
                     res.title,
                     res.season,
                     res.episode,

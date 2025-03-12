@@ -95,9 +95,14 @@ open class Streamruby : ExtractorApi() {
     }
 }
 
-open class VidStream : Chillx() {
+class VidStream : Chillx() {
     override val name = "VidStream"
     override val mainUrl = "https://vidstreaming.xyz"
+    override val requiresReferer = true
+}
+open class Raretoon : Chillx() {
+    override val name = "VidStream"
+    override val mainUrl = "https://raretoonsindia.co"
     override val requiresReferer = true
 }
 
