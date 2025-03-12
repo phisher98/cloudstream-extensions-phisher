@@ -47,8 +47,8 @@ override suspend fun loadLinks(
     val episode =data.episode
     val id =data.imdbId
     val year=data.year
-    //val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-    //val anidbEid = getAnidbEid(anijson, episode)
+    val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+    val anidbEid = getAnidbEid(anijson, episode)
     argamap(
         {
             invokeTorrastream(
@@ -136,6 +136,12 @@ override suspend fun loadLinks(
                 id,
                 season,
                 episode,
+                callback
+            )
+        },
+        {
+            if (data.isAnime) invokeAnimetosho(
+                anidbEid,
                 callback
             )
         },

@@ -268,7 +268,7 @@ suspend fun invokeMediaFusion(
         val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
         for(stream in res?.streams!!)
         {
-            val magnetLink = generateMagnetLinkFromSource(stream.sources,stream.infoHash)
+            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
                 ExtractorLink(
                     "MediaFusion",
@@ -332,7 +332,7 @@ suspend fun invokePeerFlix(
         val res = app.get(url, timeout = 10).parsedSafe<PeerflixResponse>()
         for(stream in res?.streams!!)
         {
-            val magnetLink = generateMagnetLinkFromSource(stream.sources,stream.infoHash)
+            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
                 ExtractorLink(
                     "Peerflix",
@@ -364,7 +364,7 @@ suspend fun invokeComet(
         val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
         for(stream in res?.streams!!)
         {
-            val magnetLink = generateMagnetLinkFromSource(stream.sources,stream.infoHash)
+            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
                 ExtractorLink(
                     "Comet",
