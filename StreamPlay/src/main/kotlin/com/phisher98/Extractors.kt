@@ -1884,16 +1884,7 @@ class MegaUp : ExtractorApi() {
         val m3u8Data = runCatching { Gson().fromJson(decoded, AnimeKaiM3U8::class.java) }.getOrNull() ?: return
         val m3u8 = m3u8Data.sources.firstOrNull()?.file ?: return
 
-        callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                m3u8,
-                mainUrl,
-                Qualities.P1080.value,
-                INFER_TYPE
-            )
-        )
+        M3u8Helper.generateM3u8(name, m3u8, mainUrl).forEach(callback)
 
         m3u8Data.tracks.forEach { track ->
             track.label?.let { subtitleCallback(SubtitleFile(it, track.file)) }
