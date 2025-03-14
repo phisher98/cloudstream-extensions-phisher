@@ -1,7 +1,8 @@
 package com.TorraStream
 
+import com.TorraStream.TorraStream.Companion.CometAPI
+import com.TorraStream.TorraStream.Companion.TorrentioAnimeAPI
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -188,6 +189,7 @@ class TorraStreamAnime : MainAPI() {
         }
     }
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -196,13 +198,33 @@ class TorraStreamAnime : MainAPI() {
     ): Boolean {
         val data = AppUtils.parseJson<LinkData>(data)
         val episode =data.episode
+        val season =data.season
         val aniid =data.aniId
         val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+        val id= getImdbId(anijson)
         val anidbEid = getAnidbEid(anijson, episode)
         argamap(
             {
                 invokeAnimetosho(
                     anidbEid,
+                    callback
+                )
+            },
+            {
+                invokeTorrentioAnime(
+                    TorrentioAnimeAPI,
+                    id,
+                    season,
+                    episode,
+                    callback
+                )
+            },
+            {
+                invokeComet(
+                    CometAPI,
+                    id,
+                    season,
+                    episode,
                     callback
                 )
             },

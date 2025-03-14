@@ -19,7 +19,7 @@ class StreamPlayTorrent() : StreamPlay() {
 
     companion object
     {
-        const val TorrentioAPI="https://torrentio.strem.fun"
+        const val TorrentioAPI="https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl%7Csort=seeders"
         const val TorrentgalaxyAPI="https://torrentgalaxy.to"
         const val TorrentmovieAPI="https://torrentmovie.net"
         const val OnethreethreesevenxAPI="https://1337x.to"
@@ -30,6 +30,7 @@ class StreamPlayTorrent() : StreamPlay() {
         const val ThePirateBayApi="https://thepiratebay-plus.strem.fun"
         const val PeerflixApi="https://peerflix.mov"
         const val AnimetoshoAPI="https://feed.animetosho.org"
+        const val TorrentioAnimeAPI="https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
         const val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
 
     }
@@ -51,7 +52,7 @@ override suspend fun loadLinks(
     val anidbEid = getAnidbEid(anijson, episode)
     argamap(
         {
-            invokeTorrastream(
+            invokeTorrentio(
                 TorrentioAPI,
                 id,
                 season,
@@ -142,6 +143,15 @@ override suspend fun loadLinks(
         {
             if (data.isAnime) invokeAnimetosho(
                 anidbEid,
+                callback
+            )
+        },
+        {
+            if (data.isAnime) invokeTorrentioAnime(
+                TorrentioAnimeAPI,
+                id,
+                season,
+                episode,
                 callback
             )
         },

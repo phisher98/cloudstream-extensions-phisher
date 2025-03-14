@@ -15,7 +15,7 @@ class TorraStream() : TraktProvider() {
 
     companion object
     {
-        const val TorrentioAPI="https://torrentio.strem.fun"
+        const val TorrentioAPI="https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl%7Csort=seeders"
         const val TorrentgalaxyAPI="https://torrentgalaxy.to"
         const val TorrentmovieAPI="https://torrentmovie.net"
         const val OnethreethreesevenxAPI="https://1337x.to"
@@ -27,6 +27,7 @@ class TorraStream() : TraktProvider() {
         const val CometAPI = "https://comet.elfhosted.com"
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val AnimetoshoAPI= "https://feed.animetosho.org"
+        const val TorrentioAnimeAPI="https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
         const val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
 
     }
@@ -54,7 +55,6 @@ class TorraStream() : TraktProvider() {
                     "Paramount+",
             "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=550,3027" to
                     "Peacock",
-            //"$traktApiUrl/shows/trending?extended=cloud9&genres=anime,full&limit=25&extended=full" to "Trending Animes"
         )
 
     @Suppress("NAME_SHADOWING")
@@ -70,9 +70,11 @@ class TorraStream() : TraktProvider() {
         val episode =data.episode
         val id =data.imdbId
         val year=data.year
+        val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+        val anidbEid = getAnidbEid(anijson, episode)
         argamap(
             {
-                invokeTorrastream(
+                invokeTorrentio(
                     TorrentioAPI,
                     id,
                     season,
@@ -160,6 +162,23 @@ class TorraStream() : TraktProvider() {
                     callback
                 )
             },
+            {
+                if (data.isAnime) invokeAnimetosho(
+                    anidbEid,
+                    callback
+                )
+            },
+            {
+                if (data.isAnime) invokeTorrentioAnime(
+                    TorrentioAnimeAPI,
+                    id,
+                    season,
+                    episode,
+                    callback
+                )
+            },
+
+            //Subtitles
             {
                 invokeSubtitleAPI(
                     id,

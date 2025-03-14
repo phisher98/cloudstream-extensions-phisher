@@ -99,3 +99,8 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     return episodes.optJSONObject(episodeNumber.toString())?.optInt("anidbEid", -1)?.takeIf { it != -1 }
 }
 
+fun getImdbId(jsonString: String): String? {
+    val jsonObject = JSONObject(jsonString)
+    return jsonObject.optJSONObject("mappings")?.optString("imdb_id", null)
+}
+

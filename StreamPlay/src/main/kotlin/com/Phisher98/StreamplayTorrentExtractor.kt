@@ -12,47 +12,14 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 
-suspend fun invokeTorrastream(
+suspend fun invokeTorrentio(
     mainUrl:String,
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val torrentioAPI:String
-    if (mainUrl.contains(","))
-    {
-        val splitdata = mainUrl.split(",")
-        val service = splitdata[0]
-        val key= splitdata[1]
-        torrentioAPI="$mainUrl/$service=$key"
-        val url = if(season == null) {
-            "$torrentioAPI/stream/movie/$id.json"
-        }
-        else {
-            "$torrentioAPI/stream/series/$id:$season:$episode.json"
-        }
-        val headers = mapOf(
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        )
-        val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<DebianRoot>()
-        res?.streams?.forEach { stream ->
-            callback.invoke(
-                ExtractorLink(
-                    "Torrentio",
-                    stream.title,
-                    stream.url,
-                    "",
-                    getIndexQuality(stream.name),
-                    INFER_TYPE,
-                )
-            )
-        }
-    }
-    else
-    {
-        torrentioAPI= mainUrl
+        val torrentioAPI:String = mainUrl
         val url = if(season == null) {
             "$torrentioAPI/stream/movie/$id.json"
         }
@@ -66,10 +33,19 @@ suspend fun invokeTorrastream(
         val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
         res?.streams?.forEach { stream ->
             val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
+            val formattedTitleName = stream.title
+                ?.let { title ->
+                    val tags = "\\[(.*?)]".toRegex().findAll(title)
+                        .map { match -> "[${match.groupValues[1]}]" }
+                        .joinToString(" | ")
+                    val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.get(1) ?: "0"
+                    val provider = "⚙️\\s*([^\\\\]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+                    "Torrentio | $tags | Seeder: $seeder | Provider: $provider".trim()
+                }
             callback.invoke(
                 ExtractorLink(
                     "Torrentio",
-                    stream.title ?: stream.name ?: "",
+                    formattedTitleName ?: stream.name ?: "",
                     magnet,
                     "",
                     getIndexQuality(stream.name),
@@ -77,7 +53,6 @@ suspend fun invokeTorrastream(
                 )
             )
         }
-    }
 }
 
 suspend fun invokeAnimetosho(
@@ -89,10 +64,18 @@ suspend fun invokeAnimetosho(
     val parsedList = Gson().fromJson(jsonResponse, Array<AnimetoshoItem>::class.java)?.toList() ?: emptyList()
     parsedList.sortedByDescending { it.seeders }.forEach { item ->
         item.magnetUri.let { magnet ->
+            val formattedTitleName = item.torrentName
+                .let { title ->
+                    val tags = "\\[(.*?)]".toRegex().findAll(title)
+                        .map { match -> "[${match.groupValues[1]}]" }
+                        .joinToString(" | ")
+                    val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.get(1) ?: ""
+                    "Animetosho | $tags | Seeder: $seeder".trim()
+                }
             callback.invoke(
                 ExtractorLink(
                     "Animetosho",
-                    "Animetosho ${item.torrentName}",
+                    formattedTitleName,
                     magnet,
                     "",
                     getIndexQuality(item.torrentName),
@@ -364,11 +347,23 @@ suspend fun invokeComet(
         val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
         for(stream in res?.streams!!)
         {
+            val formattedTitleName = stream.description
+                .let { title ->
+                    val tags = "\\[(.*?)]".toRegex().findAll(title)
+                        .map { match -> match.groupValues[1] }
+                        .joinToString(" | ")
+
+                    val quality = "💿\\s*([^\n]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+                    val provider = "🔎\\s*([^\n]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+
+                    "Comet | $tags | Quality: $quality | Provider: $provider"
+                }
+                .trim()
             val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
                 ExtractorLink(
                     "Comet",
-                    stream.description,
+                    formattedTitleName,
                     magnetLink,
                     "",
                     getIndexQuality(stream.description),
@@ -377,4 +372,48 @@ suspend fun invokeComet(
             )
         }
     } catch (_: Exception) { }
+}
+
+suspend fun invokeTorrentioAnime(
+    mainUrl:String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val torrentioAPI:String = mainUrl
+    val url = if(season == null) {
+        "$torrentioAPI/stream/movie/$id.json"
+    }
+    else {
+        "$torrentioAPI/stream/series/$id:$season:$episode.json"
+    }
+    val headers = mapOf(
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+    val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
+    res?.streams?.forEach { stream ->
+        val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
+        val formattedTitleName = stream.title
+            ?.let { title ->
+                val tags = "\\[(.*?)]".toRegex().findAll(title)
+                    .map { match -> "[${match.groupValues[1]}]" }
+                    .joinToString(" | ")
+                val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.get(1) ?: "0"
+                val provider = "⚙️\\s*([^\\\\]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+                "Torrentio | $tags | Seeder: $seeder | Provider: $provider".trim()
+            }
+
+        callback.invoke(
+            ExtractorLink(
+                "Torrentio ",
+                formattedTitleName ?: "Torrentio",
+                magnet,
+                "",
+                getIndexQuality(stream.name),
+                INFER_TYPE,
+            )
+        )
+    }
 }
