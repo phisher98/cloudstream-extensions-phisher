@@ -145,6 +145,9 @@ class TorraStreamAnime : MainAPI() {
         val anitype=TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
         val jpTitle=data.title.romaji
+        val syncData=app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
+        val animeData = parseAnimeData(syncData)
+
         val episodes =
             (1..data.totalEpisodes()).map { i ->
                 val linkData =
@@ -162,6 +165,8 @@ class TorraStreamAnime : MainAPI() {
                 {
                     this.season=1
                     this.episode=i
+                    this.posterUrl=animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                    this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                 }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
@@ -170,7 +175,7 @@ class TorraStreamAnime : MainAPI() {
             this.year = data.startDate.year
             this.plot = data.description
             this.backgroundPosterUrl = data.bannerImage
-            this.posterUrl = data.getCoverImage()
+            this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
             this.recommendations =
                 data.recommendations?.edges?.map {

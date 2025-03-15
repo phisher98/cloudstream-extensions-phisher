@@ -1,6 +1,7 @@
 package com.phisher98
 
 import app.cash.quickjs.QuickJs
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.phisher98.DumpUtils.queryApi
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.filmxyAPI
@@ -2682,3 +2683,8 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
         }
     }
 )
+
+fun parseAnimeData(jsonString: String): AnimeData {
+    val objectMapper = ObjectMapper()
+    return objectMapper.readValue(jsonString, AnimeData::class.java)
+}

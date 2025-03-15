@@ -1,6 +1,7 @@
 package com.TorraStream
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -102,5 +103,10 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
 fun getImdbId(jsonString: String): String? {
     val jsonObject = JSONObject(jsonString)
     return jsonObject.optJSONObject("mappings")?.optString("imdb_id", null)
+}
+
+fun parseAnimeData(jsonString: String): AnimeData {
+    val objectMapper = ObjectMapper()
+    return objectMapper.readValue(jsonString, AnimeData::class.java)
 }
 
