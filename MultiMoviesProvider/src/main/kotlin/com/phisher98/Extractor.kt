@@ -129,7 +129,7 @@ class MultimoviesVidstack : ExtractorApi() {
                 this.name,
                 m3u8,
                 url,
-                Qualities.Unknown.value,
+                Qualities.P1080.value,
                 isM3u8 = true
             )
         )

@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -34,6 +33,8 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlayTorrent.Companion.CometAPI
+import com.phisher98.StreamPlayTorrent.Companion.TorrentioAnimeAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -188,6 +189,7 @@ class StreamplayTorrentAnime : MainAPI() {
         }
     }
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -196,13 +198,33 @@ class StreamplayTorrentAnime : MainAPI() {
     ): Boolean {
         val data = AppUtils.parseJson<LinkData>(data)
         val episode =data.episode
+        val season =data.season
         val aniid =data.aniId
         val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+        val id= getImdbId(anijson)
         val anidbEid = getAnidbEid(anijson, episode)
         argamap(
             {
                 invokeAnimetosho(
                     anidbEid,
+                    callback
+                )
+            },
+            {
+                invokeTorrentioAnime(
+                    TorrentioAnimeAPI,
+                    id,
+                    season,
+                    episode,
+                    callback
+                )
+            },
+            {
+                invokeComet(
+                    CometAPI,
+                    id,
+                    season,
+                    episode,
                     callback
                 )
             },
