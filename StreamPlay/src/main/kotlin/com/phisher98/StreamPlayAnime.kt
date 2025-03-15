@@ -47,6 +47,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlayExtractor.invokeAnichi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.Calendar
 
 class StreamPlayAnime : MainAPI() {
     override var name = "StreamPlay-Anime"
@@ -94,11 +95,13 @@ class StreamPlayAnime : MainAPI() {
         return data to hasNextPage
     }
 
+    private val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
     override val mainPage =
         mainPageOf(
             "query (\$page: Int = ###, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = $isAdult) { Page(page: \$page, perPage: $mediaLimit) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
                     "Trending Now",
-            "query (\$page: Int = ###, \$seasonYear: Int = 2024, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = $isAdult) { Page(page: \$page, perPage: $mediaLimit) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, seasonYear: \$seasonYear, season: SPRING, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
+            "query (\$page: Int = ###, \$seasonYear: Int = $currentYear, \$sort: [MediaSort] = [TRENDING_DESC, POPULARITY_DESC], \$isAdult: Boolean = $isAdult) { Page(page: \$page, perPage: $mediaLimit) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, seasonYear: \$seasonYear, season: SPRING, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
                     "Popular This Season",
             "query (\$page: Int = ###, \$sort: [MediaSort] = [POPULARITY_DESC], \$isAdult: Boolean = $isAdult) { Page(page: \$page, perPage: $mediaLimit) { pageInfo { total perPage currentPage lastPage hasNextPage } media(sort: \$sort, isAdult: \$isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }" to
                     "All Time Popular",
@@ -154,11 +157,14 @@ class StreamPlayAnime : MainAPI() {
         val anitype=TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
         val jpTitle=data.title.romaji
+        val syncData=app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
+        val animeData = parseAnimeData(syncData)
+
         val episodes =
             (1..data.totalEpisodes()).map { i ->
                 val linkData =
                     LinkData(
-                        malId = ids.idMal ,
+                        malId = ids.idMal,
                         aniId = ids.id,
                         title = data.getTitle(),
                         jpTitle = jpTitle,
@@ -171,6 +177,8 @@ class StreamPlayAnime : MainAPI() {
                 {
                     this.season=1
                     this.episode=i
+                    this.posterUrl=animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                    this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                 }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
@@ -179,7 +187,7 @@ class StreamPlayAnime : MainAPI() {
             this.year = data.startDate.year
             this.plot = data.description
             this.backgroundPosterUrl = data.bannerImage
-            this.posterUrl = data.getCoverImage()
+            this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
             this.recommendations =
                 data.recommendations?.edges?.map {
