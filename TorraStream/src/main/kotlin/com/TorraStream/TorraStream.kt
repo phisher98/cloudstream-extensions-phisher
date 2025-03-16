@@ -71,7 +71,7 @@ class TorraStream() : TraktProvider() {
         val id =data.imdbId
         val year=data.year
         val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-        val anidbEid = getAnidbEid(anijson, episode)
+        val anidbEid = getAnidbEid(anijson, episode) ?: 0
         argamap(
             {
                 invokeTorrentio(

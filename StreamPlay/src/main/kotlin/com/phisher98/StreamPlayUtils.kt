@@ -2409,15 +2409,23 @@ fun getPlayer4UQuality (quality :String) : Int
 fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     if (episodeNumber == null) return null
 
-    val jsonObject = JSONObject(jsonString)
-    val episodes = jsonObject.optJSONObject("episodes") ?: return null
+    return try {
+        val jsonObject = JSONObject(jsonString)
+        val episodes = jsonObject.optJSONObject("episodes") ?: return null
 
-    return episodes.optJSONObject(episodeNumber.toString())?.optInt("anidbEid", -1)?.takeIf { it != -1 }
+        episodes.optJSONObject(episodeNumber.toString())
+            ?.optInt("anidbEid", -1)
+            ?.takeIf { it != -1 }
+    } catch (e: Exception) {
+        e.printStackTrace() // Logs the error but prevents breaking the app
+        null
+    }
 }
+
 
 fun getImdbId(jsonString: String): String? {
     val jsonObject = JSONObject(jsonString)
-    return jsonObject.optJSONObject("mappings")?.optString("imdb_id", null)
+    return jsonObject.optJSONObject("mappings")?.optString("imdb_id", "")
 }
 
 
