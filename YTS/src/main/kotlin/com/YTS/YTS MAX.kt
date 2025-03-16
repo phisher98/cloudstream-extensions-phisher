@@ -93,7 +93,7 @@ class YTSMX : YTS(){
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        val TRACKER_LIST_URL="https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_all.txt"
+        val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
         document.select("p.hidden-md.hidden-lg a").map {
             val infoHash=it.attr("href").substringAfter("download/")
             if (infoHash.startsWith("http"))
@@ -118,7 +118,7 @@ class YTSMX : YTS(){
         return true
     }
 
-    suspend fun generateMagnetLink(url: String, hash: String?): String {
+    private suspend fun generateMagnetLink(url: String, hash: String?): String {
         // Fetch the content of the file from the provided URL
         val response = app.get(url)
         val trackerList = response.text.trim().split("\n") // Assuming each tracker is on a new line

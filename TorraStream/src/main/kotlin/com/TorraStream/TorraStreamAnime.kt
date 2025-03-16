@@ -1,7 +1,5 @@
 package com.TorraStream
 
-import com.TorraStream.TorraStream.Companion.CometAPI
-import com.TorraStream.TorraStream.Companion.TorrentioAnimeAPI
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -217,6 +215,7 @@ class TorraStreamAnime : MainAPI() {
                     callback
                 )
             },
+            /*
             {
                 invokeTorrentioAnime(
                     TorrentioAnimeAPI,
@@ -235,6 +234,7 @@ class TorraStreamAnime : MainAPI() {
                     callback
                 )
             },
+             */
         )
 
 

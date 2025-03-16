@@ -1,11 +1,12 @@
 package com.Tooniboy
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
@@ -17,11 +18,14 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.json.JSONArray
 import java.net.URI
-import java.nio.ByteBuffer
-import java.security.MessageDigest
+import java.nio.charset.Charset
 import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
+import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 class StreamSB8 : StreamSB() {
@@ -45,18 +49,22 @@ open class Chillx : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "priority" to "u=0, i",
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language" to "en-US,en;q=0.9",
+        )
         try {
-            // Fetch the raw response from the URL
-            val res = app.get(url).toString() ?: throw Exception("Failed to fetch URL")
+            val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            // Extract the encoded string using regex
-            val encodedString = Regex("const\\sMatrixs\\s=\\s'(.*?)';").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt|Flagon))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
+
             // Decrypt the encoded string
-            val password = "Fvv0O(0ep+X,q-Z+"
-            val decryptedData = decryptAES(encodedString, password)
+            val keyBase64 = "SCkjX0Y9Vy5tY1FNIyZtdg=="
+            val decryptedData = decryptData(keyBase64, encodedString)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
@@ -101,62 +109,58 @@ open class Chillx : ExtractorApi() {
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
-        return regex.findAll(subtitle).map { match ->
-            val (language, url) = match.destructured
-            language.trim() to url.trim()
-        }.toList()
+        val regex = """tracks:\s*\[(.*?)]""".toRegex()
+        val match = regex.find(subtitle)?.groupValues?.get(1) ?: return emptyList()
+
+        return try {
+            val subtitles = JSONArray("[$match]") // Wrap in brackets to form valid JSON
+            (0 until subtitles.length()).mapNotNull { i ->
+                val obj = subtitles.optJSONObject(i) ?: return@mapNotNull null
+                val kind = obj.optString("kind")
+                if (kind == "captions") {
+                    val label = obj.optString("label")
+                    val file = obj.optString("file")
+                    label to file
+                } else null
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
-
-
-    private fun decryptAES(encryptedData: String, password: String): String {
-        try {
-            // Decode Base64-encoded input
+    private fun decryptData(base64Key: String, encryptedData: String): String {
+        return try {
+            // Decode Base64-encoded encrypted data
             val decodedBytes = base64DecodeArray(encryptedData)
 
-            // Convert bytes to 32-bit words (similar to bytes_to_32bit_words in Python)
-            val resultWords = bytesTo32BitWords(decodedBytes)
+            // Extract IV, Authentication Tag, and Ciphertext
+            val salt=decodedBytes.copyOfRange(0, 16)
+            val iv = decodedBytes.copyOfRange(16, 28)
+            val authTag = decodedBytes.copyOfRange(28, 44)
+            val ciphertext = decodedBytes.copyOfRange(44, decodedBytes.size)
 
-            // Extract IV (first 16 bytes, 4 words)
-            val ivBytes = ByteBuffer.allocate(16).apply {
-                for (i in 0 until 4) putInt(resultWords[i])
-            }.array()
+            // Convert Base64-encoded password to a SHA-256 encryption key
+            val password = base64Decode(base64Key)
+            val keyBytes = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(
+                PBEKeySpec(password.toCharArray(), salt, 999, 32 * 8)
+            ).encoded
 
-            // Generate the key using SHA-256 hash of the password
-            val key = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
+            // Decrypt the data using AES-GCM
+            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val gcmSpec = GCMParameterSpec(128, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
 
-            // Initialize AES Cipher in CBC mode
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(ivBytes))
-
-            // Extract ciphertext
-            val cipherText = ByteBuffer.allocate((resultWords.size - 4) * 4).apply {
-                for (i in 4 until resultWords.size) putInt(resultWords[i])
-            }.array()
-
-            // Decrypt and return the plaintext
-            return String(cipher.doFinal(cipherText), Charsets.UTF_8)
+            // Perform decryption
+            val decryptedBytes = cipher.doFinal(ciphertext + authTag)
+            String(decryptedBytes, Charset.forName("UTF-8"))
         } catch (e: Exception) {
             e.printStackTrace()
-            return "Decryption Failed"
+            "Decryption failed"
         }
     }
 
-    // Convert byte array to 32-bit word array
-    private fun bytesTo32BitWords(byteData: ByteArray): IntArray {
-        val words = mutableListOf<Int>()
-        for (i in byteData.indices step 4) {
-            var word = 0
-            for (j in 0 until 4) {
-                if (i + j < byteData.size) {
-                    word = word or (byteData[i + j].toInt() and 0xFF shl (24 - j * 8))
-                }
-            }
-            words.add(word)
-        }
-        return words.toIntArray()
-    }
+    /** End **/
 }
 
 open class StreamRuby : ExtractorApi() {
@@ -217,10 +221,12 @@ class FileMoonnl : Filesim() {
     override val name = "FileMoon"
 }
 
+
 class GDMirrorbot : ExtractorApi() {
     override var name = "GDMirrorbot"
     override var mainUrl = "https://gdmirrorbot.nl"
     override val requiresReferer = true
+
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -228,36 +234,42 @@ class GDMirrorbot : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val host = getBaseUrl(app.get(url).url)
-        val embed = url.substringAfter("embed/")
+        val embed = url.substringAfterLast("/")
         val data = mapOf("sid" to embed)
         val jsonString = app.post("$host/embedhelper.php", data = data).toString()
-        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-        val siteUrls = jsonObject.getAsJsonObject("siteUrls").asJsonObject
-        val mresult = jsonObject.getAsJsonObject("mresult").toString()
-        val regex = """"(\w+)":"([^"]+)"""".toRegex()
-        val mresultMap = regex.findAll(mresult).associate {
-            it.groupValues[1] to it.groupValues[2]
-        }
 
-        val matchingResults = mutableListOf<Pair<String, String>>()
-        siteUrls.keySet().forEach { key ->
-            if (mresultMap.containsKey(key)) { // Use regex-matched keys and values
-                val value1 = siteUrls.get(key).asString
-                Log.d("Phisher",value1)
-                val value2 = mresultMap[key].orEmpty()
-                matchingResults.add(Pair(value1, value2))
+        val jsonElement: JsonElement = JsonParser.parseString(jsonString)
+        if (!jsonElement.isJsonObject) {
+            Log.e("Error:", "Unexpected JSON format: Response is not a JSON object")
+            return
+        }
+        val jsonObject = jsonElement.asJsonObject
+        val siteUrls = jsonObject["siteUrls"]?.takeIf { it.isJsonObject }?.asJsonObject
+        val mresult = jsonObject["mresult"]?.takeIf { it.isJsonObject }?.asJsonObject
+        val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.takeIf { it.isJsonObject }?.asJsonObject
+        if (siteUrls == null || siteFriendlyNames == null || mresult == null) {
+            return
+        }
+        val commonKeys = siteUrls.keySet().intersect(mresult.keySet())
+        commonKeys.forEach { key ->
+            val siteName = siteFriendlyNames[key]?.asString
+            if (siteName == null) {
+                Log.e("Error:", "Skipping key: $key because siteName is null")
+                return@forEach
             }
-        }
-
-        matchingResults.amap { (siteUrl, result) ->
-            val href = "$siteUrl$result"
-            Log.d("Phisher", "Generated Href: $href")
+            val siteUrl = siteUrls[key]?.asString
+            val resultUrl = mresult[key]?.asString
+            if (siteUrl == null || resultUrl == null) {
+                Log.e("Error:", "Skipping key: $key because siteUrl or resultUrl is null")
+                return@forEach
+            }
+            val href = siteUrl + resultUrl
             loadExtractor(href, subtitleCallback, callback)
         }
 
     }
 
-    fun getBaseUrl(url: String): String {
+    private fun getBaseUrl(url: String): String {
         return URI(url).let {
             "${it.scheme}://${it.host}"
         }

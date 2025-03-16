@@ -218,6 +218,7 @@ class StreamplayTorrentAnime : MainAPI() {
                     callback
                 )
             },
+            /*
             {
                 invokeTorrentioAnime(
                     TorrentioAnimeAPI,
@@ -236,6 +237,7 @@ class StreamplayTorrentAnime : MainAPI() {
                     callback
                 )
             },
+             */
         )
 
 

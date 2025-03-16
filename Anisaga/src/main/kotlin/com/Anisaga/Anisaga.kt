@@ -1,6 +1,7 @@
 package com.Anisaga
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -220,6 +221,7 @@ open class Anisaga : MainAPI() {
             ).parsed<ResponseHash>().embed_url
             when {
                 !source.contains("youtube") -> {
+                    Log.d("Phisher",source)
                     loadExtractor(source, subtitleCallback, callback)
                 }
                 else -> return@apmap

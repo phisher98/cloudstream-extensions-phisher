@@ -19,7 +19,8 @@ New Imports
 **/
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import java.security.MessageDigest
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
@@ -50,13 +51,13 @@ open class Chillx : ExtractorApi() {
         try {
             val res = app.get(url,referer=mainUrl,headers=headers).toString()
 
-            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt|Flagon))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val keyBase64 = "fnBmd19PVzRyfSFmdWV0ZQ=="
+            val keyBase64 = "SCkjX0Y9Vy5tY1FNIyZtdg=="
             val decryptedData = decryptData(keyBase64, encodedString)
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
@@ -127,15 +128,16 @@ open class Chillx : ExtractorApi() {
             val decodedBytes = base64DecodeArray(encryptedData)
 
             // Extract IV, Authentication Tag, and Ciphertext
-            val iv = decodedBytes.copyOfRange(0, 12)
-            val authTag = decodedBytes.copyOfRange(12, 28)
-            val ciphertext = decodedBytes.copyOfRange(28, decodedBytes.size)
+            val salt=decodedBytes.copyOfRange(0, 16)
+            val iv = decodedBytes.copyOfRange(16, 28)
+            val authTag = decodedBytes.copyOfRange(28, 44)
+            val ciphertext = decodedBytes.copyOfRange(44, decodedBytes.size)
 
             // Convert Base64-encoded password to a SHA-256 encryption key
             val password = base64Decode(base64Key)
-            val keyBytes =
-                MessageDigest.getInstance("SHA-256")
-                    .digest(password.toByteArray(Charset.forName("UTF-8")))
+            val keyBytes = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(
+                PBEKeySpec(password.toCharArray(), salt, 999, 32 * 8)
+            ).encoded
 
             // Decrypt the data using AES-GCM
             val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")

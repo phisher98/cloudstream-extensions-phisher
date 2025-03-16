@@ -100,7 +100,7 @@ open class YTS : MainAPI() {
         return true
     }
 
-    fun getURL(url: String): String {
+    private fun getURL(url: String): String {
             return "${mainUrl}$url"
     }
 }
