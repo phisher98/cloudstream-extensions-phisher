@@ -1294,7 +1294,7 @@ class Moviesapi : Chillx() {
 
 open class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.art"
+    override val mainUrl = "https://hubcloud.ink"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -1340,6 +1340,9 @@ open class HubCloud : ExtractorApi() {
                 link.contains("pixeldra.in") -> callback(
                     ExtractorLink("$source Pixeldrain", "$source Pixeldrain $size", link, "", quality)
                 )
+                link.contains("pixeldrain") -> callback(
+                    ExtractorLink("$source Pixeldrain", "$source Pixeldrain $size", link, "", quality)
+                )
                 link.contains("buzzheavier") -> callback(
                     ExtractorLink("$source Buzzheavier", "$source Buzzheavier $size", "$link/download", "", quality)
                 )
@@ -1352,8 +1355,8 @@ open class HubCloud : ExtractorApi() {
                 link.contains("hubcdn.xyz") -> callback(
                     ExtractorLink("$source [File] Hub-Cloud", "$source [File] Hub-Cloud $size", link, "", quality)
                 )
-                link.contains("gofile.io") || link.contains("pixeldrain") ->
-                    loadCustomExtractor(source.orEmpty(), link, "", subtitleCallback, callback)
+                link.contains("gofile.io") ->
+                    loadCustomExtractor(source.orEmpty(), link, "Pixeldrain", subtitleCallback, callback)
                 else -> Log.d("Error:", "No Server Match Found")
             }
         }
