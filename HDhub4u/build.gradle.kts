@@ -22,5 +22,5 @@ cloudstream {
     )
     language = "hi"
 
-    iconUrl = "https://www.hdhub4u.soccer/templates/favicon.ico"
+    iconUrl = "https://hdhub4u.soccer/wp-content/uploads/2021/05/hdhub4ulogo.png"
 }
