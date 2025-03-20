@@ -15,7 +15,7 @@ class TorraStream() : TraktProvider() {
 
     companion object
     {
-        const val TorrentioAPI="https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl%7Csort=seeders"
+        const val TorrentioAPI="https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,ilcorsaronero,magnetdl%7Csort=seeders"
         const val TorrentgalaxyAPI="https://torrentgalaxy.to"
         const val TorrentmovieAPI="https://torrentmovie.net"
         const val OnethreethreesevenxAPI="https://1337x.to"
