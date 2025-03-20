@@ -5,8 +5,6 @@ import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
@@ -18,15 +16,9 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.json.JSONArray
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URI
-import java.nio.charset.Charset
-import javax.crypto.Cipher
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.PBEKeySpec
-import javax.crypto.spec.SecretKeySpec
 
 class FilemoonV2 : ExtractorApi() {
     override var name = "Filemoon"
@@ -124,18 +116,26 @@ open class Chillx : ExtractorApi() {
             "Accept-Language" to "en-US,en;q=0.9",
         )
         try {
-            val res = app.get(url,referer=mainUrl,headers=headers).toString()
+            val res = app.get(url, referer = mainUrl, headers = headers).toString()
 
-            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt|Flagon))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+            val encodedString =
+                Regex("(?:const|let|var|\\bwindow\\.\\w+)\\s+\\w*\\s*=\\s*'([^']*)'").find(
+                    res
+                )?.groupValues?.get(1)?.trim() ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
             // Decrypt the encoded string
-            val keyBase64 = "SCkjX0Y9Vy5tY1FNIyZtdg=="
-            val decryptedData = decryptData(keyBase64, encodedString)
+            val payload = """
+             {
+                "input": "$encodedString",
+                "key": "ojl,&[y^-{cH!ux1"
+             }
+            """.trimIndent().toRequestBody("application/json".toMediaTypeOrNull())
+            val decryptedData = app.post("https://interesting-zebra-51.deno.dev", requestBody  = payload, headers= mapOf("Content-Type" to "application/json")).text
             // Extract the m3u8 URL from decrypted data
-            val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
+            val m3u8 = Regex("(https?://[^\\s\"'\\\\]*m3u8[^\\s\"'\\\\]*)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
                 throw Exception("m3u8 URL not found")
             }
@@ -178,55 +178,14 @@ open class Chillx : ExtractorApi() {
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """tracks:\s*\[(.*?)]""".toRegex()
-        val match = regex.find(subtitle)?.groupValues?.get(1) ?: return emptyList()
+        val regex = """\[(.*?)](https?://[^\s,"]+\.srt)""".toRegex()
+        val matches = regex.findAll(subtitle)
 
-        return try {
-            val subtitles = JSONArray("[$match]") // Wrap in brackets to form valid JSON
-            (0 until subtitles.length()).mapNotNull { i ->
-                val obj = subtitles.optJSONObject(i) ?: return@mapNotNull null
-                val kind = obj.optString("kind")
-                if (kind == "captions") {
-                    val label = obj.optString("label")
-                    val file = obj.optString("file")
-                    label to file
-                } else null
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun decryptData(base64Key: String, encryptedData: String): String {
-        return try {
-            // Decode Base64-encoded encrypted data
-            val decodedBytes = base64DecodeArray(encryptedData)
-
-            // Extract IV, Authentication Tag, and Ciphertext
-            val salt=decodedBytes.copyOfRange(0, 16)
-            val iv = decodedBytes.copyOfRange(16, 28)
-            val authTag = decodedBytes.copyOfRange(28, 44)
-            val ciphertext = decodedBytes.copyOfRange(44, decodedBytes.size)
-
-            // Convert Base64-encoded password to a SHA-256 encryption key
-            val password = base64Decode(base64Key)
-            val keyBytes = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(
-                PBEKeySpec(password.toCharArray(), salt, 999, 32 * 8)
-            ).encoded
-
-            // Decrypt the data using AES-GCM
-            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            val gcmSpec = GCMParameterSpec(128, iv)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
-
-            // Perform decryption
-            val decryptedBytes = cipher.doFinal(ciphertext + authTag)
-            String(decryptedBytes, Charset.forName("UTF-8"))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "Decryption failed"
-        }
+        return matches.map { match ->
+            val label = match.groupValues[1]
+            val file = match.groupValues[2]
+            label to file
+        }.toList()
     }
 
     /** End **/
