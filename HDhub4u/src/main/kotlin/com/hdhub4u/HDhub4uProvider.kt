@@ -179,7 +179,7 @@ class HDhub4uProvider : MainAPI() {
             val movieList = mutableListOf<String>()
 
             movieList.addAll(
-                doc.select("h3 a:matchesOwn(480|720|1080|2160|4K)")
+                doc.select("h3 a:matchesOwn(480|720|1080|2160|4K), h4 a:matchesOwn(480|720|1080|2160|4K)")
                     .map { it.attr("href") }
             )
 
