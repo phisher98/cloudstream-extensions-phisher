@@ -23,7 +23,7 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","Torrent","AsianDrama","TvSeries","Anime")
 
-    iconUrl = "https://i.ibb.co/w4BnkC9/GwxAcDV.png"
+    iconUrl = "https://torrentio.strem.fun/images/logo_v1.png"
 
     isCrossPlatform = false
 }
