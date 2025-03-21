@@ -145,7 +145,7 @@ class HDhub4uProvider : MainAPI() {
         ).text()
         val seasontitle=title
         val seasonNumber = Regex("(?i)\\bSeason\\s*(\\d+)\\b").find(seasontitle)?.groupValues?.get(1)?.toIntOrNull()
-        val image = doc.select(".aligncenter").attr("src")
+        val image = doc.select("meta[property=og:image]").attr("content")
         val plot = doc.selectFirst(".kno-rdesc .kno-rdesc")?.text()
         val tags = doc.select(".page-meta em").eachText()
         val trailer = doc.selectFirst(".responsive-embed-container > iframe:nth-child(1)")?.attr("src")
@@ -173,7 +173,7 @@ class HDhub4uProvider : MainAPI() {
             cast = responseData.meta?.cast ?: emptyList()
             title = responseData.meta?.name ?: title
             year = responseData.meta?.year ?: ""
-            background = responseData.meta?.background ?: background
+            background = responseData.meta?.background ?: image
         }
         if (tvtype==TvType.Movie) {
             val movieList = mutableListOf<String>()
@@ -185,6 +185,7 @@ class HDhub4uProvider : MainAPI() {
 
             return newMovieLoadResponse(title, url, TvType.Movie, movieList) {
                 this.backgroundPosterUrl = background
+                this.posterUrl= background
                 this.year = year.toIntOrNull()
                 this.plot = description ?: plot
                 this.tags = genre ?: tags
@@ -282,6 +283,7 @@ class HDhub4uProvider : MainAPI() {
 
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesData) {
                 this.backgroundPosterUrl = background
+                this.posterUrl= background
                 this.year = year.toIntOrNull()
                 this.plot = description ?: plot
                 this.tags = genre ?: tags
