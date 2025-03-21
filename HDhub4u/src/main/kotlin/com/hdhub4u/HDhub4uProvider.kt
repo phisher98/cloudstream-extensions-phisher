@@ -35,7 +35,7 @@ class HDhub4uProvider : MainAPI() {
     override val hasDownloadSupport = true
     override val hasQuickSearch = false
     override val supportedTypes = setOf(
-        TvType.Movie, TvType.TvSeries, TvType.NSFW
+        TvType.Movie, TvType.TvSeries
     )
     private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
     override val mainPage = mainPageOf(
@@ -145,12 +145,12 @@ class HDhub4uProvider : MainAPI() {
         ).text()
         val seasontitle=title
         val seasonNumber = Regex("(?i)\\bSeason\\s*(\\d+)\\b").find(seasontitle)?.groupValues?.get(1)?.toIntOrNull()
-        var image = doc.select(".aligncenter").attr("src")
+        val image = doc.select(".aligncenter").attr("src")
         val plot = doc.selectFirst(".kno-rdesc .kno-rdesc")?.text()
         val tags = doc.select(".page-meta em").eachText()
         val trailer = doc.selectFirst(".responsive-embed-container > iframe:nth-child(1)")?.attr("src")
                 ?.replace("/embed/", "/watch?v=")
-        val links = extractLinksATags(doc.select(".page-body > div a"))
+        extractLinksATags(doc.select(".page-body > div a"))
         val typeraw=doc.select("h1.page-title span").text()
         val tvtype=if (typeraw.contains("movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
         val tvtypeapi = if (typeraw.contains("movie", ignoreCase = true)) "movie" else "series"
@@ -164,17 +164,15 @@ class HDhub4uProvider : MainAPI() {
             } else null } else null
         var cast: List<String> = emptyList()
         val genre: List<String>? = null
-        var imdbRating: String = ""
-        var year: String = ""
+        //var imdbRating: String = ""
+        var year = ""
         var background: String = image
         var description: String? = null
         if(responseData != null) {
             description = responseData.meta?.description ?: plot
             cast = responseData.meta?.cast ?: emptyList()
             title = responseData.meta?.name ?: title
-            imdbRating = responseData.meta?.imdbRating ?: ""
             year = responseData.meta?.year ?: ""
-            image = responseData.meta?.poster ?: image
             background = responseData.meta?.background ?: background
         }
         if (tvtype==TvType.Movie) {
@@ -196,7 +194,7 @@ class HDhub4uProvider : MainAPI() {
             }
         } else {
             val episodesData = mutableListOf<Episode>()
-            val epLinksList = mutableListOf<MutableList<String>>()
+            val epLinksMap = mutableMapOf<Int, MutableList<String>>() // Store links by episode number
             val episodeRegex = Regex("EPiSODE\\s*(\\d+)", RegexOption.IGNORE_CASE)
 
 // Handling h3 elements
@@ -204,50 +202,83 @@ class HDhub4uProvider : MainAPI() {
                 val episodeLinks = h3Element.select("a:contains(EPiSODE), a:contains(WATCH)")
                     .map { it.attr("href") }
                     .filter { it.isNotEmpty() }
-                val episodeInfo = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == index+1 }
+
+                val episodeInfo = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == index }
+
                 if (episodeLinks.isNotEmpty()) {
-                    epLinksList.add(episodeLinks.toMutableList())
+                    epLinksMap.getOrPut(index) { mutableListOf() }.addAll(episodeLinks.distinct())
+                    episodesData.removeAll { it.episode == index } // Remove duplicates before adding
                     episodesData.add(
-                        newEpisode(episodeLinks) {
+                        newEpisode(epLinksMap[index] ?: mutableListOf()) {
                             this.name = episodeInfo?.name ?: "Episode $index"
                             this.season = seasonNumber
                             this.episode = index
                             this.posterUrl = episodeInfo?.thumbnail
-                            this.description=episodeInfo?.overview
+                            this.description = episodeInfo?.overview
                         }
                     )
                 }
             }
-// Handling h4 elements
 
+// Direct Links
+            doc.select("h3,h4").forEach { element ->
+                val validLinks = element.select("a")
+                    .filter { a -> a.text().contains(Regex("1080|720|4K|2160", RegexOption.IGNORE_CASE)) }
+                    .mapNotNull { it.attr("href").takeIf { link -> link.isNotEmpty() } }
+
+                validLinks.forEach { url ->
+                    val resolvedUrl = getRedirectLinks(url.trim())
+                    val episodeDoc = app.get(resolvedUrl).document
+                    episodeDoc.select("div h5").forEach { h5Element ->
+                        val episodeText = h5Element.text()
+                        val episodeNumber = Regex("(\\d+)").find(episodeText)?.value?.toIntOrNull()
+                        val episodeLinks = h5Element.select("a[href]").mapNotNull { it.attr("href") }
+                        if (episodeNumber != null) {
+                            epLinksMap.getOrPut(episodeNumber) { mutableListOf() }.addAll(episodeLinks.distinct())
+                            episodesData.removeAll { it.episode == episodeNumber } // Remove duplicates before adding
+                            episodesData.add(
+                                newEpisode(epLinksMap[episodeNumber] ?: mutableListOf()) {
+                                    this.name = "Episode $episodeNumber"
+                                    this.season = seasonNumber
+                                    this.episode = episodeNumber
+                                    this.posterUrl = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.thumbnail
+                                    this.description = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.overview
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+// Handling h4 elements
             doc.select("h4:matches(EPiSODE \\d+)").forEach { h4Element ->
                 val episodeNumber = episodeRegex.find(h4Element.text())?.groupValues?.get(1)?.toIntOrNull() ?: (episodesData.size + 1)
                 val episodeLinks = mutableListOf<String>()
-                var nextElement = h4Element.nextElementSibling()
-                val episodeInfo = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }
 
+                val h4Links = h4Element.select("a[href]").mapNotNull { it.attr("href") }
+                episodeLinks.addAll(h4Links)
+
+                var nextElement = h4Element.nextElementSibling()
                 while (nextElement != null && nextElement.tagName() != "hr") {
-                    episodeLinks.addAll(
-                        nextElement.select("a[href]").mapNotNull { it.attr("href").takeIf { link -> link.isNotEmpty() } }
-                    )
+                    val siblingLinks = nextElement.select("a[href]").mapNotNull { it.attr("href") }
+                    episodeLinks.addAll(siblingLinks)
                     nextElement = nextElement.nextElementSibling()
                 }
 
                 if (episodeLinks.isNotEmpty()) {
-                    epLinksList.add(episodeLinks)
-
+                    epLinksMap.getOrPut(episodeNumber) { mutableListOf() }.addAll(episodeLinks.distinct())
+                    episodesData.removeAll { it.episode == episodeNumber } // Remove duplicates before adding
                     episodesData.add(
-                        newEpisode(episodeLinks) {
-                            this.name = episodeInfo?.name ?: "Episode $episodeNumber"
+                        newEpisode(epLinksMap[episodeNumber] ?: mutableListOf()) {
+                            this.name = "Episode $episodeNumber"
                             this.season = seasonNumber
                             this.episode = episodeNumber
-                            this.posterUrl = episodeInfo?.thumbnail
-                            this.description=episodeInfo?.overview
+                            this.posterUrl = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.thumbnail
+                            this.description = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.overview
                         }
                     )
                 }
             }
-
 
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesData) {
                 this.backgroundPosterUrl = background
@@ -275,6 +306,7 @@ class HDhub4uProvider : MainAPI() {
             .split(",")
             .map { it.trim().removeSurrounding("\"") }
             .filter { it.isNotEmpty() }
+
         linksList.forEach { link->
            if (link.contains("?id="))
            {
@@ -318,32 +350,6 @@ class HDhub4uProvider : MainAPI() {
         return null
     }
 
-    /**
-     * Extracts a four-digit year from a string, prioritizing years in parentheses and ensuring no word characters follow.
-     *
-     * Example:
-     *
-     * "This is (2023) movie" -> 2023
-     *
-     * "This is 1920x1080p" -> null
-     *
-     * "This is 2023 movie" -> 2023
-     *
-     * "This is 1999-2010 TvSeries" -> 1999
-     *
-     * @param check The input string.
-     * @return The year as an integer, or `null` if no match is found.
-     */
-    private fun getYearFromString(check: String?): Int? {
-        return check?.let {
-            parenthesesYear.find(it)?.value?.toIntOrNull()
-                ?: withoutParenthesesYear.find(it)?.value?.toIntOrNull()
-        }
-    }
-
-    private val parenthesesYear = "(?<=\\()\\d{4}(?=\\))".toRegex()
-    private val withoutParenthesesYear = "(19|20)\\d{2}(?!\\w)".toRegex()
-
     data class Meta(
         val id: String?,
         val imdb_id: String?,
@@ -383,7 +389,4 @@ class HDhub4uProvider : MainAPI() {
         val meta: Meta?
     )
 
-    data class EpisodeLink(
-        val source: String
-    )
 }

@@ -49,7 +49,7 @@ class Hubcdn : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.text().let {
+        app.get(url).document.toString().let {
             val encoded = Regex("r=([A-Za-z0-9+/=]+)").find(it)?.groups?.get(1)?.value
             if (!encoded.isNullOrEmpty()) {
                 val m3u8 = base64Decode(encoded).substringAfterLast("link=")
@@ -84,11 +84,12 @@ class Hubdrive : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val href=app.get(url).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
-        HubCloud().getUrl(href,"HUBDrive")
+        loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
 }
 
 
+@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 open class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.art"
