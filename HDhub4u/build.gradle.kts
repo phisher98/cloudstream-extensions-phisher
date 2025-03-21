@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 4
+version = 5
 
 
 cloudstream {
@@ -18,9 +18,11 @@ cloudstream {
     tvTypes = listOf(
         "Movie",
         "TvSeries",
-        "NSFW"
+        "Anime"
     )
     language = "hi"
 
     iconUrl = "https://hdhub4u.soccer/wp-content/uploads/2021/05/hdhub4ulogo.png"
+
+    isCrossPlatform = true
 }

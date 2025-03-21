@@ -35,7 +35,7 @@ class HDhub4uProvider : MainAPI() {
     override val hasDownloadSupport = true
     override val hasQuickSearch = false
     override val supportedTypes = setOf(
-        TvType.Movie, TvType.TvSeries
+        TvType.Movie, TvType.TvSeries ,TvType.Anime
     )
     private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
     override val mainPage = mainPageOf(
