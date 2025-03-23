@@ -48,7 +48,7 @@ class HDhub4uProvider : MainAPI() {
         "/category/adult/" to "Adult",
     )
     private val headers =
-        mapOf("user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+        mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0","Cookie" to "xla=s4t")
 
     private suspend fun getMainUrl() {
         newMainUrl.ifEmpty {
