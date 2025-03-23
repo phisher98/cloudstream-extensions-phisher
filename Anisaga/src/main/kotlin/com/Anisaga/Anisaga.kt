@@ -39,18 +39,19 @@ open class Anisaga : MainAPI() {
         "genre/romance" to "Slice of Life",
         "genre/sci-fi-fantasy" to "Sci-Fi & Fantasy",
     )
-    
-    companion object
-    {
-        val cookies = mapOf("cookie" to "starstruck_9c69a16370994b12750cec9b9594d3dd=5f54c7d4d56c84e5db8bb1f0c87adcdc; ays_show_popup_only_once_2=Access%20Authorisation%20for%20user; wssplashuid=9ba9ec7c3e6edab87a19e41d7c933ae890472793.1714380994.1; _subid=3u11m7a80ju; c3807=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wic3RyZWFtc1wiOntcIjNcIjoxNzE0NDk2MDQ0fSxcImNhbXBhaWduc1wiOntcIjFcIjoxNzE0NDk2MDQ0fSxcInRpbWVcIjoxNzE0NDk2MDQ0fSJ9.HovdzGc23r6_CJ4f6Gcr88ddjK_KTp4VUOPZrSQ0PMU; PHPSESSID=6vqkgujr8vrug7va18r13micme")
+
+    companion object {
+        val cookies =
+            mapOf("cookie" to "starstruck_9c69a16370994b12750cec9b9594d3dd=5f54c7d4d56c84e5db8bb1f0c87adcdc; ays_show_popup_only_once_2=Access%20Authorisation%20for%20user; wssplashuid=9ba9ec7c3e6edab87a19e41d7c933ae890472793.1714380994.1; _subid=3u11m7a80ju; c3807=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoie1wic3RyZWFtc1wiOntcIjNcIjoxNzE0NDk2MDQ0fSxcImNhbXBhaWduc1wiOntcIjFcIjoxNzE0NDk2MDQ0fSxcInRpbWVcIjoxNzE0NDk2MDQ0fSJ9.HovdzGc23r6_CJ4f6Gcr88ddjK_KTp4VUOPZrSQ0PMU; PHPSESSID=6vqkgujr8vrug7va18r13micme")
     }
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url, cookies=cookies).document
+        val url =
+            if (page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
+        val document = app.get(url, cookies = cookies).document
         val home =
             document.select("div#archive-content article,div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -96,9 +97,9 @@ open class Anisaga : MainAPI() {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
             val href = getProperLink(it.selectFirst("div.title > a")!!.attr("href"))
-            val posterlink=app.get(href).document.select("div.poster img").attr("src")
+            val posterlink = app.get(href).document.select("div.poster img").attr("src")
             val posterUrl = posterlink
-                //it.selectFirst("img")!!.attr("src").toString()
+            //it.selectFirst("img")!!.attr("src").toString()
             newMovieSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
@@ -106,12 +107,13 @@ open class Anisaga : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val request = app.get(url, cookies=cookies)
+        val request = app.get(url, cookies = cookies)
         val document = request.document
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        val poster = document.select("div#contenedor > style").html().substringAfter("(").substringBefore(")")
+        val poster = document.select("div#contenedor > style").html().substringAfter("(")
+            .substringBefore(")")
         val tags = document.select("div.sgeneros > a").map { it.text() }
 
         val year = Regex(",\\s?(\\d+)").find(
@@ -123,7 +125,8 @@ open class Anisaga : MainAPI() {
                     Regex("Episode\\s+\\d+|EP\\d+|PE\\d+")
                 )
         ) TvType.TvSeries else TvType.Movie
-        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
+        val description =
+            document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val trailer = document.selectFirst("div.embed iframe")?.attr("src")
         val rating =
             document.selectFirst("span.dt_rating_vgs")?.text()?.toRatingInt()
@@ -157,10 +160,10 @@ open class Anisaga : MainAPI() {
                         it.select("div.numerando").text().replace(" ", "").split("-").first()
                             .toIntOrNull()
                     newEpisode(href) {
-                        this.name=name
-                        this.season=season
-                        this.episode=episode
-                        this.posterUrl=image
+                        this.name = name
+                        this.season = season
+                        this.episode = episode
+                        this.posterUrl = image
                     }
                 }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
@@ -199,14 +202,14 @@ open class Anisaga : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data, cookies=cookies).document
+        val document = app.get(data, cookies = cookies).document
         document.select("ul#playeroptionsul > li").map {
-            Triple(
-                it.attr("data-post"),
-                it.attr("data-nume"),
-                it.attr("data-type")
-            )
-        }.apmap { (id, nume, type) ->
+                Triple(
+                    it.attr("data-post"),
+                    it.attr("data-nume"),
+                    it.attr("data-type")
+                )
+            }.amap { (id, nume, type) ->
             val source = app.post(
                 url = "$directUrl/wp-admin/admin-ajax.php",
                 data = mapOf(
@@ -221,10 +224,11 @@ open class Anisaga : MainAPI() {
             ).parsed<ResponseHash>().embed_url
             when {
                 !source.contains("youtube") -> {
-                    Log.d("Phisher",source)
+                    Log.d("Phisher", source)
                     loadExtractor(source, subtitleCallback, callback)
                 }
-                else -> return@apmap
+
+                else -> return@amap
             }
         }
         return true

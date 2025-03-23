@@ -221,12 +221,12 @@ suspend fun extractResumeUHD(url: String): String {
 }
 
 suspend fun extractCFUHD(url: String): MutableList<String> {
-    val CFlinks= mutableListOf<String>()
+    val CFlinks = mutableListOf<String>()
     app.get("https://driveleech.org$url?type=1").document.let {
-        CFlinks+=it.select("div.mb-4 a").attr("href")
+        CFlinks += it.select("div.mb-4 a").attr("href")
     }
     app.get("https://driveleech.org$url?type=2").document.let {
-        CFlinks+=it.select("div.mb-4 a").attr("href")
+        CFlinks += it.select("div.mb-4 a").attr("href")
     }
     return CFlinks
 }
@@ -298,8 +298,10 @@ suspend fun extractDirectDl(url: String): String? {
     return tryParseJson<DirectDl>(json)?.download_url
 }
 
-suspend fun extractMovieAPIlinks(serverid: String,movieid: String,MOVIE_API: String): String {
-    val link=app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").document.toString().substringAfter("link\":\"").substringBefore("\",")
+suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: String): String {
+    val link =
+        app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").document.toString()
+            .substringAfter("link\":\"").substringBefore("\",")
     return link
 }
 
@@ -565,7 +567,7 @@ suspend fun invokeDrivetot(
     val res = app.get(url)
     val data = res.document.select("form input").associate { it.attr("name") to it.attr("value") }
     app.post(res.url, data = data, cookies = res.cookies).document.select("div.card-body a")
-        .apmap { ele ->
+        .amap { ele ->
             val href = base64Decode(ele.attr("href").substringAfterLast("/")).let {
                 if (it.contains("hubcloud.lol")) it.replace("hubcloud.lol", "hubcloud.in") else it
             }
@@ -851,8 +853,8 @@ suspend fun getCrunchyrollIdFromMalSync(aniId: String?): String? {
         ?: regex.find("$crunchyroll")?.groupValues?.getOrNull(1)
 }
 
-suspend fun String.haveDub(referer: String) : Boolean {
-    return app.get(this,referer=referer).text.contains("TYPE=AUDIO")
+suspend fun String.haveDub(referer: String): Boolean {
+    return app.get(this, referer = referer).text.contains("TYPE=AUDIO")
 }
 
 suspend fun convertTmdbToAnimeId(
@@ -939,7 +941,6 @@ fun generateWpKey(r: String, m: String): String {
 }
 
 
-
 suspend fun loadCustomTagExtractor(
     tag: String? = null,
     url: String,
@@ -975,16 +976,16 @@ fun loadNameExtractor(
     callback: (ExtractorLink) -> Unit,
     quality: Int,
 ) {
-        callback.invoke(
-            ExtractorLink(
-                name ?: "",
-                name ?: "",
-                url,
-                referer ?: "",
-                quality,
-                if (url.contains("m3u8"))ExtractorLinkType.M3U8 else INFER_TYPE,
-            )
+    callback.invoke(
+        ExtractorLink(
+            name ?: "",
+            name ?: "",
+            url,
+            referer ?: "",
+            quality,
+            if (url.contains("m3u8")) ExtractorLinkType.M3U8 else INFER_TYPE,
         )
+    )
 }
 
 suspend fun loadSourceNameExtractor(
@@ -1215,7 +1216,10 @@ fun String?.createSlug(): String? {
 fun String?.createPlayerSlug(): String? {
     return this?.trim()
         ?.lowercase()
-        ?.replace("[^a-z0-9\\s-]".toRegex(), "") // Remove special characters except spaces & hyphens
+        ?.replace(
+            "[^a-z0-9\\s-]".toRegex(),
+            ""
+        ) // Remove special characters except spaces & hyphens
         ?.replace("\\s+".toRegex(), "-") // Replace spaces with hyphens
 }
 
@@ -1261,9 +1265,10 @@ fun getIndexSize(str: String?): String? {
 
 suspend fun extractMdrive(url: String): List<String> =
     app.get(url).document.select("a[href]").mapNotNull {
-        it.takeIf { a -> a.attr("href").contains(Regex("hubcloud|gdflix", RegexOption.IGNORE_CASE)) }?.attr("href")
-}
-
+        it.takeIf { a ->
+            a.attr("href").contains(Regex("hubcloud|gdflix", RegexOption.IGNORE_CASE))
+        }?.attr("href")
+    }
 
 
 fun getQuality(str: String): Int {
@@ -1721,32 +1726,35 @@ object AESGCM {
     }
 }
 
-suspend fun extractbollytag(url:String): String {
-    val tagdoc= app.get(url).text
-    val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?:""
+suspend fun extractbollytag(url: String): String {
+    val tagdoc = app.get(url).text
+    val tags = """\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?: ""
     return tags
 }
 
-suspend fun extractbollytag2(url:String): String {
-    val tagdoc= app.get(url).text
-    val tags ="""\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?:""
+suspend fun extractbollytag2(url: String): String {
+    val tagdoc = app.get(url).text
+    val tags = """\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?: ""
     return tags
 }
 
-suspend fun extracttopmoviestag(url:String): String? {
-    val tagdoc= app.get(url).text
-    val tags ="""\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?:""
-    return tags
-}
-suspend fun extracttopmoviestag2(url:String): String? {
-    val tagdoc= app.get(url).text
-    val tags ="""\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?:""
+suspend fun extracttopmoviestag(url: String): String? {
+    val tagdoc = app.get(url).text
+    val tags = """\b\d{3,4}p\b""".toRegex().find(tagdoc)?.value?.trim() ?: ""
     return tags
 }
 
-suspend fun decodesmashy(url:String): String {
-    val doc= app.get(url, referer = "https://smashystream.xyz/").document
-    val string=doc.toString().substringAfter("#2").substringBefore("\"").replace(Regex("//.{16}"), "").let { DecodeBase64(it) }
+suspend fun extracttopmoviestag2(url: String): String? {
+    val tagdoc = app.get(url).text
+    val tags = """\b\d{3,4}p\b\s(.*?)\[""".toRegex().find(tagdoc)?.groupValues?.get(1)?.trim() ?: ""
+    return tags
+}
+
+suspend fun decodesmashy(url: String): String {
+    val doc = app.get(url, referer = "https://smashystream.xyz/").document
+    val string =
+        doc.toString().substringAfter("#2").substringBefore("\"").replace(Regex("//.{16}"), "")
+            .let { DecodeBase64(it) }
     return string
 }
 
@@ -1786,18 +1794,18 @@ fun CatdecryptHexWithKey(hex: String, key: String): String {
     return CatxorDecrypt(binary, key)
 }
 
-fun getfullURL(url: String,mainUrl:String): String {
+fun getfullURL(url: String, mainUrl: String): String {
     return "$mainUrl$url"
 }
 
 
-fun getRiveSecretKey(e: Int?,c : List<String>): String {
+fun getRiveSecretKey(e: Int?, c: List<String>): String {
     return e?.let { c[it % c.size] } ?: "rive"
 }
 
 fun decryptBase64BlowfishEbc(base64Encrypted: String, key: String): String {
     try {
-        val encryptedBytes =  base64DecodeArray(base64Encrypted)
+        val encryptedBytes = base64DecodeArray(base64Encrypted)
         val secretKeySpec = SecretKeySpec(key.toByteArray(), "Blowfish")
         val cipher = Cipher.getInstance("Blowfish/ECB/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec)
@@ -1823,64 +1831,74 @@ suspend fun loadHindMoviezLinks(
 ): Boolean {
 
     val links = data.split("+")
-    links.forEach { item->
+    links.forEach { item ->
         val res = app.get(item, timeout = 30, allowRedirects = true)
         val doc = res.document
-        if(res.url.contains("hpage.site"))
-        {
+        if (res.url.contains("hpage.site")) {
             val quality = getVideoQuality(doc.select(".container h2").text())
             val links = doc.select(".container a");
-            links.forEach { item->
-                callback.invoke(ExtractorLink(
-                    "HindMoviez [H-Cloud]",
-                    "HindMoviez [H-Cloud]",
-                    url = item.attr("href"),
-                    "",
-                    quality = quality,
-                ))
-            }
-        }
-        else if (res.url.contains("hindshare.site"))
-        {
-            val quality = getVideoQuality(doc.select(".container p:nth-of-type(1) strong").text())
-            val links = doc.select(".btn-group a");
-            links.forEach { item->
-                if(item.text().contains("HCloud"))
-                {
-                    callback.invoke(ExtractorLink(
+            links.forEach { item ->
+                callback.invoke(
+                    ExtractorLink(
                         "HindMoviez [H-Cloud]",
                         "HindMoviez [H-Cloud]",
                         url = item.attr("href"),
                         "",
                         quality = quality,
-                    ))
-                }
-                else if (item.attr("href").contains("hindcdn.site"))
-                {
-                    val doc = app.get(item.attr("href"), timeout =  30, allowRedirects = true).document
-                    val links = doc.select(".container a");
-                    links.forEach{ item->
-                        val host = if (item.text().lowercase().contains("google")) {item.text()} else {"HindCdn H-Cloud"}
-                        callback.invoke(ExtractorLink(
-                            "HindMoviez [$host]",
-                            "HindMoviez [$host]",
+                    )
+                )
+            }
+        } else if (res.url.contains("hindshare.site")) {
+            val quality = getVideoQuality(doc.select(".container p:nth-of-type(1) strong").text())
+            val links = doc.select(".btn-group a");
+            links.forEach { item ->
+                if (item.text().contains("HCloud")) {
+                    callback.invoke(
+                        ExtractorLink(
+                            "HindMoviez [H-Cloud]",
+                            "HindMoviez [H-Cloud]",
                             url = item.attr("href"),
                             "",
                             quality = quality,
-                        ))
+                        )
+                    )
+                } else if (item.attr("href").contains("hindcdn.site")) {
+                    val doc =
+                        app.get(item.attr("href"), timeout = 30, allowRedirects = true).document
+                    val links = doc.select(".container a");
+                    links.forEach { item ->
+                        val host = if (item.text().lowercase().contains("google")) {
+                            item.text()
+                        } else {
+                            "HindCdn H-Cloud"
+                        }
+                        callback.invoke(
+                            ExtractorLink(
+                                "HindMoviez [$host]",
+                                "HindMoviez [$host]",
+                                url = item.attr("href"),
+                                "",
+                                quality = quality,
+                            )
+                        )
                     }
-                }
-                else if (item.attr("href").contains("gdirect.cloud"))
-                {
-                    val doc = app.get(item.attr("href"), timeout = 30, allowRedirects = true, referer = "https://hindshare.site/").document
+                } else if (item.attr("href").contains("gdirect.cloud")) {
+                    val doc = app.get(
+                        item.attr("href"),
+                        timeout = 30,
+                        allowRedirects = true,
+                        referer = "https://hindshare.site/"
+                    ).document
                     val link = doc.select("a")
-                    callback.invoke(ExtractorLink(
-                        "HindMoviez [GDirect]",
-                        "HindMoviez [GDirect]",
-                        url = link.attr("href"),
-                        "",
-                        quality = quality,
-                    ))
+                    callback.invoke(
+                        ExtractorLink(
+                            "HindMoviez [GDirect]",
+                            "HindMoviez [GDirect]",
+                            url = link.attr("href"),
+                            "",
+                            quality = quality,
+                        )
+                    )
                 }
             }
         }
@@ -1898,7 +1916,8 @@ private fun getVideoQuality(string: String?): Int {
 
 object Deobfuscator {
     suspend fun deobfuscateScript(source: String): String? {
-        val originalScript = app.get("https://raw.githubusercontent.com/Kohi-den/extensions-source/9328d12fcfca686becfb3068e9d0be95552c536f/lib/synchrony/src/main/assets/synchrony-v2.4.5.1.js").text
+        val originalScript =
+            app.get("https://raw.githubusercontent.com/Kohi-den/extensions-source/9328d12fcfca686becfb3068e9d0be95552c536f/lib/synchrony/src/main/assets/synchrony-v2.4.5.1.js").text
         // Sadly needed until QuickJS properly supports module imports:
         // Regex for finding one and two in "export{one as Deobfuscator,two as Transformer};"
         val regex = """export\{(.*) as Deobfuscator,(.*) as Transformer\};""".toRegex()
@@ -1912,7 +1931,9 @@ object Deobfuscator {
             engine.evaluate("globalThis.console = { log: () => {}, warn: () => {}, error: () => {}, trace: () => {} };")
             engine.evaluate(synchronyScript)
 
-            engine.set("source", TestInterface::class.java, object : TestInterface { override fun getValue() = source })
+            engine.set("source", TestInterface::class.java, object : TestInterface {
+                override fun getValue() = source
+            })
             engine.evaluate("new Deobfuscator().deobfuscateSource(source.getValue())") as? String
         }
     }
@@ -1930,14 +1951,15 @@ suspend fun invokeExternalSource(
     season: Int? = null,
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit,
-    token:String? =null,
+    token: String? = null,
 ) {
     val thirdAPI = thrirdAPI
     val fourthAPI = fourthAPI
     val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
     val headers = mapOf("Accept-Language" to "en")
-    val shareKey = app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
-        .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
+    val shareKey =
+        app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
+            .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
 
     val shareRes = app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
         .parsedSafe<ExternalResponse>()?.data ?: return
@@ -1945,35 +1967,47 @@ suspend fun invokeExternalSource(
     val fids = if (season == null) {
         shareRes.fileList
     } else {
-        shareRes.fileList?.find { it.fileName.equals("season $season", true) }?.fid?.let { parentId ->
-            app.get("$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1", headers = headers)
+        shareRes.fileList?.find {
+            it.fileName.equals(
+                "season $season",
+                true
+            )
+        }?.fid?.let { parentId ->
+            app.get(
+                "$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1",
+                headers = headers
+            )
                 .parsedSafe<ExternalResponse>()?.data?.fileList?.filterNotNull()?.filter {
                     it.fileName?.contains("s${seasonSlug}e${episodeSlug}", true) == true
                 }
         }
     } ?: return
 
-    fids.apmapIndexed { index, fileList ->
+    fids.amapIndexed { index, fileList ->
         val superToken = token ?: ""
         Log.d("Phisher", superToken)
 
-        val player = app.get("$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey", headers = mapOf("Cookie" to superToken)).text
+        val player = app.get(
+            "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey",
+            headers = mapOf("Cookie" to superToken)
+        ).text
 
         val json = try {
             JSONObject(player)
         } catch (e: Exception) {
             Log.e("Phisher", "Invalid JSON response $e")
-            return@apmapIndexed
+            return@amapIndexed
         }
         val htmlContent = json.optString("html", "")
-        if (htmlContent.isEmpty()) return@apmapIndexed
+        if (htmlContent.isEmpty()) return@amapIndexed
 
         val document: Document = Jsoup.parse(htmlContent)
         val sourcesWithQualities = mutableListOf<Pair<String, String>>()
 
         document.select("div.file_quality").forEach {
             val url = it.attr("data-url").takeIf { it.isNotEmpty() }
-            val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }?.let { if (it == "ORG") "2160p" else it }
+            val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }
+                ?.let { if (it == "ORG") "2160p" else it }
             if (url != null && quality != null) {
                 sourcesWithQualities.add(url to quality)
             }
@@ -1992,7 +2026,8 @@ suspend fun invokeExternalSource(
         listOf(jsonObject.toString()).forEach {
             val parsedSources = tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
             parsedSources.forEach org@{ source ->
-                val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                val format =
+                    if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
                 val label = if (format == ExtractorLinkType.M3U8) "Hls" else "Mp4"
                 if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
 
@@ -2013,11 +2048,12 @@ suspend fun invokeExternalSource(
 
 fun parseJsonToEpisodes(json: String): List<EpisoderesponseKAA> {
     val gson = Gson()
+
     data class Response(val result: List<EpisoderesponseKAA>)
+
     val response = gson.fromJson(json, Response::class.java)
     return response.result
 }
-
 
 
 fun getSignature(
@@ -2027,9 +2063,18 @@ fun getSignature(
     key: ByteArray
 ): Triple<String, String, String>? {
     // Define the order based on the server type
-    val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+    val headers =
+        mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
     val order = when (server) {
-        "VidStreaming", "DuckStream" -> listOf("IP", "USERAGENT", "ROUTE", "MID", "TIMESTAMP", "KEY")
+        "VidStreaming", "DuckStream" -> listOf(
+            "IP",
+            "USERAGENT",
+            "ROUTE",
+            "MID",
+            "TIMESTAMP",
+            "KEY"
+        )
+
         "BirdStream" -> listOf("IP", "USERAGENT", "ROUTE", "MID", "KEY")
         else -> return null
     }
@@ -2109,7 +2154,14 @@ object CryptoAES {
             val saltBytes = Arrays.copyOfRange(ctBytes, SALT_SIZE, IV_SIZE)
             val cipherTextBytes = Arrays.copyOfRange(ctBytes, IV_SIZE, ctBytes.size)
             val md5 = MessageDigest.getInstance("MD5")
-            val keyAndIV = generateKeyAndIV(KEY_SIZE, IV_SIZE, 1, saltBytes, password.toByteArray(Charsets.UTF_8), md5)
+            val keyAndIV = generateKeyAndIV(
+                KEY_SIZE,
+                IV_SIZE,
+                1,
+                saltBytes,
+                password.toByteArray(Charsets.UTF_8),
+                md5
+            )
             decryptAES(
                 cipherTextBytes,
                 keyAndIV?.get(0) ?: ByteArray(KEY_SIZE),
@@ -2181,11 +2233,17 @@ object CryptoAES {
      * @param keyBytes key as a bytearray
      * @param ivBytes iv as a bytearray
      */
-    private fun decryptAES(cipherTextBytes: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): String {
+    private fun decryptAES(
+        cipherTextBytes: ByteArray,
+        keyBytes: ByteArray,
+        ivBytes: ByteArray
+    ): String {
         return try {
             val cipher = try {
                 Cipher.getInstance(HASH_CIPHER)
-            } catch (e: Throwable) { Cipher.getInstance(HASH_CIPHER_FALLBACK) }
+            } catch (e: Throwable) {
+                Cipher.getInstance(HASH_CIPHER_FALLBACK)
+            }
             val keyS = SecretKeySpec(keyBytes, AES)
             cipher.init(Cipher.DECRYPT_MODE, keyS, IvParameterSpec(ivBytes))
             cipher.doFinal(cipherTextBytes).toString(Charsets.UTF_8)
@@ -2201,11 +2259,17 @@ object CryptoAES {
      * @param keyBytes key as a bytearray
      * @param ivBytes iv as a bytearray
      */
-    private fun encryptAES(plainTextBytes: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): String {
+    private fun encryptAES(
+        plainTextBytes: ByteArray,
+        keyBytes: ByteArray,
+        ivBytes: ByteArray
+    ): String {
         return try {
             val cipher = try {
                 Cipher.getInstance(HASH_CIPHER)
-            } catch (e: Throwable) { Cipher.getInstance(HASH_CIPHER_FALLBACK) }
+            } catch (e: Throwable) {
+                Cipher.getInstance(HASH_CIPHER_FALLBACK)
+            }
             val keyS = SecretKeySpec(keyBytes, AES)
             cipher.init(Cipher.ENCRYPT_MODE, keyS, IvParameterSpec(ivBytes))
             base64Encode(cipher.doFinal(plainTextBytes))
@@ -2248,7 +2312,11 @@ object CryptoAES {
             // Repeat process until sufficient data has been generated
             while (generatedLength < keyLength + ivLength) {
                 // Digest data (last digest if available, password data, salt if available)
-                if (generatedLength > 0) md.update(generatedData, generatedLength - digestLength, digestLength)
+                if (generatedLength > 0) md.update(
+                    generatedData,
+                    generatedLength - digestLength,
+                    digestLength
+                )
                 md.update(password)
                 md.update(salt, 0, SALT_SIZE)
                 md.digest(generatedData, generatedLength, digestLength)
@@ -2375,8 +2443,14 @@ suspend fun getPlayer4uUrl(
         ?: response.document.selectFirst("script:containsData(sources:)")?.data()
 
     if (script == null) {
-        val iframeUrl = Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1) ?: return
-        val iframeResponse = app.get(iframeUrl, referer = null, headers = mapOf("Accept-Language" to "en-US,en;q=0.5"))
+        val iframeUrl =
+            Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1)
+                ?: return
+        val iframeResponse = app.get(
+            iframeUrl,
+            referer = null,
+            headers = mapOf("Accept-Language" to "en-US,en;q=0.5")
+        )
         script = getAndUnpack(iframeResponse.text).takeIf { it.isNotEmpty() } ?: return
     }
 
@@ -2385,14 +2459,13 @@ suspend fun getPlayer4uUrl(
 
 }
 
-fun getPlayer4UQuality (quality :String) : Int
-{
+fun getPlayer4UQuality(quality: String): Int {
     return when (quality) {
         "4K", "2160P" -> Qualities.P2160.value
         "FHD", "1080P" -> Qualities.P1080.value
-        "HQ", "HD", "720P","DVDRIP","TVRIP","HDTC","PREDVD" -> Qualities.P720.value
+        "HQ", "HD", "720P", "DVDRIP", "TVRIP", "HDTC", "PREDVD" -> Qualities.P720.value
         "480P" -> Qualities.P480.value
-        "360P","CAM" -> Qualities.P360.value
+        "360P", "CAM" -> Qualities.P360.value
         "DS" -> Qualities.P144.value
         "SD" -> Qualities.P480.value
         "WEBRIP" -> Qualities.P720.value
@@ -2452,14 +2525,23 @@ internal class AnimekaiDecoder {
         n = base64UrlEncode(
             substitute(
                 base64UrlEncode(
-                    transform("sXmH96C4vhRrgi8",
+                    transform(
+                        "sXmH96C4vhRrgi8",
                         reverseIt(
                             reverseIt(
                                 base64UrlEncode(
-                                    transform("kOCJnByYmfI",
+                                    transform(
+                                        "kOCJnByYmfI",
                                         substitute(
                                             substitute(
-                                                reverseIt(base64UrlEncode(transform("0DU8ksIVlFcia2", n))),
+                                                reverseIt(
+                                                    base64UrlEncode(
+                                                        transform(
+                                                            "0DU8ksIVlFcia2",
+                                                            n
+                                                        )
+                                                    )
+                                                ),
                                                 "1wctXeHqb2",
                                                 "1tecHq2Xbw"
                                             ),
@@ -2559,6 +2641,7 @@ internal class AnimekaiDecoder {
         val base64Encoded = base64Encode(str.toByteArray(Charsets.ISO_8859_1))
         return base64Encoded.replace("+", "-").replace("/", "_").replace(Regex("=+$"), "")
     }
+
     private fun base64UrlDecode(n: String): String {
         val padded = n.padEnd(n.length + ((4 - (n.length % 4)) % 4), '=')
             .replace('-', '+')
@@ -2626,7 +2709,8 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
         val reversed = inputString.reversed()
         val hexPairs = reversed.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
         val key = "X9a(O;FMV2-7VO5x;Ao\u0005:dN1NoFs?j,"
-        hexPairs.mapIndexed { i, ch -> (ch.code xor key[i % key.length].code).toChar() }.joinToString("")
+        hexPairs.mapIndexed { i, ch -> (ch.code xor key[i % key.length].code).toChar() }
+            .joinToString("")
     },
     "xTyBxQyGTA" to { inputString ->
         val filtered = inputString.reversed().filterIndexed { i, _ -> i % 2 == 0 }
@@ -2644,7 +2728,8 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
         String(android.util.Base64.decode(rot13.reversed(), android.util.Base64.DEFAULT))
     },
     "o2VSUnjnZl" to { inputString ->
-        val substitutionMap = ("xyzabcdefghijklmnopqrstuvwXYZABCDEFGHIJKLMNOPQRSTUVW" zip "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ").toMap()
+        val substitutionMap =
+            ("xyzabcdefghijklmnopqrstuvwXYZABCDEFGHIJKLMNOPQRSTUVW" zip "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ").toMap()
         inputString.map { substitutionMap[it] ?: it }.joinToString("")
     },
     "eSfH1IRMyL" to { inputString ->
@@ -2661,7 +2746,9 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
     "sXnL9MQIry" to { inputString ->
         val xorKey = "pWB9V)[*4I`nJpp?ozyB~dbr9yt!_n4u"
         val hexDecoded = inputString.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
-        val decrypted = hexDecoded.mapIndexed { i, ch -> (ch.code xor xorKey[i % xorKey.length].code).toChar() }.joinToString("")
+        val decrypted =
+            hexDecoded.mapIndexed { i, ch -> (ch.code xor xorKey[i % xorKey.length].code).toChar() }
+                .joinToString("")
         val shifted = decrypted.map { (it.code - 3).toChar() }.joinToString("")
         String(android.util.Base64.decode(shifted, android.util.Base64.DEFAULT))
     },
@@ -2672,15 +2759,27 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
         }
     },
     "KJHidj7det" to { input ->
-        val decoded = String(android.util.Base64.decode(input.drop(10).dropLast(16), android.util.Base64.DEFAULT))
+        val decoded = String(
+            android.util.Base64.decode(
+                input.drop(10).dropLast(16),
+                android.util.Base64.DEFAULT
+            )
+        )
         val key = """3SAY~#%Y(V%>5d/Yg${'$'}G[Lh1rK4a;7ok"""
-        decoded.mapIndexed { i, ch -> (ch.code xor key[i % key.length].code).toChar() }.joinToString("")
+        decoded.mapIndexed { i, ch -> (ch.code xor key[i % key.length].code).toChar() }
+            .joinToString("")
     },
     "playerjs" to { x ->
         try {
             var a = x.drop(2)
-            val b1: (String) -> String = { str -> android.util.Base64.encodeToString(str.toByteArray(), android.util.Base64.NO_WRAP) }
-            val b2: (String) -> String = { str -> String(android.util.Base64.decode(str, android.util.Base64.DEFAULT)) }
+            val b1: (String) -> String = { str ->
+                android.util.Base64.encodeToString(
+                    str.toByteArray(),
+                    android.util.Base64.NO_WRAP
+                )
+            }
+            val b2: (String) -> String =
+                { str -> String(android.util.Base64.decode(str, android.util.Base64.DEFAULT)) }
             val patterns = listOf(
                 "*,4).(_)()", "33-*.4/9[6", ":]&*1@@1=&", "=(=:19705/", "%?6497.[:4"
             )

@@ -134,14 +134,14 @@ open class YomoviesProvider : MainAPI() {
         if (data.contains(directUrl.getHost(), true)) {
             val doc = app.get(data).document
             doc.select("div.movieplay iframe").map { fixUrl(it.attr("src")) }
-                .apmap { source ->
+                .amap { source ->
                     safeApiCall {
                         when {
                             source.startsWith("https://membed.net") -> app.get(
                                 source,
                                 referer = "$directUrl/"
                             ).document.select("ul.list-server-items li")
-                                .apmap {
+                                .amap {
                                     loadExtractor(
                                         it.attr("data-video").substringBefore("=https://msubload"),
                                         "$directUrl/",
@@ -149,6 +149,7 @@ open class YomoviesProvider : MainAPI() {
                                         callback
                                     )
                                 }
+
                             else -> loadExtractor(source, "$directUrl/", subtitleCallback, callback)
                         }
                     }

@@ -18,7 +18,7 @@ class KdramaHoodProvider : MainAPI() {
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.AsianDrama)
 
-    override suspend fun getMainPage(page: Int, request : MainPageRequest): HomePageResponse {
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val doc = app.get("$mainUrl/home2").document
         val home = ArrayList<HomePageList>()
 
@@ -41,10 +41,10 @@ class KdramaHoodProvider : MainAPI() {
             } catch (e: Exception) {
                 null
             }
-            newMovieSearchResponse(title,link,TvType.Movie)
+            newMovieSearchResponse(title, link, TvType.Movie)
             {
-                this.year=year
-                this.posterUrl=image
+                this.year = year
+                this.posterUrl = image
             }
         }.distinctBy { it.url }
         home.add(HomePageList(recentlyAddedTitle, recentlyAdded))
@@ -64,10 +64,10 @@ class KdramaHoodProvider : MainAPI() {
 
             val year = it.selectFirst("span.year")?.text()?.toIntOrNull()
             val image = fixUrlNull(it.selectFirst("div.image > img")?.attr("src"))
-            newMovieSearchResponse(title,link,TvType.Movie)
+            newMovieSearchResponse(title, link, TvType.Movie)
             {
-                this.year=year
-                this.posterUrl=image
+                this.year = year
+                this.posterUrl = image
             }
         }
     }
@@ -105,10 +105,10 @@ class KdramaHoodProvider : MainAPI() {
             val aNameYear = a.select("div.datatvrel")
             val aName = aNameYear.select("h4").text()
             val aYear = aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
-            newMovieSearchResponse(title,aUrl,TvType.Movie)
+            newMovieSearchResponse(title, aUrl, TvType.Movie)
             {
-                this.year=aYear
-                this.posterUrl=aCover
+                this.year = aYear
+                this.posterUrl = aCover
             }
         }
 
@@ -127,8 +127,11 @@ class KdramaHoodProvider : MainAPI() {
                 if (!epLinksContent.isNullOrEmpty()) {
                     Jsoup.parse(epLinksContent).select("div").forEach { em ->
                         val href = em.html().trim().removePrefix("'")
-                        val href1= epVidLinkEl.selectFirst("div.linkstv li a")?.attr("href") ?: return@forEach
-                        val sub=epVidLinkEl.selectFirst("div.linkstv li:nth-child(8) a")?.attr("href") ?: return@forEach
+                        val href1 = epVidLinkEl.selectFirst("div.linkstv li a")?.attr("href")
+                            ?: return@forEach
+                        val sub =
+                            epVidLinkEl.selectFirst("div.linkstv li:nth-child(8) a")?.attr("href")
+                                ?: return@forEach
                         if (href.isNotBlank()) {
                             listOfLinks.add(fixUrl(href))
                             listOfLinks.add(fixUrl(href1))
@@ -149,28 +152,28 @@ class KdramaHoodProvider : MainAPI() {
             }
             newEpisode(listOfLinks.distinct().toJson())
             {
-                this.episode=count
-                this.posterUrl=poster
+                this.episode = count
+                this.posterUrl = poster
             }
         }
 
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
-            return newMovieLoadResponse(title,url,TvType.Movie,episodeList[0].data)
+            return newMovieLoadResponse(title, url, TvType.Movie, episodeList[0].data)
             {
-                this.year=year
-                this.plot=descript
-                this.posterUrl=poster
-                this.recommendations=recs
+                this.year = year
+                this.plot = descript
+                this.posterUrl = poster
+                this.recommendations = recs
             }
         }
 
-        return newTvSeriesLoadResponse(title,url,TvType.TvSeries,episodeList.reversed())
+        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodeList.reversed())
         {
-            this.year=year
-            this.posterUrl=poster
-            this.plot=descript
-            this.recommendations=recs
+            this.year = year
+            this.posterUrl = poster
+            this.plot = descript
+            this.recommendations = recs
         }
     }
 
@@ -180,32 +183,28 @@ class KdramaHoodProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        parseJson<List<String>>(data).apmap { item ->
-            if (item.contains(".srt"))
-            {
+        parseJson<List<String>>(data).amap { item ->
+            if (item.contains(".srt")) {
                 subtitleCallback.invoke(
                     SubtitleFile(
                         "Subtitle",  // Use label for the name
                         item     // Use extracted URL
                     )
                 )
-            }
-            else
-            if (item.contains(".mp4"))
-            {
-                callback.invoke(
-                    ExtractorLink(
-                        name,
-                        name,
-                        item,
-                        "",
-                        getQualityFromName(""),
-                        INFER_TYPE
+            } else
+                if (item.contains(".mp4")) {
+                    callback.invoke(
+                        ExtractorLink(
+                            name,
+                            name,
+                            item,
+                            "",
+                            getQualityFromName(""),
+                            INFER_TYPE
+                        )
                     )
-                )
-            }
-            else
-            loadExtractor(item,subtitleCallback, callback)
+                } else
+                    loadExtractor(item, subtitleCallback, callback)
         }
         return true
     }

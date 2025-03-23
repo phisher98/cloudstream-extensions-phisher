@@ -50,41 +50,55 @@ object SuperStreamExtractor : SuperStream() {
         val fourthAPI = SUPERSTREAM_FOURTH_API
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val headers = mapOf("Accept-Language" to "en")
-        val shareKey = app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
-            .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
+        val shareKey =
+            app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
+                .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
 
-        val shareRes = app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
-            .parsedSafe<ExternalResponse>()?.data ?: return
+        val shareRes =
+            app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
+                .parsedSafe<ExternalResponse>()?.data ?: return
 
         val fids = if (season == null) {
             shareRes.fileList
         } else {
-            shareRes.fileList?.find { it.fileName.equals("season $season", true) }?.fid?.let { parentId ->
-                app.get("$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1", headers = headers)
+            shareRes.fileList?.find {
+                it.fileName.equals(
+                    "season $season",
+                    true
+                )
+            }?.fid?.let { parentId ->
+                app.get(
+                    "$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1",
+                    headers = headers
+                )
                     .parsedSafe<ExternalResponse>()?.data?.fileList?.filter {
                         it.fileName?.contains("s${seasonSlug}e${episodeSlug}", true) == true
                     }
             }
         } ?: return
 
-        fids.apmapIndexed { index, fileList ->
+        fids.amapIndexed { index, fileList ->
             val superToken = token ?: ""
-            val player = app.get("$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey", headers = mapOf("Cookie" to superToken)).text
+            val player = app.get(
+                "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey",
+                headers = mapOf("Cookie" to superToken)
+            ).text
             val json = try {
                 JSONObject(player)
             } catch (e: Exception) {
                 Log.e("Error:", "Invalid JSON response $e")
-                return@apmapIndexed
+                return@amapIndexed
             }
             val htmlContent = json.optString("html", "")
-            if (htmlContent.isEmpty()) return@apmapIndexed
+            if (htmlContent.isEmpty()) return@amapIndexed
 
             val document: Document = Jsoup.parse(htmlContent)
             val sourcesWithQualities = mutableListOf<Pair<String, String>>()
 
             document.select("div.file_quality").forEach {
                 val url = it.attr("data-url").takeIf { it.isNotEmpty() }
-                val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }?.let { if (it == "ORG") "2160p" else it }
+                val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }
+                    ?.let { if (it == "ORG") "2160p" else it }
                 if (url != null && quality != null) {
                     sourcesWithQualities.add(url to quality)
                 }
@@ -101,9 +115,11 @@ object SuperStreamExtractor : SuperStream() {
             }
             val jsonObject = JSONObject().put("sources", sourcesJsonArray)
             listOf(jsonObject.toString()).forEach {
-                val parsedSources = tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
+                val parsedSources =
+                    tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
                 parsedSources.forEach org@{ source ->
-                    val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                    val format =
+                        if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
                     if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
                         ExtractorLink(
@@ -136,7 +152,7 @@ object SuperStreamExtractor : SuperStream() {
         )
         app.get(url, headers = headers, timeout = 100L)
             .parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
-                val lan = getLanguage(it.lang) ?:"Unknown"
+                val lan = getLanguage(it.lang) ?: "Unknown"
                 val suburl = it.url
                 subtitleCallback.invoke(
                     SubtitleFile(
@@ -154,7 +170,7 @@ object SuperStreamExtractor : SuperStream() {
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
     ) {
-        val WyZIESUBAPI="https://sub.wyzie.ru"
+        val WyZIESUBAPI = "https://sub.wyzie.ru"
         val url = if (season == null) {
             "$WyZIESUBAPI/search?id=$id"
         } else {
@@ -222,7 +238,6 @@ object SuperStreamExtractor : SuperStream() {
             )
         }
     }
-
 
 
 }

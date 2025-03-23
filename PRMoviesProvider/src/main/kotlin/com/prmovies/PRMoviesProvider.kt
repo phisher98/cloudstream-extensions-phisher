@@ -145,14 +145,14 @@ class PRMoviesProvider : MainAPI() {
     ): Boolean {
         if (data.startsWith(mainUrl)) {
             app.get(data).document.select("div.movieplay iframe").map { fixUrl(it.attr("src")) }
-                .apmap { source ->
+                .amap { source ->
                     safeApiCall {
                         when {
                             source.startsWith("https://membed.net") -> app.get(
                                 source,
                                 referer = "$mainUrl/"
                             ).document.select("ul.list-server-items li")
-                                .apmap {
+                                .amap {
                                     loadExtractor(
                                         it.attr("data-video").substringBefore("=https://msubload"),
                                         "$mainUrl/",
@@ -160,6 +160,7 @@ class PRMoviesProvider : MainAPI() {
                                         callback
                                     )
                                 }
+
                             else -> loadExtractor(source, "$mainUrl/", subtitleCallback, callback)
                         }
                     }

@@ -241,18 +241,22 @@ open class Movierulzhd : MainAPI() {
                 referer = data,
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
             ).parsed<ResponseHash>().embed_url
-            Log.d("Phisher repolink",source)
-            if (!source.contains("youtube")) loadCustomExtractor(source, "$directUrl/", subtitleCallback, callback)
-        }
-        else {
+            Log.d("Phisher repolink", source)
+            if (!source.contains("youtube")) loadCustomExtractor(
+                source,
+                "$directUrl/",
+                subtitleCallback,
+                callback
+            )
+        } else {
             val document = app.get(data).document
             document.select("ul#playeroptionsul > li").map {
-                Triple(
-                    it.attr("data-post"),
-                    it.attr("data-nume"),
-                    it.attr("data-type")
-                )
-            }.apmap { (id, nume, type) ->
+                        Triple(
+                            it.attr("data-post"),
+                            it.attr("data-nume"),
+                            it.attr("data-type")
+                        )
+                    }.amap { (id, nume, type) ->
                 val source = app.post(
                     url = "$directUrl/wp-admin/admin-ajax.php",
                     data = mapOf(
@@ -263,13 +267,13 @@ open class Movierulzhd : MainAPI() {
                     ),
                     referer = data, headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                Log.d("Phisher repolink",source)
+                Log.d("Phisher repolink", source)
                 when {
                     !source.contains("youtube") -> {
                         loadExtractor(source, subtitleCallback, callback)
                     }
 
-                    else -> return@apmap
+                    else -> return@amap
                 }
             }
         }

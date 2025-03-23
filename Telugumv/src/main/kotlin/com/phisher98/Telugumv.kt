@@ -23,10 +23,10 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         TvType.AnimeMovie,
     )
 
-    companion object
-    {
+    companion object {
         //val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0", "X-Requested-With" to "XMLHttpRequest")
     }
+
     override val mainPage = mainPageOf(
         "$mainUrl/movies/" to "Movies",
         "$mainUrl/tvshows/" to "Tvshows",
@@ -52,8 +52,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                 it.toSearchResult()
             }
         }
-
-        return HomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
+        return newHomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
@@ -193,13 +192,13 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         doc.select("#seasons ul.episodios").mapIndexed { seasonNum, me ->
             me.select("li").mapIndexed { epNum, it ->
                 episodes.add(
-                    Episode(
-                        data = it.select("div.episodiotitle > a").attr("href"),
-                        name = it.select("div.episodiotitle > a").text(),
-                        season = seasonNum + 1,
-                        episode = epNum + 1,
-                        posterUrl = it.select("div.imagen > img").attr("src")
-                    )
+                    newEpisode(it.select("div.episodiotitle > a").attr("href"))
+                    {
+                        this.name=it.select("div.episodiotitle > a").text()
+                        this.season=seasonNum + 1
+                        this.episode=epNum + 1
+                        this.posterUrl=it.select("div.imagen > img").attr("src")
+                    }
                 )
             }
         }
@@ -242,15 +241,15 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
+        Log.d("Phisher", data)
         val req = app.get(data).document
         req.select("ul#playeroptionsul li").map {
-            Triple(
-                it.attr("data-post"),
-                it.attr("data-nume"),
-                it.attr("data-type")
-            )
-        }.apmap { (id, nume, type) ->
+                Triple(
+                    it.attr("data-post"),
+                    it.attr("data-nume"),
+                    it.attr("data-type")
+                )
+            }.amap { (id, nume, type) ->
             if (!nume.contains("trailer")) {
                 val source = app.post(
                     url = "$mainUrl/wp-admin/admin-ajax.php",
@@ -263,59 +262,60 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                Log.d("Phisher",source)
+                Log.d("Phisher", source)
                 val link = source.substringBeforeLast("1")
                 when {
                     !link.contains("youtube") -> {
-                        if(link.contains("gdmirrorbot.nl"))
-                            {
+                        if (link.contains("gdmirrorbot.nl")) {
                             app.get(link).document.select("ul#videoLinks li").map {
-                            @Suppress("NAME_SHADOWING") val link=it.attr("data-link")
-                            loadExtractor(link,referer = mainUrl,subtitleCallback, callback)
+                                @Suppress("NAME_SHADOWING") val link = it.attr("data-link")
+                                loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
                             }
-                        }
-                        else
-                            if(link.contains("autoembed.cc"))
-                            {
-                             app.get(link,referer=mainUrl).document.select("div.dropdown-menu > button").map {
-                                 val encoded = it.attr("data-server")
-                                 val link = base64Decode(encoded)
-                                 Log.d("Phisher", link)
-                                 if (link.contains("duka.autoembed.cc")) {
-                                     val type=link.substringAfter("/").substringBefore("/")
-                                     val id=link.substringAfter("/").substringAfter("/")
-                                     val trueurl="https://duka.autoembed.cc/api/getVideoSource?type=$type&id=$id"
-                                     val dukelink = app.get(trueurl).parsedSafe<Dukeresponse>()?.videoSource ?:""
-                                     Log.d("Phisher", dukelink)
-                                 } else
-                                     if (link.contains("hin.autoembed.cc")) {
-                                         val linkdoc = app.get(link).document.toString()
-                                         Regex("\"file\":\"(https?:\\/\\/[^\"]+)\"").find(linkdoc)?.groupValues?.get(
-                                             1
-                                         )?.let { link ->
-                                             Log.d("Phisher inside", link)
-                                             callback.invoke(
-                                                 ExtractorLink(
-                                                     this.name,
-                                                     this.name,
-                                                     link,
-                                                     "" ?: "",
-                                                     Qualities.Unknown.value,
-                                                     INFER_TYPE
-                                                 )
-                                             )
-                                         }
-                                     }
-                                 else
-                                     {
-                                         loadExtractor(link,subtitleCallback, callback)
-                                     }
-                             }
-                            }
-                        else
-                        loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
+                        } else
+                            if (link.contains("autoembed.cc")) {
+                                app.get(
+                                    link,
+                                    referer = mainUrl
+                                ).document.select("div.dropdown-menu > button").map {
+                                    val encoded = it.attr("data-server")
+                                    val link = base64Decode(encoded)
+                                    Log.d("Phisher", link)
+                                    if (link.contains("duka.autoembed.cc")) {
+                                        val type = link.substringAfter("/").substringBefore("/")
+                                        val id = link.substringAfter("/").substringAfter("/")
+                                        val trueurl =
+                                            "https://duka.autoembed.cc/api/getVideoSource?type=$type&id=$id"
+                                        val dukelink =
+                                            app.get(trueurl).parsedSafe<Dukeresponse>()?.videoSource
+                                                ?: ""
+                                        Log.d("Phisher", dukelink)
+                                    } else
+                                        if (link.contains("hin.autoembed.cc")) {
+                                            val linkdoc = app.get(link).document.toString()
+                                            Regex("\"file\":\"(https?:\\/\\/[^\"]+)\"").find(linkdoc)?.groupValues?.get(
+                                                1
+                                            )?.let { link ->
+                                                Log.d("Phisher inside", link)
+                                                callback.invoke(
+                                                    ExtractorLink(
+                                                        this.name,
+                                                        this.name,
+                                                        link,
+                                                        "" ?: "",
+                                                        Qualities.Unknown.value,
+                                                        INFER_TYPE
+                                                    )
+                                                )
+                                            }
+                                        } else {
+                                            loadExtractor(link, subtitleCallback, callback)
+                                        }
+                                }
+                            } else
+                                loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
                     }
-                    else -> return@apmap
+
+                    else -> return@amap
                 }
             }
         }

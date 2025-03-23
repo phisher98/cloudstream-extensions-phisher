@@ -137,7 +137,7 @@ class KisskhProvider : MainAPI() {
             "$mainUrl/api/DramaList/Episode/${loadData.epsId}.png?err=false&ts=&time=&kkey=$kkey",
             referer = "$mainUrl/Drama/${getTitle("${loadData.title}")}/Episode-${loadData.eps}?id=${loadData.id}&ep=${loadData.epsId}&page=0&pageSize=100"
         ).parsedSafe<Sources>()?.let { source ->
-            listOf(source.video, source.thirdParty).apmap { link ->
+            listOf(source.video, source.thirdParty).amap { link ->
                 safeApiCall {
                     if (link?.contains(".m3u8") == true) {
                         M3u8Helper.generateM3u8(
@@ -151,14 +151,14 @@ class KisskhProvider : MainAPI() {
                             ExtractorLink(
                                 this.name,
                                 this.name,
-                                fixUrl( link),
+                                fixUrl(link),
                                 mainUrl,
                                 Qualities.P720.value,
                                 INFER_TYPE
                             )
                         )
 
-                } else {
+                    } else {
                         loadExtractor(
                             link?.substringBefore("=http") ?: return@safeApiCall,
                             "$mainUrl/",

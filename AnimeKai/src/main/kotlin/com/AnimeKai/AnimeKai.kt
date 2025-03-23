@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
@@ -89,12 +90,12 @@ class AnimeKai : MainAPI() {
     }
 
     override val mainPage =
-            mainPageOf(
-                    "$mainUrl/browser?keyword=&status%5B%5D=releasing&sort=updated_date" to "Latest Episode",
-                    "$mainUrl/browser?keyword=&status[]=releasing&sort=trending" to "Trending",
-                    "$mainUrl/browser?keyword=&sort=released_date" to "New Releases",
-                    "$mainUrl/browser?keyword=&status%5B%5D=completed&sort=mal_score" to "Completed"
-            )
+        mainPageOf(
+            "$mainUrl/browser?keyword=&status%5B%5D=releasing&sort=updated_date" to "Latest Episode",
+            "$mainUrl/browser?keyword=&status[]=releasing&sort=trending" to "Trending",
+            "$mainUrl/browser?keyword=&sort=released_date" to "New Releases",
+            "$mainUrl/browser?keyword=&status%5B%5D=completed&sort=mal_score" to "Completed"
+        )
 
     override suspend fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/browser?keyword=$query"
@@ -110,46 +111,54 @@ class AnimeKai : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val malid=document.select("div.watch-section").attr("data-mal-id")
-        val aniid=document.select("div.watch-section").attr("data-al-id")
-        val syncData= app.get("https://api.ani.zip/mappings?mal_id=$malid").toString()
+        val malid = document.select("div.watch-section").attr("data-mal-id")
+        val aniid = document.select("div.watch-section").attr("data-al-id")
+        val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").toString()
         val animeData = parseAnimeData(syncData)
         val title = document.selectFirst("div.title")?.text().toString()
-        val jptitle=document.selectFirst("div.title")?.attr("data-jp").toString()
-        val poster = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")?.substringBefore(")")
+        val jptitle = document.selectFirst("div.title")?.attr("data-jp").toString()
+        val poster = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+            ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")
+                ?.substringBefore(")")
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
-        val decoder=AnimekaiDecoder()
+        val decoder = AnimekaiDecoder()
         val epRes =
-                app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?:"")}")
-                        .parsedSafe<Response>()
-                        ?.getDocument()
+            app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "")}")
+                .parsedSafe<Response>()
+                ?.getDocument()
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
             subCount?.let {
                 if (index < it) {
                     subEpisodes +=
-                            newEpisode("sub|" + ep.attr("token")) {
-                                name = ep.selectFirst("span")?.text()
-                                episode = ep.attr("num").toIntOrNull()
-                                this.rating=animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
-                                this.posterUrl= animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
-                                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                            }
+                        newEpisode("sub|" + ep.attr("token")) {
+                            name = ep.selectFirst("span")?.text()
+                            episode = ep.attr("num").toIntOrNull()
+                            this.rating =
+                                animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                            this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
+                                ?: return@newEpisode
+                            this.description = animeData.episodes[episode?.toString()]?.overview
+                                ?: "No summary available"
+                        }
                 }
             }
             dubCount?.let {
                 if (index < it) {
                     dubEpisodes +=
-                            newEpisode("dub|" + ep.attr("token")) {
-                                name = ep.selectFirst("span")?.text()
-                                episode = ep.attr("num").toIntOrNull()
-                                this.rating=animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
-                                this.posterUrl= animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
-                                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                            }
+                        newEpisode("dub|" + ep.attr("token")) {
+                            name = ep.selectFirst("span")?.text()
+                            episode = ep.attr("num").toIntOrNull()
+                            this.rating =
+                                animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                            this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
+                                ?: return@newEpisode
+                            this.description = animeData.episodes[episode?.toString()]?.overview
+                                ?: "No summary available"
+                        }
                 }
             }
         }
@@ -169,7 +178,7 @@ class AnimeKai : MainAPI() {
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
             this.japName = jptitle
-            this.tags=genres
+            this.tags = genres
             this.showStatus = getStatus(status)
             addMalId(malid.toIntOrNull())
             addAniListId(aniid.toIntOrNull())
@@ -187,9 +196,10 @@ class AnimeKai : MainAPI() {
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
         val types = if ("sub" in data) listOf(dubType, "softsub") else listOf(dubType)
 
-        val document = app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
-            .parsed<Response>()
-            .getDocument()
+        val document =
+            app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
+                .parsed<Response>()
+                .getDocument()
 
         val servers = types.flatMap { type ->
             document.select("div.server-items[data-id=$type] span.server[data-lid]")
@@ -200,7 +210,7 @@ class AnimeKai : MainAPI() {
                 }
         }.distinct()
 
-        servers.apmap { (type, lid, serverName) ->
+        servers.amap { (type, lid, serverName) ->
             val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
                 .parsed<Response>().result
             val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
@@ -212,8 +222,8 @@ class AnimeKai : MainAPI() {
     }
 
     data class Response(
-            @JsonProperty("status") val status: Boolean,
-            @JsonProperty("result") val result: String
+        @JsonProperty("status") val status: Boolean,
+        @JsonProperty("result") val result: String
     ) {
         fun getDocument(): Document {
             return Jsoup.parse(result)
