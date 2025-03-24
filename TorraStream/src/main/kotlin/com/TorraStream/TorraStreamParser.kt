@@ -258,7 +258,8 @@ data class EpisodeData(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AnimeData(
-    @JsonProperty("titles") val titles: Map<String, String>?,
-    @JsonProperty("images") val images: List<ImageData>?,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>?
+    @JsonProperty("titles") val titles: Map<String, String>? = null,
+    @JsonProperty("images") val images: List<ImageData>? = null,
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null
 )
+

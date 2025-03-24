@@ -174,7 +174,7 @@ class TorraStreamAnime : MainAPI() {
             addEpisodes(DubStatus.Subbed, episodes)
             this.year = data.startDate.year
             this.plot = data.description
-            this.backgroundPosterUrl = data.bannerImage
+            this.backgroundPosterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
             this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
             this.recommendations =
@@ -203,10 +203,8 @@ class TorraStreamAnime : MainAPI() {
     ): Boolean {
         val data = AppUtils.parseJson<LinkData>(data)
         val episode =data.episode
-        val season =data.season
         val aniid =data.aniId
         val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
-        val id= getImdbId(anijson)
         val anidbEid = getAnidbEid(anijson, episode)
         argamap(
             {

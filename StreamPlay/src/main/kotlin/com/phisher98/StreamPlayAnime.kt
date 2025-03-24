@@ -157,8 +157,12 @@ class StreamPlayAnime : MainAPI() {
         val anitype=TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
         val jpTitle=data.title.romaji
-        val syncData=app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
-        val animeData = parseAnimeData(syncData)
+        val animeData = if (ids.id != null) {
+            val syncData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
+            parseAnimeData(syncData)
+        } else {
+            null
+        }
 
         val episodes =
             (1..data.totalEpisodes()).map { i ->
@@ -177,7 +181,7 @@ class StreamPlayAnime : MainAPI() {
                 {
                     this.season=1
                     this.episode=i
-                    this.posterUrl=animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                    this.posterUrl=animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                     this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
                 }
             }
@@ -186,8 +190,8 @@ class StreamPlayAnime : MainAPI() {
             addEpisodes(DubStatus.Subbed, episodes)
             this.year = data.startDate.year
             this.plot = data.description
-            this.backgroundPosterUrl = data.bannerImage
-            this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
+            this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+            this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
             this.recommendations =
                 data.recommendations?.edges?.map {
