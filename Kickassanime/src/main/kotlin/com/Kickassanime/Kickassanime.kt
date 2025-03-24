@@ -16,8 +16,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URLEncoder
 import java.util.Calendar
 
-open class Kickassanime : MainAPI() {
-    final override var mainUrl = "https://kaas.to"
+class Kickassanime : MainAPI() {
+    override var mainUrl = "https://kaa.mx"
     override var name = "Kickassanime"
     override val hasMainPage = true
     override var lang = "en"
@@ -35,6 +35,7 @@ open class Kickassanime : MainAPI() {
     )
 
     companion object {
+        var mainUrl = "https://kaa.mx"
         fun getStatus(t: String): ShowStatus {
             return when (t) {
                 "finished_airing" -> ShowStatus.Completed
@@ -117,7 +118,7 @@ val json = """
         }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse {
         val showname=url.substringAfter(mainUrl)
         val loadapi="${mainUrl}/api/show/$showname"
         val loadjson= app.get(loadapi).parsedSafe<loadres>()

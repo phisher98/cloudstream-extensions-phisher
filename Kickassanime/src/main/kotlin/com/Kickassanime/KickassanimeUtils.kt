@@ -1,7 +1,7 @@
 package com.kickassanime
 
-import com.kickassanime.KickassanimeExtractor.mainUrl
 //mark
+import com.kickassanime.Kickassanime.Companion.mainUrl
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import java.net.URI
 import java.net.URLDecoder
