@@ -36,6 +36,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
+import kotlin.math.roundToInt
 
 class TorraStreamAnime : MainAPI() {
     override var name = "TorraStream-Anime"
@@ -167,6 +168,11 @@ class TorraStreamAnime : MainAPI() {
                     this.episode=i
                     this.posterUrl=animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                     this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
+                    this.rating = animeData.episodes[episode?.toString()]?.rating
+                        ?.toDoubleOrNull()
+                        ?.times(10)
+                        ?.roundToInt()
+                        ?: 0
                 }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {

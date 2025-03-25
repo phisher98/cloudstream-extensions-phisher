@@ -33,6 +33,7 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import kotlin.math.roundToInt
 
 
 class AnimeKai : MainAPI() {
@@ -137,8 +138,11 @@ class AnimeKai : MainAPI() {
                         newEpisode("sub|" + ep.attr("token")) {
                             name = ep.selectFirst("span")?.text()
                             episode = ep.attr("num").toIntOrNull()
-                            this.rating =
-                                animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                            this.rating = animeData?.episodes?.get(episode?.toString())?.rating
+                                ?.toDoubleOrNull()
+                                ?.times(10)
+                                ?.roundToInt()
+                                ?: 0
                             this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
                                 ?: return@newEpisode
                             this.description = animeData.episodes[episode?.toString()]?.overview
@@ -152,8 +156,11 @@ class AnimeKai : MainAPI() {
                         newEpisode("dub|" + ep.attr("token")) {
                             name = ep.selectFirst("span")?.text()
                             episode = ep.attr("num").toIntOrNull()
-                            this.rating =
-                                animeData?.episodes?.get(episode?.toString())?.rating.toRatingInt()
+                            this.rating = animeData?.episodes?.get(episode?.toString())?.rating
+                                ?.toDoubleOrNull()
+                                ?.times(10)
+                                ?.roundToInt()
+                                ?: 0
                             this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
                                 ?: return@newEpisode
                             this.description = animeData.episodes[episode?.toString()]?.overview

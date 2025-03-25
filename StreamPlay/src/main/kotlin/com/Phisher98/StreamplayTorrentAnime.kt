@@ -38,6 +38,7 @@ import com.phisher98.StreamPlayTorrent.Companion.TorrentioAnimeAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
+import kotlin.math.roundToInt
 
 class StreamplayTorrentAnime : MainAPI() {
     override var name = "StremplayTorrent-Anime"
@@ -170,6 +171,11 @@ class StreamplayTorrentAnime : MainAPI() {
                     this.episode=i
                     this.posterUrl=animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                     this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
+                    this.rating = animeData.episodes[episode?.toString()]?.rating
+                        ?.toDoubleOrNull()
+                        ?.times(10)
+                        ?.roundToInt()
+                        ?: 0
                 }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
@@ -177,7 +183,7 @@ class StreamplayTorrentAnime : MainAPI() {
             addEpisodes(DubStatus.Subbed, episodes)
             this.year = data.startDate.year
             this.plot = data.description
-            this.backgroundPosterUrl = data.bannerImage
+            this.backgroundPosterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
             this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
             this.recommendations =

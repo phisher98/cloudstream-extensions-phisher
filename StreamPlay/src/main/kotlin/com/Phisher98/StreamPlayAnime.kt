@@ -48,6 +48,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnichi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
+import kotlin.math.roundToInt
 
 class StreamPlayAnime : MainAPI() {
     override var name = "StreamPlay-Anime"
@@ -183,6 +184,11 @@ class StreamPlayAnime : MainAPI() {
                     this.episode=i
                     this.posterUrl=animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                     this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
+                    this.rating = animeData.episodes[episode?.toString()]?.rating
+                    ?.toDoubleOrNull()
+                    ?.times(10)
+                    ?.roundToInt()
+                    ?: 0
                 }
             }
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {

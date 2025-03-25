@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -1328,35 +1329,49 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
 
+            val gson = Gson()
+
             servers?.map servers@{ server ->
-                    val animeEpisodeId = url?.substringAfter("to/")
-                    val api="${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
-                    val response = app.get(api, referer = api).parsedSafe<HiAnimeResponse>()?.data
-                    val m3u8 = response?.sources?.map { it.url }?.first()
-                    val m3u8headers = mapOf("Referer" to "https://megacloud.club/", "Origin" to "https://megacloud.club/")
-                    if (m3u8!=null)
-                    {
-                        callback.invoke(
-                            ExtractorLink(
-                                "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
-                                "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
-                                m3u8,
-                                mainUrl,
-                                Qualities.P1080.value,
-                                isM3u8 = true,
-                                headers = m3u8headers
-                            )
-                        )
+                val animeEpisodeId = url?.substringAfter("to/")
+                val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
+
+                try {
+                    val responseText = app.get(api, referer = api).text
+                    val response = try {
+                        gson.fromJson(responseText, HiAnimeResponse::class.java)
+                    } catch (e: JsonSyntaxException) {
+                        return@servers
                     }
-                    val tracks = response?.tracks.orEmpty() // Ensure it's never null
-                    tracks.forEach { track ->
-                        subtitleCallback.invoke(
-                            SubtitleFile(
-                                lang = track.label,
-                                url = track.file
-                            )
-                        )
+                    if (response?.data == null) {
+                        return@servers
                     }
+                    val data = response.data
+                    data.sources.firstOrNull()?.url?.let { m3u8 ->
+                        val m3u8headers = mapOf(
+                            "Referer" to "https://megacloud.club/",
+                            "Origin" to "https://megacloud.club/"
+                        )
+
+                        M3u8Helper.generateM3u8(
+                            "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
+                            m3u8,
+                            mainUrl,
+                            headers = m3u8headers
+                        ).forEach(callback)
+                    }
+
+                    data.tracks.forEach { track ->
+                        track.file.let { file ->
+                            subtitleCallback.invoke(
+                                SubtitleFile(
+                                    lang = track.label,
+                                    url = file
+                                )
+                            )
+                        }
+                    }
+                } catch (_: Exception) {
+                }
             }
         }
     }
