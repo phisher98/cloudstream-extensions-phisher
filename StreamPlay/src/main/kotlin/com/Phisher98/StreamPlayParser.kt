@@ -745,56 +745,49 @@ data class CrunchyrollSourcesResponses(
 //Hianime
 
 
-data class Hianime(
-    val success: Boolean,
-    val results: HianimeResults,
+data class HiAnimeResponse(
+    val data: HiAnimeData,
 )
 
-data class HianimeResults(
-    val streamingLink: HianimeStreamingLink,
-    val servers: List<HianimeServer>,
+data class HiAnimeData(
+    val headers: HiAnimeHeaders,
+    val tracks: List<HiAnimeTrack>,
+    val intro: HiAnimeIntro,
+    val outro: HiAnimeOutro,
+    val sources: List<HiAnimeSource>,
+    @JsonProperty("anilistID")
+    val anilistId: Long,
+    @JsonProperty("malID")
+    val malId: Long,
 )
 
-data class HianimeStreamingLink(
-    val id: String,
-    val type: String,
-    val link: HianimeLink,
-    val tracks: List<HianimeTrack>,
-    val intro: Intro,
-    val outro: Outro,
-    val server: String,
+data class HiAnimeHeaders(
+    @JsonProperty("Referer")
+    val referer: String,
 )
 
-data class HianimeLink(
+data class HiAnimeTrack(
     val file: String,
-    val type: String,
-)
-
-data class HianimeTrack(
-    val file: String,
-    val label: String?,
+    val label: String,
     val kind: String,
-    val default: Boolean?,
+    val default: Boolean,
 )
 
-data class Intro(
+data class HiAnimeIntro(
     val start: Long,
     val end: Long,
 )
 
-data class Outro(
+data class HiAnimeOutro(
     val start: Long,
     val end: Long,
 )
 
-data class HianimeServer(
+data class HiAnimeSource(
+    val url: String,
     val type: String,
-    @JsonProperty("data_id")
-    val dataId: String,
-    @JsonProperty("server_id")
-    val serverId: String,
-    val serverName: String,
 )
+
 
 
 //anime animepahe parser

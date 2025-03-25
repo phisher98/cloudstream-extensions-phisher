@@ -1329,17 +1329,13 @@ object StreamPlayExtractor : StreamPlay() {
                 }
 
             servers?.map servers@{ server ->
-                val animeEpisodeId = url?.substringAfter("to/")
-                val api =
-                    "${BuildConfig.HianimeAPI}/${server.third}.php?id=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&embed=true"
-                app.get(api, referer = api).toString().let { responseText ->
-                    val m3u8Regex = """url\s*:\s*'([^']+\.m3u8)'""".toRegex()
-                    val m3u8Url = m3u8Regex.find(responseText)?.groups?.get(1)?.value
-                    val m3u8headers = mapOf(
-                        "Referer" to "https://megacloud.club/",
-                        "Origin" to "https://megacloud.club/"
-                    )
-                    m3u8Url?.let { m3u8 ->
+                    val animeEpisodeId = url?.substringAfter("to/")
+                    val api="${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
+                    val response = app.get(api, referer = api).parsedSafe<HiAnimeResponse>()?.data
+                    val m3u8 = response?.sources?.map { it.url }?.first()
+                    val m3u8headers = mapOf("Referer" to "https://megacloud.club/", "Origin" to "https://megacloud.club/")
+                    if (m3u8!=null)
+                    {
                         callback.invoke(
                             ExtractorLink(
                                 "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
@@ -1352,19 +1348,15 @@ object StreamPlayExtractor : StreamPlay() {
                             )
                         )
                     }
-
-                    val trackRegex = """html:\s*'([^']+)',\s*url:\s*'([^']+)'""".toRegex()
-                    trackRegex.findAll(responseText).forEach { matchResult ->
-                        val lang = matchResult.groups[1]?.value ?: ""
-                        val file = matchResult.groups[2]?.value ?: ""
+                    val tracks = response?.tracks.orEmpty() // Ensure it's never null
+                    tracks.forEach { track ->
                         subtitleCallback.invoke(
                             SubtitleFile(
-                                lang,
-                                file
+                                lang = track.label,
+                                url = track.file
                             )
                         )
                     }
-                }
             }
         }
     }
