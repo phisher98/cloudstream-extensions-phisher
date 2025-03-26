@@ -5,7 +5,6 @@ import com.TorraStream.TorraStream.Companion.AnimetoshoAPI
 import com.TorraStream.TorraStream.Companion.SubtitlesAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -75,18 +74,20 @@ suspend fun invokeTorrentioDebian(
     }
 
     val res = app.get(url).parsedSafe<DebianRoot>()
-    Log.d("Phisher",res.toString())
     res?.streams?.forEach { stream ->
 
-        val fileurl=stream.url
-        val name=stream.behaviorHints.filename
+        val fileurl = stream.url
+        val size = Regex("""(\d+\.\d+)\s*GB""").find(stream.title)?.groupValues?.get(1) ?: "Unknown"
+        val name = stream.behaviorHints.filename
         val formattedTitleName = name?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
             ?.replace(Regex("\\.mkv$"), "")
             ?.replace('.', ' ')
+            ?.let { "$it [$size GB]" }
+
         callback.invoke(
             ExtractorLink(
-                "Torrentio",
-                formattedTitleName ?: name ?: stream.name,
+                "Torrentio ${formattedTitleName ?: "$name [$size GB]"}",
+                formattedTitleName ?: "$name [$size GB]",
                 fileurl,
                 "",
                 getIndexQuality(stream.name),

@@ -1,7 +1,5 @@
 package com.TorraStream
 
-import android.annotation.SuppressLint
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
@@ -52,28 +50,29 @@ class TorraStreamDebian() : TraktProvider() {
         val episode =metadata.episode
         val id =metadata.imdbId
         val api=if (mainUrl.contains("=")) "https://torrentio.strem.fun/$mainUrl" else null
-        if (api!=null)
-        argamap(
-            {
-                invokeTorrentioDebian(
-                    api,
-                    id,
-                    season,
-                    episode,
-                    callback
-            )
-            },
+        if (api!=null) {
+            argamap(
+                {
+                    invokeTorrentioDebian(
+                        api,
+                        id,
+                        season,
+                        episode,
+                        callback
+                    )
+                },
 
-            //Subtitles
-            {
-                invokeSubtitleAPI(
-                    id,
-                    season,
-                    episode,
-                    subtitleCallback,
-                )
-            }
-        )
+                //Subtitles
+                {
+                    invokeSubtitleAPI(
+                        id,
+                        season,
+                        episode,
+                        subtitleCallback,
+                    )
+                }
+            )
+        }
         val SubAPI="https://opensubtitles-v3.strem.io"
         val url = if(season == null) {
             "$SubAPI/subtitles/movie/$id.json"
