@@ -936,7 +936,7 @@ object StreamPlayExtractor : StreamPlay() {
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
         val gogoUrl = malsync?.Gogoanime?.values?.firstNotNullOfOrNull { it["url"] }
-        val tmdbYear = date?.substringBefore("-").orEmpty()
+        val tmdbYear = date?.substringBefore("-")?.toIntOrNull()
         val jptitleSlug = jptitle.createSlug()
 
         argamap(
@@ -958,7 +958,7 @@ object StreamPlayExtractor : StreamPlay() {
             { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeGrani(title.orEmpty(), episode, callback) },
             { invokeGojo(aniId, jptitleSlug, episode, subtitleCallback, callback) },
-            { invokeAnichi(zorotitle, episode, subtitleCallback, callback) },
+            { invokeAnichi(zorotitle,tmdbYear,episode, subtitleCallback, callback) },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { gogoUrl?.let { invokeAnitaku(it, episode, subtitleCallback, callback) } },
             { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
@@ -968,12 +968,13 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeAnichi(
-        name: String? = null,
+        name: String?,
+        year: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val api = BuildConfig.ANICHI_API
+        val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
         var type = ""
@@ -982,27 +983,20 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             type = "TV"
         }
-        //val query = """$api?variables={"search":{"types":["$type"],"year":$year,"season":"$season","query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+
         val query =
-            """$api?variables={"search":{"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
-        val response = app.get(query, referer = "https://allmanga.to")
-            .parsedSafe<AnichiRoot>()?.data?.shows?.edges
+            """${BuildConfig.ANICHI_API}?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+        val response =
+            app.get(query, referer = privatereferer).parsedSafe<AnichiRoot>()?.data?.shows?.edges
         if (response != null) {
-            val matchedEdge = response.find {
-                it.name.equals(
-                    name?.replace(":", "")?.replace("", "")?.trim(),
-                    ignoreCase = true
-                ) ||
-                        it.name.contains(name?.replace(":", " ").orEmpty(), ignoreCase = true)
-            }
-            val id = matchedEdge?._id
+            val id = response.firstOrNull()?.id ?: return
             val langType = listOf("sub", "dub")
             for (i in langType) {
                 val epData =
-                    """$api?variables={"showId":"$id","translationType":"$i","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
-                val eplinks = app.get(epData, referer = "https://allmanga.to")
+                    """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$i","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
+                val eplinks = app.get(epData, referer = privatereferer)
                     .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
-                eplinks?.amap { source ->
+                eplinks?.apmap { source ->
                     safeApiCall {
                         val sourceUrl = source.sourceUrl
                         val downloadUrl = source.downloads?.downloadUrl ?: ""
@@ -1014,7 +1008,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     .parsedSafe<AnichiDownload>()?.links?.amap {
                                         val href = it.link
                                         loadNameExtractor(
-                                            "Anichi [${i.uppercase()}] [$sourcename]",
+                                            "Allanime [${i.uppercase()}] [$sourcename]",
                                             href,
                                             "",
                                             subtitleCallback,
@@ -1033,7 +1027,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     val secretDecryptKey = "54674138327930866480207815084989"
                                     GogoHelper.extractVidstream(
                                         sourceUrl,
-                                        "Anichi [${i.uppercase()}] [Vidstreaming]",
+                                        "Allanime [${i.uppercase()}] [Vidstreaming]",
                                         callback,
                                         iv,
                                         secretKey,
@@ -1044,7 +1038,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 }
                                 val sourcename = sourceUrl.getHost()
                                 loadCustomExtractor(
-                                    "Anichi [${i.uppercase()}] [$sourcename]",
+                                    "Allanime [${i.uppercase()}] [$sourcename]",
                                     sourceUrl
                                         ?: "",
                                     "",

@@ -45,6 +45,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlayExtractor.invokeAnichi
+import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
@@ -226,6 +227,7 @@ class StreamPlayAnime : MainAPI() {
         val malId = mediaData.malId
         val episode = mediaData.episode
         val jpTitle = mediaData.jpTitle
+        val year=mediaData.year
 
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
         val zoro = malsync?.zoro
@@ -253,9 +255,9 @@ class StreamPlayAnime : MainAPI() {
             },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnizone(jpTitle, episode, callback) },
-            { invokeAnichi(jpTitle, episode, subtitleCallback, callback) },
+            { invokeAnichi(jpTitle,year,episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
-            { invokeAnimeKai(malId, episode, subtitleCallback, callback) }
+            { invokeAnimeKai(malId, episode, subtitleCallback, callback) },
         )
         return true
     }
