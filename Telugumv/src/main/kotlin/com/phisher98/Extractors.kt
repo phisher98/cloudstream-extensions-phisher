@@ -2,6 +2,7 @@ package com.phisher98
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import okio.ByteString.Companion.decodeBase64
@@ -20,4 +21,10 @@ open class Autoembed : ExtractorApi() {
         }
         return null
     }
+}
+
+
+class smoothpre : VidhideExtractor() {
+    override var mainUrl = "https://smoothpre.com"
+    override var requiresReferer = true
 }

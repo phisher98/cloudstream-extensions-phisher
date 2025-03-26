@@ -11,5 +11,6 @@ class TelugumvPlugin: BasePlugin() {
         registerMainAPI(Telugumv())
         registerExtractorAPI(VidHidePro6())
         registerExtractorAPI(Autoembed())
+        registerExtractorAPI(smoothpre())
         }
 }

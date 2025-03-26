@@ -11,7 +11,7 @@ import okhttp3.FormBody
 import org.jsoup.nodes.Element
 
 class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://telugumv.xyz"
+    override var mainUrl = "https://telugumv.fun"
     override var name = "Telugumv"
     override val hasMainPage = true
     override var lang = "te"
@@ -56,17 +56,11 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        //Log.d("Got","got here")
-        val title = this.selectFirst("div.data > h3 > a")?.text()?.toString()?.trim() ?: return null
-        //Log.d("title", title)
+        val title = this.selectFirst("div.data > h3 > a")?.text()?.trim() ?: return null
         val href = fixUrl(this.selectFirst("div.data > h3 > a")?.attr("href").toString())
-        //Log.d("href", href)
         val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("src"))
-        //Log.d("posterUrl", posterUrl.toString())
-        //Log.d("QualityN", qualityN)
         val quality =
-            getQualityFromString(this.select("div.poster > div.mepo > span").text().toString())
-        //Log.d("Quality", quality.toString())
+            getQualityFromString(this.select("div.poster > div.mepo > span").text())
         return if (href.contains("Movie")) {
             newMovieSearchResponse(title, href, TvType.Movie) {
                 this.posterUrl = posterUrl
@@ -95,12 +89,9 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
             val posterUrl = fixUrlNull(
                 it.selectFirst("article > div.image > div.thumbnail > a > img")?.attr("src")
             )
-            //Log.d("posterUrl", posterUrl.toString())
-            //Log.d("QualityN", qualityN)
             val quality =
-                getQualityFromString(it.select("div.poster > div.mepo > span").text().toString())
-            //Log.d("Quality", quality.toString())
-            val type = it.select("article > div.image > div.thumbnail > a > span").text().toString()
+                getQualityFromString(it.select("div.poster > div.mepo > span").text())
+            val type = it.select("article > div.image > div.thumbnail > a > span").text()
             if (type.contains("Movie")) {
                 newMovieSearchResponse(title, href, TvType.Movie) {
                     this.posterUrl = posterUrl
@@ -137,8 +128,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
-        //Log.d("Doc", doc.toString())
-        val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.toString()?.trim()
+        val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.trim()
             ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
         val titleClean = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
@@ -147,41 +137,34 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
             doc.select("#contenedor").toString().substringAfter("background-image:url(")
                 .substringBefore(");")
         )
-        //Log.d("poster", poster.toString())
         val tags = doc.select("div.sgeneros > a").map { it.text() }
         val year =
-            doc.selectFirst("span.date")?.text()?.toString()?.substringAfter(",")?.trim()?.toInt()
-        //Log.d("year", year.toString())
+            doc.selectFirst("span.date")?.text()?.substringAfter(",")?.trim()?.toInt()
         val description = doc.selectFirst("#info div.wp-content p")?.text()?.trim()
         val type = if (url.contains("tvshows")) TvType.TvSeries else TvType.Movie
-        //Log.d("desc", description.toString())
         val trailerRegex = Regex("\"http.*\"")
         var trailer = if (type == TvType.Movie)
             fixUrlNull(
                 getEmbed(
-                    doc.select("#report-video-button-field > input[name~=postid]").attr("value")
-                        .toString(),
+                    doc.select("#report-video-button-field > input[name~=postid]").attr("value"),
                     "trailer",
                     url
                 ).parsed<TrailerUrl>().embedUrl
             )
-        else fixUrlNull(doc.select("iframe.rptss").attr("src").toString())
+        else fixUrlNull(doc.select("iframe.rptss").attr("src"))
         trailer = trailerRegex.find(trailer.toString())?.value.toString()
-        //Log.d("trailer", trailer.toString())
         val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
-        //Log.d("rating", rating.toString())
         val duration =
-            doc.selectFirst("span.runtime")?.text()?.toString()?.removeSuffix(" Min.")?.trim()
-                ?.toInt()
-        //Log.d("dur", duration.toString())
+            doc.selectFirst("span.runtime")?.text()?.removeSuffix(" Min.")?.trim()
+                ?.toIntOrNull()
         val actors =
             doc.select("div.person").map {
                 ActorData(
                     Actor(
-                        it.select("div.data > div.name > a").text().toString(),
-                        it.select("div.img > a > img").attr("src").toString()
+                        it.select("div.data > div.name > a").text(),
+                        it.select("div.img > a > img").attr("src")
                     ),
-                    roleString = it.select("div.data > div.caracter").text().toString(),
+                    roleString = it.select("div.data > div.caracter").text(),
                 )
             }
         val recommendations = doc.select("#dtw_content_related-2 article").mapNotNull {
@@ -235,13 +218,13 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         }
     }
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher", data)
         val req = app.get(data).document
         req.select("ul#playeroptionsul li").map {
                 Triple(
@@ -292,7 +275,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                                     } else
                                         if (link.contains("hin.autoembed.cc")) {
                                             val linkdoc = app.get(link).document.toString()
-                                            Regex("\"file\":\"(https?:\\/\\/[^\"]+)\"").find(linkdoc)?.groupValues?.get(
+                                            Regex("\"file\":\"(https?://[^\"]+)\"").find(linkdoc)?.groupValues?.get(
                                                 1
                                             )?.let { link ->
                                                 Log.d("Phisher inside", link)
@@ -301,7 +284,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                                                         this.name,
                                                         this.name,
                                                         link,
-                                                        "" ?: "",
+                                                        "",
                                                         Qualities.Unknown.value,
                                                         INFER_TYPE
                                                     )
