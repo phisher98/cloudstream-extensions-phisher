@@ -225,7 +225,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             {
                 if (!res.isAnime) invokeFlixAPIHQ(
                     res.title,
-                    res.year,
                     res.season,
                     res.episode,
                     subtitleCallback,

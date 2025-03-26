@@ -55,7 +55,7 @@ data class Stream(
 )
 
 data class BehaviorHints(
-    val bingeGroup: String,
+    val bingeGroup: String?,
     val filename: String?,
 )
 
@@ -107,10 +107,6 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     }
 }
 
-fun getImdbId(jsonString: String): String? {
-    val jsonObject = JSONObject(jsonString)
-    return jsonObject.optJSONObject("mappings")?.optString("imdb_id", null)
-}
 
 fun parseAnimeData(jsonString: String): AnimeData {
     val objectMapper = ObjectMapper()

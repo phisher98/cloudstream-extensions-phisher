@@ -8,5 +8,6 @@ class TorraStreamProvider: BasePlugin() {
     override fun load() {
         registerMainAPI(TorraStream())
         registerMainAPI(TorraStreamAnime())
+        registerMainAPI(TorraStreamDebian())
     }
 }

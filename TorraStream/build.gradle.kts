@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 20
+version = 21
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "#1 best extention based on MultiAPI 4K Support (Torrent)"
+    description = "#1 Best Extension – MultiAPI-Based with 4K Torrent Support (Debian) | Debian Users: Use Site Clone on Torrastream-Debian Example | Provider=Key"
     language    = "en"
     authors = listOf("Phisher98")
 

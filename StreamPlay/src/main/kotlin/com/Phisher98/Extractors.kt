@@ -256,7 +256,6 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher Vega",url)
         var href=url
         if (href.contains("api/index.php"))
         {
@@ -276,7 +275,6 @@ class VCloud : ExtractorApi() {
             div?.select("h2 a.btn")?.filterNot {it.text().contains("Telegram", ignoreCase = true)}
                 ?.amap {
                     val link = it.attr("href")
-                    Log.d("Phisher Vega",link)
                     if (link.contains("technorozen.workers.dev")) {
                         @Suppress("NAME_SHADOWING") val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
                         callback.invoke(
@@ -1801,7 +1799,6 @@ class OwlExtractor : ExtractorApi() {
         servers["luffy"]?.forEach { video ->
             val finalUrl = "${video.url}$jwt"
             val m3u8 = getRedirectedUrl(finalUrl)
-            Log.d("Phisher", "Luffy ${video.resolution} M3U8 Added: $m3u8")
             sources += "Luffy-${video.resolution}" to m3u8
         }
 

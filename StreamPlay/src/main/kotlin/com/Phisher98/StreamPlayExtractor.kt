@@ -21,6 +21,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -84,7 +85,6 @@ object StreamPlayExtractor : StreamPlay() {
         val res = app.get(url, referer = url).document
         val script =
             res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data()
-        Log.d("Phisher", script.toString())
         if (script != null) {
             val firstJS =
                 """
@@ -1266,7 +1266,6 @@ object StreamPlayExtractor : StreamPlay() {
         val decoder = AnimekaiDecoder()
         val servers = listOf("sub", "dub", "softsub").flatMap { type ->
             val url = "$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token)}"
-            Log.d("Phisher", url)
             app.get(url)
                 .parsed<AnimeKaiResponse>()
                 .getDocument()
@@ -2414,7 +2413,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
         val json = app.get(url).document.toString().substringAfter("const MultiLang = ")
             .substringBefore(";").trim()
-        Log.d("Phisher", json)
 
         val gson = Gson()
         val type = object : TypeToken<List<Vidsrcsu>>() {}.type
@@ -3442,7 +3440,6 @@ object StreamPlayExtractor : StreamPlay() {
             ?.substringAfter("{")
             ?.substringBefore(";")?.substringBefore(")")
         val json = tryParseJson<AllMovielandPlaylist>("{${res ?: return}")
-        Log.d("Phisher", json.toString())
         val headers = mapOf("X-CSRF-TOKEN" to "${json?.key}")
         val serverRes = app.get(
             fixUrl(
@@ -3768,61 +3765,39 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeDramaCool(
+    suspend fun invokeDramacool(
         title: String?,
-        year: Int? = null,
+        provider: String,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-
-        val json = if (season == null && episode == null) {
-            var episodeSlug = "$title episode 1".createSlug()
-            val url = "${ConsumetAPI}/movies/dramacool/watch?episodeId=${episodeSlug}"
-            val res = app.get(url).text
-            if (res.contains("Media Not found")) {
-                val newEpisodeSlug = "$title $year episode 1".createSlug()
-                val newUrl = "$ConsumetAPI/movies/dramacool/watch?episodeId=${newEpisodeSlug}"
-                app.get(newUrl).text
-            } else {
-                res
-            }
-        } else {
-            val seasonText = if (season == 1) "" else "season $season"
-            val episodeSlug = "$title $seasonText episode $episode".createSlug()
-            val url = "${ConsumetAPI}/movies/dramacool/watch?episodeId=${episodeSlug}"
-            val res = app.get(url).text
-            if (res.contains("Media Not found")) {
-                val newEpisodeSlug = "$title $seasonText $year episode $episode".createSlug()
-                val newUrl = "$ConsumetAPI/movies/dramacool/watch?episodeId=${newEpisodeSlug}"
-                app.get(newUrl).text
-            } else {
-                res
-            }
-        }
-
-        val data = parseJson<ConsumetSources>(json)
-        data.sources?.forEach {
+        val titleSlug = title?.replace(" ", "-")
+        val s = if(season != 1) "-season-$season" else ""
+        val url = "$Dramacool/stream/series/$provider-${titleSlug}${s}::$titleSlug${s}-ep-$episode.json"
+        val json = app.get(url).text
+        val data = tryParseJson<Dramacool>(json) ?: return
+        data.streams.forEach {
             callback.invoke(
                 ExtractorLink(
-                    "DramaCool",
-                    "DramaCool",
+                    it.title,
+                    it.title,
                     it.url,
-                    referer = "",
-                    quality = Qualities.P1080.value,
-                    isM3u8 = true
+                    "",
+                    Qualities.Unknown.value,
+                    INFER_TYPE
                 )
             )
-        }
 
-        data.subtitles?.forEach {
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    it.lang,
-                    it.url
+            it.subtitles.forEach {
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        it.lang,
+                        it.url
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -3879,138 +3854,64 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
-    /*
-suspend fun invokeFlixAPIHQ(
-        title: String? = null,
-        year: Int?=null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        val url = "$FlixAPI/search?q=$title"
-        val id= app.get(url).parsedSafe<SearchFlixAPI>()?.items?.find {
-        if (season==null)
-        {
-            it.title.equals(
-                "$title", true
-            ) && it.stats.year == "$year"
-        }
-        else {
-            it.title.equals(
-                "$title", true
-            ) && it.stats.seasons?.contains("SS") ?: return
-        }
-        }?.id ?: return
-    val epid=if (season == null)
-        {
-            app.get("$FlixAPI/movie/$id").parsedSafe<MoviedetailsResponse>()?.episodeId
-        } else {
-            val seasonid= app.get("$FlixAPI/movie/$id/seasons").parsedSafe<SeasonResponseFlixHQAPI>()?.seasons?.find { it.number.toInt() == season }?.id ?:return
-            Log.d("Phisher epid", seasonid.toString())
-            app.get("$FlixAPI/movie/$id/episodes?seasonId=$seasonid").parsedSafe<EpisodeResponseFlixHQAPI>()?.episodes?.find {
-                it.number.toInt() == episode
-            }?.id ?:return
-    }
-    val listOfServers =
-        app.get("$FlixAPI/movie/$id/servers?episodeId=$epid/")
-            .parsedSafe<FlixServers>()
-            ?.servers
-            ?.map { server ->
-                server.id to server.name
-            }
-    listOfServers?.amap { (serverid, name) ->
-        val data= app.get("$FlixAPI/movie/$id/sources?serverId=$serverid").parsedSafe<FlixHQsources>()
-        val m3u8=data?.sources?.map { it.file }?.firstOrNull()
-        callback.invoke(
-            ExtractorLink(
-                "FlixHQ ${name.capitalize()}",
-                "FlixHQ $name",
-                fixUrl( m3u8 ?:""),
-                "",
-                Qualities.P1080.value,
-                INFER_TYPE
-            )
-        )
-        data?.tracks?.amap { track->
-            val vtt=track.file
-            val lang=track.label
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    getLanguage(lang),
-                    vtt
-                )
-            )
-        }
-    }
-
-}
-     */
-
     suspend fun invokeFlixAPIHQ(
-        title: String? = null,
-        year: Int? = null,
+        title: String?,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title?.replace("–", "-")
-        val id = app.get("$consumetFlixhqAPI/$title")
-            .parsedSafe<ConsumetSearchResponse>()?.results?.find {
-                if (season == null) {
-                    it.title?.equals(
-                        "$fixTitle", true
-                    ) == true && it.releaseDate?.equals("$year") == true && it.type == "Movie"
-                } else {
-                    it.title?.equals("$fixTitle", true) == true && it.type == "TV Series"
-                }
-            }?.id ?: return
-        val episodeId =
-            app.get("$consumetFlixhqAPI/info?id=$id").parsedSafe<ConsumetDetails>()?.let {
-                if (season == null) {
-                    it.episodes?.first()?.id
-                } else {
-                    it.episodes?.find { ep -> ep.number == episode && ep.season == season }?.id
-                }
-            } ?: return
-        val sourcesjson = app.get(
-            "$consumetFlixhqAPI/servers?episodeId=$episodeId&mediaId=$id",
-            timeout = 120L
-        ).toString()
-        val gson = Gson()
-        val type = object : TypeToken<ConsumetServers>() {}.type
-        val servers: ConsumetServers = gson.fromJson(sourcesjson, type)
-        servers.forEach { server ->
-            val epid = server.url.substringAfterLast(".")
-            val head =
-                mapOf("user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36")
-            val iframeUrl = app.get(
-                "https://goodproxy.goodproxy.workers.dev/fetch?url=https://flixhq.to/ajax/episode/sources/$epid",
-                timeout = 5000L,
-                headers = head
-            )
-                .parsedSafe<FlixHQIframe>()
-                ?.link
+        val type = if (season == null) "Movie" else "TV Series"
 
-            val videoSource = iframeUrl?.let { iframe ->
-                app.get("$WASMAPI$iframe&referrer=https://flixhq.to/")
-                    .parsedSafe<FlixHQIframeiframe>()
-                    ?.sources
-                    ?.firstOrNull()
-                    ?.file
-            }
-            callback.invoke(
-                ExtractorLink(
-                    "FlixHQ",
-                    "FlixHQ",
-                    videoSource ?: "",
-                    "https://flixhq.to",
-                    Qualities.P1080.value,
-                    INFER_TYPE
+        val searchData = runCatching {
+            val searchJson = app.get("${consumetFlixhqAPI}/$title", timeout = 120L).text
+            tryParseJson<ConsumetSearch>(searchJson)
+        }.getOrNull() ?: return
+
+        val id = searchData.results.firstOrNull { it.title == title && it.type == type }?.id ?: return
+
+        val infoData = runCatching {
+            val infoJson = app.get("$consumetFlixhqAPI/info?id=$id", timeout = 120L).text
+            tryParseJson<ConsumetInfo>(infoJson)
+        }.getOrNull() ?: return
+
+        val epId = if (season == null) {
+            infoData.episodes.firstOrNull()?.id
+        } else {
+            infoData.episodes.firstOrNull { it.number == episode && it.season == season }?.id
+        } ?: return
+
+        val servers = listOf("upcloud", "vidcloud")
+
+        for (server in servers) {
+            val epData = runCatching {
+                val epJson = app.get("$consumetFlixhqAPI/watch?episodeId=$epId&mediaId=$id&server=$server", timeout = 120L).text
+                tryParseJson<ConsumetWatch>(epJson)
+            }.getOrNull() ?: continue
+
+            val referer = epData.headers.Referer ?: ""
+
+            epData.sources.forEach {
+                callback(
+                    ExtractorLink(
+                        name = "FlixHQ ${server.uppercase()}",
+                        source = "FlixHQ ${server.uppercase()}",
+                        url = it.url,
+                        referer = referer,
+                        quality = it.quality.toIntOrNull() ?: Qualities.Unknown.value,
+                        isM3u8 = it.isM3U8
+                    )
                 )
-            )
+            }
+
+            epData.subtitles.forEach {
+                subtitleCallback(
+                    SubtitleFile(
+                        lang = it.lang,
+                        url = it.url
+                    )
+                )
+            }
         }
     }
 

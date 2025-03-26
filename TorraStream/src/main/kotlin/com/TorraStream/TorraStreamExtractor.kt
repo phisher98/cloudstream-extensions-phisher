@@ -5,6 +5,7 @@ import com.TorraStream.TorraStream.Companion.AnimetoshoAPI
 import com.TorraStream.TorraStream.Companion.SubtitlesAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -56,6 +57,43 @@ suspend fun invokeTorrentio(
                 )
             )
         }
+}
+
+
+suspend fun invokeTorrentioDebian(
+    mainUrl:String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if(season == null) {
+        "$mainUrl/stream/movie/$id.json"
+    }
+    else {
+        "$mainUrl/stream/series/$id:$season:$episode.json"
+    }
+
+    val res = app.get(url).parsedSafe<DebianRoot>()
+    Log.d("Phisher",res.toString())
+    res?.streams?.forEach { stream ->
+
+        val fileurl=stream.url
+        val name=stream.behaviorHints.filename
+        val formattedTitleName = name?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
+            ?.replace(Regex("\\.mkv$"), "")
+            ?.replace('.', ' ')
+        callback.invoke(
+            ExtractorLink(
+                "Torrentio",
+                formattedTitleName ?: name ?: stream.name,
+                fileurl,
+                "",
+                getIndexQuality(stream.name),
+                INFER_TYPE,
+            )
+        )
+    }
 }
 
 suspend fun invokeTorrentgalaxy(

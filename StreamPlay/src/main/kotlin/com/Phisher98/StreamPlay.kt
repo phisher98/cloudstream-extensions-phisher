@@ -94,6 +94,7 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invokeDramacool
 import kotlin.math.roundToInt
 
 @Suppress("ConstPropertyName", "PropertyName")
@@ -164,7 +165,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val topmoviesAPI = "https://topmovies.wales"
         const val MoviesmodAPI= "https://moviesmod.gift"
         const val hdmovies4uAPI = "https://hdmovies4u.ph"
-        const val vegaMoviesAPI = "https://vegamovies.rs"
+        const val vegaMoviesAPI = "https://vegamovies.band"
         const val dotmoviesAPI = "https://luxmovies.fun"
         const val rogmoviesAPI = "https://rogmovies.icu"
         const val dahmerMoviesAPI="https://a.datadiff.us.kg"
@@ -198,6 +199,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val KickassAPI="https://kaa.mx"
         const val Player4uApi="https://player4u.xyz"
         const val Vidsrcxyz= "https://vidsrc.xyz"
+        const val Dramacool="https://stremio-dramacool-addon.xyz"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -876,13 +878,22 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 {
     if (!res.isAnime) invokeFlixAPIHQ(
         res.title,
-        res.year,
         res.season,
         res.episode,
         subtitleCallback,
         callback
     )
 },
+            {
+                if(res.isAsian && res.season != null) invokeDramacool(
+                    res.title,
+                    "kdhd",
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
 {
     if (!res.isAnime) invokeHinAuto(
         res.id,
