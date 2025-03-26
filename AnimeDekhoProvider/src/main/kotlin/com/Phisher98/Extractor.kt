@@ -5,6 +5,8 @@ import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
@@ -19,6 +21,10 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URI
+import java.security.MessageDigest
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class FilemoonV2 : ExtractorApi() {
     override var name = "Filemoon"
@@ -126,15 +132,21 @@ open class Chillx : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
 
-            // Decrypt the encoded string
-            val payload = """
-             {
-                "input": "$encodedString",
-                "key": "ojl,&[y^-{cH!ux1"
-             }
-            """.trimIndent().toRequestBody("application/json".toMediaTypeOrNull())
-            val decryptedData = app.post("https://interesting-zebra-51.deno.dev", requestBody  = payload, headers= mapOf("Content-Type" to "application/json")).text
-            // Extract the m3u8 URL from decrypted data
+            val password= base64Decode("ZlpEaWRvcURMZkNBVihHJkM4")
+            val key = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
+
+// Decode Base64 data
+            val decodedBytes = base64DecodeArray(encodedString)
+            val iv = decodedBytes.copyOfRange(32, 48)
+            val ciphertext = decodedBytes.copyOfRange(48, decodedBytes.size)
+
+// Initialize AES cipher for decryption
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            val secretKey = SecretKeySpec(key, "AES")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(iv))
+// Decrypt and remove padding
+            val plaintextPadded = cipher.doFinal(ciphertext)
+            val decryptedData = String(plaintextPadded, Charsets.UTF_8)// Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("(https?://[^\\s\"'\\\\]*m3u8[^\\s\"'\\\\]*)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
                 throw Exception("m3u8 URL not found")

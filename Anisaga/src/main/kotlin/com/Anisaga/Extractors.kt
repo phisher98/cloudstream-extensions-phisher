@@ -1,5 +1,6 @@
 package com.Anisaga
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -7,8 +8,14 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import java.security.MessageDigest
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class AnisagaStream : Chillx() {
     override val name = "Anisaga"
@@ -39,21 +46,28 @@ open class Chillx : ExtractorApi() {
             val res = app.get(url, referer = mainUrl, headers = headers).toString()
 
             val encodedString =
-                Regex("(?:const|let|var|\\bwindow\\.\\w+)\\s+\\w*\\s*=\\s*'([^']*)'").find(
+                Regex("(?:const|let|var|window\\.\\w+)\\s+\\w*\\s*=\\s*'(.*?)'").find(
                     res
                 )?.groupValues?.get(1)?.trim() ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
+            val password= base64Decode("ZlpEaWRvcURMZkNBVihHJkM4")
+            val key = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
 
-            // Decrypt the encoded string
-            val payload = """
-             {
-                "input": "$encodedString",
-                "key": "ojl,&[y^-{cH!ux1"
-             }
-            """.trimIndent().toRequestBody("application/json".toMediaTypeOrNull())
-            val decryptedData = app.post("https://interesting-zebra-51.deno.dev", requestBody  = payload, headers= mapOf("Content-Type" to "application/json")).text
+// Decode Base64 data
+            val decodedBytes = base64DecodeArray(encodedString)
+            val iv = decodedBytes.copyOfRange(32, 48)
+            val ciphertext = decodedBytes.copyOfRange(48, decodedBytes.size)
+
+// Initialize AES cipher for decryption
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            val secretKey = SecretKeySpec(key, "AES")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(iv))
+// Decrypt and remove padding
+            val plaintextPadded = cipher.doFinal(ciphertext)
+            val decryptedData = String(plaintextPadded, Charsets.UTF_8)
+
             // Extract the m3u8 URL from decrypted data
             val m3u8 = Regex("(https?://[^\\s\"'\\\\]*m3u8[^\\s\"'\\\\]*)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
