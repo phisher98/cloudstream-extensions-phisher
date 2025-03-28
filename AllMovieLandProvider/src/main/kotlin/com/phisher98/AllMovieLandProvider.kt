@@ -59,20 +59,15 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
     private suspend fun getDlJson(link: String, url: String): String {
         val doc = app.get(link, referer = url).document
         val jsonString = Regex("""\{.*\}""").find(doc.select("body > script:last-child").toString())?.value.toString()
-        //Log.d("mybaddoc", doc.toString())
-        //Log.d("mybaddoc", jsonString)
         val json = parseJson<Getfile>(jsonString)
-        //Log.d("mygodjson1", json.toString())
-        //Log.d("mybadjson2", "https://${json.href}${json.file}")
         tokenKey = json.key
         val m3u8Langs = app.post(
-            "https://${json.href}${json.file}",
+            json.file,
             referer = link,
             headers = mapOf(
                 "X-CSRF-TOKEN" to "${json.key}",
             ),
         ).toString()
-        //Log.d("mybadjson3", m3u8Langs)
         return m3u8Langs.replace(Regex("(,)\\s*\\[]"), "")
     }
 
@@ -168,17 +163,13 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
-        Log.d("Doc", doc.toString())
         val title = doc.selectFirst("h1.fs__title")?.text()?.trim()
             ?: return null
-        Log.d("title", title)
         val poster = fixUrlNull(mainUrl + doc.selectFirst("img.fs__poster-img")?.attr("src"))
-        Log.d("poster", poster.toString())
         val tags = doc.select("div.xfs__item--value[itemprop=genre] > a").map { it.text() }
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(title)?.value
             ?.toIntOrNull()
-        Log.d("year", year.toString())
         val description = doc.select("div.fs__descr--text > p").joinToString {
             it.text().trim()
         }
@@ -213,8 +204,12 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
         // Automating awful player domain changes
         val playerScript = doc.select("script:containsData(AwsIndStreamDomain)").toString()
+        Log.d("Phisher", playerScript)
+
         val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
         playerDomain = domainRegex.find(playerScript)?.groups?.get(1)?.value
+        Log.d("Phisher", playerDomain.toString())
+
         val embedLink = "$playerDomain/play/$id"
         val jsonReceive = getDlJson(embedLink, url)
         var episodes: List<Episode> = listOf()
@@ -348,7 +343,6 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
     ): Boolean {
         //Log.d("mybadembedlink", data)
         val m3u8Links = parseJson<List<Extract>>(data.replace(Regex("""\[],"""), ""))
-
         m3u8Links.forEach {
             safeApiCall {
                 callback.invoke(
