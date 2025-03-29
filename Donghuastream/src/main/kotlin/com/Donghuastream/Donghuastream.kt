@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.Jsoup
 
 open class Donghuastream : MainAPI() {
-    override var mainUrl              = "https://donghuastream.org"
+    override var mainUrl              = "https://donghuastream.com"
     override var name                 = "Donghuastream"
     override val hasMainPage          = true
     override var lang                 = "zh"
