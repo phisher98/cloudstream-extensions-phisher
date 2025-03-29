@@ -23,7 +23,7 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","TvSeries")
 
-    iconUrl="https://banglaplex.lol/uploads/system_logo/logo_619305d7d016f.png"
+    iconUrl="https://www.google.com/s2/favicons?domain=banglaplex.top&sz=%size%"
 
     isCrossPlatform = true
 }
