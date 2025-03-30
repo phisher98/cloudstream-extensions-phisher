@@ -63,6 +63,7 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
@@ -119,7 +120,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     /** AUTHOR : hexated & Code */
     companion object {
         /** TOOLS */
-        private const val tmdbAPI = "https://api.themoviedb.org/3"
+        private const val BASE_TMDB_API = "https://api.themoviedb.org/3"
         const val gdbot = "https://gdtot.pro"
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
@@ -173,7 +174,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val bollyflixAPI = "https://bollyflix.phd"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
-        const val ConsumetAPI=BuildConfig.ConsumetAPI
+        //const val ConsumetAPI=BuildConfig.ConsumetAPI
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.repair"
         const val WhvxAPI=BuildConfig.WhvxAPI
@@ -190,7 +191,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val VidSrcVip="https://vidsrc.vip"
         const val Primewire="https://www.primewire.tf"
         const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
-        const val WASMAPI=BuildConfig.WASMAPI
+        //const val WASMAPI=BuildConfig.WASMAPI
         const val AnimeOwlAPI="https://animeowl.me"
         const val Film1kApi="https://www.film1k.com"
         const val HindMoviezApi= "https://hindmoviez.ink"
@@ -213,8 +214,16 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 else -> ShowStatus.Completed
             }
         }
-
     }
+    private val tmdbAPI: String
+        get() {
+            val isProxyEnabled = sharedPref?.getBoolean("proxy_enabled", false) ?: false
+            return if (isProxyEnabled) {
+                "${BuildConfig.TMDB_API}=$BASE_TMDB_API"
+            } else {
+                BASE_TMDB_API
+            }
+        }
 
     override val mainPage = mainPageOf(
         "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending",
@@ -311,19 +320,19 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             .ifEmpty { res.keywords?.keywords?.mapNotNull { it.name } }
 
         val actors = res.credits?.cast?.mapNotNull { cast ->
+            val name = cast.name ?: cast.originalName ?: return@mapNotNull null
             ActorData(
-                Actor(
-                    cast.name ?: cast.originalName
-                    ?: return@mapNotNull null, getImageUrl(cast.profilePath)
-                ), roleString = cast.character
+                Actor(name, getImageUrl(cast.profilePath)),
+                roleString = cast.character
             )
-        } ?: return null
+        } ?: emptyList()
+
         val recommendations =
             res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
 
         val trailer = res.videos?.results?.filter { it.type == "Trailer" }?.map { "https://www.youtube.com/watch?v=${it.key}" }?.reversed().orEmpty()
             .ifEmpty { res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } }
-
+        Log.d("Phisher",trailer.toString())
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->

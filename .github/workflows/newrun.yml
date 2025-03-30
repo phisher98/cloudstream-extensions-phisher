@@ -86,6 +86,7 @@ jobs:
           KissKh: ${{ secrets.KissKh }}
           KisskhSub: ${{ secrets.KisskhSub }}
           StreamPlayAPI: ${{ secrets.StreamPlayAPI }}
+          PROXYAPI: ${{ secrets.PROXYAPI }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -128,7 +129,7 @@ jobs:
           echo KissKh=$KissKh >> local.properties
           echo KisskhSub=$KisskhSub >> local.properties
           echo StreamPlayAPI=$StreamPlayAPI >> local.properties
-
+          echo PROXYAPI=$PROXYAPI >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
