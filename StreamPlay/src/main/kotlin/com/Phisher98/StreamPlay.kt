@@ -219,7 +219,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         get() {
             val isProxyEnabled = sharedPref?.getBoolean("proxy_enabled", false) ?: false
             return if (isProxyEnabled) {
-                "${BuildConfig.TMDB_API}=$BASE_TMDB_API"
+                "${BuildConfig.PROXYAPI}=$BASE_TMDB_API"
             } else {
                 BASE_TMDB_API
             }
