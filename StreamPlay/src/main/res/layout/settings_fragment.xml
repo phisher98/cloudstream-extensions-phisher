@@ -13,18 +13,6 @@
         android:orientation="vertical"
         tools:ignore="WebViewLayout">
 
-        <!-- Proxy Toggle Button (Added at the Top) -->
-        <ToggleButton
-            android:id="@+id/proxyToggle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textOn="Proxy Enabled"
-            android:textOff="Proxy Disabled"
-            android:background="@android:drawable/btn_default"
-            android:padding="12dp"
-            android:layout_marginBottom="8dp"
-            tools:ignore="HardcodedText" />
-
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

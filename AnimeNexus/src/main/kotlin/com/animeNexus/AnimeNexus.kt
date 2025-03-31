@@ -6,11 +6,12 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import okhttp3.Interceptor
 import com.lagradost.cloudstream3.utils.Qualities
-
+import okhttp3.Response
 
 
 class AnimeNexus : MainAPI() {
     override var mainUrl = "https://anime.nexus"
+    private val api="https://api.anime.nexus"
     override var name = "AnimeNexus"
     override val hasMainPage = true
     override val hasQuickSearch =true
@@ -20,6 +21,13 @@ class AnimeNexus : MainAPI() {
         TvType.AnimeMovie,
         TvType.OVA
     )
+
+    companion object
+    {
+        val headers = mapOf(
+            "User-Agent" to "Go-http-client/2.0"
+        )
+    }
 
     override val mainPage = mainPageOf(
         "api/anime/shows?sortBy=name+asc&hasVideos=true&page=1&includes[]=poster&status=Currently+Airing&type=TV" to "Currently Airing",
@@ -32,7 +40,7 @@ class AnimeNexus : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val jsonResponse = app.get("$mainUrl/${request.data}").text
+        val jsonResponse = app.get("$api/${request.data}", interceptor = UserAgentInterceptor()).text
         val response: AnimeNexusHome? = try {
             Gson().fromJson(jsonResponse, object : TypeToken<AnimeNexusHome>() {}.type)
         } catch (e: Exception) {
@@ -55,7 +63,7 @@ class AnimeNexus : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        val jsonResponse = app.get("$mainUrl/api/anime/shows?search=$query&sortBy=name+asc&page=1&includes%5B%5D=poster").text
+        val jsonResponse = app.get("$api/api/anime/shows?search=$query&sortBy=name+asc&page=1&includes%5B%5D=poster", headers = headers, interceptor = UserAgentInterceptor()).text
         val response: AnimeNexusHome? = try {
             Gson().fromJson(jsonResponse, object : TypeToken<AnimeNexusHome>() {}.type)
         } catch (e: Exception) {
@@ -71,7 +79,7 @@ class AnimeNexus : MainAPI() {
         val animeId = url.substringAfter("series/").substringBefore("/") // Extract anime ID
 
         val response = Gson().fromJson(
-            app.get("$mainUrl/api/anime/details/episodes?id=$animeId").text,
+            app.get("$api/api/anime/details/episodes?id=$animeId", interceptor = UserAgentInterceptor()).text,
             AnimeNexusLoad::class.java
         )
 
@@ -87,7 +95,7 @@ class AnimeNexus : MainAPI() {
         // Loop through all pages and collect episodes
         (1..lastPage!!).forEach { page ->
             val pageResponse = Gson().fromJson(
-                app.get("$mainUrl/api/anime/details/episodes?id=$animeId&page=$page&perPage=$perPage&order=asc").text,
+                app.get("$api/api/anime/details/episodes?id=$animeId&page=$page&perPage=$perPage&order=asc", interceptor = UserAgentInterceptor()).text,
                 AnimeNexusLoad::class.java
             )
 
@@ -115,7 +123,7 @@ class AnimeNexus : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val episodeId = data.substringAfterLast("/")
-        val api = "$mainUrl/api/anime/details/episode/stream?id=$episodeId"
+        val api = "$api/api/anime/details/episode/stream?id=$episodeId"
 
         val headers = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
@@ -123,7 +131,7 @@ class AnimeNexus : MainAPI() {
             "Referer" to "https://anime.nexus/"
         )
 
-        val jsonResponse = app.get(api, headers = headers).text
+        val jsonResponse = app.get(api, headers = headers, interceptor = UserAgentInterceptor()).text
         val response = Gson().fromJson(jsonResponse, Stream::class.java)
         val m3u8 = response?.data?.hls.orEmpty()
         val mpd = response?.data?.mpd.orEmpty()
@@ -186,6 +194,18 @@ class AnimeNexus : MainAPI() {
             chain.proceed(modifiedRequest)
         }
     }
+
+    class UserAgentInterceptor : Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val originalRequest = chain.request()
+            val newRequest = originalRequest.newBuilder()
+                .removeHeader("User-Agent") // Remove existing User-Agent headers
+                .addHeader("User-Agent", "Go-http-client/2.0") // Add new User-Agent
+                .build()
+            return chain.proceed(newRequest)
+        }
+    }
+
 
 
 }

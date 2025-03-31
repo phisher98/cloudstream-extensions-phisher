@@ -24,8 +24,10 @@ import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -2794,4 +2796,15 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
 fun parseAnimeData(jsonString: String): AnimeData {
     val objectMapper = ObjectMapper()
     return objectMapper.readValue(jsonString, AnimeData::class.java)
+}
+
+class UserAgentInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest = chain.request()
+        val newRequest = originalRequest.newBuilder()
+            .removeHeader("User-Agent") // Remove existing User-Agent headers
+            .addHeader("User-Agent", "Go-http-client/2.0") // Add new User-Agent
+            .build()
+        return chain.proceed(newRequest)
+    }
 }
