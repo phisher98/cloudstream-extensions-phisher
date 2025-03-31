@@ -10,14 +10,11 @@ import android.view.ViewGroup
 import android.webkit.*
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ToggleButton
 import androidx.annotation.RequiresApi
-import androidx.core.content.edit
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
 import com.lagradost.cloudstream3.CommonActivity.showToast
-import androidx.core.graphics.toColorInt
 
 class SettingsFragment(
     private val plugin: StreamPlayPlugin,
@@ -39,7 +36,7 @@ class SettingsFragment(
         return inflater.inflate(layout, container, false)
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val tokenInput = view.findView<EditText>("tokenInput")
@@ -47,27 +44,10 @@ class SettingsFragment(
         val resetButton = view.findView<Button>("resetButton")
         val loginButton = view.findView<Button>("loginButton")
         val webView = view.findView<WebView>("authWebView")
-        val proxyToggle = view.findView<ToggleButton>("proxyToggle") // Added Proxy Toggle Button
-
-        fun updateToggleColor(toggleButton: ToggleButton, isChecked: Boolean) {
-            val color = if (isChecked) "#4CAF50".toColorInt() else "#D32F2F".toColorInt()
-            toggleButton.setBackgroundColor(color)
-        }
-
         val savedToken = sharedPref.getString("token", null)
         if (!savedToken.isNullOrEmpty()) {
             tokenInput.setText(savedToken)
         }
-
-
-        val isProxyEnabled: Boolean = sharedPref.getBoolean("proxy_enabled", false)
-        proxyToggle.isChecked = isProxyEnabled
-        updateToggleColor(proxyToggle, isProxyEnabled)
-
-            proxyToggle.setOnCheckedChangeListener { _, isChecked ->
-                sharedPref.edit { putBoolean("proxy_enabled", isChecked) }
-                updateToggleColor(proxyToggle, isChecked)
-            }
 
         setupWebView(webView)
 

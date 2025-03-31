@@ -96,6 +96,10 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeDramacool
+import okhttp3.Interceptor
+import okhttp3.Response
+import java.net.InetAddress
+import java.net.UnknownHostException
 import kotlin.math.roundToInt
 
 @Suppress("ConstPropertyName", "PropertyName")
@@ -120,7 +124,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     /** AUTHOR : hexated & Code */
     companion object {
         /** TOOLS */
-        private const val BASE_TMDB_API = "https://api.themoviedb.org/3"
+        private const val tmdbAPI = "https://api.themoviedb.org/3"
         const val gdbot = "https://gdtot.pro"
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
@@ -215,15 +219,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
         }
     }
-    private val tmdbAPI: String
-        get() {
-            val isProxyEnabled = sharedPref?.getBoolean("proxy_enabled", false) ?: false
-            return if (isProxyEnabled) {
-                "${BuildConfig.PROXYAPI}=$BASE_TMDB_API"
-            } else {
-                BASE_TMDB_API
-            }
-        }
 
     override val mainPage = mainPageOf(
         "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending",
@@ -265,7 +260,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page")
+        val home = app.get("${request.data}$adultQuery&page=$page", interceptor = CloudflareDnsInterceptor())
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -285,7 +280,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
+        return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}", interceptor = CloudflareDnsInterceptor())
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
             }
@@ -299,7 +294,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         } else {
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=$append"
         }
-        val res = app.get(resUrl).parsedSafe<MediaDetail>()
+        val res = app.get(resUrl, interceptor = CloudflareDnsInterceptor()).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
 
         val title = res.title ?: res.name ?: return null
@@ -332,11 +327,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         val trailer = res.videos?.results?.filter { it.type == "Trailer" }?.map { "https://www.youtube.com/watch?v=${it.key}" }?.reversed().orEmpty()
             .ifEmpty { res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } }
-        Log.d("Phisher",trailer.toString())
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->
-                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
+                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey", interceptor = CloudflareDnsInterceptor())
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
                         newEpisode(LinkData(
                             data.id,
@@ -388,7 +382,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                    this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -408,7 +402,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                    this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -1202,4 +1196,67 @@ data class MediaDetail(
 @JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
 )
 
+    class CloudflareDnsInterceptor() : Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val originalRequest = chain.request()
+            val hostname = originalRequest.url.host
+            Log.d("CloudflareDnsInterceptor", "Resolving hostname: $hostname using Cloudflare (1.1.1.1)")
+            val resolvedIp = try {
+                // Use Cloudflare's DNS to resolve the hostname
+                InetAddress.getAllByName(hostname).firstOrNull()?.hostAddress
+            } catch (e: UnknownHostException) {
+                Log.e("CloudflareDnsInterceptor", "DNS resolution failed for $hostname")
+                null
+            }
+
+            if (resolvedIp != null) {
+                Log.d("CloudflareDnsInterceptor", "Resolved IP: $resolvedIp")
+                val newUrl = originalRequest.url.newBuilder()
+                    .host(resolvedIp) // Replace host with resolved IP
+                    .build()
+                val newRequest = originalRequest.newBuilder()
+                    .url(newUrl)
+                    .header("Host", hostname) // Preserve original Host header for TLS/SSL
+                    .build()
+                Log.d("CloudflareDnsInterceptor", "Requesting URL with resolved IP: ${newRequest.url}")
+                return chain.proceed(newRequest)
+            }
+
+            Log.d("CloudflareDnsInterceptor", "Proceeding with original request: ${originalRequest.url}")
+            return chain.proceed(originalRequest)
+        }
+    }
+
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        Log.d("InterceptorDebug", "getVideoInterceptor called!")
+
+        return Interceptor { chain ->
+            val originalRequest = chain.request()
+            val originalUrl = originalRequest.url.toString()
+
+            Log.d("InterceptorDebug", "Intercepting: $originalUrl")
+
+            val shouldModify =
+                (originalUrl.contains("anime.nexus") || originalUrl.contains("anime.delivery")) &&
+                        (originalUrl.endsWith(".m3u8") || originalUrl.endsWith(".mp4") || originalUrl.endsWith(
+                            ".m4s"
+                        ))
+
+            if (shouldModify) {
+                val newUrl =
+                    "$originalUrl?token=3486384170_1c4c10a8d20c5a7789113ab1f8a8938dfac53690"
+                Log.d("InterceptorDebug", "Modified URL: $newUrl")
+
+                val modifiedRequest = originalRequest.newBuilder()
+                    .url(newUrl)
+                    .build()
+
+                return@Interceptor chain.proceed(modifiedRequest)
+            } else {
+                Log.d("InterceptorDebug", "Request not modified")
+            }
+
+            return@Interceptor chain.proceed(originalRequest)
+        }
+    }
 }
