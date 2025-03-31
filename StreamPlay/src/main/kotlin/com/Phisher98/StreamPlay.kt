@@ -98,8 +98,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeDramacool
 import okhttp3.Interceptor
 import okhttp3.Response
-import java.net.InetAddress
-import java.net.UnknownHostException
+import java.io.IOException
+import java.net.URLEncoder
 import kotlin.math.roundToInt
 
 @Suppress("ConstPropertyName", "PropertyName")
@@ -382,7 +382,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -402,7 +402,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -1195,68 +1195,66 @@ data class MediaDetail(
 @JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
 @JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
 )
-
-    class CloudflareDnsInterceptor() : Interceptor {
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val originalRequest = chain.request()
-            val hostname = originalRequest.url.host
-            Log.d("CloudflareDnsInterceptor", "Resolving hostname: $hostname using Cloudflare (1.1.1.1)")
-            val resolvedIp = try {
-                // Use Cloudflare's DNS to resolve the hostname
-                InetAddress.getAllByName(hostname).firstOrNull()?.hostAddress
-            } catch (e: UnknownHostException) {
-                Log.e("CloudflareDnsInterceptor", "DNS resolution failed for $hostname")
-                null
-            }
-
-            if (resolvedIp != null) {
-                Log.d("CloudflareDnsInterceptor", "Resolved IP: $resolvedIp")
-                val newUrl = originalRequest.url.newBuilder()
-                    .host(resolvedIp) // Replace host with resolved IP
-                    .build()
-                val newRequest = originalRequest.newBuilder()
-                    .url(newUrl)
-                    .header("Host", hostname) // Preserve original Host header for TLS/SSL
-                    .build()
-                Log.d("CloudflareDnsInterceptor", "Requesting URL with resolved IP: ${newRequest.url}")
-                return chain.proceed(newRequest)
-            }
-
-            Log.d("CloudflareDnsInterceptor", "Proceeding with original request: ${originalRequest.url}")
-            return chain.proceed(originalRequest)
+    class CloudflareDnsInterceptor : Interceptor {
+        // Use a static flag to remember if proxy should always be used
+        companion object {
+            @Volatile
+            private var shouldUseProxy = false
         }
-    }
 
-    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
-        Log.d("InterceptorDebug", "getVideoInterceptor called!")
-
-        return Interceptor { chain ->
+        override fun intercept(chain: Interceptor.Chain): Response {
             val originalRequest = chain.request()
             val originalUrl = originalRequest.url.toString()
 
-            Log.d("InterceptorDebug", "Intercepting: $originalUrl")
-
-            val shouldModify =
-                (originalUrl.contains("anime.nexus") || originalUrl.contains("anime.delivery")) &&
-                        (originalUrl.endsWith(".m3u8") || originalUrl.endsWith(".mp4") || originalUrl.endsWith(
-                            ".m4s"
-                        ))
-
-            if (shouldModify) {
-                val newUrl =
-                    "$originalUrl?token=3486384170_1c4c10a8d20c5a7789113ab1f8a8938dfac53690"
-                Log.d("InterceptorDebug", "Modified URL: $newUrl")
-
-                val modifiedRequest = originalRequest.newBuilder()
-                    .url(newUrl)
-                    .build()
-
-                return@Interceptor chain.proceed(modifiedRequest)
-            } else {
-                Log.d("InterceptorDebug", "Request not modified")
+            // If proxy mode is activated, always use proxy
+            if (shouldUseProxy) {
+                return proceedWithProxy(chain, originalRequest, originalUrl)
             }
 
-            return@Interceptor chain.proceed(originalRequest)
+            return try {
+                // Attempt the original request first
+                val originalResponse = chain.proceed(originalRequest)
+
+                if (!originalResponse.isSuccessful) {
+                    Log.e("CloudflareDnsInterceptor", "Original request failed: ${originalResponse.code}")
+                    originalResponse.close() // Close failed response
+                    throw IOException("Original request failed")
+                }
+
+                Log.d("CloudflareDnsInterceptor", "Original request successful")
+                originalResponse
+            } catch (e: IOException) {
+                Log.e("CloudflareDnsInterceptor", "Original request failed, switching to proxy: ${e.message}")
+
+                // Activate proxy mode permanently
+                shouldUseProxy = true
+                proceedWithProxy(chain, originalRequest, originalUrl)
+            }
+        }
+
+        private fun proceedWithProxy(chain: Interceptor.Chain, originalRequest: okhttp3.Request, originalUrl: String): Response {
+            val proxyUrl = "${BuildConfig.PROXYAPI}=${URLEncoder.encode(originalUrl, "UTF-8")}"
+            Log.w("CloudflareDnsInterceptor", "Using proxy for request: $proxyUrl")
+
+            val proxyRequest = originalRequest.newBuilder()
+                .url(proxyUrl)
+                .build()
+
+            return try {
+                val proxyResponse = chain.proceed(proxyRequest)
+
+                if (!proxyResponse.isSuccessful) {
+                    Log.e("CloudflareDnsInterceptor", "Proxy request failed: ${proxyResponse.code}")
+                    proxyResponse.close()
+                    throw IOException("Proxy request failed")
+                }
+
+                Log.d("CloudflareDnsInterceptor", "Proxy request successful")
+                proxyResponse
+            } catch (proxyException: IOException) {
+                Log.e("CloudflareDnsInterceptor", "Proxy failed: ${proxyException.message}")
+                throw proxyException
+            }
         }
     }
 }
