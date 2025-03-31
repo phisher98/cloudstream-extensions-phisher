@@ -6,6 +6,14 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 
 //Credit: Special Thanks to Toasty for the Code
+
+//Credit: Thanks to https://github.com/amarullz/AnimeTV/blob/master/tools/utils/kai.js
+
+//var Base64UrlDecode = safeAtob
+//var transform = rc4
+//var substitute = replaceChars
+//var reverseIt = reverseString
+
 @Suppress("NAME_SHADOWING")
 class AnimekaiDecoder {
     fun generateToken(n: String): String {
@@ -79,39 +87,33 @@ class AnimekaiDecoder {
 
     fun decode(n: String): String {
         return decodeUri(
-            substitute(
-                transform(
-                    "fnxEj3tD4Bl0X",
-                    base64UrlDecode(
-                        reverseIt(
-                            reverseIt(
-                                transform(
-                                    "IjilzMV57GrnF",
-                                    base64UrlDecode(
-                                        substitute(
+            transform(
+                "A6mkJw3XMsruY",
+                base64UrlDecode(
+                    substitute(
+                        transform(
+                            "Sv7tijKFrwDxsl9",
+                            base64UrlDecode(
+                                substitute(
+                                    transform(
+                                        "j8971KLwSyI",
+                                        base64UrlDecode(
                                             reverseIt(
                                                 substitute(
-                                                    transform(
-                                                        "PlzI69YVCtGwoa8",
-                                                        base64UrlDecode(
-                                                            base64UrlDecode(n)
-                                                        )
-                                                    ),
-                                                    "c2IfHZwSX1mj",
-                                                    "mwfXcS2ZjI1H"
+                                                    base64UrlDecode(n),
+                                                    "kxV4iJtRZg3",
+                                                    "VJx34RtgkZi"
                                                 )
-                                            ),
-                                            "82NkgQDYbIF",
-                                            "82IQNkFgYbD"
+                                            )
                                         )
-                                    )
-                                )
+                                    ),
+                                    "BjZ9dF6AxHTqn",
+                                    "jxqZdB6n9FTHA")
                             )
-                        )
-                    )
-                ),
-                "crwkth05iJR8",
-                "JRkt8rw0i5ch"
+                        ),
+                        "FpPBdhzCyGYoDvO",
+                        "YGFpvoBdCyDPhzO")
+                )
             )
         )
     }
