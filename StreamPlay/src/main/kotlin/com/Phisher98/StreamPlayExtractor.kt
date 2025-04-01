@@ -1326,39 +1326,39 @@ object StreamPlayExtractor : StreamPlay() {
 
             servers?.map servers@{ server ->
                 val animeEpisodeId = url?.substringAfter("to/")
-                val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
+                val serverName = if (server.third.equals("HD-1", ignoreCase = true)) "vidstreaming" else "vidcloud"
+                //val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
+                val api= "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId${'$'}episode$$episodeId$${server.third}&server=$serverName"
 
                 try {
                     val responseText = app.get(api, referer = api).text
+
                     val response = try {
                         gson.fromJson(responseText, HiAnimeResponse::class.java)
                     } catch (e: JsonSyntaxException) {
-                        return@servers
-                    }
-                    if (response?.data == null) {
-                        return@servers
-                    }
-                    val data = response.data
-                    data.sources.firstOrNull()?.url?.let { m3u8 ->
-                        val m3u8headers = mapOf(
-                            "Referer" to "https://megacloud.club/",
-                            "Origin" to "https://megacloud.club/"
-                        )
-
-                        M3u8Helper.generateM3u8(
-                            "HiAnime ${server.first.uppercase()} ${server.third.uppercase()}",
-                            m3u8,
-                            mainUrl,
-                            headers = m3u8headers
-                        ).forEach(callback)
+                        null
                     }
 
-                    data.tracks.forEach { track ->
-                        track.file.let { file ->
+                    if (response != null) {
+                        response.sources.firstOrNull { it.isM3U8 }?.let { source ->
+                            val m3u8headers = mapOf(
+                                "Referer" to "https://megacloud.club/",
+                                "Origin" to "https://megacloud.club/"
+                            )
+                            M3u8Helper.generateM3u8(
+                                "⌜ HiAnime ⌟ | ${server.third.uppercase()} | ${server.first.uppercase()}",
+                                source.url,
+                                mainUrl,
+                                headers = m3u8headers
+                            ).forEach(callback)
+                        }
+
+
+                        response.subtitles.forEach { subtitle ->
                             subtitleCallback.invoke(
                                 SubtitleFile(
-                                    lang = track.label,
-                                    url = file
+                                    lang = subtitle.lang,
+                                    url = subtitle.url
                                 )
                             )
                         }

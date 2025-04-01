@@ -599,31 +599,10 @@ data class CrunchyrollSourcesResponses(
 
 
 data class HiAnimeResponse(
-    val data: HiAnimeData,
-)
-
-data class HiAnimeData(
-    val headers: HiAnimeHeaders,
-    val tracks: List<HiAnimeTrack>,
     val intro: HiAnimeIntro,
     val outro: HiAnimeOutro,
     val sources: List<HiAnimeSource>,
-    @JsonProperty("anilistID")
-    val anilistId: Long,
-    @JsonProperty("malID")
-    val malId: Long,
-)
-
-data class HiAnimeHeaders(
-    @JsonProperty("Referer")
-    val referer: String,
-)
-
-data class HiAnimeTrack(
-    val file: String,
-    val label: String,
-    val kind: String,
-    val default: Boolean,
+    val subtitles: List<HiAnimeSubtitle>,
 )
 
 data class HiAnimeIntro(
@@ -638,7 +617,13 @@ data class HiAnimeOutro(
 
 data class HiAnimeSource(
     val url: String,
+    val isM3U8: Boolean,
     val type: String,
+)
+
+data class HiAnimeSubtitle(
+    val url: String,
+    val lang: String,
 )
 
 

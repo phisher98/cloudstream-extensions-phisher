@@ -255,11 +255,13 @@ class HiAnime : MainAPI() {
         val gson = Gson()
 
         servers.distinct().amap {
-            val animeEpisodeId = data.substringAfterLast("/").substringBeforeLast("-")
-            val serverlist = listOf("hd-1", "hd-2")
+            val animeEpisodeId = data.substringAfterLast("/").substringBeforeLast("?")
+            val serverlist = listOf("vidstreaming", "vidcloud") //Vidstream=HD-1 & vidcloud=HD-2
             for (server in serverlist) {
-                val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$epId&server=$server&category=$type"
-
+                Log.d("Phisher","$data $animeEpisodeId $epId")
+                //val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$epId&server=$server&category=$type"
+                //"https://consumet.8man.me/anime/zoro/watch?episodeId=sakamoto-days-19431$episode$132565$dub&server=vidstreaming"
+                val api= "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId${'$'}episode$$epId$$type&server=$server"
                 try {
                     val responseText = app.get(api, referer = api).text
 
@@ -269,36 +271,36 @@ class HiAnime : MainAPI() {
                         null
                     }
 
-                    if (response?.data == null) {
-                        Log.e("Error:", "Failed to parse HiAnimeResponse: Data is null")
+                    if (response == null) {
+                        Log.e("Error:", "Failed to parse Root response: Data is null")
                         continue
                     }
 
-                    val res = response.data
-                    res.sources.firstOrNull()?.url?.let { m3u8 ->
+                    response.sources.firstOrNull { it.isM3U8 }?.let { source ->
                         val m3u8headers = mapOf(
                             "Referer" to "https://megacloud.club/",
                             "Origin" to "https://megacloud.club/"
                         )
+                        val serverName = if (server.equals("vidstreaming", ignoreCase = true)) "HD-1" else "HD-2"
+
                         M3u8Helper.generateM3u8(
-                            "HiAnime ${server.uppercase()} ${type.uppercase()}",
-                            m3u8,
+                            "⌜ HiAnime ⌟ | ${serverName.uppercase()} | ${type.uppercase()}",
+                            source.url,
                             mainUrl,
                             headers = m3u8headers
                         ).forEach(callback)
                     }
 
-                    res.tracks.forEach { track ->
-                        track.file.let { file ->
-                            subtitleCallback.invoke(
-                                SubtitleFile(
-                                    lang = track.label,
-                                    url = file
-                                )
+                    response.subtitles.forEach { subtitle ->
+                        subtitleCallback.invoke(
+                            SubtitleFile(
+                                lang = subtitle.lang,
+                                url = subtitle.url
                             )
-                        }
+                        )
                     }
-                } catch (e: Exception) {
+                }
+                catch (e: Exception) {
                     Log.e("Error:", "Error fetching or parsing response: ${e.message}")
                 }
             }
@@ -324,31 +326,10 @@ class HiAnime : MainAPI() {
     // HiAnime Response
 
     data class HiAnimeResponse(
-        val data: HiAnimeData,
-    )
-
-    data class HiAnimeData(
-        val headers: HiAnimeHeaders,
-        val tracks: List<HiAnimeTrack>,
         val intro: HiAnimeIntro,
         val outro: HiAnimeOutro,
         val sources: List<HiAnimeSource>,
-        @JsonProperty("anilistID")
-        val anilistId: Long,
-        @JsonProperty("malID")
-        val malId: Long,
-    )
-
-    data class HiAnimeHeaders(
-        @JsonProperty("Referer")
-        val referer: String,
-    )
-
-    data class HiAnimeTrack(
-        val file: String,
-        val label: String,
-        val kind: String,
-        val default: Boolean,
+        val subtitles: List<HiAnimeSubtitle>,
     )
 
     data class HiAnimeIntro(
@@ -363,7 +344,13 @@ class HiAnime : MainAPI() {
 
     data class HiAnimeSource(
         val url: String,
+        val isM3U8: Boolean,
         val type: String,
+    )
+
+    data class HiAnimeSubtitle(
+        val url: String,
+        val lang: String,
     )
 
 
