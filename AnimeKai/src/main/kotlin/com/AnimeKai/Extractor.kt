@@ -1,6 +1,7 @@
 package com.AnimeKai
 
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -20,11 +21,12 @@ class MegaUp : ExtractorApi() {
     ) {
         val href = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val name = referer ?: this.name
+        Log.d("Phisher",href)
 
         val response = runCatching {
             app.get(href, headers = HEADERS).parsedSafe<AnimeKai.Response>()?.result
         }.getOrNull() ?: return
-
+        Log.d("Phisher",response)
         val decoded = AnimekaiDecoder().decode(response).replace("\\", "")
         val m3u8Data = runCatching { Gson().fromJson(decoded, AnimeKai.M3U8::class.java) }.getOrNull() ?: return
         val m3u8 = m3u8Data.sources.firstOrNull()?.file ?: return

@@ -37,7 +37,7 @@ import kotlin.math.roundToInt
 
 
 class AnimeKai : MainAPI() {
-    override var mainUrl = "https://animekai.to"
+    override var mainUrl = "https://animekai.bz"
     override var name = "Animekai"
     override val hasQuickSearch = false
     override val hasMainPage = true

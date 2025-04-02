@@ -87,33 +87,37 @@ class AnimekaiDecoder {
 
     fun decode(n: String): String {
         return decodeUri(
-            transform(
-                "A6mkJw3XMsruY",
-                base64UrlDecode(
-                    substitute(
-                        transform(
-                            "Sv7tijKFrwDxsl9",
-                            base64UrlDecode(
-                                substitute(
-                                    transform(
-                                        "j8971KLwSyI",
-                                        base64UrlDecode(
-                                            reverseIt(
-                                                substitute(
-                                                    base64UrlDecode(n),
-                                                    "kxV4iJtRZg3",
-                                                    "VJx34RtgkZi"
-                                                )
+            substitute(
+                transform(
+                    "Pga3kHbfN1",
+                    base64UrlDecode(
+                        reverseIt(
+                            substitute(
+                                transform(
+                                    "twUI4s9kDrT3qb",
+                                    base64UrlDecode(
+                                        reverseIt(
+                                            substitute(
+                                                transform(
+                                                    "TyrGFfhi40zq",
+                                                    base64UrlDecode(
+                                                        reverseIt(base64UrlDecode(n))
+                                                    ),
+                                                ),
+                                                "4zSetv9CNImRdiq",
+                                                "i94NvzeIRCqdtSm",
                                             )
                                         )
                                     ),
-                                    "BjZ9dF6AxHTqn",
-                                    "jxqZdB6n9FTHA")
+                                ),
+                                "vfIiqFKutaW",
+                                "tqaiKIfuvWF",
                             )
-                        ),
-                        "FpPBdhzCyGYoDvO",
-                        "YGFpvoBdCyDPhzO")
-                )
+                        )
+                    ),
+                ),
+                "vnb0rLzdZN6a",
+                "vNZnrzd60baL",
             )
         )
     }
