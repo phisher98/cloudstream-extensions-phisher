@@ -138,10 +138,10 @@ class HiAnime : MainAPI() {
         val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
-        val poster = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+        val poster = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
-
+        Log.d("Phisher",poster.toString())
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
 
@@ -199,7 +199,7 @@ class HiAnime : MainAPI() {
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
-            posterUrl = poster
+            backgroundPosterUrl = poster
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
