@@ -41,7 +41,7 @@ class Animekhor : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("div.bsx > a").attr("title")
         val href      = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.bsx > a img")?.getsrcAttribute())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -50,7 +50,7 @@ class Animekhor : MainAPI() {
     private fun Element.toSearchquery(): SearchResponse {
         val title     = this.select("div.bsx > a").attr("title")
         val href      = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.bsx > a img")?.getsrcAttribute())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
         }
@@ -116,7 +116,6 @@ class Animekhor : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        Log.d("Phisher",data)
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
             val regex = Regex("""src=["']([^"']+)["']""",RegexOption.IGNORE_CASE)
@@ -133,4 +132,16 @@ class Animekhor : MainAPI() {
         }
         return true
     }
+
+    private fun Element.getsrcAttribute(): String {
+        val src = this.attr("src")
+        val dataSrc = this.attr("data-src")
+
+        return when {
+            src.startsWith("http") -> src
+            dataSrc.startsWith("http") -> dataSrc
+            else -> ""
+        }
+    }
+
 }
