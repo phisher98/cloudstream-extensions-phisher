@@ -250,7 +250,7 @@ class HiAnime : MainAPI() {
             .map { it.attr("data-type") }
 
 // Set `dubType` to "raw" if a raw type is present in the selected servers
-        val type = if (selectedTypes.contains("raw")) "raw" else dubType
+        val type = if (selectedTypes.contains("raw")) "sub" else dubType
         // Prevent duplicates
         val gson = Gson()
 

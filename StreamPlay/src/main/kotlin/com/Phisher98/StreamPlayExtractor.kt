@@ -1253,16 +1253,15 @@ object StreamPlayExtractor : StreamPlay() {
             "x-atx" to "12RmYtJexlqnNym38z4ahwy+g1g0la/El8nkkMOVtiQ=",
             "Origin" to "https://www.miruro.tv"
         )
-
-        val token = app.get(
+        val response=app.get(
             "https://epsilon.yamista.xyz/?url=https:%2F%2Fdio.miruro.tv%2Fi%3Fid%3D$malId%26provider%3Dmal%26type%3Danime",
             headers = headers
-        ).parsedSafe<MiroTV>()
-            ?.ANIMEKAI
+        ).text
+        val miroTV: MiroTV? = Gson().fromJson(response, object : TypeToken<MiroTV>() {}.type)
+        val token = miroTV?.ANIMEKAI
             ?.asSequence()
             ?.mapNotNull { it.value.episodeList.episodes.find { ep -> ep.number == episode }?.id }
-            ?.firstOrNull() ?: return
-
+            ?.firstOrNull() ?: ""
         val decoder = AnimekaiDecoder()
         val servers = listOf("sub", "dub", "softsub").flatMap { type ->
             val url = "$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token)}"
@@ -1327,8 +1326,9 @@ object StreamPlayExtractor : StreamPlay() {
             servers?.map servers@{ server ->
                 val animeEpisodeId = url?.substringAfter("to/")
                 val serverName = if (server.third.equals("HD-1", ignoreCase = true)) "vidstreaming" else "vidcloud"
+                val dubtype=if (server.third == "raw") "sub" else server.third
                 //val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
-                val api= "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId${'$'}episode$$episodeId$${server.third}&server=$serverName"
+                val api= "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId${'$'}episode$$episodeId$$dubtype&server=$serverName"
 
                 try {
                     val responseText = app.get(api, referer = api).text
