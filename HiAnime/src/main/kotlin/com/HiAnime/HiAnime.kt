@@ -199,7 +199,7 @@ class HiAnime : MainAPI() {
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
-            backgroundPosterUrl = poster
+            posterUrl = poster
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
