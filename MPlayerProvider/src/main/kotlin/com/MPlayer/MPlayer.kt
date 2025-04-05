@@ -5,7 +5,9 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -230,31 +232,32 @@ class MPlayer : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.startsWith("video"))
-         {
-            val href=endpointurl+data
-            callback(
-                ExtractorLink(
+        if (data.startsWith("video")) {
+            val href = endpointurl + data
+            callback.invoke(
+                newExtractorLink(
                     this.name,
                     name,
-                    href,
-                    "$mainUrl/",
-                    Qualities.Unknown.value,
-                    true
-                )
+                    url = href,
+                    INFER_TYPE
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = Qualities.Unknown.value
+                }
+            )
+        } else {
+            callback.invoke(
+                newExtractorLink(
+                    this.name,
+                    name,
+                    url = data,
+                    INFER_TYPE
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
-        else
-            callback(
-                    ExtractorLink(
-                    this.name,
-                    name,
-                    data,
-                    "$mainUrl/",
-                    Qualities.Unknown.value,
-                    true
-                )
-            )
         return true
     }}
 

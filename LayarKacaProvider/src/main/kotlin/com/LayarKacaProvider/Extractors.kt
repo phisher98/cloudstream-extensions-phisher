@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 
 open class Hownetwork : ExtractorApi() {
@@ -35,14 +36,15 @@ open class Hownetwork : ExtractorApi() {
 
         res?.data?.map {
             callback.invoke(
-                    ExtractorLink(
-                            this.name,
-                            this.name,
-                            it.file,
-                            url,
-                            getQualityFromName(it.label),
-                            INFER_TYPE
-                    )
+                newExtractorLink(
+                    this.name,
+                    this.name,
+                    url = it.file,
+                    INFER_TYPE
+                ) {
+                    this.referer = url
+                    this.quality = getQualityFromName(it.label)
+                }
             )
         }
 

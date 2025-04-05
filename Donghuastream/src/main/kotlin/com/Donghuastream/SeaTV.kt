@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 
 
@@ -45,14 +46,15 @@ open class SeaTV : Donghuastream() {
                     }
                     url.endsWith("mp4") -> {
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "All Sub Player",
                                 "All Sub Player",
-                                url,
-                                "",
-                                getQualityFromName(""),
-                                type = INFER_TYPE,
-                            )
+                                url = url,
+                                INFER_TYPE
+                            ) {
+                                this.referer = ""
+                                this.quality = getQualityFromName("")
+                            }
                         )
                     }
                     else -> {

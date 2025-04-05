@@ -81,14 +81,15 @@ class ToonTales : MainAPI() {
         val file=document.selectFirst("script:containsData(file)")?.data().toString().substringAfter("file: \"").substringBefore("\"")
 
         callback.invoke(
-            ExtractorLink(
-            name=name,
-            source = name,
-            url = file,
-            referer = "",
-            quality = getQualityFromName(""),
-            type = INFER_TYPE
-            )
+            newExtractorLink(
+                name = name,
+                source = name,
+                url = file,
+                type = INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName("")
+            }
         )
         return true
     }

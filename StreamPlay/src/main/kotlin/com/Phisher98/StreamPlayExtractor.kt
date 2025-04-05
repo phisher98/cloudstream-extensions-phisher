@@ -21,8 +21,10 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -100,17 +102,17 @@ object StreamPlayExtractor : StreamPlay() {
             val file =
                 (scope.get("globalArgument", scope).toJson()).substringAfter("file\":\"")
                     .substringBefore("\",")
-            callback.invoke(
-                ExtractorLink(
-                    source = "MultiEmbeded API",
-                    name = "MultiEmbeded API",
+            callback(
+                newExtractorLink(
+                    "MultiEmbeded API",
+                    "MultiEmbeded API",
                     url = file,
-                    referer = "",
-                    quality = Qualities.P1080.value,
                     type = INFER_TYPE
-                )
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.P1080.value
+                }
             )
-
         }
     }
 
@@ -168,96 +170,6 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
-
-    /*
-    suspend fun invokeWatchasian(
-        title: String? = null,
-        year: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val servers = mutableListOf<String>()
-        val fixTitle = title.createSlug()
-        val url = "$WatchasinAPI/$fixTitle-$year-episode-$episode.html"
-        val doc = app.get(url).document
-        doc.select("div.anime_muti_link li").forEach {
-            val link = it.attr("data-video")
-            if (link.contains("pladrac")) {
-                servers.add("")
-            } else {
-                servers.add(link)
-            }
-        }
-        servers.forEach {
-            if (it.isNotEmpty()) {
-                loadExtractor(it, subtitleCallback, callback)
-            }
-        }
-    }
-
-    suspend fun invokekissasian(
-        title: String? = null,
-        year: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val fixTitle = title.createSlug()
-        val doc = Jsoup.parse(
-            AppUtils.parseJson<KissasianAPIResponse>(
-                app.get(
-                    "$KissasianAPI/ajax/v2/episode/servers?episodeId=$fixTitle-$episode"
-                ).text
-            ).html
-        )
-        Log.d("Phisher", fixTitle.toString())
-        doc.select("div.ps__-list > div.item.server-item").forEach {
-            val serverid = it.attr("data-id")
-            val apiRes =
-                app.get("$KissasianAPI/ajax/v2/episode/sources?id=$serverid")
-                    .parsedSafe<KissasianAPISourceresponse>()
-            val fstream = apiRes?.link.toString()
-            Log.d("Phisher", serverid.toString())
-            Log.d("Phisher", apiRes.toString())
-            Log.d("Phisher", fstream.toString())
-            val response = app.get(
-                fstream,
-                referer = KissasianAPI,
-                headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
-                interceptor = WebViewResolver(Regex("""ajax/getSources"""))
-            )
-            val test = response.text.replace("\": ", "\":")
-            val regex = """"file":"(.*?)""""
-            val matchResult = regex.toRegex().find(test)
-            val fileUrl = matchResult?.groups?.get(1)?.value
-            if (fileUrl != null) {
-                if (fileUrl.contains("mp4")) {
-                    callback.invoke(
-                        ExtractorLink(
-                            source = "Kissasian MP4",
-                            name = "Kissasian MP4",
-                            url = fileUrl,
-                            referer = "$KissasianAPI/",
-                            quality = Qualities.Unknown.value,
-                            isM3u8 = false
-                        )
-                    )
-                } else {
-                    callback.invoke(
-                        ExtractorLink(
-                            source = "Kissasian",
-                            name = "Kissasian",
-                            url = fileUrl,
-                            referer = "$KissasianAPI/",
-                            quality = Qualities.Unknown.value,
-                            isM3u8 = true
-                        )
-                    )
-                }
-            }
-        }
-    }
-*/
 
     suspend fun invokeMultimovies(
         apiUrl: String,
@@ -340,28 +252,30 @@ object StreamPlayExtractor : StreamPlay() {
                     headers = headers
                 ).parsedSafe<Aoneroomep>()?.data?.streams?.map {
                     val res = it.resolutions.toInt()
-                    callback.invoke(
-                        ExtractorLink(
+                    callback(
+                        newExtractorLink(
                             "Aoneroom",
                             "Aoneroom",
-                            it.url,
-                            "",
-                            res,
-                            INFER_TYPE
-                        )
+                            url = it.url,
+                            type = INFER_TYPE
+                        ) {
+                            this.referer = ""
+                            this.quality = res
+                        }
                     )
                 }
             }
-            callback.invoke(
-                ExtractorLink(
+
+            callback(
+                newExtractorLink(
                     "Aoneroom",
                     "Aoneroom",
-                    data?.resourceLink
-                        ?: return,
-                    "",
-                    data.resolution ?: Qualities.Unknown.value,
-                    INFER_TYPE
-                )
+                    url = data?.resourceLink ?: return,
+                    type = INFER_TYPE
+                ) {
+                    this.referer = ""
+                    this.quality = data.resolution ?: Qualities.Unknown.value
+                }
             )
 
             data.extCaptions?.map { sub ->
@@ -401,20 +315,23 @@ object StreamPlayExtractor : StreamPlay() {
                 "$host/ajax-get-link-stream/?server=${it.attr("value")}&filmId=$id",
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
             ).text
-            loadExtractor(server, "$host/", subtitleCallback) { link ->
-                if (link.quality == Qualities.Unknown.value) {
-                    callback.invoke(
-                        ExtractorLink(
-                            "WatchCartoon",
-                            "WatchCartoon",
-                            link.url,
-                            link.referer,
-                            Qualities.P720.value,
-                            link.type,
-                            link.headers,
-                            link.extractorData
+                loadExtractor(server, "$host/", subtitleCallback) { link ->
+                    CoroutineScope(Dispatchers.IO).launch {
+                    if (link.quality == Qualities.Unknown.value) {
+                        callback(
+                            newExtractorLink(
+                                "WatchCartoon",
+                                "WatchCartoon",
+                                url = link.url,
+                                type = link.type
+                            ) {
+                                this.referer = link.referer
+                                this.quality = Qualities.P720.value
+                                this.headers = link.headers
+                                this.extractorData = link.extractorData
+                            }
                         )
-                    )
+                    }
                 }
             }
         }
@@ -762,15 +679,16 @@ object StreamPlayExtractor : StreamPlay() {
 
         val href = doc.select("div.c_h2 > div:nth-child(1) > a").attr("href")
         if (href.isNotBlank()) {
-            callback.invoke(
-                ExtractorLink(
+            callback(
+                newExtractorLink(
                     "TokyoInsider",
                     "TokyoInsider",
-                    href,
-                    "",
-                    Qualities.P1080.value,
+                    url = href,
                     INFER_TYPE
-                )
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.P1080.value
+                }
             )
         }
     }
@@ -791,15 +709,16 @@ object StreamPlayExtractor : StreamPlay() {
         val m3u8 = href?.let {
             app.get("$it/$episode").document.select("media-player").attr("src")
         } ?: ""
-        callback.invoke(
-            ExtractorLink(
+        callback(
+            newExtractorLink(
                 "Anizone",
                 "Anizone",
-                m3u8,
-                "",
-                Qualities.P1080.value,
+                url = m3u8,
                 INFER_TYPE
-            )
+            ) {
+                this.referer = ""
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 
@@ -1129,15 +1048,16 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                     ?.attr("href") ?: ""
                 val iframe = app.get(href).document.select("#iframevideo").attr("src")
-                callback.invoke(
-                    ExtractorLink(
+                callback(
+                    newExtractorLink(
                         "Grani",
                         "Grani",
-                        iframe,
-                        "",
-                        Qualities.P1080.value,
+                        url = iframe,
                         INFER_TYPE
-                    )
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
     }
@@ -1152,43 +1072,26 @@ object StreamPlayExtractor : StreamPlay() {
         val sourcelist = listOf("shashh", "roro", "vibe")
         for (source in sourcelist) {
             val headers = mapOf("Origin" to "https://gojo.wtf")
-            if (source == "shashh") {
-                val response = app.get(
-                    "${BuildConfig.GojoAPI}/api/anime/tiddies?provider=$source&id=$aniid&watchId=$jptitle-episode-$episode",
-                    headers = headers
-                )
-                    .parsedSafe<Gojoresponseshashh>()?.sources?.map { it.url }
-                val m3u8 = response?.firstOrNull() ?: ""
-                callback.invoke(
-                    ExtractorLink(
-                        "GojoAPI [${source.capitalize()}]",
-                        "GojoAPI [${source.capitalize()}]",
-                        m3u8,
-                        "",
-                        Qualities.P1080.value,
-                        ExtractorLinkType.M3U8,
-                        headers = headers
-                    )
-                )
+            val endpoint = "${BuildConfig.GojoAPI}/api/anime/tiddies?provider=$source&id=$aniid&watchId=$jptitle-episode-$episode"
+            val response = if (source == "shashh") {
+                app.get(endpoint, headers = headers).parsedSafe<Gojoresponseshashh>()?.sources?.map { it.url }
             } else {
-                val response = app.get(
-                    "${BuildConfig.GojoAPI}/api/anime/tiddies?provider=$source&id=$aniid&watchId=$jptitle-episode-$episode",
-                    headers = headers
-                )
-                    .parsedSafe<Gojoresponsevibe>()?.sources?.map { it.url }
-                val m3u8 = response?.firstOrNull() ?: ""
-                callback.invoke(
-                    ExtractorLink(
-                        "GojoAPI [${source.capitalize()}]",
-                        "GojoAPI [${source.capitalize()}]",
-                        m3u8,
-                        "",
-                        Qualities.P1080.value,
-                        ExtractorLinkType.M3U8,
-                        headers = headers
-                    )
-                )
+                app.get(endpoint, headers = headers).parsedSafe<Gojoresponsevibe>()?.sources?.map { it.url }
             }
+            val m3u8 = response?.firstOrNull().orEmpty()
+
+            callback(
+                newExtractorLink(
+                    "GojoAPI [${source.capitalize()}]",
+                    "GojoAPI [${source.capitalize()}]",
+                    url = m3u8,
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.P1080.value
+                    this.headers = headers
+                }
+            )
         }
     }
 
@@ -1492,15 +1395,16 @@ object StreamPlayExtractor : StreamPlay() {
         val iframe = app.get("$apiurl/api/anime/details/episode/stream?id=$epid",interceptor = UserAgentInterceptor())
             .parsedSafe<AnimeNexusservers>()?.data
         val m3u8 = iframe?.hls ?: ""
-        callback.invoke(
-            ExtractorLink(
+        callback(
+            newExtractorLink(
                 "Animenexus",
                 "Animenexus",
-                m3u8,
-                "https://anime.nexus/",
-                Qualities.P1080.value,
-                INFER_TYPE
-            )
+                url = m3u8,
+                type = INFER_TYPE
+            ) {
+                this.referer = "https://anime.nexus/"
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 
@@ -1550,15 +1454,16 @@ object StreamPlayExtractor : StreamPlay() {
         val source = app.get(iframe ?: return)
         val link =
             Regex("((https:|http:)//.*\\.mp4)").find(source.text)?.value ?: return
-        callback.invoke(
-            ExtractorLink(
+        callback(
+            newExtractorLink(
                 "Ling",
                 "Ling",
-                "$link/index.m3u8",
-                "$lingAPI/",
-                Qualities.P720.value,
-                INFER_TYPE
-            )
+                url = "$link/index.m3u8",
+                type = INFER_TYPE
+            ) {
+                this.referer = "$lingAPI/"
+                this.quality = Qualities.P720.value
+            }
         )
 
         source.document.select("div#player-tracks track").map {
@@ -2170,15 +2075,16 @@ object StreamPlayExtractor : StreamPlay() {
         )
         val json = app.get(url, headers = headers).text
         val data = tryParseJson<TomResponse>(json) ?: return
-        callback.invoke(
-            ExtractorLink(
+        callback(
+            newExtractorLink(
                 "Tom Embeded",
                 "Tom Embeded",
-                data.videoSource,
-                "",
-                Qualities.P1080.value,
-                true
-            )
+                url = data.videoSource,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = ""
+                this.quality = Qualities.P1080.value
+            }
         )
 
         data.subtitles.map {
@@ -2245,15 +2151,16 @@ object StreamPlayExtractor : StreamPlay() {
                 app.get("$WhvxAPI/source?resourceId=$encodedit&provider=$source", headers = headers)
                     .parsedSafe<Vidbingeplaylist>()?.stream?.amap {
                         val playlist = it.playlist
-                        callback.invoke(
-                            ExtractorLink(
+                        callback(
+                            newExtractorLink(
                                 "Vidbinge ${source.capitalize()}",
                                 "Vidbinge ${source.capitalize()}",
-                                playlist,
-                                "",
-                                Qualities.P1080.value,
-                                INFER_TYPE
-                            )
+                                url = playlist,
+                                type = INFER_TYPE
+                            ) {
+                                this.referer = ""
+                                this.quality = Qualities.P1080.value
+                            }
                         )
                     }
             }
@@ -2279,11 +2186,16 @@ object StreamPlayExtractor : StreamPlay() {
             val hrefresponse = app.get(movieurl, headers = headers).toString().toJson()
             val hrefparser: SharmaFlixLinks = objectMapper.readValue(hrefresponse)
             hrefparser.forEach {
-                callback.invoke(
-                    ExtractorLink(
-                        "Sharmaflix", "Sharmaflix", it.url
-                            ?: return, "", Qualities.P1080.value, INFER_TYPE
-                    )
+                callback(
+                    newExtractorLink(
+                        "Sharmaflix",
+                        "Sharmaflix",
+                        url = it.url,
+                        type = INFER_TYPE
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
         }
@@ -2311,15 +2223,20 @@ object StreamPlayExtractor : StreamPlay() {
             app.get("$EmbedSu/api/e/${it.hash}", referer = EmbedSu)
                 .parsedSafe<Embedsuhref>()?.source?.let { m3u8 ->
                     callback(
-                        ExtractorLink(
-                            "Embedsu Viper", "Embedsu Viper", m3u8, EmbedSu,
-                            Qualities.P1080.value, ExtractorLinkType.M3U8,
-                            headers = mapOf(
+                        newExtractorLink(
+                            "Embedsu Viper",
+                            "Embedsu Viper",
+                            url = m3u8,
+                            type = ExtractorLinkType.M3U8
+                        ) {
+                            this.referer = EmbedSu
+                            this.quality = Qualities.P1080.value
+                            this.headers = mapOf(
                                 "Origin" to "https://embed.su",
                                 "Referer" to "https://embed.su/",
                                 "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
                             )
-                        )
+                        }
                     )
                 }
         }
@@ -2342,15 +2259,15 @@ object StreamPlayExtractor : StreamPlay() {
             val quality = it.quality.toInt()
             val name = it.fileName
             val size = it.fileSize
-            callback.invoke(
-                ExtractorLink(
+            callback(
+                newExtractorLink(
                     "DebianFlix $name $size",
                     "DebianFlix $name $size",
-                    href,
-                    "",
-                    quality,
-                    INFER_TYPE
-                )
+                    url = href
+                ) {
+                    this.referer = ""
+                    this.quality = quality
+                }
             )
         }
 
@@ -2388,11 +2305,15 @@ object StreamPlayExtractor : StreamPlay() {
             val servername = it.name
             val m3u8 = app.get("$vidsrctoAPI/api/source/${it.hash}?t=$unixTimeMs")
                 .parsedSafe<Vidsrcccm3u8>()?.data?.source
-            callback.invoke(
-                ExtractorLink(
-                    "Vidsrc [$servername]", "Vidsrc [$servername]", m3u8
-                        ?: return, "https://vidsrc.stream/", Qualities.P1080.value, INFER_TYPE
-                )
+            callback(
+                newExtractorLink(
+                    "Vidsrc [$servername]",
+                    "Vidsrc [$servername]",
+                    url = m3u8 ?: return,
+                ) {
+                    this.referer = "https://vidsrc.stream/"
+                    this.quality = Qualities.P1080.value
+                }
             )
         }
 
@@ -2419,15 +2340,16 @@ object StreamPlayExtractor : StreamPlay() {
         val vidsrcsuList: List<Vidsrcsu> = objectMapper.readValue(json)
 
         for (vid in vidsrcsuList) {
-            callback.invoke(
-                ExtractorLink(
+            callback(
+                newExtractorLink(
                     "VidsrcSU ${vid.language}",
                     "VidsrcSU ${vid.language}",
-                    vid.m3u8Url,
-                    "",
-                    Qualities.P1080.value,
-                    isM3u8 = true
-                )
+                    url = vid.m3u8Url,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.P1080.value
+                }
             )
         }
     }
@@ -2533,14 +2455,15 @@ object StreamPlayExtractor : StreamPlay() {
 
         if (!m3u8.isNullOrBlank() && m3u8.startsWith("http")) {
             callback(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    m3u8,
-                    FlickyAPI,
-                    Qualities.P1080.value,
-                    isM3u8 = true
-                )
+                    url = m3u8,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = FlickyAPI
+                    this.quality = Qualities.P1080.value
+                }
             )
         } else {
             Log.e("Flicky", "M3U8 URL not found for $name")
@@ -2579,14 +2502,15 @@ object StreamPlayExtractor : StreamPlay() {
 
         streams.forEach { vid ->
             callback(
-                ExtractorLink(
+                newExtractorLink(
                     "$baseName ${vid.language}",
                     "$baseName ${vid.language}",
-                    vid.url,
-                    FlickyAPI,
-                    Qualities.P1080.value,
-                    isM3u8 = true
-                )
+                    url = vid.url,
+                   ExtractorLinkType.M3U8
+                ) {
+                    this.referer = FlickyAPI
+                    this.quality = Qualities.P1080.value
+                }
             )
         }
     }
@@ -2608,15 +2532,17 @@ object StreamPlayExtractor : StreamPlay() {
 
         if (!m3u8.isNullOrBlank() && m3u8.startsWith("http")) {
             callback(
-                ExtractorLink(
+                newExtractorLink(
                     "Flicky OYO",
                     "Flicky OYO",
-                    m3u8,
-                    FlickyAPI,
-                    Qualities.P1080.value,
-                    isM3u8 = true
-                )
+                    url = m3u8,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = FlickyAPI
+                    this.quality = Qualities.P1080.value
+                }
             )
+
         } else {
             Log.e("Flicky", "OYO stream URL not found")
         }
@@ -2666,15 +2592,15 @@ object StreamPlayExtractor : StreamPlay() {
                 ?: return
         )?.groupValues?.getOrNull(1)
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Flixon",
                 "Flixon",
-                link
-                    ?: return,
-                "https://onionflux.com/",
-                Qualities.P720.value,
-                link.contains(".m3u8")
-            )
+                url = link ?: return,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = "https://onionflux.com/"
+                this.quality = Qualities.P720.value
+            }
         )
 
     }
@@ -2726,16 +2652,16 @@ object StreamPlayExtractor : StreamPlay() {
         val m3u8 = "(http[^\"]+)".toRegex().find(res)?.groupValues?.get(1)
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Nepu",
                 "Nepu",
-                m3u8 ?: return,
-                "$nepuAPI/",
-                Qualities.P1080.value,
+                url = m3u8 ?: return,
                 INFER_TYPE
-            )
+            ) {
+                this.referer = "$nepuAPI/"
+                this.quality = Qualities.P1080.value
+            }
         )
-
     }
 
     suspend fun invokeMoflix(
@@ -2782,15 +2708,16 @@ object StreamPlayExtractor : StreamPlay() {
                 )?.groupValues?.getOrNull(1)
                 if (m3u8?.haveDub("$host/") == false) return@amap
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "Moflix",
                         "Moflix [${iframe.name}]",
-                        m3u8 ?: return@amap,
-                        "$host/",
-                        iframe.quality?.filter { it.isDigit() }?.toIntOrNull()
-                            ?: Qualities.Unknown.value,
+                        url = m3u8 ?: return@amap,
                         INFER_TYPE
-                    )
+                    ) {
+                        this.referer = "$host/"
+                        this.quality = iframe.quality?.filter { it.isDigit() }?.toIntOrNull()
+                            ?: Qualities.Unknown.value
+                    }
                 )
             }
 
@@ -2998,15 +2925,15 @@ object StreamPlayExtractor : StreamPlay() {
             val tags = getIndexQualityTags(file.name)
 
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     api,
                     "$api $tags [$size]",
-                    path,
-                    if (api in needRefererIndex) apiUrl else "",
-                    quality,
-                )
+                    url = path
+                ) {
+                    this.referer = if (api in needRefererIndex) apiUrl else ""
+                    this.quality = quality
+                }
             )
-
         }
 
     }
@@ -3052,15 +2979,15 @@ object StreamPlayExtractor : StreamPlay() {
                     ?.trim()
 
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "GdbotMovies",
                     "GdbotMovies $tags [$size]",
-                    videoUrl ?: return@amap null,
-                    "",
-                    quality,
-                )
+                    url = videoUrl ?: return@amap null
+                ) {
+                    this.referer = ""
+                    this.quality = quality
+                }
             )
-
         }
 
     }
@@ -3096,15 +3023,15 @@ object StreamPlayExtractor : StreamPlay() {
             val quality = getIndexQuality(it.first)
             val tags = getIndexQualityTags(it.first)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "DahmerMovies",
                     "DahmerMovies $tags",
-                    decode((url + it.second).encodeUrl()),
-                    "",
-                    quality,
-                )
+                    url = decode((url + it.second).encodeUrl())
+                ) {
+                    this.referer = ""
+                    this.quality = quality
+                }
             )
-
         }
 
     }
@@ -3283,14 +3210,15 @@ object StreamPlayExtractor : StreamPlay() {
 
         sources?.streams?.mapKeys { source ->
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "CinemaTv",
                     "CinemaTv",
-                    source.value,
-                    "$cinemaTvAPI/",
-                    getQualityFromName(source.key),
-                    true
-                )
+                    url = source.value,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = "$cinemaTvAPI/"
+                    this.quality = getQualityFromName(source.key)
+                }
             )
         }
 
@@ -3352,13 +3280,14 @@ object StreamPlayExtractor : StreamPlay() {
             if (!app.get(url, referer = referer).isSuccessful) return
         }
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "NowTv",
                 "NowTv",
-                url,
-                referer,
-                Qualities.P1080.value,
-            )
+                url = url
+            ) {
+                this.referer = referer
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 
@@ -3401,14 +3330,15 @@ object StreamPlayExtractor : StreamPlay() {
                         Regex("\\(\"([^\"]+)\"\\);").find(unpacked)?.groupValues?.get(1) ?: ""
                     val video = base64Decode(base64Decode(encodeHash).reversed()).split("|").get(1)
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "Ridomovies",
                             "Ridomovies",
-                            video,
-                            "${getBaseUrl(iframe)}/",
-                            Qualities.P1080.value,
-                            isM3u8 = true
-                        )
+                            url = video,
+                            ExtractorLinkType.M3U8
+                        ) {
+                            this.referer = "${getBaseUrl(iframe)}/"
+                            this.quality = Qualities.P1080.value
+                        }
                     )
                 } else {
                     loadSourceNameExtractor(
@@ -3468,14 +3398,15 @@ object StreamPlayExtractor : StreamPlay() {
             ).text
             safeApiCall {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "AllMovieLand-${lang}",
                         "AllMovieLand-${lang}",
-                        path,
-                        allmovielandAPI,
-                        Qualities.Unknown.value,
-                        true
-                    )
+                        url = path,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = allmovielandAPI
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }
@@ -3576,14 +3507,15 @@ object StreamPlayExtractor : StreamPlay() {
             media?.attributes?.seriess?.get(season - 1)?.get(episode - 1)?.svideos
         } ?: return
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "SFMovies",
                 "SFMovies",
-                fixUrl(video, getSfServer()),
-                "",
-                Qualities.P1080.value,
+                url = fixUrl(video, getSfServer()),
                 INFER_TYPE
-            )
+        ) {
+            this.referer = ""
+            this.quality = Qualities.P1080.value
+        }
         )
     }
 
@@ -3750,15 +3682,16 @@ object StreamPlayExtractor : StreamPlay() {
             val url = CatdecryptHexWithKey(Juicedata, Juicykey)
             val headers = mapOf("Origin" to "https://turbovid.eu/", "Connection" to "keep-alive")
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Catflix",
                     "Catflix",
-                    url,
-                    "https://turbovid.eu/",
-                    Qualities.P1080.value,
-                    type = INFER_TYPE,
-                    headers = headers,
-                )
+                    url = url,
+                    INFER_TYPE
+                ) {
+                    this.referer = "https://turbovid.eu/"
+                    this.quality = Qualities.P1080.value
+                    this.headers = headers
+                }
             )
         }
     }
@@ -3778,14 +3711,15 @@ object StreamPlayExtractor : StreamPlay() {
         val data = tryParseJson<Dramacool>(json) ?: return
         data.streams.forEach {
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     it.title,
                     it.title,
-                    it.url,
-                    "",
-                    Qualities.Unknown.value,
+                    url = it.url,
                     INFER_TYPE
-                )
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.Unknown.value
+                }
             )
 
             it.subtitles.forEach {
@@ -3891,15 +3825,17 @@ object StreamPlayExtractor : StreamPlay() {
 
             epData.sources.forEach {
                 callback(
-                    ExtractorLink(
-                        name = "FlixHQ ${server.uppercase()}",
-                        source = "FlixHQ ${server.uppercase()}",
+                    newExtractorLink(
+                        "FlixHQ ${server.uppercase()}",
+                        "FlixHQ ${server.uppercase()}",
                         url = it.url,
-                        referer = referer,
-                        quality = it.quality.toIntOrNull() ?: Qualities.Unknown.value,
-                        isM3u8 = it.isM3U8
-                    )
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = referer
+                        this.quality = it.quality.toIntOrNull() ?: Qualities.Unknown.value
+                    }
                 )
+
             }
 
             epData.subtitles.forEach {
@@ -3931,14 +3867,15 @@ object StreamPlayExtractor : StreamPlay() {
                 val m3u8 = data.file
                 val lang = data.label
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "HIN Autoembed $lang",
                         "HIN Autoembed $lang",
-                        m3u8,
-                        "",
-                        Qualities.P1080.value,
+                        url = m3u8,
                         ExtractorLinkType.M3U8
-                    )
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
         }
@@ -3962,14 +3899,15 @@ object StreamPlayExtractor : StreamPlay() {
             val Qualities = getIndexQuality(it.selectFirst("tr td:nth-of-type(2)")?.text())
             val href = getfullURL(it.select("td.text-center a:nth-child(1)").attr("href"), NyaaAPI)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Nyaa $Qualities",
                     "Nyaa $Qualities",
-                    href,
-                    "",
-                    Qualities,
+                    url = href,
                     ExtractorLinkType.TORRENT
-                )
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities
+                }
             )
         }
     }
@@ -4007,14 +3945,15 @@ object StreamPlayExtractor : StreamPlay() {
                     if (sourceJson?.data != null) {
                         sourceJson.data.sources.forEach { source ->
                             callback.invoke(
-                                ExtractorLink(
+                                newExtractorLink(
                                     "RiveStream ${source.source} ${source.quality}",
                                     "RiveStream ${source.source} ${source.quality}",
-                                    source.url,
-                                    "",
-                                    Qualities.P1080.value,
+                                    url = source.url,
                                     ExtractorLinkType.M3U8
-                                )
+                                ) {
+                                    this.referer = ""
+                                    this.quality = Qualities.P1080.value
+                                }
                             )
                         }
                     }
@@ -4077,14 +4016,15 @@ object StreamPlayExtractor : StreamPlay() {
             val vidsrcsuList: List<VidSrcVipSource> = objectMapper.readValue(json)
             for (source in vidsrcsuList) {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "VidSrcVip ${source.language}",
                         "VidSrcVip ${source.language}",
-                        source.m3u8Stream,
-                        "",
-                        Qualities.P1080.value,
+                        url = source.m3u8Stream,
                         ExtractorLinkType.M3U8
-                    )
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
         } catch (_: Exception) {
@@ -4109,15 +4049,16 @@ object StreamPlayExtractor : StreamPlay() {
         val decryptedSource = extractAndDecryptSource(prorcpUrl) ?: return
 
         val referer = prorcpUrl.substringBefore("rcp")
-        callback(
-            ExtractorLink(
+        callback.invoke(
+            newExtractorLink(
                 "Vidsrc",
                 "Vidsrc",
-                decryptedSource,
-                referer,
-                Qualities.P1080.value,
+                url = decryptedSource,
                 ExtractorLinkType.M3U8
-            )
+            ) {
+                this.referer = referer
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 
@@ -4191,113 +4132,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    /*
-    suspend fun invokeRgshows(
-        id: Int? = null,
-        imdbId: String? = null,
-        title: String? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        year: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val sources = listOf(
-            "vidlink",
-            "vidapi",
-            "spenembed",
-            "flixhq",
-            "vidsrc_vip",
-            "catflix_su",
-            "flicky",
-            "vidsrc_su",
-            "viet",
-            "embed_su",
-            "cineby"
-        )
-        for (source in sources) {
-            val url = if (season == null) {
-                "$Rgshows/$source/movie/$id"
-            } else {
-                "$Rgshows/$source/tv/$id/$season/$episode"
-            }
-
-            if (source == "flicky") {
-                try {
-                    val response = app.get(url, timeout = 20, referer = "https://embed.rgshows.me/")
-                        .parsedSafe<RgshowsFlickyStream>()
-                    for (streamSource in response?.stream!!) {
-                        val cSource = "${source} ${streamSource.quality}".split(" ")
-                            .joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
-                        callback.invoke(
-                            ExtractorLink(
-                                "Rgshows $cSource",
-                                "Rgshows $cSource",
-                                streamSource.url,
-                                "",
-                                Qualities.P1080.value,
-                                ExtractorLinkType.M3U8
-                            )
-                        )
-                    }
-                } catch (_: Exception) {
-                }
-            } else {
-                try {
-                    val response = app.get(url, timeout = 20, referer = "https://embed.rgshows.me/")
-                        .parsedSafe<RgshowsStream>()
-                    val cSource = source.split("_")
-                        .joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
-                    callback.invoke(
-                        ExtractorLink(
-                            "Rgshows ${cSource}",
-                            "Rgshows ${cSource}",
-                            response?.stream?.url!!,
-                            "",
-                            Qualities.P1080.value,
-                            ExtractorLinkType.M3U8
-                        )
-                    )
-                } catch (e: Exception) {
-                }
-            }
-
-        }
-
-        val jsonData = app.get(
-            "$RgshowsHindi/api/v1/mediaInfo?id=$imdbId",
-            headers = mapOf(
-                "Referer" to "https://embed.rgshows.me",
-                "Origin" to "https://embed.rgshows.me"
-            )
-        ).parsedSafe<RgshowsHindi>()
-        for (playlist in jsonData?.data?.playlist!!) {
-            try {
-                val json = app.post(
-                    "$RgshowsHindi/api/v1/getStream",
-                    headers = mapOf(
-                        "Referer" to "https://embed.rgshows.me",
-                        "Origin" to "https://embed.rgshows.me",
-                        "Content-Type" to "application/json"
-                    ),
-                    json = mapOf("file" to playlist.file, "key" to jsonData.data.key)
-                ).parsedSafe<RgshowsHindiResponse>()
-                callback.invoke(
-                    ExtractorLink(
-                        "Rgshows ${playlist.title}",
-                        "Rgshows ${playlist.title}",
-                        json?.data?.link!!,
-                        "",
-                        Qualities.P1080.value,
-                        ExtractorLinkType.M3U8
-                    )
-                )
-            } catch (e: Exception) {
-            }
-        }
-    }
-
-     */
 
     suspend fun invokeFilm1k(
         id: Int? = null,

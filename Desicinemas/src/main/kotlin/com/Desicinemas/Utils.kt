@@ -7,8 +7,13 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.ResponseParser
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
 val JSONParser = object : ResponseParser {
@@ -49,30 +54,33 @@ inline fun <reified T : Any> tryParseJson(text: String): T? {
     }
 }
 
-suspend fun loadExtractor(
+fun loadExtractor(
     url: String,
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit,
     name: String? = null,
 ): Boolean {
-    return com.lagradost.cloudstream3.utils.loadExtractor(
+    return loadExtractor(
         url = url,
-        referer = null,
         subtitleCallback = subtitleCallback,
-        callback = {
-            callback(
-                ExtractorLink(
-                    it.source,
-                    name ?: it.name,
-                    it.url,
-                    it.referer,
-                    it.quality,
-                    it.isM3u8,
-                    it.headers,
-                    it.extractorData
-                )
-            )
+        callback = { link ->
+            CoroutineScope(Dispatchers.IO).launch {
+                val extractorLink = newExtractorLink(
+                    link.source,
+                    name ?: link.name,
+                    url = link.url,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = link.referer
+                    this.quality = link.quality
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+                callback(extractorLink)
+            }
         }
     )
 }
+
+
 

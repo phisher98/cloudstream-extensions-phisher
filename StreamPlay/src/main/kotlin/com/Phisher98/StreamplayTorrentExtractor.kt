@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 suspend fun invokeTorrentio(
     mainUrl:String,
@@ -43,15 +44,16 @@ suspend fun invokeTorrentio(
                     "Torrentio | $tags | Seeder: $seeder | Provider: $provider".trim()
                 }
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Torrentio",
                     formattedTitleName ?: stream.name ?: "",
-                    magnet,
-                    "",
-                    getIndexQuality(stream.name),
-                    INFER_TYPE,
-                )
+                    url = magnet,
+                    INFER_TYPE
+                ) {
+                    this.quality = getIndexQuality(stream.name)
+                }
             )
+
         }
 }
 
@@ -73,15 +75,16 @@ suspend fun invokeAnimetosho(
                     "Animetosho | $tags | Seeder: $seeder".trim()
                 }
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Animetosho",
                     formattedTitleName,
-                    magnet,
-                    "",
-                    getIndexQuality(item.torrentName),
+                    url = magnet,
                     INFER_TYPE
-                )
+                ) {
+                    this.quality = getIndexQuality(item.torrentName)
+                }
             )
+
         }
     }
 }
@@ -98,15 +101,16 @@ suspend fun invokeTorrentgalaxy(
         val title=it.select("div.tgxtablecell.clickable-row.click.textshadow a.txlight").attr("title")
         val magnet=it.select("div:nth-child(5) > a:nth-child(2)").attr("href")
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Torrentgalaxy",
                 "Torrentgalaxy $title",
-                magnet,
-                "",
-                getIndexQuality(title),
-                INFER_TYPE,
-            )
+                url = magnet,
+                INFER_TYPE
+            ) {
+                this.quality = getIndexQuality(title)
+            }
         )
+
     }
 }
 
@@ -124,15 +128,16 @@ suspend fun invokeTorrentmovie(
         files.forEach { file ->
             val quality=file.substringAfter("resolution_").substringBefore("ps")
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Torrentmovie",
                     "Torrentmovie",
-                    "$TorrentmovieAPI/${file}",
-                    "",
-                    getQualityFromName(quality),
-                    INFER_TYPE,
-                )
+                    url = "$TorrentmovieAPI/${file}",
+                    INFER_TYPE
+                ) {
+                    this.quality = getQualityFromName(quality)
+                }
             )
+
         }
     }
 }
@@ -152,14 +157,14 @@ suspend fun invoke1337x(
         val qualityraw=doc.select("div.box-info ul.list li:contains(Type) span").text()
         val quality=getQuality(qualityraw)
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Torrent1337x $qualityraw",
                 "Torrent1337x $qualityraw",
-                magnet,
-                "",
-                quality,
-                INFER_TYPE,
-            )
+                url = magnet,
+                INFER_TYPE
+            ) {
+                this.quality = quality
+            }
         )
     }
 }
@@ -182,14 +187,14 @@ suspend fun invokeTorbox(
         val quality=it.resolution?.toIntOrNull()
         val providername=it.behaviorHints?.filename?.substringAfterLast("-")
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "TorBox $providername",
                 "TorBox $providername",
-                magnet,
-                "",
-                quality ?: Qualities.Unknown.value,
-                INFER_TYPE,
-            )
+                url = magnet,
+                INFER_TYPE
+            ) {
+                this.quality = quality ?: Qualities.Unknown.value
+            }
         )
     }
 }
@@ -221,16 +226,15 @@ suspend fun invokeBitsearch(
         val leechers = statusElement[3].select("font").text()
         val magnetLink = item.select(".dl-magnet").attr("href")
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Bitsearch [${title} $downloadSize \uD83D\uDD3C $seeders \uD83D\uDD3D $leechers]",
                 "Bitsearch [${title} $downloadSize \uD83D\uDD3C $seeders \uD83D\uDD3D $leechers]",
-                magnetLink,
-                "",
-                getQuality(title),
-                ExtractorLinkType.MAGNET,
-            )
+                url = magnetLink,
+                ExtractorLinkType.MAGNET
+            ) {
+                this.quality = getQuality(title)
+            }
         )
-
     }
 }
 
@@ -253,14 +257,14 @@ suspend fun invokeMediaFusion(
         {
             val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "MediaFusion",
                     stream.description,
-                    magnetLink,
-                    "",
-                    getIndexQuality(stream.description),
-                    INFER_TYPE,
-                )
+                    url = magnetLink,
+                    INFER_TYPE
+                ) {
+                    this.quality = getIndexQuality(stream.description)
+                }
             )
         }
     } catch (_: Exception) { }
@@ -285,14 +289,14 @@ suspend fun invokeThepiratebay(
         {
             val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "ThePirateBay",
                     "ThePirateBay [${stream.title}]",
-                    magnetLink,
-                    "",
-                    getIndexQuality(stream.title),
-                    INFER_TYPE,
-                )
+                    url = magnetLink,
+                    INFER_TYPE
+                ) {
+                    this.quality = getIndexQuality(stream.title)
+                }
             )
         }
     } catch (_: Exception) { }
@@ -317,14 +321,14 @@ suspend fun invokePeerFlix(
         {
             val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Peerflix",
                     stream.description,
-                    magnetLink,
-                    "",
-                    getIndexQuality(stream.description),
-                    INFER_TYPE,
-                )
+                    url = magnetLink,
+                    INFER_TYPE
+                ) {
+                    this.quality = getIndexQuality(stream.description)
+                }
             )
         }
     } catch (_: Exception) { }
@@ -361,14 +365,14 @@ suspend fun invokeComet(
                 .trim()
             val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Comet",
                     formattedTitleName,
-                    magnetLink,
-                    "",
-                    getIndexQuality(stream.description),
-                    ExtractorLinkType.MAGNET,
-                )
+                    url = magnetLink,
+                    ExtractorLinkType.MAGNET
+                ) {
+                    this.quality = getIndexQuality(stream.description)
+                }
             )
         }
     } catch (_: Exception) { }
@@ -406,14 +410,14 @@ suspend fun invokeTorrentioAnime(
             }
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Torrentio ",
                 formattedTitleName ?: "Torrentio",
-                magnet,
-                "",
-                getIndexQuality(stream.name),
-                INFER_TYPE,
-            )
+                url = magnet,
+                INFER_TYPE
+            ) {
+                this.quality = getIndexQuality(stream.name)
+            }
         )
     }
 }

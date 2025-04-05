@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.Interceptor
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -148,14 +149,15 @@ class KisskhProvider : MainAPI() {
                         ).forEach(callback)
                     } else if (link?.contains("mp4") == true) {
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 this.name,
                                 this.name,
-                                fixUrl(link),
-                                mainUrl,
-                                Qualities.P720.value,
+                                url = fixUrl(link),
                                 INFER_TYPE
-                            )
+                            ) {
+                                this.referer = mainUrl
+                                this.quality = Qualities.P720.value
+                            }
                         )
 
                     } else {

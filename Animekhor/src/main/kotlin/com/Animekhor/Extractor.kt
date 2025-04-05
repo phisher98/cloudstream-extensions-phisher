@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class embedwish : StreamWishExtractor() {
     override var mainUrl = "https://embedwish.com"
@@ -52,16 +53,16 @@ class Rumble : ExtractorApi() {
         for (match in matches) {
             val href = match.groupValues[1].replace("\\/", "/")
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    href,
-                    "",
-                    getQualityFromName(""),
-                    type = INFER_TYPE,
-                )
+                    url = href,
+                    INFER_TYPE
+                ) {
+                    this.referer = ""
+                    this.quality = getQualityFromName("")
+                }
             )
-
         }
     }
 }

@@ -11,6 +11,10 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -34,7 +38,9 @@ object SuperStreamExtractor : SuperStream() {
                 ?.substringAfterLast("/")?.toIntOrNull()
         }
         mediaId?.let {
-            invokeExternalSource(it, if (season == null) 1 else 2, season, episode, callback, token)
+            CoroutineScope(Dispatchers.IO).launch {
+                invokeExternalSource(it, season ?: 1, season, episode, callback, token)
+            }
         }
     }
 
@@ -226,15 +232,16 @@ object SuperStreamExtractor : SuperStream() {
             val url = CatdecryptHexWithKey(Juicedata, Juicykey)
             val headers = mapOf("Origin" to "https://turbovid.eu/", "Connection" to "keep-alive")
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "Catflix",
                     "Catflix",
-                    url,
-                    "https://turbovid.eu/",
-                    Qualities.P1080.value,
-                    type = INFER_TYPE,
-                    headers = headers,
-                )
+                    url = url,
+                    INFER_TYPE
+                ) {
+                    this.referer = "https://turbovid.eu/"
+                    this.quality = Qualities.P1080.value
+                    this.headers = headers
+                }
             )
         }
     }

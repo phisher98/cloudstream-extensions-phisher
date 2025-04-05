@@ -3,11 +3,14 @@ package com.phisher98
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newDrmExtractorLink
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.io.InputStream
+import java.util.UUID
 
 open class SportsIPTV : MainAPI() {
     override var lang = "en"
@@ -24,7 +27,7 @@ open class SportsIPTV : MainAPI() {
         request : MainPageRequest
     ): HomePageResponse {
         val data = IptvPlaylistParser().parseM3U(app.get(mainUrl).text)
-        return HomePageResponse(data.items.groupBy{it.attributes["group-title"]}.map { group ->
+        return newHomePageResponse(data.items.groupBy{it.attributes["group-title"]}.map { group ->
             val title = group.key ?: ""
             val show = group.value.map { channel ->
                 val streamurl = channel.url.toString()
@@ -33,14 +36,11 @@ open class SportsIPTV : MainAPI() {
                 val nation = channel.attributes["group-title"].toString()
                 val key=channel.attributes["key"].toString()
                 val keyid=channel.attributes["keyid"].toString()
-                LiveSearchResponse(
-                    channelname,
-                    LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
-                    this@SportsIPTV.name,
-                    TvType.Live,
-                    posterurl,
-                    lang = channel.attributes["group-title"]
-                )
+                newLiveSearchResponse(channelname,LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),TvType.Live)
+                {
+                    this.posterUrl=posterurl
+                    this.lang=channel.attributes["group-title"]
+                }
             }
             HomePageList(
                 title,
@@ -59,26 +59,20 @@ open class SportsIPTV : MainAPI() {
                 val nation = channel.attributes["group-title"].toString()
                 val key=channel.attributes["key"].toString()
                 val keyid=channel.attributes["keyid"].toString()
-                LiveSearchResponse(
-                    channelname,
-                    LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),
-                    this@SportsIPTV.name,
-                    TvType.Live,
-                    posterurl,
-                )
+            newLiveSearchResponse(channelname,LoadData(streamurl, channelname, posterurl, nation, key, keyid).toJson(),TvType.Live)
+            {
+                this.posterUrl=posterurl
+            }
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
         val data = parseJson<LoadData>(url)
-        return LiveStreamLoadResponse(
-            data.title,
-            data.url,
-            this.name,
-            url,
-            data.poster,
-            plot = data.nation,
-        )
+        return newLiveStreamLoadResponse(data.title,data.url,url)
+        {
+            this.posterUrl=data.poster
+            this.plot=data.nation
+        }
     }
     data class LoadData(
         val url: String,
@@ -98,43 +92,46 @@ open class SportsIPTV : MainAPI() {
         if (loadData.url.contains("mpd"))
         {
             callback.invoke(
-                DrmExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = loadData.url,
-                    referer = "",
-                    quality = Qualities.Unknown.value,
-                    type = INFER_TYPE,
-                    kid = loadData.keyid.trim(),
-                    key = loadData.key.trim(),
+                newDrmExtractorLink(
+                    this.name,
+                    this.name,
+                    loadData.url,
+                    INFER_TYPE,
+                    UUID.randomUUID()
                 )
+                {
+                    this.key=loadData.key.trim()
+                    this.kid=loadData.keyid.trim()
+                }
             )
         }
             else
         if(loadData.url.contains("&e=.m3u"))
             {
-            callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    loadData.url,
-                    "https://embedme.top/",
-                    Qualities.Unknown.value,
-                    isM3u8 = true,
+                callback.invoke(
+                    newExtractorLink(
+                        this.name,
+                        this.name,
+                        url = loadData.url,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = "https://embedme.top/"
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
-            )
             }
         else
         {
             callback.invoke(
-                ExtractorLink(
-                this.name,
-                loadData.title,
-                loadData.url,
-                "https://embedme.top/",
-                Qualities.Unknown.value,
-                type = INFER_TYPE,
-                )
+                newExtractorLink(
+                    this.name,
+                    loadData.title,
+                    url = loadData.url,
+                    INFER_TYPE
+                ) {
+                    this.referer = "https://embedme.top/"
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
         return true

@@ -3,12 +3,12 @@ package com.Pinoymoviepedia
 import com.lagradost.cloudstream3.mainPageOf
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -49,10 +49,10 @@ class Bluray : Pinoymoviepedia() {
                 val type = it.attr("data-type")
                 val post = it.attr("data-post")
                 val nume = it.attr("data-nume")
-                Episode(
-                    LinkData(type, post,nume).toJson(),
-                    name,
-                )
+                newEpisode(LinkData(type, post,nume).toJson())
+                {
+                    this.name=name
+                }
             }
 
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

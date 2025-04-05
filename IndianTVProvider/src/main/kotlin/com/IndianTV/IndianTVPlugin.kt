@@ -87,15 +87,16 @@ class IndianTVPlugin : MainAPI() {
     ): Boolean {
         val headers= mapOf("Connection" to "keep-alive","User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                data,
-                "",
-                Qualities.P1080.value,
-                true,
-                headers
-            )
+                url = data,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = ""
+                this.quality = Qualities.P1080.value
+                this.headers = headers
+            }
         )
         return true
     }

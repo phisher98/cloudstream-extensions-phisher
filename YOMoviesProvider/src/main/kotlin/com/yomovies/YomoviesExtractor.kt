@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Embdproxy : ExtractorApi() {
     override val name = "Embdproxy"
@@ -22,14 +23,15 @@ open class Embdproxy : ExtractorApi() {
         val script = response.selectFirst("script:containsData(vplayer)")?.data().toString()
         Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
-                    link,
-                    mainUrl,
-                    Qualities.P1080.value,
-                    type = INFER_TYPE,
-                )
+                    url = link,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                }
             )
         }
     }

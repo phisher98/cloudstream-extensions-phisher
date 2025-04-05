@@ -119,14 +119,15 @@ open class Donghuastream : MainAPI() {
                 loadExtractor(link,referer = url,subtitleCallback, callback)
             } else if(url.endsWith("mp4")) {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "All Sub Player",
                         "All Sub Player",
-                        url,
-                        "",
-                        getQualityFromName(""),
-                        type = INFER_TYPE,
-                    )
+                        url = url,
+                        INFER_TYPE
+                    ) {
+                        this.referer = ""
+                        this.quality = getQualityFromName("")
+                    }
                 )
             }
             else {

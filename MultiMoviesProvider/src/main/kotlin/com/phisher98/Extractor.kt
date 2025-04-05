@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.net.URI
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -124,14 +125,15 @@ class MultimoviesVidstack : ExtractorApi() {
         val decryptedText = AesHelper.decryptAES(encoded, "kiemtienmua911ca", "0123456789abcdef")
         val m3u8=Regex("\"source\":\"(.*?)\"").find(decryptedText)?.groupValues?.get(1)?.replace("\\/","/") ?:""
         return listOf(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
-                m3u8,
-                url,
-                Qualities.P1080.value,
-                isM3u8 = true
-            )
+                url = m3u8,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = url
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 }
@@ -235,14 +237,16 @@ open class VidhideExtractor : ExtractorApi() {
         val sources = mutableListOf<ExtractorLink>()
         if (response.url.contains("m3u8"))
             sources.add(
-                ExtractorLink(
+                newExtractorLink(
                     source = name,
                     name = name,
                     url = response.url,
-                    referer = referer ?: "$mainUrl/",
-                    quality = Qualities.Unknown.value,
-                    isM3u8 = true
-                )
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = referer ?: "$mainUrl/"
+                    this.quality = Qualities.Unknown.value
+                }
+
             )
         return sources
     }

@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 
 class KdramaHoodProvider : MainAPI() {
@@ -194,14 +195,15 @@ class KdramaHoodProvider : MainAPI() {
             } else
                 if (item.contains(".mp4")) {
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             name,
                             name,
-                            item,
-                            "",
-                            getQualityFromName(""),
+                            url = item,
                             INFER_TYPE
-                        )
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName("")
+                        }
                     )
                 } else
                     loadExtractor(item, subtitleCallback, callback)

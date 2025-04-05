@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class StreamSB8 : StreamSB() {
     override var mainUrl = "https://streamsb.net"
@@ -37,14 +38,15 @@ open class Streamruby : ExtractorApi() {
 
         return m3u8?.takeIf { it.isNotEmpty() }?.let {
             listOf(
-                ExtractorLink(
+                newExtractorLink(
                     name = this.name,
                     source = this.name,
                     url = it,
-                    referer = mainUrl,
-                    quality = Qualities.Unknown.value,
                     type = INFER_TYPE
-                )
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
     }

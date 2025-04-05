@@ -6,7 +6,9 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Vidsp : VidhideExtractor() {
     override var mainUrl = "https://vidsp.lol"
@@ -39,14 +41,15 @@ open class Ds2play : ExtractorApi() {
         val trueUrl = app.get(md5, referer = url).text + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")   //direct link to extract  (zUEJeL3mUN is random)
         val quality = Regex("\\d{3,4}p").find(response0.substringAfter("<title>").substringBefore("</title>"))?.groupValues?.get(0)
         return listOf(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
-                trueUrl,
-                mainUrl,
-                getQualityFromName(quality),
-                false
-            )
+                url = trueUrl,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = mainUrl
+                this.quality = getQualityFromName(quality)
+            }
         ) // links are valid in 8h
 
     }

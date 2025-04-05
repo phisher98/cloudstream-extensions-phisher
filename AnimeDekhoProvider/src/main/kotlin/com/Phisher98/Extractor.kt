@@ -18,8 +18,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.net.URI
 import java.security.MessageDigest
 import javax.crypto.Cipher
@@ -66,14 +65,15 @@ open class Streamruby : ExtractorApi() {
             val txt = app.get(newurl).text
             val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(txt)?.groupValues?.getOrNull(1).toString()
             return listOf(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
-                    m3u8,
-                    mainUrl,
-                    Qualities.Unknown.value,
-                    type = INFER_TYPE
-                )
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
         else
@@ -81,14 +81,15 @@ open class Streamruby : ExtractorApi() {
             val txt = app.get(url).text
             val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(txt)?.groupValues?.getOrNull(1).toString()
             return listOf(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
-                    m3u8,
-                    mainUrl,
-                    Qualities.Unknown.value,
-                    type = INFER_TYPE
-                )
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
     }
@@ -167,15 +168,16 @@ open class Chillx : ExtractorApi() {
 
             // Return the extractor link
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    m3u8,
-                    mainUrl,
-                    Qualities.P1080.value,
-                    INFER_TYPE,
-                    headers = header
-                )
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                    this.headers = header
+                }
             )
 
             // Extract and return subtitles

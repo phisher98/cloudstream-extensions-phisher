@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.AnimeWorld.Companion.API
 
 class Pixdrive : Filesim() {
@@ -40,15 +41,16 @@ open class AWSStream : ExtractorApi() {
             val formdata= mapOf("hash" to extractedHash,"r" to "https://anime-world.co/")
             val response = app.post(m3u8Url, headers=header, data = formdata).parsedSafe<Response>()
             response?.videoSource?.let { m3u8 ->
-                callback.invoke(
-                    ExtractorLink(
+                callback(
+                    newExtractorLink(
                         name,
                         name,
-                        m3u8,
-                        "",
-                        Qualities.P1080.value,
-                        ExtractorLinkType.M3U8
-                    )
+                        url = m3u8,
+                        type = ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
 
                 subtitleCallback.invoke(

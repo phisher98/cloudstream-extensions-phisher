@@ -49,14 +49,15 @@ open class NeoHD : ExtractorApi() {
         ).text
         val source = parseJson<VideoUrl>(doc).sources[0].file
         sources.add(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                source,
-                "$mainUrl/",
-                Qualities.Unknown.value,
-                headers = mapOf("range" to "bytes=0-")
-            )
+                url = source
+            ) {
+                this.referer = "$mainUrl/"
+                this.quality = Qualities.Unknown.value
+                this.headers = mapOf("range" to "bytes=0-")
+            }
         )
         return sources
     }

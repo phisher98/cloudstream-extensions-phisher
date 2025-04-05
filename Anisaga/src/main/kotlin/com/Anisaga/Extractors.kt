@@ -1,6 +1,5 @@
 package com.Anisaga
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -10,8 +9,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -89,15 +87,16 @@ open class Chillx : ExtractorApi() {
 
             // Return the extractor link
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    m3u8,
-                    mainUrl,
-                    Qualities.P1080.value,
-                    INFER_TYPE,
-                    headers = header
-                )
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                    this.headers = header
+                }
             )
 
             // Extract and return subtitles

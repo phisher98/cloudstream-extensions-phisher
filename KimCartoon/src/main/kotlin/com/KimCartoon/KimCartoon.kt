@@ -101,14 +101,15 @@ class KimCartoon : MainAPI() {
             if (m3u8!=null)
             {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "$name ${server.uppercase()}",
                         "$name ${server.uppercase()}",
-                        m3u8,
-                        "$mainUrl/",
-                        Qualities.P1080.value,
+                        url = m3u8,
                         INFER_TYPE
-                    )
+                    ) {
+                        this.referer = "$mainUrl/"
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
         }

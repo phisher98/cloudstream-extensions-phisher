@@ -166,14 +166,15 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
             //val mp3Stream = app.get(data, allowRedirects = true)
             safeApiCall {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         it.sourceName,
                         it.sourceName,
-                        "https://goodproxy.goodproxy.workers.dev/fetch?url=${it.sourceLink}",
-                        "$mainUrl/",
-                        Qualities.Unknown.value,
+                        url = "https://goodproxy.goodproxy.workers.dev/fetch?url=${it.sourceLink}",
                         INFER_TYPE
-                    )
+                    ) {
+                        this.referer = "$mainUrl/"
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }

@@ -8,6 +8,9 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -296,22 +299,25 @@ open class Movierulzhd : MainAPI() {
         quality: Int? = null,
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            if(link.quality == Qualities.Unknown.value) {
-                callback.invoke(
-                    ExtractorLink(
-                        link.source,
-                        link.name,
-                        link.url,
-                        link.referer,
-                        when (link.type) {
-                            ExtractorLinkType.M3U8 -> link.quality
-                            else -> quality ?: link.quality
-                        },
-                        link.type,
-                        link.headers,
-                        link.extractorData
+            CoroutineScope(Dispatchers.IO).launch {
+                if (link.quality == Qualities.Unknown.value) {
+                    callback.invoke(
+                        newExtractorLink(
+                            link.source,
+                            link.name,
+                            url = link.url,
+                            ExtractorLinkType.M3U8
+                        ) {
+                            this.referer = link.referer
+                            this.quality = when (link.type) {
+                                ExtractorLinkType.M3U8 -> link.quality
+                                else -> quality ?: link.quality
+                            }
+                            this.headers = link.headers
+                            this.extractorData = link.extractorData
+                        }
                     )
-                )
+                }
             }
         }
     }

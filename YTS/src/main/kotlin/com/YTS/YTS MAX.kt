@@ -4,12 +4,10 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
@@ -20,7 +18,7 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Element
 
 class YTSMX : YTS(){
@@ -104,14 +102,15 @@ class YTSMX : YTS(){
                 val quality = it.ownText().substringBefore(".").replace("p", "").toInt()
                 val magnet = generateMagnetLink(TRACKER_LIST_URL, infoHash)
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "$name $quality",
                         name,
-                        magnet,
-                        "",
-                        quality,
+                        url = magnet,
                         ExtractorLinkType.MAGNET
-                    )
+                    ) {
+                        this.referer = ""
+                        this.quality = quality
+                    }
                 )
             }
         }

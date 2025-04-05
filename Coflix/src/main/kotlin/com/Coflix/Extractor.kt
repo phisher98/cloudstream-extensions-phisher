@@ -6,8 +6,10 @@ import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlin.text.Regex
 
 open class darkibox : ExtractorApi() {
@@ -19,14 +21,15 @@ open class darkibox : ExtractorApi() {
             val response = app.get(url,referer=mainUrl).toString()
             Regex("""sources:\s*\[\{src:\s*"(.*?)"""").find(response)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
-                        link,
-                        referer ?: "",
-                        Qualities.P1080.value,
-                        isM3u8 = true
-                    )
+                        url = link,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
         return null
@@ -41,14 +44,15 @@ open class Videzz : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
             val mp4 = app.get(url,referer=mainUrl).document.select("#vplayer > #player source").attr("src")
             return listOf(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
-                    mp4,
-                    referer ?: "",
-                    Qualities.P1080.value,
-                    INFER_TYPE
-                )
+                    url = mp4,
+                    type = INFER_TYPE
+                ) {
+                    this.referer = referer ?: ""
+                    this.quality = Qualities.P1080.value
+                }
             )
     }
 }

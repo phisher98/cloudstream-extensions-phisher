@@ -278,16 +278,16 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                                             Regex("\"file\":\"(https?://[^\"]+)\"").find(linkdoc)?.groupValues?.get(
                                                 1
                                             )?.let { link ->
-                                                Log.d("Phisher inside", link)
                                                 callback.invoke(
-                                                    ExtractorLink(
+                                                    newExtractorLink(
                                                         this.name,
                                                         this.name,
-                                                        link,
-                                                        "",
-                                                        Qualities.Unknown.value,
+                                                        url = link,
                                                         INFER_TYPE
-                                                    )
+                                                    ) {
+                                                        this.referer = ""
+                                                        this.quality = Qualities.Unknown.value
+                                                    }
                                                 )
                                             }
                                         } else {

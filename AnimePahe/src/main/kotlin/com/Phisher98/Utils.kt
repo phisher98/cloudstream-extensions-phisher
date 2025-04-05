@@ -9,6 +9,10 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.*
 suspend fun loadSourceNameExtractor(
     source: String,
@@ -18,19 +22,22 @@ suspend fun loadSourceNameExtractor(
     callback: (ExtractorLink) -> Unit,
     quality: String? = null,
 ) {
-    loadExtractor(url, referer, subtitleCallback) { link ->
-        callback.invoke(
-            ExtractorLink(
-                source,
-                source,
-                link.url,
-                link.referer,
-                getQualityFromName(quality),
-                link.type,
-                link.headers,
-                link.extractorData
+        loadExtractor(url, referer, subtitleCallback) { link ->
+            CoroutineScope(Dispatchers.IO).launch {
+            callback(
+                newExtractorLink(
+                    source,
+                    source,
+                    url = link.url,
+                    type = link.type
+                ) {
+                    this.referer = link.referer
+                    this.quality = getQualityFromName(quality)
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
             )
-        )
+        }
     }
 }
 
@@ -46,14 +53,15 @@ class Kwik : ExtractorApi() {
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                m3u8,
-                "",
-                getQualityFromName(""),
+                url = m3u8,
                 INFER_TYPE
-            )
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName("")
+            }
         )
     }
 }
@@ -152,14 +160,15 @@ class Pahe : ExtractorApi() {
         content?.close()
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                location,
-                "",
-                Qualities.Unknown.value,
+                url = location,
                 INFER_TYPE
-            )
+            ) {
+                this.referer = ""
+                this.quality = Qualities.Unknown.value
+            }
         )
     }
 }

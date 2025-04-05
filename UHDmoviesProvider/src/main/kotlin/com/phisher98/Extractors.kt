@@ -104,13 +104,14 @@ open class Driveseed : ExtractorApi() {
                     try {
                         val instant = instantLink(href)
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "$name Instant(Download)",
                                 "$name Instant(Download) - $fileName",
-                                instant,
-                                "",
-                                getIndexQuality(quality)
-                            )
+                                url = instant
+                            ) {
+                                this.referer = ""
+                                this.quality = getIndexQuality(quality)
+                            }
                         )
                     } catch (e: Exception) {
                         Log.d("Error:", e.toString())
@@ -119,43 +120,45 @@ open class Driveseed : ExtractorApi() {
                 text.contains("Resume Worker Bot") -> {
                     val resumeLink = resumeBot(href)
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "$name ResumeBot(VLC)",
                             "$name ResumeBot(VLC) - $fileName",
-                            resumeLink,
-                            "",
-                            getIndexQuality(quality)
-                        )
+                            url = resumeLink
+                        ) {
+                            this.referer = ""
+                            this.quality = getIndexQuality(quality)
+                        }
                     )
                 }
                 text.contains("Direct Links") -> {
                     val link = mainUrl + href
                     CFType1(link).forEach {
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "$name CF Type1",
                                 "$name CF Type1 - $fileName",
-                                it,
-                                "",
-                                getIndexQuality(quality)
-                            )
+                                url = it
+                            ) {
+                                this.referer = ""
+                                this.quality = getIndexQuality(quality)
+                            }
                         )
                     }
                 }
                 text.contains("Resume Cloud") -> {
                     val resumeCloud = resumeCloudLink(href)
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "$name ResumeCloud",
                             "$name ResumeCloud - $fileName",
-                            resumeCloud,
-                            "",
-                            getIndexQuality(quality)
-                        )
+                            url = resumeCloud
+                        ) {
+                            this.referer = ""
+                            this.quality = getIndexQuality(quality)
+                        }
                     )
                 }
-                else -> {
-                }
+                else -> { }
             }
         }
     }

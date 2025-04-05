@@ -268,7 +268,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher Test 2", data)
         if (data.startsWith("https://")) {
             data.let { me ->
                 val driveLink = bypassHrefli(me) ?: ""
@@ -306,20 +305,27 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val resume = extractResumeUHD(bitLink)
                 if (resume.isNotEmpty()) {
                     callback.invoke(
-                        ExtractorLink(
-                            "UHDMovies", "UHDMovies Resume", resume, "", getQualityFromName("")
-                        )
+                        newExtractorLink(
+                            "UHDMovies",
+                            "UHDMovies Resume",
+                            url = resume
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName("")
+                        }
                     )
                 }
+
                 if (insLink.isNotEmpty()) {
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "UHDMovies",
                             "UHDMovies VLC $tag",
-                            insLink,
-                            "",
-                            getQualityFromName(quality)
-                        )
+                            url = insLink
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName(quality)
+                        }
                     )
                 }
                 val DirectLink =
@@ -329,13 +335,14 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 CFExtract.forEach { CFlinks ->
                     if (CFlinks.isNotEmpty())
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "UHDMovies",
                                 "UHDMovies CF Worker",
-                                CFlinks,
-                                "",
-                                getQualityFromName("")
-                            )
+                                url = CFlinks
+                            ) {
+                                this.referer = ""
+                                this.quality = getQualityFromName("")
+                            }
                         )
                 }
                 val pixeldrain = extractPixeldrainUHD(bitLink)
@@ -346,9 +353,14 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                             loadExtractor(it, subtitleCallback, callback)
                         } else
                             callback.invoke(
-                                ExtractorLink(
-                                    "UHDMovies", "UHDMovies", it, "", getQualityFromName("")
-                                )
+                                newExtractorLink(
+                                    "UHDMovies",
+                                    "UHDMovies",
+                                    url = it
+                                ) {
+                                    this.referer = ""
+                                    this.quality = getQualityFromName("")
+                                }
                             )
                     }
                 }
@@ -393,43 +405,60 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 val resume = extractResumeUHD(bitLink)
                 if (resume.isNotEmpty()) {
                     callback.invoke(
-                        ExtractorLink(
-                            "UHDMovies", "UHDMovies $tag Resume", resume,
-                            "", getQualityFromName(quality)
-                        )
+                        newExtractorLink(
+                            "UHDMovies",
+                            "UHDMovies $tag Resume",
+                            url = resume
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName(quality)
+                        }
                     )
                 }
-                val DirectLink =
-                    driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
+
+                val DirectLink = driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
                 Log.d("Phisher Directlink", DirectLink)
                 val CFExtract = extractCFUHD(DirectLink)
+
                 CFExtract.forEach { CFlinks ->
                     if (CFlinks.isNotEmpty()) {
                         callback.invoke(
-                            ExtractorLink(
-                                "UHDMovies", "UHDMovies $tag CF Worker", CFlinks,
-                                "", getQualityFromName(quality)
-                            )
+                            newExtractorLink(
+                                "UHDMovies",
+                                "UHDMovies $tag CF Worker",
+                                url = CFlinks
+                            ) {
+                                this.referer = ""
+                                this.quality = getQualityFromName(quality)
+                            }
                         )
                     }
                 }
+
                 if (insLink.isNotEmpty()) {
                     callback.invoke(
-                        ExtractorLink(
-                            "UHDMovies", "UHDMovies VLC $tag", insLink,
-                            "", getQualityFromName(quality)
-                        )
+                        newExtractorLink(
+                            "UHDMovies",
+                            "UHDMovies VLC $tag",
+                            url = insLink
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName(quality)
+                        }
                     )
                 }
-                if (downloadLink != null) {
-                    if (downloadLink.isNotEmpty()) {
-                        callback.invoke(
-                            ExtractorLink(
-                                "UHDMovies", "UHDMovies $tag Instant Download", downloadLink,
-                                "", getQualityFromName(quality)
-                            )
-                        )
-                    }
+
+                if (downloadLink?.isNotEmpty() == true) {
+                    callback.invoke(
+                        newExtractorLink(
+                            "UHDMovies",
+                            "UHDMovies $tag Instant Download",
+                            url = downloadLink
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName(quality)
+                        }
+                    )
                 }
 
                 /*

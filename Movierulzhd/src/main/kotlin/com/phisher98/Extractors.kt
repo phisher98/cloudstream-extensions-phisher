@@ -66,14 +66,15 @@ open class FMX : ExtractorApi() {
             JsUnpacker(extractedpack).unpack()?.let { unPacked ->
                 Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                     return listOf(
-                        ExtractorLink(
+                        newExtractorLink(
                             this.name,
                             this.name,
-                            link,
-                            referer ?: "",
-                            Qualities.Unknown.value,
-                            type = INFER_TYPE
-                        )
+                            url = link,
+                            INFER_TYPE
+                        ) {
+                            this.referer = referer ?: ""
+                            this.quality = Qualities.Unknown.value
+                        }
                     )
                 }
             }

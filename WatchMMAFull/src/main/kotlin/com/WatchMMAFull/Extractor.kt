@@ -6,9 +6,11 @@ import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
-import java.net.URI
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -24,14 +26,16 @@ class Vtbe : ExtractorApi() {
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
-                        link,
-                        referer ?: "",
-                        Qualities.Unknown.value,
-                        URI(link).path.endsWith(".m3u8")
-                    )
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.Unknown.value
+                    }
+
                 )
             }
         }
@@ -51,14 +55,16 @@ class SuiSports : ExtractorApi() {
         val decryptedText = AesHelper.decryptAES(encoded, "kiemtienmua911ca", "0123456789abcdef")
         val m3u8=Regex("\"source\":\"(.*?)\"").find(decryptedText)?.groupValues?.get(1)?.replace("\\/","/") ?:""
         return listOf(
-             ExtractorLink(
-                 this.name,
-                 this.name,
-                 m3u8,
-                 url,
-                 Qualities.Unknown.value,
-                 isM3u8 = true
-            )
+            newExtractorLink(
+                this.name,
+                this.name,
+                url = m3u8,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = url
+                this.quality = Qualities.Unknown.value
+            }
+
         )
     }
 }
@@ -92,14 +98,15 @@ class Spcdn : ExtractorApi() {
         val vhash =url.substringAfter("data=")
         val m3u8="$mainUrl/cdn/hls/$vhash/master.txt?s=1&d="
         return listOf(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
-                m3u8,
-                url,
-                Qualities.Unknown.value,
-                isM3u8 = true
-            )
+                url = m3u8,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = url
+                this.quality = Qualities.Unknown.value
+            }
         )
     }
 }

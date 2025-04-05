@@ -167,13 +167,14 @@ open class UHDMovies : ExtractorApi() {
                 .replace("\\/", "/")
         val link = finaldownloadlink
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                url = link,
-                "",
-                getQualityFromName(quality)
-            )
+                url = link
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName(quality)
+            }
         )
     }
 }

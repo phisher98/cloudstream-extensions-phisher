@@ -2,10 +2,13 @@ package com.phisher98
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.DrmExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newDrmExtractorLink
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import java.util.UUID
 
 class SonyIPTV : SportsIPTV() {
     override var lang = "en"
@@ -28,43 +31,46 @@ class SonyIPTV : SportsIPTV() {
         if (loadData.url.contains("mpd"))
         {
             callback.invoke(
-                DrmExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = loadData.url,
-                    referer = "",
-                    quality = Qualities.Unknown.value,
-                    type = INFER_TYPE,
-                    kid = loadData.keyid.trim(),
-                    key = loadData.key.trim(),
+                newDrmExtractorLink(
+                    this.name,
+                    this.name,
+                    loadData.url,
+                    INFER_TYPE,
+                    UUID.randomUUID()
                 )
+                {
+                    this.key=loadData.key.trim()
+                    this.kid=loadData.keyid.trim()
+                }
             )
         }
             else
         if(loadData.url.contains("&e=.m3u"))
             {
-            callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name,
-                    loadData.url,
-                    "https://embedme.top/",
-                    Qualities.Unknown.value,
-                    isM3u8 = true,
+                callback.invoke(
+                    newExtractorLink(
+                        this.name,
+                        this.name,
+                        url = loadData.url,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = "https://embedme.top/"
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
-            )
             }
         else
         {
             callback.invoke(
-                ExtractorLink(
-                this.name,
-                loadData.title,
-                loadData.url,
-                "https://embedme.top/",
-                Qualities.Unknown.value,
-                type = INFER_TYPE,
-                )
+                newExtractorLink(
+                    this.name,
+                    loadData.title,
+                    url = loadData.url,
+                    INFER_TYPE
+                ) {
+                    this.referer = "https://embedme.top/"
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
         return true

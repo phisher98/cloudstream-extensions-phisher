@@ -74,14 +74,15 @@ class Tennistream : MainAPI() {
                else if (trueurl.contains("m3u8"))
                {
                    callback.invoke(
-                       ExtractorLink(
+                       newExtractorLink(
                            "Server 2",
                            "Server 2",
-                           trueurl,
-                           "https://freshwaterdell.com",
-                           Qualities.P1080.value,
-                           isM3u8 = true,
-                       )
+                           url = trueurl,
+                           ExtractorLinkType.M3U8
+                       ) {
+                           this.referer = "https://freshwaterdell.com"
+                           this.quality = Qualities.P1080.value
+                       }
                    )
                }
                else

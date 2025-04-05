@@ -87,14 +87,15 @@ open class YTS : MainAPI() {
             val href=getURL(it.attr("href").replace(" ","%20"))
             val quality =it.ownText().substringBefore(".").replace("p","").toInt()
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "$name $quality",
                     name,
-                    fixUrl( href),
-                    "",
-                    quality,
+                    url = fixUrl(href),
                     INFER_TYPE
-                )
+                ) {
+                    this.referer = ""
+                    this.quality = quality
+                }
             )
         }
         return true

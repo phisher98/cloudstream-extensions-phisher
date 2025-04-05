@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getPacked
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
@@ -89,15 +90,16 @@ open class Chillx : ExtractorApi() {
 
             // Return the extractor link
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    m3u8,
-                    mainUrl,
-                    Qualities.P1080.value,
-                    INFER_TYPE,
-                    headers = header
-                )
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                    this.headers = header
+                }
             )
 
             // Extract and return subtitles

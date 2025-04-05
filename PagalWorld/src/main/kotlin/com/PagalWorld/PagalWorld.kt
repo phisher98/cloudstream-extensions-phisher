@@ -1,6 +1,5 @@
 package com.PagalWorld
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
@@ -155,14 +154,15 @@ class PagalWorld : MainAPI() { // all providers must be an instance of MainAPI
                 href=fixUrl(href)
             }
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     "$name $quality",
-                    "$name $quality" ,
-                    "https://goodproxy.goodproxy.workers.dev/fetch?url=$href",
-                    "$mainUrl/",
-                    Qualities.Unknown.value,
+                    "$name $quality",
+                    url = "https://goodproxy.goodproxy.workers.dev/fetch?url=$href",
                     INFER_TYPE
-                )
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
         return true

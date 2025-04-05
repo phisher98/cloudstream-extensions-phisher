@@ -8,8 +8,10 @@ import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class HdStream4u : VidHidePro() {
     override var mainUrl = "https://hdstream4u.com"
@@ -54,14 +56,15 @@ class Hubcdn : ExtractorApi() {
             if (!encoded.isNullOrEmpty()) {
                 val m3u8 = base64Decode(encoded).substringAfterLast("link=")
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
-                        m3u8,
-                        url,
-                        Qualities.Unknown.value,
-                        isM3u8 = true
-                    )
+                        url = m3u8,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = url
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             } else {
                 Log.e("Error", "Encoded URL not found")
@@ -92,7 +95,7 @@ class Hubdrive : ExtractorApi() {
 @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 open class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.art"
+    override val mainUrl = "https://hubcloud.ink"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -124,34 +127,83 @@ open class HubCloud : ExtractorApi() {
 
             when {
                 link.contains("www-google-com") -> Log.d("Error:", "Not Found")
+
                 link.contains("technorozen.workers.dev") -> {
                     callback(
-                        ExtractorLink(
+                        newExtractorLink(
                             "$source 10GB Server",
                             "$source 10GB Server $size",
-                            getGBurl(link),
-                            "",
-                            quality
-                        )
+                            url = getGBurl(link)
+                        ) {
+                            this.quality = quality
+                        }
                     )
                 }
-                link.contains(Regex("pixeldra\\.in|pixeldrain\\.net")) -> callback(
-                    ExtractorLink("$source Pixeldrain", "$source Pixeldrain $size", link, "", quality)
-                )
-                link.contains("buzzheavier") -> callback(
-                    ExtractorLink("$source Buzzheavier", "$source Buzzheavier $size", "$link/download", "", quality)
-                )
-                link.contains(".dev") -> callback(
-                    ExtractorLink("$source Hub-Cloud", "$source Hub-Cloud $size", link, "", quality)
-                )
-                link.contains("fastdl.lol") -> callback(
-                    ExtractorLink("$source [FSL] Hub-Cloud", "$source [FSL] Hub-Cloud $size", link, "", quality)
-                )
-                link.contains("hubcdn.xyz") -> callback(
-                    ExtractorLink("$source [File] Hub-Cloud", "$source [File] Hub-Cloud $size", link, "", quality)
-                )
-                link.contains("gofile.io") || link.contains("pixeldrain") ->
-                    loadCustomExtractor(source.orEmpty(), link, "", subtitleCallback, callback)
+
+                link.contains("pixeldra.in") || link.contains("pixeldrain") -> {
+                    callback(
+                        newExtractorLink(
+                            "$source Pixeldrain",
+                            "$source Pixeldrain $size",
+                            url = link
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+
+                link.contains("buzzheavier") -> {
+                    callback(
+                        newExtractorLink(
+                            "$source Buzzheavier",
+                            "$source Buzzheavier $size",
+                            url = "$link/download"
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+
+                link.contains(".dev") -> {
+                    callback(
+                        newExtractorLink(
+                            "$source Hub-Cloud",
+                            "$source Hub-Cloud $size",
+                            url = link
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+
+                link.contains("fastdl.lol") -> {
+                    callback(
+                        newExtractorLink(
+                            "$source [FSL] Hub-Cloud",
+                            "$source [FSL] Hub-Cloud $size",
+                            url = link
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+
+                link.contains("hubcdn.xyz") -> {
+                    callback(
+                        newExtractorLink(
+                            "$source [File] Hub-Cloud",
+                            "$source [File] Hub-Cloud $size",
+                            url = link
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+
+                link.contains("gofile.io") -> {
+                    loadCustomExtractor(source.orEmpty(), link, "Pixeldrain", subtitleCallback, callback)
+                }
+
                 else -> Log.d("Error:", "No Server Match Found")
             }
         }

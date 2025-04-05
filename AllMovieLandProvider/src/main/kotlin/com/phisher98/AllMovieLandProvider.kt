@@ -346,14 +346,15 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         m3u8Links.forEach {
             safeApiCall {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "AllMovieLand-${it.title}",
                         "AllMovieLand-${it.title}",
-                        getM3u8(it.file),
-                        playerDomain.toString(),
-                        Qualities.Unknown.value,
-                        true
-                    )
+                        url = getM3u8(it.file),
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = playerDomain.toString()
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }

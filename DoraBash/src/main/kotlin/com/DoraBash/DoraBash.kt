@@ -125,14 +125,15 @@ class DoraBash : MainAPI() {
                 val truelink=app.get(href).document.selectFirst("#container source")?.attr("src")
                 if (truelink != null) {
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             this.name,
                             this.name,
-                            truelink,
-                            "",
-                            Qualities.Unknown.value,
-                            type = INFER_TYPE
-                        )
+                            url = truelink,
+                            INFER_TYPE
+                        ) {
+                            this.referer = ""
+                            this.quality = Qualities.Unknown.value
+                        }
                     )
                 }
             }

@@ -92,8 +92,11 @@ class Streamblasters : MainAPI() {
             val episodes =
                 document.select("div.series-listing > a").mapNotNull {
                     val href = it.attr("href")
-                    val episode = it.select("span").text().toString()
-                    Episode(href, episode)
+                    val episode = it.select("span").text()
+                    newEpisode(href)
+                    {
+                        this.name=episode
+                    }
                 }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster

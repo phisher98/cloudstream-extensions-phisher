@@ -85,7 +85,13 @@ class Megakino : MainAPI() {
             document.select("select.flex-grow-1.mr-select option").map {
                 val epnumber="Episode "+it.attr("data-season")
                 val ephref=it.select("option").attr("value")
-                episodes+=Episode(ephref, epnumber,1,epnumber.toIntOrNull(), posterUrl = poster)
+                episodes+=newEpisode(ephref)
+                {
+                    this.name=epnumber
+                    this.season=1
+                    this.episode=epnumber.toIntOrNull()
+                    this.posterUrl=poster
+                }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster

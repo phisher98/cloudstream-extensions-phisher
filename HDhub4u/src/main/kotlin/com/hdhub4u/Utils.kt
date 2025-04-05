@@ -9,6 +9,10 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 import org.json.JSONObject
 import java.net.URL
@@ -67,22 +71,25 @@ suspend fun loadCustomExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
-        callback.invoke(
-            ExtractorLink(
-                name ?: link.source,
-                name ?: link.name,
-                link.url,
-                link.referer,
-                when {
-                    link.name == "VidSrc" -> Qualities.P1080.value
-                    link.type == ExtractorLinkType.M3U8 -> link.quality
-                    else -> quality ?: link.quality
-                },
-                link.type,
-                link.headers,
-                link.extractorData
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    name ?: link.source,
+                    name ?: link.name,
+                    link.url,
+                ) {
+                    this.quality = when {
+                        link.name == "VidSrc" -> Qualities.P1080.value
+                        link.type == ExtractorLinkType.M3U8 -> link.quality
+                        else -> quality ?: link.quality
+                    }
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
             )
-        )
+        }
     }
 }
 

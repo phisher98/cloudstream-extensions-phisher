@@ -1,5 +1,6 @@
 package com.animez
 
+import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
@@ -67,6 +68,7 @@ open class Animez : MainAPI() {
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title = document.select("article.TPost.Single h2").text().trim()

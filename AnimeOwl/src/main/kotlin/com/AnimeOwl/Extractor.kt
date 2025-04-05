@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlin.text.Regex
 
 class OwlExtractor : ExtractorApi() {
@@ -56,23 +57,23 @@ class OwlExtractor : ExtractorApi() {
                 subtitleCallback.invoke(SubtitleFile("English", url))
             } else {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "AnimeOwl $key",
                         "AnimeOwl $key",
-                        url,
-                        mainUrl,
-                        when {
+                        url = url,
+                        INFER_TYPE
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = when {
                             key.contains("480") -> Qualities.P480.value
                             key.contains("720") -> Qualities.P720.value
                             key.contains("1080") -> Qualities.P1080.value
                             key.contains("1440") -> Qualities.P1440.value
                             key.contains("2160") -> Qualities.P2160.value
                             else -> Qualities.P1080.value
-                        },
-                        INFER_TYPE
-                    )
+                        }
+                    }
                 )
-
             }
         }
         return

@@ -18,6 +18,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONArray
 import java.net.URI
 import java.nio.charset.Charset
@@ -86,15 +87,16 @@ open class Chillx : ExtractorApi() {
 
             // Return the extractor link
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    m3u8,
-                    mainUrl,
-                    Qualities.P1080.value,
-                    INFER_TYPE,
-                    headers = header
-                )
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                    this.headers = header
+                }
             )
 
             // Extract and return subtitles
@@ -189,15 +191,16 @@ open class StreamRuby : ExtractorApi() {
 
         Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
-                    link,
-                    "https://rubystm.com",
-                    Qualities.P1080.value,
-                    type = INFER_TYPE,
-                    headers
-                )
+                    url = link,
+                    INFER_TYPE
+                ) {
+                    this.referer = "https://rubystm.com"
+                    this.quality = Qualities.P1080.value
+                    this.headers = headers
+                }
             )
         }
     }

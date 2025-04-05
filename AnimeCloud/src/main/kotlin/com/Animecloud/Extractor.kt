@@ -4,8 +4,10 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class AnimeCloudProxy : ExtractorApi() {
     override var name = "AnimeCloudProxy"
@@ -19,15 +21,16 @@ open class AnimeCloudProxy : ExtractorApi() {
         val m3u8="$mainUrl/proxy/nocache/$id/"
         val headers= mapOf("Cookie" to "session=$seassion_ck")
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                m3u8,
-                mainUrl,
-                Qualities.P1080.value,
-                isM3u8 = true,
-                headers = headers
-            )
+                url = m3u8,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.P1080.value
+                this.headers = headers
+            }
         )
         return
     }
@@ -59,15 +62,16 @@ open class LuluStream : ExtractorApi() {
         post.selectFirst("script:containsData(vplayer)")?.data()
             ?.let { script ->
                 Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
-                    callback(
-                        ExtractorLink(
+                    callback.invoke(
+                        newExtractorLink(
                             name,
                             name,
-                            link,
-                            mainUrl,
-                            Qualities.P1080.value,
-                            type = INFER_TYPE
-                        )
+                            url = link,
+                            INFER_TYPE
+                        ) {
+                            this.referer = mainUrl
+                            this.quality = Qualities.P1080.value
+                        }
                     )
                 }
             }

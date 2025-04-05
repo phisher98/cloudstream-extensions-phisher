@@ -22,6 +22,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.StringUtils.encodeUri
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
@@ -487,14 +490,15 @@ suspend fun invokeSmashySu(
         val quality = Regex("\\[(\\S+)]").find(links)?.groupValues?.getOrNull(1) ?: return@forEach
         val trimmedLink = links.removePrefix("[$quality]").trim()
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 "Smashy [$name]",
                 "Smashy [$name]",
                 trimmedLink,
-                "",
-                getQualityFromName(quality),
                 INFER_TYPE
             )
+            {
+                this.quality=getQualityFromName(quality)
+            }
         )
     }
 }
@@ -574,18 +578,21 @@ suspend fun invokeDrivetot(
                 if (it.contains("hubcloud.lol")) it.replace("hubcloud.lol", "hubcloud.in") else it
             }
             loadExtractor(href, "$hdmovies4uAPI/", subtitleCallback) { link ->
-                callback.invoke(
-                    ExtractorLink(
-                        link.source,
-                        "${link.name} $tags [$size]",
-                        link.url,
-                        link.referer,
-                        link.quality,
-                        link.type,
-                        link.headers,
-                        link.extractorData
+                CoroutineScope(Dispatchers.IO).launch {
+                    callback.invoke(
+                        newExtractorLink(
+                            link.source,
+                            "${link.name} $tags [$size]",
+                            link.url,
+                        ) {
+                            this.referer = link.referer
+                            this.quality = link.quality
+                            this.type = link.type
+                            this.headers = link.headers
+                            this.extractorData = link.extractorData
+                        }
                     )
-                )
+                }
             }
         }
 }
@@ -952,25 +959,27 @@ suspend fun loadCustomTagExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
-        callback.invoke(
-            ExtractorLink(
+        CoroutineScope(Dispatchers.IO).launch {
+            val extractorLink = newExtractorLink(
                 link.source,
                 "${link.name} $tag",
                 link.url,
-                link.referer,
-                when (link.type) {
+            ) {
+                this.quality = when (link.type) {
                     ExtractorLinkType.M3U8 -> link.quality
                     else -> quality ?: link.quality
-                },
-                link.type,
-                link.headers,
-                link.extractorData
-            )
-        )
+                }
+                this.type = link.type
+                this.headers = link.headers
+                this.referer = link.referer
+                this.extractorData = link.extractorData
+            }
+            callback.invoke(extractorLink)
+        }
     }
 }
 
-fun loadNameExtractor(
+suspend fun loadNameExtractor(
     name: String? = null,
     url: String,
     referer: String? = null,
@@ -979,14 +988,16 @@ fun loadNameExtractor(
     quality: Int,
 ) {
     callback.invoke(
-        ExtractorLink(
+        newExtractorLink(
             name ?: "",
             name ?: "",
             url,
-            referer ?: "",
-            quality,
-            if (url.contains("m3u8")) ExtractorLinkType.M3U8 else INFER_TYPE,
         )
+        {
+            this.referer=referer ?:""
+            this.quality=quality
+            this.type=if (url.contains("m3u8")) ExtractorLinkType.M3U8 else INFER_TYPE!!
+        }
     )
 }
 
@@ -999,18 +1010,21 @@ suspend fun loadSourceNameExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
-        callback.invoke(
-            ExtractorLink(
-                "$source[${link.source}]",
-                "$source[${link.source}]",
-                link.url,
-                link.referer,
-                link.quality,
-                link.type,
-                link.headers,
-                link.extractorData
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    "$source[${link.source}]",
+                    "$source[${link.source}]",
+                    link.url,
+                ) {
+                    this.quality = link.quality
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
             )
-        )
+        }
     }
 }
 
@@ -1023,22 +1037,25 @@ suspend fun loadCustomExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
-        callback.invoke(
-            ExtractorLink(
-                name ?: link.source,
-                name ?: link.name,
-                link.url,
-                link.referer,
-                when {
-                    link.name == "VidSrc" -> Qualities.P1080.value
-                    link.type == ExtractorLinkType.M3U8 -> link.quality
-                    else -> quality ?: link.quality
-                },
-                link.type,
-                link.headers,
-                link.extractorData
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    name ?: link.source,
+                    name ?: link.name,
+                    link.url,
+                ) {
+                    this.quality = when {
+                        link.name == "VidSrc" -> Qualities.P1080.value
+                        link.type == ExtractorLinkType.M3U8 -> link.quality
+                        else -> quality ?: link.quality
+                    }
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
             )
-        )
+        }
     }
 }
 
@@ -1841,13 +1858,14 @@ suspend fun loadHindMoviezLinks(
             val links = doc.select(".container a");
             links.forEach { item ->
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "HindMoviez [H-Cloud]",
                         "HindMoviez [H-Cloud]",
-                        url = item.attr("href"),
-                        "",
-                        quality = quality,
+                        url = item.attr("href")
                     )
+                    {
+                        this.quality=quality
+                    }
                 )
             }
         } else if (res.url.contains("hindshare.site")) {
@@ -1856,13 +1874,14 @@ suspend fun loadHindMoviezLinks(
             links.forEach { item ->
                 if (item.text().contains("HCloud")) {
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "HindMoviez [H-Cloud]",
                             "HindMoviez [H-Cloud]",
                             url = item.attr("href"),
-                            "",
-                            quality = quality,
                         )
+                        {
+                            this.quality=quality
+                        }
                     )
                 } else if (item.attr("href").contains("hindcdn.site")) {
                     val doc =
@@ -1875,14 +1894,15 @@ suspend fun loadHindMoviezLinks(
                             "HindCdn H-Cloud"
                         }
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "HindMoviez [$host]",
                                 "HindMoviez [$host]",
                                 url = item.attr("href"),
-                                "",
-                                quality = quality,
-                            )
+                            ) {
+                                this.quality = quality
+                            }
                         )
+
                     }
                 } else if (item.attr("href").contains("gdirect.cloud")) {
                     val doc = app.get(
@@ -1893,13 +1913,13 @@ suspend fun loadHindMoviezLinks(
                     ).document
                     val link = doc.select("a")
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "HindMoviez [GDirect]",
                             "HindMoviez [GDirect]",
                             url = link.attr("href"),
-                            "",
-                            quality = quality,
-                        )
+                        ) {
+                            this.quality = quality
+                        }
                     )
                 }
             }
@@ -2457,7 +2477,10 @@ suspend fun getPlayer4uUrl(
     }
 
     val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
-    callback(ExtractorLink(name, name, m3u8, "", selectedQuality, ExtractorLinkType.M3U8))
+    callback(newExtractorLink(name, name, m3u8) {
+        this.quality=selectedQuality
+        this.type=ExtractorLinkType.M3U8
+    })
 
 }
 

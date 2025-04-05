@@ -8,13 +8,14 @@ import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.httpsify
-import java.net.URI
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Vtbe : ExtractorApi() {
     override var name = "Vtbe"
@@ -27,14 +28,15 @@ open class Vtbe : ExtractorApi() {
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
-                        link,
-                        referer ?: "",
-                        Qualities.Unknown.value,
-                        URI(link).path.endsWith(".m3u8")
-                    )
+                        url = link,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }
@@ -76,14 +78,15 @@ open class Ultrahd : ExtractorApi() {
                     if (m3u8.contains(".mp4"))
                     {
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "Ultrahd Streamplay",
                                 "Ultrahd Streamplay",
-                                m3u8,
-                                "",
-                                getQualityFromName(""),
-                                type = INFER_TYPE,
-                            )
+                                url = m3u8,
+                                INFER_TYPE
+                            ) {
+                                this.referer = ""
+                                this.quality = getQualityFromName("")
+                            }
                         )
                     }
                     else
@@ -131,14 +134,15 @@ class Rumble : ExtractorApi() {
         for (match in matches) {
             val href = match.groupValues[1].replace("\\/", "/")
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
-                    href,
-                    "",
-                    getQualityFromName(""),
-                    type = INFER_TYPE,
-                )
+                    url = href,
+                    INFER_TYPE
+                ) {
+                    this.referer = ""
+                    this.quality = getQualityFromName("")
+                }
             )
 
         }

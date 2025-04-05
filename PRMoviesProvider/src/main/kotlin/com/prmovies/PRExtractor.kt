@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.extractors.StreamSB
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Minoplres : ExtractorApi() {
     override val name = "Minoplres"
@@ -24,14 +25,15 @@ open class Minoplres : ExtractorApi() {
             val script = response.selectFirst("script:containsData(vplayer)")?.data().toString()
             Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
-                        link,
-                        "",
-                        Qualities.P1080.value,
-                        type = INFER_TYPE,
-                    )
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = ""
+                        this.quality = Qualities.P1080.value
+                    }
                 )
             }
     }
@@ -52,14 +54,15 @@ open class Embdproxy : ExtractorApi() {
         val script = response.selectFirst("script:containsData(vplayer)")?.data().toString()
         Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
-                    link,
-                    mainUrl,
-                    Qualities.P1080.value,
-                    type = INFER_TYPE,
-                )
+                    url = link,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                }
             )
         }
     }

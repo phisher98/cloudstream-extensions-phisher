@@ -48,14 +48,15 @@ class PublicSportsIPTV : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
-                data,
-                "",
-                getQualityFromName(""),
-                type = INFER_TYPE,
-            )
+                url = data,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName("")
+            }
         )
         return true
     }

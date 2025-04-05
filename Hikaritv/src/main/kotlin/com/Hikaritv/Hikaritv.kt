@@ -10,6 +10,9 @@ import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jsoup.Jsoup
@@ -355,21 +358,24 @@ class Hikaritv : MainAPI() {
         quality: Int? = null,
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.source,
-                    "${link.name}${if (tag!!.contains("dub", true) || tag.contains("sub", true)) " $tag" else ""}",
-                    link.url,
-                    link.referer,
-                    when (link.type) {
-                        ExtractorLinkType.M3U8 -> link.quality
-                        else -> quality ?: link.quality
-                    },
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            CoroutineScope(Dispatchers.IO).launch {
+                callback.invoke(
+                    newExtractorLink(
+                        link.source,
+                        "${link.name}${if (tag!!.contains("dub", true) || tag.contains("sub", true)) " $tag" else ""}",
+                        url = link.url,
+                        type = link.type
+                    ) {
+                        this.referer = link.referer
+                        this.quality = when (link.type) {
+                            ExtractorLinkType.M3U8 -> link.quality
+                            else -> quality ?: link.quality
+                        }
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
                 )
-            )
+            }
         }
     }
 

@@ -1,9 +1,6 @@
 package com.phisher98
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamTape
-import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -75,7 +72,6 @@ class Ownfmx : MainAPI() { // all providers must be an instance of MainAPI
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         var src = app.get(data).document.select("a[href^=https://streamtape]").attr("href")
-        
         //Log.d("link",src)
         loadExtractor(
                 src,

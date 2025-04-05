@@ -77,12 +77,12 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
                     val ep =it.text().substringAfter("x").toIntOrNull()
                     val season = it.text().substringBefore("x").trim().toIntOrNull()
                     episodes.add(
-                        Episode(
-                            data = href,
-                            episode = ep,
-                            name = name,
-                            season = season
-                        )
+                        newEpisode(href)
+                        {
+                            this.episode=ep
+                            this.name=name
+                            this.season=season
+                        }
                     ).toJson()
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

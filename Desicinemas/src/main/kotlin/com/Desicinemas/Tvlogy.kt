@@ -5,9 +5,11 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Tvlogyflow(val source:String) : ExtractorApi() {
     override val mainUrl = "https://flow.tvlogy.to"
@@ -26,14 +28,15 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
         {
             Regex("\"src\":\"(.*?)\",\"").find(doc)?.groupValues?.get(1)?.let {
                 callback(
-                    ExtractorLink(
+                    newExtractorLink(
                         source,
                         name,
-                        it,
-                        url,
-                        Qualities.Unknown.value,
-                        INFER_TYPE
-                    )
+                        url = it,
+                        type = INFER_TYPE
+                    ) {
+                        this.referer = url
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }
@@ -45,14 +48,15 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
             Log.d("Phisher scrit unpacked",unpacked)
             Regex("file\":.*?\"(.*.m3u8)\"").find(unpacked)?.groupValues?.get(1)?.let {
                 callback(
-                    ExtractorLink(
+                    newExtractorLink(
                         source,
                         name,
-                        it,
-                        url,
-                        Qualities.Unknown.value,
-                        INFER_TYPE
-                    )
+                        url = it,
+                        type = INFER_TYPE
+                    ) {
+                        this.referer = url
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }
@@ -84,14 +88,15 @@ class Tvlogy(private val source:String) : ExtractorApi() {
             .parsedSafe<MetaData>() ?: return
 
         callback(
-            ExtractorLink(
+            newExtractorLink(
                 source,
                 name,
-                meta.videoSource,
-                url,
-                Qualities.Unknown.value,
-                meta.hls
-            )
+                url = meta.videoSource,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = url
+                this.quality = Qualities.Unknown.value
+            }
         )
     }
 

@@ -1,5 +1,6 @@
 package com.Megakino
 
+import android.annotation.SuppressLint
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.SubtitleFile
@@ -14,6 +15,7 @@ open class Gxplayer : ExtractorApi() {
     override var mainUrl = "https://watch.gxplayer.xyz"
     override val requiresReferer = true
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,

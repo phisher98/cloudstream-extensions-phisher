@@ -9,8 +9,10 @@ import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 
 class Tamilian : TmdbProvider() {
@@ -47,15 +49,16 @@ class Tamilian : TmdbProvider() {
         m3u8?.let {
             safeApiCall {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         name,
                         name,
-                        it.videoSource,
-                        "$mainUrl/",
-                        Qualities.P1080.value,
-                        isM3u8 = true,
-                        headers=headers
-                    )
+                        url = it.videoSource,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = "$mainUrl/"
+                        this.quality = Qualities.P1080.value
+                        this.headers = headers
+                    }
                 )
             }
         }

@@ -26,7 +26,6 @@ class MegaUp : ExtractorApi() {
         val response = runCatching {
             app.get(href, headers = HEADERS).parsedSafe<AnimeKai.Response>()?.result
         }.getOrNull() ?: return
-        Log.d("Phisher",response)
         val decoded = AnimekaiDecoder().decode(response).replace("\\", "")
         val m3u8Data = runCatching { Gson().fromJson(decoded, AnimeKai.M3U8::class.java) }.getOrNull() ?: return
         val m3u8 = m3u8Data.sources.firstOrNull()?.file ?: return

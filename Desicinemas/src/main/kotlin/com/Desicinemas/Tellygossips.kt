@@ -4,7 +4,9 @@ package com.Desicinemas
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Tellygossips(private val source:String) : ExtractorApi() {
     override val mainUrl = "https://flow.tellygossips.net"
@@ -28,15 +30,16 @@ class Tellygossips(private val source:String) : ExtractorApi() {
         val config = tryParseJson<Config>(configStr) ?: return
         for (link in config.sources) {
             callback(
-                ExtractorLink(
+                newExtractorLink(
                     source,
                     name,
-                    link.file ?: link.src ?: continue,
-                    "",
-                    Qualities.Unknown.value,
-                    true,
-                    headers
-                )
+                    url = link.file ?: link.src ?: continue,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.Unknown.value
+                    this.headers = headers
+                }
             )
         }
     }

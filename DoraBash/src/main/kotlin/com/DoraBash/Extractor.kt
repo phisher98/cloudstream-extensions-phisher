@@ -7,9 +7,10 @@ import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
-import java.net.URI
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Vtbe : ExtractorApi() {
     override var name = "Vtbe"
@@ -22,14 +23,15 @@ open class Vtbe : ExtractorApi() {
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
                 return listOf(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
-                        link,
-                        referer ?: "",
-                        Qualities.Unknown.value,
-                        URI(link).path.endsWith(".m3u8")
-                    )
+                        url = link,
+                        INFER_TYPE
+                    ) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }

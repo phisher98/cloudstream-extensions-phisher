@@ -58,7 +58,10 @@ class Topcartoons : MainAPI() {
                     val href = it.select("a").attr("href")
                     val name = fixTitle(it.select("h3 a").text().trim())
                     val ps = it.selectFirst("a img")?.attr("data-src").toString().trim()
-                episodes.add(Episode(href, name = name, posterUrl = ps))
+                episodes.add(newEpisode(href){
+                    this.name=name
+                    this.posterUrl=ps
+                })
                 }
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
@@ -70,15 +73,17 @@ class Topcartoons : MainAPI() {
         val document = app.get(data).document
         val file=document.selectFirst("meta[property=og:video:url]")?.attr("content").toString()
         callback.invoke(
-            ExtractorLink(
-            name=name,
-            source = name,
-            url = file,
-            referer = "",
-            quality = getQualityFromName(""),
-            type = INFER_TYPE
-            )
+            newExtractorLink(
+                name = name,
+                source = name,
+                url = file,
+                type = INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName("")
+            }
         )
+
         return true
     }
 }

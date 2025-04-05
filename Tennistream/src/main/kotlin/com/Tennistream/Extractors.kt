@@ -5,7 +5,9 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 
 open class Quest4play : ExtractorApi() {
@@ -23,14 +25,15 @@ open class Quest4play : ExtractorApi() {
         val href=Regex("""source:.'(.*?)'""").find(res)?.groupValues?.get(1) ?:""
         val reallink=app.get(href,referer=mainUrl, allowRedirects = false).headers["location"] ?:""
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
-                reallink,
-                mainUrl,
-                Qualities.P1080.value,
-                isM3u8 = true,
-            )
+                url = reallink,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 }
@@ -60,14 +63,15 @@ open class Vaguedinosaurs : ExtractorApi() {
         val domain=Regex("""\{"([^"]+)""").find(doc)?.groupValues?.get(1)
         val link ="https://$domain/hls/$hash/live.m3u8"
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
-                link,
-                mainUrl,
-                Qualities.P1080.value,
-                isM3u8 = true,
-            )
+                url = link,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = mainUrl
+                this.quality = Qualities.P1080.value
+            }
         )
     }
 }
