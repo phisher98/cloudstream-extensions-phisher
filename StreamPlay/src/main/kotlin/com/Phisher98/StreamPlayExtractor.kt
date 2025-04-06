@@ -1157,7 +1157,7 @@ object StreamPlayExtractor : StreamPlay() {
             "Origin" to "https://www.miruro.tv"
         )
         val response=app.get(
-            "https://epsilon.yamista.xyz/?url=https:%2F%2Fdio.miruro.tv%2Fi%3Fid%3D$malId%26provider%3Dmal%26type%3Danime",
+            "https://www.miruro.to/api/episodes?malId=$malId",
             headers = headers
         ).text
         val miroTV: MiroTV? = Gson().fromJson(response, object : TypeToken<MiroTV>() {}.type)
