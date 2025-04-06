@@ -96,22 +96,28 @@ class KimCartoon : MainAPI() {
         app.get(data).document.select("#info_player #selectServer option").map { s ->
             val server=s.attr("sv")
             val href=app.post("${mainUrl}/ajax/anime/load_episodes_v2?s=$server", data = mapOf("episode_id" to id)).document.selectFirst("iframe")?.attr("src")?.replace("\\\"","")  ?:""
-            val response= app.get(href, referer = mainUrl).toString()
-            val m3u8 =Regex("file\":\"(.*?m3u8.*?)\"").find(response)?.groupValues?.getOrNull(1)
-            if (m3u8!=null)
-            {
-                callback.invoke(
-                    newExtractorLink(
-                        "$name ${server.uppercase()}",
-                        "$name ${server.uppercase()}",
-                        url = m3u8,
-                        INFER_TYPE
-                    ) {
-                        this.referer = "$mainUrl/"
-                        this.quality = Qualities.P1080.value
-                    }
-                )
+
+            if (href.contains("vidstream")) {
+                val response = app.get(href, referer = mainUrl).toString()
+                val m3u8 =
+                    Regex("file\":\"(.*?m3u8.*?)\"").find(response)?.groupValues?.getOrNull(1)
+                if (m3u8 != null) {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$name ${server.uppercase()}",
+                            "$name ${server.uppercase()}",
+                            url = m3u8,
+                            INFER_TYPE
+                        ) {
+                            this.referer = "$mainUrl/"
+                            this.quality = Qualities.P1080.value
+                        }
+                    )
+                } else {
+                    ""
+                }
             }
+            else loadExtractor(href,subtitleCallback, callback)
         }
         return true
     }
