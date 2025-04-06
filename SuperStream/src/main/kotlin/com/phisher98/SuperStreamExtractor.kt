@@ -35,7 +35,7 @@ object SuperStreamExtractor : SuperStream() {
                 ?.substringAfterLast("/")?.toIntOrNull()
         }
         mediaId?.let {
-                invokeExternalSource(it, season ?: 1, season, episode, callback, token)
+            invokeExternalSource(it, if (season == null) 1 else 2, season, episode, callback, token)
         }
     }
 
@@ -51,17 +51,13 @@ object SuperStreamExtractor : SuperStream() {
         val fourthAPI = SUPERSTREAM_FOURTH_API
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val headers = mapOf("Accept-Language" to "en")
-        Log.d("Phisher","$fourthAPI/index/share_link?id=${mediaId}&type=$type")
         val shareKey =
             app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
                 .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
-        Log.d("Phisher","$shareKey $shareKey $thirdAPI $fourthAPI")
 
         val shareRes =
             app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
                 .parsedSafe<ExternalResponse>()?.data ?: return
-        Log.d("Phisher","$shareKey $shareRes $thirdAPI $fourthAPI")
-
         val fids = if (season == null) {
             shareRes.fileList
         } else {
