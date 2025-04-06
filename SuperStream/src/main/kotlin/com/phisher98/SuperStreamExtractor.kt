@@ -12,9 +12,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -38,9 +35,7 @@ object SuperStreamExtractor : SuperStream() {
                 ?.substringAfterLast("/")?.toIntOrNull()
         }
         mediaId?.let {
-            CoroutineScope(Dispatchers.IO).launch {
                 invokeExternalSource(it, season ?: 1, season, episode, callback, token)
-            }
         }
     }
 
@@ -56,13 +51,16 @@ object SuperStreamExtractor : SuperStream() {
         val fourthAPI = SUPERSTREAM_FOURTH_API
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val headers = mapOf("Accept-Language" to "en")
+        Log.d("Phisher","$fourthAPI/index/share_link?id=${mediaId}&type=$type")
         val shareKey =
             app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
                 .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
+        Log.d("Phisher","$shareKey $shareKey $thirdAPI $fourthAPI")
 
         val shareRes =
             app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
                 .parsedSafe<ExternalResponse>()?.data ?: return
+        Log.d("Phisher","$shareKey $shareRes $thirdAPI $fourthAPI")
 
         val fids = if (season == null) {
             shareRes.fileList
