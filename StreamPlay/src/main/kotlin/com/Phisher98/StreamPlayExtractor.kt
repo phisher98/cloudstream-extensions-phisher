@@ -1014,12 +1014,15 @@ object StreamPlayExtractor : StreamPlay() {
         var session = animeData?.find { it.episode == episode }?.session ?: ""
         if (session.isEmpty()) session =
             animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
-        app.get("$animepaheAPI/play/$id/$session", headers).document.select("div.dropup button")
+        val document=app.get("$animepaheAPI/play/$id/$session", headers).document
+
+        document.select("div.dropup button")
             .map {
                 var lang = ""
                 val dub = it.select("span").text()
                 if (dub.contains("eng")) lang = "DUB" else lang = "SUB"
                 val quality = it.attr("data-resolution").toIntOrNull()
+
                 val href = it.attr("data-src")
                 if (href.contains("kwik.si")) {
                     loadCustomExtractor(
@@ -1032,6 +1035,27 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
             }
+
+        val qualityRegex = Regex("""(SubsPlease|ADN)\s+·\s+(\d{3,4}p)""")
+
+        document.select("div#pickDownload > a").amap {
+            val href = it.attr("href")
+            var type = "SUB"
+            if(it.select("span").text().contains("eng"))
+                type="DUB"
+            val text = it.text()
+            val match = qualityRegex.find(text)
+            val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
+            val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
+            loadCustomExtractor(
+                "Animepahe $source [$type]",
+                href,
+                "",
+                subtitleCallback,
+                callback,
+                quality.toIntOrNull()
+            )
+        }
     }
 
     suspend fun invokeGrani(

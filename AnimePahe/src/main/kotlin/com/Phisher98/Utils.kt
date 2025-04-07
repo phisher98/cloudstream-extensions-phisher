@@ -61,6 +61,7 @@ class Kwik : ExtractorApi() {
             ) {
                 this.referer = ""
                 this.quality = getQualityFromName("")
+                this.headers= mapOf("origin" to "https://www.miruro.tv")
             }
         )
     }
@@ -167,7 +168,7 @@ class Pahe : ExtractorApi() {
                 INFER_TYPE
             ) {
                 this.referer = ""
-                this.quality = Qualities.Unknown.value
+                this.quality = getQualityFromName("")
             }
         )
     }

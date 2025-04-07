@@ -498,7 +498,7 @@ class AnimePahe : MainAPI() {
                 if (dub.contains("eng")) lang="DUB" else lang="SUB"
                 val quality = it.attr("data-resolution")
                 val href = it.attr("data-src")
-                        loadSourceNameExtractor(
+                loadSourceNameExtractor(
                             "Animepahe [$lang]",
                             href,
                             quality,
@@ -507,18 +507,24 @@ class AnimePahe : MainAPI() {
                             quality
                         )
             }
+        val qualityRegex = Regex("""(SubsPlease|ADN)\s+·\s+(\d{3,4}p)""")
+
         document.select("div#pickDownload > a").amap {
             val href = it.attr("href")
             var type = "SUB"
             if(it.select("span").text().contains("eng"))
                 type="DUB"
+            val text = it.text()
+            val match = qualityRegex.find(text)
+            val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
+            val quality = match?.groupValues?.getOrNull(2) ?: "Unknown"
             loadSourceNameExtractor(
-                "Animepahe Download [$type]",
+                "Animepahe $source [$type]",
                 href,
                 "",
                 subtitleCallback,
                 callback,
-                it.text()
+                quality
             )
         }
         return true
