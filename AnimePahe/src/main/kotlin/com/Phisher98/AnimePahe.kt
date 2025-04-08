@@ -322,166 +322,6 @@ class AnimePahe : MainAPI() {
         }
     }
 
-    /*
-    private fun cookieStrToMap(cookie: String): Map<String, String> {
-        val cookies = mutableMapOf<String, String>()
-        for (string in cookie.split("; ")) {
-            val split = string.split("=").toMutableList()
-            val name = split.removeFirst().trim()
-            val value = if (split.size == 0) {
-                "true"
-            } else {
-                split.joinToString("=")
-            }
-            cookies[name] = value
-        }
-        return cookies.toMap()
-    }
-
-
-    private fun getString(content: String, s1: Int, s2: Int): String {
-        val characterMap = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/"
-
-        val slice2 = characterMap.slice(0 until s2)
-        var acc: Long = 0
-
-        for ((n, i) in content.reversed().withIndex()) {
-            acc += (when (isNumber("$i")) {
-                true -> "$i".toLong()
-                false -> "0".toLong()
-            }) * s1.toDouble().pow(n.toDouble()).toInt()
-        }
-
-        var k = ""
-
-        while (acc > 0) {
-            k = slice2[(acc % s2).toInt()] + k
-            acc = (acc - (acc % s2)) / s2
-        }
-
-        return when (k != "") {
-            true -> k
-            false -> "0"
-        }
-    }
-
-    private fun decrypt(fullString: String, key: String, v1: Int, v2: Int): String {
-        var r = ""
-        var i = 0
-
-        while (i < fullString.length) {
-            var s = ""
-
-            while (fullString[i] != key[v2]) {
-                s += fullString[i]
-                ++i
-            }
-            var j = 0
-
-            while (j < key.length) {
-                s = s.replace(key[j].toString(), j.toString())
-                ++j
-            }
-            r += (getString(s, v2, 10).toInt() - v1).toChar()
-            ++i
-        }
-        return r
-    }
-
-    private fun zipGen(gen: Sequence<Pair<Int, Int>>): ArrayList<Pair<Pair<Int, Int>, Pair<Int, Int>>> {
-        val allItems = gen.toList().toMutableList()
-        val newList = ArrayList<Pair<Pair<Int, Int>, Pair<Int, Int>>>()
-
-        while (allItems.size > 1) {
-            newList.add(Pair(allItems[0], allItems[1]))
-            allItems.removeAt(0)
-            allItems.removeAt(0)
-        }
-        return newList
-    }
-
-    private fun decodeAdfly(codedKey: String): String {
-        var r = ""
-        var j = ""
-
-        for ((n, l) in codedKey.withIndex()) {
-            if (n % 2 != 0) {
-                j = l + j
-            } else {
-                r += l
-            }
-        }
-
-        val encodedUri = ((r + j).toCharArray().map { it.toString() }).toMutableList()
-        val numbers = sequence {
-            for ((i, n) in encodedUri.withIndex()) {
-                if (isNumber(n)) {
-                    yield(Pair(i, n.toInt()))
-                }
-            }
-        }
-
-        for ((first, second) in zipGen(numbers)) {
-            val xor = first.second.xor(second.second)
-            if (xor < 10) {
-                encodedUri[first.first] = xor.toString()
-            }
-        }
-        var returnValue = String(encodedUri.joinToString("").toByteArray(), Charsets.UTF_8)
-        returnValue = base64Decode(returnValue)
-        return returnValue.slice(16..returnValue.length - 17)
-    }
-
-    private data class VideoQuality(
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("audio") val audio: String?,
-        @JsonProperty("kwik") val kwik: String?,
-        @JsonProperty("kwik_pahewin") val kwikPahewin: String
-    )
-    private data class AnimePaheEpisodeLoadLinks(
-        @JsonProperty("data") val data: List<Map<String, VideoQuality>>
-    )
-
-
-    private suspend fun getStreamUrlFromKwik(url: String?): String? {
-        if (url == null) return null
-        val response =
-            app.get(
-                url,
-                headers = mapOf("referer" to mainUrl),
-                cookies = cookies
-            ).text
-        val unpacked = getAndUnpack(response)
-        return Regex("source=\'(.*?)\'").find(unpacked)?.groupValues?.get(1)
-    }
-
-    private suspend fun extractVideoLinks(
-        data: String,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val parsed = parseJson<LinkLoadData>(data)
-        val headers = mapOf("referer" to "$mainUrl/")
-        val episodeUrl = parsed.getUrl() ?: return
-
-        val text = app.get(episodeUrl, headers = headers).text
-        val urlRegex = Regex("""let url = "(.*?)";""")
-        val embed = urlRegex.find(text)?.groupValues?.getOrNull(1) ?: return
-
-        getStreamUrlFromKwik(embed)?.let { link ->
-            callback(
-                ExtractorLink(
-                    this.name,
-                    "Kwik",
-                    link,
-                    "https://kwik.cx/",
-                    Qualities.Unknown.value,
-                    link.contains(".m3u8")
-                )
-            )
-        }
-    }
-
- */
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -491,25 +331,35 @@ class AnimePahe : MainAPI() {
         val parsed = parseJson<LinkLoadData>(data)
         val episodeUrl = parsed.getUrl() ?: ""
         val document= app.get(episodeUrl, headers= headers).document
-        document.select("div.dropup button")
+        document.select("#resolutionMenu button")
             .map {
-                val lang: String
-                val dub=it.select("span").text()
-                if (dub.contains("eng")) lang="DUB" else lang="SUB"
-                val quality = it.attr("data-resolution")
+                val dubText = it.select("span").text().lowercase()
+                val type = if ("eng" in dubText) "DUB" else "SUB"
+
+                val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
+                val text = it.text()
+                val match = qualityRegex.find(text)
+                val source = match?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+                val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p")?.toIntOrNull()
+                    ?: Qualities.Unknown.value
+                Log.d("Phisher","$source $quality")
+
                 val href = it.attr("data-src")
-                loadSourceNameExtractor(
-                            "Animepahe [$lang]",
-                            href,
-                            quality,
-                            subtitleCallback,
-                            callback,
-                            quality
-                        )
+                if ("kwik.si" in href) {
+                    loadCustomExtractor(
+                        "Animepahe $source [$type]",
+                        href,
+                        "",
+                        subtitleCallback,
+                        callback,
+                        quality
+                    )
+                }
             }
-        val qualityRegex = Regex("""(SubsPlease|ADN)\s+·\s+(\d{3,4}p)""")
+
 
         document.select("div#pickDownload > a").amap {
+            val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
             val href = it.attr("href")
             var type = "SUB"
             if(it.select("span").text().contains("eng"))
@@ -517,14 +367,15 @@ class AnimePahe : MainAPI() {
             val text = it.text()
             val match = qualityRegex.find(text)
             val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
-            val quality = match?.groupValues?.getOrNull(2) ?: "Unknown"
-            loadSourceNameExtractor(
-                "Animepahe $source [$type]",
+            val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
+
+            loadCustomExtractor(
+                "Animepahe Pahe $source [$type]",
                 href,
                 "",
                 subtitleCallback,
                 callback,
-                quality
+                quality.toIntOrNull()
             )
         }
         return true

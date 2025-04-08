@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
@@ -33,6 +34,36 @@ suspend fun loadSourceNameExtractor(
                 ) {
                     this.referer = link.referer
                     this.quality = getQualityFromName(quality)
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+            )
+        }
+    }
+}
+
+
+suspend fun loadCustomExtractor(
+    name: String? = null,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+    quality: Int? = null,
+) {
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    name ?: link.source,
+                    name ?: link.name,
+                    link.url,
+                ) {
+                    this.quality = when {
+                        else -> quality ?: link.quality
+                    }
+                    this.type = link.type
+                    this.referer = link.referer
                     this.headers = link.headers
                     this.extractorData = link.extractorData
                 }

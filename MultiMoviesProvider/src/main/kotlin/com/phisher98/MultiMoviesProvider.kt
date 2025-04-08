@@ -15,7 +15,7 @@ import okhttp3.FormBody
 import java.net.URI
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.world"
+    override var mainUrl = "https://multimovies.press"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -152,16 +152,21 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         val description = doc.selectFirst("#info div.wp-content p")?.text()?.trim()
         val type = if (url.contains("tvshows")) TvType.TvSeries else TvType.Movie
         val trailerRegex = Regex("\"http.*\"")
-        var trailer = if (type == TvType.Movie)
-            fixUrlNull(
-                getEmbed(
-                    doc.select("#player-option-trailer").attr("data-post"),
-                    "trailer",
-                    url
-                ).parsed<TrailerUrl>().embedUrl
-            )
-        else fixUrlNull(doc.select("iframe.rptss").attr("src"))
-        trailer = trailerRegex.find(trailer.toString())?.value.toString()
+
+        var trailer: String? = if (type == TvType.Movie) {
+            try {
+                val postId = doc.select("#player-option-trailer").attr("data-post")
+                val embedResponse = getEmbed(postId, "trailer", url)
+                val parsed = embedResponse.parsed<TrailerUrl>()
+                parsed.embedUrl?.let { fixUrlNull(it) }
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            val iframeSrc = doc.select("iframe.rptss").attr("src")
+            fixUrlNull(iframeSrc)
+        }
+        trailer = trailer?.let { trailerRegex.find(it)?.value?.trim('"') }
         val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
         val duration =
             doc.selectFirst("span.runtime")?.text()?.removeSuffix(" Min.")?.trim()
@@ -233,6 +238,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val req = app.get(data).document
         req.select("ul#playeroptionsul li").map {
                 Triple(

@@ -1016,29 +1016,35 @@ object StreamPlayExtractor : StreamPlay() {
             animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
         val document=app.get("$animepaheAPI/play/$id/$session", headers).document
 
-        document.select("div.dropup button")
+        document.select("#resolutionMenu button")
             .map {
-                var lang = ""
-                val dub = it.select("span").text()
-                if (dub.contains("eng")) lang = "DUB" else lang = "SUB"
-                val quality = it.attr("data-resolution").toIntOrNull()
+                val dubText = it.select("span").text().lowercase()
+                val type = if ("eng" in dubText) "DUB" else "SUB"
+
+                val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
+                val text = it.text()
+                val match = qualityRegex.find(text)
+
+                val source = match?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+                val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p")?.toIntOrNull()
+                    ?: Qualities.Unknown.value
 
                 val href = it.attr("data-src")
-                if (href.contains("kwik.si")) {
+                if ("kwik.si" in href) {
                     loadCustomExtractor(
-                        "Animepahe [$lang]",
+                        "Animepahe $source [$type]",
                         href,
-                        "$quality",
+                        "",
                         subtitleCallback,
                         callback,
-                        quality ?: Qualities.Unknown.value
+                        quality
                     )
                 }
             }
 
-        val qualityRegex = Regex("""(SubsPlease|ADN)\s+·\s+(\d{3,4}p)""")
-
         document.select("div#pickDownload > a").amap {
+            val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
+
             val href = it.attr("href")
             var type = "SUB"
             if(it.select("span").text().contains("eng"))
@@ -1047,8 +1053,9 @@ object StreamPlayExtractor : StreamPlay() {
             val match = qualityRegex.find(text)
             val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
             val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
+
             loadCustomExtractor(
-                "Animepahe $source [$type]",
+                "Animepahe Pahe $source [$type]",
                 href,
                 "",
                 subtitleCallback,
