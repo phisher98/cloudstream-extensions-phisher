@@ -2621,43 +2621,19 @@ internal class AnimekaiDecoder {
         )
     }
 
-    fun decode(n: String): String {
-        return decodeUri(
-            substitute(
-                transform(
-                    "XvxVdt4eTSnCyG",
-                    base64UrlDecode(
-                        reverseIt(
-                            transform(
-                                "ENZqBfw54cgsJ",
-                                base64UrlDecode(
-                                    reverseIt(
-                                        substitute(
-                                            transform(
-                                                "HCcYA9gQqxUD",
-                                                base64UrlDecode(
-                                                    substitute(
-                                                        reverseIt(
-                                                            base64UrlDecode(n)
-                                                        ),
-                                                        "OdilCbZWmrtUeYg",
-                                                        "YirdmeZblOtgCWU"
-                                                    )
-                                                )
-                                            ),
-                                            "K9lQq2SsnjkObe",
-                                            "l9j2sSnekQOqKb"
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-                "nMW7qCTpe6SQhco",
-                "nqce7WMQC6pSTho"
-            )
-        )
+    fun decode(input: String, operations: List<List<String>>): String {
+        var result = input
+        for (op in operations) {
+            result = when (op[0]) {
+                "safeb64_decode" -> base64UrlDecode(result)
+                "reverse" -> reverseIt(result)
+                "substitute" -> substitute(result, op[1], op[2])
+                "rc4" -> transform(op[1], result)
+                "urldecode" -> decodeUri(result)
+                else -> error("Unknown operation: ${op[0]}")
+            }
+        }
+        return result
     }
 
     private fun base64UrlEncode(str: String): String {

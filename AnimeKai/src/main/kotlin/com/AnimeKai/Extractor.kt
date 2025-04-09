@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import kotlinx.serialization.Serializable
+
 
 class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
@@ -19,18 +21,29 @@ class MegaUp : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href = url.replace("/e/", "/media/").replace("/e2/", "/media/")
-        val name = referer ?: this.name
-        Log.d("Phisher",href)
+        val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
+        val displayName = referer ?: this.name
 
-        val response = runCatching {
-            app.get(href, headers = HEADERS).parsedSafe<AnimeKai.Response>()?.result
+        val encodedResult = runCatching {
+            app.get(mediaUrl, headers = HEADERS)
+                .parsedSafe<AnimeKai.Response>()?.result
         }.getOrNull() ?: return
-        val decoded = AnimekaiDecoder().decode(response).replace("\\", "")
-        val m3u8Data = runCatching { Gson().fromJson(decoded, AnimeKai.M3U8::class.java) }.getOrNull() ?: return
-        val m3u8 = m3u8Data.sources.firstOrNull()?.file ?: return
 
-        M3u8Helper.generateM3u8(name, m3u8, mainUrl).forEach(callback)
+        val decryptionSteps = runCatching {
+            app.get(KEYS_URL).parsedSafe<AnimeKaiKey>()?.megaup?.decrypt
+        }.getOrNull() ?: return
+
+        val decodedJson = runCatching {
+            AnimekaiDecoder().decode(encodedResult, decryptionSteps).replace("\\", "")
+        }.getOrNull() ?: return
+
+        val m3u8Data = runCatching {
+            Gson().fromJson(decodedJson, AnimeKai.M3U8::class.java)
+        }.getOrNull() ?: return
+
+        m3u8Data.sources.firstOrNull()?.file?.let { m3u8 ->
+            M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
+        }
 
         m3u8Data.tracks.forEach { track ->
             track.label?.let { subtitleCallback(SubtitleFile(it, track.file)) }
@@ -38,6 +51,9 @@ class MegaUp : ExtractorApi() {
     }
 
     companion object {
+        private const val KEYS_URL =
+            "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/kai_codex.json"
+
         private val HEADERS = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
             "Accept" to "text/html, */*; q=0.01",
@@ -53,4 +69,13 @@ class MegaUp : ExtractorApi() {
             "Cookie" to "usertype=guest; session=your-session-id; cf_clearance=your-clearance-token"
         )
     }
+
+    @Serializable
+    data class AnimeKaiKey(val kai: Kai, val megaup: Megaup)
+
+    @Serializable
+    data class Kai(val encrypt: List<List<String>>, val decrypt: List<List<String>>)
+
+    @Serializable
+    data class Megaup(val encrypt: List<List<String>>, val decrypt: List<List<String>>)
 }
