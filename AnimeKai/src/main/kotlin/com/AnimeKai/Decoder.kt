@@ -87,35 +87,42 @@ class AnimekaiDecoder {
 
     fun decode(n: String): String {
         return decodeUri(
-            reverseIt(
-                transform("hI8JxsWF9G",
-                    base64UrlDecode(
-                        substitute(
-                            transform("HzdLUrxnhcS",
-                                base64UrlDecode(
+            substitute(
+            transform(
+                "XvxVdt4eTSnCyG",
+                base64UrlDecode(
+                    reverseIt(
+                        transform(
+                            "ENZqBfw54cgsJ",
+                            base64UrlDecode(
+                                reverseIt(
                                     substitute(
-                                        reverseIt(
-                                            reverseIt(
+                                        transform(
+                                            "HCcYA9gQqxUD",
+                                            base64UrlDecode(
                                                 substitute(
-                                                    transform("Zd5yYckQ38h",
-                                                        base64UrlDecode(
-                                                            base64UrlDecode(n)
-                                                        )
+                                                    reverseIt(
+                                                        base64UrlDecode(n)
                                                     ),
-                                                    "RuFt8YWnQA", "RQunFW8AYt"
+                                                    "OdilCbZWmrtUeYg",
+                                                    "YirdmeZblOtgCWU"
                                                 )
                                             )
                                         ),
-                                        "GJRdPQgXn34ul", "JGQ34nPlRudgX"
+                                        "K9lQq2SsnjkObe",
+                                        "l9j2sSnekQOqKb"
                                     )
                                 )
-                            ),
-                            "9mz6PhsUQVNS", "mN9sQhVUPSz6"
+                            )
                         )
                     )
                 )
-            )
+            ),
+            "nMW7qCTpe6SQhco",
+            "nqce7WMQC6pSTho"
         )
+        )
+
     }
 
     private fun base64UrlEncode(str: String): String {
