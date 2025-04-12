@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -8,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getPacked
@@ -52,10 +52,8 @@ open class Cybervynx : ExtractorApi() {
         } else {
             response.document.selectFirst("script:containsData(sources:)")?.data()
         } ?: return
-        Log.d("Phisher script",script)
         val m3u8 =
             Regex("\"hls2\":\"(.*?)\"").find(script)?.groupValues?.getOrNull(1)
-        Log.d("Phisher script",m3u8.toString())
 
         generateM3u8(
             name,
@@ -120,39 +118,37 @@ open class AWSStream : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val scriptData = app.get(url, referer = referer)
+        val evalContent = app.get(url, referer = referer)
             .document
             .selectFirst("script:containsData(function(p,a,c,k,e,d))")
             ?.data() ?: return
 
-        val extractedHash = Regex("/cdn/down/([a-f0-9]{32})/").find(scriptData)
-            ?.groupValues?.getOrNull(1)
-
+        val evalRegex = Regex("""eval\(.*""", RegexOption.DOT_MATCHES_ALL)
+        val matchedEval = evalRegex.find(evalContent)?.value ?: return
+        val scriptData = JsUnpacker(matchedEval).unpack().toString()
+        val extractedHash = scriptData.substringAfter("cdn\\\\/down\\\\/").substringBefore("\\")
         val subtitleUrl = Regex("""playerjsSubtitle\s*=\s*"(?:\[.*?])?(https?://[^"]+\.srt)"""").find(scriptData)?.groupValues?.getOrNull(1)
-        Log.d("Phisher",subtitleUrl.toString())
-        if (extractedHash != null) {
-            val m3u8Url = "$API/cdn/hls/$extractedHash/master.txt"
+        val m3u8Url = "$API/cdn/hls/$extractedHash/master.txt"
 
-            callback(
-                newExtractorLink(
-                    name,
-                    name,
-                    url = m3u8Url,
-                    type = ExtractorLinkType.M3U8
-                ) {
-                    this.referer = referer ?: ""
-                    this.quality = Qualities.P1080.value
-                }
-            )
-
-            if (subtitleUrl != null) {
-                subtitleCallback(
-                    SubtitleFile(
-                        "English",
-                        subtitleUrl
-                    )
-                )
+        callback(
+            newExtractorLink(
+                name,
+                name,
+                url = m3u8Url,
+                type = ExtractorLinkType.M3U8
+            ) {
+                this.referer = referer ?: ""
+                this.quality = Qualities.P1080.value
             }
+        )
+
+        if (subtitleUrl != null) {
+            subtitleCallback(
+                SubtitleFile(
+                    "English",
+                    subtitleUrl
+                )
+            )
         }
     }
 }
