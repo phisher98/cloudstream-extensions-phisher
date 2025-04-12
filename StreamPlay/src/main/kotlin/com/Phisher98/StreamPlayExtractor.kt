@@ -2239,39 +2239,67 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url = "$EmbedSu/embed/${if (season == null) "movie/$id" else "tv/$id/$season/$episode"}"
-        val scriptData = app.get(url, referer = EmbedSu)
-            .document.selectFirst("script:containsData(window.vConfig)")?.data() ?: return
-        val jsonencoded = Regex("atob\\(`(.*?)`\\)")
-            .find(scriptData)?.groupValues?.getOrNull(1)?.let(::base64Decode)?.toJson() ?: return
-        val json = Gson().fromJson(jsonencoded, Embedsu::class.java)
-        val encodedHash = base64Decode("${json.hash}==")
-        val decodedResult = encodedHash.split(".").joinToString("") { it.reversed() }
-            .reversed()
-            .let { base64Decode("$it=") }
+        try {
+            val embedPath = if (season == null) "movie/$id" else "tv/$id/$season/$episode"
+            val url = "$EmbedSu/embed/$embedPath"
 
-        EmbedSuitemparseJson(decodedResult).forEach {
-            app.get("$EmbedSu/api/e/${it.hash}", referer = EmbedSu)
-                .parsedSafe<Embedsuhref>()?.source?.let { m3u8 ->
+            val scriptContent = runCatching {
+                app.get(url, referer = EmbedSu)
+                    .document.selectFirst("script:containsData(window.vConfig)")
+                    ?.data()
+            }.getOrNull() ?: return
+
+            val encodedJson = runCatching {
+                Regex("atob\\(`(.*?)`\\)").find(scriptContent)
+                    ?.groupValues?.getOrNull(1)
+                    ?.let(::base64Decode)
+                    ?.toJson()
+            }.getOrNull() ?: return
+
+            val embedData = runCatching {
+                Gson().fromJson(encodedJson, Embedsu::class.java)
+            }.getOrNull() ?: return
+
+            val decodedPayload = runCatching {
+                val hashDecoded = base64Decode(embedData.hash)
+                base64Decode(
+                    hashDecoded.split(".")
+                        .joinToString("") { it.reversed() }
+                        .reversed() + "="
+                )
+            }.getOrNull() ?: return
+
+            EmbedSuitemparseJson(decodedPayload).forEach { item ->
+                runCatching {
+                    val sourceUrl = app.get("$EmbedSu/api/e/${item.hash}", referer = EmbedSu)
+                        .parsedSafe<Embedsuhref>()
+                        ?.source ?: return@runCatching
+
                     callback(
                         newExtractorLink(
                             "Embedsu Viper",
                             "Embedsu Viper",
-                            url = m3u8,
+                            url = sourceUrl,
                             type = ExtractorLinkType.M3U8
                         ) {
-                            this.referer = EmbedSu
-                            this.quality = Qualities.P1080.value
-                            this.headers = mapOf(
+                            referer = EmbedSu
+                            quality = Qualities.P1080.value
+                            headers = mapOf(
                                 "Origin" to "https://embed.su",
                                 "Referer" to "https://embed.su/",
                                 "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
                             )
                         }
                     )
+                }.onFailure {
+                    Log.w("Embedsu", "Failed to fetch or parse link for item: ${item.hash} $it")
                 }
+            }
+        } catch (e: Exception) {
+            Log.e("Embedsu", "Unexpected error in invokeEmbedsu $e")
         }
     }
+
 
     suspend fun invokeTheyallsayflix(
         id: String? = null,
@@ -3684,48 +3712,92 @@ object StreamPlayExtractor : StreamPlay() {
         title: String? = null,
         episode: Int? = null,
         season: Int? = null,
-        year: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val fixtitle = title.createSlug()
-        val Juicykey =
-            app.get(BuildConfig.CatflixAPI, referer = Catflix).parsedSafe<CatflixJuicy>()?.juice
-        val href = if (season == null) {
-            "$Catflix/movie/$fixtitle-$id"
-        } else {
-            "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
-        }
-        val res = app.get(href, referer = Catflix).toString()
-        val iframe = base64Decode(
-            Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""").find(res)?.groupValues?.get(1)!!
-        )
-        val iframedata = app.get(iframe, referer = Catflix).toString()
-        val apkey = Regex("""apkey\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.get(1)
-        val xxid = Regex("""xxid\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.get(1)
-        val theJuiceData = "https://turbovid.eu/api/cucked/the_juice/?${apkey}=${xxid}"
-        val Juicedata = app.get(
-            theJuiceData,
-            headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
-            referer = theJuiceData
-        ).parsedSafe<CatflixJuicydata>()?.data
-        if (Juicedata != null && Juicykey != null) {
-            val url = CatdecryptHexWithKey(Juicedata, Juicykey)
-            val headers = mapOf("Origin" to "https://turbovid.eu/", "Connection" to "keep-alive")
-            callback.invoke(
-                newExtractorLink(
-                    "Catflix",
-                    "Catflix",
-                    url = url,
-                    INFER_TYPE
-                ) {
-                    this.referer = "https://turbovid.eu/"
-                    this.quality = Qualities.P1080.value
-                    this.headers = headers
+        try {
+            val fixtitle = title.createSlug()
+
+            val juicyKey = runCatching {
+                app.get(BuildConfig.CatflixAPI, referer = Catflix)
+                    .parsedSafe<CatflixJuicy>()
+                    ?.juice
+            }.getOrNull()
+
+            val href = if (season == null) {
+                "$Catflix/movie/$fixtitle-$id"
+            } else {
+                "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
+            }
+            Log.d("Phisher",href)
+            val pageHtml = runCatching {
+                app.get(href, referer = Catflix).toString()
+            }.getOrNull() ?: return
+            Log.d("Phisher",pageHtml)
+
+            val iframe = runCatching {
+                Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""")
+                    .find(pageHtml)
+                    ?.groupValues?.get(1)
+                    ?.let(::base64Decode)
+            }.getOrNull() ?: return
+            Log.d("Phisher",iframe)
+
+            val iframeHtml = runCatching {
+                app.get(iframe, referer = Catflix).toString()
+            }.getOrNull() ?: return
+            Log.d("Phisher",iframeHtml)
+
+            val apkey = Regex("""apkey\s*=\s*['"](.*?)["']""")
+                .find(iframeHtml)
+                ?.groupValues?.getOrNull(1)
+            Log.d("Phisher", apkey.toString())
+
+            val xxid = Regex("""xxid\s*=\s*['"](.*?)["']""")
+                .find(iframeHtml)
+                ?.groupValues?.getOrNull(1)
+
+            if (apkey.isNullOrEmpty() || xxid.isNullOrEmpty()) return
+
+            val juiceUrl = "https://turbovid.eu/api/cucked/the_juice/?$apkey=$xxid"
+
+            val juiceData = runCatching {
+                app.get(
+                    juiceUrl,
+                    headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
+                    referer = juiceUrl
+                ).parsedSafe<CatflixJuicydata>()?.data
+            }.getOrNull()
+
+            if (!juiceData.isNullOrEmpty() && !juicyKey.isNullOrEmpty()) {
+                val finalUrl = runCatching {
+                    CatdecryptHexWithKey(juiceData, juicyKey)
+                }.getOrNull()
+
+                if (!finalUrl.isNullOrEmpty()) {
+                    val headers = mapOf(
+                        "Origin" to "https://turbovid.eu/",
+                        "Connection" to "keep-alive"
+                    )
+
+                    callback(
+                        newExtractorLink(
+                            "Catflix",
+                            "Catflix",
+                            url = finalUrl,
+                            INFER_TYPE
+                        ) {
+                            referer = "https://turbovid.eu/"
+                            quality = Qualities.P1080.value
+                            this.headers = headers
+                        }
+                    )
                 }
-            )
+            }
+        } catch (e: Exception) {
+            Log.e("Catflix", "Unexpected error in invokecatflix $e")
         }
     }
+
 
     suspend fun invokeDramacool(
         title: String?,
