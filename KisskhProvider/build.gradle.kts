@@ -37,7 +37,7 @@ cloudstream {
         "Movie",
     )
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=kisskh.co&sz=%size%"
+    iconUrl = "https://www.google.com/s2/favicons?domain=kisskh.ovh&sz=%size%"
 
     isCrossPlatform = true
 }

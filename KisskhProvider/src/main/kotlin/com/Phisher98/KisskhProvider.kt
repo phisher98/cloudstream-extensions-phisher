@@ -18,7 +18,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import java.util.ArrayList
 
 class KisskhProvider : MainAPI() {
-    override var mainUrl = "https://kisskh.co"
+    override var mainUrl = "https://kisskh.ovh"
     override var name = "Kisskh"
     override val hasMainPage = true
     override val hasDownloadSupport = true
