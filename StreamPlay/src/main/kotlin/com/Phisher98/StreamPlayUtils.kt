@@ -2005,13 +2005,21 @@ suspend fun invokeExternalSource(
 
     fids.amapIndexed { index, fileList ->
         val superToken = token ?: ""
-        Log.d("Phisher", superToken)
+        val TokenHeaders = mapOf("Cookie" to superToken)
+        val fallbackUrl = "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey"
+        val player: String = try {
+            val primaryUrl = "https://febbox.vercel.app/api/video-quality?fid=${fileList.fid}"
+            val primaryResponse = app.get(primaryUrl)
 
-        val player = app.get(
-            "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey",
-            headers = mapOf("Cookie" to superToken)
-        ).text
-
+            if (primaryResponse.code == 200 && primaryResponse.text.isNotBlank()) {
+                primaryResponse.text
+            } else {
+                throw Exception("Primary API failed or returned empty")
+            }
+        } catch (e: Exception) {
+            val fallbackResponse = app.get(fallbackUrl, headers = TokenHeaders).text
+            fallbackResponse
+        }
         val json = try {
             JSONObject(player)
         } catch (e: Exception) {
@@ -2022,26 +2030,33 @@ suspend fun invokeExternalSource(
         if (htmlContent.isEmpty()) return@amapIndexed
 
         val document: Document = Jsoup.parse(htmlContent)
-        val sourcesWithQualities = mutableListOf<Pair<String, String>>()
+        val sourcesWithQualities = mutableListOf<Triple<String, String, String>>() // url, quality, size
 
-        document.select("div.file_quality").forEach {
-            val url = it.attr("data-url").takeIf { it.isNotEmpty() }
-            val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }
-                ?.let { if (it == "ORG") "2160p" else it }
-            if (url != null && quality != null) {
-                sourcesWithQualities.add(url to quality)
+        document.select("div.file_quality").forEach { element ->
+            val url = element.attr("data-url").takeIf { it.isNotEmpty() } ?: return@forEach
+            val qualityAttr = element.attr("data-quality").takeIf { it.isNotEmpty() }
+            val size = element.selectFirst(".size")?.text()?.takeIf { it.isNotEmpty() } ?: return@forEach
+
+            val quality = if (qualityAttr.equals("ORG", ignoreCase = true)) {
+                Regex("""(\d{3,4}p)""", RegexOption.IGNORE_CASE).find(url)?.groupValues?.get(1) ?: "2160p"
+            } else {
+                qualityAttr ?: return@forEach
             }
+
+            sourcesWithQualities.add(Triple(url, quality, size))
         }
 
         val sourcesJsonArray = JSONArray().apply {
-            sourcesWithQualities.forEach { (url, quality) ->
+            sourcesWithQualities.forEach { (url, quality, size) ->
                 put(JSONObject().apply {
                     put("file", url)
                     put("label", quality)
                     put("type", "video/mp4")
+                    put("size", size)
                 })
             }
         }
+
         val jsonObject = JSONObject().put("sources", sourcesJsonArray)
         listOf(jsonObject.toString()).forEach {
             val parsedSources = tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
@@ -2053,8 +2068,8 @@ suspend fun invokeExternalSource(
 
                 callback.invoke(
                     ExtractorLink(
-                        "SuperStream",
-                        "SuperStream [Server ${index + 1}]",
+                        "SuperStream ${source.size}",
+                        "SuperStream [Server ${index + 1}] ${source.size}",
                         source.file?.replace("\\/", "/") ?: return@org,
                         "",
                         getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
