@@ -15,7 +15,7 @@ import okhttp3.FormBody
 import java.net.URI
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.press"
+    override var mainUrl = "https://multimovies.guru"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
