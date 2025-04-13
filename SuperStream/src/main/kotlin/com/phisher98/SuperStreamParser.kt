@@ -51,7 +51,6 @@ data class ExternalSources(
     @JsonProperty("file") val file: String? = null,
     @JsonProperty("label") val label: String? = null,
     @JsonProperty("type") val type: String? = null,
-    @JsonProperty("size") val size: String? = null,
 )
 
 

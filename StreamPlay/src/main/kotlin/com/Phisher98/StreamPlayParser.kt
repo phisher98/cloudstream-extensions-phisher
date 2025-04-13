@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -1491,7 +1492,6 @@ data class ExternalSources(
     @JsonProperty("file") val file: String? = null,
     @JsonProperty("label") val label: String? = null,
     @JsonProperty("type") val type: String? = null,
-    @JsonProperty("size") val size: String? = null,
 )
 
 data class UiraResponse(

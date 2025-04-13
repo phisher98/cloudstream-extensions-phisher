@@ -5,7 +5,6 @@ import com.phisher98.SuperStreamExtractor.invokeSubtitleAPI
 import com.phisher98.SuperStreamExtractor.invokeSuperstream
 import com.phisher98.SuperStreamExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -38,10 +37,6 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import okhttp3.Interceptor
-import okhttp3.Response
-import java.io.IOException
-import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -124,7 +119,7 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page",interceptor = CloudflareDnsInterceptor())
+        val home = app.get("${request.data}$adultQuery&page=$page")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -159,7 +154,7 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         } else {
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=$append"
         }
-        val res = app.get(resUrl,interceptor = CloudflareDnsInterceptor()).parsedSafe<MediaDetail>()
+        val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
 
         val title = res.title ?: res.name ?: return null
@@ -538,69 +533,6 @@ data class MediaDetail(
         } catch (t: Throwable) {
             logError(t)
             false
-        }
-    }
-
-    class CloudflareDnsInterceptor : Interceptor {
-        // Use a static flag to remember if proxy should always be used
-        companion object {
-            @Volatile
-            private var shouldUseProxy = false
-        }
-
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val originalRequest = chain.request()
-            val originalUrl = originalRequest.url.toString()
-
-            // If proxy mode is activated, always use proxy
-            if (shouldUseProxy) {
-                return proceedWithProxy(chain, originalRequest, originalUrl)
-            }
-
-            return try {
-                // Attempt the original request first
-                val originalResponse = chain.proceed(originalRequest)
-
-                if (!originalResponse.isSuccessful) {
-                    Log.e("CloudflareDnsInterceptor", "Original request failed: ${originalResponse.code}")
-                    originalResponse.close() // Close failed response
-                    throw IOException("Original request failed")
-                }
-
-                Log.d("CloudflareDnsInterceptor", "Original request successful")
-                originalResponse
-            } catch (e: IOException) {
-                Log.e("CloudflareDnsInterceptor", "Original request failed, switching to proxy: ${e.message}")
-
-                // Activate proxy mode permanently
-                shouldUseProxy = true
-                proceedWithProxy(chain, originalRequest, originalUrl)
-            }
-        }
-
-        private fun proceedWithProxy(chain: Interceptor.Chain, originalRequest: okhttp3.Request, originalUrl: String): Response {
-            val proxyUrl = "${BuildConfig.PROXYAPI}=${URLEncoder.encode(originalUrl, "UTF-8")}"
-            Log.w("CloudflareDnsInterceptor", "Using proxy for request: $proxyUrl")
-
-            val proxyRequest = originalRequest.newBuilder()
-                .url(proxyUrl)
-                .build()
-
-            return try {
-                val proxyResponse = chain.proceed(proxyRequest)
-
-                if (!proxyResponse.isSuccessful) {
-                    Log.e("CloudflareDnsInterceptor", "Proxy request failed: ${proxyResponse.code}")
-                    proxyResponse.close()
-                    throw IOException("Proxy request failed")
-                }
-
-                Log.d("CloudflareDnsInterceptor", "Proxy request successful")
-                proxyResponse
-            } catch (proxyException: IOException) {
-                Log.e("CloudflareDnsInterceptor", "Proxy failed: ${proxyException.message}")
-                throw proxyException
-            }
         }
     }
 

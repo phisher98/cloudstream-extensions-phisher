@@ -1,5 +1,3 @@
-@file:Suppress("NAME_SHADOWING")
-
 package com.phisher98
 
 import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
@@ -81,22 +79,10 @@ object SuperStreamExtractor : SuperStream() {
 
         fids.amapIndexed { index, fileList ->
             val superToken = token ?: ""
-            val fallbackUrl = "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey"
-            val headers = mapOf("Cookie" to superToken)
-            val player: String = try {
-                val primaryUrl = "https://febbox.vercel.app/api/video-quality?fid=${fileList.fid}"
-                val primaryResponse = app.get(primaryUrl)
-
-                if (primaryResponse.code == 200 && primaryResponse.text.isNotBlank()) {
-                    primaryResponse.text
-                } else {
-                    throw Exception("Primary API failed or returned empty")
-                }
-            } catch (e: Exception) {
-                val fallbackResponse = app.get(fallbackUrl, headers = headers).text
-                fallbackResponse
-            }
-
+            val player = app.get(
+                "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey",
+                headers = mapOf("Cookie" to superToken)
+            ).text
             val json = try {
                 JSONObject(player)
             } catch (e: Exception) {
@@ -107,33 +93,26 @@ object SuperStreamExtractor : SuperStream() {
             if (htmlContent.isEmpty()) return@amapIndexed
 
             val document: Document = Jsoup.parse(htmlContent)
-            val sourcesWithQualities = mutableListOf<Triple<String, String, String>>() // url, quality, size
+            val sourcesWithQualities = mutableListOf<Pair<String, String>>()
 
-            document.select("div.file_quality").forEach { element ->
-                val url = element.attr("data-url").takeIf { it.isNotEmpty() } ?: return@forEach
-                val qualityAttr = element.attr("data-quality").takeIf { it.isNotEmpty() }
-                val size = element.selectFirst(".size")?.text()?.takeIf { it.isNotEmpty() } ?: return@forEach
-
-                val quality = if (qualityAttr.equals("ORG", ignoreCase = true)) {
-                    Regex("""(\d{3,4}p)""", RegexOption.IGNORE_CASE).find(url)?.groupValues?.get(1) ?: "2160p"
-                } else {
-                    qualityAttr ?: return@forEach
+            document.select("div.file_quality").forEach {
+                val url = it.attr("data-url").takeIf { it.isNotEmpty() }
+                val quality = it.attr("data-quality").takeIf { it.isNotEmpty() }
+                    ?.let { if (it == "ORG") "2160p" else it }
+                if (url != null && quality != null) {
+                    sourcesWithQualities.add(url to quality)
                 }
-
-                sourcesWithQualities.add(Triple(url, quality, size))
             }
 
             val sourcesJsonArray = JSONArray().apply {
-                sourcesWithQualities.forEach { (url, quality, size) ->
+                sourcesWithQualities.forEach { (url, quality) ->
                     put(JSONObject().apply {
                         put("file", url)
                         put("label", quality)
                         put("type", "video/mp4")
-                        put("size", size)
                     })
                 }
             }
-
             val jsonObject = JSONObject().put("sources", sourcesJsonArray)
             listOf(jsonObject.toString()).forEach {
                 val parsedSources =
@@ -144,8 +123,8 @@ object SuperStreamExtractor : SuperStream() {
                     if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
                         ExtractorLink(
-                            "SuperStream ${source.size}",
-                            "SuperStream [Server ${index + 1}] ${source.size}",
+                            "SuperStream",
+                            "SuperStream [Server ${index + 1}]",
                             source.file?.replace("\\/", "/") ?: return@org,
                             "",
                             getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
@@ -222,82 +201,42 @@ object SuperStreamExtractor : SuperStream() {
         season: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        try {
-            val fixtitle = title?.createSlug() ?: return
-
-            val Juicykey = try {
-                app.get(BuildConfig.CatflixAPI, referer = Catflix)
-                    .parsedSafe<CatflixJuicy>()?.juice
-            } catch (e: Exception) {
-                null
-            }
-
-            val href = if (season == null) {
-                "$Catflix/movie/$fixtitle-$id"
-            } else {
-                "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
-            }
-
-            val res = try {
-                app.get(href, referer = Catflix).toString()
-            } catch (e: Exception) {
-                return
-            }
-
-            val iframe = try {
-                val encoded = Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""").find(res)?.groupValues?.get(1)
-                base64Decode(encoded ?: return)
-            } catch (e: Exception) {
-                return
-            }
-
-            val iframedata = try {
-                app.get(iframe, referer = Catflix).toString()
-            } catch (e: Exception) {
-                return
-            }
-
-            val apkey = Regex("""apkey\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.getOrNull(1)
-            val xxid = Regex("""xxid\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.getOrNull(1)
-
-            if (apkey == null || xxid == null) return
-
-            val theJuiceData = "https://turbovid.eu/api/cucked/the_juice/?$apkey=$xxid"
-
-            val Juicedata = try {
-                app.get(
-                    theJuiceData,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
-                    referer = theJuiceData
-                ).parsedSafe<CatflixJuicydata>()?.data
-            } catch (e: Exception) {
-                null
-            }
-
-            if (Juicedata != null && Juicykey != null) {
-                val url = try {
-                    CatdecryptHexWithKey(Juicedata, Juicykey)
-                } catch (e: Exception) {
-                    return
+        val fixtitle = title.createSlug()
+        val Juicykey =
+            app.get(BuildConfig.CatflixAPI, referer = Catflix).parsedSafe<CatflixJuicy>()?.juice
+        val href = if (season == null) {
+            "$Catflix/movie/$fixtitle-$id"
+        } else {
+            "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
+        }
+        val res = app.get(href, referer = Catflix).toString()
+        val iframe = base64Decode(
+            Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""").find(res)?.groupValues?.get(1)!!
+        )
+        val iframedata = app.get(iframe, referer = Catflix).toString()
+        val apkey = Regex("""apkey\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.get(1)
+        val xxid = Regex("""xxid\s*=\s*['"](.*?)["']""").find(iframedata)?.groupValues?.get(1)
+        val theJuiceData = "https://turbovid.eu/api/cucked/the_juice/?${apkey}=${xxid}"
+        val Juicedata = app.get(
+            theJuiceData,
+            headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
+            referer = theJuiceData
+        ).parsedSafe<CatflixJuicydata>()?.data
+        if (Juicedata != null && Juicykey != null) {
+            val url = CatdecryptHexWithKey(Juicedata, Juicykey)
+            val headers = mapOf("Origin" to "https://turbovid.eu/", "Connection" to "keep-alive")
+            callback.invoke(
+                newExtractorLink(
+                    "Catflix",
+                    "Catflix",
+                    url = url,
+                    INFER_TYPE
+                ) {
+                    this.referer = "https://turbovid.eu/"
+                    this.quality = Qualities.P1080.value
+                    this.headers = headers
                 }
-
-                val headers = mapOf("Origin" to "https://turbovid.eu/", "Connection" to "keep-alive")
-                callback.invoke(
-                    newExtractorLink(
-                        "Catflix",
-                        "Catflix",
-                        url = url,
-                        INFER_TYPE
-                    ) {
-                        this.referer = "https://turbovid.eu/"
-                        this.quality = Qualities.P1080.value
-                        this.headers = headers
-                    }
-                )
-            }
-
-        } catch (e: Exception) {
-            // Optional: Log the error if needed
+            )
         }
     }
 
