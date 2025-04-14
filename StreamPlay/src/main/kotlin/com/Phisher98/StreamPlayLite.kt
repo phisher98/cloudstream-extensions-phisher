@@ -18,7 +18,6 @@ import com.phisher98.StreamPlayExtractor.invokeWatchCartoon
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
-import com.phisher98.StreamPlayExtractor.invokeFlicky
 import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokePlayer4U
@@ -55,9 +54,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.episode,
                     callback
                 )
-            },
-            {
-                if (!res.isAnime) invokeFlicky(res.id, res.season, res.episode, callback)
             },
             {
                 if (!res.isAnime) invokeWatchsomuch(

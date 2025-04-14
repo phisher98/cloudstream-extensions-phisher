@@ -6,7 +6,6 @@ import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
 import com.phisher98.StreamPlayExtractor.invokeAoneroom
-import com.phisher98.StreamPlayExtractor.invokeAsianHD
 import com.phisher98.StreamPlayExtractor.invokeBollyflix
 import com.phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
@@ -17,7 +16,6 @@ import com.phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
-import com.phisher98.StreamPlayExtractor.invokeFlicky
 import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeHinAuto
@@ -142,7 +140,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
         const val lingAPI = "https://ling-online.net"
-        const val AsianhdAPI = "https://asianhdplay.in"
+        //const val AsianhdAPI = "https://asianhdplay.in"
         const val flixonAPI = "https://flixon.ovh"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
@@ -166,13 +164,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
         const val nepuAPI = "https://nepu.to"
-        const val uhdmoviesAPI = "https://uhdmovies.wales"
-        const val topmoviesAPI = "https://topmovies.loan"
-        const val MoviesmodAPI= "https://moviesmod.gift"
+        const val modflixAPI="https://modflix.xyz"
         const val hdmovies4uAPI = "https://hdmovies4u.ph"
-        const val vegaMoviesAPI = "https://vegamovies.band"
-        const val dotmoviesAPI = "https://luxmovies.diy"
-        const val rogmoviesAPI = "https://rogmovies.lol"
+        const val Vglist="https://vglist.nl"
         const val dahmerMoviesAPI="https://a.111477.xyz"
         const val MovieDrive_API="https://moviesdrive.xyz"
         const val bollyflixAPI = "https://bollyflix.kiwi"
@@ -185,7 +179,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val EmbedSu="https://embed.su"
-        const val FlickyAPI="https://www.flicky.host"
+        //const val FlickyAPI="https://www.flicky.host"
         const val WyZIESUBAPI="https://subs.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"
@@ -260,7 +254,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page", interceptor = CloudflareDnsInterceptor())
+        val home = app.get("${request.data}$adultQuery&page=$page")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -280,7 +274,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}", interceptor = CloudflareDnsInterceptor())
+        return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
             }
@@ -294,7 +288,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         } else {
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=$append"
         }
-        val res = app.get(resUrl, interceptor = CloudflareDnsInterceptor()).parsedSafe<MediaDetail>()
+        val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
 
         val title = res.title ?: res.name ?: return null
@@ -330,7 +324,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->
-                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey", interceptor = CloudflareDnsInterceptor())
+                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
                         newEpisode(LinkData(
                             data.id,
@@ -609,9 +603,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
-            {
-                if (!res.isAnime) invokeFlicky(res.id, res.season, res.episode, callback)
-            },
     {
         if (!res.isAnime) invokeFlixon(
             res.id,
@@ -797,16 +788,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     {
         if (!res.isAnime) invoke2embed(
             res.imdbId,
-            res.season,
-            res.episode,
-            subtitleCallback,
-            callback
-        )
-    },
- {
-        if (res.isAsian) invokeAsianHD(
-            res.title,
-            res.year,
             res.season,
             res.episode,
             subtitleCallback,

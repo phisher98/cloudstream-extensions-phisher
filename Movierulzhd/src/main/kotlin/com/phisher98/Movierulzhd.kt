@@ -6,11 +6,15 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.extractors.helper.CryptoJS.decrypt
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.Interceptor
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -328,6 +332,19 @@ open class Movierulzhd : MainAPI() {
         val post: String? = null,
         val nume: String? = null,
     )
+
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+
+            // Log the URL of each request
+            println("Intercepted request: ${request.url}")
+
+            val response = chain.proceed(request)
+
+            response
+        }
+    }
 
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,

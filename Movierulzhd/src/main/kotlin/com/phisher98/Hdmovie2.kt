@@ -13,7 +13,7 @@ import java.util.Calendar
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.study"
+    override var mainUrl = "https://hdmovie2.navy"
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
         "trending" to "Trending",

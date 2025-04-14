@@ -98,20 +98,25 @@ open class Akamaicdn : ExtractorApi() {
         val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
         val ids = mappers.split(",").map { it.replace("\"", "") }
+        val m3u8="$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1"
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
-                "$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1",
-                url,
-                Qualities.P1080.value,
-                type = ExtractorLinkType.M3U8,
-                headers = headers
+                m3u8,
+                ExtractorLinkType.M3U8
             )
+            {
+                this.referer=url
+                this.quality=Qualities.P1080.value
+                this.headers=headers
+
+            }
         )
     }
 }
+
 class Mocdn:Akamaicdn(){
-   override val name = "Mocdn"
-   override val mainUrl = "https://mocdn.art"
+    override val name = "Mocdn"
+    override val mainUrl = "https://molop.art"
 }

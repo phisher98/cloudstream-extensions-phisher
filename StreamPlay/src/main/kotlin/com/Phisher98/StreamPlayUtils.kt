@@ -1842,92 +1842,98 @@ fun decryptLinks(data: String): List<String> {
     return pt.chunked(5)
 }
 
-suspend fun loadHindMoviezLinks(
+
+fun loadHindMoviezLinks(
     data: String,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
 
     val links = data.split("+")
+    val scope = CoroutineScope(Dispatchers.IO)  // Using IO dispatcher for network calls
+
     links.forEach { item ->
-        val res = app.get(item, timeout = 30, allowRedirects = true)
-        val doc = res.document
-        if (res.url.contains("hpage.site")) {
-            val quality = getVideoQuality(doc.select(".container h2").text())
-            val links = doc.select(".container a");
-            links.forEach { item ->
-                callback.invoke(
-                    newExtractorLink(
-                        "HindMoviez [H-Cloud]",
-                        "HindMoviez [H-Cloud]",
-                        url = item.attr("href")
-                    )
-                    {
-                        this.quality=quality
-                    }
-                )
-            }
-        } else if (res.url.contains("hindshare.site")) {
-            val quality = getVideoQuality(doc.select(".container p:nth-of-type(1) strong").text())
-            val links = doc.select(".btn-group a");
-            links.forEach { item ->
-                if (item.text().contains("HCloud")) {
-                    callback.invoke(
-                        newExtractorLink(
-                            "HindMoviez [H-Cloud]",
-                            "HindMoviez [H-Cloud]",
-                            url = item.attr("href"),
-                        )
-                        {
-                            this.quality=quality
-                        }
-                    )
-                } else if (item.attr("href").contains("hindcdn.site")) {
-                    val doc =
-                        app.get(item.attr("href"), timeout = 30, allowRedirects = true).document
-                    val links = doc.select(".container a");
-                    links.forEach { item ->
-                        val host = if (item.text().lowercase().contains("google")) {
-                            item.text()
-                        } else {
-                            "HindCdn H-Cloud"
-                        }
+        scope.launch {
+            try {
+                val res = app.get(item, timeout = 30, allowRedirects = true)
+                val doc = res.document
+                val size = doc.selectFirst("body > div.container > p:nth-child(3)")?.ownText()
+                Log.d("Phisher HH Size",size.toString())
+                if (res.url.contains("hpage.site")) {
+                    val quality = getVideoQuality(doc.select(".container h2").text())
+                    val linkElements = doc.select(".container a")
+                    linkElements.forEach { linkItem ->
                         callback.invoke(
                             newExtractorLink(
-                                "HindMoviez [$host]",
-                                "HindMoviez [$host]",
-                                url = item.attr("href"),
+                                "HindMoviez [H-Cloud] [$size]",
+                                "HindMoviez [H-Cloud] [$size]",
+                                url = linkItem.attr("href")
                             ) {
                                 this.quality = quality
                             }
                         )
-
                     }
-                } else if (item.attr("href").contains("gdirect.cloud")) {
-                    val doc = app.get(
-                        item.attr("href"),
-                        timeout = 30,
-                        allowRedirects = true,
-                        referer = "https://hindshare.site/"
-                    ).document
-                    val link = doc.select("a")
-                    callback.invoke(
-                        newExtractorLink(
-                            "HindMoviez [GDirect]",
-                            "HindMoviez [GDirect]",
-                            url = link.attr("href"),
-                        ) {
-                            this.quality = quality
+                } else if (res.url.contains("hindshare.site")) {
+                    val quality = getVideoQuality(doc.select(".container p:nth-of-type(1) strong").text())
+                    val linkElements = doc.select(".btn-group a")
+                    linkElements.forEach { linkItem ->
+                        if (linkItem.text().contains("HCloud")) {
+                            callback.invoke(
+                                newExtractorLink(
+                                    "HindMoviez [H-Cloud] [$size]",
+                                    "HindMoviez [H-Cloud] [$size]",
+                                    url = linkItem.attr("href")
+                                ) {
+                                    this.quality = quality
+                                }
+                            )
+                        } else if (linkItem.attr("href").contains("hindcdn.site")) {
+                            val doc = app.get(linkItem.attr("href"), timeout = 30, allowRedirects = true).document
+                            val linkElements = doc.select(".container a")
+                            linkElements.forEach { item ->
+                                val host = if (item.text().lowercase().contains("google")) {
+                                    item.text()
+                                } else {
+                                    "HindCdn H-Cloud"
+                                }
+                                callback.invoke(
+                                    newExtractorLink(
+                                        "HindMoviez [$host] [$size]",
+                                        "HindMoviez [$host] [$size]",
+                                        url = item.attr("href")
+                                    ) {
+                                        this.quality = quality
+                                    }
+                                )
+                            }
+                        } else if (linkItem.attr("href").contains("gdirect.cloud")) {
+                            val doc = app.get(
+                                linkItem.attr("href"),
+                                timeout = 30,
+                                allowRedirects = true,
+                                referer = "https://hindshare.site/"
+                            ).document
+                            val link = doc.select("a")
+                            callback.invoke(
+                                newExtractorLink(
+                                    "HindMoviez [GDirect] [$size]",
+                                    "HindMoviez [GDirect] [$size]",
+                                    url = link.attr("href")
+                                ) {
+                                    this.quality = quality
+                                }
+                            )
                         }
-                    )
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
-
-
     }
 
     return true
 }
+
 
 private fun getVideoQuality(string: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(string ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
@@ -2809,3 +2815,44 @@ class UserAgentInterceptor : Interceptor {
         return chain.proceed(newRequest)
     }
 }
+
+fun cleanTitle(title: String): String {
+    val parts = title.split(".", "-", "_")
+
+    val qualityTags = listOf(
+        "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
+        "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
+        "HD"
+    )
+
+    val audioTags = listOf(
+        "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
+    )
+
+    val subTags = listOf(
+        "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
+    )
+
+    val codecTags = listOf(
+        "x264", "x265", "H264", "HEVC", "AVC"
+    )
+
+    val startIndex = parts.indexOfFirst { part ->
+        qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
+    }
+
+    val endIndex = parts.indexOfLast { part ->
+        subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
+    }
+
+    return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+        parts.subList(startIndex, endIndex + 1).joinToString(".")
+    } else if (startIndex != -1) {
+        parts.subList(startIndex, parts.size).joinToString(".")
+    } else {
+        parts.takeLast(3).joinToString(".")
+    }
+}
+

@@ -247,7 +247,7 @@ class VCloudGDirect : ExtractorApi() {
     }
 }
 
-    
+
 class VCloud : ExtractorApi() {
     override val name: String = "V-Cloud"
     override val mainUrl: String = "https://vcloud.lol"
@@ -259,105 +259,136 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        var href=url
-        if (href.contains("api/index.php"))
-        {
-            href=app.get(url).document.selectFirst("div.main h4 a")?.attr("href") ?:""
+        var href = url
+
+        if (href.contains("api/index.php")) {
+            href = runCatching {
+                app.get(url).document.selectFirst("div.main h4 a")?.attr("href")
+            }.getOrNull() ?: return
         }
-        val doc = app.get(href).document
-        val scriptTag = doc.selectFirst("script:containsData(url)")?.toString() ?:""
-        val urlValue = Regex("var url = '([^']*)'").find(scriptTag) ?. groupValues ?. get(1) ?: ""
-        if (urlValue.isNotEmpty()) {
-            val document = app.get(urlValue).document
-            val size = document.selectFirst("i#size")?.text() ?: ""
-            val div = document.selectFirst("div.card-body")
-            val header = document.selectFirst("div.card-header")?.text() ?: ""
-            val headerdetails =
-                """\.\d{3,4}p\.(.*)-[^-]*${'$'}""".toRegex().find(header)?.groupValues?.get(1)
-                    ?.trim() ?: ""
-            div?.select("h2 a.btn")?.filterNot {it.text().contains("Telegram", ignoreCase = true)}
-                ?.amap {
-                    val link = it.attr("href")
-                    if (link.contains("technorozen.workers.dev")) {
-                        @Suppress("NAME_SHADOWING") val href = app.get(link).document.selectFirst("#vd")?.attr("href") ?: ""
-                        callback.invoke(
-                            newExtractorLink(
-                                "V-Cloud 10 Gbps $headerdetails",
-                                "V-Cloud 10 Gbps $size",
-                                url = href
-                            ) {
-                                this.quality = getIndexQuality(header)
-                            }
-                        )
-                    } else
-                        if (link.contains("pixeldra")) {
+
+        val doc = runCatching { app.get(href).document }.getOrNull() ?: return
+        val scriptTag = doc.selectFirst("script:containsData(url)")?.data() ?: ""
+        val urlValue = Regex("var url = '([^']*)'").find(scriptTag)?.groupValues?.getOrNull(1).orEmpty()
+        if (urlValue.isEmpty()) return
+
+        val document = runCatching { app.get(urlValue).document }.getOrNull() ?: return
+        val size = document.selectFirst("i#size")?.text().orEmpty()
+        val header = document.selectFirst("div.card-header")?.text().orEmpty()
+
+        val headerdetails = """\.\d{3,4}p\.(.*)-[^-]*$""".toRegex()
+            .find(header)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+
+        val labelExtras = buildString {
+            if (headerdetails.isNotEmpty()) append("[$headerdetails]")
+            if (size.isNotEmpty()) append("[$size]")
+        }
+
+        val div = document.selectFirst("div.card-body") ?: return
+
+        div.select("h2 a.btn")
+            ?.filterNot { it.text().contains("Telegram", ignoreCase = true) }
+            ?.amap { linkTag ->
+                val link = linkTag.attr("href")
+
+                when {
+                    link.contains("technorozen.workers.dev") -> {
+                        val redirected = runCatching {
+                            app.get(link).document.selectFirst("#vd")?.attr("href")
+                        }.getOrNull().orEmpty()
+
+                        if (redirected.isNotEmpty()) {
                             callback.invoke(
                                 newExtractorLink(
-                                    "Pixeldrain $headerdetails",
-                                    "Pixeldrain $size",
-                                    url = link
-                                ) {
-                                    this.quality = getIndexQuality(header)
-                                }
-                            )
-                        } else if (link.contains("dl.php")) {
-                            val response = app.get(link, allowRedirects = false)
-                            val downloadLink =
-                                response.headers["location"].toString().split("link=").getOrNull(1)
-                                    ?: link
-                            callback.invoke(
-                                newExtractorLink(
-                                    "V-Cloud[Download] $headerdetails",
-                                    "V-Cloud[Download] $size",
-                                    url = downloadLink
-                                ) {
-                                    this.quality = getIndexQuality(header)
-                                }
-                            )
-                        } else if (link.contains(".dev")) {
-                            callback.invoke(
-                                newExtractorLink(
-                                    "V-Cloud $headerdetails",
-                                    "V-Cloud $size",
-                                    url = link
-                                ) {
-                                    this.quality = getIndexQuality(header)
-                                }
-                            )
-                        } else if (link.contains(".hubcdn.xyz")) {
-                            callback.invoke(
-                                newExtractorLink(
-                                    "V-Cloud $headerdetails",
-                                    "V-Cloud $size",
-                                    url = link
-                                ) {
-                                    this.quality = getIndexQuality(header)
-                                }
-                            )
-                        } else if (link.contains(".lol")) {
-                            callback.invoke(
-                                newExtractorLink(
-                                    "V-Cloud [FSL] $headerdetails",
-                                    "V-Cloud $size",
-                                    url = link
+                                    "10Gbps $labelExtras",
+                                    "10Gbps $labelExtras",
+                                    url = redirected
                                 ) {
                                     this.quality = getIndexQuality(header)
                                 }
                             )
                         } else {
-                            loadExtractor(link, subtitleCallback, callback)
+                            null
                         }
-                }
-        }
-    }
+                    }
 
+                    link.contains("pixeldra") -> {
+                        callback.invoke(
+                            newExtractorLink(
+                                "Pixeldrain $labelExtras",
+                                "Pixeldrain $labelExtras",
+                                url = link
+                            ) {
+                                this.quality = getIndexQuality(header)
+                            }
+                        )
+                    }
+
+                    link.contains("dl.php") -> {
+                        val downloadLink = runCatching {
+                            val response = app.get(link, allowRedirects = false)
+                            response.headers["location"].orEmpty().split("link=").getOrNull(1)
+                        }.getOrNull() ?: link
+
+                        callback.invoke(
+                            newExtractorLink(
+                                "Download $labelExtras",
+                                "Download $labelExtras",
+                                url = downloadLink
+                            ) {
+                                this.quality = getIndexQuality(header)
+                            }
+                        )
+                    }
+
+                    link.contains(".dev") -> {
+                        callback.invoke(
+                            newExtractorLink(
+                                "Mirror $labelExtras",
+                                "Mirror $labelExtras",
+                                url = link
+                            ) {
+                                this.quality = getIndexQuality(header)
+                            }
+                        )
+                    }
+
+                    link.contains(".hubcdn.xyz") -> {
+                        callback.invoke(
+                            newExtractorLink(
+                                "CDN $labelExtras",
+                                "CDN $labelExtras",
+                                url = link
+                            ) {
+                                this.quality = getIndexQuality(header)
+                            }
+                        )
+                    }
+
+                    link.contains(".lol") -> {
+                        callback.invoke(
+                            newExtractorLink(
+                                "FSL $labelExtras",
+                                "FSL $labelExtras",
+                                url = link
+                            ) {
+                                this.quality = getIndexQuality(header)
+                            }
+                        )
+                    }
+
+                    else -> loadExtractor(link, subtitleCallback, callback)
+                }
+            }
+    }
 
     private fun getIndexQuality(str: String?): Int {
         return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.Unknown.value
     }
-
 }
+
+
 
 open class Streamruby : ExtractorApi() {
     override val name = "Streamruby"
@@ -1195,107 +1226,100 @@ open class HubCloud : ExtractorApi() {
             realUrl
         } else {
             val regex = "var url = '([^']*)'".toRegex()
-            val regexdata=app.get(realUrl).document.selectFirst("script:containsData(url)")?.toString() ?: ""
+            val regexdata = app.get(realUrl).document.selectFirst("script:containsData(url)")?.toString() ?: ""
             regex.find(regexdata)?.groupValues?.get(1).orEmpty()
         }
+
         if (href.isEmpty()) {
             Log.d("Error", "Not Found")
             return
         }
 
         val document = app.get(href).document
-        val size = document.selectFirst("i#size")?.text()
+        val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text()
+        val quality = getIndexQuality(header)
 
         document.select("div.card-body a.btn").forEach { linkElement ->
             val link = linkElement.attr("href")
-            val quality = getIndexQuality(header)
 
             when {
                 link.contains("www-google-com") -> Log.d("Error:", "Not Found")
-
                 link.contains("technorozen.workers.dev") -> {
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
-                            "$source 10GB Server",
-                            "$source 10GB Server $size",
+                            "$source [10GB Server]",
+                            "$source [10GB Server] [$size]",
                             url = getGBurl(link)
                         ) {
                             this.quality = quality
                         }
                     )
                 }
-
                 link.contains("pixeldra.in") || link.contains("pixeldrain") -> {
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
-                            "$source Pixeldrain",
-                            "$source Pixeldrain $size",
+                            "$source [Pixeldrain]",
+                            "$source [Pixeldrain] [$size]",
                             url = link
                         ) {
                             this.quality = quality
                         }
                     )
                 }
-
                 link.contains("buzzheavier") -> {
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
-                            "$source Buzzheavier",
-                            "$source Buzzheavier $size",
+                            "$source [Buzzheavier]",
+                            "$source [Buzzheavier] [$size]",
                             url = "$link/download"
                         ) {
                             this.quality = quality
                         }
                     )
                 }
-
                 link.contains(".dev") -> {
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
-                            "$source Hub-Cloud",
-                            "$source Hub-Cloud $size",
+                            "$source [Hub-Cloud]",
+                            "$source [Hub-Cloud] [$size]",
                             url = link
                         ) {
                             this.quality = quality
                         }
                     )
                 }
-
                 link.contains("fastdl.lol") -> {
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
                             "$source [FSL] Hub-Cloud",
-                            "$source [FSL] Hub-Cloud $size",
+                            "$source [FSL] Hub-Cloud [$size]",
                             url = link
                         ) {
                             this.quality = quality
                         }
                     )
                 }
-
                 link.contains("hubcdn.xyz") -> {
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
                             "$source [File] Hub-Cloud",
-                            "$source [File] Hub-Cloud $size",
+                            "$source [File] Hub-Cloud [$size]",
                             url = link
                         ) {
                             this.quality = quality
                         }
                     )
                 }
-
                 link.contains("gofile.io") -> {
                     loadCustomExtractor(source.orEmpty(), link, "Pixeldrain", subtitleCallback, callback)
                 }
-
                 else -> Log.d("Error:", "No Server Match Found")
             }
         }
     }
 
-    private fun getIndexQuality(str: String?) =
+    private fun getIndexQuality(str: String?): Int =
         Regex("(\\d{3,4})[pP]").find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.P2160.value
 
@@ -1308,6 +1332,8 @@ class Driveleech : Driveseed() {
     override val name: String = "Driveleech"
     override val mainUrl: String = "https://driveleech.org"
 }
+
+
 
 open class Driveseed : ExtractorApi() {
     override val name: String = "Driveseed"
@@ -1331,10 +1357,8 @@ open class Driveseed : ExtractorApi() {
     }
 
     private suspend fun resumeCloudLink(url: String): String? {
-        val resumeCloudUrl = mainUrl + url
         return runCatching {
-            app.get(resumeCloudUrl).document.selectFirst("a.btn-success")
-                ?.attr("href")
+            app.get(mainUrl + url).document.selectFirst("a.btn-success")?.attr("href")
                 ?.takeIf { it.startsWith("http") }
         }.getOrElse {
             Log.e("Error:", "Failed to fetch ResumeCloud link: ${it.message}")
@@ -1411,8 +1435,15 @@ open class Driveseed : ExtractorApi() {
             Log.e("Error:", "Failed to fetch page document: ${e.message}")
             return
         }
+
         val quality = document.selectFirst("li.list-group-item")?.text().orEmpty()
-        val fileName = quality.replace("Name : ", "")
+        val rawFileName = quality.replace("Name : ", "").trim()
+        val fileName = cleanTitle(rawFileName)
+        val size = document.selectFirst("li:nth-child(3)")?.text().orEmpty().replace("Size : ", "").trim()
+        val labelExtras = buildString {
+            if (fileName.isNotEmpty()) append("[$fileName]")
+            if (size.isNotEmpty()) append("[$size]")
+        }
 
         document.select("div.text-center > a").forEach { element ->
             val text = element.text()
@@ -1420,81 +1451,67 @@ open class Driveseed : ExtractorApi() {
 
             if (href.isNotBlank()) {
                 when {
-                    text.contains("Instant Download") -> {
-                        try {
-                            val instant = instantLink(href)
-                            if (instant!!.startsWith("http")) {
-                                callback(
-                                    newExtractorLink(
-                                        "$name Instant(Download)",
-                                        "$name Instant(Download) - $fileName",
-                                        url = instant
-                                    ) {
-                                        this.quality = getIndexQuality(quality)
-                                    }
-                                )
-                            }
-                        } catch (e: Exception) {
-                            Log.e("Error:", "Instant Download failed: ${e.message}")
-                        }
-                    }
-
-                    text.contains("Resume Worker Bot") -> {
-                        try {
-                            val resumeLink = resumeBot(href)
-                            if (resumeLink!!.startsWith("http")) {
-                                callback(
-                                    newExtractorLink(
-                                        "$name ResumeBot(VLC)",
-                                        "$name ResumeBot(VLC) - $fileName",
-                                        url = resumeLink
-                                    ) {
-                                        this.quality = getIndexQuality(quality)
-                                    }
-                                )
-                            }
-                        } catch (e: Exception) {
-                            Log.e("Error:", "Resume Worker Bot failed: ${e.message}")
-                        }
-                    }
-
-                    text.contains("Direct Links") -> {
-                        try {
-                            val link = mainUrl + href
-                            CFType1(link).forEach { directLink ->
-                                if (directLink.startsWith("http")) {
-                                    callback(
-                                        newExtractorLink(
-                                            "$name CF Type1",
-                                            "$name CF Type1 - $fileName",
-                                            url = directLink
-                                        ) {
-                                            this.quality = getIndexQuality(quality)
-                                        }
-                                    )
+                    text.contains("Instant Download", ignoreCase = true) -> {
+                        runCatching {
+                            instantLink(href)
+                        }.getOrNull()?.let { instant ->
+                            callback(
+                                newExtractorLink(
+                                    "$name Instant(Download) $labelExtras",
+                                    "$name Instant(Download) $labelExtras",
+                                    url = instant
+                                ) {
+                                    this.quality = getIndexQuality(quality)
                                 }
-                            }
-                        } catch (e: Exception) {
-                            Log.e("Error:", "CF Type1 failed: ${e.message}")
+                            )
                         }
                     }
 
-                    text.contains("Resume Cloud") -> {
-                        try {
-                            val resumeCloud = resumeCloudLink(href)
-                            if (resumeCloud!!.startsWith("http")) {
-                                callback(
-                                    newExtractorLink(
-                                        "$name ResumeCloud",
-                                        "$name ResumeCloud - $fileName",
-                                        url = resumeCloud
-                                    ) {
-                                        this.quality = getIndexQuality(quality)
-                                    }
-                                )
-                            }
-                        } catch (e: Exception) {
-                            Log.e("Error:", "Resume Cloud failed: ${e.message}")
+                    text.contains("Resume Worker Bot", ignoreCase = true) -> {
+                        runCatching {
+                            resumeBot(href)
+                        }.getOrNull()?.let { resumeLink ->
+                            callback(
+                                newExtractorLink(
+                                    "$name ResumeBot(VLC) $labelExtras",
+                                    "$name ResumeBot(VLC) $labelExtras",
+                                    url = resumeLink
+                                ) {
+                                    this.quality = getIndexQuality(quality)
+                                }
+                            )
+                        }
+                    }
+
+                    text.contains("Direct Links", ignoreCase = true) -> {
+                        runCatching {
+                            CFType1(mainUrl + href)
+                        }.getOrNull()?.forEach { directLink ->
+                            callback(
+                                newExtractorLink(
+                                    "$name CF Type1 $labelExtras",
+                                    "$name CF Type1 $labelExtras",
+                                    url = directLink
+                                ) {
+                                    this.quality = getIndexQuality(quality)
+                                }
+                            )
+                        }
+                    }
+
+                    text.contains("Resume Cloud", ignoreCase = true) -> {
+                        runCatching {
+                            resumeCloudLink(href)
+                        }.getOrNull()?.let { resumeCloud ->
+                            callback(
+                                newExtractorLink(
+                                    "$name ResumeCloud $labelExtras",
+                                    "$name ResumeCloud $labelExtras",
+                                    url = resumeCloud
+                                ) {
+                                    this.quality = getIndexQuality(quality)
+                                }
+                            )
                         }
                     }
                 }
@@ -1502,6 +1519,7 @@ open class Driveseed : ExtractorApi() {
         }
     }
 }
+
 
 class Kwik : ExtractorApi() {
     override val name            = "Kwik"
