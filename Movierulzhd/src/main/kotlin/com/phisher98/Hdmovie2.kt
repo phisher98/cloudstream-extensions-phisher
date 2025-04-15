@@ -7,7 +7,10 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 import java.util.Calendar
 
@@ -67,6 +70,29 @@ open class Hdmovie2 : Movierulzhd() {
                         callback
                     )
                 }
+                else if (source.contains("https://molop.art"))
+                    {
+                        val headers= mapOf("user-agent" to "okhttp/4.12.0")
+                        val res = app.get(source, referer = mainUrl, headers = headers).document
+                        val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
+                            ?.substringBefore(");") ?: return@amap
+                        val ids = mappers.split(",").map { it.replace("\"", "") }
+                        val m3u8="https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1"
+                        callback.invoke(
+                            newExtractorLink(
+                                name,
+                                name,
+                                m3u8,
+                                ExtractorLinkType.M3U8
+                            )
+                            {
+                                this.referer=url
+                                this.quality= Qualities.P1080.value
+                                this.headers=headers
+
+                            }
+                        )
+                    }
                 else
                 when {
                     !source.contains("youtube") -> loadExtractor(

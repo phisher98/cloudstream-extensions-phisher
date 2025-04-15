@@ -101,8 +101,8 @@ open class Akamaicdn : ExtractorApi() {
         val m3u8="$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1"
         callback.invoke(
             newExtractorLink(
-                this.name,
-                this.name,
+                name,
+                name,
                 m3u8,
                 ExtractorLinkType.M3U8
             )

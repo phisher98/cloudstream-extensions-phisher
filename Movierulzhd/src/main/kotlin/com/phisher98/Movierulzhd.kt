@@ -6,15 +6,12 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.extractors.helper.CryptoJS.decrypt
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.Interceptor
-import okhttp3.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -99,7 +96,7 @@ open class Movierulzhd : MainAPI() {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
             val href = getProperLink(it.selectFirst("div.title > a")!!.attr("href"))
-            val posterUrl = it.selectFirst("img")!!.attr("src").toString()
+            val posterUrl = it.selectFirst("img")!!.attr("src")
             newMovieSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
@@ -141,8 +138,7 @@ open class Movierulzhd : MainAPI() {
         }
 
         val recommendations = document.select("div.owl-item").map {
-            val recName =
-                it.selectFirst("a")!!.attr("href").toString().removeSuffix("/").split("/").last()
+            val recName = it.selectFirst("a")!!.attr("href").removeSuffix("/").split("/").last()
             val recHref = it.selectFirst("a")!!.attr("href")
             val recPosterUrl = it.selectFirst("img")?.getImageAttr()
             newTvSeriesSearchResponse(recName, recHref, TvType.TvSeries) {
@@ -287,7 +283,7 @@ open class Movierulzhd : MainAPI() {
         return true
     }
 
-    private fun Element.getImageAttr(): String? {
+    private fun Element.getImageAttr(): String {
         return when {
             this.hasAttr("data-src") -> this.attr("abs:data-src")
             this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")
@@ -326,6 +322,35 @@ open class Movierulzhd : MainAPI() {
         }
     }
 
+
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            val originalUrl = request.url.toString()
+            val modifiedRequest = if (originalUrl.startsWith("https://exxample.com/")) {
+                val encodedPart = originalUrl.removePrefix("https://exxample.com/")
+                val decodedUrl = try {
+                    base64Decode(encodedPart)
+                } catch (e: IllegalArgumentException) {
+                    println("Failed to decode Base64: ${e.message}")
+                    null
+                }
+                if (decodedUrl != null) {
+                    val newRequest = request.newBuilder()
+                        .url(decodedUrl)
+                        .build()
+                    newRequest
+                } else {
+                    request
+                }
+            } else {
+                request
+            }
+
+            chain.proceed(modifiedRequest)
+        }
+    }
+
     data class LinkData(
         val tag: String? = null,
         val type: String? = null,
@@ -333,18 +358,7 @@ open class Movierulzhd : MainAPI() {
         val nume: String? = null,
     )
 
-    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
-        return Interceptor { chain ->
-            val request = chain.request()
 
-            // Log the URL of each request
-            println("Intercepted request: ${request.url}")
-
-            val response = chain.proceed(request)
-
-            response
-        }
-    }
 
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,
