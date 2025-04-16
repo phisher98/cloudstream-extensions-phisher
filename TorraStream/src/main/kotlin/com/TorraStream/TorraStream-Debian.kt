@@ -1,9 +1,18 @@
 package com.TorraStream
 
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.argamap
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -53,7 +62,9 @@ class TorraStreamDebian() : TraktProvider() {
         val season =metadata.season
         val episode =metadata.episode
         val id =metadata.imdbId
-        val encodedUrl = URLEncoder.encode(mainUrl, StandardCharsets.UTF_8.toString())
+        val encodedUrl = withContext(Dispatchers.IO) {
+            URLEncoder.encode(mainUrl, StandardCharsets.UTF_8.toString())
+        }
         val api = if (mainUrl.contains("=")) "https://torrentio.strem.fun/$encodedUrl" else null
         if (api!=null) {
             argamap(

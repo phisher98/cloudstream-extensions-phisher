@@ -2,6 +2,7 @@ package com.TorraStream
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -30,33 +31,34 @@ fun getLanguage(language: String?): String? {
 }
 
 
-data class TorrentioResponse(val streams: List<TorrentioStream>)
-
-data class TorrentioStream(
-    val name: String?,
-    val title: String?,
-    val infoHash: String?,
-    val fileIdx: Int?,
+data class TorrentioResponse(
+    @SerializedName("streams") val streams: List<TorrentioStream> = emptyList()
 )
 
+data class TorrentioStream(
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("infoHash") val infoHash: String? = null,
+    @SerializedName("fileIdx") val fileIdx: Int? = null
+)
 
 data class DebianRoot(
-    val streams: List<Stream>,
-    val cacheMaxAge: Long,
-    val staleRevalidate: Long,
-    val staleError: Long,
+    @SerializedName("streams") val streams: List<Stream> = emptyList(),
+    @SerializedName("cacheMaxAge") val cacheMaxAge: Long = 0,
+    @SerializedName("staleRevalidate") val staleRevalidate: Long = 0,
+    @SerializedName("staleError") val staleError: Long = 0
 )
 
 data class Stream(
-    val name: String,
-    val title: String,
-    val url: String,
-    val behaviorHints: BehaviorHints,
+    @SerializedName("name") val name: String = "",
+    @SerializedName("title") val title: String = "",
+    @SerializedName("url") val url: String = "",
+    @SerializedName("behaviorHints") val behaviorHints: BehaviorHints = BehaviorHints()
 )
 
 data class BehaviorHints(
-    val bingeGroup: String?,
-    val filename: String?,
+    @SerializedName("bingeGroup") val bingeGroup: String? = null,
+    @SerializedName("filename") val filename: String? = null
 )
 
 //Subtitles

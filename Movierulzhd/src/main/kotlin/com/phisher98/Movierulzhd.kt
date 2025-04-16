@@ -270,7 +270,6 @@ open class Movierulzhd : MainAPI() {
                     ),
                     referer = data, headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                Log.d("Phisher repolink", source)
                 when {
                     !source.contains("youtube") -> {
                         loadExtractor(source, subtitleCallback, callback)
@@ -336,10 +335,9 @@ open class Movierulzhd : MainAPI() {
                     null
                 }
                 if (decodedUrl != null) {
-                    val newRequest = request.newBuilder()
+                    request.newBuilder()
                         .url(decodedUrl)
                         .build()
-                    newRequest
                 } else {
                     request
                 }
@@ -347,9 +345,35 @@ open class Movierulzhd : MainAPI() {
                 request
             }
 
-            chain.proceed(modifiedRequest)
+            val finalRequest = if (modifiedRequest.url.host.contains("sukumsanghas.com")) {
+                modifiedRequest.newBuilder()
+                    .header("Accept", "*/*")
+                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .header("Accept-Language", "en-US,en;q=0.5")
+                    .header("Cache-Control", "no-cache")
+                    .header("Connection", "keep-alive")
+                    .header("DNT", "1")
+                    .header("Origin", "https://molop.art")
+                    .header("Pragma", "no-cache")
+                    .header("Referer", "https://molop.art/")
+                    .header("Sec-Fetch-Dest", "empty")
+                    .header("Sec-Fetch-Mode", "cors")
+                    .header("Sec-Fetch-Site", "cross-site")
+                    .header("Sec-GPC", "1")
+                    .header(
+                        "User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0"
+                    )
+                    .build()
+            } else {
+                modifiedRequest
+            }
+            chain.proceed(finalRequest)
         }
     }
+
+
+
 
     data class LinkData(
         val tag: String? = null,

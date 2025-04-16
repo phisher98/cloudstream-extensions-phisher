@@ -5,6 +5,7 @@ import com.TorraStream.TorraStream.Companion.AnimetoshoAPI
 import com.TorraStream.TorraStream.Companion.SubtitlesAPI
 import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -62,34 +63,49 @@ suspend fun invokeTorrentio(
 
 
 suspend fun invokeTorrentioDebian(
-    mainUrl:String,
+    mainUrl: String,
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val url = if(season == null) {
+    val url = if (season == null) {
         "$mainUrl/stream/movie/$id.json"
-    }
-    else {
+    } else {
         "$mainUrl/stream/series/$id:$season:$episode.json"
     }
-
     val res = app.get(url).parsedSafe<DebianRoot>()
     res?.streams?.forEach { stream ->
-
         val fileurl = stream.url
-        val size = Regex("""(\d+\.\d+)\s*GB""").find(stream.title)?.groupValues?.get(1) ?: "Unknown"
+        val size = Regex("""(\d+\.\d+)\s*GB""").find(stream.title)?.groupValues?.get(1)
+
         val name = stream.behaviorHints.filename
-        val formattedTitleName = name?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
+
+        val formattedName = name
+            ?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
             ?.replace(Regex("\\.mkv$"), "")
             ?.replace('.', ' ')
-            ?.let { "$it [$size GB]" }
+            ?.trim()
+
+        val tbTag = when {
+            stream.name.contains("TB+", ignoreCase = true) -> "TB+"
+            stream.name.contains("TB download", ignoreCase = true) -> "TB download"
+            else -> null
+        }
+
+        val sizeTag = size?.let { "$it GB" }
+
+        val tagPrefix = listOfNotNull(tbTag, sizeTag).joinToString(" | ")
+        val finalTitle = if (tagPrefix.isNotEmpty()) {
+            "[$tagPrefix] ${formattedName ?: name}"
+        } else {
+            formattedName ?: name
+        } ?: "Unknown"
 
         callback.invoke(
             newExtractorLink(
-                "Torrentio ${formattedTitleName ?: "$name [$size GB]"}",
-                formattedTitleName ?: "$name [$size GB]",
+                "Torrentio $finalTitle",
+                finalTitle,
                 url = fileurl,
                 INFER_TYPE
             ) {
@@ -99,6 +115,7 @@ suspend fun invokeTorrentioDebian(
         )
     }
 }
+
 
 suspend fun invokeTorrentgalaxy(
     TorrentgalaxyAPI: String? = null,
