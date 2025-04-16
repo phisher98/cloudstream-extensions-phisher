@@ -1,4 +1,4 @@
-version = 4
+version = 1
 
 
 cloudstream {
@@ -22,7 +22,7 @@ cloudstream {
         "Cartoon"
     )
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=anime.cat&sz=%size%"
+    iconUrl = "https://www.google.com/s2/favicons?domain=animeworld.site&sz=%size%"
 
     isCrossPlatform = true
 }
