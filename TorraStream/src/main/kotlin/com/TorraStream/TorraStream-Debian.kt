@@ -4,6 +4,9 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 
 class TorraStreamDebian() : TraktProvider() {
     override var name = "TorraStream-Debian"
@@ -11,7 +14,8 @@ class TorraStreamDebian() : TraktProvider() {
     override var mainUrl = "https://torrentio.strem.fun"
     override var lang = "en"
     override val supportedSyncNames = setOf(SyncIdName.Trakt)
-    override val hasMainPage = true
+    override val hasMainPage: Boolean get() = mainUrl.contains("=")
+
     override val hasQuickSearch = false
 
     private val traktApiUrl = base64Decode("aHR0cHM6Ly9hcGl6LnRyYWt0LnR2")
@@ -49,7 +53,8 @@ class TorraStreamDebian() : TraktProvider() {
         val season =metadata.season
         val episode =metadata.episode
         val id =metadata.imdbId
-        val api=if (mainUrl.contains("=")) "https://torrentio.strem.fun/$mainUrl" else null
+        val encodedUrl = URLEncoder.encode(mainUrl, StandardCharsets.UTF_8.toString())
+        val api = if (mainUrl.contains("=")) "https://torrentio.strem.fun/$encodedUrl" else null
         if (api!=null) {
             argamap(
                 {
