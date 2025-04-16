@@ -11,5 +11,6 @@ class UHDmoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(Driveleech())
         registerExtractorAPI(Driveseed())
         registerExtractorAPI(UHDMovies())
+        registerExtractorAPI(DriveleechPro())
     }
 }

@@ -37,7 +37,6 @@ class AnimeWorld : MainAPI() {
 
     override val mainPage =
             mainPageOf(
-                    "category/status/ongoing" to "On-Air Shows",
                     "category/type/anime/?type=series" to "New Anime Arrivals",
                     "category/type/cartoon/?type=series" to "Just In: Cartoon Series",
                     "category/type/anime/?type=movies" to "Latest Anime Movies",

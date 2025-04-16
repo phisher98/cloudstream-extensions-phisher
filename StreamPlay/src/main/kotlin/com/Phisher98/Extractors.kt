@@ -1333,7 +1333,10 @@ class Driveleech : Driveseed() {
     override val mainUrl: String = "https://driveleech.org"
 }
 
-
+class DriveleechPro : Driveseed() {
+    override val name: String = "Driveleech"
+    override val mainUrl: String = "https://driveleech.pro"
+}
 
 open class Driveseed : ExtractorApi() {
     override val name: String = "Driveseed"
@@ -1351,17 +1354,18 @@ open class Driveseed : ExtractorApi() {
                 .select("a.btn-success")
                 .mapNotNull { it.attr("href").takeIf { href -> href.startsWith("http") } }
         }.getOrElse {
-            Log.e("Error:", "Failed to fetch CFType1 links: ${it.message}")
+            Log.e("Driveseed", "CFType1 error: ${it.message}")
             emptyList()
         }
     }
 
-    private suspend fun resumeCloudLink(url: String): String? {
+    private suspend fun resumeCloudLink(baseUrl: String, path: String): String? {
         return runCatching {
-            app.get(mainUrl + url).document.selectFirst("a.btn-success")?.attr("href")
+            app.get(baseUrl + path).document
+                .selectFirst("a.btn-success")?.attr("href")
                 ?.takeIf { it.startsWith("http") }
         }.getOrElse {
-            Log.e("Error:", "Failed to fetch ResumeCloud link: ${it.message}")
+            Log.e("Driveseed", "ResumeCloud error: ${it.message}")
             null
         }
     }
@@ -1371,15 +1375,13 @@ open class Driveseed : ExtractorApi() {
             val response = app.get(url)
             val docString = response.document.toString()
             val ssid = response.cookies["PHPSESSID"].orEmpty()
-            val token = Regex("formData\\.append\\('token', '([a-f0-9]+)'\\)").find(docString)
-                ?.groups?.get(1)?.value.orEmpty()
-            val path = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/+]+)'").find(docString)
-                ?.groups?.get(1)?.value.orEmpty()
+            val token = Regex("formData\\.append\\('token', '([a-f0-9]+)'\\)").find(docString)?.groupValues?.getOrNull(1).orEmpty()
+            val path = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/+]+)'").find(docString)?.groupValues?.getOrNull(1).orEmpty()
             val baseUrl = url.substringBefore("/download")
 
             if (token.isEmpty() || path.isEmpty()) return@runCatching null
 
-            val jsonResponse = app.post(
+            val json = app.post(
                 "$baseUrl/download?id=$path",
                 requestBody = FormBody.Builder().addEncoded("token", token).build(),
                 headers = mapOf("Accept" to "*/*", "Origin" to baseUrl, "Sec-Fetch-Site" to "same-origin"),
@@ -1387,29 +1389,30 @@ open class Driveseed : ExtractorApi() {
                 referer = url
             ).text
 
-            JSONObject(jsonResponse).getString("url").takeIf { it.startsWith("http") }
+            JSONObject(json).getString("url").takeIf { it.startsWith("http") }
         }.getOrElse {
-            Log.e("Error:", "Failed to fetch ResumeBot link: ${it.message}")
+            Log.e("Driveseed", "ResumeBot error: ${it.message}")
             null
         }
     }
 
     private suspend fun instantLink(finallink: String): String? {
         return runCatching {
-            val url = if (finallink.contains("video-leech")) "video-leech.xyz" else "video-seed.xyz"
+            val host = if (finallink.contains("video-leech")) "video-leech.xyz" else "video-seed.xyz"
             val token = finallink.substringAfter("url=")
             val response = app.post(
-                url = "https://$url/api",
+                "https://$host/api",
                 data = mapOf("keys" to token),
                 referer = finallink,
-                headers = mapOf("x-token" to url)
+                headers = mapOf("x-token" to host)
             ).text
 
-            response.substringAfter("url\":\"").substringBefore("\",\"name")
+            response.substringAfter("url\":\"")
+                .substringBefore("\",\"name")
                 .replace("\\/", "/")
                 .takeIf { it.startsWith("http") }
         }.getOrElse {
-            Log.e("Error:", "Failed to fetch InstantLink: ${it.message}")
+            Log.e("Driveseed", "InstantLink error: ${it.message}")
             null
         }
     }
@@ -1420,6 +1423,8 @@ open class Driveseed : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val Basedomain = getBaseUrl(url)
+
         val document = try {
             if (url.contains("r?key=")) {
                 val temp = app.get(url).document.selectFirst("script")
@@ -1432,14 +1437,15 @@ open class Driveseed : ExtractorApi() {
                 app.get(url).document
             }
         } catch (e: Exception) {
-            Log.e("Error:", "Failed to fetch page document: ${e.message}")
+            Log.e("Driveseed", "getUrl page load error: ${e.message}")
             return
         }
 
-        val quality = document.selectFirst("li.list-group-item")?.text().orEmpty()
-        val rawFileName = quality.replace("Name : ", "").trim()
+        val qualityText = document.selectFirst("li.list-group-item")?.text().orEmpty()
+        val rawFileName = qualityText.replace("Name : ", "").trim()
         val fileName = cleanTitle(rawFileName)
         val size = document.selectFirst("li:nth-child(3)")?.text().orEmpty().replace("Size : ", "").trim()
+
         val labelExtras = buildString {
             if (fileName.isNotEmpty()) append("[$fileName]")
             if (size.isNotEmpty()) append("[$size]")
@@ -1448,68 +1454,61 @@ open class Driveseed : ExtractorApi() {
         document.select("div.text-center > a").forEach { element ->
             val text = element.text()
             val href = element.attr("href")
+            Log.d("Driveseed", "Link: $href")
 
             if (href.isNotBlank()) {
                 when {
                     text.contains("Instant Download", ignoreCase = true) -> {
-                        runCatching {
-                            instantLink(href)
-                        }.getOrNull()?.let { instant ->
+                        instantLink(href)?.let { link ->
                             callback(
                                 newExtractorLink(
                                     "$name Instant(Download) $labelExtras",
                                     "$name Instant(Download) $labelExtras",
-                                    url = instant
+                                    url = link
                                 ) {
-                                    this.quality = getIndexQuality(quality)
+                                    this.quality = getIndexQuality(qualityText)
                                 }
                             )
                         }
                     }
 
                     text.contains("Resume Worker Bot", ignoreCase = true) -> {
-                        runCatching {
-                            resumeBot(href)
-                        }.getOrNull()?.let { resumeLink ->
+                        resumeBot(href)?.let { link ->
                             callback(
                                 newExtractorLink(
                                     "$name ResumeBot(VLC) $labelExtras",
                                     "$name ResumeBot(VLC) $labelExtras",
-                                    url = resumeLink
+                                    url = link
                                 ) {
-                                    this.quality = getIndexQuality(quality)
+                                    this.quality = getIndexQuality(qualityText)
                                 }
                             )
                         }
                     }
 
                     text.contains("Direct Links", ignoreCase = true) -> {
-                        runCatching {
-                            CFType1(mainUrl + href)
-                        }.getOrNull()?.forEach { directLink ->
+                        CFType1(Basedomain + href)?.forEach { link ->
                             callback(
                                 newExtractorLink(
                                     "$name CF Type1 $labelExtras",
                                     "$name CF Type1 $labelExtras",
-                                    url = directLink
+                                    url = link
                                 ) {
-                                    this.quality = getIndexQuality(quality)
+                                    this.quality = getIndexQuality(qualityText)
                                 }
                             )
                         }
                     }
 
                     text.contains("Resume Cloud", ignoreCase = true) -> {
-                        runCatching {
-                            resumeCloudLink(href)
-                        }.getOrNull()?.let { resumeCloud ->
+                        resumeCloudLink(Basedomain, href)?.let { link ->
                             callback(
                                 newExtractorLink(
                                     "$name ResumeCloud $labelExtras",
                                     "$name ResumeCloud $labelExtras",
-                                    url = resumeCloud
+                                    url = link
                                 ) {
-                                    this.quality = getIndexQuality(quality)
+                                    this.quality = getIndexQuality(qualityText)
                                 }
                             )
                         }

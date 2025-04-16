@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -11,12 +10,13 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
+import kotlinx.coroutines.runBlocking
 import okhttp3.FormBody
 import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://uhdmovies.wales"
+    override var mainUrl = "https://modflix.xyz/?type=uhdmovies"
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "en"
@@ -26,16 +26,31 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         TvType.TvSeries
     )
 
+    companion object {
+        val basemainUrl: String? by lazy {
+            runBlocking {
+                try {
+                    val mainUrl = "https://modflix.xyz/?type=uhdmovies"
+                    app.get(mainUrl).document
+                        .selectFirst("meta[http-equiv=refresh]")?.attr("content")
+                        ?.substringAfter("url=")
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }
+    }
+
     override val mainPage = mainPageOf(
-        "$mainUrl/" to "Home",
-        "$mainUrl/movies/" to "Movies",
-        "$mainUrl/tv-series/" to "TV Series",
-        "$mainUrl/tv-shows/" to "TV Shows",
-        "$mainUrl/movies/dual-audio-movies/" to "Dual Audio Movies",
-        "$mainUrl/movies/collection-movies/" to "Hollywood",
-        "$mainUrl/tv-shows/netflix/" to "Netflix",
-        "$mainUrl/web-series/" to "Web Series",
-        "$mainUrl/amazon-prime/" to "Amazon Prime",
+        "$basemainUrl/" to "Home",
+        "$basemainUrl/movies/" to "Movies",
+        "$basemainUrl/tv-series/" to "TV Series",
+        "$basemainUrl/tv-shows/" to "TV Shows",
+        "$basemainUrl/movies/dual-audio-movies/" to "Dual Audio Movies",
+        "$basemainUrl/movies/collection-movies/" to "Hollywood",
+        "$basemainUrl/tv-shows/netflix/" to "Netflix",
+        "$basemainUrl/web-series/" to "Web Series",
+        "$basemainUrl/amazon-prime/" to "Amazon Prime",
     )
 
     private suspend fun cfKiller(url: String): NiceResponse {
@@ -84,7 +99,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("$mainUrl/?s=$query ").document
+        val document = cfKiller("$basemainUrl/?s=$query ").document
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
@@ -108,7 +123,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
         val type = if (tvTags.contains("Season") || tvTags.contains("S0")) TvType.TvSeries else TvType.Movie
         val trailer=doc.select("p iframe").attr("src")
-        Log.d("Phisher",trailer)
         return if (type == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
             var pTags = doc.select("p:has(a:contains(Episode))")
@@ -268,216 +282,20 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        //Log.d("Phisher",data)
+        //val href=bypassHrefli(data)
         if (data.startsWith("https://")) {
             data.let { me ->
                 val driveLink = bypassHrefli(me) ?: ""
-                //loadExtractor(driveLink, subtitleCallback, callback)
-                val base = getBaseUrl(driveLink)
-                val driveReq = app.get(driveLink)
-                val driveRes = driveReq.document
-                val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
-                val rawtag = driveRes.selectFirst("div.mb-4 ul li")?.text() ?: ""
-                val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)
-                    ?.substringBefore(",") ?: ""
-                val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1) ?: ""
-                val insLink =
-                    driveRes.select("a.btn.btn-danger:contains(Instant Download)")
-                        .attr("href")
-                Log.d("Phisher Test 2", insLink)
-                val downloadLink = when {
-                    insLink.isNotEmpty() -> extractInstantUHD(insLink)
-                    driveRes.select("button.btn.btn-success").text()
-                        .contains("Direct Download", true) -> extractDirectUHD(
-                        driveLink,
-                        driveReq
-                    )
+                loadExtractor(driveLink, subtitleCallback, callback)
 
-                    bitLink.isEmpty() -> {
-                        val backupIframe =
-                            driveRes.select("a.btn.btn-outline-warning").attr("href")
-                        extractBackupUHD(backupIframe)
-                    }
-
-                    else -> {
-                        extractMirrorUHD(bitLink, base)
-                    }
-                }
-                val resume = extractResumeUHD(bitLink)
-                if (resume.isNotEmpty()) {
-                    callback.invoke(
-                        newExtractorLink(
-                            "UHDMovies",
-                            "UHDMovies Resume",
-                            url = resume
-                        ) {
-                            this.referer = ""
-                            this.quality = getQualityFromName("")
-                        }
-                    )
-                }
-
-                if (insLink.isNotEmpty()) {
-                    callback.invoke(
-                        newExtractorLink(
-                            "UHDMovies",
-                            "UHDMovies VLC $tag",
-                            url = insLink
-                        ) {
-                            this.referer = ""
-                            this.quality = getQualityFromName(quality)
-                        }
-                    )
-                }
-                val DirectLink =
-                    driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
-                Log.d("Phisher Directlink", DirectLink)
-                val CFExtract = extractCFUHD(DirectLink)
-                CFExtract.forEach { CFlinks ->
-                    if (CFlinks.isNotEmpty())
-                        callback.invoke(
-                            newExtractorLink(
-                                "UHDMovies",
-                                "UHDMovies CF Worker",
-                                url = CFlinks
-                            ) {
-                                this.referer = ""
-                                this.quality = getQualityFromName("")
-                            }
-                        )
-                }
-                val pixeldrain = extractPixeldrainUHD(bitLink)
-                val serverslist = listOf(downloadLink, resume, pixeldrain)
-                serverslist.forEach {
-                    if (it!!.isNotEmpty()) {
-                        if (it.contains("https://video-leech.xyz")) {
-                            loadExtractor(it, subtitleCallback, callback)
-                        } else
-                            callback.invoke(
-                                newExtractorLink(
-                                    "UHDMovies",
-                                    "UHDMovies",
-                                    url = it
-                                ) {
-                                    this.referer = ""
-                                    this.quality = getQualityFromName("")
-                                }
-                            )
-                    }
-                }
             }
         } else {
             val sources = parseJson<ArrayList<UHDLinks>>(data)
-            Log.d("Phisher sources", sources.toString())
             sources.amap { me ->
                 val link = me.sourceLink
                 val driveLink = bypassHrefli(link) ?: ""
-                //loadExtractor(driveLink, subtitleCallback, callback)
-                val base = getBaseUrl(driveLink)
-                val driveReq = app.get(driveLink)
-                val driveRes = driveReq.document
-                val bitLink = driveRes.select("a.btn.btn-warning").attr("href")
-                val insLink =
-                    driveRes.select("a.btn.btn-danger:contains(Instant Download)")
-                        .attr("href")
-                val downloadLink = when {
-                    insLink.isNotEmpty() -> extractInstantUHD(insLink)
-                    driveRes.select("button.btn.btn-success").text()
-                        .contains("Direct Download", true) -> extractDirectUHD(
-                        driveLink,
-                        driveReq
-                    )
-
-                    bitLink.isEmpty() -> {
-                        val backupIframe =
-                            driveRes.select("a.btn.btn-outline-warning").attr("href")
-                        extractBackupUHD(backupIframe)
-                    }
-
-                    else -> {
-                        extractMirrorUHD(bitLink, base)
-                    }
-                }
-                val rawtag = me.sourceName
-                Log.d("Phisher rawtag", rawtag)
-                val tag = "(\\d{3,4}p\\s)(.*)".toRegex().find(rawtag)?.groupValues?.get(2)
-                    ?.substringBefore(",") ?: ""
-                val quality = "(\\d{3,4}p)".toRegex().find(rawtag)?.groupValues?.get(1) ?: ""
-                val resume = extractResumeUHD(bitLink)
-                if (resume.isNotEmpty()) {
-                    callback.invoke(
-                        newExtractorLink(
-                            "UHDMovies",
-                            "UHDMovies $tag Resume",
-                            url = resume
-                        ) {
-                            this.referer = ""
-                            this.quality = getQualityFromName(quality)
-                        }
-                    )
-                }
-
-                val DirectLink = driveRes.select("div.text-center a:contains(Direct Links)").attr("href")
-                Log.d("Phisher Directlink", DirectLink)
-                val CFExtract = extractCFUHD(DirectLink)
-
-                CFExtract.forEach { CFlinks ->
-                    if (CFlinks.isNotEmpty()) {
-                        callback.invoke(
-                            newExtractorLink(
-                                "UHDMovies",
-                                "UHDMovies $tag CF Worker",
-                                url = CFlinks
-                            ) {
-                                this.referer = ""
-                                this.quality = getQualityFromName(quality)
-                            }
-                        )
-                    }
-                }
-
-                if (insLink.isNotEmpty()) {
-                    callback.invoke(
-                        newExtractorLink(
-                            "UHDMovies",
-                            "UHDMovies VLC $tag",
-                            url = insLink
-                        ) {
-                            this.referer = ""
-                            this.quality = getQualityFromName(quality)
-                        }
-                    )
-                }
-
-                if (downloadLink?.isNotEmpty() == true) {
-                    callback.invoke(
-                        newExtractorLink(
-                            "UHDMovies",
-                            "UHDMovies $tag Instant Download",
-                            url = downloadLink
-                        ) {
-                            this.referer = ""
-                            this.quality = getQualityFromName(quality)
-                        }
-                    )
-                }
-
-                /*
-                val pixeldrain = extractPixeldrainUHD(bitLink)
-                val serverslist = listOf(downloadLink, resume, pixeldrain, insLink)
-                serverslist.forEach {
-                    if (it != null) {
-                        if (it.contains("https://video-leech.xyz")) {
-                            loadExtractor(it, subtitleCallback, callback)
-                        } else
-                            callback.invoke(
-                                ExtractorLink(
-                                    "UHDMovies", "UHDMovies $tag", it
-                                    , "", getQualityFromName(quality)
-                                )
-                            )
-                    }
-                }
-                 */
+                loadExtractor(driveLink, subtitleCallback, callback)
             }
         }
         return true
