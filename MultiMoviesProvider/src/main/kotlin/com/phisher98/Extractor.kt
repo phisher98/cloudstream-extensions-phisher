@@ -187,7 +187,8 @@ class MultimoviesVidstack : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
         val hash=url.substringAfterLast("#")
-        val encoded= app.get("$mainUrl/api/v1/video?id=$hash",headers=headers).text.trim()
+        val baseurl=getBaseUrl(url)
+        val encoded= app.get("$baseurl/api/v1/video?id=$hash",headers=headers).text.trim()
         val decryptedText = AesHelper.decryptAES(encoded, "kiemtienmua911ca", "0123456789abcdef")
         val m3u8=Regex("\"source\":\"(.*?)\"").find(decryptedText)?.groupValues?.get(1)?.replace("\\/","/") ?:""
         return listOf(
@@ -201,6 +202,15 @@ class MultimoviesVidstack : ExtractorApi() {
                 this.quality = Qualities.P1080.value
             }
         )
+    }
+
+    private fun getBaseUrl(url: String): String {
+        return try {
+            URI(url).let { "${it.scheme}://${it.host}" }
+        } catch (e: Exception) {
+            Log.e("GDMirrorbot", "getBaseUrl fallback: ${e.message}")
+            mainUrl
+        }
     }
 }
 
