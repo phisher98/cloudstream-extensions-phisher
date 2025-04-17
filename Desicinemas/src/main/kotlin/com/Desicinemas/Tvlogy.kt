@@ -14,7 +14,6 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 class Tvlogyflow(val source:String) : ExtractorApi() {
     override val mainUrl = "https://flow.tvlogy.to"
     override val name = "Tvlogy"
-    private val privatereferer = "https://skillsmagnet.com"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -23,7 +22,8 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc=app.get(url, referer = privatereferer).text
+        Log.d("Phisher","I'm Here")
+        val doc=app.get(url, referer = mainUrl).text
         if (doc.contains(".m3u8"))
         {
             Regex("\"src\":\"(.*?)\",\"").find(doc)?.groupValues?.get(1)?.let {

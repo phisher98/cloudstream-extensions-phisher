@@ -35,7 +35,7 @@ class BollyzoneProvider : DesicinemasProvider() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=$query"
+        val url = "https://goodproxy.goodproxy.workers.dev/fetch?url=$mainUrl/?s=$query"
         val doc = app.get(url, referer = "$mainUrl/").document
 
         val items = doc.select(".MovieList li").mapNotNull {

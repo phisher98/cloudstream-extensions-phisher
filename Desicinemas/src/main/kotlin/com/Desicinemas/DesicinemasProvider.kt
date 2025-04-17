@@ -67,8 +67,8 @@ open class DesicinemasProvider : MainAPI() {
         app.get(data, referer = mainUrl).document.select(".MovieList .OptionBx").amap {
             val name = it.select("p.AAIco-dns").text()
             val link = it.select("a").attr("href")
-            val src = app.get(link).document.select("iframe").attr("src")
-            loadExtractor(src, subtitleCallback, callback, name)
+            val src = app.get(link, referer = mainUrl).document.selectFirst("iframe")?.attr("src")
+            loadCustomExtractor(name,src ?: return@amap,src,subtitleCallback, callback)
         }
         return true
     }
