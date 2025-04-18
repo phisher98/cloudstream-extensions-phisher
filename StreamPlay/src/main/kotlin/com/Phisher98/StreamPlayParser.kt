@@ -1748,3 +1748,30 @@ data class AnimekaiTrack(
     val kind: String,
     val default: Boolean?,
 )
+
+
+
+data class Xprime(
+    @JsonProperty("available_qualities")
+    val availableQualities: List<String>,
+    @JsonProperty("has_subtitles")
+    val hasSubtitles: Boolean,
+    val message: Any?,
+    val status: String,
+    val streams: XprimeStreams,
+    val subtitles: List<XprimeSubtitle>,
+)
+
+data class XprimeStreams(
+    @JsonProperty("1080p")
+    val n1080p: String,
+    @JsonProperty("720p")
+    val n720p: String,
+    @JsonProperty("480p")
+    val n480p: String,
+)
+
+data class XprimeSubtitle(
+    val file: String,
+    val label: String,
+)

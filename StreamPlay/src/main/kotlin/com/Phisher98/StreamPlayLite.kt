@@ -34,6 +34,9 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
+import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
+import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 
 class StreamPlayLite() : StreamPlay(sharedPref) {
     override var name = "StreamPlay-Lite"
@@ -299,8 +302,34 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.episode,
                     subtitleCallback,
                 )
-            }
-        )
+            },
+            {
+                if (!res.isAnime) invokeXPrimeAPI(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+            if (!res.isAnime) invokevidzeeUltra(
+                res.id,
+                res.season,
+                res.episode,
+                callback
+            )
+            },
+            {
+                if (!res.isAnime) invokevidzeeMulti(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
+
+            )
         return true
     }
 

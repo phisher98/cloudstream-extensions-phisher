@@ -94,6 +94,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeDramacool
+import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
+import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
+import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
@@ -199,6 +202,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Player4uApi="https://player4u.xyz"
         const val Vidsrcxyz= "https://vidsrc.xyz"
         const val Dramacool="https://stremio-dramacool-addon.xyz"
+        const val Xprime="https://xprime.tv"
+        const val Vidzee="https://vidzee.wtf"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -989,7 +994,31 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
-
+            {
+                if (!res.isAnime) invokeXPrimeAPI(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokevidzeeUltra(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokevidzeeMulti(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
 
 
 

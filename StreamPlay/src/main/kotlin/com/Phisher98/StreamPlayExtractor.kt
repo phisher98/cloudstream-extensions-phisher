@@ -29,6 +29,7 @@ import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.jsoup.*
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -1627,6 +1628,149 @@ object StreamPlayExtractor : StreamPlay() {
             subtitleCallback(SubtitleFile(language, it.url))
         }
     }
+
+    suspend fun invokeXPrimeAPI(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$Xprime/primebox?id=$id"
+        } else {
+            "$Xprime/primebox?id=$id&season=$season&episode=$episode"
+        }
+
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+        )
+
+        val response = app.get(url, headers = headers, timeout = 100L).parsedSafe<Xprime>() ?: return
+        val streamMap = mapOf(
+            "1080p" to (response.streams.n1080p to Qualities.P1080.value),
+            "720p" to (response.streams.n720p to Qualities.P720.value),
+            "480p" to (response.streams.n480p to Qualities.P480.value)
+        )
+
+        for ((quality, pair) in streamMap) {
+            val (streamUrl, qualityValue) = pair
+            if (quality in response.availableQualities && streamUrl.isNotBlank()) {
+                callback(
+                    newExtractorLink(
+                        "XPrime",
+                        "XPrime",
+                        url = streamUrl,
+                        ExtractorLinkType.M3U8
+                    ) {
+                        this.referer = referer
+                        this.quality = qualityValue
+                    }
+                )
+            }
+        }
+
+        response.subtitles.forEach {
+            val language = it.label.ifBlank { "Unknown" }
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    language.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase(Locale.getDefault()) else c.toString() },
+                    it.file
+                )
+            )
+        }
+    }
+
+    suspend fun invokevidzeeUltra(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$Vidzee/movie/movie.php?id=$id"
+        } else {
+            "$Vidzee/tv/$id/$season/$episode"
+        }
+        val response = app.get(url).document
+        val script = response.select("script").map { it.data() }.firstOrNull { "qualityOptions" in it } ?: return
+
+        val regex = Regex("""const\s+qualityOptions\s*=\s*(\[[\s\S]*?])""")
+        val match = regex.find(script)
+        val jsonArrayRaw = match?.groups?.get(1)?.value ?: return
+
+        try {
+            val jsonArray = JSONArray(jsonArrayRaw)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val label = obj.optString("html")
+                val file = obj.optString("url")
+
+                if (file.isNotBlank()) {
+                    callback(
+                        newExtractorLink(
+                            "Vidzee",
+                            "Vidzee",
+                            file,
+                            ExtractorLinkType.M3U8
+                        ) {
+                            this.referer = "$Vidzee/"
+                            this.quality = label.replace(Regex("""[^\d]"""), "").toIntOrNull() ?: Qualities.Unknown.value
+                        }
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VidzeeParser", "Failed to parse qualityOptions $e")
+        }
+    }
+
+
+    suspend fun invokevidzeeMulti(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$Vidzee/movie/multi.php?id=$id"
+        } else {
+            "$Vidzee/tv/multi.php?id=$id&season=$season&episode=$episode"
+        }
+        val response = app.get(url).document
+        val script = response.select("script").map { it.data() }.firstOrNull { "qualityOptions" in it } ?: return
+
+        val regex = Regex("""const\s+qualityOptions\s*=\s*(\[[\s\S]*?])""")
+        val match = regex.find(script)
+        val jsonArrayRaw = match?.groups?.get(1)?.value ?: return
+
+        try {
+            val jsonArray = JSONArray(jsonArrayRaw)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val label = obj.optString("html")
+                val file = obj.optString("url")
+
+                if (file.isNotBlank()) {
+                    callback(
+                        newExtractorLink(
+                            "Vidzee Multi",
+                            "Vidzee Multi",
+                            file,
+                            ExtractorLinkType.M3U8
+                        ) {
+                            this.referer = "$Vidzee/"
+                            this.quality = label.replace(Regex("""[^\d]"""), "").toIntOrNull() ?: Qualities.Unknown.value
+                        }
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VidzeeParser", "Failed to parse qualityOptions $e")
+        }
+
+    }
+
 
 
     suspend fun invokeTopMovies(
