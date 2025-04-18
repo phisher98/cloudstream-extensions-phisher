@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
@@ -26,25 +27,25 @@ import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.nicehttp.RequestBodyTypes
 import kotlinx.serialization.Serializable
 import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigInteger
 import java.net.URI
-import java.nio.charset.Charset
 import java.security.MessageDigest
+import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 
@@ -734,29 +735,76 @@ open class Chillx : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val baseurl=getBaseUrl(url)
         val headers = mapOf(
-            "priority" to "u=0, i",
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Language" to "en-US,en;q=0.9",
+            "Origin" to baseurl,
+            "Referer" to baseurl,
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36"
         )
-        try {
-            val res = app.get(url,referer=mainUrl,headers=headers).toString()
+        // Diffie-Hellman parameters
+        val dhModulus = BigInteger("FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF", 16)
+        val generator = BigInteger("2")
+        val keyBytes = 32 // 256-bit key
+        val randomBytes = ByteArray(keyBytes)
+        SecureRandom().nextBytes(randomBytes)
+        val clientPrivateKey = BigInteger(1, randomBytes).mod(dhModulus)
+        val clientPublicKey = generator.modPow(clientPrivateKey, dhModulus)
 
-            val encodedString = Regex("(?:const|let|var|window\\.(?:Delta|Alpha|Ebolt|Flagon))\\s+\\w*\\s*=\\s*'(.*?)'").find(res)?.groupValues?.get(1) ?: ""
+        // Request for token
+        val nonce = getNonce()
+
+        try {
+            val res = app.get(url, referer = referer ?: mainUrl, headers = headers).toString()
+
+            // Extract encoded string from response
+            val encodedString = Regex("(?:const|let|var|window\\.\\w+)\\s+\\w*\\s*=\\s*'(.*?)'").find(res)
+                ?.groupValues?.get(1)?.trim() ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
             }
 
-            // Decrypt the encoded string
-            val keyBase64 = "SCkjX0Y9Vy5tY1FNIyZtdg=="
-            val decryptedData = decryptData(keyBase64, encodedString)
-            // Extract the m3u8 URL from decrypted data
-            val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decryptedData)?.groupValues?.get(1)?.trim() ?: ""
+            val postDataStep2 = """{
+                "nonce": "$nonce",
+                "client_public": "$clientPublicKey"
+            }""".toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+
+            val step2Response = app.post("$baseurl/api-2/prepair-token.php", requestBody = postDataStep2, headers = headers).toString()
+            val jsonResponse2 = Gson().fromJson(step2Response, JsonObject::class.java)
+            val preToken = jsonResponse2.get("pre_token")?.asString ?: ""
+            val csrfToken = jsonResponse2.get("csrf_token")?.asString ?: ""
+            val serverPublicKey = jsonResponse2.get("server_public")?.asString ?: ""
+
+            // Step 3: Create token
+            val postDataStep3 = """{
+                "nonce": "$nonce",
+                "pre_token": "$preToken",
+                "csrf_token": "$csrfToken"
+            }""".toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+
+            val step3Response = app.post("$baseurl/api-2/create-token.php", requestBody = postDataStep3, headers = headers).toString()
+            val sessionToken = Gson().fromJson(step3Response, JsonObject::class.java).get("token")?.asString ?: ""
+
+            // Step 4: Process final request
+            val postDataLast = """{
+                "token": "$sessionToken",
+                "nonce": "$nonce",
+                "initial_nonce": "$nonce",
+                "pre_token": "$preToken",
+                "csrf_token": "$csrfToken",
+                "encrypted_data": "$encodedString"
+            }""".toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+
+            val stepLastResponse = app.post("$baseurl/api-2/last-process.php", requestBody = postDataLast, headers = headers).toString()
+            val decryptedData = decodeData(stepLastResponse,serverPublicKey,clientPrivateKey,dhModulus).toString()
+
+            // Extract m3u8 URL
+            val m3u8 = Regex("(https?://[^\\s\"'\\\\]*m3u8[^\\s\"'\\\\]*)").find(decryptedData)
+                ?.groupValues?.get(1)?.trim() ?: ""
             if (m3u8.isEmpty()) {
                 throw Exception("m3u8 URL not found")
             }
 
-            // Prepare headers
+            // Prepare headers for callback
             val header = mapOf(
                 "accept" to "*/*",
                 "accept-language" to "en-US,en;q=0.5",
@@ -790,63 +838,84 @@ open class Chillx : ExtractorApi() {
             }
 
         } catch (e: Exception) {
-            println("Error: ${e.message}")
+            Log.e("Anisaga Stream", "Error: ${e.message}")
         }
+    }
+
+    private fun decodeData(
+        response: String,
+        serverPublicKey: String,
+        clientPrivateKey: BigInteger,
+        dhModulus: BigInteger
+    ): String? {
+        val res = Gson().fromJson(response, JsonObject::class.java)
+        val tempiv = res.get("temp_iv")?.asString ?: return null
+        val encryptedSymmetricKeyStr = res.get("encrypted_symmetric_key")?.asString ?: return null
+        val ivStr = res.get("iv")?.asString ?: return null
+        val encryptedResultStr = res.get("encrypted_result")?.asString ?: return null
+
+        val shared = modExp(
+            BigInteger(serverPublicKey),
+            clientPrivateKey,
+            dhModulus
+        )
+
+        val derivedKey = MessageDigest.getInstance("SHA-256").digest(shared.toString().toByteArray())
+
+// Decrypt symmetric key
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        val secretKey = SecretKeySpec(derivedKey, "AES")
+        val ivSpec = IvParameterSpec(base64DecodeArray(tempiv))
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+        val encryptedSymmetricKey = base64DecodeArray(encryptedSymmetricKeyStr)
+        val decryptedBytes = cipher.doFinal(encryptedSymmetricKey)
+
+// Decrypt final data
+        val aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        val aesKey = SecretKeySpec(decryptedBytes, "AES")
+        val ivParameter = IvParameterSpec(base64DecodeArray(ivStr))
+        aesCipher.init(Cipher.DECRYPT_MODE, aesKey, ivParameter)
+        val encodedEncryptedData = base64DecodeArray(encryptedResultStr)
+        val decryptedByteArray = aesCipher.doFinal(encodedEncryptedData)
+        val decryptedText = String(decryptedByteArray, Charsets.UTF_8)
+        return decryptedText
+    }
+
+    private fun modExp(base: BigInteger, exp: BigInteger, mod: BigInteger): BigInteger {
+        var result = BigInteger.ONE
+        var baseVar = base.mod(mod)
+        var expVar = exp
+
+        while (expVar > BigInteger.ZERO) {
+            if (expVar.and(BigInteger.ONE) == BigInteger.ONE) {
+                result = (result * baseVar).mod(mod)
+            }
+            baseVar = (baseVar * baseVar).mod(mod)
+            expVar = expVar.shiftRight(1)
+        }
+
+        return result
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """tracks:\s*\[(.*?)]""".toRegex()
-        val match = regex.find(subtitle)?.groupValues?.get(1) ?: return emptyList()
+        val regex = """\[(.*?)](https?://[^\s,"]+\.srt)""".toRegex()
+        return regex.findAll(subtitle).map {
+            it.groupValues[1] to it.groupValues[2]
+        }.toList()
+    }
 
-        return try {
-            val subtitles = JSONArray("[$match]") // Wrap in brackets to form valid JSON
-            (0 until subtitles.length()).mapNotNull { i ->
-                val obj = subtitles.optJSONObject(i) ?: return@mapNotNull null
-                val kind = obj.optString("kind")
-                if (kind == "captions") {
-                    val label = obj.optString("label")
-                    val file = obj.optString("file")
-                    label to file
-                } else null
-            }
-        } catch (e: Exception) {
-            emptyList()
+    private fun getNonce(): String {
+        val randPart = (Math.random().toString().split(".")[1].toLong()).toString(36)
+        val timePart = System.currentTimeMillis().toString(36)
+        return randPart + timePart
+    }
+
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
     }
 
-    private fun decryptData(base64Key: String, encryptedData: String): String {
-        return try {
-            // Decode Base64-encoded encrypted data
-            val decodedBytes = base64DecodeArray(encryptedData)
-
-            // Extract IV, Authentication Tag, and Ciphertext
-            val salt=decodedBytes.copyOfRange(0, 16)
-            val iv = decodedBytes.copyOfRange(16, 28)
-            val authTag = decodedBytes.copyOfRange(28, 44)
-            val ciphertext = decodedBytes.copyOfRange(44, decodedBytes.size)
-
-            // Convert Base64-encoded password to a SHA-256 encryption key
-            val password = base64Decode(base64Key)
-            val keyBytes = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(
-                PBEKeySpec(password.toCharArray(), salt, 999, 32 * 8)
-            ).encoded
-
-            // Decrypt the data using AES-GCM
-            val secretKey: SecretKey = SecretKeySpec(keyBytes, "AES")
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            val gcmSpec = GCMParameterSpec(128, iv)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
-
-            // Perform decryption
-            val decryptedBytes = cipher.doFinal(ciphertext + authTag)
-            String(decryptedBytes, Charset.forName("UTF-8"))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "Decryption failed"
-        }
-    }
-
-    /** End **/
 }
 
 

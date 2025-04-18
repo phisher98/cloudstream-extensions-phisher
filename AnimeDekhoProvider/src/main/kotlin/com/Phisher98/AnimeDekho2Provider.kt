@@ -9,7 +9,7 @@ import okio.ByteString.Companion.decodeBase64
 import org.jsoup.nodes.Element
 
 class AnimeDekho2Provider : MainAPI() {
-    override var mainUrl = "https://animedekho.com"
+    override var mainUrl = "https://animedekho.co"
     override var name = "Anime Dekho 2"
     override val hasMainPage = true
     override var lang = "hi"

@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
 open class AnimeDekhoProvider : MainAPI() {
-    override var mainUrl = "https://animedekho.net"
+    override var mainUrl = "https://animedekho.co"
     override var name = "Anime Dekho"
     override val hasMainPage = true
     override var lang = "hi"
