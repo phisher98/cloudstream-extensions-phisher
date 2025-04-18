@@ -106,12 +106,29 @@ open class Cybervynx : ExtractorApi() {
         if (scriptData.isNullOrEmpty()) return
 
         val m3u8Url = Regex("\"hls2\":\"(.*?)\"").find(scriptData)?.groupValues?.getOrNull(1)
+        val subtitleUrl = Regex("""file\s*:\s*"(https?://[^"]+\.vtt)"""").find(scriptData)?.groupValues?.getOrNull(1)
+
         if (m3u8Url.isNullOrBlank()) return
-        generateM3u8(
-            name,
-            m3u8Url,
-            mainUrl
-        ).forEach(callback)
+        callback(
+            newExtractorLink(
+                name,
+                name,
+                url = m3u8Url,
+                type = ExtractorLinkType.M3U8
+            ) {
+                this.referer = referer ?: ""
+                this.quality = Qualities.P1080.value
+            }
+        )
+
+        if (subtitleUrl != null) {
+            subtitleCallback(
+                SubtitleFile(
+                    "English",
+                    subtitleUrl
+                )
+            )
+        }
     }
 }
 
