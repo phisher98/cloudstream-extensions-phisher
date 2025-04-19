@@ -17,7 +17,6 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
-import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
@@ -26,7 +25,6 @@ import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
-import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.json.JSONObject
@@ -133,41 +131,39 @@ class AnimeKai : MainAPI() {
                 ?.getDocument()
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
             subCount?.let {
-                if (index < it) {
-                    subEpisodes +=
-                        newEpisode("sub|" + ep.attr("token")) {
-                            name = ep.selectFirst("span")?.text()
-                            episode = ep.attr("num").toIntOrNull()
-                            this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                                ?.toDoubleOrNull()
-                                ?.times(10)
-                                ?.roundToInt()
-                                ?: 0
-                            this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
-                                ?: return@newEpisode
-                            this.description = animeData.episodes[episode?.toString()]?.overview
-                                ?: "No summary available"
-                        }
+                subEpisodes += newEpisode("sub|" + ep.attr("token")) {
+                    name = ep.selectFirst("span")?.text()
+                    episode = index + 1
+                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
+                        ?.toDoubleOrNull()
+                        ?.times(10)
+                        ?.roundToInt()
+                        ?: 0
+                    this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
+                        ?: return@newEpisode
+                    this.description = animeData.episodes[episode?.toString()]?.overview
+                        ?: "No summary available"
                 }
+                index + 1
             }
             dubCount?.let {
                 if (index < it) {
-                    dubEpisodes +=
-                        newEpisode("dub|" + ep.attr("token")) {
-                            name = ep.selectFirst("span")?.text()
-                            episode = ep.attr("num").toIntOrNull()
-                            this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                                ?.toDoubleOrNull()
-                                ?.times(10)
-                                ?.roundToInt()
-                                ?: 0
-                            this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
-                                ?: return@newEpisode
-                            this.description = animeData.episodes[episode?.toString()]?.overview
-                                ?: "No summary available"
-                        }
+                    dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
+                        name = ep.selectFirst("span")?.text()
+                        episode = ep.attr("num").toIntOrNull()
+                        this.rating = animeData?.episodes?.get(episode?.toString())?.rating
+                            ?.toDoubleOrNull()
+                            ?.times(10)
+                            ?.roundToInt()
+                            ?: 0
+                        this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
+                            ?: return@newEpisode
+                        this.description = animeData.episodes[episode?.toString()]?.overview
+                            ?: "No summary available"
+                    }
                 }
             }
+
         }
         val recommendations = document.select("div.aitem-col a").map { it.toRecommendResult() }
         val genres = document.select("div.detail a")
@@ -198,6 +194,7 @@ class AnimeKai : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val decoder = AnimekaiDecoder()
         val token = data.split("|").last().split("=").last()
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
