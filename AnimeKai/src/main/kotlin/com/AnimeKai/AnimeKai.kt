@@ -27,11 +27,13 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import kotlin.math.roundToInt
+import kotlin.random.Random
 
 
 class AnimeKai : MainAPI() {
@@ -90,11 +92,12 @@ class AnimeKai : MainAPI() {
 
     override val mainPage =
         mainPageOf(
-            "$mainUrl/browser?keyword=&status%5B%5D=releasing&sort=updated_date" to "Latest Episode",
             "$mainUrl/browser?keyword=&status[]=releasing&sort=trending" to "Trending",
+            "$mainUrl/browser?keyword=&status[]=releasing&sort=updated_date" to "Latest Episode",
             "$mainUrl/browser?keyword=&sort=released_date" to "New Releases",
-            "$mainUrl/browser?keyword=&status%5B%5D=completed&sort=mal_score" to "Completed"
-        )
+            "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=sub&language[]=softsub" to "Recently SUB",
+            "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=dub" to "Recently DUB",
+            )
 
     override suspend fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/browser?keyword=$query"
@@ -102,11 +105,16 @@ class AnimeKai : MainAPI() {
         return res.select("div.aitem-wrapper div.aitem").map { it.toSearchResult() }
     }
 
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val waitTime = Random.nextLong(1000, 2000)
+        delay(waitTime)
         val res = app.get("${request.data}&page=$page").document
         val items = res.select("div.aitem-wrapper div.aitem").map { it.toSearchResult() }
+
         return newHomePageResponse(request.name, items)
     }
+
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
