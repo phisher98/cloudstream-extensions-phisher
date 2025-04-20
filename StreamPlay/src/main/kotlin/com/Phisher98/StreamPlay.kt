@@ -18,7 +18,6 @@ import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.phisher98.StreamPlayExtractor.invokeFlixon
-import com.phisher98.StreamPlayExtractor.invokeHinAuto
 import com.phisher98.StreamPlayExtractor.invokeHindMoviez
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
@@ -171,7 +170,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val hdmovies4uAPI = "https://hdmovies4u.ph"
         const val Vglist="https://vglist.nl"
         const val dahmerMoviesAPI="https://a.111477.xyz"
-        const val MovieDrive_API="https://moviesdrive.xyz"
+        const val MovieDriveAPI="https://moviesdrives.com"
         const val bollyflixAPI = "https://bollyflix.kiwi"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
@@ -186,7 +185,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val WyZIESUBAPI="https://subs.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"
-        const val HinAutoAPI="https://hin.autoembed.cc"
+        //const val HinAutoAPI="https://hin.autoembed.cc"
         const val RiveStreamAPI="https://rivestream.org"
         const val RiveStreamScraperAPI="https://scrapper.rivestream.org"
         const val VidSrcVip="https://vidsrc.vip"
@@ -881,6 +880,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
+            /*
 {
     if (!res.isAnime) invokeHinAuto(
         res.id,
@@ -890,6 +890,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         callback
     )
 },
+             */
  {
      if (!res.isAnime) invokeRiveStream(
          res.id,

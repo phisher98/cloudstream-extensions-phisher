@@ -1815,7 +1815,6 @@ object StreamPlayExtractor : StreamPlay() {
             res.select("a.maxbutton-download-links")
                 .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
                 .forEach { detailPageUrl ->
-                    Log.d("Phisher", detailPageUrl)
                     val detailPageDocument = runCatching { app.get(detailPageUrl).document }.getOrNull()
                         ?: return@forEach
 
@@ -3778,10 +3777,19 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val firstRedirect = app.get(MovieDriveAPI)
+            .document.selectFirst("meta[http-equiv=refresh]")
+            ?.attr("content")
+            ?.substringAfter("url=")
+        val movieDrive_API = firstRedirect?.let {
+            app.get(it, allowRedirects = false)
+                .document.selectFirst("a[href]")
+                ?.attr("href")
+        }
         val cfInterceptor = CloudflareKiller()
         val fixTitle = title?.substringBefore("-")?.replace(":", " ")?.replace("&", " ")
         val searchTitle = title?.substringBefore("-").createSlug()
-        val url = "$MovieDrive_API/search/$fixTitle${if (season == null) " $year" else ""}"
+        val url = "${movieDrive_API}search/$fixTitle${if (season == null) " $year" else ""}"
         val hrefPattern = app.get(url).document.select("figure")
             .toString()
             .let {
@@ -3912,11 +3920,9 @@ object StreamPlayExtractor : StreamPlay() {
             } else {
                 "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
             }
-            Log.d("Phisher",href)
             val pageHtml = runCatching {
                 app.get(href, referer = Catflix).toString()
             }.getOrNull() ?: return
-            Log.d("Phisher",pageHtml)
 
             val iframe = runCatching {
                 Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""")
@@ -3924,17 +3930,14 @@ object StreamPlayExtractor : StreamPlay() {
                     ?.groupValues?.get(1)
                     ?.let(::base64Decode)
             }.getOrNull() ?: return
-            Log.d("Phisher",iframe)
 
             val iframeHtml = runCatching {
                 app.get(iframe, referer = Catflix).toString()
             }.getOrNull() ?: return
-            Log.d("Phisher",iframeHtml)
 
             val apkey = Regex("""apkey\s*=\s*['"](.*?)["']""")
                 .find(iframeHtml)
                 ?.groupValues?.getOrNull(1)
-            Log.d("Phisher", apkey.toString())
 
             val xxid = Regex("""xxid\s*=\s*['"](.*?)["']""")
                 .find(iframeHtml)
@@ -4136,6 +4139,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    /*
     suspend fun invokeHinAuto(
         id: Int? = null,
         year: Int? = null,
@@ -4173,7 +4177,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         return gson.fromJson(json, Array<HinAutoRoot2>::class.java).toList()
     }
-
+     */
     suspend fun invokenyaa(
         title: String? = null,
         season: Int? = null,
