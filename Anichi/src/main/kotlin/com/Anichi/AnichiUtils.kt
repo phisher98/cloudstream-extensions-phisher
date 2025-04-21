@@ -148,7 +148,7 @@ object AnichiUtils {
         return M3u8Helper.generateM3u8(
                 qualityName,
                 m3u8Link,
-                referer,
+                referer
         )
     }
 

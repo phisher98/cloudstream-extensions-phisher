@@ -7,6 +7,7 @@ import com.Anichi.AnichiUtils.fixUrlPath
 import com.Anichi.AnichiUtils.getHost
 import com.Anichi.AnichiUtils.getM3u8Qualities
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
@@ -45,12 +46,13 @@ object AnichiExtractors : Anichi() {
         sources.forEach { source ->
             launch {
                 safeApiCall {
+                    //Log.d("Phisher", "${source.sourceName} ${source.sourceUrl}")
+
                     val rawLink = source.sourceUrl ?: return@safeApiCall
                     val link = fixSourceUrls(rawLink, source.sourceName) ?: return@safeApiCall
 
                     if (URI(link).isAbsolute || link.startsWith("//")) {
                         val fixedLink = if (link.startsWith("//")) "https:$link" else link
-                        Log.d("Phisher", fixedLink)
                         loadExtractor(fixedLink, subtitleCallback, callback)
                         /*
                         when {
@@ -64,16 +66,16 @@ object AnichiExtractors : Anichi() {
                          */
                     } else {
                         val fixedLink = link.fixUrlPath()
+                        Log.d("Phisher",fixedLink)
+
                         val links = try {
-                            app.get(fixedLink).parsedSafe<AnichiVideoApiResponse>()?.links ?: emptyList()
+                            app.get(fixedLink, headers=headers).parsedSafe<AnichiVideoApiResponse>()?.links ?: emptyList()
                         } catch (e: Exception) {
                             e.printStackTrace()
                             return@safeApiCall
                         }
-
                         links.forEach { server ->
                             val host = server.link.getHost()
-
                             when {
                                 source.sourceName?.contains("Default") == true &&
                                         (server.resolutionStr == "SUB" || server.resolutionStr == "Alt vo_SUB") -> {
@@ -84,13 +86,27 @@ object AnichiExtractors : Anichi() {
                                     ).forEach(callback)
                                 }
 
+                                server.hls == null -> {
+                                    callback.invoke(
+                                        newExtractorLink(
+                                            "Allanime ${host.capitalize()}",
+                                            "Allanime ${host.capitalize()}",
+                                            server.link,
+                                            INFER_TYPE
+                                        )
+                                        {
+                                            this.quality=Qualities.P1080.value
+                                        }
+                                    )
+                                }
+
                                 server.hls == true -> {
                                     val endpoint = "$apiEndPoint/player?uri=" +
                                             (if (URI(server.link).host.isNotEmpty())
                                                 server.link
                                             else apiEndPoint + URI(server.link).path)
 
-                                    getM3u8Qualities(server.link, endpoint, host).forEach(callback)
+                                    getM3u8Qualities(server.link, server.headers?.referer ?: endpoint, host).forEach(callback)
                                 }
 
                                 else -> {
@@ -106,6 +122,7 @@ object AnichiExtractors : Anichi() {
                 }
 
                 // Handle AllAnime direct download
+                /*
                 val downloadUrl = source.downloads?.downloadUrl
                 if (!downloadUrl.isNullOrEmpty() && downloadUrl.startsWith("http")) {
                     val downloadId = downloadUrl.substringAfter("id=", "")
@@ -132,6 +149,7 @@ object AnichiExtractors : Anichi() {
                         }
                     }
                 }
+                */
             }
         }
     }

@@ -77,13 +77,21 @@ object AnichiParser {
     )
 
     data class Links(
-            @JsonProperty("link") val link: String,
-            @JsonProperty("hls") val hls: Boolean?,
-            @JsonProperty("resolutionStr") val resolutionStr: String,
-            @JsonProperty("src") val src: String?,
-            @JsonProperty("portData") val portData: PortData? = null,
-            @JsonProperty("subtitles") val subtitles: ArrayList<Subtitles>? = arrayListOf(),
+        @JsonProperty("link") val link: String,
+        @JsonProperty("hls") val hls: Boolean? = null,
+        @JsonProperty("resolutionStr") val resolutionStr: String,
+        @JsonProperty("src") val src: String? = null,
+        @JsonProperty("headers") val headers: Headers? = null,
+        @JsonProperty("portData") val portData: PortData? = null,
+        @JsonProperty("subtitles") val subtitles: ArrayList<Subtitles>? = arrayListOf(),
     )
+
+    data class Headers(
+        @JsonProperty("Referer") val referer: String? = null,
+        @JsonProperty("Origin") val origin: String? = null,
+        @JsonProperty("user-agent") val userAgent: String? = null,
+    )
+
 
     data class AnichiVideoApiResponse(@JsonProperty("links") val links: List<Links>)
 

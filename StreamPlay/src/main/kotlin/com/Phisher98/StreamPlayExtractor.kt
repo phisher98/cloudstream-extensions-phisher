@@ -918,7 +918,7 @@ object StreamPlayExtractor : StreamPlay() {
                     """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$i","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
                 val eplinks = app.get(epData, referer = privatereferer)
                     .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
-                eplinks?.apmap { source ->
+                eplinks?.amap { source ->
                     safeApiCall {
                         val sourceUrl = source.sourceUrl
                         val downloadUrl = source.downloads?.downloadUrl ?: ""
