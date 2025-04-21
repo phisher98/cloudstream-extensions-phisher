@@ -6,7 +6,6 @@ import com.Anichi.AnichiUtils.fixSourceUrls
 import com.Anichi.AnichiUtils.fixUrlPath
 import com.Anichi.AnichiUtils.getHost
 import com.Anichi.AnichiUtils.getM3u8Qualities
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -65,9 +64,12 @@ object AnichiExtractors : Anichi() {
                         }
                          */
                     } else {
-                        val fixedLink = link.fixUrlPath()
-                        Log.d("Phisher",fixedLink)
-
+                        val decodedlink=if (link.startsWith("--"))
+                        {
+                            decrypthex(link)
+                        }
+                        else link
+                        val fixedLink = decodedlink.fixUrlPath()
                         val links = try {
                             app.get(fixedLink, headers=headers).parsedSafe<AnichiVideoApiResponse>()?.links ?: emptyList()
                         } catch (e: Exception) {
@@ -154,6 +156,20 @@ object AnichiExtractors : Anichi() {
         }
     }
 
+    fun decrypthex(inputStr: String): String {
+        val hexString = if (inputStr.startsWith("-")) {
+            inputStr.substringAfterLast("-")
+        } else {
+            inputStr
+        }
+
+        val bytes = ByteArray(hexString.length / 2) { i ->
+            val hexByte = hexString.substring(i * 2, i * 2 + 2)
+            (hexByte.toInt(16) and 0xFF).toByte()
+        }
+
+        return bytes.joinToString("") { (it.toInt() xor 56).toChar().toString() }
+    }
 
 }
 
