@@ -10,7 +10,7 @@ import org.jsoup.nodes.Element
 
 class PRMoviesProvider : MainAPI() {
 
-    override var mainUrl = "https://prmovies.email"
+    override var mainUrl = "https://prmovies.cash"
     override var name = "PRMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -160,7 +160,6 @@ class PRMoviesProvider : MainAPI() {
                                         callback
                                     )
                                 }
-
                             else -> loadExtractor(source, "$mainUrl/", subtitleCallback, callback)
                         }
                     }

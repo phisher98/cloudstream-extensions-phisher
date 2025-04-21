@@ -12,7 +12,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Minoplres : ExtractorApi() {
     override val name = "Minoplres"
-    override val mainUrl = "https://minoplres.xyz"
+    override val mainUrl = "https://spedostream.com"
     override val requiresReferer = true
 
     override suspend fun getUrl(
@@ -31,8 +31,8 @@ open class Minoplres : ExtractorApi() {
                         url = link,
                         INFER_TYPE
                     ) {
-                        this.referer = ""
-                        this.quality = Qualities.P1080.value
+                        this.referer = mainUrl
+                        this.quality = Qualities.P720.value
                     }
                 )
             }
