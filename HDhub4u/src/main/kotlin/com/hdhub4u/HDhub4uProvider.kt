@@ -2,6 +2,7 @@ package com.hdhub4u
 
 import android.annotation.SuppressLint
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -28,7 +29,7 @@ import org.jsoup.select.Elements
 
 
 class HDhub4uProvider : MainAPI() {
-    override var mainUrl = "https://hdhub4u.exposed"
+    override var mainUrl = "https://hdhub4u.mn/?re=hdhub"
     override var name = "HDHub4U"
     override var lang = "hi"
     override val hasMainPage = true
@@ -39,52 +40,22 @@ class HDhub4uProvider : MainAPI() {
     )
     private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
     override val mainPage = mainPageOf(
-        "/" to "Latest",
-        "/category/bollywood-movies/" to "Bollywood",
-        "/category/hollywood-movies/" to "Hollywood",
-        "/category/hindi-dubbed/" to "Hindi Dubbed",
-        "/category/south-hindi-movies/" to "South Hindi Dubbed",
-        "/category/category/web-series/" to "Web Series",
-        "/category/adult/" to "Adult",
+        "" to "Latest",
+        "category/bollywood-movies/" to "Bollywood",
+        "category/hollywood-movies/" to "Hollywood",
+        "category/hindi-dubbed/" to "Hindi Dubbed",
+        "category/south-hindi-movies/" to "South Hindi Dubbed",
+        "category/category/web-series/" to "Web Series",
+        "category/adult/" to "Adult",
     )
     private val headers =
         mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0","Cookie" to "xla=s4t")
 
-    private suspend fun getMainUrl() {
-        newMainUrl.ifEmpty {
-            val response =
-                app.get("https://hdhublist.com/?re=hdhub", allowRedirects = true, cacheTime = 60)
-            if (response.isSuccessful) {
-                // Method 1: Extract from <meta http-equiv="refresh">
-                val doc = response.document
-                val metaRefresh = doc.selectFirst("meta[http-equiv=refresh]")
-                if (metaRefresh != null) {
-                    val content = metaRefresh.attr("content")
-                    val urlMatch = Regex("""url=(.+)""").find(content)
-                    if (urlMatch != null) {
-                        newMainUrl = urlMatch.groupValues[1]
-                    }
-                }
-
-                // Method 2: Extract from location.replace in <BODY>
-                val bodyOnLoad = doc.selectFirst("body[onload]")
-                if (bodyOnLoad != null) {
-                    val onLoad = bodyOnLoad.attr("onload")
-                    val urlMatch = Regex("""location\.replace\(['"](.+)['"]\)""").find(onLoad)
-                    if (urlMatch != null) {
-                        newMainUrl = urlMatch.groupValues[1].replace("+document.location.hash", "")
-                    }
-                }
-            } else newMainUrl = mainUrl
-        }
-    }
-
-    private var newMainUrl = ""
-
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        getMainUrl()
+        val newMainUrl=app.get(mainUrl, allowRedirects = false, cacheTime = 60).headers["location"] ?:""
+        Log.d("Phisher",newMainUrl)
         val doc = app.get(
             "$newMainUrl/${request.data}page/$page/",
             cacheTime = 60,
@@ -105,7 +76,7 @@ class HDhub4uProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        getMainUrl()
+        val newMainUrl=app.get(mainUrl, allowRedirects = true, cacheTime = 60).headers["location"] ?:""
         val doc = app.get(
             "$newMainUrl/?s=$query",
             cacheTime = 60,
@@ -198,87 +169,67 @@ class HDhub4uProvider : MainAPI() {
             val epLinksMap = mutableMapOf<Int, MutableList<String>>() // Store links by episode number
             val episodeRegex = Regex("EPiSODE\\s*(\\d+)", RegexOption.IGNORE_CASE)
 
-// Handling h3 elements
-            doc.select("h3").forEachIndexed { index, h3Element ->
-                val episodeLinks = h3Element.select("a:contains(EPiSODE), a:contains(WATCH)")
-                    .map { it.attr("href") }
-                    .filter { it.isNotEmpty() }
+            doc.select("h3, h4").forEachIndexed { index, element ->
+                val episodeNumberFromTitle = episodeRegex.find(element.text())?.groupValues?.get(1)?.toIntOrNull()
 
-                val episodeInfo = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == index }
+                val baseLinks = element.select("a[href]").mapNotNull { it.attr("href") }
 
-                if (episodeLinks.isNotEmpty()) {
-                    epLinksMap.getOrPut(index) { mutableListOf() }.addAll(episodeLinks.distinct())
-                    episodesData.removeAll { it.episode == index } // Remove duplicates before adding
-                    episodesData.add(
-                        newEpisode(epLinksMap[index] ?: mutableListOf()) {
-                            this.name = episodeInfo?.name ?: "Episode $index"
-                            this.season = seasonNumber
-                            this.episode = index
-                            this.posterUrl = episodeInfo?.thumbnail
-                            this.description = episodeInfo?.overview
-                        }
-                    )
+                val isDirectLinkBlock = element.select("a").any {
+                    it.text().contains(Regex("1080|720|4K|2160", RegexOption.IGNORE_CASE))
                 }
-            }
 
-// Direct Links
-            doc.select("h3,h4").forEach { element ->
-                val validLinks = element.select("a")
-                    .filter { a -> a.text().contains(Regex("1080|720|4K|2160", RegexOption.IGNORE_CASE)) }
-                    .mapNotNull { it.attr("href").takeIf { link -> link.isNotEmpty() } }
+                val episodeNumber = episodeNumberFromTitle ?: (index + 1)
 
-                validLinks.forEach { url ->
-                    val resolvedUrl = getRedirectLinks(url.trim())
-                    val episodeDoc = app.get(resolvedUrl).document
-                    episodeDoc.select("div h5").forEach { h5Element ->
-                        val episodeText = h5Element.text()
-                        val episodeNumber = Regex("(\\d+)").find(episodeText)?.value?.toIntOrNull()
-                        val episodeLinks = h5Element.select("a[href]").mapNotNull { it.attr("href") }
-                        if (episodeNumber != null) {
-                            epLinksMap.getOrPut(episodeNumber) { mutableListOf() }.addAll(episodeLinks.distinct())
-                            episodesData.removeAll { it.episode == episodeNumber } // Remove duplicates before adding
-                            episodesData.add(
-                                newEpisode(epLinksMap[episodeNumber] ?: mutableListOf()) {
-                                    this.name = "Episode $episodeNumber"
-                                    this.season = seasonNumber
-                                    this.episode = episodeNumber
-                                    this.posterUrl = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.thumbnail
-                                    this.description = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.overview
+                val allEpisodeLinks = mutableListOf<String>()
+                allEpisodeLinks.addAll(baseLinks)
+                if (isDirectLinkBlock) {
+                    baseLinks.forEach { url ->
+                        try {
+                            val resolvedUrl = getRedirectLinks(url.trim())
+                            val episodeDoc = app.get(resolvedUrl).document
+                            episodeDoc.select("div h5").forEach { h5Element ->
+                                val episodeText = h5Element.text()
+                                val subEpisodeNum = Regex("(\\d+)").find(episodeText)?.value?.toIntOrNull()
+                                val links = h5Element.select("a[href]").mapNotNull { it.attr("href") }
+
+                                val finalEpisodeNum = subEpisodeNum ?: episodeNumber
+                                if (links.isNotEmpty()) {
+                                    Log.d("Phisher base",links.toString())
+                                    epLinksMap.getOrPut(finalEpisodeNum) { mutableListOf() }.addAll(links.distinct())
                                 }
-                            )
+                            }
+                        } catch (_: Exception) {
                         }
                     }
                 }
+
+                // === If it's a h4 block, grab following sibling links until <hr> ===
+                if (element.tagName() == "h4" && episodeNumberFromTitle != null) {
+                    var nextElement = element.nextElementSibling()
+                    while (nextElement != null && nextElement.tagName() != "hr") {
+                        val siblingLinks = nextElement.select("a[href]").mapNotNull { it.attr("href") }
+                        allEpisodeLinks.addAll(siblingLinks)
+                        nextElement = nextElement.nextElementSibling()
+                    }
+                }
+
+                if (allEpisodeLinks.isNotEmpty()) {
+                    epLinksMap.getOrPut(episodeNumber) { mutableListOf() }.addAll(allEpisodeLinks.distinct())
+                }
             }
 
-// Handling h4 elements
-            doc.select("h4:matches(EPiSODE \\d+)").forEach { h4Element ->
-                val episodeNumber = episodeRegex.find(h4Element.text())?.groupValues?.get(1)?.toIntOrNull() ?: (episodesData.size + 1)
-                val episodeLinks = mutableListOf<String>()
+            epLinksMap.forEach { (epNum, links) ->
+                val info = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == epNum }
 
-                val h4Links = h4Element.select("a[href]").mapNotNull { it.attr("href") }
-                episodeLinks.addAll(h4Links)
-
-                var nextElement = h4Element.nextElementSibling()
-                while (nextElement != null && nextElement.tagName() != "hr") {
-                    val siblingLinks = nextElement.select("a[href]").mapNotNull { it.attr("href") }
-                    episodeLinks.addAll(siblingLinks)
-                    nextElement = nextElement.nextElementSibling()
-                }
-
-                if (episodeLinks.isNotEmpty()) {
-                    epLinksMap.getOrPut(episodeNumber) { mutableListOf() }.addAll(episodeLinks.distinct())
-                    episodesData.removeAll { it.episode == episodeNumber } // Remove duplicates before adding
-                    episodesData.add(
-                        newEpisode(epLinksMap[episodeNumber] ?: mutableListOf()) {
-                            this.name = "Episode $episodeNumber"
-                            this.season = seasonNumber
-                            this.episode = episodeNumber
-                            this.posterUrl = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.thumbnail
-                            this.description = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == episodeNumber }?.overview
-                        }
-                    )
-                }
+                episodesData.add(
+                    newEpisode(links) {
+                        this.name = info?.name ?: "Episode $epNum"
+                        this.season = seasonNumber
+                        this.episode = epNum
+                        this.posterUrl = info?.thumbnail
+                        this.description = info?.overview
+                    }
+                )
             }
 
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesData) {
