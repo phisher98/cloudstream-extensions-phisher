@@ -156,7 +156,7 @@ object AnichiExtractors : Anichi() {
         }
     }
 
-    fun decrypthex(inputStr: String): String {
+    private fun decrypthex(inputStr: String): String {
         val hexString = if (inputStr.startsWith("-")) {
             inputStr.substringAfterLast("-")
         } else {

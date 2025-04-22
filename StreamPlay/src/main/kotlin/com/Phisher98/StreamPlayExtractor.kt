@@ -36,8 +36,11 @@ import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
+import java.net.URI
 import java.time.Instant
 import java.util.Locale
+import kotlinx.coroutines.launch
+
 
 val session = Session(Requests().baseClient)
 
@@ -920,44 +923,14 @@ object StreamPlayExtractor : StreamPlay() {
                     .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
                 eplinks?.amap { source ->
                     safeApiCall {
+                        val headers =
+                            mapOf(
+                                "app-version" to "android_c-247",
+                                "platformstr" to "android_c",
+                                "Referer" to "https://allmanga.to"
+                            )
                         val sourceUrl = source.sourceUrl
-                        val downloadUrl = source.downloads?.downloadUrl ?: ""
-                        if (downloadUrl.contains("blog.allanime.day")) {
-                            if (downloadUrl.isNotEmpty()) {
-                                val downloadid = downloadUrl.substringAfter("id=")
-                                val sourcename = downloadUrl.getHost()
-                                app.get("https://allanime.day/apivtwo/clock.json?id=$downloadid")
-                                    .parsedSafe<AnichiDownload>()?.links?.amap {
-                                        val href = it.link
-                                        loadNameExtractor(
-                                            "Allanime [${i.uppercase()}] [$sourcename]",
-                                            href,
-                                            "",
-                                            subtitleCallback,
-                                            callback,
-                                            Qualities.P1080.value
-                                        )
-                                    }
-                            } else {
-                                Log.d("Error:", "Not Found")
-                            }
-                        } else {
-                            if (sourceUrl.startsWith("http")) {
-                                if (sourceUrl.contains("embtaku.pro")) {
-                                    val iv = "3134003223491201"
-                                    val secretKey = "37911490979715163134003223491201"
-                                    val secretDecryptKey = "54674138327930866480207815084989"
-                                    GogoHelper.extractVidstream(
-                                        sourceUrl,
-                                        "Allanime [${i.uppercase()}] [Vidstreaming]",
-                                        callback,
-                                        iv,
-                                        secretKey,
-                                        secretDecryptKey,
-                                        isUsingAdaptiveKeys = false,
-                                        isUsingAdaptiveData = true
-                                    )
-                                }
+                        if (sourceUrl.startsWith("http")) {
                                 val sourcename = sourceUrl.getHost()
                                 loadCustomExtractor(
                                     "Allanime [${i.uppercase()}] [$sourcename]",
@@ -968,13 +941,67 @@ object StreamPlayExtractor : StreamPlay() {
                                     callback,
                                 )
                             } else {
-                                Log.d("Error:", "Not Found")
+                                Log.d("Phisher else",sourceUrl)
+                            val decodedlink=if (sourceUrl.startsWith("--"))
+                            {
+                                decrypthex(sourceUrl)
+                            }
+                            else sourceUrl
+                            val fixedLink = decodedlink.fixUrlPath()
+                            val links = try {
+                                app.get(fixedLink, headers=headers).parsedSafe<AnichiVideoApiResponse>()?.links ?: emptyList()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                return@safeApiCall
+                            }
+                            links.forEach { server ->
+                                val host = server.link.getHost()
+                                when {
+                                    source.sourceName.contains("Default") && (server.resolutionStr == "SUB" || server.resolutionStr == "Alt vo_SUB") -> {
+                                        getM3u8Qualities(
+                                            server.link,
+                                            "https://static.crunchyroll.com/",
+                                            host
+                                        ).forEach(callback)
+                                    }
+
+                                    server.hls == null -> {
+                                        callback.invoke(
+                                            newExtractorLink(
+                                                "Allanime ${host.capitalize()}",
+                                                "Allanime ${host.capitalize()}",
+                                                server.link,
+                                                INFER_TYPE
+                                            )
+                                            {
+                                                this.quality=Qualities.P1080.value
+                                            }
+                                        )
+                                    }
+
+                                    server.hls == true -> {
+                                        val endpoint = "https://allanime.day/player?uri=" +
+                                                (if (URI(server.link).host.isNotEmpty())
+                                                    server.link
+                                                else "https://allanime.day" + URI(server.link).path)
+
+                                        getM3u8Qualities(server.link, server.headers?.referer ?: endpoint, host).forEach(callback)
+                                    }
+
+                                    else -> {
+                                        server.subtitles?.forEach { sub ->
+                                            val lang = SubtitleHelper.fromTwoLettersToLanguage(sub.lang ?: "") ?: sub.lang.orEmpty()
+                                            val src = sub.src ?: return@forEach
+                                            subtitleCallback(SubtitleFile(lang, httpsify(src)))
+                                        }
+                                    }
+                                }
+                            }
                             }
                         }
                     }
                 }
             }
-        }
     }
 
     suspend fun invokeAnimeOwl(
@@ -3824,6 +3851,11 @@ object StreamPlayExtractor : StreamPlay() {
                                     HubCloud().getUrl(url, referer = "MoviesDrive")
                                 }
                                 else
+                                if (url.contains("GDFlix",ignoreCase = true))
+                                {
+                                    GDFlix().getUrl(url, referer = "MoviesDrive")
+                                }
+                                else
                                 {
                                     loadExtractor(
                                         url,
@@ -3838,6 +3870,10 @@ object StreamPlayExtractor : StreamPlay() {
                                 if (url.contains("hubcloud",ignoreCase = true))
                                 {
                                     HubCloud().getUrl(furl, referer = "MoviesDrive")
+                                }
+                                else if (url.contains("GDFlix",ignoreCase = true))
+                                {
+                                        GDFlix().getUrl(url, referer = "MoviesDrive")
                                 }
                                 else
                                 {

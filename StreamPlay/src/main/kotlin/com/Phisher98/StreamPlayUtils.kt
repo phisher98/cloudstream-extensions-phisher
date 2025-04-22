@@ -2856,3 +2856,47 @@ fun cleanTitle(title: String): String {
     }
 }
 
+//Anichi
+
+fun String.fixUrlPath(): String {
+    return if (this.contains(".json?")) "https://allanime.day" + this
+    else "https://allanime.day" + URI(this).path + ".json?" + URI(this).query
+}
+
+fun fixSourceUrls(url: String, source: String?): String? {
+    return if (source == "Ak" || url.contains("/player/vitemb")) {
+        tryParseJson<AkIframe>(base64Decode(url.substringAfter("=")))?.idUrl
+    } else {
+        url.replace(" ", "%20")
+    }
+}
+
+
+fun decrypthex(inputStr: String): String {
+    val hexString = if (inputStr.startsWith("-")) {
+        inputStr.substringAfterLast("-")
+    } else {
+        inputStr
+    }
+
+    val bytes = ByteArray(hexString.length / 2) { i ->
+        val hexByte = hexString.substring(i * 2, i * 2 + 2)
+        (hexByte.toInt(16) and 0xFF).toByte()
+    }
+
+    return bytes.joinToString("") { (it.toInt() xor 56).toChar().toString() }
+}
+
+suspend fun getM3u8Qualities(
+    m3u8Link: String,
+    referer: String,
+    qualityName: String,
+): List<ExtractorLink> {
+    return M3u8Helper.generateM3u8(
+        qualityName,
+        m3u8Link,
+        referer
+    )
+}
+
+
