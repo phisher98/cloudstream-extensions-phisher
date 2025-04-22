@@ -76,7 +76,7 @@ class HDhub4uProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val newMainUrl=app.get(mainUrl, allowRedirects = true, cacheTime = 60).headers["location"] ?:""
+        val newMainUrl=app.get(mainUrl, allowRedirects = false, cacheTime = 60).headers["location"] ?:""
         val doc = app.get(
             "$newMainUrl/?s=$query",
             cacheTime = 60,
