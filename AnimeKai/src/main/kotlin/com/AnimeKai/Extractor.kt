@@ -1,7 +1,6 @@
 package com.AnimeKai
 
 import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -32,7 +31,6 @@ class MegaUp : ExtractorApi() {
         val decryptionSteps = runCatching {
             app.get(KEYS_URL).parsedSafe<AnimeKaiKey>()?.megaup?.decrypt
         }.getOrNull() ?: return
-
         val decodedJson = runCatching {
             AnimekaiDecoder().decode(encodedResult, decryptionSteps).replace("\\", "")
         }.getOrNull() ?: return
@@ -71,11 +69,15 @@ class MegaUp : ExtractorApi() {
     }
 
     @Serializable
-    data class AnimeKaiKey(val kai: Kai, val megaup: Megaup)
+    data class AnimeKaiKey(
+        val kai: Any?,
+        val kaihome: String,
+        val megaup: Megaup
+    )
 
     @Serializable
-    data class Kai(val encrypt: List<List<String>>, val decrypt: List<List<String>>)
-
-    @Serializable
-    data class Megaup(val encrypt: List<List<String>>, val decrypt: List<List<String>>)
+    data class Megaup(
+        val encrypt: List<List<String>>,
+        val decrypt: List<List<String>>
+    )
 }

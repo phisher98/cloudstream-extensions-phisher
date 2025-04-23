@@ -1802,13 +1802,17 @@ class MegaUp : ExtractorApi() {
     }
 
     @Serializable
-    data class AnimeKaiKey(val kai: Kai, val megaup: Megaup)
+    data class AnimeKaiKey(
+        val kai: Any?,  // Kai can be of any type
+        val kaihome: String,
+        val megaup: Megaup
+    )
 
     @Serializable
-    data class Kai(val encrypt: List<List<String>>, val decrypt: List<List<String>>)
-
-    @Serializable
-    data class Megaup(val encrypt: List<List<String>>, val decrypt: List<List<String>>)
+    data class Megaup(
+        val encrypt: List<List<String>>,
+        val decrypt: List<List<String>>
+    )
 }
 
 

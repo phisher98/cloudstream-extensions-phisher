@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import app.cash.quickjs.QuickJs
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.phisher98.DumpUtils.queryApi
@@ -2567,101 +2568,118 @@ fun generateVidsrcVrf(n: Int?): String {
 
 internal class AnimekaiDecoder {
     fun generateToken(n: String): String {
-        var n = encodeURIComponent(n)
-        n = base64UrlEncode(
-            substitute(
-                base64UrlEncode(
-                    transform(
-                        "sXmH96C4vhRrgi8",
-                        reverseIt(
-                            reverseIt(
-                                base64UrlEncode(
-                                    transform(
-                                        "kOCJnByYmfI",
-                                        substitute(
-                                            substitute(
-                                                reverseIt(
-                                                    base64UrlEncode(
-                                                        transform(
-                                                            "0DU8ksIVlFcia2",
-                                                            n
-                                                        )
-                                                    )
-                                                ),
-                                                "1wctXeHqb2",
-                                                "1tecHq2Xbw"
-                                            ),
-                                            "48KbrZx1ml",
-                                            "Km8Zb4lxr1"
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-                "hTn79AMjduR5",
-                "djn5uT7AMR9h"
-            )
+        val encodeTransforms: List<(Int) -> Int> = listOf(
+            { n -> (n + 111) % 256 },
+            { n -> (n + 212) % 256 },
+            { n -> n xor 217 },
+            { n -> (n + 214) % 256 },
+            { n -> (n + 151) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> n.inv() and 255 },
+            { n -> n.inv() and 255 },
+            { n -> (n - 1 + 256) % 256 },
+            { n -> (n - 96 + 256) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> n.inv() and 255 },
+            { n -> (n - 206 + 256) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> (n + 116) % 256 },
+            { n -> n xor 70 },
+            { n -> n xor 147 },
+            { n -> (n + 190) % 256 },
+            { n -> n xor 222 },
+            { n -> (n - 118 + 256) % 256 },
+            { n -> (n - 227 + 256) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> ((n shl 4) or (n ushr 4)) and 255 },
+            { n -> (n + 22) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> (n + 94) % 256 },
+            { n -> (n + 146) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> (n - 206 + 256) % 256 },
+            { n -> (n - 62 + 256) % 256 }
         )
-        return n
+
+        @SuppressLint("NewApi")
+        fun encode(input: String): String {
+            val encoded = URLEncoder.encode(input, "UTF-8")
+            val transformedBytes = encoded.mapIndexed { i, c ->
+                encodeTransforms[i % encodeTransforms.size](c.code) and 255
+            }.map { it.toByte() }.toByteArray()
+            return base64UrlEncode(String(transformedBytes, Charsets.ISO_8859_1))
+        }
+
+        return encode(n)
     }
 
-    fun decodeIframeData(n: String): String {
-        return decodeURIComponent(
-            transform(
-                "0DU8ksIVlFcia2",
-                base64UrlDecode(
-                    reverseIt(
-                        substitute(
-                            substitute(
-                                transform(
-                                    "kOCJnByYmfI",
-                                    base64UrlDecode(
-                                        reverseIt(
-                                            reverseIt(
-                                                transform(
-                                                    "sXmH96C4vhRrgi8",
-                                                    base64UrlDecode(
-                                                        substitute(
-                                                            base64UrlDecode(n),
-                                                            "djn5uT7AMR9h",
-                                                            "hTn79AMjduR5"
-                                                        )
-                                                    )
-                                                )
-                                            )
-                                        )
-                                    )
-                                ),
-                                "Km8Zb4lxr1", "48KbrZx1ml"
-                            ),
-                            "1tecHq2Xbw", "1wctXeHqb2"
-                        )
-                    )
-                )
-            )
+    fun decodeIframeData(input: String): String {
+        val decodeTransforms: List<(Int) -> Int> = listOf(
+            { n -> (n - 111 + 256) % 256 },
+            { n -> (n - 212 + 256) % 256 },
+            { n -> n xor 217 },
+            { n -> (n - 214 + 256) % 256 },
+            { n -> (n - 151 + 256) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> n.inv() and 255 },
+            { n -> n.inv() and 255 },
+            { n -> (n + 1) % 256 },
+            { n -> (n + 96) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> n.inv() and 255 },
+            { n -> (n + 206) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> (n - 116 + 256) % 256 },
+            { n -> n xor 70 },
+            { n -> n xor 147 },
+            { n -> (n - 190 + 256) % 256 },
+            { n -> n xor 222 },
+            { n -> (n + 118) % 256 },
+            { n -> (n + 227) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> ((n ushr 4) or (n shl 4)) and 255 },
+            { n -> (n - 22 + 256) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> (n - 94 + 256) % 256 },
+            { n -> (n - 146 + 256) % 256 },
+            { n -> n.inv() and 255 },
+            { n -> (n + 206) % 256 },
+            { n -> (n + 62) % 256 },
         )
+
+        val decoded = base64UrlDecode(input)
+        val transformed = decoded.mapIndexed { i, c ->
+            decodeTransforms[i % decodeTransforms.size](c.code) and 255
+        }.map { it.toChar() }
+        return decodeURIComponent(transformed.joinToString(""))
     }
 
     fun decode(input: String, operations: List<List<String>>): String {
         var result = input
         for (op in operations) {
             result = when (op[0]) {
-                "safeb64_decode" -> base64UrlDecode(result)
-                "reverse" -> reverseIt(result)
-                "substitute" -> substitute(result, op[1], op[2])
-                "rc4" -> transform(op[1], result)
-                "urldecode" -> decodeUri(result)
-                else -> error("Unknown operation: ${op[0]}")
+                "safeb64_decode" -> base64UrlDecode(result)  // Your safe base64 decode method
+                "reverse" -> reverseIt(result)  // Your reverse string method
+                "substitute" -> {
+                    if (op.size < 3) throw IllegalArgumentException("Substitute requires two arguments: from and to")
+                    substitute(result, op[1], op[2])  // Your substitute method
+                }
+                "rc4" -> {
+                    if (op.size < 2) throw IllegalArgumentException("RC4 requires one argument: the key")
+                    transform(op[1], result)  // Your RC4 transform method
+                }
+                "urldecode" -> URLDecoder.decode(result, "UTF-8")  // URL decode
+                else -> error("Unknown operation: ${op[0]}")  // Handle unknown operations
             }
         }
         return result
     }
 
     private fun base64UrlEncode(str: String): String {
-        val base64Encoded = base64Encode(str.toByteArray(Charsets.ISO_8859_1))
-        return base64Encoded.replace("+", "-").replace("/", "_").replace(Regex("=+$"), "")
+        return base64Encode(str.toByteArray(Charsets.ISO_8859_1))
+            .replace("+", "-")
+            .replace("/", "_")
+            .replace(Regex("=+$"), "")
     }
 
     private fun base64UrlDecode(n: String): String {

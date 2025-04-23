@@ -94,7 +94,6 @@ class AnimeKai : MainAPI() {
         mainPageOf(
             "$mainUrl/browser?keyword=&status[]=releasing&sort=trending" to "Trending",
             "$mainUrl/browser?keyword=&status[]=releasing&sort=updated_date" to "Latest Episode",
-            "$mainUrl/browser?keyword=&sort=released_date" to "New Releases",
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=sub&language[]=softsub" to "Recently SUB",
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=dub" to "Recently DUB",
             )
@@ -213,7 +212,6 @@ class AnimeKai : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         val decoder = AnimekaiDecoder()
         val token = data.split("|").last().split("=").last()
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
