@@ -173,7 +173,7 @@ class HDhub4uProvider : MainAPI() {
                 val episodeNumberFromTitle = episodeRegex.find(element.text())?.groupValues?.get(1)?.toIntOrNull()
 
                 val baseLinks = element.select("a[href]").mapNotNull { it.attr("href") }
-
+                Log.d("Phisher 1",baseLinks.toString())
                 val isDirectLinkBlock = element.select("a").any {
                     it.text().contains(Regex("1080|720|4K|2160", RegexOption.IGNORE_CASE))
                 }
@@ -254,22 +254,16 @@ class HDhub4uProvider : MainAPI() {
     ): Boolean {
         val linksList = data
             .trim()
-            .removePrefix("[")
-            .removeSuffix("]")
-            .split(",")
+            .removeSurrounding("[", "]")
+            .split(',')
+            .asSequence()
             .map { it.trim().removeSurrounding("\"") }
             .filter { it.isNotEmpty() }
+            .toList()
 
-        linksList.forEach { link->
-           if (link.contains("?id="))
-           {
-               val encoded= getRedirectLinks(link.trim())
-               loadExtractor(encoded,subtitleCallback, callback)
-           }
-           else
-           {
-               loadExtractor(link,subtitleCallback, callback)
-           }
+        linksList.forEach { link ->
+            val finalLink = if ("?id=" in link) getRedirectLinks(link) else link
+            loadExtractor(finalLink, subtitleCallback, callback)
         }
         return true
     }
