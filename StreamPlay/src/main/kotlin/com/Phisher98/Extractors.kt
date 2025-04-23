@@ -1199,6 +1199,7 @@ open class HubCloud : ExtractorApi() {
                         }
                     )
                 }
+
                 link.contains(".dev") -> {
                     callback.invoke(
                         newExtractorLink(

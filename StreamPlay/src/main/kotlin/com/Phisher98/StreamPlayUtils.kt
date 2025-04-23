@@ -1280,12 +1280,25 @@ fun getIndexSize(str: String?): String? {
     return Regex("(?i)([\\d.]+\\s*(?:gb|mb))").find(str ?: "")?.groupValues?.getOrNull(1)?.trim()
 }
 
-suspend fun extractMdrive(url: String): List<String> =
-    app.get(url).document.select("a[href]").mapNotNull {
-        it.takeIf { a ->
-            a.attr("href").contains(Regex("hubcloud|gdflix", RegexOption.IGNORE_CASE))
-        }?.attr("href")
+suspend fun extractMdrive(url: String): List<String> {
+    val regex = Regex("hubcloud|gdflix|gdlink", RegexOption.IGNORE_CASE)
+
+    return try {
+        app.get(url).document
+            .select("a[href]")
+            .mapNotNull { element ->
+                val href = element.attr("href")
+                if (regex.containsMatchIn(href)) {
+                    href
+                } else {
+                    null
+                }
+            }
+    } catch (e: Exception) {
+        Log.e("Error Mdrive", "Error extracting links: ${e.localizedMessage}")
+        emptyList()
     }
+}
 
 
 fun getQuality(str: String): Int {
