@@ -12,6 +12,7 @@ import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeMiruroanimeGogo
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -192,6 +193,7 @@ class StreamPlayAnime : MainAPI() {
                     ?: 0
                 }
             }
+        Log.d("Phisher Anime",data.recommendations.toString())
         return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
             addAniListId(id.toInt())
             addEpisodes(DubStatus.Subbed, episodes)
@@ -200,6 +202,18 @@ class StreamPlayAnime : MainAPI() {
             this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
             this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
+            this.recommendations = data.recommendations?.edges
+                ?.mapNotNull { edge ->
+                    val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
+                    val title = recommendation.title?.english
+                        ?: recommendation.title?.romaji
+                        ?: ""
+                    val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
+                    newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
+                        this.posterUrl = recommendation.coverImage?.large
+                    }
+                }
+
         }
     }
 
@@ -273,7 +287,7 @@ class StreamPlayAnime : MainAPI() {
             @JsonProperty("bannerImage") val bannerImage: String?,
             @JsonProperty("nextAiringEpisode") val nextAiringEpisode: SeasonNextAiringEpisode?,
             @JsonProperty("airingSchedule") val airingSchedule: AiringScheduleNodes?,
-            //@JsonProperty("recommendations") val recommendations: RecommendationConnection?,
+            @JsonProperty("recommendations") val recommendations: RecommendationConnection?,
         ) {
             data class StartDate(@JsonProperty("year") val year: Int)
 

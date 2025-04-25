@@ -186,17 +186,14 @@ class StreamplayTorrentAnime : MainAPI() {
             this.backgroundPosterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
             this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
-            this.recommendations =
-                data.recommendations?.edges?.map {
-                    val recommendation = it.node.mediaRecommendation
-                    val title =
-                        recommendation.title?.english
-                            ?: recommendation.title?.romaji
-                            ?: throw Exception(
-                                "Unable to load name of recommendation"
-                            )
+            this.recommendations = data.recommendations?.edges
+                ?.mapNotNull { edge ->
+                    val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
+                    val title = recommendation.title?.english
+                        ?: recommendation.title?.romaji
+                        ?: ""
                     val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
-                    newAnimeSearchResponse(title, recommendationUrl, TvType.Anime) {
+                    newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
                         this.posterUrl = recommendation.coverImage?.large
                     }
                 }
