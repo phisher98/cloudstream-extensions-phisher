@@ -200,20 +200,6 @@ class StreamPlayAnime : MainAPI() {
             this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
             this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
             this.tags = data.genres
-            this.recommendations =
-                data.recommendations?.edges?.map {
-                    val recommendation = it.node.mediaRecommendation
-                    val title =
-                        recommendation.title?.english
-                            ?: recommendation.title?.romaji
-                            ?: throw Exception(
-                                "Unable to load name of recommendation"
-                            )
-                    val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
-                    newAnimeSearchResponse(title, recommendationUrl, TvType.Anime) {
-                        this.posterUrl = recommendation.coverImage?.large
-                    }
-                }
         }
     }
 
@@ -287,7 +273,7 @@ class StreamPlayAnime : MainAPI() {
             @JsonProperty("bannerImage") val bannerImage: String?,
             @JsonProperty("nextAiringEpisode") val nextAiringEpisode: SeasonNextAiringEpisode?,
             @JsonProperty("airingSchedule") val airingSchedule: AiringScheduleNodes?,
-            @JsonProperty("recommendations") val recommendations: RecommendationConnection?,
+            //@JsonProperty("recommendations") val recommendations: RecommendationConnection?,
         ) {
             data class StartDate(@JsonProperty("year") val year: Int)
 
