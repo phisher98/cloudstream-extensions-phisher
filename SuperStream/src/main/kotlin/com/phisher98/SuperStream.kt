@@ -1,15 +1,18 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import com.phisher98.SuperStreamExtractor.invokeSubtitleAPI
 import com.phisher98.SuperStreamExtractor.invokeSuperstream
 import com.phisher98.SuperStreamExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.Gson
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -37,9 +40,15 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.regex.Pattern
 import kotlin.math.roundToInt
 
 open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
@@ -62,7 +71,7 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = BuildConfig.TMDB_API
         const val Catflix= "https://catflix.su"
-
+        const val febbox="https://www.febbox.com"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -104,7 +113,8 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         "$tmdbAPI/discover/tv?api_key=$apiKey&with_genres=16&sort_by=air_date.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}&language=jp" to "Recently Updated Anime",
         "$tmdbAPI/discover/tv?api_key=$apiKey&with_keywords=210024|222243" to "Anime",
         "$tmdbAPI/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
-        "$tmdbAPI/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
+        //"$tmdbAPI/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
+        "Personal" to "Personal Febbox Content"
         )
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
@@ -116,15 +126,51 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val adultQuery =
-            if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
-        val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page")
-            .parsedSafe<Results>()?.results?.mapNotNull { media ->
-                media.toSearchResponse(type)
-            } ?: throw ErrorLoadingException("Invalid Json reponse")
-        return newHomePageResponse(request.name, home)
+        if (request.name.contains("Personal")) {
+            if (token.isNullOrEmpty()) {
+                return newHomePageResponse(
+                    "Login required for Febbox Personal content.",
+                    emptyList<SearchResponse>(),
+                    false
+                )
+            }
+
+            val htmlResponse = app.get(
+                "$febbox/console/file_list",
+                headers = mapOf("cookie" to token)
+            ).parsedSafe<HTML>()
+
+            val document = Jsoup.parse(htmlResponse?.html.orEmpty())
+            val parsedHtmlContent = document.select("div.list_scroll > div > div")
+            val filesFromHtml = parsedHtmlContent.mapNotNull { div ->
+                div.toSearchResponse()
+             }
+
+            return newHomePageResponse(
+                listOf(
+                    HomePageList(
+                        request.name,
+                        filesFromHtml,
+                        true
+                    )
+                )
+            )
+        }
+        else {
+            val adultQuery =
+                if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
+            val type = if (request.data.contains("/movie")) "movie" else "tv"
+
+            val home = app.get("${request.data}$adultQuery&page=$page")
+                .parsedSafe<Results>()
+                ?.results
+                ?.mapNotNull { it.toSearchResponse(type) }
+                ?: throw ErrorLoadingException("Invalid JSON response")
+
+            return newHomePageResponse(request.name, home)
+        }
     }
+
 
     private fun Media.toSearchResponse(type: String? = null): SearchResponse? {
         return newMovieSearchResponse(
@@ -136,6 +182,20 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
         }
     }
 
+
+    private fun Element.toSearchResponse(): SearchResponse {
+        val title=this.select("p.file_name_show").text()
+        val poster=this.select("div.file_icon").attr("style").substringAfter("(").substringBefore(")")
+        val href="$febbox/console/share_file_comment?fid="+this.select("div").attr("data-id")
+        return newMovieSearchResponse(
+            title,
+            href,
+            TvType.Movie,
+        ) {
+            this.posterUrl = poster
+        }
+    }
+
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
@@ -144,8 +204,26 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
                 media.toSearchResponse()
             }
     }
-// do we need to put token each time ? No
+
     override suspend fun load(url: String): LoadResponse? {
+        if (url.startsWith("$febbox/console/share_file_comment?fid")) {
+            val gson = Gson()
+            val jsonString = app.get(url, headers = mapOf("cookie" to (token ?: ""))).text
+            val response = gson.fromJson(jsonString, PersonalComments::class.java)
+            val media = response?.file
+
+            if (media != null) {
+                return newMovieLoadResponse(
+                    media.file_name,
+                    "$febbox|"+media.fid.toString(),
+                    TvType.Movie,
+                    "$febbox|"+media.fid
+                ) {
+                    this.posterUrl = media.thumb_big
+                    this.plot = "Added: ${media.add_time} | Updated: ${media.update_time} | Size: ${media.file_size}"
+                }
+            }
+        }
         val data = parseJson<Data>(url)
         val type = getType(data.type)
         val append = "alternative_titles,credits,external_ids,keywords,videos,recommendations"
@@ -311,42 +389,76 @@ open class SuperStream(val sharedPref: SharedPreferences? = null) : TmdbProvider
             }
         }
     }
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val res = parseJson<LinkData>(data)
-        argamap(
-            {
-                invokeSubtitleAPI(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                )
-            },
-            {
-                invokeSuperstream(
-                    token,
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokecatflix(
-                    res.id,
-                    res.epid,
-                    res.title,
-                    res.episode,
-                    res.season,
-                    callback
+        if (data.startsWith(febbox))
+        {
+            val fid=data.substringAfterLast("|")
+            val postdata = mapOf(
+                "fid" to fid,
+                "share" to "",
+                "imdb_id" to "",
+                "quality" to ""
+            )
+            val source = app.post(url = "$febbox/console/player", data = postdata, headers = mapOf("cookie" to (token ?: ""))).text
+            val regex = """\{"type":"([^"]+)","file":"([^"]+)","label":"([^"]+)"\}"""
+            val pattern = Pattern.compile(regex)
+            val matcher = pattern.matcher(source)
+            while (matcher.find()) {
+                val file = matcher.group(2)
+                    ?.replace("\\/", "/")
+                val label = matcher.group(3)
+                if (file!=null)
+                callback.invoke(
+                    newExtractorLink(
+                        "$name $label",
+                        "$name $label",
+                        file,
+                        INFER_TYPE
+                    )
+                    {
+                        this.quality= Qualities.P1080.value
+                    }
                 )
             }
-        )
+        }
+        else {
+            val res = parseJson<LinkData>(data)
+            argamap(
+                {
+                    invokeSubtitleAPI(
+                        res.imdbId,
+                        res.season,
+                        res.episode,
+                        subtitleCallback,
+                    )
+                },
+                {
+                    invokeSuperstream(
+                        token,
+                        res.imdbId,
+                        res.season,
+                        res.episode,
+                        callback
+                    )
+                },
+                {
+                    if (!res.isAnime) invokecatflix(
+                        res.id,
+                        res.epid,
+                        res.title,
+                        res.episode,
+                        res.season,
+                        callback
+                    )
+                }
+            )
+        }
         return true
     }
     data class LinkData(
