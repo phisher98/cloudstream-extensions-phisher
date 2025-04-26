@@ -21,6 +21,7 @@ import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
@@ -33,10 +34,12 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlayAnime.LinkData
 import com.phisher98.StreamPlayTorrent.Companion.CometAPI
 import com.phisher98.StreamPlayTorrent.Companion.TorrentioAnimeAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.util.Calendar
 import kotlin.math.roundToInt
 
@@ -137,66 +140,89 @@ class StreamplayTorrentAnime : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
-        val data =
-            anilistAPICall(
-                "query (\$id: Int = $id) {  Media (id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore bannerImage coverImage { extraLarge large medium } bannerImage episodes nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
-            )
-                .data
-                .media
-                ?: throw Exception("Unable to fetch media details")
-        val anititle=data.getTitle()
-        val aniyear=data.startDate.year
-        val anitype=TvType.TvSeries
-        val ids = tmdbToAnimeId(anititle, aniyear, anitype)
-        val jpTitle=data.title.romaji
-        val syncData=app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
-        val animeData = parseAnimeData(syncData)
+        val data = anilistAPICall(
+            "query (\$id: Int = $id) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+        ).data.media ?: throw Exception("Unable to fetch media details")
 
-        val episodes =
-            (1..data.totalEpisodes()).map { i ->
-                val linkData =
-                    LinkData(
-                        malId = ids.idMal ,
-                        aniId = ids.id,
-                        title = data.getTitle(),
-                        jpTitle = jpTitle,
-                        year = data.startDate.year,
-                        season = 1,
-                        episode = i,
-                        isAnime = true
-                    ).toStringData()
-                newEpisode(linkData)
-                {
-                    this.season=1
-                    this.episode=i
-                    this.posterUrl=animeData.episodes?.get(episode?.toString())?.image ?: return@newEpisode
-                    this.description=animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                    this.rating = animeData.episodes[episode?.toString()]?.rating
-                        ?.toDoubleOrNull()
-                        ?.times(10)
-                        ?.roundToInt()
-                        ?: 0
-                }
+        val anititle = data.getTitle()
+        val aniyear = data.startDate.year
+        val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
+        val ids = tmdbToAnimeId(anititle, aniyear, anitype)
+
+        val jpTitle = data.title.romaji
+        val animeData = if (ids.id != null) {
+            val syncData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
+            parseAnimeData(syncData)
+        } else {
+            null
+        }
+        val href= com.phisher98.StreamPlayAnime.LinkData(
+            malId = ids.idMal,
+            aniId = ids.id,
+            title = data.getTitle(),
+            jpTitle = jpTitle,
+            year = data.startDate.year,
+            isAnime = true
+        ).toStringData()
+
+        val episodes = (1..data.totalEpisodes()).map { i ->
+            val linkData = com.phisher98.StreamPlayAnime.LinkData(
+                malId = ids.idMal,
+                aniId = ids.id,
+                title = data.getTitle(),
+                jpTitle = jpTitle,
+                year = data.startDate.year,
+                season = 1,
+                episode = i,
+                isAnime = true
+            ).toStringData()
+
+            newEpisode(linkData) {
+                this.season = 1
+                this.episode = i
+                this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
+                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
+                this.rating = animeData.episodes[episode?.toString()]?.rating
+                    ?.toDoubleOrNull()
+                    ?.times(10)
+                    ?.roundToInt()
+                    ?: 0
             }
-        return newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
-            addAniListId(id.toInt())
-            addEpisodes(DubStatus.Subbed, episodes)
-            this.year = data.startDate.year
-            this.plot = data.description
-            this.backgroundPosterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-            this.posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
-            this.tags = data.genres
-            this.recommendations = data.recommendations?.edges
-                ?.mapNotNull { edge ->
-                    val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
-                    val title = recommendation.title?.english
-                        ?: recommendation.title?.romaji
-                        ?: ""
-                    val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
-                    newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
-                        this.posterUrl = recommendation.coverImage?.large
+        }
+
+        return if (data.format.contains("Movie",ignoreCase = true)) {
+            newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
+                addAniListId(id.toInt())
+                this.year = data.startDate.year
+                this.plot = data.description
+                this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
+                this.tags = data.genres
+            }
+        } else {
+            newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
+                addAniListId(id.toInt())
+                addEpisodes(DubStatus.Subbed, episodes)
+                this.year = data.startDate.year
+                this.plot = data.description
+                this.backgroundPosterUrl =
+                    animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+                        ?: data.bannerImage
+                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+                    ?: data.getCoverImage()
+                this.tags = data.genres
+                this.recommendations = data.recommendations?.edges
+                    ?.mapNotNull { edge ->
+                        val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
+                        val title = recommendation.title?.english
+                            ?: recommendation.title?.romaji
+                            ?: ""
+                        val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
+                        newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
+                            this.posterUrl = recommendation.coverImage?.large
+                        }
                     }
-                }
+            }
         }
     }
 
@@ -207,7 +233,8 @@ class StreamplayTorrentAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val data = AppUtils.parseJson<LinkData>(data)
+        val innerJson = JSONObject(data).getString("data")
+        val data = AppUtils.parseJson<LinkData>(innerJson)
         val episode =data.episode
         val season =data.season
         val aniid =data.aniId
@@ -273,7 +300,8 @@ class StreamplayTorrentAnime : MainAPI() {
             @JsonProperty("nextAiringEpisode") val nextAiringEpisode: SeasonNextAiringEpisode?,
             @JsonProperty("airingSchedule") val airingSchedule: AiringScheduleNodes?,
             @JsonProperty("recommendations") val recommendations: RecommendationConnection?,
-        ) {
+            @JsonProperty("format") val format: String?,
+            ) {
             data class StartDate(@JsonProperty("year") val year: Int)
 
             data class AiringScheduleNodes(
