@@ -11,6 +11,7 @@ import com.Anichi.AnichiParser.Edges
 import com.Anichi.AnichiParser.JikanResponse
 import com.Anichi.AnichiUtils.aniToMal
 import com.Anichi.AnichiUtils.getTracker
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorRole
 import com.lagradost.cloudstream3.AnimeSearchResponse
@@ -233,6 +234,7 @@ open class Anichi : MainAPI() {
                     AnichiLoadData(id, "sub", eps, trackers?.idMal).toJson()
                 ) {
                     episode = eps.toIntOrNull()
+                    Log.d("Phisher",episode.toString())
                     this.name = animeData?.episodes?.get(episode?.toString())?.title?.get("en")
                     this.rating = animeData?.episodes?.get(episode?.toString())?.rating
                         ?.toDoubleOrNull()
@@ -263,7 +265,7 @@ open class Anichi : MainAPI() {
                         ?: "No summary available"
                 }
             }
-            Pair(sub, dub)
+            Pair(sub.reversed(), dub.reversed())
         }
         val (subEpisodes, dubEpisodes) = episodes ?: Pair(emptyList(), emptyList())
 
