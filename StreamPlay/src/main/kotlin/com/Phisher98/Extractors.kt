@@ -1765,7 +1765,7 @@ class MegaUp : ExtractorApi() {
         }.getOrNull() ?: return
 
         val decodedJson = runCatching {
-            AnimekaiDecoder().decode(encoded, decryptSteps).replace("\\", "")
+            AnimekaiDecoder().decode(encoded).replace("\\", "")
         }.getOrNull() ?: return
 
         val m3u8Data = runCatching {
