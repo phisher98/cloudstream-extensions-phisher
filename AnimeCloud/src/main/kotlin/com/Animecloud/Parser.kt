@@ -11,73 +11,80 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 data class EpisodeParser(
-    val data: EpisodeData,
-    val status: Long,
+    val data: Data?,
+    val status: Long?,
 )
 
-data class EpisodeData(
-    val id: Long,
+data class Data(
+    val id: Long?,
     @JsonProperty("created_at")
-    val createdAt: String,
+    val createdAt: String?,
     @JsonProperty("updated_at")
-    val updatedAt: String,
+    val updatedAt: String?,
     @JsonProperty("last_sync")
-    val lastSync: String,
-    val slug: String,
-    val title: String,
+    val lastSync: String?,
+    val slug: String?,
+    val title: String?,
     @JsonProperty("alternate_titles")
-    val alternateTitles: String,
-    val generes: List<String>,
-    val imdb: String,
-    val tmdb: Long,
+    val alternateTitles: String?,
+    val generes: List<String>?,
+    val imdb: String?,
+    val tmdb: Long?,
     @JsonProperty("tmdb_type")
-    val tmdbType: String,
+    val tmdbType: String?,
     val anilist: Any?,
-    val desc: String,
-    val start: Long,
-    val end: Long,
-    val poster: String,
-    val backdrop: String,
+    val desc: String?,
+    val start: Long?,
+    val end: Long?,
+    val poster: String?,
+    val backdrop: String?,
     @JsonProperty("vote_avg")
-    val voteAvg: Double,
+    val voteAvg: Double?,
     @JsonProperty("vote_count")
-    val voteCount: Long,
+    val voteCount: Long?,
     @JsonProperty("item_type")
-    val itemType: String,
+    val itemType: String?,
     @JsonProperty("anime_seasons")
-    val animeSeasons: List<AnimeSeason>,
+    val animeSeasons: List<AnimeSeason>?,
 )
 
 data class AnimeSeason(
-    val id: Long,
+    val id: Long?,
     @JsonProperty("created_at")
-    val createdAt: String,
+    val createdAt: String?,
     @JsonProperty("updated_at")
-    val updatedAt: String,
+    val updatedAt: String?,
     val season: String,
     @JsonProperty("anime_id")
-    val animeId: Long,
+    val animeId: Long?,
     @JsonProperty("anime_episodes")
     val animeEpisodes: List<AnimeEpisode>,
 )
 
 data class AnimeEpisode(
-    val id: Long,
+    val id: Long?,
     @JsonProperty("created_at")
-    val createdAt: String,
+    val createdAt: String?,
     @JsonProperty("updated_at")
-    val updatedAt: String,
+    val updatedAt: String?,
     @JsonProperty("last_sync")
-    val lastSync: String,
-    val episode: String,
-    val image: String,
+    val lastSync: String?,
+    val episode: String?,
+    val image: String?,
     @JsonProperty("view_count")
-    val viewCount: Long,
+    val viewCount: Long?,
     @JsonProperty("anime_season_id")
-    val animeSeasonId: Long,
+    val animeSeasonId: Long?,
+    @JsonProperty("has_ger_sub")
+    val hasGerSub: Boolean?,
+    @JsonProperty("has_ger_dub")
+    val hasGerDub: Boolean?,
+    @JsonProperty("has_eng_sub")
+    val hasEngSub: Boolean?,
     @JsonProperty("anime_episode_links")
     val animeEpisodeLinks: Any?,
 )
+
 
 
 

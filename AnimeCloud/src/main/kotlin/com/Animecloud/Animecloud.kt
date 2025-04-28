@@ -76,14 +76,14 @@ class Animecloud : MainAPI() {
         val poster = document.select("#__nuxt img.fixed").attr("data-src")
         val description = document.selectFirst("div.flex.flex-col.gap-4.w-full > p > span")?.text()?.trim()
         val genres=document.select("div.flex.flex-wrap.gap-2 a.badge").map { it.text() }
-        val animeSeasons= app.get("${mainUrl}/api/anime?$animeslug").parsedSafe<EpisodeParser>()?.data?.animeSeasons
+        val animeSeasons= app.get("${mainUrl}/api/anime?slug=$animeslug").parsedSafe<EpisodeParser>()?.data?.animeSeasons
         val episodes = mutableListOf<Episode>()
         animeSeasons?.map { info->
              var season:String
              season = info.season
              if (season.contains("Filme")) season="0"
              info.animeEpisodes.map {
-                 val episode=it.episode.toIntOrNull()
+                 val episode=it.episode?.toIntOrNull()
                  val epname="Episode $episode "
                  val epposter="${mainUrl}/img/thumbs/${it.image}"
                  val animename=url.substringAfterLast("/")
@@ -110,7 +110,7 @@ class Animecloud : MainAPI() {
         app.get(data).parsedSafe<AnimecloudEP>()?.data?.anime_episode_links?.map {
             val dubtype=it.lang
             val href=it.link
-            loadSourceNameExtractor("$name ${dubtype.uppercase()}",href, "", subtitleCallback, callback)
+            loadSourceNameExtractor("$name ${dubtype.uppercase()}",href, "", subtitleCallback, callback, quality = "1080P")
         }
         return true
     }
