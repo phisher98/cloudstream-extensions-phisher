@@ -1,26 +1,17 @@
 package com.hikaritv
 
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.util.Calendar
 
 class Hikaritv : MainAPI() {
@@ -46,7 +37,7 @@ class Hikaritv : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
-        "api/anime/?sort=created_at&order=asc&ani_stats=1&ani_release=$currentYear&page=" to "OnGoing Animes",
+        "api/anime/?sort=created_at&order=asc&ani_stats=1&ani_release=$currentYear&page=" to "Animes",
         "api/anime/?sort=created_at&order=asc&ani_type=2&page=" to "Anime Movies",
         "api/anime/?sort=created_at&order=asc&ani_stats=2&page=" to "Completed Animes",
         )
@@ -55,9 +46,15 @@ class Hikaritv : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val res = app.get("$HikariAPI/${request.data}$page").parsedSafe<HomePage>()
-        val home = res?.results?.mapNotNull { it.toSearchResult() }
-        return newHomePageResponse(request.name, home!!)
+        val home = mutableListOf<SearchResponse>()
+
+        val res1 = app.get("$HikariAPI/${request.data}$page").parsedSafe<HomePage>()
+        home.addAll(res1?.results?.map { it.toSearchResult() } ?: emptyList())
+
+        val res2 = app.get("$HikariAPI/${request.data}${page + 1}").parsedSafe<HomePage>()
+        home.addAll(res2?.results?.map { it.toSearchResult() } ?: emptyList())
+
+        return newHomePageResponse(request.name, home)
     }
 
     private fun getProperLink(uri: String): String {
@@ -78,19 +75,7 @@ class Hikaritv : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("h3 a")?.text() ?: return null
-        val href = getProperLink(fixUrl(this.selectFirst("h3 > a")!!.attr("href")))
-        val posterUrl = fixUrlNull(this.select("img").last()?.getImageAttr())
-        val quality = getQualityFromString(this.select("span.quality").text())
-        return newMovieSearchResponse(title, href, TvType.Anime) {
-            this.posterUrl = posterUrl
-            this.quality = quality
-        }
-
-    }
-
-    private fun Result.toSearchResult(): SearchResponse? {
+    private fun Result.toSearchResult(): SearchResponse {
         val title=this.aniName
         val href="$mainUrl/info/${this.uid}"
         val posterUrl=this.aniPoster
@@ -103,32 +88,28 @@ class Hikaritv : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search?keyword=$query").document
-        return document.select("#main-wrapper div.tab-content div.flw-item").map {
-            val title = it.selectFirst("h3 a")?.text() ?: "Unknown"
-            val href = getProperLink(fixUrl(it.selectFirst("h3 > a")!!.attr("href")))
-            val posterlink=fixUrlNull(it.select("img").last()?.getImageAttr())
-            newMovieSearchResponse(title, href, TvType.Anime) {
-                this.posterUrl = posterlink
-            }
-        }
+        val res1 = app.get("$HikariAPI/api/anime/?sort=created_at&order=asc&search=$query").parsedSafe<HomePage>()
+        return res1?.results?.mapNotNull { it.toSearchResult() } ?: emptyList()
     }
 
     override suspend fun load(url: String): LoadResponse {
         val animeId = url.substringAfter("/info/").substringBefore("/").toIntOrNull()
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=$animeId").toString()
         val animeData = parseAnimeData(syncData)
-        val response = app.get("$HikariAPI/api/anime/uid/$animeId").parsedSafe<Load>()
-        val animeTitle = response?.aniEname ?: animeData.titles?.get("en") ?: "Unknown"
+        val response = try {
+            val responseText = app.get("$HikariAPI/api/anime/uid/$animeId/").text
+            Gson().fromJson(responseText, Load::class.java)
+        } catch (e: JsonSyntaxException) {
+            null // or handle the error appropriately
+        }
+        val animeTitle = response?.ani_name ?: animeData.titles?.get("en") ?: "Unknown"
         val posterUrl = animeData.images?.firstOrNull { it.coverType == "Fanart" }?.url
-            ?: response?.aniPoster
-        Log.d("Phisher",posterUrl.toString())
-        val aniGenre = response?.aniGenre ?: ""
+            ?: response?.ani_poster
+        val aniGenre = response?.ani_genre ?: ""
         val genreTags = aniGenre.split(",")
-        val releaseYear =response?.aniRelease
-        val animeDescription = response?.aniSynonyms
-        val tvType = if (response?.aniType == 1) TvType.TvSeries else TvType.Movie
-
+        val releaseYear =response?.ani_release
+        val animeDescription = response?.ani_synopsis
+        val tvType = if (response?.ani_type == 1) TvType.TvSeries else TvType.Movie
         if (tvType == TvType.TvSeries) {
             val subbedEpisodes = mutableListOf<Episode>()
             val responseJson = app.get("$HikariAPI/api/episode/uid/$animeId").text
@@ -156,7 +137,6 @@ class Hikaritv : MainAPI() {
             }
         } else {
             val embedData = "$HikariAPI/api/embed/$animeId/1"
-            Log.d("Phisher",embedData)
             return newMovieLoadResponse(animeTitle, url, TvType.Movie, embedData) {
                 this.posterUrl = posterUrl
                 this.year = releaseYear
@@ -175,25 +155,33 @@ class Hikaritv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        return try {
-            val json = app.get(data).toString()
+        return runCatching {
+            val json = app.get(data).text // Avoid unnecessary `.toString()`
             val embedDataList = parseEmbedData(json)
 
-            embedDataList.forEach {
-                val nameSuffix = when (it.embedType) {
+            embedDataList.forEach { embed ->
+                val nameSuffix = when (embed.embedType) {
                     "2" -> "SUB"
                     "3" -> "DUB"
                     else -> "MULTI"
                 }
                 val name = "Hikari | $nameSuffix"
-                loadCustomTagExtractor(name,it.embedFrame,mainUrl,subtitleCallback, callback)
+                loadCustomTagExtractor(
+                    tag = name,
+                    url = embed.embedFrame,
+                    referer = mainUrl,
+                    subtitleCallback = subtitleCallback,
+                    callback = callback
+                )
             }
+
             true
-        } catch (e: Exception) {
-            Log.e("Phisher", "Error occurred while loading links: ${e.message}")
+        }.getOrElse { e ->
+            Log.e("Hikari", "Failed to load links: ${e.localizedMessage}")
             false
         }
     }
+
 
 
     private fun parseEmbedData(json: String): List<EmbedData> {
@@ -202,6 +190,7 @@ class Hikaritv : MainAPI() {
         return gson.fromJson(json, listType)
     }
 
+    /*
     private fun Element.getImageAttr(): String {
         return when {
             this.hasAttr("data-src") -> this.attr("abs:data-src")
@@ -210,48 +199,7 @@ class Hikaritv : MainAPI() {
             else -> this.attr("abs:src")
         }
     }
-
-    private fun extractIframeSrc(jsonResponse: String): String? {
-        val type = object : TypeToken<List<String>>() {}.type
-        val iframeHtmlList: List<String> = gson.fromJson(jsonResponse, type)
-        val iframeHtml = iframeHtmlList.firstOrNull() ?: return null
-        return Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
-    }
-
-
-    private val gson = Gson()
-    private suspend fun extractEmbedUrls(id: Int?, serverClass: String): List<LoadUrls> {
-        /*
-        val typeres = app.get("$mainUrl/ajax/embedserver/$id/1").parsedSafe<TypeRes>()?.html ?: ""
-        val typedoc = Jsoup.parse(typeres)
-        val embedUrls = mutableListOf<LoadUrls>()
-
-        typedoc.select(serverClass).forEach { type ->
-            val embedId = type.attr("id").substringAfter("embed-")
-            if (embedId.toIntOrNull() != null) {
-                val href = "$mainUrl/ajax/embed/$id/1/$embedId" // Construct the URL
-                embedUrls.add(LoadUrls(type = if (serverClass.contains("sub")) "sub" else "dub", href = href))
-            }
-        }
-
-         */
-        return emptyList()
-    }
-
-    private suspend fun extractEmbedIdsAndEpisodesToJson(id: Int?): String {
-        val subUrls = extractEmbedUrls(id, ".servers-sub .server-item a")
-        val dubUrls = extractEmbedUrls(id, ".servers-dub .server-item a")
-        val allEmbedUrls = subUrls + dubUrls
-        return gson.toJson(allEmbedUrls)
-    }
-
-
-    data class LoadUrls(
-        val type: String,
-        val href: String,
-    )
-
-    data class LoadSeriesUrls(val type: String, val href: List<String>)
+     */
 
 
     //Custom
@@ -284,9 +232,4 @@ class Hikaritv : MainAPI() {
             }
         }
     }
-
-    fun String.toJson(): String {
-        return "\"$this\"" // Simple example: return the string in JSON format (e.g., "Action")
-    }
-
 }
