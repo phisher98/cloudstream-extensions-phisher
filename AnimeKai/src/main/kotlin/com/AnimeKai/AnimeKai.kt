@@ -1,5 +1,7 @@
 package com.AnimeKai
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
@@ -126,6 +128,7 @@ class AnimeKai : MainAPI() {
 
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val malid = document.select("div.watch-section").attr("data-mal-id")
@@ -189,9 +192,10 @@ class AnimeKai : MainAPI() {
             .filter { it.attr("href").contains("/genres/") }
             .map { it.text() }
             .toList()
-        val status = document.select("div.detail div:contains(Status)")
-            .select("span")
-            .text()
+        val status = document.select("div:containsOwn(Status) span")
+            .firstOrNull()
+            ?.text()?.trim()
+
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
             posterUrl = poster
@@ -200,12 +204,13 @@ class AnimeKai : MainAPI() {
             this.recommendations = recommendations
             this.japName = jptitle
             this.tags = genres
-            this.showStatus = getStatus(status)
+            this.showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
             addAniListId(aniid.toIntOrNull())
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
