@@ -27,6 +27,7 @@ import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -2903,3 +2904,17 @@ suspend fun getM3u8Qualities(
 }
 
 
+suspend fun <T> retryIO(
+    times: Int = 3,
+    delayTime: Long = 1000,
+    block: suspend () -> T
+): T {
+    repeat(times - 1) {
+        try {
+            return block()
+        } catch (e: Exception) {
+            delay(delayTime)
+        }
+    }
+    return block() // last attempt, let it throw
+}

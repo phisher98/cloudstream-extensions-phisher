@@ -5,8 +5,10 @@ import android.content.SharedPreferences
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.argamap
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invokeExtramovies
 
 class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sharedPreferences) {
     override var name = "StreamPlay-Test"
@@ -17,15 +19,14 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = AppUtils.parseJson<LinkData>(data)
-        argamap(
+        runAllAsync(
             {
-                if (!res.isAnime) invokeVidSrcXyz(
+                if (!res.isAnime) invokeExtramovies(
                     res.imdbId,
-                    res.season,
-                    res.episode,
+                    subtitleCallback,
                     callback
                 )
-            }
+            },
         )
         return true
     }

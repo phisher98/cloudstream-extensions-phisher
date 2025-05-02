@@ -1209,6 +1209,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    @SuppressLint("NewApi")
     suspend fun invokeAnimeKai(
         malId: Int? = null,
         episode: Int? = null,
@@ -1546,80 +1547,98 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit
+        subtitleCallback: (SubtitleFile) -> Unit,
+        maxRetries: Int = 3,
+        delayBetweenRetries: Long = 2000L
     ) {
-        val fixTitle = title?.replace("-", " ")?.replace(":", " ") ?: return
-        val searchTitle = fixTitle.createSlug()
-        val (seasonSlug) = getEpisodeSlug(season, episode)
+        var retries = 0
 
-        val uhdmoviesAPI = try {
-            app.get("$modflixAPI/?type=uhdmovies", allowRedirects = false)
-                .document
-                .selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
-                ?.takeIf { it.startsWith("http") }
-        } catch (e: Exception) {
-            Log.e("UHDMovies", "Failed to fetch redirect: ${e.localizedMessage}")
-            return
-        }
-
-        val searchUrl = "$uhdmoviesAPI/search/$fixTitle $year"
-        val searchResults = try {
-            app.get(searchUrl).document.select("#content article")
-        } catch (e: Exception) {
-            Log.e("UHDMovies", "Search failed: ${e.localizedMessage}")
-            return
-        }
-
-        val hrefPatternRegex = Regex("""(?i)<a\s+href="([^"]*?\b$searchTitle\b[^"]*?\b$year\b[^"]*?)"[^>]*>""")
-        val seasonPattern = season?.let { "(?i)(S0?$it|Season 0?$it)" }
-        val episodePattern = episode?.let { "(?i)(Episode $it)" }
-
-        searchResults.forEach { article ->
+        while (retries < maxRetries) {
             try {
-                val hrefPattern = hrefPatternRegex.find(article.toString())?.groupValues?.get(1) ?: return@forEach
-                val doc = app.get(hrefPattern).document
+                val fixTitle = title?.replace("-", " ")?.replace(":", " ") ?: return
+                val searchTitle = fixTitle.createSlug()
+                val (seasonSlug) = getEpisodeSlug(season, episode)
 
-                val selector = if (season == null) {
-                    "div.entry-content p:matches($year)"
-                } else {
-                    "div.entry-content p:matches($seasonPattern)"
-                }
-                val epSelector = if (season == null) {
-                    "a:matches((?i)(Download))"
-                } else {
-                    "a:matches($episodePattern)"
-                }
-
-                val links = doc.select(selector).mapNotNull {
-                    it.nextElementSibling()?.select(epSelector)?.attr("href")
+                val uhdmoviesAPI = try {
+                    app.get("$modflixAPI/?type=uhdmovies", allowRedirects = false)
+                        .document
+                        .selectFirst("meta[http-equiv=refresh]")
+                        ?.attr("content")
+                        ?.substringAfter("url=")
+                        ?.takeIf { it.startsWith("http") }
+                } catch (e: Exception) {
+                    Log.e("UHDMovies", "Failed to fetch redirect: ${e.localizedMessage}")
+                    return
                 }
 
-                links.amap {
+                val searchUrl = "$uhdmoviesAPI/search/$fixTitle $year"
+                val searchResults = try {
+                    app.get(searchUrl).document.select("#content article")
+                } catch (e: Exception) {
+                    Log.e("UHDMovies", "Search failed: ${e.localizedMessage}")
+                    return
+                }
+
+                val hrefPatternRegex = Regex("""(?i)<a\s+href="([^"]*?\b$searchTitle\b[^"]*?\b$year\b[^"]*?)"[^>]*>""")
+                val seasonPattern = season?.let { "(?i)(S0?$it|Season 0?$it)" }
+                val episodePattern = episode?.let { "(?i)(Episode $it)" }
+
+                searchResults.forEach { article ->
                     try {
-                        if (it.isNotEmpty()) {
-                            val driveLink = bypassHrefli(it) ?: return@amap
-                            if (driveLink.isNotEmpty()) {
-                                loadSourceNameExtractor(
-                                    "UHDMovies",
-                                    driveLink,
-                                    "",
-                                    subtitleCallback,
-                                    callback
-                                )
+                        val hrefPattern = hrefPatternRegex.find(article.toString())?.groupValues?.get(1) ?: return@forEach
+                        val doc = app.get(hrefPattern).document
+
+                        val selector = if (season == null) {
+                            "div.entry-content p:matches($year)"
+                        } else {
+                            "div.entry-content p:matches($seasonPattern)"
+                        }
+                        val epSelector = if (season == null) {
+                            "a:matches((?i)(Download))"
+                        } else {
+                            "a:matches($episodePattern)"
+                        }
+
+                        val links = doc.select(selector).mapNotNull {
+                            it.nextElementSibling()?.select(epSelector)?.attr("href")
+                        }
+
+                        links.amap {
+                            try {
+                                if (it.isNotEmpty()) {
+                                    val driveLink = bypassHrefli(it) ?: return@amap
+                                    if (driveLink.isNotEmpty()) {
+                                        loadSourceNameExtractor(
+                                            "UHDMovies",
+                                            driveLink,
+                                            "",
+                                            subtitleCallback,
+                                            callback
+                                        )
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("UHDMovies", "Link processing error: ${e.localizedMessage}")
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e("UHDMovies", "Link processing error: ${e.localizedMessage}")
+                        Log.e("UHDMovies", "Article processing error: ${e.localizedMessage}")
                     }
                 }
+                return
             } catch (e: Exception) {
-                Log.e("UHDMovies", "Article processing error: ${e.localizedMessage}")
+                retries++
+                Log.e("UHDMovies", "Attempt $retries failed: ${e.localizedMessage}")
+
+                if (retries >= maxRetries) {
+                    Log.e("UHDMovies", "Max retries reached. Exiting.")
+                    return
+                }
+
+                delay(delayBetweenRetries)
             }
         }
     }
-
 
 
 
@@ -1828,81 +1847,100 @@ object StreamPlayExtractor : StreamPlay() {
         lastSeason: Int?,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
+        callback: (ExtractorLink) -> Unit,
+        maxRetries: Int = 3,
+        delayBetweenRetries: Long = 2000L
     ) {
-        val topmoviesAPI = runCatching {
-            app.get("$modflixAPI/?type=bollywood", allowRedirects = false)
-                .document
-                .selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
-        }.getOrNull() ?: return
+        var retries = 0
 
-        val url = if (season == null) {
-            "$topmoviesAPI/search/${imdbId.orEmpty()} ${year ?: ""}"
-        } else {
-            "$topmoviesAPI/search/${imdbId.orEmpty()} Season ${season} ${year ?: ""}"
-        }
+        while (retries < maxRetries) {
+            try {
+                val topmoviesAPI = runCatching {
+                    app.get("$modflixAPI/?type=bollywood", allowRedirects = false)
+                        .document
+                        .selectFirst("meta[http-equiv=refresh]")
+                        ?.attr("content")
+                        ?.substringAfter("url=")
+                }.getOrNull() ?: return
 
-        val res1 = runCatching {
-            app.get(url).document.select("#content_box article a")
-        }.getOrNull() ?: return
+                val url = if (season == null) {
+                    "$topmoviesAPI/search/${imdbId.orEmpty()} ${year ?: ""}"
+                } else {
+                    "$topmoviesAPI/search/${imdbId.orEmpty()} Season ${season} ${year ?: ""}"
+                }
 
-        val hrefpattern = res1.attr("href").takeIf(String::isNotBlank) ?: return
+                val res1 = runCatching {
+                    app.get(url).document.select("#content_box article a")
+                }.getOrNull() ?: return
 
-        val res = runCatching {
-            app.get(
-                hrefpattern,
-                headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),
-                interceptor = wpRedisInterceptor
-            ).document
-        }.getOrNull() ?: return
+                val hrefpattern = res1.attr("href").takeIf(String::isNotBlank) ?: return
 
-        if (season == null) {
-            res.select("a.maxbutton-download-links")
-                .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
-                .forEach { detailPageUrl ->
-                    val detailPageDocument = runCatching { app.get(detailPageUrl).document }.getOrNull()
-                        ?: return@forEach
+                val res = runCatching {
+                    app.get(
+                        hrefpattern,
+                        headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"),
+                        interceptor = wpRedisInterceptor
+                    ).document
+                }.getOrNull() ?: return
 
-                    detailPageDocument.select("a.maxbutton-fast-server-gdrive")
+                if (season == null) {
+                    res.select("a.maxbutton-download-links")
                         .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
-                        .forEach { driveLink ->
-                            bypassHrefli(driveLink)?.let { streamUrl ->
-                                loadSourceNameExtractor(
-                                    "TopMovies",
-                                    streamUrl,
-                                    "$topmoviesAPI/",
-                                    subtitleCallback,
-                                    callback,
-                                )
-                            }
-                        }
-                }
-        } else {
-            res.select("a.maxbutton-g-drive")
-                .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
-                .forEach { detailPageUrl ->
-                    val detailPageDocument = runCatching { app.get(detailPageUrl).document }.getOrNull()
-                        ?: return@forEach
+                        .forEach { detailPageUrl ->
+                            val detailPageDocument = runCatching { app.get(detailPageUrl).document }.getOrNull()
+                                ?: return@forEach
 
-                    detailPageDocument.select("span strong")
-                        .firstOrNull {
-                            it.text().matches(Regex(".*Episode\\s+$episode.*", RegexOption.IGNORE_CASE))
+                            detailPageDocument.select("a.maxbutton-fast-server-gdrive")
+                                .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
+                                .forEach { driveLink ->
+                                    bypassHrefli(driveLink)?.let { streamUrl ->
+                                        loadSourceNameExtractor(
+                                            "TopMovies",
+                                            streamUrl,
+                                            "$topmoviesAPI/",
+                                            subtitleCallback,
+                                            callback,
+                                        )
+                                    }
+                                }
                         }
-                        ?.parent()?.closest("a")?.attr("href")?.takeIf(String::isNotBlank)
-                        ?.let { driveLink ->
-                            bypassHrefli(driveLink)?.let { streamUrl ->
-                                loadSourceNameExtractor(
-                                    "TopMovies",
-                                    streamUrl,
-                                    "$topmoviesAPI/",
-                                    subtitleCallback,
-                                    callback,
-                                )
-                            }
+                } else {
+                    res.select("a.maxbutton-g-drive")
+                        .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
+                        .forEach { detailPageUrl ->
+                            val detailPageDocument = runCatching { app.get(detailPageUrl).document }.getOrNull()
+                                ?: return@forEach
+
+                            detailPageDocument.select("span strong")
+                                .firstOrNull {
+                                    it.text().matches(Regex(".*Episode\\s+$episode.*", RegexOption.IGNORE_CASE))
+                                }
+                                ?.parent()?.closest("a")?.attr("href")?.takeIf(String::isNotBlank)
+                                ?.let { driveLink ->
+                                    bypassHrefli(driveLink)?.let { streamUrl ->
+                                        loadSourceNameExtractor(
+                                            "TopMovies",
+                                            streamUrl,
+                                            "$topmoviesAPI/",
+                                            subtitleCallback,
+                                            callback,
+                                        )
+                                    }
+                                }
                         }
                 }
+                return
+            } catch (e: Exception) {
+                retries++
+                Log.e("TopMovies", "Attempt $retries failed: ${e.localizedMessage}")
+
+                if (retries >= maxRetries) {
+                    Log.e("TopMovies", "Max retries reached. Exiting.")
+                    return
+                }
+
+                delay(delayBetweenRetries)
+            }
         }
     }
 
@@ -1913,30 +1951,46 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
+        callback: (ExtractorLink) -> Unit,
+        maxRetries: Int = 3,
+        delayBetweenRetries: Long = 2000L
     ) {
-        val redirectUrl = try {
-            app.get("$modflixAPI/?type=hollywood", allowRedirects = false)
-                .document
-                .selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
-                ?.takeIf { it.startsWith("http") }
-        } catch (e: Exception) {
-            Log.e("Moviesmod", "Failed to fetch redirect: ${e.localizedMessage}")
-            null
-        }
+        var retries = 0
 
-        redirectUrl?.let {
-            invokeModflix(
-                imdbId = imdbId,
-                year = year,
-                season = season,
-                episode = episode,
-                subtitleCallback = subtitleCallback,
-                callback = callback,
-                api = it
-            )
+        while (retries < maxRetries) {
+            try {
+                val redirectUrl = app.get("$modflixAPI/?type=hollywood", allowRedirects = false)
+                    .document
+                    .selectFirst("meta[http-equiv=refresh]")
+                    ?.attr("content")
+                    ?.substringAfter("url=")
+                    ?.takeIf { it.startsWith("http") }
+
+                redirectUrl?.let {
+                    invokeModflix(
+                        imdbId = imdbId,
+                        year = year,
+                        season = season,
+                        episode = episode,
+                        subtitleCallback = subtitleCallback,
+                        callback = callback,
+                        api = it
+                    )
+                    return
+                } ?: run {
+                    Log.e("Moviesmod", "Redirect URL is null or invalid")
+                }
+            } catch (e: Exception) {
+                retries++
+                Log.e("Moviesmod", "Attempt $retries failed: ${e.localizedMessage}")
+
+                if (retries >= maxRetries) {
+                    Log.e("Moviesmod", "Max retries reached. Exiting.")
+                    return
+                }
+
+                delay(delayBetweenRetries)
+            }
         }
     }
 
@@ -2070,38 +2124,53 @@ object StreamPlayExtractor : StreamPlay() {
         lastSeason: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
+        callback: (ExtractorLink) -> Unit,
+        maxRetries: Int = 3, // Maximum number of retries
+        delayBetweenRetries: Long = 2000L // Delay between retries (in milliseconds)
     ) {
         val targetUrl = "$Vglist/?re=luxmovies"
+        var retries = 0
 
-        try {
-            val response = app.get(targetUrl, allowRedirects = false)
-            val document = response.document
-            val redirectUrl = document.selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
-                ?.takeIf { it.startsWith("http") }
+        while (retries < maxRetries) {
+            try {
+                val response = app.get(targetUrl, allowRedirects = false)
+                val document = response.document
+                val redirectUrl = document.selectFirst("meta[http-equiv=refresh]")
+                    ?.attr("content")
+                    ?.substringAfter("url=")
+                    ?.takeIf { it.startsWith("http") }
 
-            if (!redirectUrl.isNullOrBlank()) {
-                invokeWpredis(
-                    imdbId = imdbId,
-                    title = title,
-                    year = year,
-                    season = season,
-                    lastSeason = lastSeason,
-                    episode = episode,
-                    subtitleCallback = subtitleCallback,
-                    callback = callback,
-                    api = redirectUrl
-                )
-            } else {
-                Log.e("Dotmovies", "Redirect URL is null or invalid: check meta refresh or use fallback.")
+                if (!redirectUrl.isNullOrBlank()) {
+                    invokeWpredis(
+                        source = "LuxMovies",
+                        imdbId = imdbId,
+                        title = title,
+                        year = year,
+                        season = season,
+                        lastSeason = lastSeason,
+                        episode = episode,
+                        subtitleCallback = subtitleCallback,
+                        callback = callback,
+                        api = redirectUrl
+                    )
+                    return // Success, exit the function
+                } else {
+                    Log.e("Dotmovies", "Redirect URL is null or invalid: check meta refresh or use fallback.")
+                    return // Exit after logging error
+                }
+            } catch (e: Exception) {
+                retries++
+                Log.e("Dotmovies", "Attempt $retries failed: ${e.localizedMessage}")
+
+                if (retries >= maxRetries) {
+                    Log.e("Dotmovies", "Max retries reached. Exiting.")
+                    return // Exit after max retries
+                }
+                delay(delayBetweenRetries)
             }
-
-        } catch (e: Exception) {
-            Log.e("Dotmovies", "Failed to fetch redirect URL from $targetUrl: ${e.localizedMessage}")
         }
     }
+
 
 
     suspend fun invokeRogmovies(
@@ -2112,32 +2181,49 @@ object StreamPlayExtractor : StreamPlay() {
         lastSeason: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
+        callback: (ExtractorLink) -> Unit,
+        maxRetries: Int = 3,
+        delayBetweenRetries: Long = 2000L
     ) {
-        val redirectUrl = try {
-            app.get("$Vglist/?re=rogmovies",allowRedirects = false)
-                .document
-                .selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
-                ?.takeIf { it.startsWith("http") }
-        } catch (e: Exception) {
-            Log.e("RogMovies", "Failed to fetch RogMovies redirect: ${e.localizedMessage}")
-            null
-        }
+        var retries = 0
 
-        redirectUrl?.let {
-            invokeWpredis(
-                imdbId = imdbId,
-                title = title,
-                year = year,
-                season = season,
-                lastSeason = lastSeason,
-                episode = episode,
-                subtitleCallback = subtitleCallback,
-                callback = callback,
-                api = it
-            )
+        while (retries < maxRetries) {
+            try {
+                val redirectUrl = app.get("$Vglist/?re=rogmovies", allowRedirects = false)
+                    .document
+                    .selectFirst("meta[http-equiv=refresh]")
+                    ?.attr("content")
+                    ?.substringAfter("url=")
+                    ?.takeIf { it.startsWith("http") }
+
+                redirectUrl?.let {
+                    invokeWpredis(
+                        source = "RogMovies",
+                        imdbId = imdbId,
+                        title = title,
+                        year = year,
+                        season = season,
+                        lastSeason = lastSeason,
+                        episode = episode,
+                        subtitleCallback = subtitleCallback,
+                        callback = callback,
+                        api = it
+                    )
+                    return
+                } ?: run {
+                    Log.e("RogMovies", "Redirect URL is null or invalid")
+                }
+            } catch (e: Exception) {
+                retries++
+                Log.e("RogMovies", "Attempt $retries failed: ${e.localizedMessage}")
+
+                if (retries >= maxRetries) {
+                    Log.e("RogMovies", "Max retries reached. Exiting.")
+                    return
+                }
+
+                delay(delayBetweenRetries)
+            }
         }
     }
 
@@ -2196,7 +2282,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 }
                                 .forEach { streamingUrl ->
                                     loadSourceNameExtractor(
-                                        "V-Cloud",
+                                        "VegaMovies V-Cloud",
                                         streamingUrl,
                                         "$vegaMoviesAPI/",
                                         subtitleCallback,
@@ -2223,7 +2309,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         }
                                         ?.forEach { streamingUrl ->
                                             loadSourceNameExtractor(
-                                                "V-Cloud",
+                                                "VegaMovies V-Cloud",
                                                 streamingUrl,
                                                 "$vegaMoviesAPI/",
                                                 subtitleCallback,
@@ -2241,6 +2327,7 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     private suspend fun invokeWpredis(
+        source : String? = null,
         imdbId: String? = null,
         title: String? = null,
         year: Int? = null,
@@ -2282,15 +2369,16 @@ object StreamPlayExtractor : StreamPlay() {
             val href = element.attr("href")
             val doc = app.get(href).document
             if (season == null) {
-                processMovieLinks(doc, api, subtitleCallback, callback)
+                processMovieLinks(source,doc, api, subtitleCallback, callback)
             } else {
-                processSeasonLinks(doc, season, episode, api, subtitleCallback, callback)
+                processSeasonLinks(source,doc, season, episode, api, subtitleCallback, callback)
             }
         }
     }
 
 
     private suspend fun processMovieLinks(
+        source: String?,
         doc: Document,
         api: String,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -2319,7 +2407,7 @@ object StreamPlayExtractor : StreamPlay() {
                         }
                         .forEach { streamingUrl ->
                             loadSourceNameExtractor(
-                                "V-Cloud",
+                                "$source V-Cloud",
                                 streamingUrl,
                                 "$api/",
                                 subtitleCallback,
@@ -2333,6 +2421,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     private suspend fun processSeasonLinks(
+        source: String?,
         doc: Document,
         season: Int,
         episode: Int?,
@@ -2358,7 +2447,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     streamingUrls?.forEach { link ->
                         loadSourceNameExtractor(
-                            "V-Cloud",
+                            "$source V-Cloud",
                             link,
                             "$api/",
                             subtitleCallback,
@@ -2380,14 +2469,30 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url =
-            if (season == null) "$TomAPI/api/getVideoSource?type=movie&id=$id" else "$TomAPI/api/getVideoSource?type=tv&id=$id/$season/$episode"
+        val url = if (season == null) {
+            "$TomAPI/api/getVideoSource?type=movie&id=$id"
+        } else {
+            "$TomAPI/api/getVideoSource?type=tv&id=$id/$season/$episode"
+        }
+
         val headers = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
             "Referer" to "https://autoembed.cc"
         )
-        val json = app.get(url, headers = headers).text
-        val data = tryParseJson<TomResponse>(json) ?: return
+
+        val response = try {
+            app.get(url, headers = headers)
+        } catch (e: Exception) {
+            Log.e("invokeTom", "Error fetching data: ${e.localizedMessage}")
+            return
+        }
+
+        if (response.code != 200) {
+            Log.e("invokeTom", "Failed to fetch data. Status code: ${response.code}")
+            return
+        }
+
+        val data = tryParseJson<TomResponse>(response.text) ?: return
         callback(
             newExtractorLink(
                 "Tom Embeded",
@@ -2400,15 +2505,16 @@ object StreamPlayExtractor : StreamPlay() {
             }
         )
 
-        data.subtitles.map {
+        data.subtitles.forEach {
             subtitleCallback.invoke(
                 SubtitleFile(
                     it.label,
-                    it.file,
+                    it.file
                 )
             )
         }
     }
+
 
     suspend fun invokeExtramovies(
         imdbId: String? = null,
@@ -3892,58 +3998,79 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val firstRedirectUrl = app.get(MovieDriveAPI)
-            .document
-            .selectFirst("meta[http-equiv=refresh]")
-            ?.attr("content")
-            ?.substringAfter("url=")
-            ?.takeIf { it.startsWith("http") }
+        val firstRedirectUrl = retryIO(times = 3) {
+            val response = app.get(MovieDriveAPI, timeout = 15_000)
+            response.document
+                .selectFirst("meta[http-equiv=refresh]")
+                ?.attr("content")
+                ?.substringAfter("url=", "")
+                ?.takeIf { it.startsWith("http") }
+        }
 
-        val movieDrive_API = firstRedirectUrl?.let { redirect ->
-            app.get(redirect, allowRedirects = false)
-                .document
-                .selectFirst("a[href]")
-                ?.attr("href")
-        } ?: return
+        val movieDriveAPI = runCatching {
+            firstRedirectUrl?.let {
+                app.get(it, allowRedirects = false).headers["Location"]
+            }
+        }.getOrNull()?.takeIf { it.startsWith("http") } ?: return
 
         val cfInterceptor = CloudflareKiller()
+        val fixTitle = title?.substringBefore("-")
+            ?.replace(":", " ")
+            ?.replace("&", " ")
+            ?.trim()
+            .orEmpty()
 
-        val fixTitle = title?.substringBefore("-")?.replace(":", " ")?.replace("&", " ")?.trim().orEmpty()
-        val searchTitle = title?.substringBefore("-")?.createSlug().orEmpty()
-        val searchUrl = "$movieDrive_API/search/$fixTitle${if (season == null) " $year" else ""}"
-        Log.d("Phisher", searchUrl)
+        val searchTitle = fixTitle.createSlug()
+        val searchUrl = if (season == null) {
+            "$movieDriveAPI/search/$fixTitle $year"
+        } else {
+            "$movieDriveAPI/search/$fixTitle"
+        }
 
-        val hrefPattern = app.get(searchUrl).document.select("figure a[href]")
-            .firstOrNull { it.attr("href").contains(searchTitle, ignoreCase = true) }
-            ?.attr("href") ?: return
+        val searchResultHtml = runCatching {
+            app.get(searchUrl, interceptor = wpRedisInterceptor).document.select("figure").toString()
+        }.getOrNull() ?: return
 
-        val document = app.get(hrefPattern, interceptor = cfInterceptor).document
+        val hrefPattern = Regex("""(?i)<a\s+href="([^"]*\b$searchTitle\b[^"]*)"""")
+            .find(searchResultHtml)
+            ?.groupValues?.getOrNull(1)
+            ?.takeIf { it.startsWith("http") }
+            ?: return
+
+        val doc = app.get(hrefPattern, interceptor = cfInterceptor).document
 
         if (season == null) {
-            document.select("h5 > a").amap { element ->
+            doc.select("h5 > a").amap { element ->
                 extractMdrive(element.attr("href")).forEach { serverUrl ->
                     processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                 }
             }
         } else {
-            val seasonPattern = "(?i)Season $season|S0$season"
-            val episodePattern = "(?i)Ep0$episode|Ep$episode"
+            val seasonPattern = "(?i)Season\\s*0?$season\\b|S0?$season\\b"
+            val episodePattern = "(?i)Ep0?$episode\\b|Ep\\s+$episode\\b"
 
-            document.select("h5:matches($seasonPattern)").forEach { entry ->
-                entry.nextElementSibling()?.selectFirst("a")?.attr("href")
-                    ?.takeIf { it.isNotBlank() }?.let { href ->
-                        val doc = app.get(href).document
-                        doc.selectFirst("h5:matches($episodePattern)")?.let { epElement ->
-                            val links = generateSequence(epElement.nextElementSibling()) { it.nextElementSibling() }
+            doc.select("h5:matches($seasonPattern)").forEach { seasonElement ->
+                seasonElement.nextElementSibling()
+                    ?.selectFirst("a")
+                    ?.attr("href")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { seasonHref ->
+                        val episodeDoc = app.get(seasonHref).document
+                        val episodeHeader = episodeDoc.selectFirst("h5:matches($episodePattern)")
+
+                        val links = episodeHeader?.let {
+                            generateSequence(it.nextElementSibling()) { next -> next.nextElementSibling() }
                                 .takeWhile { it.tagName() == "h5" }
                                 .mapNotNull { it.selectFirst("a")?.attr("href") }
                                 .toList()
+                        }
 
+                        if (!links.isNullOrEmpty()) {
                             links.forEach { serverUrl ->
                                 processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                             }
-                        } ?: run {
-                            doc.selectFirst("h5 a:contains(HubCloud)")?.attr("href")?.let { fallbackUrl ->
+                        } else {
+                            episodeDoc.selectFirst("h5 a:contains(HubCloud)")?.attr("href")?.let { fallbackUrl ->
                                 processMoviesdriveUrl(fallbackUrl, subtitleCallback, callback)
                             }
                         }
@@ -3961,17 +4088,14 @@ object StreamPlayExtractor : StreamPlay() {
             serverUrl.contains("hubcloud", ignoreCase = true) -> {
                 HubCloud().getUrl(serverUrl, "MoviesDrive", subtitleCallback, callback)
             }
-
             serverUrl.contains("gdlink", ignoreCase = true) || serverUrl.contains("gdflix", ignoreCase = true) -> {
                 GDFlix().getUrl(serverUrl, referer = "MoviesDrive", subtitleCallback = subtitleCallback, callback = callback)
             }
-
             else -> {
                 loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
             }
         }
     }
-
 
     suspend fun invokeBollyflix(
         imdbId: String? = null,
