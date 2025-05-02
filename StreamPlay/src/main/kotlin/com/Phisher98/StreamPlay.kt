@@ -88,6 +88,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -154,7 +155,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = "https://multimovies.guru"
+        const val multimoviesAPI = "https://linktr.ee/multimovies"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val vidsrctoAPI = "https://vidsrc.cc"
         const val vidsrcsu = "https://vidsrc.su"
@@ -456,7 +457,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LinkData>(data)
-        argamap(
+        runAllAsync(
             {
                 invokeEmbedsu(res.imdbId, res.season, res.episode,callback)
             },

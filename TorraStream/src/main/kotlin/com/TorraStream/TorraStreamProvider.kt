@@ -9,5 +9,7 @@ class TorraStreamProvider: BasePlugin() {
         registerMainAPI(TorraStream())
         registerMainAPI(TorraStreamAnime())
         registerMainAPI(TorraStreamDebian())
+        registerMainAPI(TorraStreamAIO())
+        registerMainAPI(TorraStreamAIODebian())
     }
 }

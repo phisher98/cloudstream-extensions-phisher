@@ -185,12 +185,15 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val MultimoviesApi= app.get(apiUrl).document.selectFirst("div.sc-bdfBwQ > a")?.attr("href")
+        Log.d("Phisher",MultimoviesApi.toString())
         val fixTitle = title.createSlug()
         val url = if (season == null) {
-            "$apiUrl/movies/$fixTitle"
+            "$MultimoviesApi/movies/$fixTitle"
         } else {
-            "$apiUrl/episodes/$fixTitle-${season}x${episode}"
+            "$MultimoviesApi/episodes/$fixTitle-${season}x${episode}"
         }
+        Log.d("Phisher",MultimoviesApi.toString())
         val req = app.get(url).document
         req.select("ul#playeroptionsul li").map {
             Triple(
@@ -864,7 +867,7 @@ object StreamPlayExtractor : StreamPlay() {
         val tmdbYear = date?.substringBefore("-")?.toIntOrNull()
         val jptitleSlug = jptitle.createSlug()
 
-        argamap(
+        runAllAsync(
             { malId?.let { invokeAnimetosho(it, season, episode, subtitleCallback, callback) } },
             { invokeHianime(zoroIds, hianimeUrl, episode, subtitleCallback, callback) },
             { malId?.let { invokeAnimeKai(it, episode, subtitleCallback, callback) } },
@@ -887,8 +890,7 @@ object StreamPlayExtractor : StreamPlay() {
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { gogoUrl?.let { invokeAnitaku(it, episode, subtitleCallback, callback) } },
             { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
-            { invokeAnizone(jptitle, episode, callback) }
-        )
+            { invokeAnizone(jptitle, episode, callback) })
     }
 
 
@@ -3902,93 +3904,74 @@ object StreamPlayExtractor : StreamPlay() {
                 .document
                 .selectFirst("a[href]")
                 ?.attr("href")
-        }
+        } ?: return
 
         val cfInterceptor = CloudflareKiller()
-        val fixTitle = title?.substringBefore("-")?.replace(":", " ")?.replace("&", " ")
-        val searchTitle = title?.substringBefore("-").createSlug()
-        val url = "${movieDrive_API}search/$fixTitle${if (season == null) " $year" else ""}"
-        Log.d("Phisher",url)
-        val hrefPattern = app.get(url).document.select("figure")
-            .toString()
-            .let {
-                Regex("""(?i)<a\s+href="([^"]*\b$searchTitle\b[^"]*)"""").find(it)?.groupValues?.get(
-                    1
-                ) ?: ""
-            }
-        Log.d("hrefPattern",url)
 
-        if (hrefPattern.isEmpty()) return
+        val fixTitle = title?.substringBefore("-")?.replace(":", " ")?.replace("&", " ")?.trim().orEmpty()
+        val searchTitle = title?.substringBefore("-")?.createSlug().orEmpty()
+        val searchUrl = "$movieDrive_API/search/$fixTitle${if (season == null) " $year" else ""}"
+        Log.d("Phisher", searchUrl)
+
+        val hrefPattern = app.get(searchUrl).document.select("figure a[href]")
+            .firstOrNull { it.attr("href").contains(searchTitle, ignoreCase = true) }
+            ?.attr("href") ?: return
+
         val document = app.get(hrefPattern, interceptor = cfInterceptor).document
+
         if (season == null) {
             document.select("h5 > a").amap { element ->
                 extractMdrive(element.attr("href")).forEach { serverUrl ->
-                    if (serverUrl.contains("hubcloud",ignoreCase = true))
-                    {
-                        HubCloud().getUrl(serverUrl, referer = "MoviesDrive")
-                    }
-                    else if (serverUrl.contains("gdlink",ignoreCase = true))
-                    {
-                        GDFlix().getUrl(serverUrl, referer = "MoviesDrive")
-                    } else if (serverUrl.contains("GDFlix",ignoreCase = true)) {
-                        GDFlix().getUrl(serverUrl, referer = "MoviesDrive")
-                    }
-                    else
-                    loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
+                    processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                 }
             }
         } else {
             val seasonPattern = "(?i)Season $season|S0$season"
             val episodePattern = "(?i)Ep0$episode|Ep$episode"
+
             document.select("h5:matches($seasonPattern)").forEach { entry ->
                 entry.nextElementSibling()?.selectFirst("a")?.attr("href")
                     ?.takeIf { it.isNotBlank() }?.let { href ->
                         val doc = app.get(href).document
                         doc.selectFirst("h5:matches($episodePattern)")?.let { epElement ->
-                            val links =
-                                generateSequence(epElement.nextElementSibling()) { it.nextElementSibling() }
-                                    .takeWhile { it.tagName() == "h5" }
-                                    .mapNotNull { it.selectFirst("a")?.attr("href") }
-                                    .toList()
+                            val links = generateSequence(epElement.nextElementSibling()) { it.nextElementSibling() }
+                                .takeWhile { it.tagName() == "h5" }
+                                .mapNotNull { it.selectFirst("a")?.attr("href") }
+                                .toList()
+
                             links.forEach { serverUrl ->
-                                if (serverUrl.contains("hubcloud",ignoreCase = true))
-                                {
-                                    HubCloud().getUrl(serverUrl, referer = "MoviesDrive")
-                                }
-                                else if (serverUrl.contains("gdlink",ignoreCase = true))
-                                {
-                                    GDFlix().getUrl(serverUrl, referer = "MoviesDrive")
-                                } else if (serverUrl.contains("GDFlix",ignoreCase = true)) {
-                                    GDFlix().getUrl(serverUrl, referer = "MoviesDrive")
-                                }
-                                else
-                                    loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
+                                processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                             }
                         } ?: run {
-                            doc.selectFirst("h5 a:contains(HubCloud)")?.attr("href")?.let { furl ->
-                                if (url.contains("hubcloud",ignoreCase = true))
-                                {
-                                    HubCloud().getUrl(furl, referer = "MoviesDrive")
-                                }
-                                else if (url.contains("GDFlix",ignoreCase = true))
-                                {
-                                        GDFlix().getUrl(url, referer = "MoviesDrive")
-                                }
-                                else
-                                {
-                                    loadExtractor(
-                                        furl,
-                                        referer = "MoviesDrive",
-                                        subtitleCallback,
-                                        callback
-                                    )
-                                }
+                            doc.selectFirst("h5 a:contains(HubCloud)")?.attr("href")?.let { fallbackUrl ->
+                                processMoviesdriveUrl(fallbackUrl, subtitleCallback, callback)
                             }
                         }
                     }
             }
         }
     }
+
+    private suspend fun processMoviesdriveUrl(
+        serverUrl: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        when {
+            serverUrl.contains("hubcloud", ignoreCase = true) -> {
+                HubCloud().getUrl(serverUrl, "MoviesDrive", subtitleCallback, callback)
+            }
+
+            serverUrl.contains("gdlink", ignoreCase = true) || serverUrl.contains("gdflix", ignoreCase = true) -> {
+                GDFlix().getUrl(serverUrl, referer = "MoviesDrive", subtitleCallback = subtitleCallback, callback = callback)
+            }
+
+            else -> {
+                loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
+            }
+        }
+    }
+
 
     suspend fun invokeBollyflix(
         imdbId: String? = null,

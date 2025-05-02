@@ -1075,22 +1075,6 @@ class GDFlix2 : GDFlix() {
     override val mainUrl: String = "https://new2.gdflix.cfd"
 }
 
-class HubCloudClub : HubCloud() {
-    override var mainUrl = "https://hubcloud.club"
-}
-
-class HubCloudink : HubCloud() {
-    override var mainUrl = "https://hubcloud.ink"
-}
-
-class HubCloudtel : HubCloud() {
-    override var mainUrl = "https://hubcloud.tel"
-}
-
-class HubCloudlol : HubCloud() {
-    override var mainUrl = "https://hubcloud.lol"
-}
-
 open class PixelDrain : ExtractorApi() {
     override val name            = "PixelDrain"
     override val mainUrl         = "https://pixeldrain.com"
@@ -1131,7 +1115,7 @@ class Moviesapi : Chillx() {
     override val requiresReferer = true
 }
 
-open class HubCloud : ExtractorApi() {
+class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
     override val requiresReferer = false
@@ -1142,6 +1126,8 @@ open class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        Log.d("hrefPattern","I'm Here")
+
         val realUrl = replaceHubclouddomain(url)
         val href = if (realUrl.contains("hubcloud.php")) {
             realUrl
@@ -1150,6 +1136,7 @@ open class HubCloud : ExtractorApi() {
             val regexdata = app.get(realUrl).document.selectFirst("script:containsData(url)")?.toString() ?: ""
             regex.find(regexdata)?.groupValues?.get(1).orEmpty()
         }
+        Log.d("hrefPattern","$realUrl $href")
 
         if (href.isEmpty()) {
             Log.d("Error", "Not Found")
