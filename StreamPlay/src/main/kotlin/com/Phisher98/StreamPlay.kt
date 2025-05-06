@@ -217,6 +217,23 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 else -> ShowStatus.Completed
             }
         }
+
+        private const val AUTOKAI_URL = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
+
+        private var cachedKeys: List<String>? = null
+
+        suspend fun getHomeKeys(): List<String> {
+            if (cachedKeys == null) {
+                val parsed = app.get(AUTOKAI_URL).parsedSafe<AutoKai>()
+                cachedKeys = parsed?.kai ?: emptyList()
+            }
+            return cachedKeys ?: emptyList()
+        }
+
+        data class AutoKai(
+            val kai: List<String>,
+            val mega: List<String>,
+        )
     }
 
     override val mainPage = mainPageOf(

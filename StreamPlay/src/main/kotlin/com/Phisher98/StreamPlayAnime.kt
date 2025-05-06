@@ -273,7 +273,7 @@ class StreamPlayAnime : MainAPI() {
             { invokeAnizone(jpTitle, episode, callback) },
             { invokeAnichi(jpTitle,year,episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
-            { invokeAnimeKai(malId, episode, subtitleCallback, callback) },
+            { invokeAnimeKai(jpTitle,zorotitle,malId, episode, subtitleCallback, callback) },
         )
         return true
     }

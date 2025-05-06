@@ -2,6 +2,7 @@ package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 //Vidsrccc
@@ -1731,6 +1732,11 @@ fun extractVideoUrlFromJson(jsonData: String): String {
     val gson = com.google.gson.Gson()
     val videoData = gson.fromJson(jsonData, VideoData::class.java)
     return videoData.url
+}
+
+fun extractVideoUrlFromJsonAnimekai(jsonData: String): String {
+    val jsonObject = JSONObject(jsonData)
+    return jsonObject.getString("url")
 }
 
 data class AnimeKaiM3U8(
