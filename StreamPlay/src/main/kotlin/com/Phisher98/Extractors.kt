@@ -1,5 +1,7 @@
 package com.phisher98
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.phisher98.StreamPlay.Companion.animepaheAPI
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -1733,45 +1735,54 @@ class MegaUp : ExtractorApi() {
     override var mainUrl = "https://megaup.cc"
     override val requiresReferer = true
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val mediaUrl = url.replace("/e", "/media").replace("/e2", "/media")
+        val Autokai = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
+        val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val displayName = referer ?: this.name
-
-        val encoded = runCatching {
+        val encodedResult = runCatching {
             app.get(mediaUrl, headers = HEADERS)
                 .parsedSafe<AnimeKaiResponse>()?.result
-        }.getOrNull() ?: return
+        }.getOrNull()
 
-        val decryptSteps = runCatching {
-            app.get(KEYS_URL).parsedSafe<AnimeKaiKey>()?.megaup?.decrypt
-        }.getOrNull() ?: return
+        if (encodedResult == null) {
+            Log.d("Phisher", "Encoded result is null")
+            return
+        }
+        val megaKeysSrc = app.get(Autokai).parsedSafe<AutoKai>()?.mega
+        if (megaKeysSrc == null) {
+            Log.d("Phisher", "Mega keys source is null")
+            return
+        }
 
-        val decodedJson = runCatching {
-            AnimekaiDecoder().decode(encoded).replace("\\", "")
-        }.getOrNull() ?: return
+        val decodedJson = AnimekaiDecoder().decode(encodedResult, megaKeysSrc).replace("\\", "")
 
         val m3u8Data = runCatching {
             Gson().fromJson(decodedJson, AnimeKaiM3U8::class.java)
-        }.getOrNull() ?: return
+        }.getOrNull()
+
+        if (m3u8Data == null) {
+            Log.d("Error:", "M3U8 data is null")
+            return
+        }
 
         m3u8Data.sources.firstOrNull()?.file?.let { m3u8 ->
             M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
-        }
+        } ?: Log.d("Error:", "No sources found in M3U8 data")
 
         m3u8Data.tracks.forEach { track ->
-            track.label?.let { subtitleCallback(SubtitleFile(it, track.file)) }
+            track.label?.let {
+                subtitleCallback(SubtitleFile(it, track.file))
+            }
         }
     }
 
     companion object {
-        private const val KEYS_URL =
-            "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/kai_codex.json"
-
         private val HEADERS = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
             "Accept" to "text/html, */*; q=0.01",
@@ -1784,21 +1795,12 @@ class MegaUp : ExtractorApi() {
             "Pragma" to "no-cache",
             "Cache-Control" to "no-cache",
             "referer" to "https://animekai.to/",
-            "Cookie" to "usertype=guest; session=your-session-id; cf_clearance=your-clearance-token"
         )
     }
 
-    @Serializable
-    data class AnimeKaiKey(
-        val kai: Any?,  // Kai can be of any type
-        val kaihome: String,
-        val megaup: Megaup
-    )
-
-    @Serializable
-    data class Megaup(
-        val encrypt: List<List<String>>,
-        val decrypt: List<List<String>>
+    data class AutoKai(
+        val kai: List<String>,
+        val mega: List<String>,
     )
 }
 

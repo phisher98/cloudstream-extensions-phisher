@@ -42,7 +42,6 @@ class MegaUp : ExtractorApi() {
         }
 
         val decodedJson = AnimekaiDecoder().decode(encodedResult, megaKeysSrc).replace("\\", "")
-        Log.d("Phisher", "Decoded JSON: $decodedJson")
 
         val m3u8Data = runCatching {
             Gson().fromJson(decodedJson, AnimeKai.M3U8::class.java)

@@ -2570,6 +2570,9 @@ fun generateVidsrcVrf(n: Int?): String {
 
 
 internal class AnimekaiDecoder {
+    private val keysChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-~!*().'"
+
+    /*
     private val tcodex = listOf(
         intArrayOf(125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124),
         intArrayOf(249, 250, 251, 252, 253, 254, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248),
@@ -2621,32 +2624,109 @@ internal class AnimekaiDecoder {
         val byteArray = output.map { it.toByte() }.toByteArray()
         return Base64.getUrlEncoder().withoutPadding().encodeToString(byteArray)
     }
+    */
+
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun decodeIframeData(input: String): String {
-        val decodedBytes = Base64.getUrlDecoder().decode(input)
-        val output = mutableListOf<Int>()
+    fun generateToken(n: String, homeKeysSrc: List<String>): String {
+        val homeKeys = mutableListOf<ByteArray>()
+        for (i in homeKeysSrc.indices) {
+            homeKeys.add(base64DecodeArray(homeKeysSrc[i]))
+        }
+        val encoded = URLEncoder.encode(n, "UTF-8")
+        val o = mutableListOf<Byte>()
+        for (i in encoded.indices) {
+            val k = homeKeys[keysChar.indexOf(encoded[i])]
+            o.add(k[ i % k.size ])
+        }
+        return Base64.getEncoder().encodeToString(o.toByteArray())
+            .replace("/", "_")
+            .replace("+", "-")
+            .replace("=", "")
+    }
 
-        for (i in decodedBytes.indices) {
-            val byte = decodedBytes[i].toInt() and 0xFF
-            val index = tcodex[i % tcodex.size].indexOf(byte)
-            if (index >= 0) {
-                output.add(index)
-            } else {
-                output.add(0)
+    /*
+        fun decodeIframeData(input: String, homeKeys: List<String>): String {
+            // Replace characters and decode Base64
+            val base64 = input.replace('_', '/').replace('-', '+')
+            val decodedBytes = base64DecodeArray(base64)
+            val decodedString = decodedBytes.toString(Charsets.ISO_8859_1) // match JS charCodeAt
+
+            val result = StringBuilder()
+
+            for (i in decodedString.indices) {
+                val c = decodedString[i].code
+                var cp: Char? = null
+
+                for (j in homeKeys.indices) {
+                    val ck = homeKeys[j][i % homeKeys[j].length].code
+                    if (ck == c) {
+                        cp = keysChar[j]
+                        break
+                    }
+                }
+
+                result.append(cp ?: '%')
             }
+
+            return URLDecoder.decode(result.toString(), "UTF-8")
+        }
+        */
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun decodeIframeData(n: String, homeKeysSrc: List<String>): String {
+        val homeKeys = mutableListOf<ByteArray>()
+        for (i in homeKeysSrc.indices) {
+            val decodedKey = Base64.getDecoder().decode(homeKeysSrc[i])
+            homeKeys.add(decodedKey)
         }
 
-        val decodedString = output.map { it.toChar() }.joinToString("")
-        return URLDecoder.decode(decodedString, "UTF-8")
+        val decoded = Base64.getDecoder().decode(n.replace('_', '/').replace('-', '+'))
+        val o = StringBuilder()
+        for (i in decoded.indices) {
+            val c = decoded[i]
+            var cp = '%'
+            for (j in homeKeys.indices) {
+                val k = homeKeys[j]
+                val ck = k[i % k.size]
+                if (c == ck) {
+                    cp = keysChar[j]
+                    break
+                }
+            }
+            o.append(cp)
+        }
+
+        val url = URLDecoder.decode(o.toString())
+        return url.replaceFirst("'", ".")
     }
 
+    //Megaup
 
-    fun decode(n: String): String {
-        val step1 = reverseIt(substitute(transform("3BqOnxGhQv", base64UrlDecode(substitute(reverseIt(transform("WPUVliQX7b9", base64UrlDecode(transform("8AqSMtvQwu", base64UrlDecode(reverseIt(substitute(base64UrlDecode(n), "kw82Kupm07Dlca", "a20puk8lm7DKcw"))))))), "pFAymC6OTU", "mTAFpCO6yU"))), "q4Gt9OYkXT28jm7", "kYj879T4m2XGOqt"))
-        val finalResult = decodeURIComponent(step1)
-        return finalResult
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun decode(n: String, megaKeysSrc:List<String>,): String {
+        val megaKeys = mutableListOf<ByteArray>()
+        for (i in megaKeysSrc.indices) {
+            megaKeys.add(Base64.getDecoder().decode(megaKeysSrc[i]))
+        }
+
+        // Base64-safe decode
+        val decoded = Base64.getDecoder().decode(n.replace('_', '/').replace('-', '+'))
+        val o = mutableListOf<Byte>()
+
+        // Iterate over each character in the decoded string
+        for (i in decoded.indices) {
+            // get unsigned-byte char code
+            val c = ((decoded[i].toInt() and 0xFF).toUByte()).toInt()
+            // get megakey substitute key
+            val k = megaKeys[c]
+            // get replacement character
+            o.add(k[ i % k.size ])
+        }
+        // Return the decoded string
+        return URLDecoder.decode(String(o.toByteArray(), Charsets.ISO_8859_1))
     }
+
 
     private fun base64UrlEncode(str: String): String {
         return base64Encode(str.toByteArray(Charsets.ISO_8859_1))

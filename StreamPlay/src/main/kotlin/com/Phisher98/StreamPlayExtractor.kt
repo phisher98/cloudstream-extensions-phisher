@@ -1231,7 +1231,9 @@ object StreamPlayExtractor : StreamPlay() {
             ?.firstOrNull() ?: ""
         val decoder = AnimekaiDecoder()
         val servers = listOf("sub", "dub", "softsub").flatMap { type ->
-            val url = "$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token)}"
+            val url = "$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token,
+                emptyList() //TODO
+            )}"
             app.get(url)
                 .parsed<AnimeKaiResponse>()
                 .getDocument()
@@ -1245,10 +1247,12 @@ object StreamPlayExtractor : StreamPlay() {
 
         servers.amap { (type, lid, serverName) ->
             val result =
-                app.get("$AnimeKai/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
+                app.get("$AnimeKai/ajax/links/view?id=$lid&_=${decoder.generateToken(lid,
+                    emptyList()
+                )}")
                     .parsed<AnimeKaiResponse>().result
 
-            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
+            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result, emptyList()))
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else "[${type.uppercase()}]"
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix | "
             loadExtractor(iframe, name, subtitleCallback, callback)
