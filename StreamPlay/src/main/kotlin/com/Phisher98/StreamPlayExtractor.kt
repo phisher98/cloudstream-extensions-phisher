@@ -190,14 +190,12 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val MultimoviesApi= app.get(apiUrl).document.selectFirst("div.sc-bdfBwQ > a")?.attr("href")
-        Log.d("Phisher",MultimoviesApi.toString())
         val fixTitle = title.createSlug()
         val url = if (season == null) {
             "$MultimoviesApi/movies/$fixTitle"
         } else {
             "$MultimoviesApi/episodes/$fixTitle-${season}x${episode}"
         }
-        Log.d("Phisher",MultimoviesApi.toString())
         val req = app.get(url).document
         req.select("ul#playeroptionsul li").map {
             Triple(

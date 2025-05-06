@@ -2,8 +2,6 @@ package com.phisher98
 
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -15,7 +13,7 @@ import okhttp3.FormBody
 import java.net.URI
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.guru"
+    override var mainUrl = "https://multimovies.media"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -144,8 +142,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         val titleClean = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
         val title = if (titleClean == "null") titleL else titleClean
         val poster = fixUrlNull(
-            doc.select("#contenedor").toString().substringAfter("background-image:url(")
-                .substringBefore(");")
+            doc.select("div.g-item a").attr("href")
         )
         val tags = doc.select("div.sgeneros > a").map { it.text() }
         val year = doc.selectFirst("span.date")?.text()?.substringAfter(",")?.trim()?.toInt()
