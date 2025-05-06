@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.AnimeKai.MegaUp.AutoKai
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -21,7 +20,6 @@ import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newAnimeLoadResponse
@@ -89,22 +87,27 @@ class AnimeKai : MainAPI() {
                 val parsed = app.get(AUTOKAI_URL).parsedSafe<AutoKai>()
                 cachedKeys = parsed?.kai ?: emptyList()
             }
-            return cachedKeys!!
+            return cachedKeys ?: emptyList()
         }
 
         fun getType(t: String): TvType {
-            return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
-            else if (t.contains("Movie")) TvType.AnimeMovie else TvType.Anime
+            val lower = t.lowercase()
+            return when {
+                "ova" in lower || "special" in lower -> TvType.OVA
+                "movie" in lower -> TvType.AnimeMovie
+                else -> TvType.Anime
+            }
         }
 
         fun getStatus(t: String): ShowStatus {
             return when (t) {
                 "Finished Airing" -> ShowStatus.Completed
                 "Releasing" -> ShowStatus.Ongoing
-                else -> ShowStatus.Completed
+                else -> ShowStatus.Completed // optionally log unexpected status
             }
         }
     }
+
 
     override val mainPage =
         mainPageOf(

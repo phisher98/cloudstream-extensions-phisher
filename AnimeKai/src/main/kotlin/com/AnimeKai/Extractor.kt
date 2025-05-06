@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import kotlinx.serialization.Serializable
 
 
 class MegaUp : ExtractorApi() {
@@ -24,33 +23,48 @@ class MegaUp : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val Autokai="https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
+        val Autokai = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val displayName = referer ?: this.name
         val encodedResult = runCatching {
             app.get(mediaUrl, headers = HEADERS)
                 .parsedSafe<AnimeKai.Response>()?.result
-        }.getOrNull() ?: return
-        val megaKeysSrc= app.get(Autokai).parsedSafe<AutoKai>()?.mega
-        val decodedJson = runCatching {
-            AnimekaiDecoder().decode(encodedResult,megaKeysSrc ?: emptyList()).replace("\\", "")
-        }.getOrNull() ?: return
+        }.getOrNull()
+
+        if (encodedResult == null) {
+            Log.d("Phisher", "Encoded result is null")
+            return
+        }
+        val megaKeysSrc = app.get(Autokai).parsedSafe<AutoKai>()?.mega
+        if (megaKeysSrc == null) {
+            Log.d("Phisher", "Mega keys source is null")
+            return
+        }
+
+        val decodedJson = AnimekaiDecoder().decode(encodedResult, megaKeysSrc).replace("\\", "")
+        Log.d("Phisher", "Decoded JSON: $decodedJson")
 
         val m3u8Data = runCatching {
             Gson().fromJson(decodedJson, AnimeKai.M3U8::class.java)
-        }.getOrNull() ?: return
+        }.getOrNull()
+
+        if (m3u8Data == null) {
+            Log.d("Error:", "M3U8 data is null")
+            return
+        }
 
         m3u8Data.sources.firstOrNull()?.file?.let { m3u8 ->
             M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
-        }
+        } ?: Log.d("Error:", "No sources found in M3U8 data")
 
         m3u8Data.tracks.forEach { track ->
-            track.label?.let { subtitleCallback(SubtitleFile(it, track.file)) }
+            track.label?.let {
+                subtitleCallback(SubtitleFile(it, track.file))
+            }
         }
     }
 
     companion object {
-
         private val HEADERS = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
             "Accept" to "text/html, */*; q=0.01",
@@ -66,22 +80,8 @@ class MegaUp : ExtractorApi() {
         )
     }
 
-    @Serializable
-    data class AnimeKaiKey(
-        val kai: Any?,
-        val kaihome: String,
-        val megaup: Megaup
-    )
-
-    @Serializable
-    data class Megaup(
-        val encrypt: List<List<String>>,
-        val decrypt: List<List<String>>
-    )
-
     data class AutoKai(
         val kai: List<String>,
         val mega: List<String>,
     )
-
 }

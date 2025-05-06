@@ -1,10 +1,7 @@
 package com.AnimeKai
 
-import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
@@ -151,14 +148,15 @@ class AnimekaiDecoder {
 
     //Megaup
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun decode(n: String, megaKeysSrc:List<String>,): String {
         val megaKeys = mutableListOf<ByteArray>()
         for (i in megaKeysSrc.indices) {
-            megaKeys.add(base64DecodeArray(megaKeysSrc[i]))
+            megaKeys.add(Base64.getDecoder().decode(megaKeysSrc[i]))
         }
 
         // Base64-safe decode
-        val decoded = base64DecodeArray(n.replace('_', '/').replace('-', '+'))
+        val decoded = Base64.getDecoder().decode(n.replace('_', '/').replace('-', '+'))
         val o = mutableListOf<Byte>()
 
         // Iterate over each character in the decoded string
