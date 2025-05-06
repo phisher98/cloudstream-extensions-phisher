@@ -2,6 +2,7 @@ package com.AnimeKai
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.AnimeKai.MegaUp.AutoKai
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
@@ -20,6 +21,7 @@ import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newAnimeLoadResponse
@@ -78,6 +80,18 @@ class AnimeKai : MainAPI() {
 
 
     companion object {
+        private const val AUTOKAI_URL = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
+
+        private var cachedKeys: List<String>? = null
+
+        suspend fun getHomeKeys(): List<String> {
+            if (cachedKeys == null) {
+                val parsed = app.get(AUTOKAI_URL).parsedSafe<AutoKai>()
+                cachedKeys = parsed?.kai ?: emptyList()
+            }
+            return cachedKeys!!
+        }
+
         fun getType(t: String): TvType {
             return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
             else if (t.contains("Movie")) TvType.AnimeMovie else TvType.Anime
@@ -146,10 +160,9 @@ class AnimeKai : MainAPI() {
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
         val decoder = AnimekaiDecoder()
+        val homekey= getHomeKeys()
         val epRes =
-            app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "")}")
-                .parsedSafe<Response>()
-                ?.getDocument()
+            app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "", homeKeysSrc = homekey)}").parsedSafe<Response>()?.getDocument()
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
             subCount?.let {
                 subEpisodes += newEpisode("sub|" + ep.attr("token")) {
@@ -221,9 +234,9 @@ class AnimeKai : MainAPI() {
         val token = data.split("|").last().split("=").last()
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
         val types = if ("sub" in data) listOf(dubType, "softsub") else listOf(dubType)
-
+        val homekey= getHomeKeys()
         val document =
-            app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token)}")
+            app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token,homekey)}")
                 .parsed<Response>()
                 .getDocument()
 
@@ -237,9 +250,10 @@ class AnimeKai : MainAPI() {
         }.distinct()
 
         servers.amap { (type, lid, serverName) ->
-            val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=${decoder.generateToken(lid)}")
+            val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=${decoder.generateToken(lid,homekey)}")
                 .parsed<Response>().result
-            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result))
+            val homekeys=getHomeKeys()
+            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result,homekeys))
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
             loadExtractor(iframe, name, subtitleCallback, callback)

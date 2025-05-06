@@ -1,5 +1,7 @@
 package com.AnimeKai
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
@@ -15,23 +17,24 @@ class MegaUp : ExtractorApi() {
     override var mainUrl = "https://megaup.cc"
     override val requiresReferer = true
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val Autokai="https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val displayName = referer ?: this.name
         val encodedResult = runCatching {
             app.get(mediaUrl, headers = HEADERS)
                 .parsedSafe<AnimeKai.Response>()?.result
         }.getOrNull() ?: return
-
+        val megaKeysSrc= app.get(Autokai).parsedSafe<AutoKai>()?.mega
         val decodedJson = runCatching {
-            AnimekaiDecoder().decode(encodedResult).replace("\\", "")
+            AnimekaiDecoder().decode(encodedResult,megaKeysSrc ?: emptyList()).replace("\\", "")
         }.getOrNull() ?: return
-        Log.d("Phisher decodedJson",decodedJson)
 
         val m3u8Data = runCatching {
             Gson().fromJson(decodedJson, AnimeKai.M3U8::class.java)
@@ -47,8 +50,6 @@ class MegaUp : ExtractorApi() {
     }
 
     companion object {
-        private const val KEYS_URL =
-            "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/kai_codex.json"
 
         private val HEADERS = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
@@ -62,7 +63,6 @@ class MegaUp : ExtractorApi() {
             "Pragma" to "no-cache",
             "Cache-Control" to "no-cache",
             "referer" to "https://animekai.to/",
-            "Cookie" to "usertype=guest; session=your-session-id; cf_clearance=your-clearance-token"
         )
     }
 
@@ -78,4 +78,10 @@ class MegaUp : ExtractorApi() {
         val encrypt: List<List<String>>,
         val decrypt: List<List<String>>
     )
+
+    data class AutoKai(
+        val kai: List<String>,
+        val mega: List<String>,
+    )
+
 }

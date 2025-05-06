@@ -24,6 +24,9 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
@@ -55,7 +58,6 @@ class HDhub4uProvider : MainAPI() {
         page: Int, request: MainPageRequest
     ): HomePageResponse {
         val newMainUrl=app.get(mainUrl, allowRedirects = false, cacheTime = 60).headers["location"] ?:""
-        Log.d("Phisher",newMainUrl)
         val doc = app.get(
             "$newMainUrl/${request.data}page/$page/",
             cacheTime = 60,
@@ -148,9 +150,10 @@ class HDhub4uProvider : MainAPI() {
         }
         if (tvtype==TvType.Movie) {
             val movieList = mutableListOf<String>()
+            val ff = mutableListOf<String>()
 
             movieList.addAll(
-                doc.select("h3 a:matchesOwn(480|720|1080|2160|4K), h4 a:matchesOwn(480|720|1080|2160|4K)")
+                doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
                     .map { it.attr("href") }
             )
 
@@ -173,7 +176,6 @@ class HDhub4uProvider : MainAPI() {
                 val episodeNumberFromTitle = episodeRegex.find(element.text())?.groupValues?.get(1)?.toIntOrNull()
 
                 val baseLinks = element.select("a[href]").mapNotNull { it.attr("href") }
-                Log.d("Phisher 1",baseLinks.toString())
                 val isDirectLinkBlock = element.select("a").any {
                     it.text().contains(Regex("1080|720|4K|2160", RegexOption.IGNORE_CASE))
                 }
@@ -194,7 +196,6 @@ class HDhub4uProvider : MainAPI() {
 
                                 val finalEpisodeNum = subEpisodeNum ?: episodeNumber
                                 if (links.isNotEmpty()) {
-                                    Log.d("Phisher base",links.toString())
                                     epLinksMap.getOrPut(finalEpisodeNum) { mutableListOf() }.addAll(links.distinct())
                                 }
                             }
@@ -251,22 +252,23 @@ class HDhub4uProvider : MainAPI() {
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val linksList = data
-            .trim()
+    ): Boolean = coroutineScope {
+        data.trim()
             .removeSurrounding("[", "]")
             .split(',')
             .asSequence()
-            .map { it.trim().removeSurrounding("\"") }
-            .filter { it.isNotEmpty() }
+            .mapNotNull { it.trim().removeSurrounding("\"").takeIf { it.isNotEmpty() } }
+            .map { link ->
+                async {
+                    val finalLink = if ("?id=" in link) getRedirectLinks(link) else link
+                    loadExtractor(finalLink, subtitleCallback, callback)
+                }
+            }
             .toList()
-
-        linksList.forEach { link ->
-            val finalLink = if ("?id=" in link) getRedirectLinks(link) else link
-            loadExtractor(finalLink, subtitleCallback, callback)
-        }
-        return true
+            .awaitAll()
+        true
     }
+
 
     /**
      * Determines the search quality based on the presence of specific keywords in the input string.
