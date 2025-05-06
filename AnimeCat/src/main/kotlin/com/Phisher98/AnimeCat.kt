@@ -23,7 +23,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class AnimeCat : MainAPI() {
-    override var mainUrl = "https://anime.cat"
+    override var mainUrl = "https://watchanimeworld.in"
     override var name = "AnimeCat"
     override val hasMainPage = true
     override var lang = "hi"
