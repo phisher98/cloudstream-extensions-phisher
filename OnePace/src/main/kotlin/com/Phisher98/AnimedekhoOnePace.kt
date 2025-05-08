@@ -48,7 +48,7 @@ open class OnepaceProvider : MainAPI() {
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
-        val posterUrl = this.selectFirst("img")?.attr("src")
+        val posterUrl = this.selectFirst("img")?.getsrcAttribute()
         val dubtype:Boolean
         val subtype:Boolean
         if (hreftitle.contains("Dub"))
@@ -138,5 +138,17 @@ open class OnepaceProvider : MainAPI() {
     }
 
     data class Media(val url: String, val poster: String? = null, val mediaType: String? = null)
+
+    private fun Element.getsrcAttribute(): String {
+        val src = this.attr("src")
+        val dataSrc = this.attr("data-src")
+        val lazysrc=this.attr("data-lazy-src")
+        return when {
+            src.startsWith("http") -> src
+            dataSrc.startsWith("http") -> dataSrc
+            lazysrc.startsWith("http") -> lazysrc
+            else -> ""
+        }
+    }
 
 }

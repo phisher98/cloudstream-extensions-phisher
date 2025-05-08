@@ -48,7 +48,7 @@ open class OnepaceProvider : MainAPI() {
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
-        val posterUrl = this.selectFirst("img")?.attr("src")
+        val posterUrl = this.selectFirst("img")?.getsrcAttribute()
         val dubtype:Boolean
         val subtype:Boolean
         if (hreftitle.contains("Dub"))
@@ -76,7 +76,6 @@ open class OnepaceProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        Log.d("Phisher",url)
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
         val ArcINT=media.mediaType?.substringAfter("Arc ")
@@ -89,7 +88,6 @@ open class OnepaceProvider : MainAPI() {
             ?: document.selectFirst("meta[property=og:updated_time]")?.attr("content")
                 ?.substringBefore("-"))?.toIntOrNull()
         val lst = element?.select("ul.seasons-lst.anm-a li")
-        Log.d("Phisher","$ArcINT $element $title $lst")
         return if (lst!!.isEmpty()) {
             newMovieLoadResponse(title, url, TvType.Movie, Media(
                 media.url,
@@ -134,7 +132,6 @@ open class OnepaceProvider : MainAPI() {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
-            Log.d("Phisher",link)
             loadExtractor(link,subtitleCallback, callback)
         }
         return true
@@ -142,4 +139,15 @@ open class OnepaceProvider : MainAPI() {
 
     data class Media(val url: String, val poster: String? = null, val mediaType: String? = null)
 
+    private fun Element.getsrcAttribute(): String {
+        val src = this.attr("src")
+        val dataSrc = this.attr("data-src")
+        val lazysrc=this.attr("data-lazy-src")
+        return when {
+            src.startsWith("http") -> src
+            dataSrc.startsWith("http") -> dataSrc
+            lazysrc.startsWith("http") -> lazysrc
+            else -> ""
+        }
+    }
 }
