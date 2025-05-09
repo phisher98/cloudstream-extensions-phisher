@@ -1833,9 +1833,64 @@ fun getfullURL(url: String, mainUrl: String): String {
 }
 
 
-fun getRiveSecretKey(e: Int?, c: List<String>): String {
-    return e?.let { c[it % c.size] } ?: "rive"
+fun hashOuter(e: String): String {
+    var t: Long = 0L // Use Long here
+    for (ch in e) {
+        t = (ch.code + (t shl 6) + (t shl 16) - t) and 0xFFFFFFFFL // Use Long type constant
+    }
+    return t.toString(16) // Convert to hexadecimal
 }
+
+fun hashInner(e: String): String {
+    var t = e
+    var n: Long = 0xDEADBEEFL // Use Long for n
+    for (i in t.indices) {
+        var r = t[i].code
+        r = r xor (17 * i and 0xFF)
+        n = (n shl 5 or (n ushr 27)) and 0xFFFFFFFFL // Use Long type constant
+        n = n xor r.toLong()
+        n = (n * 73244475) and 0xFFFFFFFFL // Use Long type constant
+    }
+    n = n xor (n ushr 16)
+    n = (n * 295559667) and 0xFFFFFFFFL // Use Long type constant
+    n = n xor (n ushr 13)
+    n = (n * 877262033) and 0xFFFFFFFFL // Use Long type constant
+    n = n xor (n ushr 16)
+    return n.toString(16).padStart(8, '0') // Return 8-digit hexadecimal string
+}
+
+fun generateRiveSecret(e: String?, c: List<String>): String {
+    if (e.isNullOrEmpty()) return "rive"
+
+    return try {
+        val r = e
+        val hashed = hashInner(hashOuter(r)) // Apply the hash functions
+        val i = hashed.encodeToByteArray().toBase64() // Base64 encode the result of hashed
+
+        var t: String
+        var n: Int
+
+        if (e.toIntOrNull() == null) {  // If the string is not a number
+            val sum = r.sumOf { it.code }
+            t = c.getOrElse(sum % c.size) { r.encodeToByteArray().toBase64() }
+            n = (sum % i.length) / 2
+        } else {
+            val num = e.toInt()
+            t = c.getOrElse(num % c.size) { r.encodeToByteArray().toBase64() }
+            n = (num % i.length) / 2
+        }
+
+        i.take(n) + t + i.drop(n)
+    } catch (err: Exception) {
+        "topSecret"
+    }
+}
+
+// Extension function for Base64 encoding
+fun ByteArray.toBase64(): String {
+    return android.util.Base64.encodeToString(this, android.util.Base64.NO_WRAP)
+}
+
 
 fun decryptBase64BlowfishEbc(base64Encrypted: String, key: String): String {
     try {

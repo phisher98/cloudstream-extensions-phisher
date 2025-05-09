@@ -4579,6 +4579,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    @SuppressLint("NewApi")
     suspend fun invokeRiveStream(
         id: Int? = null,
         year: Int? = null,
@@ -4595,10 +4596,14 @@ object StreamPlayExtractor : StreamPlay() {
         val appScript =
             scripts.filter { element -> element.attr("src").contains("_app") }.first().attr("src")
         val js = app.get("$RiveStreamAPI$appScript").text
-        val keys = """\["([^"]+)"(,\s?"([^"]+)")*\]""".toRegex().findAll(js).toList().get(1).value
-        val lsKeys =
-            keys.substringAfter("[").substringBefore("]")?.split(",")?.map { it.replace("\"", "") }
-        val secretKey = lsKeys?.let { getRiveSecretKey(id, it) }
+        val regex = """let\s+c\s*=\s*(\[[^]]*])""".toRegex()
+        val allMatches = regex.findAll(js).toList()
+        val firstNonEmptyMatch = allMatches.firstOrNull { it.groupValues[1].length > 2 } // [] is length 2
+        val keyList: List<String> = firstNonEmptyMatch?.let { match ->
+            val arrayText = match.groupValues[1]  // e.g., ["a","b","c"]
+            Regex("\"([^\"]+)\"").findAll(arrayText).map { it.groupValues[1] }.toList()
+        } ?: emptyList()
+        val secretKey = app.get("https://rivestream.supe2372.workers.dev/?input=$id&cList=${keyList.joinToString(",")}").text
         if (sourceList != null) {
             for (source: String in sourceList.data) {
                 try {
@@ -4611,12 +4616,18 @@ object StreamPlayExtractor : StreamPlay() {
                         app.get(sourceStreamLink, timeout = 10).parsedSafe<RiveStreamResponse>()
                     if (sourceJson?.data != null) {
                         sourceJson.data.sources.forEach { source ->
+                            val linkType = if (source.url.contains(".m3u8", ignoreCase = true)) {
+                                ExtractorLinkType.M3U8
+                            } else {
+                                INFER_TYPE
+                            }
+
                             callback.invoke(
                                 newExtractorLink(
                                     "RiveStream ${source.source} ${source.quality}",
                                     "RiveStream ${source.source} ${source.quality}",
                                     url = source.url,
-                                    ExtractorLinkType.M3U8
+                                    type = linkType
                                 ) {
                                     this.referer = ""
                                     this.quality = Qualities.P1080.value
@@ -4625,7 +4636,7 @@ object StreamPlayExtractor : StreamPlay() {
                         }
                     }
                 } catch (e: Exception) {
-                    TODO("Not yet implemented")
+                    Log.d("Error:","Not Found")
                 }
             }
         }
@@ -4656,7 +4667,7 @@ object StreamPlayExtractor : StreamPlay() {
                         }
                     }
                 } catch (e: Exception) {
-                    TODO("Not yet implemented")
+                    Log.d("Error:","Not Found")
                 }
             }
         }
