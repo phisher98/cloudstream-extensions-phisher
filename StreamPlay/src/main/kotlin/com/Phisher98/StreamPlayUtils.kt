@@ -2488,7 +2488,7 @@ suspend fun getPlayer4uUrl(
     val response = app.get(url, referer = referer)
     var script = getAndUnpack(response.text).takeIf { it.isNotEmpty() }
         ?: response.document.selectFirst("script:containsData(sources:)")?.data()
-
+    Log.d("Phisher",script.toString())
     if (script == null) {
         val iframeUrl =
             Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1)
@@ -2501,7 +2501,7 @@ suspend fun getPlayer4uUrl(
         script = getAndUnpack(iframeResponse.text).takeIf { it.isNotEmpty() } ?: return
     }
 
-    val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
+    val m3u8 = Regex("\"hls2\":\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
     callback(newExtractorLink(name, name, m3u8) {
         this.quality=selectedQuality
         this.type=ExtractorLinkType.M3U8

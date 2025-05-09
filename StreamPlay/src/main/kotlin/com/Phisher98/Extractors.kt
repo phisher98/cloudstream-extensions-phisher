@@ -34,6 +34,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlay.Companion.modflixAPI
 import kotlinx.serialization.Serializable
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -1816,7 +1817,16 @@ open class GDFlix : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val newUrl = url.replace(mainUrl, "https://new6.gdflix.dad")
+        val newUrl = try {
+            app.get(url)
+                .document
+                .selectFirst("meta[http-equiv=refresh]")
+                ?.attr("content")
+                ?.substringAfter("url=")
+        } catch (e: Exception) {
+            Log.e("Error", "Failed to fetch redirect: ${e.localizedMessage}")
+            return
+        } ?: return
         val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ").orEmpty()

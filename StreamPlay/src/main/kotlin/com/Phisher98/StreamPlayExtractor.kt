@@ -206,7 +206,7 @@ object StreamPlayExtractor : StreamPlay() {
         }.amap { (id, nume, type) ->
             if (!nume.contains("trailer")) {
                 val source = app.post(
-                    url = "$apiUrl/wp-admin/admin-ajax.php",
+                    url = "$MultimoviesApi/wp-admin/admin-ajax.php",
                     data = mapOf(
                         "action" to "doo_player_ajax",
                         "post" to id,
@@ -221,7 +221,6 @@ object StreamPlayExtractor : StreamPlay() {
                     !link.contains("youtube") -> {
                         loadExtractor(link, referer = apiUrl, subtitleCallback, callback)
                     }
-
                     else -> Log.d("Error", "Not Found")
                 }
             }
@@ -1712,7 +1711,7 @@ object StreamPlayExtractor : StreamPlay() {
                     return
                 }
 
-                val hrefPatternRegex = Regex("""(?i)<a\s+href="([^"]*?\b$searchTitle\b[^"]*?\b$year\b[^"]*?)"[^>]*>""")
+                val hrefPatternRegex = Regex("""(?i)<a\s+href="([^"]+)"[^>]*title="[^"]*\b$searchTitle\b[^"]*\b$year\b[^"]*"[^>]*>""")
                 val seasonPattern = season?.let { "(?i)(S0?$it|Season 0?$it)" }
                 val episodePattern = episode?.let { "(?i)(Episode $it)" }
 
@@ -3940,60 +3939,62 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val doc = app.get("https://allmovieland.link/player.js?v=60%20128").toString()
-        val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
-        val host = domainRegex.find(doc)?.groups?.get(1)?.value ?: ""
-        val res = app.get(
-            "$host/play/$imdbId",
-            referer = "$allmovielandAPI/"
-        ).document.selectFirst("script:containsData(playlist)")?.data()
-            ?.substringAfter("{")
-            ?.substringBefore(";")?.substringBefore(")")
-        val json = tryParseJson<AllMovielandPlaylist>("{${res ?: return}")
-        val headers = mapOf("X-CSRF-TOKEN" to "${json?.key}")
-        val serverRes = app.get(
-            fixUrl(
-                json?.file
-                    ?: return, host
-            ), headers = headers, referer = "$allmovielandAPI/"
-        ).text.replace(Regex(""",\s*\[]"""), "")
-        val servers =
-            tryParseJson<ArrayList<AllMovielandServer>>(serverRes).let { server ->
-                if (season == null) {
-                    server?.map { it.file to it.title }
-                } else {
-                    server?.find { it.id.equals("$season") }?.folder?.find {
-                        it.episode.equals(
-                            "$episode"
-                        )
-                    }?.folder?.map {
-                        it.file to it.title
-                    }
-                }
-            }
+        runCatching {
+            val playerScript = app.get("https://allmovieland.link/player.js?v=60%20128").toString()
+            val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
+            val host = domainRegex.find(playerScript)?.groupValues?.getOrNull(1) ?: return
 
-        servers?.amap { (server, lang) ->
-            val path = app.post(
-                "${host}/playlist/${server ?: return@amap}.txt",
+            val resData = app.get(
+                "$host/play/$imdbId",
+                referer = "$allmovielandAPI/"
+            ).document.selectFirst("script:containsData(playlist)")?.data()
+                ?.substringAfter("{")?.substringBefore(";")?.substringBefore(")") ?: return
+
+            val json = tryParseJson<AllMovielandPlaylist>("{$resData}") ?: return
+            val headers = mapOf(("X-CSRF-TOKEN" to "${json.key}"))
+
+            val serverJson = app.get(
+                fixUrl(json.file ?: return, host),
                 headers = headers,
                 referer = "$allmovielandAPI/"
-            ).text
-            safeApiCall {
-                callback.invoke(
-                    newExtractorLink(
-                        "AllMovieLand-${lang}",
-                        "AllMovieLand-${lang}",
-                        url = path,
-                        ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = allmovielandAPI
-                        this.quality = Qualities.Unknown.value
-                    }
-                )
-            }
-        }
+            ).text.replace(Regex(""",\\s*\\/"""), "")
 
+            val servers = tryParseJson<ArrayList<AllMovielandServer>>(serverJson)?.let { list ->
+                if (season == null) {
+                    list.mapNotNull { it.file?.let { file -> file to it.title.orEmpty() } }
+                } else {
+                    list.find { it.id == season.toString() }
+                        ?.folder?.find { it.episode == episode.toString() }
+                        ?.folder?.mapNotNull { it.file?.let { file -> file to it.title.orEmpty() } }
+                }
+            } ?: return
+
+            servers.amap { (server, lang) ->
+                runCatching {
+                    val playlistUrl = app.post(
+                        "$host/playlist/$server.txt",
+                        headers = headers,
+                        referer = "$allmovielandAPI/"
+                    ).text
+
+                    callback.invoke(
+                        newExtractorLink(
+                            "AllMovieLand-$lang",
+                            "AllMovieLand-$lang",
+                            url = playlistUrl,
+                            type = ExtractorLinkType.M3U8
+                        ) {
+                            referer = allmovielandAPI
+                            quality = Qualities.Unknown.value
+                        }
+                    )
+                }.onFailure { it.printStackTrace() }
+            }
+        }.onFailure {
+            it.printStackTrace()
+        }
     }
+
 
     suspend fun invokeEmovies(
         title: String? = null,
@@ -4173,7 +4174,7 @@ object StreamPlayExtractor : StreamPlay() {
         val doc = app.get(hrefPattern, interceptor = cfInterceptor).document
 
         if (season == null) {
-            doc.select("h5 > a").amap { element ->
+            doc.select("h5 a").amap { element ->
                 extractMdrive(element.attr("href")).forEach { serverUrl ->
                     processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                 }
@@ -4221,7 +4222,7 @@ object StreamPlayExtractor : StreamPlay() {
             serverUrl.contains("hubcloud", ignoreCase = true) -> {
                 HubCloud().getUrl(serverUrl, "MoviesDrive", subtitleCallback, callback)
             }
-            serverUrl.contains("gdlink", ignoreCase = true) || serverUrl.contains("gdflix", ignoreCase = true) -> {
+            serverUrl.contains("gdlink", ignoreCase = true) -> {
                 GDFlix().getUrl(serverUrl, referer = "MoviesDrive", subtitleCallback = subtitleCallback, callback = callback)
             }
             else -> {
@@ -5090,37 +5091,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    /*
-    suspend fun invokeUira(
-        imdbId: String? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val sources = listOf("vidsrcsu","vidapi","soapertv","4k","vidsrcvip","viet")
-        for(source in sources)
-        {
-            try {
-                val url = if(season == null) {"$UiraApi/$source/$imdbId"} else {"$UiraApi/$source/$imdbId?s=$season&e=$episode"}
-                val response = app.get(url, timeout = 10).parsedSafe<UiraResponse>()
-                if (response != null) {
-                    val sourceTxt = response.sourceId?.split("_")?.joinToString(" ") { word -> word.replaceFirstChar { it.uppercaseChar() } }
-                    callback.invoke(
-                        ExtractorLink(
-                            "Uira [${sourceTxt}]",
-                            "Uira [${sourceTxt}]",
-                            response?.stream?.playlist.toString(),
-                            "",
-                            Qualities.P1080.value,
-                            ExtractorLinkType.M3U8
-                        )
-                    )
-                }
-            } catch (e: Exception) {}
-        }
-    }
-    //We should try to crack source and most of its sources are already available in StreamPlay like catflix,FlixHQ Etc also API url is dynamic keeps on changing
-     */
+
     suspend fun invokePlayer4U(
         title: String? = null,
         season: Int? = null,
@@ -5164,7 +5135,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val firstPart = splitName.getOrNull(0)?.replace(title.toString(), "")
                     ?.replace(year.toString(), "")?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
                 val nameFormatted = "Player4U ${
-                    if (firstPart.isNullOrEmpty()) {
+                    if (firstPart.isEmpty()) {
                         ""
                     } else {
                         "{$firstPart}"
