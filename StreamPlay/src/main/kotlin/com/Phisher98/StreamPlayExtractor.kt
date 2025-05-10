@@ -43,6 +43,8 @@ import java.time.Instant
 import java.util.Locale
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.net.URLDecoder
+import java.net.URLEncoder
 import kotlin.math.max
 
 
@@ -4582,10 +4584,8 @@ object StreamPlayExtractor : StreamPlay() {
     @SuppressLint("NewApi")
     suspend fun invokeRiveStream(
         id: Int? = null,
-        year: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
         val sourceApiUrl =
@@ -4612,67 +4612,59 @@ object StreamPlayExtractor : StreamPlay() {
                     } else {
                         "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=${secretKey}"
                     }
-                    val sourceJson =
-                        app.get(sourceStreamLink, timeout = 10).parsedSafe<RiveStreamResponse>()
+
+                    val sourceJson = app.get(sourceStreamLink, timeout = 10).parsedSafe<RiveStreamResponse>()
+
                     if (sourceJson?.data != null) {
+                        Log.d("RiveStreamResponse", "Sources found for service: $source")
                         sourceJson.data.sources.forEach { source ->
-                            val linkType = if (source.url.contains(".m3u8", ignoreCase = true)) {
-                                ExtractorLinkType.M3U8
+
+                            if (source.url.contains("m3u8-proxy?url")) {
+                                val href = URLDecoder.decode(
+                                    source.url.substringAfter("m3u8-proxy?url=").substringBefore("&headers="),
+                                    "UTF-8"
+                                )
+                                callback.invoke(
+                                    newExtractorLink(
+                                        "RiveStream ${source.source} ${source.quality}",
+                                        "RiveStream ${source.source} ${source.quality}",
+                                        url = href,
+                                        type = ExtractorLinkType.M3U8
+                                    ) {
+                                        this.referer = "https://megacloud.store/"
+                                        this.quality = Qualities.P1080.value
+                                    }
+                                )
                             } else {
-                                INFER_TYPE
+                                val linkType =
+                                    if (source.url.contains(".m3u8", ignoreCase = true)) {
+                                        ExtractorLinkType.M3U8
+                                    } else {
+                                        INFER_TYPE
+                                    }
+
+                                callback.invoke(
+                                    newExtractorLink(
+                                        "RiveStream ${source.source} ${source.quality} (VLC)",
+                                        "RiveStream ${source.source} ${source.quality} (VLC)",
+                                        url = source.url,
+                                        type = linkType
+                                    ) {
+                                        this.referer = ""
+                                        this.quality = Qualities.P1080.value
+                                    }
+                                )
                             }
-
-                            callback.invoke(
-                                newExtractorLink(
-                                    "RiveStream ${source.source} ${source.quality}",
-                                    "RiveStream ${source.source} ${source.quality}",
-                                    url = source.url,
-                                    type = linkType
-                                ) {
-                                    this.referer = ""
-                                    this.quality = Qualities.P1080.value
-                                }
-                            )
                         }
+                    } else {
+                        Log.d("RiveStreamResponse", "No data returned for service: $source")
                     }
                 } catch (e: Exception) {
-                    Log.d("Error:","Not Found")
+                    Log.e("RiveStreamError", "Failed to process source: $source")
                 }
             }
+
         }
-
-        val embedApi = "$RiveStreamScraperAPI/api/embeds?api_key=d64117f26031a428449f102ced3aba73"
-        val embedSourceList = app.get(embedApi).parsedSafe<RiveStreamSource>()
-        if (embedSourceList != null) {
-            for (source in embedSourceList.data) {
-
-                val sourceStreamLink = if (season == null) {
-                    "$RiveStreamScraperAPI/api/embed?provider=$source&id=$id&api_key=d64117f26031a428449f102ced3aba73"
-                } else {
-                    "$RiveStreamScraperAPI/api/embed?provider=$source&id=$id&season=$season&episode=$episode&api_key=d64117f26031a428449f102ced3aba73"
-                }
-
-                val sourceJson =
-                    app.get(sourceStreamLink, timeout = 10).parsedSafe<RivestreamEmbedResponse>()
-                try {
-                    if (sourceJson?.data != null) {
-                        for (source in sourceJson.data.sources) {
-                            loadSourceNameExtractor(
-                                "Rivestream",
-                                source.link,
-                                "",
-                                subtitleCallback,
-                                callback
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.d("Error:","Not Found")
-                }
-            }
-        }
-
-
     }
 
     suspend fun invokeVidSrcViP(
