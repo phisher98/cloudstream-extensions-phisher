@@ -1391,7 +1391,7 @@ object StreamPlayExtractor : StreamPlay() {
 
      */
 
-    suspend fun invokeHianime(
+    internal suspend fun invokeHianime(
         animeIds: List<String?>? = null,
         url: String?,
         episode: Int? = null,

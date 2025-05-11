@@ -44,7 +44,7 @@ import java.net.URI
 import kotlin.math.roundToInt
 
 class HiAnime : MainAPI() {
-    override var mainUrl = "https://hianime.bz"
+    override var mainUrl = "https://hianimez.to"
     override var name = "HiAnime"
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -234,6 +234,7 @@ class HiAnime : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         try {
+            Log.d("Phisher",data)
             val animeEpisodeId = data.substringAfterLast("/").substringBeforeLast("?")
             val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
             val epId = data.substringAfterLast("|").substringAfter("=")

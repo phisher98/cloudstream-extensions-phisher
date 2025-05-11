@@ -30,7 +30,6 @@ import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
 import com.phisher98.StreamPlayExtractor.invokeMultimovies
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
-import com.phisher98.StreamPlayExtractor.invokeNowTv
 import com.phisher98.StreamPlayExtractor.invokePlaydesi
 import com.phisher98.StreamPlayExtractor.invokePlayer4U
 import com.phisher98.StreamPlayExtractor.invokePrimeWire
@@ -78,7 +77,6 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -138,7 +136,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val filmxyAPI = "https://www.filmxy.online"
         const val MOVIE_API = BuildConfig.MOVIE_API
         const val kimcartoonAPI = "https://kimcartoon.com.co"
-        const val hianimeAPI = "https://hianime.bz"
+        const val hianimeAPI = "https://hianimez.to"
         const val AnimeKai= "https://animekai.to"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
@@ -188,7 +186,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val TomAPI="https://tom.autoembed.cc"
         //const val HinAutoAPI="https://hin.autoembed.cc"
         const val RiveStreamAPI="https://rivestream.org"
-        const val RiveStreamScraperAPI="https://scrapper.rivestream.org"
         const val VidSrcVip="https://vidsrc.vip"
         const val Primewire="https://www.primewire.tf"
         const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
@@ -1211,6 +1208,7 @@ data class MediaDetail(
 @JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
 @JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
 )
+
     class CloudflareDnsInterceptor : Interceptor {
         // Use a static flag to remember if proxy should always be used
         companion object {

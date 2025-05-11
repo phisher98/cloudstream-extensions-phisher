@@ -22,7 +22,7 @@ cloudstream {
     )
     language = "hi"
 
-    iconUrl = "https://hdhub4u.soccer/wp-content/uploads/2021/05/hdhub4ulogo.png"
+    iconUrl = "https://hdhub4u.mn/hdhub4ulogo.webp"
 
     isCrossPlatform = true
 }
