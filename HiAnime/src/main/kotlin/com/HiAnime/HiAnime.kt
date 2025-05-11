@@ -141,7 +141,6 @@ class HiAnime : MainAPI() {
         val poster = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
-        Log.d("Phisher",poster.toString())
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
 
@@ -229,85 +228,88 @@ class HiAnime : MainAPI() {
     }
 
     override suspend fun loadLinks(
-            data: String,
-            isCasting: Boolean,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
-        val epId = data.split("|").last().split("=").last()
-        val servers: List<String> =
-                app.get("$mainUrl/ajax/v2/episode/servers?episodeId=$epId")
-                        .parsed<Response>()
-                        .getDocument()
-                        .select(".server-item[data-type=raw][data-id],.server-item[data-type=$dubType][data-id]")
-                        .map { it.attr("data-id") }
-        // val extractorData = "https://ws1.rapid-cloud.ru/socket.io/?EIO=4&transport=polling"
-        val selectedTypes = app.get("$mainUrl/ajax/v2/episode/servers?episodeId=$epId")
-            .parsed<Response>()
-            .getDocument()
-            .select(".server-item[data-type]")
-            .map { it.attr("data-type") }
-
-// Set `dubType` to "raw" if a raw type is present in the selected servers
-        val type = if (selectedTypes.contains("raw")) "sub" else dubType
-        // Prevent duplicates
-        val gson = Gson()
-
-        servers.distinct().amap {
+        try {
             val animeEpisodeId = data.substringAfterLast("/").substringBeforeLast("?")
-            val serverlist = listOf("vidstreaming", "vidcloud") //Vidstream=HD-1 & vidcloud=HD-2
-            for (server in serverlist) {
-                Log.d("Phisher","$data $animeEpisodeId $epId")
-                //val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$epId&server=$server&category=$type"
-                //"https://consumet.8man.me/anime/zoro/watch?episodeId=sakamoto-days-19431$episode$132565$dub&server=vidstreaming"
-                val api= "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId${'$'}episode$$epId$$type&server=$server"
-                try {
-                    val responseText = app.get(api, referer = api).text
+            val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
+            val epId = data.substringAfterLast("|").substringAfter("=")
 
-                    val response = try {
-                        gson.fromJson(responseText, HiAnimeResponse::class.java)
-                    } catch (e: JsonSyntaxException) {
-                        null
-                    }
+            // Single network call for servers
+            val doc = app.get("$mainUrl/ajax/v2/episode/servers?episodeId=$epId")
+                .parsed<Response>()
+                .getDocument()
 
-                    if (response == null) {
-                        Log.e("Error:", "Failed to parse Root response: Data is null")
-                        continue
-                    }
+            val selectedTypes = doc.select(".server-item[data-type]")
+                .map { it.attr("data-type") }
 
-                    response.sources.firstOrNull { it.isM3U8 }?.let { source ->
-                        val m3u8headers = mapOf(
-                            "Referer" to "https://megacloud.club/",
-                            "Origin" to "https://megacloud.club/"
-                        )
-                        val serverName = if (server.equals("vidstreaming", ignoreCase = true)) "HD-1" else "HD-2"
+            val effectiveType = if (selectedTypes.contains("raw")) "sub" else dubType
 
-                        M3u8Helper.generateM3u8(
-                            "⌜ HiAnime ⌟ | ${serverName.uppercase()} | ${type.uppercase()}",
-                            source.url,
-                            mainUrl,
-                            headers = m3u8headers
-                        ).forEach(callback)
-                    }
+            val servers = doc.select(".server-item[data-type=$dubType][data-id],.server-item[data-type=raw][data-id]")
+                .map { it.attr("data-id") }
+                .distinct()
 
-                    response.subtitles.forEach { subtitle ->
-                        subtitleCallback.invoke(
-                            SubtitleFile(
-                                lang = subtitle.lang,
-                                url = subtitle.url
+            val gson = Gson()
+            val serverList = listOf("vidstreaming", "vidcloud") // HD-1 and HD-2
+
+            servers.amap { _ ->
+                for (server in serverList) {
+                    val api = "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId\$episode\$$epId\$$effectiveType&server=$server"
+
+                    try {
+                        val responseText = app.get(api, referer = api).text
+                        val response = gson.fromJson(responseText, HiAnimeResponse::class.java)
+
+                        if (response?.sources.isNullOrEmpty()) {
+                            Log.e("HiAnime", "No sources found for $api")
+                            continue
+                        }
+
+                        // Extract first M3U8 source
+                        response.sources.firstOrNull { it.isM3U8 }?.let { source ->
+                            val serverName = if (server.equals("vidstreaming", ignoreCase = true)) "HD-1" else "HD-2"
+                            val m3u8headers = mapOf(
+                                "Referer" to "https://megacloud.club/",
+                                "Origin" to "https://megacloud.club/"
                             )
-                        )
+
+                            M3u8Helper.generateM3u8(
+                                "⌜ HiAnime ⌟ | ${serverName.uppercase()} | ${effectiveType.uppercase()}",
+                                source.url,
+                                mainUrl,
+                                headers = m3u8headers
+                            ).forEach(callback)
+                        }
+
+                        // Subtitles
+                        response.subtitles.forEach { subtitle ->
+                            subtitleCallback(
+                                SubtitleFile(
+                                    lang = subtitle.lang,
+                                    url = subtitle.url
+                                )
+                            )
+                        }
+
+                    } catch (e: JsonSyntaxException) {
+                        Log.e("HiAnime", "JSON parsing error for $api: ${e.localizedMessage}")
+                    } catch (e: Exception) {
+                        Log.e("HiAnime", "Failed to fetch or parse data from $api: ${e.localizedMessage}")
                     }
-                }
-                catch (e: Exception) {
-                    Log.e("Error:", "Error fetching or parsing response: ${e.message}")
                 }
             }
-        }
 
-        return true
+            return true
+
+        } catch (e: Exception) {
+            Log.e("HiAnime", "Critical error in loadLinks: ${e.localizedMessage}")
+            return false
+        }
     }
+
 
     data class Response(
         @SerializedName("status") val status: Boolean,
