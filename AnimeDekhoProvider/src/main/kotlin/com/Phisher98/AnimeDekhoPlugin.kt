@@ -13,7 +13,7 @@ class AnimeDekhoPlugin: BasePlugin() {
         registerMainAPI(AnimeDekhoProvider())
         registerMainAPI(OnepaceProvider())
         registerMainAPI(HindiSubAnime())
-        registerExtractorAPI(Streamruby())
+        registerExtractorAPI(StreamRuby())
         registerExtractorAPI(VidStream())
         registerExtractorAPI(Vidmolynet())
         registerExtractorAPI(GDMirrorbot())

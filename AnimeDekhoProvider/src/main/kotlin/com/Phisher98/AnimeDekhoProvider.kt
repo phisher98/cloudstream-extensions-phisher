@@ -93,7 +93,7 @@ open class AnimeDekhoProvider : MainAPI() {
                 this.year = year
             }
         } else {
-            @Suppress("NAME_SHADOWING") val episodes = document.select("ul.seasons-lst li").mapNotNull {
+            val episodes = document.select("ul.seasons-lst li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.ownText() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
                 val poster=it.selectFirst("div > div > figure > img")?.attr("src")
@@ -135,18 +135,46 @@ open class AnimeDekhoProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
-        val media = parseJson<Media>(data)
-        val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
-        val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
-        for (i in 0..4) {
-            val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
-                .document.selectFirst("iframe")?.attr("src")
-                ?: throw ErrorLoadingException("no iframe found")
-            Log.d("Phisher",link)
-            loadExtractor(link,subtitleCallback, callback)
+        val media = runCatching { parseJson<Media>(data) }.getOrElse {
+            Log.e("Error:", "Failed to parse media JSON $it" )
+            return false
         }
-        return true
+
+        val bodyClass = runCatching {
+            app.get(media.url).document.selectFirst("body")?.attr("class")
+        }.getOrNull()
+
+        val term = Regex("""(?:term|postid)-(\d+)""").find(bodyClass ?: "")
+            ?.groupValues?.getOrNull(1)
+
+        if (term.isNullOrEmpty()) {
+            Log.e("Error:", "No postid/term ID found in body class: $bodyClass")
+            return false
+        }
+
+        var success = false
+        for (i in 0..4) {
+            val iframeUrl = runCatching {
+                app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
+                    .document.selectFirst("iframe")?.attr("src")
+            }.getOrNull()
+
+            if (!iframeUrl.isNullOrEmpty()) {
+                Log.d("Error:", "Found iframe: $iframeUrl")
+                runCatching {
+                    loadExtractor(iframeUrl, subtitleCallback, callback)
+                    success = true
+                }.onFailure {
+                    Log.e("Error:", "Failed to load extractor for $iframeUrl $it")
+                }
+            } else {
+                Log.w("Error:", "No iframe found for iteration $i")
+            }
+        }
+
+        return success
     }
+
 
     data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
 
