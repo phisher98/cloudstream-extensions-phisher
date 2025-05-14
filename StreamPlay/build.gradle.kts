@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 266
+version = 267
 android {
     buildFeatures {
         buildConfig = true

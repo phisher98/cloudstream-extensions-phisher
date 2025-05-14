@@ -758,7 +758,7 @@ open class Chillx : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
 
-            val password = "bKJxbNP4iAnqLBUabDyoYRAalEwhYqwX"
+            val password = "#w8pukc]MoiBhH1{QlwOFF^I7pU]N9q^"
             val decryptedData = decryptAESCBC(encodedString, password)
                 ?: throw Exception("Decryption failed")
 

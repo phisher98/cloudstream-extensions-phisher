@@ -30,5 +30,6 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(VidHidePro6())
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Streamcasthub())
+        registerExtractorAPI(Dhcplay())
         }
 }

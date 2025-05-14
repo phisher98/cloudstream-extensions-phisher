@@ -26,6 +26,12 @@ class MultimoviesAIO: StreamWishExtractor() {
     override var requiresReferer = true
 }
 
+class Dhcplay: VidHidePro() {
+    override var name = "DHC Play"
+    override var mainUrl = "https://dhcplay.com"
+    override var requiresReferer = true
+}
+
 class Multimovies: StreamWishExtractor() {
     override var name = "Multimovies Cloud"
     override var mainUrl = "https://multimovies.cloud"
