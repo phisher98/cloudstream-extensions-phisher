@@ -59,7 +59,7 @@ open class Chillx : ExtractorApi() {
             val res = app.get(url, referer = referer ?: mainUrl, headers = headers).toString()
 
             // Extract encoded string from response
-            val encodedString = Regex("(?:const|let|var|window\\.\\w+)\\s+\\w*\\s*=\\s*'(.*?)'").find(res)
+            val encodedString = Regex("(?:const|let|var|window\\.\\w+)\\s+\\w*\\s*=\\s*'([^']{30,})'").find(res)
                 ?.groupValues?.get(1)?.trim() ?: ""
             if (encodedString.isEmpty()) {
                 throw Exception("Encoded string not found")
