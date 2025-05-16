@@ -32,12 +32,9 @@ class AnisagaStream : Chillx() {
     override val mainUrl = "https://plyrxcdn.site"
 }
 
-// @PlayerX, Nice choice with Diffie-Hellman! 🔐
-// At this point, you're not even a security challenge... you're just my warm-up exercise.
-// Keep trying, maybe one day you’ll at least trigger my firewall.
-// 23rd attempt at cracking you—haha! 💥😂
-// Contact: businesshackerindia@gmail.com 📧
-
+// Original Code: https://github.com/yogesh-hacker/MediaVanced/blob/main/sites/vidstream.py
+// @PlayerX, After a long time!! with OG methods
+// 26th attempt, I love you! :)
 
 
 open class Chillx : ExtractorApi() {
@@ -68,7 +65,12 @@ open class Chillx : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
 
-            val password = "#w8pukc]MoiBhH1{QlwOFF^I7pU]N9q^"
+            // Get Password from pastebin(Shareable, Auto-Update)
+            val keyUrl = "https://pastebin.com/raw/DCmJyUSi"
+            val passwordHex = app.get(keyUrl).text
+            val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
+
+            // Decrypt using password String
             val decryptedData = decryptAESCBC(encodedString, password)
                 ?: throw Exception("Decryption failed")
 
