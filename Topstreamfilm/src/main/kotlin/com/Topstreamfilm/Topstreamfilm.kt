@@ -74,7 +74,7 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
                     val href = it.select("a").map {
                         it.attr("href")
                     }.toString()
-                    val ep =it.text().substringAfter("x").toIntOrNull()
+                    val ep =name.substringAfter("Episode").trim().toIntOrNull()
                     val season = it.text().substringBefore("x").trim().toIntOrNull()
                     episodes.add(
                         newEpisode(href)
