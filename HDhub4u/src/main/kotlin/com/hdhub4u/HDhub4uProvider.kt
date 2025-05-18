@@ -32,7 +32,7 @@ import org.jsoup.select.Elements
 
 
 class HDhub4uProvider : MainAPI() {
-    override var mainUrl = "https://hdhub4u.mn/?re=hdhub"
+    override var mainUrl = "https://hdhub4u.do/?re=hdhub"
     override var name = "HDHub4U"
     override var lang = "hi"
     override val hasMainPage = true
