@@ -33,6 +33,7 @@ import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
@@ -251,7 +252,7 @@ class StreamPlayAnime : MainAPI() {
         val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
 
-        argamap(
+        runAllAsync(
             { invokeHianime(zoro?.keys?.toList(), hianimeUrl, episode, subtitleCallback, callback) },
             {
                 malsync?.animepahe?.values?.firstNotNullOfOrNull { it["title"] }?.let {

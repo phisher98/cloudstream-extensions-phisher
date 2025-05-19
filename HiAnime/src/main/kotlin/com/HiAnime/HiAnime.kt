@@ -23,7 +23,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.getDurationFromString
@@ -36,7 +35,7 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.phisher98.BuildConfig
+import com.phisher98.BuildConfig.WASMAPI
 import kotlinx.coroutines.delay
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -249,7 +248,7 @@ class HiAnime : MainAPI() {
         try {
             val dubType = data.removePrefix("$mainUrl/").substringBefore("|").ifEmpty { "raw" }
             val hrefPart = data.substringAfterLast("|")
-            val animeEpisodeId = hrefPart.substringAfterLast("/").substringBefore("?")
+            //val animeEpisodeId = hrefPart.substringAfterLast("/").substringBefore("?")
             val epId = hrefPart.substringAfter("ep=")
 
             val doc = app.get("$mainUrl/ajax/v2/episode/servers?episodeId=$epId")
@@ -262,69 +261,57 @@ class HiAnime : MainAPI() {
             val effectiveType = if (selectedTypes.contains("raw")) "sub" else dubType
 
             val servers = doc.select(".server-item[data-type=$dubType][data-id], .server-item[data-type=raw][data-id]")
-                .map { it.attr("data-id") }
-                .distinct()
-
-            val gson = Gson()
-            val serverList = listOf("vidstreaming", "vidcloud") // HD-1 and HD-2
-
-            servers.amap { _ ->
-                for (server in serverList) {
-                    val api = "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId\$episode\$$epId\$$effectiveType&server=$server"
-
+                .mapNotNull {
+                    val id = it.attr("data-id")
+                    val label = it.selectFirst("a.btn")?.text()?.trim()
+                    if (id.isNotEmpty() && label != null) {
+                        id to label
+                    } else {
+                        null
+                    }
+                }.distinctBy { it.first }
+            servers.forEach { (id, label) ->
+                    val sourceurl = app.get("${mainUrl}/ajax/v2/episode/sources?id=$id").parsedSafe<EpisodeServers>()?.link
                     var attempt = 0
                     var success = false
-
                     while (attempt < 3 && !success) {
                         try {
-                            val responseText = app.get(api, referer = api).text
-                            val response = gson.fromJson(responseText, HiAnimeResponse::class.java)
-
-                            if (response?.sources.isNullOrEmpty()) {
-                                Log.w("HiAnime", "Empty sources for $api on attempt $attempt")
-                                attempt++
-                                continue
-                            }
-
-                            response.sources.firstOrNull { it.isM3U8 }?.let { source ->
-                                val serverName = if (server.equals("vidstreaming", ignoreCase = true)) "HD-1" else "HD-2"
-                                val m3u8headers = mapOf(
-                                    "Referer" to "https://megacloud.club/",
-                                    "Origin" to "https://megacloud.club/"
-                                )
-
+                            val api = "$WASMAPI${sourceurl}&referrer=$mainUrl"
+                            val sourceRes = app.get(api).parsedSafe<HiAnimeAPI>()
+                            val m3u8 = sourceRes?.sources?.firstOrNull()?.file
+                            val m3u8headers = mapOf(
+                                "Referer" to "https://megacloud.club/",
+                                "Origin" to "https://megacloud.club/"
+                            )
+                            if (!m3u8.isNullOrEmpty()) {
                                 M3u8Helper.generateM3u8(
-                                    "⌜ HiAnime ⌟ | ${serverName.uppercase()} | ${effectiveType.uppercase()}",
-                                    source.url,
+                                    "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
+                                    m3u8,
                                     mainUrl,
                                     headers = m3u8headers
                                 ).forEach(callback)
                             }
 
-                            response.subtitles.forEach { subtitle ->
+                            sourceRes?.tracks?.forEach { subtitle ->
                                 subtitleCallback(
                                     SubtitleFile(
-                                        lang = subtitle.lang,
-                                        url = subtitle.url
+                                        lang = subtitle.label,
+                                        url = subtitle.file
                                     )
                                 )
                             }
-
-                            success = true // only reached if all above succeeded
+                            success = true
                         } catch (e: JsonSyntaxException) {
-                            Log.e("HiAnime", "JSON error for $api: ${e.localizedMessage}")
-                            break // no point retrying if JSON is invalid
+                            Log.e("HiAnime", "JSON error for : ${e.localizedMessage}")
+                            break
                         } catch (e: Exception) {
-                            Log.w("HiAnime", "Attempt ${attempt + 1} failed for $api: ${e.localizedMessage}")
+                            Log.w("HiAnime", "Attempt ${attempt + 1} failed for: ${e.localizedMessage}")
                             attempt++
-                            delay(500L) // wait before retrying
+                            delay(500L)
                         }
                     }
-                }
             }
-
             return true
-
         } catch (e: Exception) {
             Log.e("HiAnime", "Critical error in loadLinks: ${e.localizedMessage}")
             return false
@@ -350,10 +337,16 @@ class HiAnime : MainAPI() {
     // HiAnime Response
 
     data class HiAnimeResponse(
+        val headers: HiAnimeHeaders,
         val intro: HiAnimeIntro,
         val outro: HiAnimeOutro,
         val sources: List<HiAnimeSource>,
         val subtitles: List<HiAnimeSubtitle>,
+    )
+
+    data class HiAnimeHeaders(
+        @JsonProperty("Referer")
+        val referer: String,
     )
 
     data class HiAnimeIntro(
@@ -378,7 +371,34 @@ class HiAnime : MainAPI() {
     )
 
 
-// Metadata
+    data class HiAnimeAPI(
+        val sources: List<Source>,
+        val tracks: List<Track>,
+    )
+
+    data class Source(
+        val file: String,
+        val type: String,
+    )
+
+    data class Track(
+        val file: String,
+        val label: String,
+    )
+
+    data class EpisodeServers(
+        val type: String,
+        val link: String,
+        val server: Long,
+        val sources: List<Any?>,
+        val tracks: List<Any?>,
+        val htmlGuide: String,
+    )
+
+
+
+
+    // Metadata
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class MetaImage(
         @JsonProperty("coverType") val coverType: String?,

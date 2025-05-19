@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 7
+version = 8
 
 android {
     buildFeatures {
@@ -10,7 +10,7 @@ android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
-        buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
+        buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
     }
 }
 
