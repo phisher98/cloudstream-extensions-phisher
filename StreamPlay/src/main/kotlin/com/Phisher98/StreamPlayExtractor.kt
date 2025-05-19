@@ -5195,6 +5195,43 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    suspend fun invoke4khdhub(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (title.isNullOrBlank()) return
+
+        val searchUrl = "$Fourkhdhub/?s=$title"
+        val searchDoc = app.get(searchUrl).document
+        val link = searchDoc
+            .selectFirst("div.card-grid > a:has(div.movie-card-content:contains(${year ?: ""}))")
+            ?.attr("href") ?: return
+
+        val doc = app.get("$Fourkhdhub$link").document
+
+        val links = if (season == null) {
+            doc.select("div.download-item a")
+        } else {
+            val seasonText = "S${season.toString().padStart(2, '0')}"
+            val episodeText = "E${episode.toString().padStart(2, '0')}"
+            doc.select("div.episode-download-item:has(div.episode-file-title:contains(${seasonText}${episodeText}))")
+                .flatMap { it.select("div.episode-links > a") }
+        }
+        links.amap {
+            val source = it.attr("href")
+            loadSourceNameExtractor(
+                "4Khdhub",
+                source,
+                "",
+                subtitleCallback,
+                callback
+            )
+        }
+    }
 }
 
 

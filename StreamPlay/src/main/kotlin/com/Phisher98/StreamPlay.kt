@@ -91,6 +91,7 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeDramacool
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
@@ -189,7 +190,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val VidSrcVip="https://vidsrc.vip"
         const val Primewire="https://www.primewire.tf"
         const val consumetFlixhqAPI="https://consumet.8man.me/movies/flixhq"
-        //const val WASMAPI=BuildConfig.WASMAPI
         const val AnimeOwlAPI="https://animeowl.me"
         const val Film1kApi="https://www.film1k.com"
         const val HindMoviezApi= "https://hindmoviez.co.in"
@@ -201,6 +201,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Dramacool="https://stremio-dramacool-addon.xyz"
         const val Xprime="https://xprime.tv"
         const val Vidzee="https://vidzee.wtf"
+        const val Fourkhdhub="https://4khdhub.fans"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -1024,8 +1025,15 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
-
-
+            {
+                if (!res.isBollywood) invoke4khdhub(
+                res.title,
+                res.year,
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback)
+            },
 
             //Subtitles Invokes
             {
