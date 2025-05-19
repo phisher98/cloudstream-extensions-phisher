@@ -76,11 +76,9 @@ open class Raretoon : Chillx() {
     override val requiresReferer = true
 }
 
-// @PlayerX, Nice choice with Diffie-Hellman! 🔐
-// At this point, you're not even a security challenge... you're just my warm-up exercise.
-// Keep trying, maybe one day you’ll at least trigger my firewall.
-// 23rd attempt at cracking you—haha! 💥😂
-// Contact: businesshackerindia@gmail.com 📧
+// Original Code: https://github.com/yogesh-hacker/MediaVanced/blob/main/sites/vidstream.py
+// @PlayerX, After a long time!! with OG methods
+// 26th attempt, I love you! :)
 
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
@@ -110,8 +108,9 @@ open class Chillx : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
 
-            val keyUrl = "https://pastebin.com/raw/DCmJyUSi"
-            val passwordHex = app.get(keyUrl).text
+            // Get Password from pastebin(Shareable, Auto-Update)
+            val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
+            val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
             val decryptedData = decryptAESCBC(encodedString, password)
                 ?: throw Exception("Decryption failed")
