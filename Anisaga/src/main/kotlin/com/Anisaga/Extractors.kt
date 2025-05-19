@@ -66,8 +66,8 @@ open class Chillx : ExtractorApi() {
             }
 
             // Get Password from pastebin(Shareable, Auto-Update)
-            val keyUrl = "https://pastebin.com/raw/DCmJyUSi"
-            val passwordHex = app.get(keyUrl).text
+            val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
+            val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
 
             // Decrypt using password String
