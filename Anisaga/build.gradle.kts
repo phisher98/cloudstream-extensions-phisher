@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 45
+version = 46
 
 
 cloudstream {

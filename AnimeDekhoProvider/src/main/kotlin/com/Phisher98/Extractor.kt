@@ -34,6 +34,7 @@ import java.util.Base64
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 class FilemoonV2 : ExtractorApi() {
@@ -77,8 +78,8 @@ open class Raretoon : Chillx() {
 }
 
 // Original Code: https://github.com/yogesh-hacker/MediaVanced/blob/main/sites/vidstream.py
-// @PlayerX, After a long time!! with OG methods
-// 26th attempt, I love you! :)
+// @PlayerX, Yes, I will never give up!
+// 27th attempt, I love you for trying though :) 
 
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
@@ -112,7 +113,7 @@ open class Chillx : ExtractorApi() {
             val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
             val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
-            val decryptedData = decryptAESCBC(encodedString, password)
+            val decryptedData = decryptAESGCM(encodedString, password)
                 ?: throw Exception("Decryption failed")
 
             // Extract m3u8 URL
@@ -167,18 +168,21 @@ open class Chillx : ExtractorApi() {
             val decodedBytes = Base64.getDecoder().decode(encryptedData)
 
             // Extract IV (first 16 bytes) and encrypted data (remaining bytes)
-            val ivBytes = decodedBytes.copyOfRange(0, 16)
-            val encryptedBytes = decodedBytes.copyOfRange(16, decodedBytes.size)
+            val ivBytes = decodedBytes.copyOfRange(0, 12)
+            val encryptedBytes = decodedBytes.copyOfRange(12, decodedBytes.size)
 
             // Prepare key
             val keyBytes = password.toByteArray(Charsets.UTF_8)
             val secretKey = SecretKeySpec(keyBytes, "AES")
-            val ivSpec = IvParameterSpec(ivBytes)
-
+            val gcmSpec = GCMParameterSpec(128, ivBytes)
+            
             // Decrypt using AES-CBC
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
+            
+            // Add AAD(Additional Data)
+            cipher.updateAAD("NeverGiveUp".toByteArray(Charsets.UTF_8))
+            
             val decryptedBytes = cipher.doFinal(encryptedBytes)
             return String(decryptedBytes, Charsets.UTF_8)
 
