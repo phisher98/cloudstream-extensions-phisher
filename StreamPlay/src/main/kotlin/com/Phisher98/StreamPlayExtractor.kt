@@ -1256,7 +1256,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                 // Fetch anime details and episode list
                 val animeId = app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
-                val epRes = app.get("$AnimeKai/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "", homeKeysSrc = homekey)}")
+                val epRes = app.get("$AnimeKai/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "", homekey)}")
                     .parsedSafe<AnimeKaiResponse>()?.getDocument()
 
                 epRes?.select("div.eplist a")?.forEach { ep ->

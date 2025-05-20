@@ -59,6 +59,7 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -216,21 +217,44 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
         }
 
-        private const val AUTOKAI_URL = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
+        private const val AUTOKAI_URL = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/gen/keys.json"
 
-        private var cachedKeys: List<String>? = null
+        private var cachedKeys: List<List<String>>? = null
+        private val gson = Gson()
 
-        suspend fun getHomeKeys(): List<String> {
+        suspend fun getHomeKeys(): List<List<String>> {
             if (cachedKeys == null) {
-                val parsed = app.get(AUTOKAI_URL).parsedSafe<AutoKai>()
+                val responseBody = app.get(AUTOKAI_URL).body.string()
+                val parsed: AutoKai? = try {
+                    gson.fromJson(responseBody, AutoKai::class.java)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
                 cachedKeys = parsed?.kai ?: emptyList()
             }
             return cachedKeys ?: emptyList()
         }
 
+        private var cachedMegaKeys: List<List<String>>? = null
+
+        suspend fun getMegaKeys(): List<List<String>> {
+            if (cachedMegaKeys == null) {
+                val responseBody = app.get(AUTOKAI_URL).body.string()
+                val parsed: AutoKai? = try {
+                    gson.fromJson(responseBody, AutoKai::class.java)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+                cachedMegaKeys = parsed?.mega ?: emptyList()
+            }
+            return cachedMegaKeys ?: emptyList()
+        }
+
         data class AutoKai(
-            val kai: List<String>,
-            val mega: List<String>,
+            val kai: List<List<String>>,
+            val mega: List<List<String>>,
         )
     }
 

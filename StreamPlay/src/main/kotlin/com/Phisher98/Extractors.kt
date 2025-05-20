@@ -35,6 +35,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlay.Companion.getMegaKeys
 import com.phisher98.StreamPlay.Companion.modflixAPI
 import kotlinx.serialization.Serializable
 import okhttp3.FormBody
@@ -1662,7 +1663,7 @@ class OwlExtractor : ExtractorApi() {
 
 }
 
-class MegaUp : ExtractorApi() {
+internal class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.cc"
     override val requiresReferer = true
@@ -1674,7 +1675,7 @@ class MegaUp : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val Autokai = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/keys.json"
+
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val displayName = referer ?: this.name
         val encodedResult = runCatching {
@@ -1686,12 +1687,7 @@ class MegaUp : ExtractorApi() {
             Log.d("Phisher", "Encoded result is null")
             return
         }
-        val megaKeysSrc = app.get(Autokai).parsedSafe<AutoKai>()?.mega
-        if (megaKeysSrc == null) {
-            Log.d("Phisher", "Mega keys source is null")
-            return
-        }
-
+        val megaKeysSrc= getMegaKeys()
         val decodedJson = AnimekaiDecoder().decode(encodedResult, megaKeysSrc).replace("\\", "")
 
         val m3u8Data = runCatching {
@@ -1717,7 +1713,7 @@ class MegaUp : ExtractorApi() {
     companion object {
         private val HEADERS = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-            "Accept" to "text/html, */*; q=0.01",
+            "Accept" to "text/html, *//*; q=0.01",
             "Accept-Language" to "en-US,en;q=0.5",
             "Sec-GPC" to "1",
             "Sec-Fetch-Dest" to "empty",
@@ -1729,11 +1725,6 @@ class MegaUp : ExtractorApi() {
             "referer" to "https://animekai.to/",
         )
     }
-
-    data class AutoKai(
-        val kai: List<String>,
-        val mega: List<String>,
-    )
 }
 
 
