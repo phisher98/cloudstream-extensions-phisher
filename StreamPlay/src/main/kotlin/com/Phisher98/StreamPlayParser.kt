@@ -628,6 +628,30 @@ data class HiAnimeSubtitle(
 )
 
 
+data class HiAnimeAPI(
+    val sources: List<HiAnimeAPISource>,
+    val tracks: List<HiAnimeAPITrack>,
+)
+
+data class HiAnimeAPISource(
+    val file: String,
+    val type: String,
+)
+
+data class HiAnimeAPITrack(
+    val file: String,
+    val label: String,
+)
+
+data class EpisodeServers(
+    val type: String,
+    val link: String,
+    val server: Long,
+    val sources: List<Any?>,
+    val tracks: List<Any?>,
+    val htmlGuide: String,
+)
+
 
 //anime animepahe parser
 

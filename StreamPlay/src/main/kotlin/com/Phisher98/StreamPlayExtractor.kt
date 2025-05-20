@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
+import com.phisher98.BuildConfig.WASMAPI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -1421,50 +1422,45 @@ object StreamPlayExtractor : StreamPlay() {
                         it.attr("data-type"),
                     )
                 }
-
-            val gson = Gson()
-
-            servers?.map servers@{ server ->
-                val animeEpisodeId = url?.substringAfter("to/")
-                val serverName = if (server.third.equals("HD-1", ignoreCase = true)) "vidstreaming" else "vidcloud"
-                val dubtype=if (server.third == "raw") "sub" else server.third
-                //val api = "${BuildConfig.HianimeAPI}?animeEpisodeId=$animeEpisodeId?ep=$episodeId&server=${server.first.lowercase()}&category=${server.third}"
-                val api= "${BuildConfig.HianimeAPI}episodeId=$animeEpisodeId${'$'}episode$$episodeId$$dubtype&server=$serverName"
-
-                try {
-                    val responseText = app.get(api, referer = api).text
-
-                    val response = try {
-                        gson.fromJson(responseText, HiAnimeResponse::class.java)
-                    } catch (e: JsonSyntaxException) {
-                        null
-                    }
-
-                    if (response != null) {
-                        response.sources.firstOrNull { it.isM3U8 }?.let { source ->
-                            val m3u8headers = mapOf(
-                                "Referer" to "https://megacloud.club/",
-                                "Origin" to "https://megacloud.club/"
-                            )
+            servers?.map { (label, id, effectiveType) ->
+                val sourceurl = app.get("${hianimeAPI}/ajax/v2/episode/sources?id=$id").parsedSafe<EpisodeServers>()?.link
+                var attempt = 0
+                var success = false
+                while (attempt < 3 && !success) {
+                    try {
+                        val api = "$WASMAPI${sourceurl}&referrer=$hianimeAPI"
+                        val sourceRes = app.get(api).parsedSafe<HiAnimeAPI>()
+                        val m3u8 = sourceRes?.sources?.firstOrNull()?.file
+                        val m3u8headers = mapOf(
+                            "Referer" to "https://megacloud.club/",
+                            "Origin" to "https://megacloud.club/"
+                        )
+                        if (!m3u8.isNullOrEmpty()) {
                             M3u8Helper.generateM3u8(
-                                "⌜ HiAnime ⌟ | ${server.third.uppercase()} | ${server.first.uppercase()}",
-                                source.url,
+                                "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
+                                m3u8,
                                 mainUrl,
                                 headers = m3u8headers
                             ).forEach(callback)
                         }
 
-
-                        response.subtitles.forEach { subtitle ->
-                            subtitleCallback.invoke(
+                        sourceRes?.tracks?.forEach { subtitle ->
+                            subtitleCallback(
                                 SubtitleFile(
-                                    lang = subtitle.lang,
-                                    url = subtitle.url
+                                    lang = subtitle.label,
+                                    url = subtitle.file
                                 )
                             )
                         }
+                        success = true
+                    } catch (e: JsonSyntaxException) {
+                        Log.e("HiAnime", "JSON error for : ${e.localizedMessage}")
+                        break
+                    } catch (e: Exception) {
+                        Log.w("HiAnime", "Attempt ${attempt + 1} failed for: ${e.localizedMessage}")
+                        attempt++
+                        delay(500L)
                     }
-                } catch (_: Exception) {
                 }
             }
         }
@@ -5199,6 +5195,43 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    suspend fun invoke4khdhub(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (title.isNullOrBlank()) return
+
+        val searchUrl = "$Fourkhdhub/?s=$title"
+        val searchDoc = app.get(searchUrl).document
+        val link = searchDoc
+            .selectFirst("div.card-grid > a:has(div.movie-card-content:contains(${year ?: ""}))")
+            ?.attr("href") ?: return
+
+        val doc = app.get("$Fourkhdhub$link").document
+
+        val links = if (season == null) {
+            doc.select("div.download-item a")
+        } else {
+            val seasonText = "S${season.toString().padStart(2, '0')}"
+            val episodeText = "E${episode.toString().padStart(2, '0')}"
+            doc.select("div.episode-download-item:has(div.episode-file-title:contains(${seasonText}${episodeText}))")
+                .flatMap { it.select("div.episode-links > a") }
+        }
+        links.amap {
+            val source = it.attr("href")
+            loadSourceNameExtractor(
+                "4Khdhub",
+                source,
+                "",
+                subtitleCallback,
+                callback
+            )
+        }
+    }
 }
 
 
