@@ -2,7 +2,6 @@ package com.hdhub4u
 
 import android.annotation.SuppressLint
 import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -32,7 +31,7 @@ import org.jsoup.select.Elements
 
 
 class HDhub4uProvider : MainAPI() {
-    override var mainUrl = "https://hdhub4u.do/?re=hdhub"
+    override var mainUrl = "https://hdhub4u.football"
     override var name = "HDHub4U"
     override var lang = "hi"
     override val hasMainPage = true
@@ -57,7 +56,14 @@ class HDhub4uProvider : MainAPI() {
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        val newMainUrl=app.get(mainUrl, allowRedirects = false, cacheTime = 60).headers["location"] ?:""
+        val newMainUrl = runCatching { app.get(mainUrl) }
+            .getOrNull()
+            ?.takeIf { it.code in 200..299 }
+            ?.let { mainUrl }
+            ?: app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json")
+                .parsedSafe<Domains>()
+                ?.hdhub4u
+            ?: throw Exception("Update Domain")
         val doc = app.get(
             "$newMainUrl/${request.data}page/$page/",
             cacheTime = 60,

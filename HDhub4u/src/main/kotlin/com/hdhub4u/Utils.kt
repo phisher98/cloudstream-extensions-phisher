@@ -1,6 +1,7 @@
 package com.hdhub4u
 
 import android.annotation.SuppressLint
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -112,3 +113,11 @@ fun replaceHubclouddomain(url: String): String {
         "Invalid URL: ${e.message}"
     }
 }
+
+
+data class Domains(
+    @JsonProperty("HDHUB4u")
+    val hdhub4u: String,
+    @JsonProperty("4khdhub")
+    val n4khdhub: String,
+)
