@@ -113,7 +113,7 @@ open class Chillx : ExtractorApi() {
             val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
             val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
-            val decryptedData = decryptAESGCM(encodedString, password)
+            val decryptedData = decryptAESCBC(encodedString, password)
                 ?: throw Exception("Decryption failed")
 
             // Extract m3u8 URL

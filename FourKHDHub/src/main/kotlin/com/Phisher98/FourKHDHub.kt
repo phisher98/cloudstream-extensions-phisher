@@ -77,6 +77,8 @@ class FourKHDHub : MainAPI() {
             else -> TvType.TvSeries
         }
 
+        val hrefs: List<String> = document.select("div.download-item a").eachAttr("href")
+
         val description = document.selectFirst("div.content-section p.mt-4")?.text()?.trim()
         val trailer = document.selectFirst("#trailer-btn")?.attr("data-trailer-url")
 
@@ -127,7 +129,7 @@ class FourKHDHub : MainAPI() {
             }
         }
         else {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
+            newMovieLoadResponse(title, url, TvType.Movie, hrefs) {
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
@@ -144,6 +146,7 @@ class FourKHDHub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
         val links = Regex("""https?://[^",\]\[]+""").findAll(data).map { it.value }.toList()
         for (link in links) {
             when {

@@ -113,8 +113,9 @@ open class Chillx : ExtractorApi() {
                 throw Exception("Encoded string not found")
             }
 
-            val keyUrl = "https://pastebin.com/raw/DCmJyUSi"
-            val passwordHex = app.get(keyUrl).text
+            // Get Password from pastebin(Shareable, Auto-Update)
+            val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
+            val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
             val decryptedData = decryptAESCBC(encodedString, password)
                 ?: throw Exception("Decryption failed")
@@ -171,17 +172,20 @@ open class Chillx : ExtractorApi() {
             val decodedBytes = Base64.getDecoder().decode(encryptedData)
 
             // Extract IV (first 16 bytes) and encrypted data (remaining bytes)
-            val ivBytes = decodedBytes.copyOfRange(0, 16)
-            val encryptedBytes = decodedBytes.copyOfRange(16, decodedBytes.size)
+            val ivBytes = decodedBytes.copyOfRange(0, 12)
+            val encryptedBytes = decodedBytes.copyOfRange(12, decodedBytes.size)
 
             // Prepare key
             val keyBytes = password.toByteArray(Charsets.UTF_8)
             val secretKey = SecretKeySpec(keyBytes, "AES")
-            val ivSpec = IvParameterSpec(ivBytes)
+            val gcmSpec = GCMParameterSpec(128, ivBytes)
 
             // Decrypt using AES-CBC
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
+
+            // Add AAD(Additional Data)
+            cipher.updateAAD("NeverGiveUp".toByteArray(Charsets.UTF_8))
 
             val decryptedBytes = cipher.doFinal(encryptedBytes)
             return String(decryptedBytes, Charsets.UTF_8)
@@ -208,6 +212,7 @@ open class Chillx : ExtractorApi() {
     }
 
 }
+
 
 
 class Vidmolynet : Vidmoly() {

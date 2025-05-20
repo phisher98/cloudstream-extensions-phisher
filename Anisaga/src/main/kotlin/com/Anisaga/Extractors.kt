@@ -69,9 +69,7 @@ open class Chillx : ExtractorApi() {
             val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
             val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
-
-            // Decrypt using password String
-            val decryptedData = decryptAESGCM(encodedString, password)
+            val decryptedData = decryptAESCBC(encodedString, password)
                 ?: throw Exception("Decryption failed")
 
             // Extract m3u8 URL
@@ -120,28 +118,27 @@ open class Chillx : ExtractorApi() {
     }
 
     @SuppressLint("NewApi")
-    fun decryptAESGCM(encryptedData: String, password: String): String? {
+    fun decryptAESCBC(encryptedData: String, password: String): String? {
         try {
             // Base64 decode the encrypted data
             val decodedBytes = Base64.getDecoder().decode(encryptedData)
 
-            // Extract IV (first 12 bytes) and Encrypted Bytes (remaining bytes)
+            // Extract IV (first 16 bytes) and encrypted data (remaining bytes)
             val ivBytes = decodedBytes.copyOfRange(0, 12)
             val encryptedBytes = decodedBytes.copyOfRange(12, decodedBytes.size)
-            
+
             // Prepare key
             val keyBytes = password.toByteArray(Charsets.UTF_8)
             val secretKey = SecretKeySpec(keyBytes, "AES")
             val gcmSpec = GCMParameterSpec(128, ivBytes)
-            
-            // Decrypt using AES-GCM
+
+            // Decrypt using AES-CBC
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
-            
+
             // Add AAD(Additional Data)
             cipher.updateAAD("NeverGiveUp".toByteArray(Charsets.UTF_8))
 
-            
             val decryptedBytes = cipher.doFinal(encryptedBytes)
             return String(decryptedBytes, Charsets.UTF_8)
 
@@ -167,3 +164,4 @@ open class Chillx : ExtractorApi() {
     }
 
 }
+
