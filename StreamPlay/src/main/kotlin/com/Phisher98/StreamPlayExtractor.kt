@@ -973,8 +973,8 @@ object StreamPlayExtractor : StreamPlay() {
                                     server.hls == null -> {
                                         callback.invoke(
                                             newExtractorLink(
-                                                "Allanime ${host.capitalize()}",
-                                                "Allanime ${host.capitalize()}",
+                                                "Allanime [${i.uppercase()}] ${host.capitalize()}",
+                                                "Allanime [${i.uppercase()}] ${host.capitalize()}",
                                                 server.link,
                                                 INFER_TYPE
                                             )
@@ -1429,7 +1429,14 @@ object StreamPlayExtractor : StreamPlay() {
                 while (attempt < 3 && !success) {
                     try {
                         val api = "$WASMAPI${sourceurl}&referrer=$hianimeAPI"
-                        val sourceRes = app.get(api).parsedSafe<HiAnimeAPI>()
+                        val jsonString = app.get(api).text
+                        val gson = Gson()
+                        val sourceRes: HiAnimeAPI? = try {
+                            gson.fromJson(jsonString, HiAnimeAPI::class.java)
+                        } catch (e: JsonSyntaxException) {
+                            null
+                        }
+
                         val m3u8 = sourceRes?.sources?.firstOrNull()?.file
                         val m3u8headers = mapOf(
                             "Referer" to "https://megacloud.club/",

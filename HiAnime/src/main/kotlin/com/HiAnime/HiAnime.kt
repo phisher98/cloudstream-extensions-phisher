@@ -277,7 +277,14 @@ class HiAnime : MainAPI() {
                     while (attempt < 3 && !success) {
                         try {
                             val api = "$WASMAPI${sourceurl}&referrer=$mainUrl"
-                            val sourceRes = app.get(api).parsedSafe<HiAnimeAPI>()
+                            val jsonString = app.get(api).text
+                            val gson = Gson()
+                            val sourceRes: HiAnimeAPI? = try {
+                                gson.fromJson(jsonString, HiAnimeAPI::class.java)
+                            } catch (e: JsonSyntaxException) {
+                                null
+                            }
+
                             val m3u8 = sourceRes?.sources?.firstOrNull()?.file
                             val m3u8headers = mapOf(
                                 "Referer" to "https://megacloud.club/",
