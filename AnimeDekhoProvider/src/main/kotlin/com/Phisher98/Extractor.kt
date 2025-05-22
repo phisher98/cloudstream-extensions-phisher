@@ -77,9 +77,11 @@ open class Raretoon : Chillx() {
     override val requiresReferer = true
 }
 
+// Special Thanks to @Toasty360 for the GitHub Workflow Set-up 
+
 // Original Code: https://github.com/yogesh-hacker/MediaVanced/blob/main/sites/vidstream.py
 // @PlayerX, Yes, I will never give up!
-// 27th attempt, I love you for trying though :) 
+// 28th attempt, I love you for trying though :) 
 
 open class Chillx : ExtractorApi() {
     override val name = "Chillx"
@@ -110,8 +112,8 @@ open class Chillx : ExtractorApi() {
             }
 
             // Get Password from pastebin(Shareable, Auto-Update)
-            val keyUrl = "https://pastebin.com/dl/DCmJyUSi"
-            val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://pastebin.com/")).text
+            val keyUrl = "https://raw.githubusercontent.com/yogesh-hacker/playerx/refs/heads/main/key.key"
+            val passwordHex = app.get(keyUrl, headers = mapOf("Referer" to "https://github.com/")).text
             val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
             val decryptedData = decryptData(encodedString, password)
                 ?: throw Exception("Decryption failed")
