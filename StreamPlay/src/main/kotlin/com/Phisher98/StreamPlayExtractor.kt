@@ -2373,20 +2373,37 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val vegaMoviesAPI = try {
-            app.get("$Vglist/?re=vegamovies",allowRedirects = false)
-                .document
-                .selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
-                ?.takeIf { it.startsWith("http") }
-        } catch (e: Exception) {
-            Log.e("VegaMovies", "Failed to fetch VegaMovies redirect: ${e.localizedMessage}")
-            null
+        val maxAttempts = 3
+        val retryDelay = 2000L
+
+        var vegaMoviesAPI: String? = null
+
+        repeat(maxAttempts) { attempt ->
+            try {
+                vegaMoviesAPI = app.get("$Vglist/?re=vegamovies", allowRedirects = false)
+                    .document
+                    .selectFirst("meta[http-equiv=refresh]")
+                    ?.attr("content")
+                    ?.substringAfter("url=")
+                    ?.takeIf { it.startsWith("http") }
+
+                if (vegaMoviesAPI != null) return@repeat
+            } catch (e: Exception) {
+                Log.w("VegaMovies", "Attempt ${attempt + 1} failed: ${e.localizedMessage}")
+            }
+            if (attempt < maxAttempts - 1) {
+                delay(retryDelay * (attempt + 1))
+            }
         }
+
+        if (vegaMoviesAPI == null) {
+            Log.e("VegaMovies", "Failed to resolve VegaMovies API after $maxAttempts attempts")
+            return
+        }
+
         val cfInterceptor = CloudflareKiller()
         val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")
-        val query = if (season == null) "$fixtitle $year" else "$fixtitle season $season"
+        val query = if (season == null) "$fixtitle $year" else "$fixtitle season $season $year"
         val url = "$vegaMoviesAPI/?s=$query"
 
         val excludedButtonTexts = setOf("Filepress", "GDToT", "DropGalaxy")
