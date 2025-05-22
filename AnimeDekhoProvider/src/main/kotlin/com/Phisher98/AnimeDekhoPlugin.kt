@@ -3,6 +3,7 @@ package com.phisher98
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.FileMoon
+import com.lagradost.cloudstream3.extractors.GDMirrorbot
 import com.lagradost.cloudstream3.extractors.Krakenfiles
 import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.Voe
@@ -27,5 +28,6 @@ class AnimeDekhoPlugin: BasePlugin() {
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Animezia())
         registerExtractorAPI(Raretoon())
+        registerExtractorAPI(Cloudy())
     }
 }

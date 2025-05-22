@@ -69,10 +69,8 @@ open class AnimeDekhoProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        Log.d("Phisher load",url)
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
-        Log.d("Phisher",media.toString())
         val title = document.selectFirst("h1.entry-title")?.text()?.trim()?.substringAfter("Watch Online ")
             ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.substringAfter("Watch Online ")?.substringBefore(" Movie in Hindi Dubbed Free") ?: "No Title"
         val poster = fixUrlNull(document.selectFirst("div.post-thumbnail figure img")?.attr("src") ?: media.poster)
