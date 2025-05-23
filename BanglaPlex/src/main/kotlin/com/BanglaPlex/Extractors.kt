@@ -1,5 +1,6 @@
 package com.BanglaPlex
 
+import android.annotation.SuppressLint
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
@@ -15,8 +16,12 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.FormBody
 import org.json.JSONObject
+import java.net.URI
+import java.util.Base64
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
@@ -49,111 +54,130 @@ open class Chillx : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url).toString()
-        val encodedString =
-            Regex("Encrypted\\s*=\\s*'(.*?)';").find(res)?.groupValues?.get(1) ?:""
-        Log.d("Phisher",encodedString)
-        val decoded = decodeEncryptedData(encodedString) ?:""
-        val m3u8 = Regex("\"?file\"?:\\s*\"([^\"]+)").find(decoded)?.groupValues?.get(1)
-            ?.trim()
-            ?:""
-        val header =mapOf(
-            "accept" to "*/*",
-            "accept-language" to "en-US,en;q=0.5",
-            "Origin" to mainUrl,
-            "Accept-Encoding" to "gzip, deflate, br",
-            "Connection" to "keep-alive",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "cross-site",
-            "user-agent" to USER_AGENT,)
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                url = m3u8,
-                INFER_TYPE
-            ) {
-                this.referer = mainUrl
-                this.quality = Qualities.P1080.value
-                this.headers = header
-            }
+        val baseurl=getBaseUrl(url)
+        val headers = mapOf(
+            "Origin" to baseurl,
+            "Referer" to baseurl,
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36"
         )
 
-        val subtitles = extractSrtSubtitles(decoded)
-        subtitles.forEachIndexed { _, (language, url) ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    language,
-                    url
-                )
+        try {
+            val res = app.get(url, referer = referer ?: mainUrl, headers = headers).toString()
+
+            // Extract encoded string from response
+            val encodedString = Regex("(?:const|let|var|window\\.\\w+)\\s+\\w*\\s*=\\s*'([^']{30,})'").find(res)
+                ?.groupValues?.get(1)?.trim() ?: ""
+            if (encodedString.isEmpty()) {
+                throw Exception("Encoded string not found")
+            }
+
+            // Get Password from pastebin(Shareable, Auto-Update)
+            val keyUrl = "https://chillx.supe2372.workers.dev/getKey"
+            val passwordHex = app.get(keyUrl).text
+            val password = passwordHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
+            val decryptedData = decryptData(encodedString, password)
+                ?: throw Exception("Decryption failed")
+
+            // Extract m3u8 URL
+            val m3u8 = Regex("(https?://[^\\s\"'\\\\]*m3u8[^\\s\"'\\\\]*)").find(decryptedData)
+                ?.groupValues?.get(1)?.trim() ?: ""
+            if (m3u8.isEmpty()) {
+                throw Exception("m3u8 URL not found")
+            }
+
+            // Prepare headers for callback
+            val header = mapOf(
+                "accept" to "*/*",
+                "accept-language" to "en-US,en;q=0.5",
+                "Origin" to mainUrl,
+                "Accept-Encoding" to "gzip, deflate, br",
+                "Connection" to "keep-alive",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "cross-site",
+                "user-agent" to USER_AGENT
             )
+
+            // Return the extractor link
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    url = m3u8,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.P1080.value
+                    this.headers = header
+                }
+            )
+
+            // Extract and return subtitles
+            val subtitles = extractSrtSubtitles(decryptedData)
+            subtitles.forEachIndexed { _, (language, url) ->
+                subtitleCallback.invoke(SubtitleFile(language, url))
+            }
+
+        } catch (e: Exception) {
+            Log.e("Anisaga Stream", "Error: ${e.message}")
+        }
+    }
+
+
+    @SuppressLint("NewApi")
+    fun decryptData(encryptedData: String, password: String): String? {
+        val decodedBytes = Base64.getDecoder().decode(encryptedData)
+        val keyBytes = password.toByteArray(Charsets.UTF_8)
+        val secretKey = SecretKeySpec(keyBytes, "AES")
+
+        // Try AES-CBC decryption first (assumes IV is 16 bytes)
+        try {
+            val ivBytesCBC = decodedBytes.copyOfRange(0, 16)
+            val encryptedBytesCBC = decodedBytes.copyOfRange(16, decodedBytes.size)
+
+            val ivSpec = IvParameterSpec(ivBytesCBC)
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+
+            val decryptedBytes = cipher.doFinal(encryptedBytesCBC)
+            return String(decryptedBytes, Charsets.UTF_8)
+        } catch (e: Exception) {
+            println("CBC decryption failed, trying AES-GCM...")
+        }
+
+        // Fallback to AES-GCM decryption (assumes IV is 12 bytes)
+        return try {
+            val ivBytesGCM = decodedBytes.copyOfRange(0, 12)
+            val encryptedBytesGCM = decodedBytes.copyOfRange(12, decodedBytes.size)
+
+            val gcmSpec = GCMParameterSpec(128, ivBytesGCM)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
+            cipher.updateAAD("NeverGiveUp".toByteArray(Charsets.UTF_8))
+
+            val decryptedBytes = cipher.doFinal(encryptedBytesGCM)
+            String(decryptedBytes, Charsets.UTF_8)
+        } catch (e: BadPaddingException) {
+            println("Decryption failed: Bad padding or incorrect password.")
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
     private fun extractSrtSubtitles(subtitle: String): List<Pair<String, String>> {
-        val regex = """\[([^]]+)](https?://[^\s,]+\.srt)""".toRegex()
-
-        return regex.findAll(subtitle).map { match ->
-            val (language, url) = match.destructured
-            language.trim() to url.trim()
+        val regex = """\[(.*?)](https?://[^\s,"]+\.srt)""".toRegex()
+        return regex.findAll(subtitle).map {
+            it.groupValues[1] to it.groupValues[2]
         }.toList()
     }
-
-
-    private fun decodeEncryptedData(encryptedString: String): String {
-        val decodedData = base64Decode(encryptedString)
-        val parsedJson = JSONObject(decodedData)
-        val salt = stringTo32BitWords(parsedJson.getString("salt"))
-        val password = stringTo32BitWords("3%.tjS0K@K9{9rTc")
-        val derivedKey = deriveKey(password, salt, keySize = 32, iterations = 999, hashAlgo = "SHA-512")
-
-        val iv = base64DecodeArray(parsedJson.getString("iv"))
-        val encryptedContent = base64DecodeArray(parsedJson.getString("data"))
-
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        val secretKeySpec = SecretKeySpec(derivedKey, "AES")
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, IvParameterSpec(iv))
-        val decryptedData = cipher.doFinal(encryptedContent)
-
-        val finalResult = String(decryptedData) // Simplified for demonstration
-        return finalResult
-
-    }
-
-    private fun stringTo32BitWords(text: String): IntArray {
-        val words = IntArray((text.length + 3) / 4)
-        for (i in text.indices) {
-            words[i shr 2] = words[i shr 2] or (text[i].code and 255 shl (24 - (i % 4) * 8))
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
         }
-        return words
     }
 
-    private fun deriveKey(password: IntArray, salt: IntArray, keySize: Int, iterations: Int, hashAlgo: String): ByteArray {
-        val passwordBytes = password.flatMap { it.toByteArray() }.toByteArray()
-        val saltBytes = salt.flatMap { it.toByteArray() }.toByteArray()
-
-        // Use PBKDF2 with SHA-512 as the hash algorithm
-        val keySpec = PBEKeySpec(
-            passwordBytes.map { it.toInt().toChar() }.toCharArray(), // Convert password to CharArray
-            saltBytes,
-            iterations,
-            keySize * 8 // The size in bits
-        )
-        val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-        val derivedKey = secretKeyFactory.generateSecret(keySpec).encoded
-
-        return derivedKey
-    }
-
-    private fun Int.toByteArray(): List<Byte> {
-        return listOf(
-            (this shr 24 and 0xFF).toByte(),
-            (this shr 16 and 0xFF).toByte(),
-            (this shr 8 and 0xFF).toByte(),
-            (this and 0xFF).toByte()
-        )
-    }
 }
 
 
