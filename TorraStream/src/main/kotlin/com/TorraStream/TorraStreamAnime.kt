@@ -14,7 +14,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.newAnimeLoadResponse
@@ -22,6 +21,7 @@ import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
@@ -207,8 +207,8 @@ class TorraStreamAnime : MainAPI() {
                     ?: data.getCoverImage()
                 this.tags = data.genres
                 this.recommendations = data.recommendations?.edges
-                    ?.mapNotNull { edge ->
-                        val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
+                    ?.map { edge ->
+                        val recommendation = edge.node.mediaRecommendation
                         val title = recommendation.title?.english
                             ?: recommendation.title?.romaji
                             ?: ""
@@ -221,19 +221,18 @@ class TorraStreamAnime : MainAPI() {
         }
     }
 
-    @Suppress("NAME_SHADOWING")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val data = AppUtils.parseJson<LinkData>(data)
-        val episode =data.episode
-        val aniid =data.aniId
+        val mediaData = AppUtils.parseJson<LinkData>(data)
+        val episode =mediaData.episode
+        val aniid =mediaData.aniId
         val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
         val anidbEid = getAnidbEid(anijson, episode)
-        argamap(
+        runAllAsync(
             {
                 invokeAnimetosho(
                     anidbEid,
@@ -343,7 +342,7 @@ class TorraStreamAnime : MainAPI() {
         @JsonProperty("isCartoon") val isCartoon: Boolean = false,
     )
 
-    suspend fun tmdbToAnimeId(title: String?, year: Int?, type: TvType): AniIds {
+    private suspend fun tmdbToAnimeId(title: String?, year: Int?, type: TvType): AniIds {
         val query = """
         query (
           ${'$'}page: Int = 1
