@@ -25,7 +25,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.newAnimeLoadResponse
@@ -224,7 +223,7 @@ class StreamPlayAnime : MainAPI() {
                         val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
                         val title = recommendation.title?.english
                             ?: recommendation.title?.romaji
-                            ?: ""
+                            ?: "Unknown"
                         val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
                         newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
                             this.posterUrl = recommendation.coverImage?.large

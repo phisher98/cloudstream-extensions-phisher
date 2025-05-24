@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -209,11 +208,11 @@ class StreamplayTorrentAnime : MainAPI() {
                     ?: data.getCoverImage()
                 this.tags = data.genres
                 this.recommendations = data.recommendations?.edges
-                    ?.map { edge ->
-                        val recommendation = edge.node.mediaRecommendation
+                    ?.mapNotNull { edge ->
+                        val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
                         val title = recommendation.title?.english
                             ?: recommendation.title?.romaji
-                            ?: ""
+                            ?:  "Unknown"
                         val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
                         newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
                             this.posterUrl = recommendation.coverImage?.large
@@ -234,7 +233,6 @@ class StreamplayTorrentAnime : MainAPI() {
         val aniid =mediaData.aniId
         val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
         val anidbEid = getAnidbEid(anijson, episode)
-        Log.d("Phisher",anidbEid.toString())
         runAllAsync(
             {
                 invokeAnimetosho(
