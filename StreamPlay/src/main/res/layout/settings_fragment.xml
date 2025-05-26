@@ -22,11 +22,13 @@
                 android:id="@+id/header"
                 android:layout_width="50dp"
                 android:layout_height="25dp"
-                android:text="Login"
-                android:textSize="18sp"
-                android:textStyle="bold"
                 android:layout_alignParentStart="true"
-                android:layout_centerVertical="true" />
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="329dp"
+                android:text="Login with Google Option to get SuperStream 4K Links"
+                android:textSize="18sp"
+                android:textStyle="bold" />
         </RelativeLayout>
 
         <!-- New Login Button -->
@@ -54,12 +56,10 @@
             android:id="@+id/tokenInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Click on login with Google or Paste Token"
             android:inputType="text"
             android:padding="12dp"
-            android:background="@android:drawable/editbox_background"
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp"
-            android:hint="Enter or Paste Token" />
+            android:textSize="16sp" />
 
         <!-- Save Token Button -->
         <Button
