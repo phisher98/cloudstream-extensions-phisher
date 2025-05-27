@@ -3656,7 +3656,6 @@ object StreamPlayExtractor : StreamPlay() {
                 ?: return
         val ref = getBaseUrl(framesrc)
         val id = framesrc.substringAfter("id=").substringBefore("&")
-        Log.d("Phisher",id)
         loadExtractor("https://uqloads.xyz/e/$id", "$ref/", subtitleCallback, callback)
     }
 
