@@ -188,7 +188,7 @@ fun decryptData(encryptedData: String, password: String): String? {
         val gcmSpec = GCMParameterSpec(128, ivBytesGCM)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
-        cipher.updateAAD("NeverGiveUp".toByteArray(Charsets.UTF_8))
+        cipher.updateAAD("GGMM&^_FOZ[kFPf1".toByteArray(Charsets.UTF_8))
 
         val decryptedBytes = cipher.doFinal(encryptedBytesGCM)
         String(decryptedBytes, Charsets.UTF_8)
