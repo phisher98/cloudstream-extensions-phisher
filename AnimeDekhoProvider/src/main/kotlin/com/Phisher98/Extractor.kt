@@ -215,7 +215,9 @@ fun decryptData(encryptedData: String, password: String): String? {
 
 }
 
-
+class vidcloudupns : VidStack() {
+    override var mainUrl = "https://vidcloud.upns.ink"
+}
 
 class Multimovies: StreamWishExtractor() {
     override var name = "Multimovies Cloud"

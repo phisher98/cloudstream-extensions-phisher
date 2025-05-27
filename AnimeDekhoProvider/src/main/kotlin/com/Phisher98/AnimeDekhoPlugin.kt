@@ -29,5 +29,6 @@ class AnimeDekhoPlugin: BasePlugin() {
         registerExtractorAPI(Animezia())
         registerExtractorAPI(Raretoon())
         registerExtractorAPI(Cloudy())
+        registerExtractorAPI(vidcloudupns())
     }
 }

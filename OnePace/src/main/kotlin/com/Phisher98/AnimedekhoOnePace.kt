@@ -128,7 +128,7 @@ open class OnepaceProvider : MainAPI() {
         val media = parseJson<Media>(data)
         val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
-        for (i in 0..4) {
+        for (i in 0..7) {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                 .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
