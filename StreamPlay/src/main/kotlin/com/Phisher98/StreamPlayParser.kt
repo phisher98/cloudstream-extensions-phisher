@@ -1849,3 +1849,16 @@ data class Headers(
 
 
 data class AnichiVideoApiResponse(@JsonProperty("links") val links: List<AnichiLinks>)
+
+
+
+data class Elevenmoviesres(
+    val noReferrer: Boolean,
+    val url: String,
+    val tracks: List<ElevenmovieTrack>,
+)
+
+data class ElevenmovieTrack(
+    val file: String,
+    val label: String,
+)

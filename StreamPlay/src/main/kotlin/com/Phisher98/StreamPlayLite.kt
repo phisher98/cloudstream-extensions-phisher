@@ -35,6 +35,7 @@ import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
@@ -280,6 +281,42 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     callback
                 )
             },
+            {
+                if (!res.isAnime) invokeElevenmovies(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeXPrimeAPI(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokevidzeeUltra(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokevidzeeMulti(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
+
+
 
             //Subtitles Invokes
             {
@@ -299,33 +336,7 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     subtitleCallback,
                 )
             },
-            {
-                if (!res.isAnime) invokeXPrimeAPI(
-                    res.id,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-            if (!res.isAnime) invokevidzeeUltra(
-                res.id,
-                res.season,
-                res.episode,
-                callback
-            )
-            },
-            {
-                if (!res.isAnime) invokevidzeeMulti(
-                    res.id,
-                    res.season,
-                    res.episode,
-                    callback
-                )
-            },
-
-            )
+        )
         return true
     }
 

@@ -2931,3 +2931,52 @@ suspend fun <T> retryIO(
     }
     return block() // last attempt, let it throw
 }
+
+
+fun elevenmoviestoken(input: String): String {
+    // AES Key and IV
+    val s = byteArrayOf(
+        104.toByte(), 250.toByte(), 66, 33, 104.toByte(), 28, 246.toByte(), 86,
+        7, 161.toByte(), 213.toByte(), 24, 41, 53, 173.toByte(), 102,
+        28, 219.toByte(), 211.toByte(), 30, 158.toByte(), 111, 171.toByte(), 194.toByte(),
+        161.toByte(), 119, 52, 110, 5, 143.toByte(), 56, 38
+    )
+    val l = byteArrayOf(5, 8, 181.toByte(), 84, 59, 236.toByte(), 228.toByte(), 243.toByte(), 80, 8, 36, 17, 183.toByte(), 114, 33, 62)
+
+    // Pad to AES block size (16 bytes)
+    fun pad(data: ByteArray): ByteArray {
+        val blockSize = 16
+        val padLength = blockSize - data.size % blockSize
+        return data + ByteArray(padLength) { padLength.toByte() }
+    }
+
+    // AES CBC Encryption
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    val secretKey = SecretKeySpec(s, "AES")
+    val ivSpec = IvParameterSpec(l)
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+    val encryptedBytes = cipher.doFinal(pad(input.toByteArray(Charsets.UTF_8)))
+    val c = encryptedBytes.joinToString("") { "%02x".format(it) }
+
+    // XOR Obfuscation
+    val u = byteArrayOf(97, 108, 67, 143.toByte(), 240.toByte(), 226.toByte())
+    val d = buildString {
+        for ((i, ch) in c.withIndex()) {
+            val t = ch.code
+            val n = u[i % u.size].toInt() and 0xFF
+            append(if ((t xor n xor n) == t) (t xor n).toChar() else ch)
+        }
+    }
+
+    val p = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_".toList()
+    val h = listOf(
+        "F", "q", "p", "V", "Q", "O", "U", "W", "9", "y", "a", "s", "c", "E", "h", "4", "7", "T", "Y", "u", "6", "r", "8", "N", "g", "f", "G", "m", "t", "H", "K", "P",
+        "i", "I", "-", "e", "J", "v", "B", "Z", "L", "w", "S", "2", "b", "3", "n", "d", "C", "j", "z", "D", "A", "l", "x", "X", "k", "R", "M", "o", "0", "5", "_", "1"
+    )
+    val mapPh = p.zip(h).toMap()
+    val base64Str = base64Encode(d.toByteArray())
+        .replace("+", "-").replace("/", "_").replace("=", "")
+    val m = base64Str.map { mapPh[it] ?: it }.joinToString("")
+    val g = "8e39ee3bc9096d8b2182b11bb3408ecb2d49d6ea/63f9b2f13d6e49d5626f55ad4dd073eb44c855576623c445f9297dbc41aca8d2/APA91pnnfHpSk-JUXVYqNM-8uZFTnjnkimXJeWy3y8wFIOoGQUuQ0T3ec_a5VZh6g4K0J8VjDJOoGWa3mBbrkq8ktvEu-YBcGVOHOxSQc5AGxcb2HDHjY0zAeBW5PXU54znsUHSteIQBYogeieO2qhWHircRCQAVAACZCfHwPNk0GrGiWEnpC67/1000085286633646/itailige"
+    return "/$g/$m"
+}

@@ -94,6 +94,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeDramacool
+import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
@@ -183,7 +184,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val EmbedSu="https://embed.su"
         //const val FlickyAPI="https://www.flicky.host"
-        const val WyZIESUBAPI="https://subs.wyzie.ru"
+        const val WyZIESUBAPI="https://sub.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"
         //const val HinAutoAPI="https://hin.autoembed.cc"
@@ -203,6 +204,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Xprime="https://xprime.tv"
         const val Vidzee="https://vidzee.wtf"
         const val Fourkhdhub="https://4khdhub.fans"
+        const val Elevenmovies="https://111movies.com"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -1057,6 +1059,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 res.episode,
                 subtitleCallback,
                 callback)
+            },
+            {
+                if (!res.isAnime) invokeElevenmovies(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback)
             },
 
             //Subtitles Invokes
