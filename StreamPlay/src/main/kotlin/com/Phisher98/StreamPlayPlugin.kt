@@ -30,7 +30,7 @@ class StreamPlayPlugin: Plugin() {
         registerMainAPI(StreamPlay(sharedPref))
         registerMainAPI(StreamPlayLite())
         registerMainAPI(StreamPlayTorrent())
-        registerMainAPI(StreamPlayTest(sharedPref))
+        //registerMainAPI(StreamPlayTest(sharedPref))
         registerMainAPI(StreamPlayAnime())
         registerMainAPI(StreamplayTorrentAnime())
         registerExtractorAPI(Animefever())
