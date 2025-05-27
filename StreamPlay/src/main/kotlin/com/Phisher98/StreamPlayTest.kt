@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
 
 class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sharedPreferences) {
@@ -21,8 +22,10 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
             {
-                if (!res.isAnime) invokeExtramovies(
+                if (!res.isAnime) invoke2embed(
                     res.imdbId,
+                    res.season,
+                    res.episode,
                     subtitleCallback,
                     callback
                 )

@@ -34,6 +34,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlay.Companion.getMegaKeys
 import com.phisher98.StreamPlay.Companion.modflixAPI
@@ -609,11 +610,6 @@ class Alions : Ridoo() {
     override val name = "Alions"
     override var mainUrl = "https://alions.pro"
     override val defaulQuality = Qualities.Unknown.value
-}
-
-class UqloadsXyz : Filesim() {
-    override val name = "Uqloads"
-    override var mainUrl = "https://uqloads.xyz"
 }
 
 class Pixeldra : PixelDrain() {
@@ -1986,4 +1982,51 @@ class Gofile : ExtractorApi() {
     }
 }
 
+class UqloadsXyz : ExtractorApi() {
+    override val name = "Uqloadsxyz"
+    override val mainUrl = "https://uqloads.xyz"
+    override val requiresReferer = true
 
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        var response = app.get(url.replace("/download/", "/e/"), referer = referer)
+        val iframe = response.document.selectFirst("iframe")
+        if (iframe != null) {
+            response = app.get(
+                iframe.attr("src"), headers = mapOf(
+                    "Accept-Language" to "en-US,en;q=0.5",
+                    "Sec-Fetch-Dest" to "iframe"
+                ), referer = response.url
+            )
+        }
+
+        val script = if (!getPacked(response.text).isNullOrEmpty()) {
+            getAndUnpack(response.text)
+        } else {
+            response.document.selectFirst("script:containsData(sources:)")?.data()
+        } ?: return
+        val regex = Regex("""hls2":"(?<hls2>[^"]+)"|hls4":"(?<hls4>[^"]+)"""")
+        val links = regex.findAll(script)
+            .mapNotNull { matchResult ->
+                val hls2 = matchResult.groups["hls2"]?.value
+                val hls4 = matchResult.groups["hls4"]?.value
+                when {
+                    hls2 != null -> hls2
+                    hls4 != null -> "https://uqloads.xyz$hls4"
+                    else -> null
+                }
+            }.toList()
+        links.forEach { m3u8->
+            generateM3u8(
+                name,
+                m3u8,
+                mainUrl
+            ).forEach(callback)
+        }
+
+    }
+}
