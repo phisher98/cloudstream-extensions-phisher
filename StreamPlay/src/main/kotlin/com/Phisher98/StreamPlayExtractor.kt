@@ -5275,14 +5275,13 @@ object StreamPlayExtractor : StreamPlay() {
             val sourceurl = Elevenmovies + token
 
             val headers = mapOf(
-                "content-type" to "font/woff",
+                "content-type" to "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                 "x-requested-with" to "XMLHttpRequest"
             )
 
-            val res = app.post(
+            val res = app.get(
                 url = sourceurl,
                 headers = headers,
-                requestBody = "".toRequestBody(null)
             ).parsedSafe<Elevenmoviesres>()
 
             val m3u8 = res?.url ?: return
