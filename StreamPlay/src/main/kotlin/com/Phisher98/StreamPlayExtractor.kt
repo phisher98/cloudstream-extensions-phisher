@@ -5269,35 +5269,47 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             "$Elevenmovies/tv/$id/$season/$episode"
         }
-        val encodedtoken= app.get(url).document.selectFirst("script[type=application/json]")?.data()?.trim()?.substringAfter("{\"data\":\"")?.substringBefore("\",")
-        if (encodedtoken != null) {
-            val token = elevenmoviestoken(encodedtoken)
-            val sourceurl = Elevenmovies + token
 
-            val headers = mapOf(
-                "content-type" to "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                "x-requested-with" to "XMLHttpRequest"
-            )
+        val encodedToken = app.get(url).document.selectFirst("script[type=application/json]")
+            ?.data()
+            ?.substringAfter("{\"data\":\"")
+            ?.substringBefore("\",")
 
-            val res = app.get(
-                url = sourceurl,
-                headers = headers,
-            ).parsedSafe<Elevenmoviesres>()
+        if (encodedToken == null) return
 
-            val m3u8 = res?.url ?: return
+        val token = elevenMoviesTokenV2(encodedToken)
+
+        val staticPath = "APA91t9PoZwHV2WyucaGbKSpxJx7c_VYAYWOXlI8WCB-gTWcvz88bY9PMJ7I30nJayTEJg4AAtk0Gaa6D4V8FJQ9_Io3CtM9law2xptLLoKR8eD8slNP3WwL9x7juFBjXNVr9ciqrMoF2CV9xfmhITgEl6-zqVyecEO801em3fs4_osx2fWihKO/48bbb48dc848f14d2754754d197d939dbab4da99/i/bawose/laf/1181c071/1000037950406033/01ade2fbcf5203de7bc999e631258e3da61441cfe877770fa4cdc28c9971c8cf"
+        val apiServerUrl = "$Elevenmovies/$staticPath/$token/sr"
+
+        val headers = mapOf(
+            "Referer" to "https://111movies.com/",
+            "Content-Type" to "font/woff",
+            "X-Requested-With" to "XMLHttpRequest",
+            "User-Agent" to USER_AGENT
+        )
+
+        val responseString = app.get(apiServerUrl, headers = headers).body.string()
+        val listType = object : TypeToken<List<ElevenmoviesServerEntry>>() {}.type
+        val serverList: List<ElevenmoviesServerEntry> = Gson().fromJson(responseString, listType)
+
+        for (entry in serverList) {
+            val serverToken = entry.data
+            val serverName = entry.name
+
+            val streamApiUrl = "$Elevenmovies/$staticPath/$serverToken"
+            val streamResponseString = app.get(streamApiUrl, headers = headers).body.string()
+            val streamRes = Gson().fromJson(streamResponseString, ElevenmoviesStreamResponse::class.java) ?: continue
+            val videoUrl = streamRes.url ?: continue
+
             M3u8Helper.generateM3u8(
-                "Eleven Movies",
-                m3u8,
+                "Eleven Movies $serverName",
+                videoUrl,
                 ""
             ).forEach(callback)
 
-            res.tracks.forEach { sub->
-                    subtitleCallback.invoke(
-                        SubtitleFile(
-                            sub.label,
-                            sub.file
-                        )
-                    )
+            streamRes.tracks?.forEach { sub ->
+                subtitleCallback.invoke(SubtitleFile(sub.label ?: return@forEach, sub.file ?: return@forEach))
             }
         }
     }

@@ -2933,65 +2933,50 @@ suspend fun <T> retryIO(
 }
 
 
-fun elevenmoviestoken(input: String): String {
-    // AES Key and IV from JS code
-    val s = byteArrayOf(
-        174.toByte(), 111, 42, 40, 137.toByte(), 191.toByte(), 142.toByte(), 202.toByte(),
-        39, ((-64).toByte()), (-39).toByte(), (-15).toByte(), 54, (-12).toByte(), (-10).toByte(), 80,
-        (-127).toByte(), (-57).toByte(), 123, 41, 64, 74, (-9).toByte(), 126, 59, (-114).toByte(),
-        (-41).toByte(), (-37).toByte(), 96, (-11).toByte(), 65, (-94).toByte()
-    )
-    val l = byteArrayOf(
-        (-1).toByte(), (-118).toByte(), 66, (-98).toByte(), 80, (-19).toByte(), 37, 122,
-        (-54).toByte(), (-45).toByte(), 37, (-107).toByte(), 68, (-120).toByte(), 57, (-18).toByte()
-    )
+@SuppressLint("NewApi")
+fun elevenMoviesTokenV2(rawData: String): String {
+    // AES key and IV in hex (from Python)
+    val keyHex = "92602fba85ae08969373a50448391cdbccadeb40be09abb17007861049944842"
+    val ivHex = "1e933f03e2fb9d2e77f457ac1645f33d"
+
+    val aesKey = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    val aesIv = ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    val keySpec = SecretKeySpec(s, "AES")
-    val ivSpec = IvParameterSpec(l)
-    cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
+    val secretKey = SecretKeySpec(aesKey, "AES")
+    val ivSpec = IvParameterSpec(aesIv)
+    cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
 
-    val encryptedBytes = cipher.doFinal(input.toByteArray(Charsets.UTF_8))
+    val paddedInput = rawData.toByteArray(Charsets.UTF_8)
+    val encrypted = cipher.doFinal(paddedInput)
+    val hexString = encrypted.joinToString("") { "%02x".format(it) }
 
-    val c = encryptedBytes.joinToString("") { "%02x".format(it) }
+    // XOR key from hex string
+    val xorKeyHex = "edc5e93586d7"
+    val xorKey = xorKeyHex.chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
 
-    // XOR obfuscation key from JS
-    val u = byteArrayOf(24, 2, (-48).toByte(), 72, (-101).toByte(), 78, 5, (-94).toByte(), 27,
-        (-125).toByte()
-    )
-
-    // Apply XOR obfuscation on hex string c
-    val d = buildString {
-        for (i in c.indices) {
-            val charCode = c[i].code
-            val keyByte = u[i % u.size].toInt() and 0xFF
-            if ((charCode xor keyByte xor keyByte) == charCode) {
-                append((charCode xor keyByte).toChar())
-            } else {
-                append(c[i])
-            }
+    val xorResult = buildString {
+        for (i in hexString.indices) {
+            val c = hexString[i].code
+            val k = xorKey[i % xorKey.size].toInt() and 0xFF
+            append((c xor k).toChar())
         }
     }
 
-    val p = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_".toList()
-    val h = listOf(
-        'C', 'q', 't', 'Y', '3', 'K', '8', 'j', 'w', 'u', 'f', 'G', 'Z', 'n', 'c', 'B',
-        'W', '_', 'm', 'T', 'b', 'O', 'N', '2', 'M', 'y', 'J', 'i', 'X', '6', 'r', 'p',
-        'R', 'x', 'o', '9', 'S', 'I', 'E', '4', 'g', 'h', 'L', 'a', 'e', 'v', 'k', 'P',
-        'Q', '1', 'F', 'H', '7', '-', 'U', 's', '0', '5', 'd', 'z', 'D', 'V', 'l', 'A'
-    )
+    val src = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+    val dst = "2xwYJGjOibPtCBu3lUNzL_HrQTVK0gFymven4RShWA6f71IcXs-MZ5EaoqkD8pd9"
+    val translationMap = src.zip(dst).toMap()
 
-    val base64str = Base64.getEncoder().encodeToString(d.toByteArray(Charsets.UTF_8))
+    val base64Encoded = Base64.getEncoder()
+        .encodeToString(xorResult.toByteArray(Charsets.UTF_8))
         .replace("+", "-")
         .replace("/", "_")
         .replace("=", "")
 
-    val m = base64str.map { ch ->
-        val idx = p.indexOf(ch)
-        if (idx == -1) ch else h[idx]
-    }.joinToString("")
-
-    val g = "coc/6cb5a820/1000059358189026"
-    return "/$g/$m"
+    // Apply custom translation
+    val finalEncoded = base64Encoded.map { translationMap[it] ?: it }.joinToString("")
+    return finalEncoded
 }
 
