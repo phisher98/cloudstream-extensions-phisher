@@ -18,5 +18,6 @@ class DonghuastreamProvider: BasePlugin() {
         registerExtractorAPI(Geodailymotion())
         registerExtractorAPI(Ultrahd())
         registerExtractorAPI(Rumble())
+        registerExtractorAPI(PlayStreamplay())
     }
 }

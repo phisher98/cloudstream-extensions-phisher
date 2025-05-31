@@ -1,6 +1,7 @@
 package com.Donghuastream
 
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
@@ -148,3 +149,75 @@ class Rumble : ExtractorApi() {
         }
     }
 }
+
+open class PlayStreamplay : ExtractorApi() {
+    override var name = "All sub player"
+    override var mainUrl = "https://play.streamplay.co.in"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(url).document
+        val packedScript = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data() ?: return
+        val evalRegex = Regex("""eval\(.*?\)\)\)""", RegexOption.DOT_MATCHES_ALL)
+        val packedCode = evalRegex.find(packedScript)?.value ?: return
+        val unpackedJs = JsUnpacker(packedCode).unpack() ?: return
+        val token = Regex("""kaken="(.*?)"""").find(unpackedJs)?.groupValues?.getOrNull(1) ?: return
+        val apiUrl = "$mainUrl/api/?$token"
+        val response = app.get(apiUrl).parsedSafe<Response>() ?: return
+
+        val m3u8Url = response.sources.firstOrNull()?.file
+        if (!m3u8Url.isNullOrEmpty()) {
+            M3u8Helper.generateM3u8(name, m3u8Url, referer = "$mainUrl/")
+                .forEach(callback)
+        }
+
+        response.tracks.forEach { subtitle ->
+            subtitleCallback(
+                SubtitleFile(
+                    lang = subtitle.label,
+                    url = subtitle.file
+                )
+            )
+        }
+    }
+
+    data class Response(
+        val query: Query,
+        val status: String,
+        val message: String,
+        @JsonProperty("embed_url")
+        val embedUrl: String,
+        @JsonProperty("download_url")
+        val downloadUrl: String,
+        val title: String,
+        val poster: String,
+        val filmstrip: String,
+        val sources: List<Source>,
+        val tracks: List<Track>,
+    )
+
+    data class Query(
+        val source: String,
+        val id: String,
+        val download: String,
+    )
+
+    data class Source(
+        val file: String,
+        val type: String,
+        val label: String,
+        val default: Boolean,
+    )
+
+    data class Track(
+        val file: String,
+        val label: String,
+        val default: Boolean?,
+    )
+}
+

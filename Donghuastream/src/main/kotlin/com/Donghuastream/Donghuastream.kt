@@ -1,9 +1,12 @@
 package com.Donghuastream
 
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 
 open class Donghuastream : MainAPI() {
@@ -106,34 +109,89 @@ open class Donghuastream : MainAPI() {
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
-        document.select(".mobius option").amap { server->
-            val base64 = server.attr("value")
-            val doc= base64Decode(base64).let { Jsoup.parse(it) }
-            val url= httpsify(doc.select("iframe").attr("src"))
-            if (url.contains("vidmoly"))
-            {
-                val newurl=url.substringAfter("=\"").substringBefore("\"")
-                val link= "http:$newurl"
-                loadExtractor(link,referer = url,subtitleCallback, callback)
-            } else if(url.endsWith("mp4")) {
-                callback.invoke(
-                    newExtractorLink(
-                        "All Sub Player",
-                        "All Sub Player",
-                        url = url,
-                        INFER_TYPE
-                    ) {
-                        this.referer = ""
-                        this.quality = getQualityFromName("")
-                    }
-                )
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val postReq = app.post(data, requestBody = "".toRequestBody()).text
+
+        val regex = Regex("'get_video_servers'\\s*,\\s*\\w+\\s*:\\s*'([^']+)'\\s*,\\s*\\w+\\s*:\\s*'([^']+)'")
+        val match = regex.find(postReq) ?: return false
+        val postId = match.groupValues[1]
+        val nonce = match.groupValues[2]
+
+        val formData = mapOf(
+            "action" to "get_video_servers",
+            "post_id" to postId,
+            "nonce" to nonce
+        )
+
+        val html = app.post("$mainUrl/wp-admin/admin-ajax.php", data = formData)
+            .parsedSafe<Resp>()?.data?.data?.html ?: return false
+
+        val options = Jsoup.parse(html).select("select.mirror > option")
+
+        for (option in options) {
+            val base64 = option.attr("value")
+            if (base64.isBlank()) continue
+
+            val label = option.text().trim()
+            val decodedHtml = try {
+                base64Decode(base64)
+            } catch (e: Exception) {
+                Log.w("Error", "Base64 decode failed: $base64")
+                continue
             }
-            else {
-                loadExtractor(url, referer = url, subtitleCallback, callback)
+
+            val iframeUrl = Jsoup.parse(decodedHtml).selectFirst("iframe")?.attr("src")?.let(::httpsify)
+            if (iframeUrl.isNullOrEmpty()) continue
+
+            Log.d("Phisher", "[$label] iframe URL: $iframeUrl")
+
+            when {
+                "vidmoly" in iframeUrl -> {
+                    val cleanedUrl = "http:" + iframeUrl.substringAfter("=\"").substringBefore("\"")
+                    loadExtractor(cleanedUrl, referer = iframeUrl, subtitleCallback, callback)
+                }
+                iframeUrl.endsWith(".mp4") -> {
+                    callback(
+                        newExtractorLink(
+                            label,
+                            label,
+                            url = iframeUrl,
+                            INFER_TYPE
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName(label)
+                        }
+                    )
+                }
+                else -> {
+                    loadExtractor(iframeUrl, referer = iframeUrl, subtitleCallback, callback)
+                }
             }
         }
+
         return true
     }
+
+
+    data class Resp(
+        val success: Boolean,
+        val data: Data,
+    )
+
+    data class Data(
+        val data: Data2,
+        @JsonProperty("post_id")
+        val postId: Long,
+    )
+
+    data class Data2(
+        val html: String,
+        val status: String,
+    )
+
 }
