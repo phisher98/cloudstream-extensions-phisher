@@ -2936,8 +2936,8 @@ suspend fun <T> retryIO(
 @SuppressLint("NewApi")
 fun elevenMoviesTokenV2(rawData: String): String {
     // AES key and IV in hex (from Python)
-    val keyHex = "92602fba85ae08969373a50448391cdbccadeb40be09abb17007861049944842"
-    val ivHex = "1e933f03e2fb9d2e77f457ac1645f33d"
+    val keyHex = "a10e5798728e186d71dbb25c85b70006595c43ebc56077caee5c46fdaec034f9"
+    val ivHex = "82562b2cf22038d3daa1770234c63a04"
 
     val aesKey = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     val aesIv = ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
@@ -2952,7 +2952,7 @@ fun elevenMoviesTokenV2(rawData: String): String {
     val hexString = encrypted.joinToString("") { "%02x".format(it) }
 
     // XOR key from hex string
-    val xorKeyHex = "edc5e93586d7"
+    val xorKeyHex = "c679ea0d"
     val xorKey = xorKeyHex.chunked(2)
         .map { it.toInt(16).toByte() }
         .toByteArray()

@@ -146,24 +146,27 @@ class FourKHDHub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data)
         val links = Regex("""https?://[^",\]\[]+""").findAll(data).map { it.value }.toList()
+
         for (link in links) {
+            val lower = link.lowercase()
+            val resolvedLink = if ("id=" in lower) {
+                val finalLink = getRedirectLinks(link)
+                finalLink } else link
+
             when {
-                "hubdrive" in link.lowercase() -> {
-                    Hubdrive().getUrl(link, "HUB Drive", subtitleCallback, callback)
+                "hubdrive" in resolvedLink.lowercase() -> {
+                    Hubdrive().getUrl(resolvedLink, "HUB Drive", subtitleCallback, callback)
                 }
-                "hubcloud" in link.lowercase() -> {
-                    HubCloud().getUrl(link, "Hub Cloud", subtitleCallback, callback)
+                "hubcloud" in resolvedLink.lowercase() -> {
+                    HubCloud().getUrl(resolvedLink, "Hub Cloud", subtitleCallback, callback)
                 }
                 else -> {
-                    Log.w("Extractor", "Unknown host: $link")
+                    Log.w("Extractor", "Unknown host: $resolvedLink")
                 }
             }
         }
-
         return true
     }
-
 
 }
