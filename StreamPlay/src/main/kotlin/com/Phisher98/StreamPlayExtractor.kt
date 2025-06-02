@@ -5276,20 +5276,34 @@ object StreamPlayExtractor : StreamPlay() {
             ?.substringBefore("\",")
 
         if (encodedToken == null) return
-
+        val json = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/output.json")
+            .parsedSafe<Elevenmoviesjson>()
+        requireNotNull(json) { "Failed to parse Elevenmovies JSON" }
         val token = elevenMoviesTokenV2(encodedToken)
 
-        val staticPath = "APA91t9PoZwHV2WyucaGbKSpxJx7c_VYAYWOXlI8WCB-gTWcvz88bY9PMJ7I30nJayTEJg4AAtk0Gaa6D4V8FJQ9_Io3CtM9law2xptLLoKR8eD8slNP3WwL9x7juFBjXNVr9ciqrMoF2CV9xfmhITgEl6-zqVyecEO801em3fs4_osx2fWihKO/48bbb48dc848f14d2754754d197d939dbab4da99/i/bawose/laf/1181c071/1000037950406033/01ade2fbcf5203de7bc999e631258e3da61441cfe877770fa4cdc28c9971c8cf"
+        val staticPath = json.staticPath
         val apiServerUrl = "$Elevenmovies/$staticPath/$token/sr"
-
         val headers = mapOf(
-            "Referer" to "https://111movies.com/",
-            "Content-Type" to "font/woff",
-            "X-Requested-With" to "XMLHttpRequest",
-            "User-Agent" to USER_AGENT
+            "Referer" to Elevenmovies,
+            "User-Agent" to USER_AGENT,
+            "Content-Type" to "application/vnd.api+json",
+            "X-CSRF-Token" to json.csrfToken,
+            "X-Requested-With" to "XMLHttpRequest"
         )
+        val responseString = if (json.httpMethod == "GET") {
+            app.get(apiServerUrl, headers = headers).body.string()
+        }else {
+            val postHeaders = mapOf(
+                "Referer" to Elevenmovies,
+                "Content-Type" to "application/vnd.api+json",
+                "X-CSRF-Token" to json.csrfToken,
+                "X-Requested-With" to "XMLHttpRequest"
+            )
+            val mediaType = "application/vnd.api+json".toMediaType()
+            val requestBody = "".toRequestBody(mediaType)
+            app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
+        }
 
-        val responseString = app.get(apiServerUrl, headers = headers).body.string()
         val listType = object : TypeToken<List<ElevenmoviesServerEntry>>() {}.type
         val serverList: List<ElevenmoviesServerEntry> = Gson().fromJson(responseString, listType)
 
@@ -5298,7 +5312,19 @@ object StreamPlayExtractor : StreamPlay() {
             val serverName = entry.name
 
             val streamApiUrl = "$Elevenmovies/$staticPath/$serverToken"
-            val streamResponseString = app.get(streamApiUrl, headers = headers).body.string()
+            val streamResponseString = if (json.httpMethod == "GET") {
+                app.get(streamApiUrl, headers = headers).body.string()
+            } else {
+                val postHeaders = mapOf(
+                    "Referer" to Elevenmovies,
+                    "Content-Type" to "application/vnd.api+json",
+                    "X-CSRF-Token" to json.csrfToken,
+                    "X-Requested-With" to "XMLHttpRequest"
+                )
+                val mediaType = "application/vnd.api+json".toMediaType()
+                val requestBody = "".toRequestBody(mediaType)
+                app.post(streamApiUrl, headers = postHeaders, requestBody = requestBody).body.string()
+            }
             val streamRes = Gson().fromJson(streamResponseString, ElevenmoviesStreamResponse::class.java) ?: continue
             val videoUrl = streamRes.url ?: continue
 

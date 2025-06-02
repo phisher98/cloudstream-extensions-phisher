@@ -1870,3 +1870,20 @@ data class ElevenmoviesSubtitle(
     val file: String?
 )
 
+data class Elevenmoviesjson(
+    val src: String,
+    val dst: String,
+    @JsonProperty("static_path")
+    val staticPath: String,
+    @JsonProperty("http_method")
+    val httpMethod: String,
+    @JsonProperty("key_hex")
+    val keyHex: String,
+    @JsonProperty("iv_hex")
+    val ivHex: String,
+    @JsonProperty("xor_key")
+    val xorKey: String,
+    @JsonProperty("csrf_token")
+    val csrfToken: String,
+)
+
