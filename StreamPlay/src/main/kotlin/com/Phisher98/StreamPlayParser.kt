@@ -1885,5 +1885,7 @@ data class Elevenmoviesjson(
     val xorKey: String,
     @JsonProperty("csrf_token")
     val csrfToken: String,
+    @JsonProperty("content_types")
+    val contentTypes: String,
 )
 

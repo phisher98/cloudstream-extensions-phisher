@@ -5286,7 +5286,7 @@ object StreamPlayExtractor : StreamPlay() {
         val headers = mapOf(
             "Referer" to Elevenmovies,
             "User-Agent" to USER_AGENT,
-            "Content-Type" to "application/vnd.api+json",
+            "Content-Type" to json.contentTypes,
             "X-CSRF-Token" to json.csrfToken,
             "X-Requested-With" to "XMLHttpRequest"
         )
@@ -5295,11 +5295,11 @@ object StreamPlayExtractor : StreamPlay() {
         }else {
             val postHeaders = mapOf(
                 "Referer" to Elevenmovies,
-                "Content-Type" to "application/vnd.api+json",
+                "Content-Type" to json.contentTypes,
                 "X-CSRF-Token" to json.csrfToken,
                 "X-Requested-With" to "XMLHttpRequest"
             )
-            val mediaType = "application/vnd.api+json".toMediaType()
+            val mediaType = json.contentTypes.toMediaType()
             val requestBody = "".toRequestBody(mediaType)
             app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
         }
