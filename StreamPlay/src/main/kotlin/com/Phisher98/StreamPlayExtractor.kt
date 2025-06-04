@@ -1256,7 +1256,8 @@ object StreamPlayExtractor : StreamPlay() {
 
                 // Fetch anime details and episode list
                 val animeId = app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
-                val epRes = app.get("$AnimeKai/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "", homekey)}")
+                val decoded= app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
+                val epRes = app.get("$AnimeKai/ajax/episodes/list?ani_id=$animeId&_=$decoded")
                     .parsedSafe<AnimeKaiResponse>()?.getDocument()
 
                 epRes?.select("div.eplist a")?.forEach { ep ->
@@ -1265,7 +1266,8 @@ object StreamPlayExtractor : StreamPlay() {
                         val token = ep.attr("token")
 
                         // Fetch episode links for this episode
-                        val document = app.get("$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token, homekey)}")
+                        val decodedtoken= app.get("${BuildConfig.KAISVA}/?f=e&d=$token")
+                        val document = app.get("$AnimeKai/ajax/links/list?token=$token&_=$decodedtoken")
                             .parsed<AnimeKaiResponse>()
                             .getDocument()
 
@@ -1280,10 +1282,12 @@ object StreamPlayExtractor : StreamPlay() {
 
                         // Process each server sequentially
                         for ((type, lid, serverName) in servers) {
-                            val result = app.get("$AnimeKai/ajax/links/view?id=$lid&_=${decoder.generateToken(lid, homekey)}")
+                            val decodelid= app.get("${BuildConfig.KAISVA}/?f=e&d=$lid")
+                            val result = app.get("$AnimeKai/ajax/links/view?id=$lid&_=$decodelid")
                                 .parsed<AnimeKaiResponse>().result
                             val homekeys = getHomeKeys()
-                            val iframe = extractVideoUrlFromJsonAnimekai(decoder.decodeIframeData(result, homekeys))
+                            val decodeiframe= app.get("${BuildConfig.KAISVA}/?f=d&d=$result").text
+                            val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
 
                             val nameSuffix = when {
                                 type.contains("soft", ignoreCase = true) -> " [Soft Sub]"

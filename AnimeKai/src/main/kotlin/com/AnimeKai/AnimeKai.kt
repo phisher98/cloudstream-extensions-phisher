@@ -29,6 +29,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.phisher98.BuildConfig
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -185,10 +186,9 @@ class AnimeKai : MainAPI() {
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
-        val decoder = AnimekaiDecoder()
-        val homekey= getHomeKeys()
+        val decoded= app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
         val epRes =
-            app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=${decoder.generateToken(animeId ?: "", homekey)}").parsedSafe<Response>()?.getDocument()
+            app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded").parsedSafe<Response>()?.getDocument()
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
             subCount?.let {
                 subEpisodes += newEpisode("sub|" + ep.attr("token")) {
@@ -256,13 +256,12 @@ class AnimeKai : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val decoder = AnimekaiDecoder()
         val token = data.split("|").last().split("=").last()
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
         val types = if ("sub" in data) listOf(dubType, "softsub") else listOf(dubType)
-        val homekey= getHomeKeys()
+        val decodetoken= app.get("${BuildConfig.KAISVA}/?f=e&d=$token")
         val document =
-            app.get("$mainUrl/ajax/links/list?token=$token&_=${decoder.generateToken(token,homekey)}")
+            app.get("$mainUrl/ajax/links/list?token=$token&_=$decodetoken")
                 .parsed<Response>()
                 .getDocument()
 
@@ -276,10 +275,11 @@ class AnimeKai : MainAPI() {
         }.distinct()
 
         servers.amap { (type, lid, serverName) ->
-            val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=${decoder.generateToken(lid,homekey)}")
+            val decodelid= app.get("${BuildConfig.KAISVA}/?f=e&d=$lid")
+            val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=$decodelid")
                 .parsed<Response>().result
-            val homekeys=getHomeKeys()
-            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result,homekeys))
+            val decodeiframe= app.get("${BuildConfig.KAISVA}/?f=d&d=$result").text
+            val iframe = extractVideoUrlFromJson(decodeiframe)
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
             loadExtractor(iframe, name, subtitleCallback, callback)

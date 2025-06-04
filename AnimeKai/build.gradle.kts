@@ -1,5 +1,21 @@
+import org.jetbrains.kotlin.konan.properties.Properties
+
 // use an integer for version numbers
 version = 25
+
+
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+    defaultConfig {
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
+        buildConfigField("String", "KAISVA", "\"${properties.getProperty("KAISVA")}\"")
+    }
+}
 
 cloudstream {
     language = "en"
@@ -22,5 +38,6 @@ cloudstream {
 
     iconUrl = "https://www.google.com/s2/favicons?domain=animekai.to&sz=%size%"
 
-    isCrossPlatform = true
+    requiresResources = true
+    isCrossPlatform = false
 }

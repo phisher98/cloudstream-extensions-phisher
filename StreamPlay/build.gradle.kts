@@ -42,6 +42,7 @@ android {
         buildConfigField("String", "SUPERSTREAM_FIRST_API", "\"${properties.getProperty("SUPERSTREAM_FIRST_API")}\"")
         buildConfigField("String", "StreamPlayAPI", "\"${properties.getProperty("StreamPlayAPI")}\"")
         buildConfigField("String", "PROXYAPI", "\"${properties.getProperty("PROXYAPI")}\"")
+        buildConfigField("String", "KAISVA", "\"${properties.getProperty("KAISVA")}\"")
     }
 }
 

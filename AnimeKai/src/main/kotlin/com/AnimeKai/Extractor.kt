@@ -2,15 +2,17 @@ package com.AnimeKai
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.AnimeKai.AnimeKai.Companion.getHomeKeys
-import com.AnimeKai.AnimeKai.Companion.getMegaKeys
 import com.google.gson.Gson
 import com.lagradost.api.Log
+import com.AnimeKai.*
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.phisher98.BuildConfig
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 
 class MegaUp : ExtractorApi() {
@@ -37,8 +39,10 @@ class MegaUp : ExtractorApi() {
             Log.d("Phisher", "Encoded result is null")
             return
         }
-        val megaKeysSrc= getMegaKeys()
-        val decodedJson = AnimekaiDecoder().decode(encodedResult, megaKeysSrc).replace("\\", "")
+        val requestBody = encodedResult.toRequestBody("text/plain".toMediaType())
+        val response = app.post("${BuildConfig.KAISVA}/?f=m", requestBody = requestBody).text
+        val decodedJson = response.replace("\\", "")
+
 
         val m3u8Data = runCatching {
             Gson().fromJson(decodedJson, AnimeKai.M3U8::class.java)

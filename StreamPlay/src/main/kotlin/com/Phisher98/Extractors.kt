@@ -40,6 +40,7 @@ import com.phisher98.StreamPlay.Companion.getMegaKeys
 import com.phisher98.StreamPlay.Companion.modflixAPI
 import kotlinx.serialization.Serializable
 import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -1698,8 +1699,9 @@ internal class MegaUp : ExtractorApi() {
             Log.d("Phisher", "Encoded result is null")
             return
         }
-        val megaKeysSrc= getMegaKeys()
-        val decodedJson = AnimekaiDecoder().decode(encodedResult, megaKeysSrc).replace("\\", "")
+        val requestBody = encodedResult.toRequestBody("text/plain".toMediaType())
+        val response = app.post("${BuildConfig.KAISVA}/?f=m", requestBody = requestBody).text
+        val decodedJson = response.replace("\\", "")
 
         val m3u8Data = runCatching {
             Gson().fromJson(decodedJson, AnimeKaiM3U8::class.java)
