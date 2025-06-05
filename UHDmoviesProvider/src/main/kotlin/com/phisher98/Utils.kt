@@ -338,3 +338,23 @@ open class Driveseed : ExtractorApi() {
     }
 }
         */
+
+
+data class DomainsParser(
+    val moviesdrive: String,
+    @JsonProperty("HDHUB4u")
+    val hdhub4u: String,
+    @JsonProperty("4khdhub")
+    val n4khdhub: String,
+    @JsonProperty("MultiMovies")
+    val multiMovies: String,
+    val bollyflix: String,
+    @JsonProperty("UHDMovies")
+    val uhdmovies: String,
+    val moviesmod: String,
+    val topMovies: String,
+    val hdmovie2: String,
+    val vegamovies: String,
+    val rogmovies: String,
+    val luxmovies: String,
+)

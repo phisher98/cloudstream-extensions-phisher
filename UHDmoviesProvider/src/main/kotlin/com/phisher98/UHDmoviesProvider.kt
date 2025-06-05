@@ -16,7 +16,7 @@ import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://modflix.xyz/?type=uhdmovies"
+    override var mainUrl = "https://uhdmovies.tips"
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "en"
@@ -27,30 +27,32 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     )
 
     companion object {
-        val basemainUrl: String? by lazy {
-            runBlocking {
+        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private var cachedDomains: DomainsParser? = null
+
+        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
+            if (cachedDomains == null || forceRefresh) {
                 try {
-                    val mainUrl = "https://modflix.xyz/?type=uhdmovies"
-                    app.get(mainUrl).document
-                        .selectFirst("meta[http-equiv=refresh]")?.attr("content")
-                        ?.substringAfter("url=")
+                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
                 } catch (e: Exception) {
-                    null
+                    e.printStackTrace()
+                    return null
                 }
             }
+            return cachedDomains
         }
     }
 
     override val mainPage = mainPageOf(
-        "$basemainUrl/" to "Home",
-        "$basemainUrl/movies/" to "Movies",
-        "$basemainUrl/tv-series/" to "TV Series",
-        "$basemainUrl/tv-shows/" to "TV Shows",
-        "$basemainUrl/movies/dual-audio-movies/" to "Dual Audio Movies",
-        "$basemainUrl/movies/collection-movies/" to "Hollywood",
-        "$basemainUrl/tv-shows/netflix/" to "Netflix",
-        "$basemainUrl/web-series/" to "Web Series",
-        "$basemainUrl/amazon-prime/" to "Amazon Prime",
+        "" to "Home",
+        "movies/" to "Movies",
+        "tv-series/" to "TV Series",
+        "tv-shows/" to "TV Shows",
+        "movies/dual-audio-movies/" to "Dual Audio Movies",
+        "movies/collection-movies/" to "Hollywood",
+        "tv-shows/netflix/" to "Netflix",
+        "web-series/" to "Web Series",
+        "amazon-prime/" to "Amazon Prime",
     )
 
     private suspend fun cfKiller(url: String): NiceResponse {
@@ -65,10 +67,11 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        val uhdmoviesAPI = getDomains()?.uhdmovies
         val document = if (page == 1) {
-            cfKiller(request.data).document
+            cfKiller("$uhdmoviesAPI/${request.data}").document
         } else {
-            cfKiller(request.data + "/page/$page/").document
+            cfKiller("$uhdmoviesAPI/${request.data}" + "/page/$page/").document
         }
 
         //Log.d("Document", document.toString())
@@ -99,7 +102,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("$basemainUrl/?s=$query ").document
+        val document = cfKiller("?s=$query ").document
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()

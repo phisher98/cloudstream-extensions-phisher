@@ -219,45 +219,20 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
         }
 
-        private const val AUTOKAI_URL = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/gen/keys.json"
+        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private var cachedDomains: DomainsParser? = null
 
-        private var cachedKeys: List<List<String>>? = null
-        private val gson = Gson()
-
-        suspend fun getHomeKeys(): List<List<String>> {
-            if (cachedKeys == null) {
-                val responseBody = app.get(AUTOKAI_URL).body.string()
-                val parsed: AutoKai? = try {
-                    gson.fromJson(responseBody, AutoKai::class.java)
+        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
+            if (cachedDomains == null || forceRefresh) {
+                try {
+                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    null
+                    return null
                 }
-                cachedKeys = parsed?.kai ?: emptyList()
             }
-            return cachedKeys ?: emptyList()
+            return cachedDomains
         }
-
-        private var cachedMegaKeys: List<List<String>>? = null
-
-        suspend fun getMegaKeys(): List<List<String>> {
-            if (cachedMegaKeys == null) {
-                val responseBody = app.get(AUTOKAI_URL).body.string()
-                val parsed: AutoKai? = try {
-                    gson.fromJson(responseBody, AutoKai::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
-                }
-                cachedMegaKeys = parsed?.mega ?: emptyList()
-            }
-            return cachedMegaKeys ?: emptyList()
-        }
-
-        data class AutoKai(
-            val kai: List<List<String>>,
-            val mega: List<List<String>>,
-        )
     }
 
     override val mainPage = mainPageOf(
