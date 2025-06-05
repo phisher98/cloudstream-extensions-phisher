@@ -3,6 +3,9 @@ package com.phisher98
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
@@ -1835,57 +1838,93 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     suspend fun invokeXPrimeAPI(
-        id: Int? = null,
+        title: String?,
+        year: Int?,
+        id: String? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val url = if (season == null) {
-            "$Xprime/primebox?id=$id"
-        } else {
-            "$Xprime/primebox?id=$id&season=$season&episode=$episode"
-        }
+        val backendAPI = getDomains()?.xprime ?: return
+        val serversUrl = "$backendAPI/servers"
+        val servers = app.get(serversUrl).parsedSafe<XprimeServers>() ?: return
+        servers.servers.forEach { server ->
+            if (server.status != "ok") return@forEach
 
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        )
+            val finalUrl = if (server.name == "primebox") {
+                if (season == null) {
+                    "$backendAPI/primebox?name=$title&fallback_year=$year"
+                } else {
+                    "$backendAPI/primebox?name=$title&fallback_year=$year&season=$season&episode=$episode"
+                }
+            } else {
+                if (season == null) {
+                    "$backendAPI/${server.name}?name=$title&year=$year&id=$id&imdb=$id"
+                } else {
+                    "$backendAPI/${server.name}?name=$title&year=$year&id=$id&imdb=$id&season=$season&episode=$episode"
+                }
+            }
 
-        val response =
-            app.get(url, headers = headers, timeout = 100L).parsedSafe<Xprime>() ?: return
-        val streamMap = mapOf(
-            "1080p" to (response.streams.n1080p to Qualities.P1080.value),
-            "720p" to (response.streams.n720p to Qualities.P720.value),
-            "480p" to (response.streams.n480p to Qualities.P480.value)
-        )
+            try {
+                val document = app.get(finalUrl)
+                val objectMapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
+                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
-        for ((quality, pair) in streamMap) {
-            val (streamUrl, qualityValue) = pair
-            if (quality in response.availableQualities && streamUrl.isNotBlank()) {
-                callback(
-                    newExtractorLink(
-                        "XPrime",
-                        "XPrime",
-                        url = streamUrl,
-                        ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = referer
-                        this.quality = qualityValue
+                if (server.name == "primebox") {
+                    val streamText = document.text
+                    val stream: XprimeStream = objectMapper.readValue(streamText)
+
+                    stream.qualities.forEach { quality ->
+                        val source = objectMapper.readTree(streamText).get("streams").get(quality).textValue()
+                        callback.invoke(
+                            newExtractorLink(
+                                source = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
+                                name = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
+                                url = source,
+                                type = ExtractorLinkType.VIDEO
+                            ) {
+                                this.quality = getQualityFromName(quality)
+                                this.headers = mapOf("Origin" to Xprime)
+                                this.referer = Xprime
+                            }
+                        )
                     }
-                )
+
+                    if (stream.hasSubtitles) {
+                        stream.subtitles.forEach {
+                            subtitleCallback.invoke(
+                                SubtitleFile(
+                                    lang = it.label ?: "Unknown",
+                                    url = it.file ?: ""
+                                )
+                            )
+                        }
+                    }
+
+                } else {
+                    val source = objectMapper.readTree(document.text).get("url").textValue()
+                    callback.invoke(
+                        newExtractorLink(
+                            source = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
+                            name = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
+                            url = source,
+                            type = ExtractorLinkType.M3U8
+                        ) {
+                            this.headers = mapOf("Origin" to Xprime)
+                            this.quality = Qualities.Unknown.value
+                            this.referer = Xprime
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
-        response.subtitles.forEach {
-            val language = it.label.ifBlank { "Unknown" }
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    language.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase(Locale.getDefault()) else c.toString() },
-                    it.file
-                )
-            )
-        }
+
     }
+
 
     suspend fun invokevidzeeUltra(
         id: Int? = null,

@@ -1003,7 +1003,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokeXPrimeAPI(
-                    res.id,
+                    res.title,
+                    res.year,
+                    res.imdbId,
                     res.season,
                     res.episode,
                     subtitleCallback,

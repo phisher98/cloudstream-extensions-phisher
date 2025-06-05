@@ -292,7 +292,9 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             },
             {
                 if (!res.isAnime) invokeXPrimeAPI(
-                    res.id,
+                    res.title,
+                    res.year,
+                    res.imdbId,
                     res.season,
                     res.episode,
                     subtitleCallback,

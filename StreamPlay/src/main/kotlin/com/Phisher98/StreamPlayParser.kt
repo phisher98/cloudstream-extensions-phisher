@@ -1909,5 +1909,32 @@ data class DomainsParser(
     val vegamovies: String,
     val rogmovies: String,
     val luxmovies: String,
+    val xprime: String,
 )
+
+
+//Xprime
+data class XprimeServers(
+    val servers: List<XprimeServer1>,
+)
+
+data class XprimeServer1(
+    val name: String,
+    val status: String,
+    val language: String,
+)
+
+
+data class XprimeStream(
+    @JsonProperty("available_qualities") val qualities: List<String>,
+    @JsonProperty("status") val status: String,
+    @JsonProperty("has_subtitles") val hasSubtitles: Boolean,
+    @JsonProperty("subtitles") val subtitles: List<XprimePrimeSubs>
+)
+
+data class XprimePrimeSubs(
+    @JsonProperty("file") val file: String? = null,
+    @JsonProperty("label") val label: String? = null,
+)
+
 
