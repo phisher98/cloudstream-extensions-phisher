@@ -30,9 +30,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
-import kotlinx.coroutines.delay
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -290,8 +288,8 @@ class VCloud : ExtractorApi() {
         val div = document.selectFirst("div.card-body") ?: return
 
         div.select("h2 a.btn")
-            ?.filterNot { it.text().contains("Telegram", ignoreCase = true) }
-            ?.amap { linkTag ->
+            .filterNot { it.text().contains("Telegram", ignoreCase = true) }
+            .amap { linkTag ->
                 val link = linkTag.attr("href")
 
                 when {
@@ -419,7 +417,7 @@ open class Streamruby : ExtractorApi() {
             response.document.selectFirst("script:containsData(sources:)")?.data()
         }
         val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
-        M3u8Helper.generateM3u8(
+        generateM3u8(
             name,
             m3u8 ?: return,
             mainUrl
@@ -491,7 +489,7 @@ open class Netembed : ExtractorApi() {
         val script = getAndUnpack(response.text)
         val m3u8 = Regex("((https:|http:)//.*\\.m3u8)").find(script)?.groupValues?.getOrNull(1) ?: return
 
-        M3u8Helper.generateM3u8(this.name, m3u8, "$mainUrl/").forEach(callback)
+        generateM3u8(this.name, m3u8, "$mainUrl/").forEach(callback)
     }
 }
 
@@ -549,7 +547,7 @@ open class Streamvid : ExtractorApi() {
         }
         val m3u8 =
             Regex("src:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
-        M3u8Helper.generateM3u8(
+        generateM3u8(
             name,
             m3u8 ?: return,
             mainUrl
@@ -1054,6 +1052,7 @@ class Moviesapi : Chillx() {
     override val requiresReferer = true
 }
 
+@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
@@ -1335,7 +1334,7 @@ open class Driveseed : ExtractorApi() {
                     }
 
                     text.contains("Direct Links", ignoreCase = true) -> {
-                        CFType1(Basedomain + href)?.forEach { link ->
+                        CFType1(Basedomain + href).forEach { link ->
                             callback(
                                 newExtractorLink(
                                     "$name CF Type1 $labelExtras",
@@ -1716,7 +1715,7 @@ internal class MegaUp : ExtractorApi() {
         }
 
         m3u8Data.sources.firstOrNull()?.file?.let { m3u8 ->
-            M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
+            generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
         } ?: Log.d("Error:", "No sources found in M3U8 data")
 
         m3u8Data.tracks.forEach { track ->
@@ -1767,9 +1766,9 @@ open class GDFlix : ExtractorApi() {
         } ?: return
         val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
-            .substringAfter("Name : ").orEmpty()
+            .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
-            .substringAfter("Size : ").orEmpty()
+            .substringAfter("Size : ")
 
         document.select("div.text-center a").amap { anchor ->
             val text = anchor.select("a").text()
@@ -1778,7 +1777,7 @@ open class GDFlix : ExtractorApi() {
                 text.contains("DIRECT DL") -> {
                     val link = anchor.attr("href")
                     callback.invoke(
-                        newExtractorLink("GDFlix[Direct]", "GDFlix[Direct] $fileName[$fileSize]", link) {
+                        newExtractorLink("GDFlix[Direct]", "GDFlix[Direct] [$fileSize]", link) {
                             this.quality = getIndexQuality(fileName)
                         }
                     )
@@ -1794,7 +1793,7 @@ open class GDFlix : ExtractorApi() {
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val source = sourceAnchor.attr("href")
                                         callback.invoke(
-                                            newExtractorLink("GDFlix[Index]", "GDFlix[Index] $fileName[$fileSize]", source) {
+                                            newExtractorLink("GDFlix[Index]", "GDFlix[Index] [$fileSize]", source) {
                                                 this.quality = getIndexQuality(fileName)
                                             }
                                         )
@@ -1833,7 +1832,7 @@ open class GDFlix : ExtractorApi() {
                                 val headers = mapOf("Referer" to indexbotLink)
                                 val cookies = mapOf("PHPSESSID" to "$cookiesSSID")
 
-                                var downloadLink = app.post(
+                                val downloadLink = app.post(
                                     "$baseUrl/download?id=$postId",
                                     requestBody = requestBody,
                                     headers = headers,
@@ -1844,7 +1843,7 @@ open class GDFlix : ExtractorApi() {
                                 }
 
                                 callback.invoke(
-                                    newExtractorLink("GDFlix[DriveBot]", "GDFlix[DriveBot] $fileName[$fileSize]", downloadLink) {
+                                    newExtractorLink("GDFlix[DriveBot]", "GDFlix[DriveBot] [$fileSize]", downloadLink) {
                                         this.referer = baseUrl
                                         this.quality = getIndexQuality(fileName)
                                     }
@@ -1863,7 +1862,7 @@ open class GDFlix : ExtractorApi() {
                             .headers["location"]?.substringAfter("url=").orEmpty()
 
                         callback.invoke(
-                            newExtractorLink("GDFlix[Instant Download]", "GDFlix[Instant Download] $fileName[$fileSize]", link) {
+                            newExtractorLink("GDFlix[Instant Download]", "GDFlix[Instant Download] [$fileSize]", link) {
                                 this.quality = getIndexQuality(fileName)
                             }
                         )
@@ -1874,7 +1873,7 @@ open class GDFlix : ExtractorApi() {
 
                 text.contains("CLOUD DOWNLOAD") -> {
                     callback.invoke(
-                        newExtractorLink("GDFlix[CLOUD]", "GDFlix[CLOUD] $fileName[$fileSize]", anchor.attr("href")) {
+                        newExtractorLink("GDFlix[CLOUD]", "GDFlix[CLOUD] [$fileSize]", anchor.attr("href")) {
                             this.quality = getIndexQuality(fileName)
                         }
                     )
@@ -1909,7 +1908,7 @@ open class GDFlix : ExtractorApi() {
 
                 if (source.isNotEmpty()) {
                     callback.invoke(
-                        newExtractorLink("GDFlix[CF]", "GDFlix[CF] $fileName[$fileSize]", source) {
+                        newExtractorLink("GDFlix[CF]", "GDFlix[CF] [$fileSize]", source) {
                             this.quality = getIndexQuality(fileName)
                         }
                     )
@@ -1942,7 +1941,7 @@ class Gofile : ExtractorApi() {
         val token = jsonResp.getJSONObject("data").getString("token") ?: return
 
         val globalRes = app.get("$mainUrl/dist/js/global.js").text
-        val wt = Regex("""appdata\.wt\s*=\s*[\"']([^\"']+)[\"']""").find(globalRes)?.groupValues?.get(1) ?: return
+        val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""").find(globalRes)?.groupValues?.get(1) ?: return
 
         val response = app.get("$mainApi/contents/$id?wt=$wt",
             headers = mapOf(
@@ -1965,20 +1964,18 @@ class Gofile : ExtractorApi() {
             "%.2f GB".format(sizeInGB)
         }
 
-        if(link != null) {
-            callback.invoke(
-                newExtractorLink(
-                    "Gofile",
-                    "Gofile $fileName[$formattedSize]",
-                    link,
-                ) {
-                    this.quality = getQuality(fileName)
-                    this.headers = mapOf(
-                        "Cookie" to "accountToken=$token"
-                    )
-                }
-            )
-        }
+        callback.invoke(
+            newExtractorLink(
+                "Gofile",
+                "Gofile [$formattedSize]",
+                link,
+            ) {
+                this.quality = getQuality(fileName)
+                this.headers = mapOf(
+                    "Cookie" to "accountToken=$token"
+                )
+            }
+        )
     }
 
     private fun getQuality(str: String?): Int {
