@@ -10,7 +10,6 @@ import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.filmxyAPI
 import com.phisher98.StreamPlay.Companion.fourthAPI
 import com.phisher98.StreamPlay.Companion.gdbot
-import com.phisher98.StreamPlay.Companion.hdmovies4uAPI
 import com.phisher98.StreamPlay.Companion.malsyncAPI
 import com.phisher98.StreamPlay.Companion.thrirdAPI
 import com.google.gson.Gson
@@ -565,40 +564,6 @@ suspend fun fetchDumpEpisodes(id: String, type: String, episode: Int?): EpisodeV
     )?.episodeVo?.find {
         it.seriesNo == (episode ?: 0)
     }
-}
-
-suspend fun invokeDrivetot(
-    url: String,
-    tags: String? = null,
-    size: String? = null,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit,
-) {
-    val res = app.get(url)
-    val data = res.document.select("form input").associate { it.attr("name") to it.attr("value") }
-    app.post(res.url, data = data, cookies = res.cookies).document.select("div.card-body a")
-        .amap { ele ->
-            val href = base64Decode(ele.attr("href").substringAfterLast("/")).let {
-                if (it.contains("hubcloud.lol")) it.replace("hubcloud.lol", "hubcloud.in") else it
-            }
-            loadExtractor(href, "$hdmovies4uAPI/", subtitleCallback) { link ->
-                CoroutineScope(Dispatchers.IO).launch {
-                    callback.invoke(
-                        newExtractorLink(
-                            link.source,
-                            "${link.name} $tags [$size]",
-                            link.url,
-                        ) {
-                            this.referer = link.referer
-                            this.quality = link.quality
-                            this.type = link.type
-                            this.headers = link.headers
-                            this.extractorData = link.extractorData
-                        }
-                    )
-                }
-            }
-        }
 }
 
 suspend fun bypassBqrecipes(url: String): String? {

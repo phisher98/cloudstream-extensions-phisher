@@ -59,8 +59,6 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
@@ -98,13 +96,8 @@ import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
-import okhttp3.Interceptor
-import okhttp3.Response
-import java.io.IOException
-import java.net.URLEncoder
 import kotlin.math.roundToInt
 
-@Suppress("ConstPropertyName", "PropertyName")
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "StreamPlay"
     override val hasMainPage = true
@@ -118,12 +111,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         TvType.Cartoon,
     )
 
-    // token is the name of the string "variable" saved in the preferences.
-    // null is what it returns if there's no token saved
     private val token = sharedPref?.getString("token", null)
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
-    /** AUTHOR : hexated & Code */
+    /** AUTHOR : hexated & Phisher & Code */
     companion object {
         /** TOOLS */
         private const val tmdbAPI = "https://api.themoviedb.org/3"
@@ -144,7 +135,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
         const val lingAPI = "https://ling-online.net"
-        //const val AsianhdAPI = "https://asianhdplay.in"
         const val flixonAPI = "https://flixon.ovh"
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
@@ -156,7 +146,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
-        const val multimoviesAPI = "https://linktr.ee/multimovies"
         const val allmovielandAPI = "https://allmovieland.fun"
         const val vidsrctoAPI = "https://vidsrc.cc"
         const val vidsrcsu = "https://vidsrc.su"
@@ -168,26 +157,19 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://www1.zoechip.to"
         const val nepuAPI = "https://nepu.to"
-        const val modflixAPI="https://modflix.xyz"
-        const val hdmovies4uAPI = "https://hdmovies4u.ph"
-        const val Vglist="https://vglist.nl"
         const val dahmerMoviesAPI="https://a.111477.xyz"
-        const val MovieDriveAPI="https://moviesdrives.com"
         const val bollyflixAPI = "https://bollyflix.yoga"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix= "https://catflix.su"
-        //const val ConsumetAPI=BuildConfig.ConsumetAPI
         const val NyaaAPI="https://nyaa.land"
         const val Extramovies="https://extramovies.direct"
         const val WhvxAPI=BuildConfig.WhvxAPI
         const val Sharmaflix= BuildConfig.SharmaflixApi
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val EmbedSu="https://embed.su"
-        //const val FlickyAPI="https://www.flicky.host"
         const val WyZIESUBAPI="https://sub.wyzie.ru"
         const val Theyallsayflix=BuildConfig.Theyallsayflix
         const val TomAPI="https://tom.autoembed.cc"
-        //const val HinAutoAPI="https://hin.autoembed.cc"
         const val RiveStreamAPI="https://rivestream.org"
         const val VidSrcVip="https://vidsrc.vip"
         const val Primewire="https://www.primewire.tf"
@@ -603,11 +585,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             {
                 if (!res.isAnime) invokeBollyflix(
                     res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
                     subtitleCallback,
                     callback
                 )
@@ -779,7 +756,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
     {
         invokeMultimovies(
-            multimoviesAPI,
             res.title,
             res.season,
             res.episode,
@@ -1228,66 +1204,5 @@ data class MediaDetail(
 @JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
 )
 
-    class CloudflareDnsInterceptor : Interceptor {
-        // Use a static flag to remember if proxy should always be used
-        companion object {
-            @Volatile
-            private var shouldUseProxy = false
-        }
 
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val originalRequest = chain.request()
-            val originalUrl = originalRequest.url.toString()
-
-            // If proxy mode is activated, always use proxy
-            if (shouldUseProxy) {
-                return proceedWithProxy(chain, originalRequest, originalUrl)
-            }
-
-            return try {
-                // Attempt the original request first
-                val originalResponse = chain.proceed(originalRequest)
-
-                if (!originalResponse.isSuccessful) {
-                    Log.e("CloudflareDnsInterceptor", "Original request failed: ${originalResponse.code}")
-                    originalResponse.close() // Close failed response
-                    throw IOException("Original request failed")
-                }
-
-                Log.d("CloudflareDnsInterceptor", "Original request successful")
-                originalResponse
-            } catch (e: IOException) {
-                Log.e("CloudflareDnsInterceptor", "Original request failed, switching to proxy: ${e.message}")
-
-                // Activate proxy mode permanently
-                shouldUseProxy = true
-                proceedWithProxy(chain, originalRequest, originalUrl)
-            }
-        }
-
-        private fun proceedWithProxy(chain: Interceptor.Chain, originalRequest: okhttp3.Request, originalUrl: String): Response {
-            val proxyUrl = "${BuildConfig.PROXYAPI}=${URLEncoder.encode(originalUrl, "UTF-8")}"
-            Log.w("CloudflareDnsInterceptor", "Using proxy for request: $proxyUrl")
-
-            val proxyRequest = originalRequest.newBuilder()
-                .url(proxyUrl)
-                .build()
-
-            return try {
-                val proxyResponse = chain.proceed(proxyRequest)
-
-                if (!proxyResponse.isSuccessful) {
-                    Log.e("CloudflareDnsInterceptor", "Proxy request failed: ${proxyResponse.code}")
-                    proxyResponse.close()
-                    throw IOException("Proxy request failed")
-                }
-
-                Log.d("CloudflareDnsInterceptor", "Proxy request successful")
-                proxyResponse
-            } catch (proxyException: IOException) {
-                Log.e("CloudflareDnsInterceptor", "Proxy failed: ${proxyException.message}")
-                throw proxyException
-            }
-        }
-    }
 }
