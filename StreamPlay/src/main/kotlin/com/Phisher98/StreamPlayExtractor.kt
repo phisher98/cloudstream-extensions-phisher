@@ -4045,7 +4045,6 @@ object StreamPlayExtractor : StreamPlay() {
             ?.replace("&", " ")
             ?.trim()
             .orEmpty()
-        Log.d("Phisher", movieDriveAPI)
         val searchTitle = fixTitle.createSlug()
         val searchUrl = if (season == null) {
             "$movieDriveAPI/search/$fixTitle $year"
