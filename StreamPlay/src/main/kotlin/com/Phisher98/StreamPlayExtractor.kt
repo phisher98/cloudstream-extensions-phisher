@@ -935,7 +935,18 @@ object StreamPlayExtractor : StreamPlay() {
         val response =
             app.get(query, referer = privatereferer).parsedSafe<AnichiRoot>()?.data?.shows?.edges
         if (response != null) {
-            val id = response.firstOrNull()?.id ?: return
+            val normalizedQuery = name?.trim()?.lowercase() ?: return
+
+            val matched = response.find { item ->
+                item.name.trim().lowercase() == normalizedQuery ||
+                        item.englishName.trim().lowercase() == normalizedQuery
+            } ?: response.find { item ->
+                val allTitles = listOfNotNull(item.name, item.englishName).map { it.lowercase() }
+                allTitles.any { it.contains(normalizedQuery) }
+            }
+
+            val id = matched?.id ?: return
+
             val langType = listOf("sub", "dub")
             for (i in langType) {
                 val epData =
@@ -1042,14 +1053,14 @@ object StreamPlayExtractor : StreamPlay() {
             val href = it.select(".episode-node")
                 .firstOrNull { element -> element.text().contains("$episode") }?.select("a")
                 ?.attr("href")
-            if (href != null)
+            if (href!= null)
                 loadCustomExtractor(
                     "AnimeOwl [$subtype]",
                     href,
                     AnimeOwlAPI,
                     subtitleCallback,
                     callback,
-                    Qualities.P1080.value
+
                 )
         }
     }

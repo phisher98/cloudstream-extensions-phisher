@@ -32,6 +32,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import kotlinx.coroutines.delay
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -1579,18 +1580,30 @@ class OwlExtractor : ExtractorApi() {
     override var mainUrl = "https://whguides.com"
     override val requiresReferer = false
 
-    override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
-        val response = app.get(url).document
-        val datasrc=response.select("button#hot-anime-tab").attr("data-source")
-        val id=datasrc.substringAfterLast("/")
-        val epJS= app.get("$referer/players/$id.v2.js").text.let {
-            Deobfuscator.deobfuscateScript(it)
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val response = retryIO { app.get(url).document }
+        val datasrc = response.select("button#hot-anime-tab").attr("data-source")
+        val id = datasrc.substringAfterLast("/")
+
+        val epJS = retryIO {
+            app.get("$referer/players/$id.v2.js").text.let {
+                Deobfuscator.deobfuscateScript(it)
+            }
         }
-        val jwt=findFirstJwt(epJS?: throw Exception("Unable to get jwt")) ?:return
-        val jsonString=app.get("$referer$datasrc").toString()
+
+        val jwt = findFirstJwt(epJS ?: throw Exception("Unable to get jwt")) ?: return
+
+        val jsonString = retryIO { app.get("$referer$datasrc").text }
         val mapper = jacksonObjectMapper()
         val servers: Map<String, List<VideoData>> = mapper.readValue(jsonString)
+
         val sources = mutableListOf<Pair<String, String>>()
+
         servers["kaido"]?.firstOrNull()?.url?.let {
             val finalUrl = "$it$jwt"
             sources += "Kaido" to finalUrl
@@ -1598,18 +1611,17 @@ class OwlExtractor : ExtractorApi() {
 
         servers["luffy"]?.forEach { video ->
             val finalUrl = "${video.url}$jwt"
-            val m3u8 = getRedirectedUrl(finalUrl)
+            val m3u8 = retryIO { getRedirectedUrl(finalUrl) }
             sources += "Luffy-${video.resolution}" to m3u8
         }
 
         servers["zoro"]?.firstOrNull()?.url?.let {
             val finalUrl = "$it$jwt"
-            val jsonResponse = getZoroJson(finalUrl)
+            val jsonResponse = retryIO { getZoroJson(finalUrl) }
             val (m3u8, vtt) = fetchZoroUrl(jsonResponse) ?: return
             sources += "Zoro" to m3u8
             sources += "Zoro" to vtt
         }
-
 
         sources.amap { (key, url) ->
             if (url.endsWith(".vvt")) {
@@ -1635,15 +1647,15 @@ class OwlExtractor : ExtractorApi() {
                 )
             }
         }
-        return
     }
+
     private fun findFirstJwt(text: String): String? {
         val jwtPattern = Regex("['\"]([A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+)['\"]")
         return jwtPattern.find(text)?.groupValues?.get(1)
     }
 
     private fun getRedirectedUrl(url: String): String {
-        return url
+        return url // Can wrap with retryIO if logic is added
     }
 
     data class ZoroResponse(val url: String, val subtitle: String)
@@ -1663,8 +1675,8 @@ class OwlExtractor : ExtractorApi() {
     }
 
     data class VideoData(val resolution: String, val url: String)
-
 }
+
 
 internal class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
