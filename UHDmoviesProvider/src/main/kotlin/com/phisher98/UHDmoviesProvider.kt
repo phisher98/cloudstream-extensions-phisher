@@ -102,7 +102,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("?s=$query ").document
+        val uhdmoviesAPI = getDomains()?.uhdmovies
+        val document = cfKiller("$uhdmoviesAPI?s=$query ").document
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()

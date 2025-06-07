@@ -122,6 +122,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
+        const val cineMetaAPI = "https://v3-cinemeta.strem.io/meta"
         private const val apiKey = BuildConfig.TMDB_API
 
         /** ALL SOURCES */
@@ -294,7 +295,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
 
-        val title = res.title ?: res.name ?: return null
+        val altTitle=app.get("$cineMetaAPI/${type.name.lowercase()}/${res.external_ids?.imdb_id}.json").parsedSafe<Cinemeta>()?.meta?.name
+        val title = altTitle ?: res.title ?: res.name ?: return null
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
         val orgTitle = res.originalTitle ?: res.originalName ?: return null
@@ -423,7 +425,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     airedDate = res.releaseDate
                         ?: res.firstAirDate,
                     isAsian = isAsian,
-                    isBollywood = isBollywood
+                    isBollywood = isBollywood,
                 ).toJson(),
             ) {
                 this.posterUrl = poster
@@ -1067,6 +1069,7 @@ val airedDate: String? = null,
 val isAsian: Boolean = false,
 val isBollywood: Boolean = false,
 val isCartoon: Boolean = false,
+val imdbtitle: String? = null
 )
 
 data class Data(

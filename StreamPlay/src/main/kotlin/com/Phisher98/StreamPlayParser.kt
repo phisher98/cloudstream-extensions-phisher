@@ -1938,3 +1938,18 @@ data class XprimePrimeSubs(
 )
 
 
+//
+
+
+data class Cinemeta(
+    val meta: cinemetaMeta,
+)
+
+data class cinemetaMeta(
+    val description: String,
+    val director: List<String>,
+    val genre: List<String>,
+    val imdbRating: String,
+    val name: String,
+)
+

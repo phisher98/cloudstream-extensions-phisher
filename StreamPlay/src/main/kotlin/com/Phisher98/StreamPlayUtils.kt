@@ -5,7 +5,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import app.cash.quickjs.QuickJs
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.phisher98.DumpUtils.queryApi
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.filmxyAPI
 import com.phisher98.StreamPlay.Companion.fourthAPI
@@ -503,66 +502,6 @@ suspend fun invokeSmashySu(
                 this.quality=getQualityFromName(quality)
             }
         )
-    }
-}
-
-suspend fun getDumpIdAndType(title: String?, year: Int?, season: Int?): Pair<String?, Int?> {
-    val res = tryParseJson<DumpQuickSearchData>(
-        queryApi(
-            "POST",
-            "${BuildConfig.DUMP_API}/search/searchWithKeyWord",
-            mapOf(
-                "searchKeyWord" to "$title",
-                "size" to "50",
-            )
-        )
-    )?.searchResults
-
-    val media = if (res?.size == 1) {
-        res.firstOrNull()
-    } else {
-        res?.find {
-            when (season) {
-                null -> {
-                    it.name.equals(
-                        title,
-                        true
-                    ) && it.releaseTime == "$year" && it.domainType == 0
-                }
-
-                1 -> {
-                    it.name?.contains(
-                        "$title",
-                        true
-                    ) == true && (it.releaseTime == "$year" || it.name.contains(
-                        "Season $season",
-                        true
-                    )) && it.domainType == 1
-                }
-
-                else -> {
-                    it.name?.contains(Regex("(?i)$title\\s?($season|${season.toRomanNumeral()}|Season\\s$season)")) == true && it.releaseTime == "$year" && it.domainType == 1
-                }
-            }
-        }
-    }
-
-    return media?.id to media?.domainType
-
-}
-
-suspend fun fetchDumpEpisodes(id: String, type: String, episode: Int?): EpisodeVo? {
-    return tryParseJson<DumpMediaDetail>(
-        queryApi(
-            "GET",
-            "${BuildConfig.DUMP_API}/movieDrama/get",
-            mapOf(
-                "category" to type,
-                "id" to id,
-            )
-        )
-    )?.episodeVo?.find {
-        it.seriesNo == (episode ?: 0)
     }
 }
 
