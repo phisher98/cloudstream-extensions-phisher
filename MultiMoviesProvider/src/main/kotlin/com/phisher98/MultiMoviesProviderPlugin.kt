@@ -23,7 +23,6 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(MultimoviesAIO())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(MultimoviesVidstack())
-        //registerExtractorAPI(VidhideExtractor())
         registerExtractorAPI(Asnwish())
         registerExtractorAPI(CdnwishCom())
         registerExtractorAPI(Strwishcom())
@@ -31,5 +30,6 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Streamcasthub())
         registerExtractorAPI(Dhcplay())
+        registerExtractorAPI(server1())
         }
 }

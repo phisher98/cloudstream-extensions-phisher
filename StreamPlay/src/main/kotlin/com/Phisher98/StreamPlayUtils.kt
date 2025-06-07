@@ -2883,3 +2883,46 @@ suspend fun elevenMoviesTokenV2(rawData: String): String {
     return finalEncoded
 }
 
+
+suspend fun hdhubgetRedirectLinks(url: String): String {
+    val doc = app.get(url).toString()
+    val regex = "s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'".toRegex()
+    val combinedString = buildString {
+        regex.findAll(doc).forEach { matchResult ->
+            val extractedValue = matchResult.groups[1]?.value ?: matchResult.groups[2]?.value
+            if (!extractedValue.isNullOrEmpty()) append(extractedValue)
+        }
+    }
+    return try {
+        val decodedString = base64Decode(hdhubpen(base64Decode(base64Decode(combinedString))))
+        val jsonObject = JSONObject(decodedString)
+        val encodedurl = base64Decode(jsonObject.optString("o", "")).trim()
+        val data = hdhubencode(jsonObject.optString("data", "")).trim()
+        val wphttp1 = jsonObject.optString("blog_url", "").trim()
+        val directlink = runCatching {
+            app.get("$wphttp1?re=$data".trim()).document.select("body").text().trim()
+        }.getOrDefault("").trim()
+
+        encodedurl.ifEmpty { directlink }
+    } catch (e: Exception) {
+        Log.e("Error:", "Error processing links $e")
+        "" // Return an empty string on failure
+    }
+}
+
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun hdhubencode(value: String): String {
+    return Base64.getEncoder().encodeToString(value.toByteArray())
+}
+
+fun hdhubpen(value: String): String {
+    return value.map {
+        when (it) {
+            in 'A'..'Z' -> ((it - 'A' + 13) % 26 + 'A'.code).toChar()
+            in 'a'..'z' -> ((it - 'a' + 13) % 26 + 'a'.code).toChar()
+            else -> it
+        }
+    }.joinToString("")
+}
+

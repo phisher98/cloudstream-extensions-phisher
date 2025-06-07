@@ -27,36 +27,51 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
 
     companion object {
         //val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0", "X-Requested-With" to "XMLHttpRequest")
+        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private var cachedDomains: DomainsParser? = null
+
+        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
+            if (cachedDomains == null || forceRefresh) {
+                try {
+                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return null
+                }
+            }
+            return cachedDomains
+        }
     }
 
     override val mainPage = mainPageOf(
-        "$mainUrl/trending/" to "Trending",
-        "$mainUrl/genre/bollywood-movies/" to "Bollywood Movies",
-        "$mainUrl/genre/hollywood/" to "Hollywood Movies",
-        "$mainUrl/genre/south-indian/" to "South Indian Movies",
-        "$mainUrl/genre/punjabi/" to "Punjabi Movies",
-        "$mainUrl/genre/amazon-prime/" to "Amazon Prime",
-        "$mainUrl/genre/disney-hotstar/" to "Disney Hotstar",
-        "$mainUrl/genre/jio-ott/" to "Jio OTT",
-        "$mainUrl/genre/netflix/" to "Netfilx",
-        "$mainUrl/genre/sony-liv/" to "Sony Live",
-        "$mainUrl/genre/k-drama/" to "KDrama",
-        "$mainUrl/genre/zee-5/" to "Zee5",
-        "$mainUrl/genre/anime-hindi/" to "Anime Series",
-        "$mainUrl/genre/anime-movies/" to "Anime Movies",
-        "$mainUrl/genre/cartoon-network/" to "Cartoon Network",
-        "$mainUrl/genre/disney-channel/" to "Disney Channel",
-        "$mainUrl/genre/hungama/" to "Hungama",
+        "trending/" to "Trending",
+        "genre/bollywood-movies/" to "Bollywood Movies",
+        "genre/hollywood/" to "Hollywood Movies",
+        "genre/south-indian/" to "South Indian Movies",
+        "genre/punjabi/" to "Punjabi Movies",
+        "genre/amazon-prime/" to "Amazon Prime",
+        "genre/disney-hotstar/" to "Disney Hotstar",
+        "genre/jio-ott/" to "Jio OTT",
+        "genre/netflix/" to "Netfilx",
+        "genre/sony-liv/" to "Sony Live",
+        "genre/k-drama/" to "KDrama",
+        "genre/zee-5/" to "Zee5",
+        "genre/anime-hindi/" to "Anime Series",
+        "genre/anime-movies/" to "Anime Movies",
+        "genre/cartoon-network/" to "Cartoon Network",
+        "genre/disney-channel/" to "Disney Channel",
+        "genre/hungama/" to "Hungama",
     )
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        val multiMoviesAPI = getDomains()?.multiMovies
         val document = if (page == 1) {
-            app.get(request.data).document
+            app.get("$multiMoviesAPI/${request.data}").document
         } else {
-            app.get(request.data + "page/$page/").document
+            app.get("$multiMoviesAPI/${request.data}" + "page/$page/").document
         }
         val home = if (request.data.contains("/movies")) {
             document.select("#archive-content > article").mapNotNull {
@@ -89,7 +104,8 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val multiMoviesAPI = getDomains()?.multiMovies
+        val document = app.get("$multiMoviesAPI/?s=$query").document
         return document.select("div.result-item").mapNotNull {
             val title =
                 it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
@@ -245,15 +261,16 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 )
             }.amap { (id, nume, type) ->
             if (!nume.contains("trailer")) {
+                val multiMoviesAPI = getDomains()?.multiMovies
                 val source = app.post(
-                    url = "$mainUrl/wp-admin/admin-ajax.php",
+                    url = "$multiMoviesAPI/wp-admin/admin-ajax.php",
                     data = mapOf(
                         "action" to "doo_player_ajax",
                         "post" to id,
                         "nume" to nume,
                         "type" to type
                     ),
-                    referer = mainUrl,
+                    referer = multiMoviesAPI,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
                 val link = source.substringAfter("\"").substringBefore("\"").trim()
@@ -262,10 +279,10 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                         if (link.contains("deaddrive.xyz")) {
                             app.get(link).document.select("ul.list-server-items > li").map {
                                 val server = it.attr("data-video")
-                                loadExtractor(server, referer = mainUrl, subtitleCallback, callback)
+                                loadExtractor(server, referer = multiMoviesAPI, subtitleCallback, callback)
                             }
                         } else
-                            loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
+                            loadExtractor(link, referer = multiMoviesAPI, subtitleCallback, callback)
                     }
 
                     else -> return@amap
@@ -287,4 +304,9 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             "${it.scheme}://${it.host}"
         }
     }
+
+    data class DomainsParser(
+        @JsonProperty("MultiMovies")
+        val multiMovies: String,
+    )
 }

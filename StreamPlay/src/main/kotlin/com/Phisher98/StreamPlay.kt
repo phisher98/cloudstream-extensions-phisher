@@ -186,7 +186,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Dramacool="https://stremio-dramacool-addon.xyz"
         const val Xprime="https://xprime.tv"
         const val Vidzee="https://vidzee.wtf"
-        const val Fourkhdhub="https://4khdhub.fans"
         const val Elevenmovies="https://111movies.com"
         fun getType(t: String?): TvType {
             return when (t) {

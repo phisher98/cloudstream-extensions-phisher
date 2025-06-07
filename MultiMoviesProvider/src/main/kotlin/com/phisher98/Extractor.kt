@@ -44,6 +44,12 @@ class Animezia : VidhideExtractor() {
     override var requiresReferer = true
 }
 
+class server1 : MultimoviesVidstack() {
+    override var name = "MultimoviesVidstack"
+    override var mainUrl = "https://server1.uns.bio"
+    override var requiresReferer = true
+}
+
 class server2 : VidhideExtractor() {
     override var name = "Multimovies Vidhide"
     override var mainUrl = "https://server2.shop"
@@ -185,7 +191,7 @@ class GDMirrorbot : ExtractorApi() {
 
 
 
-class MultimoviesVidstack : ExtractorApi() {
+open class MultimoviesVidstack : ExtractorApi() {
     override var name = "Vidstack"
     override var mainUrl = "https://multimovies.rpmhub.site"
     override val requiresReferer = true

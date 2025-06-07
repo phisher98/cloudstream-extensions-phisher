@@ -5083,7 +5083,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         if (title.isNullOrBlank()) return
-
+        val Fourkhdhub = getDomains()?.n4khdhub
         val searchUrl = "$Fourkhdhub/?s=$title"
         val searchDoc = app.get(searchUrl).document
         val link = searchDoc
@@ -5101,7 +5101,7 @@ object StreamPlayExtractor : StreamPlay() {
                 .flatMap { it.select("div.episode-links > a") }
         }
         links.amap {
-            val source = it.attr("href")
+            val source = hdhubgetRedirectLinks(it.attr("href"))
             loadSourceNameExtractor(
                 "4Khdhub",
                 source,
