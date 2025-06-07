@@ -16,6 +16,24 @@ class FourKHDHub : MainAPI() {
     override val hasQuickSearch       = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
 
+
+    companion object {
+        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private var cachedDomains: DomainsParser? = null
+
+        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
+            if (cachedDomains == null || forceRefresh) {
+                try {
+                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return null
+                }
+            }
+            return cachedDomains
+        }
+    }
+
     override val mainPage = mainPageOf(
         "" to "Latest Releases",
         "category/movies-10810.html" to "Movies",
@@ -31,9 +49,10 @@ class FourKHDHub : MainAPI() {
         val allResults = mutableListOf<SearchResponse>()
         var currentPage = page
         val maxPages = 3
+        val FourKHDHubAPI = getDomains()?.n4khdhub
 
         while (true) {
-            val url = "$mainUrl/${request.data}/page/$currentPage.html"
+            val url = "$FourKHDHubAPI/${request.data}/page/$currentPage.html"
             val document = app.get(url).document
             val results = document.select("div.card-grid a").mapNotNull {
                 it.toSearchResult()
@@ -59,13 +78,15 @@ class FourKHDHub : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val FourKHDHubAPI = getDomains()?.n4khdhub
+        val document = app.get("$FourKHDHubAPI/?s=$query").document
         val results = document.select("div.card-grid a").mapNotNull {
             it.toSearchResult()
         }
         return results
     }
 
+    @Suppress("NAME_SHADOWING")
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title = document.selectFirst("h1.page-title")?.text()?.substringBefore("(")?.trim().toString()

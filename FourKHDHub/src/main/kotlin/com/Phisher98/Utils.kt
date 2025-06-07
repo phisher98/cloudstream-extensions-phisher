@@ -1,6 +1,7 @@
 package com.Phisher98
 
 import android.annotation.SuppressLint
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -48,3 +49,8 @@ fun pen(value: String): String {
         }
     }.joinToString("")
 }
+
+data class DomainsParser(
+    @JsonProperty("4khdhub")
+    val n4khdhub: String,
+)
