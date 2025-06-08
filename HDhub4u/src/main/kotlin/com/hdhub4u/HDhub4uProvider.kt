@@ -54,7 +54,8 @@ class HDhub4uProvider : MainAPI() {
         mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0","Cookie" to "xla=s4t")
 
     companion object {
-        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private const val DOMAINS_URL =
+            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
         private var cachedDomains: Domains? = null
 
         suspend fun getDomains(forceRefresh: Boolean = false): Domains? {
@@ -67,6 +68,7 @@ class HDhub4uProvider : MainAPI() {
                 }
             }
             return cachedDomains
+        }
     }
 
     override suspend fun getMainPage(
@@ -94,7 +96,6 @@ class HDhub4uProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val newMainUrl = getDomains()?.hdhub4u
-        val newMainUrl=app.get(mainUrl, allowRedirects = false, cacheTime = 60).headers["location"] ?:""
         val doc = app.get(
             "$newMainUrl/?s=$query",
             cacheTime = 60,

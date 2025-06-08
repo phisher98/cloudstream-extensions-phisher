@@ -4978,76 +4978,68 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val fixTitle = title?.createPlayerSlug().orEmpty()
-        val fixQuery = (season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" }
-            ?: "$fixTitle $year").replace(
-            " ",
-            "+"
-        ) // It is necessary for query with year otherwise it will give wrong movie
-        val allLinks = HashSet<Player4uLinkData>()
+        val queryWithEpisode = season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" }
+        val baseQuery = queryWithEpisode ?: "$fixTitle $year"
+        val encodedQuery = baseQuery.replace(" ", "+")
 
+        val allLinks = linkedSetOf<Player4uLinkData>()
         var page = 0
         var nextPageExists: Boolean
 
         do {
-            val url = if (page == 0) {
-                "$Player4uApi/embed?key=$fixQuery"
-            } else {
-                "$Player4uApi/embed?key=$fixQuery&page=$page"
-            }
-            val document = app.get(url, timeout = 20).document
-            allLinks.addAll(
-                document.select(".playbtnx").map {
-                    Player4uLinkData(name = it.text(), url = it.attr("onclick"))
+            val url = "$Player4uApi/embed?key=$encodedQuery" + if (page > 0) "&page=$page" else ""
+            try {
+                val document = app.get(url, timeout = 20).document
+                allLinks += extractPlayer4uLinks(document)
+
+                // If on first page, no season provided, and no links found — try fallback
+                if (page == 0 && season == null && allLinks.isEmpty()) {
+                    val fallbackDoc = app.get("$Player4uApi/embed?key=${fixTitle.replace(" ", "+")}", timeout = 20).document
+                    allLinks += extractPlayer4uLinks(fallbackDoc)
+                    break
                 }
-            )
 
-            nextPageExists = document.select("div a").any { it.text().contains("Next", true) }
+                nextPageExists = document.select("div a").any { it.text().contains("Next", true) }
+            } catch (_: Exception) {
+                break
+            }
             page++
-        } while (nextPageExists && page <= 10)
+        } while (nextPageExists && page <= 4)
 
-        val sizeAllLinks = allLinks.distinctBy { it.name }.size
         allLinks.distinctBy { it.name }.forEach { link ->
             try {
-
-                val splitName = link.name.split("|").reversed()
-                val firstPart = splitName.getOrNull(0)?.replace(title.toString(), "")
-                    ?.replace(year.toString(), "")?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
-                val nameFormatted = "Player4U ${
-                    if (firstPart.isEmpty()) {
-                        ""
-                    } else {
-                        "{$firstPart}"
-                    }
-                }"
-
-                val qualityFromName = Regex(
-                    """(\d{3,4}p|4K|CAM|HQ|HD|SD|WEBRip|DVDRip|BluRay|HDRip|TVRip|HDTC|PREDVD)""",
-                    RegexOption.IGNORE_CASE
-                )
-                    .find(nameFormatted)?.value?.uppercase() ?: "UNKNOWN"
-
-
-                val selectedQuality = getPlayer4UQuality(qualityFromName)
-
-                if (selectedQuality >= Qualities.P1080.value || sizeAllLinks < 10) { // For less links
-                    val subLink = "go\\('(.*)'\\)".toRegex().find(link.url)?.groups?.get(1)?.value
-                        ?: return@forEach
-                    val iframeSource =
-                        app.get("$Player4uApi$subLink", timeout = 10, referer = Player4uApi)
-                            .document.select("iframe").attr("src")
-
-                    getPlayer4uUrl(
-                        nameFormatted,
-                        selectedQuality,
-                        "https://uqloads.xyz/e/$iframeSource",
-                        Player4uApi,
-                        callback
-                    )
+                val namePart = link.name.split("|").lastOrNull()?.trim().orEmpty()
+                val displayName = buildString {
+                    append("Player4U")
+                    if (namePart.isNotEmpty()) append(" {$namePart}")
                 }
+
+                val qualityMatch = Regex("""(\d{3,4}p|4K|CAM|HQ|HD|SD|WEBRip|DVDRip|BluRay|HDRip|TVRip|HDTC|PREDVD)""", RegexOption.IGNORE_CASE)
+                    .find(displayName)?.value?.uppercase() ?: "UNKNOWN"
+                val quality = getPlayer4UQuality(qualityMatch)
+
+                val subPath = Regex("""go\('(.*?)'\)""").find(link.url)?.groupValues?.get(1) ?: return@forEach
+                val iframeSrc = app.get("$Player4uApi$subPath", timeout = 10, referer = Player4uApi)
+                    .document.selectFirst("iframe")?.attr("src") ?: return@forEach
+
+                getPlayer4uUrl(
+                    displayName,
+                    quality,
+                    "https://uqloads.xyz/e/$iframeSrc",
+                    Player4uApi,
+                    callback
+                )
             } catch (_: Exception) {
             }
         }
     }
+
+    private fun extractPlayer4uLinks(document: Document): List<Player4uLinkData> {
+        return document.select(".playbtnx").map {
+            Player4uLinkData(name = it.text(), url = it.attr("onclick"))
+        }
+    }
+
 
     suspend fun invokeStreamPlay(
         tmdbId: Int? = null,
@@ -5086,9 +5078,16 @@ object StreamPlayExtractor : StreamPlay() {
         val Fourkhdhub = getDomains()?.n4khdhub
         val searchUrl = "$Fourkhdhub/?s=$title"
         val searchDoc = app.get(searchUrl).document
-        val link = searchDoc
-            .selectFirst("div.card-grid > a:has(div.movie-card-content:contains(${year ?: ""}))")
-            ?.attr("href") ?: return
+        val link = searchDoc.select("div.card-grid > a.movie-card")
+            .firstOrNull { card ->
+                val titleText = card.selectFirst("div.movie-card-content > h3")?.text()?.trim()?.lowercase() ?: return@firstOrNull false
+                val metaText = card.selectFirst("div.movie-card-content > p.movie-card-meta")?.text()?.trim() ?: return@firstOrNull false
+                val titleMatch = title.lowercase().let {
+                    titleText == it || titleText.contains(" $it ") || titleText.contains("$it:")
+                }
+                val yearMatch = year?.let { metaText.contains(it.toString()) } ?: true
+                titleMatch && yearMatch
+            }?.attr("href") ?: return
 
         val doc = app.get("$Fourkhdhub$link").document
 
