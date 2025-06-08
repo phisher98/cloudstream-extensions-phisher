@@ -53,17 +53,26 @@ class HDhub4uProvider : MainAPI() {
     private val headers =
         mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0","Cookie" to "xla=s4t")
 
+    companion object {
+        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private var cachedDomains: Domains? = null
+
+        suspend fun getDomains(forceRefresh: Boolean = false): Domains? {
+            if (cachedDomains == null || forceRefresh) {
+                try {
+                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<Domains>()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return null
+                }
+            }
+            return cachedDomains
+    }
+
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        val newMainUrl = runCatching { app.get(mainUrl) }
-            .getOrNull()
-            ?.takeIf { it.code in 200..299 }
-            ?.let { mainUrl }
-            ?: app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json")
-                .parsedSafe<Domains>()
-                ?.hdhub4u
-            ?: throw Exception("Update Domain")
+        val newMainUrl = getDomains()?.hdhub4u
         val doc = app.get(
             "$newMainUrl/${request.data}page/$page/",
             cacheTime = 60,
@@ -84,6 +93,7 @@ class HDhub4uProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        val newMainUrl = getDomains()?.hdhub4u
         val newMainUrl=app.get(mainUrl, allowRedirects = false, cacheTime = 60).headers["location"] ?:""
         val doc = app.get(
             "$newMainUrl/?s=$query",
