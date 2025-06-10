@@ -36,8 +36,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 34
-          build-tools: '34.0.0'
+          api-level: 35
+          build-tools: '35.0.0'
       
       - name: Create local.properties
         run: |
@@ -47,80 +47,91 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
-        
+      - name: List Projects and Tasks
+        run: |
+          echo "Available projects:"
+          ./gradlew projects
+          echo "Available tasks:"
+          ./gradlew tasks --all
+      
+      - name: Build All Plugins
+        run: |
+          echo "Building all plugins..."
+          ./gradlew makeJar
+          
       - name: Setup Build Directory
         run: |
           mkdir -p build/repos/repos
           mkdir -p build/repos/plugins
       
-      - name: List Available Tasks
+      - name: Copy Plugin Files
         run: |
-          echo "Available Gradle tasks:"
-          ./gradlew tasks --all
+          echo "Searching for built plugin files..."
+          
+          # Find CS3 files (Cloudstream plugin format)
+          find . -name "*.cs3" -type f -exec echo "Found CS3: {}" \;
+          find . -name "*.cs3" -type f -exec cp {} build/repos/plugins/ \;
+          
+          # Also look for jar files in build/libs of subprojects
+          find . -path "*/build/libs/*.jar" -type f -exec echo "Found JAR: {}" \;
+          find . -path "*/build/libs/*.jar" -type f -exec cp {} build/repos/plugins/ \;
+          
+          echo "Contents of plugins directory:"
+          ls -la build/repos/plugins/ || echo "No files copied"
       
-      - name: Build Plugins
-        run: |
-          ./gradlew --stop
-          # Try the most common Cloudstream tasks
-          echo "Attempting to build plugins..."
-          ./gradlew makeJar || echo "makeJar failed, trying make..."
-          ./gradlew make || echo "make failed, trying build..."
-          ./gradlew build || echo "build completed"
-      
-      - name: Find and Copy Plugin Files
-        run: |
-          echo "Searching for built files..."
-          
-          # Find all potential plugin files
-          echo "Looking for .cs3 files:"
-          find . -name "*.cs3" -type f || echo "No .cs3 files found"
-          
-          echo "Looking for .jar files in build directories:"
-          find . -path "*/build/*" -name "*.jar" -type f || echo "No .jar files found"
-          
-          echo "Looking for .apk files:"
-          find . -name "*.apk" -type f || echo "No .apk files found"
-          
-          # Copy any found files
-          find . -name "*.cs3" -type f -exec cp {} build/repos/plugins/ \; 2>/dev/null || true
-          find . -path "*/build/*" -name "*.jar" -type f -exec cp {} build/repos/plugins/ \; 2>/dev/null || true
-          find . -name "*.apk" -type f -exec cp {} build/repos/plugins/ \; 2>/dev/null || true
-          
-          echo "Final plugins directory contents:"
-          ls -la build/repos/plugins/ || echo "Plugins directory is empty"
-      
-      - name: Prepare Artifacts
+      - name: Create Repository Structure
         run: |
           cd build/repos
-          if [ "$(ls -A plugins/ 2>/dev/null)" ]; then
-            echo "Creating zip with plugin files..."
-            zip -r ../repos.zip .
+          
+          # Create repository index or manifest if needed
+          echo "Creating repository structure..."
+          
+          if [ "$(ls -A plugins/)" ]; then
+            echo "Plugins built successfully:"
+            ls -la plugins/
+            
+            # Create a simple index
+            echo "# Cloudstream Extensions" > README.md
+            echo "Built on: $(date)" >> README.md
+            echo "Commit: ${{ github.sha }}" >> README.md
+            echo "" >> README.md
+            echo "## Available Plugins:" >> README.md
+            for file in plugins/*; do
+              if [ -f "$file" ]; then
+                echo "- $(basename "$file")" >> README.md
+              fi
+            done
           else
-            echo "No plugin files found, creating empty zip..."
-            touch plugins/.gitkeep
-            zip -r ../repos.zip .
+            echo "No plugins were built" > README.md
+            echo "This may indicate a build issue" >> README.md
           fi
+          
+          # Create zip
+          zip -r ../repos.zip .
       
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: repositories
+          name: cloudstream-plugins
           path: build/repos.zip
           retention-days: 90
           
       - name: Deploy to Builds Branch
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd build/repos
+          
+          # Initialize git repository
           git init
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git config --global init.defaultBranch builds
-          git checkout --orphan builds
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git branch -M builds
+          
+          # Add all files
           git add -A
-          git commit -m "Build from commit: ${{ github.sha }}"
+          git commit -m "Auto-build plugins from commit ${{ github.sha }}"
+          
+          # Push to builds branch
           git push -f "https://${{ github.actor }}:${GITHUB_TOKEN}@github.com/${{ github.repository }}" builds
