@@ -34,6 +34,13 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
       
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+          ndk: '25.2.9519653'
+      
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
