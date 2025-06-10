@@ -1,5 +1,4 @@
 name: Build
-
 on:
   push:
     branches: [ main, master ]
@@ -34,6 +33,11 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: 'gradle'
+      
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "ndk.dir=$ANDROID_NDK_ROOT" >> local.properties
       
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
@@ -70,7 +74,7 @@ jobs:
           name: repositories
           path: build/repos.zip
           retention-days: 90
-
+          
       - name: Deploy to Builds Branch
         if: github.event_name == 'push'
         env:
