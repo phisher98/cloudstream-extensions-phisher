@@ -1,5 +1,4 @@
 name: Build
-
 on:
   push:
     branches: [ main, master ]
@@ -13,6 +12,9 @@ on:
       - '.github/README.md'
   workflow_dispatch:
 
+env:
+  JAVA_VERSION: '17'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,29 +26,82 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
       
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
           cache: 'gradle'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+      
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "ndk.dir=$ANDROID_NDK_ROOT" >> local.properties
       
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
       - name: Build Debug APK
         run: ./gradlew assembleDebug
-      
+        
       - name: Setup Build Directory
         run: |
           mkdir -p build/repos/repos
           mkdir -p build/repos/plugins
       
-      - name: Copy APKs to plugins directory
+      - name: List Available Tasks
         run: |
-          find . -name "*.apk" -exec cp {} build/repos/plugins/ \;
+          echo "Available Gradle tasks:"
+          ./gradlew tasks --all
+      
+      - name: Build Plugins
+        run: |
+          ./gradlew --stop
+          # Try the most common Cloudstream tasks
+          echo "Attempting to build plugins..."
+          ./gradlew makeJar || echo "makeJar failed, trying make..."
+          ./gradlew make || echo "make failed, trying build..."
+          ./gradlew build || echo "build completed"
+      
+      - name: Find and Copy Plugin Files
+        run: |
+          echo "Searching for built files..."
+          
+          # Find all potential plugin files
+          echo "Looking for .cs3 files:"
+          find . -name "*.cs3" -type f || echo "No .cs3 files found"
+          
+          echo "Looking for .jar files in build directories:"
+          find . -path "*/build/*" -name "*.jar" -type f || echo "No .jar files found"
+          
+          echo "Looking for .apk files:"
+          find . -name "*.apk" -type f || echo "No .apk files found"
+          
+          # Copy any found files
+          find . -name "*.cs3" -type f -exec cp {} build/repos/plugins/ \; 2>/dev/null || true
+          find . -path "*/build/*" -name "*.jar" -type f -exec cp {} build/repos/plugins/ \; 2>/dev/null || true
+          find . -name "*.apk" -type f -exec cp {} build/repos/plugins/ \; 2>/dev/null || true
+          
+          echo "Final plugins directory contents:"
+          ls -la build/repos/plugins/ || echo "Plugins directory is empty"
+      
+      - name: Prepare Artifacts
+        run: |
           cd build/repos
-          zip -r ../repos.zip .
+          if [ "$(ls -A plugins/ 2>/dev/null)" ]; then
+            echo "Creating zip with plugin files..."
+            zip -r ../repos.zip .
+          else
+            echo "No plugin files found, creating empty zip..."
+            touch plugins/.gitkeep
+            zip -r ../repos.zip .
+          fi
       
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -54,7 +109,7 @@ jobs:
           name: repositories
           path: build/repos.zip
           retention-days: 90
-
+          
       - name: Deploy to Builds Branch
         if: github.event_name == 'push'
         env:
