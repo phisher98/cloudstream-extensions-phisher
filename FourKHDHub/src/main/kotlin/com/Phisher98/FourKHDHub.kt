@@ -168,26 +168,43 @@ class FourKHDHub : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val links = Regex("""https?://[^",\]\[]+""").findAll(data).map { it.value }.toList()
-
         for (link in links) {
-            val lower = link.lowercase()
-            val resolvedLink = if ("id=" in lower) {
-                val finalLink = getRedirectLinks(link)
-                finalLink } else link
+            try {
+                val lower = link.lowercase()
+                val resolvedLink = try {
+                    if ("id=" in lower) {
+                        getRedirectLinks(link)
+                    } else link
+                } catch (e: Exception) {
+                    Log.e("Phisher", "Redirect failed for $link")
+                    continue
+                }
 
-            when {
-                "hubdrive" in resolvedLink.lowercase() -> {
-                    Hubdrive().getUrl(resolvedLink, "HUB Drive", subtitleCallback, callback)
+                when {
+                    "hubdrive" in resolvedLink.lowercase() -> {
+                        try {
+                            Hubdrive().getUrl(resolvedLink, "HUB Drive", subtitleCallback, callback)
+                        } catch (e: Exception) {
+                            Log.e("Hubdrive", "Failed: $resolvedLink")
+                        }
+                    }
+                    "hubcloud" in resolvedLink.lowercase() -> {
+                        try {
+                            HubCloud().getUrl(resolvedLink, "Hub Cloud", subtitleCallback, callback)
+                        } catch (e: Exception) {
+                            Log.e("HubCloud", "Failed: $resolvedLink")
+                        }
+                    }
+                    else -> {
+                        Log.w("Extractor", "Unknown host: $resolvedLink")
+                    }
                 }
-                "hubcloud" in resolvedLink.lowercase() -> {
-                    HubCloud().getUrl(resolvedLink, "Hub Cloud", subtitleCallback, callback)
-                }
-                else -> {
-                    Log.w("Extractor", "Unknown host: $resolvedLink")
-                }
+            } catch (e: Exception) {
+                Log.e("Extractor", "Unexpected error with link: $link")
             }
         }
         return true
     }
+
 
 }
