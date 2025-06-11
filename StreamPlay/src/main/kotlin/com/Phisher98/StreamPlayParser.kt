@@ -274,6 +274,8 @@ data class AniIds(var id: Int? = null, var idMal: Int? = null)
 data class TmdbDate(
     val today: String,
     val nextWeek: String,
+    val lastWeekStart: String,
+    val monthStart: String
 )
 
 data class AniwaveResponse(

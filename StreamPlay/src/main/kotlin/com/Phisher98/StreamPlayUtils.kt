@@ -1290,11 +1290,27 @@ fun isUpcoming(dateString: String?): Boolean {
 
 fun getDate(): TmdbDate {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val calender = Calendar.getInstance()
-    val today = formatter.format(calender.time)
-    calender.add(Calendar.WEEK_OF_YEAR, 1)
-    val nextWeek = formatter.format(calender.time)
-    return TmdbDate(today, nextWeek)
+    val calendar = Calendar.getInstance()
+
+    // Today
+    val today = formatter.format(calendar.time)
+
+    // Next week
+    calendar.add(Calendar.WEEK_OF_YEAR, 1)
+    val nextWeek = formatter.format(calendar.time)
+
+    // Last week's Monday
+    calendar.time = Date()
+    calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    calendar.add(Calendar.WEEK_OF_YEAR, -1)
+    val lastWeekStart = formatter.format(calendar.time)
+
+    // Start of current month
+    calendar.time = Date()
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    val monthStart = formatter.format(calendar.time)
+
+    return TmdbDate(today, nextWeek, lastWeekStart, monthStart)
 }
 
 fun decode(input: String): String = URLDecoder.decode(input, "utf-8")
@@ -2884,6 +2900,7 @@ suspend fun elevenMoviesTokenV2(rawData: String): String {
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 suspend fun hdhubgetRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
     val regex = "s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'".toRegex()
