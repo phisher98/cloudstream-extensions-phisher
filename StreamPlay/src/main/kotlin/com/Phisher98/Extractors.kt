@@ -40,6 +40,7 @@ import okhttp3.Response
 import org.json.JSONObject
 import java.math.BigInteger
 import java.net.URI
+import java.net.URL
 import java.security.MessageDigest
 import java.util.Base64
 import javax.crypto.BadPaddingException
@@ -1063,38 +1064,52 @@ class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val realUrl = replaceHubclouddomain(url)
-        val href = if (realUrl.contains("hubcloud.php")) {
+
+        val realUrl = try {
+            val originalUrl = URL(url)
+            val parts = originalUrl.host.split(".").toMutableList()
+            if (parts.size > 1) {
+                parts[parts.lastIndex] = "dad"
+                URL(originalUrl.protocol, parts.joinToString("."), originalUrl.port, originalUrl.file).toString()
+            } else url
+        } catch (e: Exception) {
+            Log.e("HubCloud", "Invalid URL: ${e.message}")
+            return
+        }
+
+        val href = if ("hubcloud.php" in realUrl) {
             realUrl
         } else {
-            val regex = "var url = '([^']*)'".toRegex()
-            val regexdata=app.get(realUrl).document.selectFirst("script:containsData(url)")?.toString() ?: ""
-            regex.find(regexdata)?.groupValues?.get(1).orEmpty()
+            val scriptData = app.get(realUrl).document
+                .selectFirst("script:containsData(url)")?.toString().orEmpty()
+            Regex("var url = '([^']*)'").find(scriptData)?.groupValues?.getOrNull(1).orEmpty()
         }
-        if (href.isEmpty()) {
-            Log.d("Error", "Not Found")
+
+        if (href.isBlank()) {
+            Log.w("HubCloud", "No valid href found")
             return
         }
 
         val document = app.get(href).document
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
-        val headerdetails = """\.\d{3,4}p\.(.*)-[^-]*$""".toRegex()
+
+        val headerDetails = Regex("""\b(?:2160|1080|720|480|360)[pP]\b\s+(.*?)(?:\s+\S+\.(mkv|mp4|avi|mov|webm))?${'$'}""")
             .find(header)?.groupValues?.getOrNull(1)?.trim().orEmpty()
 
         val labelExtras = buildString {
-            if (headerdetails.isNotEmpty()) append("[$headerdetails]")
+            if (headerDetails.isNotEmpty()) append("[$headerDetails]")
             if (size.isNotEmpty()) append("[$size]")
         }
+        val quality = getIndexQuality(header)
 
-        document.select("h2 a.btn").amap { element ->
+        document.select("div.card-body h2 a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.text()
             val baseUrl = getBaseUrl(link)
-            val quality = getIndexQuality(header)
 
             when {
-                text.contains("Download [FSL Server]") -> {
+                text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
                             "$source [FSL Server] $labelExtras",
@@ -1104,7 +1119,8 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
-                text.contains("Download File") -> {
+                text.contains("Download File", ignoreCase = true) -> {
+                    Log.d("HubCloud", "Phisher text: $text")
                     callback.invoke(
                         newExtractorLink(
                             "$source $labelExtras",
@@ -1114,10 +1130,10 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
-                text.contains("BuzzServer") -> {
-                    val dlink = app.get("$link/download", referer = link, allowRedirects = false)
-                        .headers["hx-redirect"] ?: ""
-                    if (dlink.isNotEmpty()) {
+                text.contains("BuzzServer", ignoreCase = true) -> {
+                    val buzzResp = app.get("$link/download", referer = link, allowRedirects = false)
+                    val dlink = buzzResp.headers["hx-redirect"].orEmpty()
+                    if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
                                 "$source [BuzzServer] $labelExtras",
@@ -1126,27 +1142,51 @@ class HubCloud : ExtractorApi() {
                             ) { this.quality = quality }
                         )
                     } else {
-                        Log.w("Error:","Not Found")
+                        Log.w("HubCloud", "BuzzServer: No redirect")
                     }
                 }
 
-                link.contains("pixeldra") -> {
+                "pixeldra" in link -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source Pixeldrain $labelExtras",
-                            "$source Pixeldrain $labelExtras",
+                            "Pixeldrain $labelExtras",
+                            "Pixeldrain $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("Download [Server : 10Gbps]") -> {
-                    val dlink = app.get(link, allowRedirects = false).headers["location"]?.substringAfter("link=") ?: ""
+                text.contains("S3 Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$source S3 Server $labelExtras",
+                            "$source S3 Server $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("10Gbps", ignoreCase = true) -> {
+                    var currentLink = link
+                    var redirectUrl: String?
+
+                    while (true) {
+                        val response = app.get(currentLink, allowRedirects = false)
+                        redirectUrl = response.headers["location"]
+                        if (redirectUrl == null) {
+                            Log.e("HubCloud", "10Gbps: No redirect")
+                            break
+                        }
+                        if ("id=" in redirectUrl) break
+                        currentLink = redirectUrl
+                    }
+
+                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
                             "$source [Download] $labelExtras",
                             "$source [Download] $labelExtras",
-                            dlink,
+                            finalLink,
                         ) { this.quality = quality }
                     )
                 }
@@ -1158,17 +1198,19 @@ class HubCloud : ExtractorApi() {
         }
     }
 
-    private fun getIndexQuality(str: String?) =
-        Regex("(\\d{3,4})[pP]").find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
+    private fun getIndexQuality(str: String?): Int {
+        return Regex("(\\d{3,4})[pP]").find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.P2160.value
+    }
 
     private fun getBaseUrl(url: String): String {
-        return URI(url).let {
-            "${it.scheme}://${it.host}"
+        return try {
+            URI(url).let { "${it.scheme}://${it.host}" }
+        } catch (e: Exception) {
+            ""
         }
     }
 }
-
 
 class Driveleech : Driveseed() {
     override val name: String = "Driveleech"
