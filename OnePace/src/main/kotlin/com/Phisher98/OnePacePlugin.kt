@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.lagradost.cloudstream3.extractors.GDMirrorbot
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 
@@ -14,6 +13,7 @@ class OnePacePlugin : BasePlugin() {
         registerExtractorAPI(Vidmolynet())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Cdnwish())
+        registerExtractorAPI(Dhcplay())
         registerExtractorAPI(raretoonsindia())
         registerExtractorAPI(vidcloudupns())
     }

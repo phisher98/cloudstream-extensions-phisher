@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.Vidmoly
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -243,4 +244,67 @@ class Cdnwish : StreamWishExtractor() {
 
 class vidcloudupns : VidStack() {
     override var mainUrl = "https://vidcloud.upns.ink"
+}
+
+class Dhcplay: VidHidePro() {
+    override var name = "DHC Play"
+    override var mainUrl = "https://dhcplay.com"
+    override var requiresReferer = true
+}
+
+class GDMirrorbot : ExtractorApi() {
+    override var name = "GDMirrorbot"
+    override var mainUrl = "https://gdmirrorbot.nl"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val host = getBaseUrl(app.get(url).url)
+        val embedId = url.substringAfterLast("/")
+        val postData = mapOf("sid" to embedId)
+
+        val responseJson = app.post("$host/embedhelper.php", data = postData).text
+        val jsonElement = JsonParser.parseString(responseJson)
+        if (!jsonElement.isJsonObject) return
+
+        val root = jsonElement.asJsonObject
+        val siteUrls = root["siteUrls"]?.asJsonObject ?: return
+        val siteFriendlyNames = root["siteFriendlyNames"]?.asJsonObject
+
+        val decodedMresult: JsonObject = when {
+            root["mresult"]?.isJsonObject == true -> {
+                root["mresult"]?.asJsonObject!!
+            }
+            root["mresult"]?.isJsonPrimitive == true -> {
+                val mresultBase64 = root["mresult"]?.asString ?: return
+                try {
+                    val jsonStr = base64Decode(mresultBase64)
+                    JsonParser.parseString(jsonStr).asJsonObject
+                } catch (e: Exception) {
+                    Log.e("Phisher", "Failed to decode mresult base64: $e")
+                    return
+                }
+            }
+            else -> return
+        }
+
+        val commonKeys = siteUrls.keySet().intersect(decodedMresult.keySet())
+
+        for (key in commonKeys) {
+            val base = siteUrls[key]?.asString?.trimEnd('/') ?: continue
+            val path = decodedMresult[key]?.asString?.trimStart('/') ?: continue
+            val fullUrl = "$base/$path"
+
+            siteFriendlyNames?.get(key)?.asString ?: name
+            loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+        }
+    }
+
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let { "${it.scheme}://${it.host}" }
+    }
 }

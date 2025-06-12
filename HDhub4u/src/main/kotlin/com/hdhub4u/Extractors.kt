@@ -1,7 +1,9 @@
 package com.hdhub4u
 
+import android.annotation.SuppressLint
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.VidHidePro
@@ -12,6 +14,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import java.net.URI
 
 class HdStream4u : VidHidePro() {
     override var mainUrl = "https://hdstream4u.com"
@@ -80,6 +83,7 @@ class Hubdrive : ExtractorApi() {
     override val mainUrl = "https://hubdrive.fit"
     override val requiresReferer = false
 
+    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -97,8 +101,7 @@ class Hubdrive : ExtractorApi() {
 }
 
 
-@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-open class HubCloud : ExtractorApi() {
+class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
     override val requiresReferer = false
@@ -123,93 +126,83 @@ open class HubCloud : ExtractorApi() {
         }
 
         val document = app.get(href).document
-        val size = document.selectFirst("i#size")?.text()
-        val header = document.selectFirst("div.card-header")?.text()
+        val size = document.selectFirst("i#size")?.text().orEmpty()
+        val header = document.selectFirst("div.card-header")?.text().orEmpty()
+        val headerdetails = """\.\d{3,4}p\.(.*)-[^-]*$""".toRegex()
+            .find(header)?.groupValues?.getOrNull(1)?.trim().orEmpty()
 
-        document.select("div.card-body a.btn").forEach { linkElement ->
-            val link = linkElement.attr("href")
+        val labelExtras = buildString {
+            if (headerdetails.isNotEmpty()) append("[$headerdetails]")
+            if (size.isNotEmpty()) append("[$size]")
+        }
+
+        document.select("h2 a.btn").amap { element ->
+            val link = element.attr("href")
+            val text = element.text()
+            val baseUrl = getBaseUrl(link)
             val quality = getIndexQuality(header)
 
             when {
-                link.contains("www-google-com") -> Log.d("Error:", "Not Found")
-
-                link.contains("technorozen.workers.dev") -> {
-                    callback(
+                text.contains("Download [FSL Server]") -> {
+                    callback.invoke(
                         newExtractorLink(
-                            "$source 10GB Server",
-                            "$source 10GB Server $size",
-                            url = getGBurl(link)
-                        ) {
-                            this.quality = quality
-                        }
+                            "$name[FSL Server] $labelExtras",
+                            "$name[FSL Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
                     )
                 }
 
-                link.contains("pixeldra.in") || link.contains("pixeldrain") -> {
-                    callback(
+                text.contains("Download File") -> {
+                    callback.invoke(
                         newExtractorLink(
-                            "$source Pixeldrain",
-                            "$source Pixeldrain $size",
-                            url = link
-                        ) {
-                            this.quality = quality
-                        }
+                            "$name $labelExtras",
+                            "$name $labelExtras",
+                            link,
+                        ) { this.quality = quality }
                     )
                 }
 
-                link.contains("buzzheavier") -> {
-                    callback(
+                text.contains("BuzzServer") -> {
+                    val dlink = app.get("$link/download", referer = link, allowRedirects = false)
+                        .headers["hx-redirect"] ?: ""
+                    if (dlink.isNotEmpty()) {
+                        callback.invoke(
+                            newExtractorLink(
+                                "$name[BuzzServer] $labelExtras",
+                                "$name[BuzzServer] $labelExtras",
+                                baseUrl + dlink,
+                            ) { this.quality = quality }
+                        )
+                    } else {
+                        Log.w("Error:","Not Found")
+                    }
+                }
+
+                link.contains("pixeldra") -> {
+                    callback.invoke(
                         newExtractorLink(
-                            "$source Buzzheavier",
-                            "$source Buzzheavier $size",
-                            url = "$link/download"
-                        ) {
-                            this.quality = quality
-                        }
+                            "Pixeldrain $labelExtras",
+                            "Pixeldrain $labelExtras",
+                            link,
+                        ) { this.quality = quality }
                     )
                 }
 
-                link.contains(".dev") -> {
-                    callback(
+                text.contains("Download [Server : 10Gbps]") -> {
+                    val dlink = app.get(link, allowRedirects = false).headers["location"]?.substringAfter("link=") ?: ""
+                    callback.invoke(
                         newExtractorLink(
-                            "$source Hub-Cloud",
-                            "$source Hub-Cloud $size",
-                            url = link
-                        ) {
-                            this.quality = quality
-                        }
+                            "$name[Download] $labelExtras",
+                            "$name[Download] $labelExtras",
+                            dlink,
+                        ) { this.quality = quality }
                     )
                 }
 
-                link.contains("fastdl.lol") -> {
-                    callback(
-                        newExtractorLink(
-                            "$source [FSL] Hub-Cloud",
-                            "$source [FSL] Hub-Cloud $size",
-                            url = link
-                        ) {
-                            this.quality = quality
-                        }
-                    )
+                else -> {
+                    loadExtractor(link, "", subtitleCallback, callback)
                 }
-
-                link.contains("hubcdn.xyz") -> {
-                    callback(
-                        newExtractorLink(
-                            "$source [File] Hub-Cloud",
-                            "$source [File] Hub-Cloud $size",
-                            url = link
-                        ) {
-                            this.quality = quality
-                        }
-                    )
-                }
-
-                link.contains("gofile.io") -> {
-                    loadCustomExtractor(source.orEmpty(), link, "Pixeldrain", subtitleCallback, callback)
-                }
-
-                else -> Log.d("Error:", "No Server Match Found")
             }
         }
     }
@@ -218,8 +211,11 @@ open class HubCloud : ExtractorApi() {
         Regex("(\\d{3,4})[pP]").find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.P2160.value
 
-    private suspend fun getGBurl(url: String): String =
-        app.get(url).document.selectFirst("#vd")?.attr("href").orEmpty()
+    private fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
+        }
+    }
 }
 
 
