@@ -1,6 +1,6 @@
 package com.Tooniboy
 
-import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
@@ -12,6 +12,8 @@ import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidHidePro
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -237,44 +239,67 @@ class GDMirrorbot : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val host = getBaseUrl(app.get(url).url)
-        val embed = url.substringAfterLast("/")
-        val data = mapOf("sid" to embed)
-        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
+        val embedId = url.substringAfterLast("/")
+        val postData = mapOf("sid" to embedId)
 
-        val jsonElement: JsonElement = JsonParser.parseString(jsonString)
-        if (!jsonElement.isJsonObject) {
-            Log.e("Error:", "Unexpected JSON format: Response is not a JSON object")
-            return
-        }
-        val jsonObject = jsonElement.asJsonObject
-        val siteUrls = jsonObject["siteUrls"]?.takeIf { it.isJsonObject }?.asJsonObject
-        val mresult = jsonObject["mresult"]?.takeIf { it.isJsonObject }?.asJsonObject
-        val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.takeIf { it.isJsonObject }?.asJsonObject
-        if (siteUrls == null || siteFriendlyNames == null || mresult == null) {
-            return
-        }
-        val commonKeys = siteUrls.keySet().intersect(mresult.keySet())
-        commonKeys.forEach { key ->
-            val siteName = siteFriendlyNames[key]?.asString
-            if (siteName == null) {
-                Log.e("Error:", "Skipping key: $key because siteName is null")
-                return@forEach
+        val responseJson = app.post("$host/embedhelper.php", data = postData).text
+        val jsonElement = JsonParser.parseString(responseJson)
+        if (!jsonElement.isJsonObject) return
+
+        val root = jsonElement.asJsonObject
+        val siteUrls = root["siteUrls"]?.asJsonObject ?: return
+        val siteFriendlyNames = root["siteFriendlyNames"]?.asJsonObject
+
+        val decodedMresult: JsonObject = when {
+            root["mresult"]?.isJsonObject == true -> {
+                root["mresult"]?.asJsonObject!!
             }
-            val siteUrl = siteUrls[key]?.asString
-            val resultUrl = mresult[key]?.asString
-            if (siteUrl == null || resultUrl == null) {
-                Log.e("Error:", "Skipping key: $key because siteUrl or resultUrl is null")
-                return@forEach
+            root["mresult"]?.isJsonPrimitive == true -> {
+                val mresultBase64 = root["mresult"]?.asString ?: return
+                try {
+                    val jsonStr = base64Decode(mresultBase64)
+                    JsonParser.parseString(jsonStr).asJsonObject
+                } catch (e: Exception) {
+                    Log.e("Error:", "Failed to decode mresult base64: $e")
+                    return
+                }
             }
-            val href = siteUrl + resultUrl
-            loadExtractor(href, subtitleCallback, callback)
+            else -> return
+        }
+
+        val commonKeys = siteUrls.keySet().intersect(decodedMresult.keySet())
+
+        for (key in commonKeys) {
+            val base = siteUrls[key]?.asString?.trimEnd('/') ?: continue
+            val path = decodedMresult[key]?.asString?.trimStart('/') ?: continue
+            val fullUrl = "$base/$path"
+
+            val friendlyName = siteFriendlyNames?.get(key)?.asString ?: key
+
+            try {
+                when (friendlyName) {
+                    "EarnVids" -> {
+                        VidhideExtractor().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "StreamHG" -> {
+                        VidHidePro().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "RpmShare", "UpnShare", "StreamP2p" -> {
+                        VidStack().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    else -> {
+                        loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Error:", "Failed to extract from $friendlyName at $fullUrl")
+                continue
+            }
         }
 
     }
 
     private fun getBaseUrl(url: String): String {
-        return URI(url).let {
-            "${it.scheme}://${it.host}"
-        }
+        return URI(url).let { "${it.scheme}://${it.host}" }
     }
 }

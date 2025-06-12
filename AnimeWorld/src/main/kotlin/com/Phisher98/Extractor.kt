@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.extractors.Filesim
@@ -14,6 +13,9 @@ import com.phisher98.AnimeWorld.Companion.API
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.extractors.VidHidePro
+import com.lagradost.cloudstream3.extractors.VidStack
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
 
@@ -66,7 +68,7 @@ open class GDMirrorbot : ExtractorApi() {
                     val jsonStr = base64Decode(mresultBase64)
                     JsonParser.parseString(jsonStr).asJsonObject
                 } catch (e: Exception) {
-                    Log.e("Phisher", "Failed to decode mresult base64: $e")
+                    Log.e("Error:", "Failed to decode mresult base64: $e")
                     return
                 }
             }
@@ -80,66 +82,35 @@ open class GDMirrorbot : ExtractorApi() {
             val path = decodedMresult[key]?.asString?.trimStart('/') ?: continue
             val fullUrl = "$base/$path"
 
-            siteFriendlyNames?.get(key)?.asString ?: name
-            loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+            val friendlyName = siteFriendlyNames?.get(key)?.asString ?: key
+
+            try {
+                when (friendlyName) {
+                    "EarnVids" -> {
+                        VidhideExtractor().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "StreamHG" -> {
+                        VidHidePro().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "RpmShare", "UpnShare", "StreamP2p" -> {
+                        VidStack().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    else -> {
+                        loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Error:", "Failed to extract from $friendlyName at $fullUrl")
+                continue
+            }
         }
+
     }
 
     private fun getBaseUrl(url: String): String {
         return URI(url).let { "${it.scheme}://${it.host}" }
     }
 }
-
-/*
-open class Techinmind : ExtractorApi() {
-    override var name = "GDMirrorbot"
-    override var mainUrl = "https://dlx.techinmind.space"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val host = getBaseUrl(app.get(url).url)
-        val embedId = url.substringAfterLast("/")
-        val postData = mapOf("sid" to embedId)
-
-        val responseJson = app.post("$host/embedhelper.php", data = postData).text
-        val jsonElement = JsonParser.parseString(responseJson)
-        if (!jsonElement.isJsonObject) return
-
-        val root = jsonElement.asJsonObject
-        val siteUrls = root["siteUrls"]?.asJsonObject ?: return
-        root["siteFriendlyNames"]?.asJsonObject ?: return
-
-        val mresultBase64 = root["mresult"]?.asString ?: return
-        val decodedMresult = try {
-            val jsonStr = base64Decode(mresultBase64)
-            JsonParser.parseString(jsonStr).asJsonObject
-        } catch (e: Exception) {
-            Log.e("Phisher", "Failed to decode mresult base64: $e")
-            return
-        }
-
-        val commonKeys = siteUrls.keySet().intersect(decodedMresult.keySet())
-
-        for (key in commonKeys) {
-            val base = siteUrls[key]?.asString?.trimEnd('/') ?: continue
-            val path = decodedMresult[key]?.asString?.trimStart('/') ?: continue
-            val fullUrl = "$base/$path"
-            loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
-        }
-    }
-
-    private fun getBaseUrl(url: String): String {
-        return URI(url).let { "${it.scheme}://${it.host}" }
-    }
-}
-
- */
-
 
 
 
@@ -196,143 +167,9 @@ data class Response(
 )
 
 
-data class Root(
-    val sources: Sources,
-    val mresult: String,
-    val encryptedApiKeys: EncryptedApiKeys,
-    val siteUrls: SiteUrls,
-    val sid: String,
-    val siteFriendlyNames: SiteFriendlyNames,
-    @JsonProperty("dl_icon")
-    val dlIcon: Boolean,
-    @JsonProperty("domain_blocked")
-    val domainBlocked: Boolean,
-    @JsonProperty("domain_block_reason")
-    val domainBlockReason: String,
-)
 
-data class Sources(
-    val plrx: Plrx,
-    val abys: Abys,
-    val upnshr: Upnshr,
-    val rpmshre: Rpmshre,
-    val strmp2: Strmp2,
-    val smwh: Smwh,
-    val flls: Flls,
-    val kknfl: Kknfl,
-    val flps: Flps,
-    val gdtot: Gdtot,
-    val pixeldrain: Pixeldrain,
-)
 
-data class Plrx(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
 
-data class Abys(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Upnshr(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Rpmshre(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Strmp2(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Smwh(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Flls(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Kknfl(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Flps(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Gdtot(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class Pixeldrain(
-    val encryptedValue: String,
-    val encryptedSiteName: String,
-)
-
-data class EncryptedApiKeys(
-    val plrx: String,
-    val flls: String,
-    val abys: String,
-    val upnshr: String,
-    val rpmshre: String,
-    val strmp2: String,
-    val stmrb: String,
-    val kknfl: String,
-    val smwh: String,
-    val dpld: String,
-)
-
-data class SiteUrls(
-    val flmn: String,
-    val flls: String,
-    val smwh: String,
-    val onud: String,
-    val vdgd: String,
-    val vosx: String,
-    val ddstm: String,
-    val mxdp: String,
-    val dpld: String,
-    val abys: String,
-    val plrx: String,
-    val stmrb: String,
-    val kknfl: String,
-    val strmtp: String,
-    val rpmshre: String,
-    val upnshr: String,
-    val strmp2: String,
-)
-
-data class SiteFriendlyNames(
-    val rpmshre: String,
-    val pxldrn: String,
-    val flls: String,
-    val flmn: String,
-    val smwh: String,
-    val onud: String,
-    val vdgd: String,
-    val vosx: String,
-    val ddstm: String,
-    val mxdp: String,
-    val dpld: String,
-    val abys: String,
-    val plrx: String,
-    val stmrb: String,
-    val kknfl: String,
-    val strmtp: String,
-    val upnshr: String,
-    val strmp2: String,
-)
 
 
 /*

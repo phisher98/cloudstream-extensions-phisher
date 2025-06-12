@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
@@ -7,6 +8,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -79,114 +81,72 @@ class GDMirrorbot : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        try {
-            val host = getBaseUrl(app.get(url).url)
-            val embedId = url.substringAfterLast("/")
+        val host = getBaseUrl(app.get(url).url)
+        val embedId = url.substringAfterLast("/")
+        val postData = mapOf("sid" to embedId)
 
-            val data = mapOf("sid" to embedId)
-            val response = app.post("$host/embedhelper.php", data = data).toString()
-            val jsonElement = JsonParser.parseString(response)
+        val responseJson = app.post("$host/embedhelper.php", data = postData).text
+        val jsonElement = JsonParser.parseString(responseJson)
+        if (!jsonElement.isJsonObject) return
 
-            if (!jsonElement.isJsonObject) {
-                Log.e("GDMirrorbot", "Unexpected JSON format: not a JSON object")
-                return
+        val root = jsonElement.asJsonObject
+        val siteUrls = root["siteUrls"]?.asJsonObject ?: return
+        val siteFriendlyNames = root["siteFriendlyNames"]?.asJsonObject
+
+        val decodedMresult: JsonObject = when {
+            root["mresult"]?.isJsonObject == true -> {
+                root["mresult"]?.asJsonObject!!
             }
-
-            val jsonObject = jsonElement.asJsonObject
-            val siteUrls = jsonObject["siteUrls"]?.asJsonObject
-            val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.asJsonObject
-            val mresultEncoded = jsonObject["mresult"]?.asString
-
-            if (siteUrls == null || siteFriendlyNames == null || mresultEncoded.isNullOrBlank()) {
-                Log.e("GDMirrorbot", "Missing siteUrls, siteFriendlyNames, or mresult")
-                return
-            }
-
-            val mresult = try {
-                val decoded = base64Decode(mresultEncoded)
-                JsonParser.parseString(decoded).asJsonObject
-            } catch (e: Exception) {
-                Log.e("GDMirrorbot", "Failed to decode mresult: ${e.message}")
-                return
-            }
-
-            val commonKeys = siteUrls.keySet().intersect(mresult.keySet())
-
-            for (key in commonKeys) {
+            root["mresult"]?.isJsonPrimitive == true -> {
+                val mresultBase64 = root["mresult"]?.asString ?: return
                 try {
-                    val siteName = siteFriendlyNames[key]?.asString.orEmpty()
-                    val siteUrl = siteUrls[key]?.asString.orEmpty()
-                    val resultUrl = mresult[key]?.asString.orEmpty()
-
-                    if (siteName.isBlank() || siteUrl.isBlank() || resultUrl.isBlank()) {
-                        Log.w("GDMirrorbot", "Skipping key '$key' due to blank values")
-                        continue
-                    }
-
-                    // Ensure final URL has the correct scheme
-                    val finalUrl = if (resultUrl.startsWith("http://") || resultUrl.startsWith("https://")) {
-                        siteUrl + resultUrl
-                    } else {
-                        // If no scheme is present, prepend the scheme from siteUrl
-                        val finalUrlWithScheme = if (siteUrl.startsWith("https://") || siteUrl.startsWith("http://")) {
-                            siteUrl + resultUrl
-                        } else {
-                            "https://$siteUrl$resultUrl"
-                        }
-                        finalUrlWithScheme
-                    }
-
-                    when {
-                        siteName.contains("EarnVids", ignoreCase = true) -> {
-                            runCatching {
-                                VidHidePro().getUrl(finalUrl, referer, subtitleCallback, callback)
-                            }.onFailure {
-                                Log.e("GDMirrorbot", "VidHidePro failed: ${it.message}")
-                            }
-                        }
-
-                        siteName.contains("RpmShare", ignoreCase = true) -> {
-                            runCatching {
-                                MultimoviesVidstack().getUrl(finalUrl, referer, subtitleCallback, callback)
-                            }.onFailure {
-                                Log.e("GDMirrorbot", "VidStack failed: ${it.message}")
-                            }
-                        }
-
-                        siteName.contains("StreamHG", ignoreCase = true) -> {
-                            runCatching {
-                                VidHidePro().getUrl(finalUrl, referer, subtitleCallback, callback)
-                            }.onFailure {
-                                Log.e("GDMirrorbot", "StreamHG failed: ${it.message}")
-                            }
-                        }
-
-                        else -> {
-                            runCatching {
-                                loadExtractor(finalUrl, subtitleCallback, callback)
-                            }.onFailure {
-                                Log.e("GDMirrorbot", "Generic extractor failed: ${it.message}")
-                            }
-                        }
-                    }
+                    val jsonStr = base64Decode(mresultBase64)
+                    JsonParser.parseString(jsonStr).asJsonObject
                 } catch (e: Exception) {
-                    Log.e("GDMirrorbot", "Exception in processing key '$key': ${e.message}")
+                    Log.e("Phisher", "Failed to decode mresult base64: $e")
+                    return
                 }
             }
-        } catch (e: Exception) {
-            Log.e("GDMirrorbot", "Fatal error in getUrl: ${e.message}")
+            else -> return
         }
+
+        val commonKeys = siteUrls.keySet().intersect(decodedMresult.keySet())
+
+        for (key in commonKeys) {
+            val base = siteUrls[key]?.asString?.trimEnd('/') ?: continue
+            val path = decodedMresult[key]?.asString?.trimStart('/') ?: continue
+            val fullUrl = "$base/$path"
+
+            val friendlyName = siteFriendlyNames?.get(key)?.asString ?: key
+            try {
+                when (friendlyName) {
+                    "EarnVids" -> {
+                        VidhideExtractor().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "StreamHG" -> {
+                        VidHidePro().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "RpmShare", "UpnShare", "StreamP2p" -> {
+                        VidStack().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    else -> {
+                        loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Error:", "Failed to extract from $friendlyName at $fullUrl")
+                continue
+            }
+        }
+
     }
 
     private fun getBaseUrl(url: String): String {
-        return try {
-            URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
-            Log.e("GDMirrorbot", "getBaseUrl fallback: ${e.message}")
-            mainUrl
-        }
+        return URI(url).let { "${it.scheme}://${it.host}" }
     }
 }
+
+
 
 
 

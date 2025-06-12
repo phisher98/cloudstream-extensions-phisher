@@ -1,8 +1,6 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
-import com.google.gson.Gson
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.api.Log
@@ -10,35 +8,23 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.lagradost.nicehttp.RequestBodyTypes
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import java.math.BigInteger
 import java.net.URI
-import java.nio.charset.Charset
-import java.security.MessageDigest
-import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 open class Streamruby : ExtractorApi() {
@@ -285,7 +271,7 @@ class GDMirrorbot : ExtractorApi() {
                     val jsonStr = base64Decode(mresultBase64)
                     JsonParser.parseString(jsonStr).asJsonObject
                 } catch (e: Exception) {
-                    Log.e("Phisher", "Failed to decode mresult base64: $e")
+                    Log.e("Error:", "Failed to decode mresult base64: $e")
                     return
                 }
             }
@@ -299,9 +285,29 @@ class GDMirrorbot : ExtractorApi() {
             val path = decodedMresult[key]?.asString?.trimStart('/') ?: continue
             val fullUrl = "$base/$path"
 
-            siteFriendlyNames?.get(key)?.asString ?: name
-            loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+            val friendlyName = siteFriendlyNames?.get(key)?.asString ?: key
+
+            try {
+                when (friendlyName) {
+                    "EarnVids" -> {
+                        VidhideExtractor().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "StreamHG" -> {
+                        VidHidePro().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    "RpmShare", "UpnShare", "StreamP2p" -> {
+                        VidStack().getUrl(fullUrl, referer, subtitleCallback, callback)
+                    }
+                    else -> {
+                        loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Error:", "Failed to extract from $friendlyName at $fullUrl")
+                continue
+            }
         }
+
     }
 
     private fun getBaseUrl(url: String): String {

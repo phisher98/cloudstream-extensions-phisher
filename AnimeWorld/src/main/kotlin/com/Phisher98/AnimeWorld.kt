@@ -20,7 +20,6 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.json.JSONArray
 import org.jsoup.nodes.Element
 
 class AnimeWorld : MainAPI() {
@@ -83,7 +82,7 @@ class AnimeWorld : MainAPI() {
         val description = document.selectFirst("div.description p")?.text()?.trim()
         val recommendations = document.select("section.section.episodes div.owl-carousel article").mapNotNull { it.toSearchResult() }
         return if (tvType == TvType.TvSeries) {
-            val episodes = mutableListOf<Episode>()
+                val episodes = mutableListOf<Episode>()
                 document.select("#episode_by_temp li").map { ep->
                         val href = ep.select("a").attr("href")
                         val name = "Episode "+ ep.select("header.entry-header h2").text().substringAfter("EP").trim()
