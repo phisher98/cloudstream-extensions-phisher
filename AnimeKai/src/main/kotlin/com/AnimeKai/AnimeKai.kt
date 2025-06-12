@@ -3,7 +3,6 @@ package com.AnimeKai
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.Gson
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -79,40 +78,6 @@ class AnimeKai : MainAPI() {
 
 
     companion object {
-        private const val AUTOKAI_URL = "https://raw.githubusercontent.com/amarullz/kaicodex/refs/heads/main/generated/gen/keys.json"
-
-        private var cachedKeys: List<List<String>>? = null
-        private val gson = Gson()
-
-        suspend fun getHomeKeys(): List<List<String>> {
-            if (cachedKeys == null) {
-                val responseBody = app.get(AUTOKAI_URL).body.string()
-                val parsed: AutoKai? = try {
-                    gson.fromJson(responseBody, AutoKai::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
-                }
-                cachedKeys = parsed?.kai ?: emptyList()
-            }
-            return cachedKeys ?: emptyList()
-        }
-
-        private var cachedMegaKeys: List<List<String>>? = null
-
-        suspend fun getMegaKeys(): List<List<String>> {
-            if (cachedMegaKeys == null) {
-                val responseBody = app.get(AUTOKAI_URL).body.string()
-                val parsed: AutoKai? = try {
-                    gson.fromJson(responseBody, AutoKai::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
-                }
-                cachedMegaKeys = parsed?.mega ?: emptyList()
-            }
-            return cachedMegaKeys ?: emptyList()
-        }
 
         fun getType(t: String): TvType {
             val lower = t.lowercase()
@@ -176,8 +141,8 @@ class AnimeKai : MainAPI() {
         val aniid = document.select("div.watch-section").attr("data-al-id")
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").toString()
         val animeData = parseAnimeData(syncData)
-        val title = document.selectFirst("div.title")?.text().toString()
-        val jptitle = document.selectFirst("div.title")?.attr("data-jp").toString()
+        val title = document.selectFirst("h1.title")?.text().toString()
+        val jptitle = document.selectFirst("h1.title")?.attr("data-jp").toString()
         val poster = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
             ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")
                 ?.substringBefore(")")
