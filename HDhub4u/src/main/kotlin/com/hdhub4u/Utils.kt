@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 import org.json.JSONObject
-import java.net.URL
 import java.util.Base64
 
 
@@ -95,22 +94,43 @@ suspend fun loadCustomExtractor(
 }
 
 
+fun cleanTitle(title: String): String {
+    val parts = title.split(".", "-", "_")
 
-fun replaceHubclouddomain(url: String): String {
-    return try {
-        val originalUrl = URL(url)
-        val domainParts = originalUrl.host.split(".").toMutableList()
-        if (domainParts.size > 1) {
-            domainParts[domainParts.lastIndex] = "dad"
-            val newDomain = domainParts.joinToString(".")
+    val qualityTags = listOf(
+        "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
+        "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
+        "HD"
+    )
 
-            // Construct the new URL with the updated domain
-            URL(originalUrl.protocol, newDomain, originalUrl.port, originalUrl.file).toString()
-        } else {
-            throw IllegalArgumentException("Invalid domain structure in URL")
-        }
-    } catch (e: Exception) {
-        "Invalid URL: ${e.message}"
+    val audioTags = listOf(
+        "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
+    )
+
+    val subTags = listOf(
+        "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
+    )
+
+    val codecTags = listOf(
+        "x264", "x265", "H264", "HEVC", "AVC"
+    )
+
+    val startIndex = parts.indexOfFirst { part ->
+        qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
+    }
+
+    val endIndex = parts.indexOfLast { part ->
+        subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
+    }
+
+    return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+        parts.subList(startIndex, endIndex + 1).joinToString(".")
+    } else if (startIndex != -1) {
+        parts.subList(startIndex, parts.size).joinToString(".")
+    } else {
+        parts.takeLast(3).joinToString(".")
     }
 }
 

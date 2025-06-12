@@ -1,6 +1,8 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -2299,7 +2301,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     val episodeDoc = app.get(episodeUrl).document
                                     episodeDoc.selectFirst("h4:contains(Episodes):contains($episode)")
                                         ?.nextElementSibling()
-                                        ?.select("a:matches((?i)(V-Cloud|G-Direct))")
+                                        ?.select("a:matches((?i)(V-Cloud|G-Direct|OxxFile))")
                                         ?.mapNotNull {
                                             it.attr("href").takeIf { url -> url.isNotBlank() }
                                         }
@@ -2457,7 +2459,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val res = app.get(episodeUrl).document
                     val streamingUrls = res.selectFirst("h4:contains(Episodes):contains($episode)")
                         ?.nextElementSibling()
-                        ?.select("a:matches((?i)(V-Cloud|G-Direct))")
+                        ?.select("a:matches((?i)(V-Cloud|G-Direct|OXXFile))")
                         ?.map { it.attr("href") }
 
                     streamingUrls?.forEach { link ->
@@ -5066,6 +5068,8 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    @SuppressLint("NewApi")
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invoke4khdhub(
         title: String? = null,
         year: Int? = null,

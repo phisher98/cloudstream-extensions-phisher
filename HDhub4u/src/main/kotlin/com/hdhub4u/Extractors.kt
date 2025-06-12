@@ -143,8 +143,7 @@ class HubCloud : ExtractorApi() {
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
-        val headerDetails = Regex("""\b(?:2160|1080|720|480|360)[pP]\b\s+(.*?)(?:\s+\S+\.(mkv|mp4|avi|mov|webm))?${'$'}""")
-            .find(header)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+        val headerDetails = cleanTitle(header)
 
         val labelExtras = buildString {
             if (headerDetails.isNotEmpty()) append("[$headerDetails]")

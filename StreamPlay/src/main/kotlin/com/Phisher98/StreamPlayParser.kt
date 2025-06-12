@@ -2,6 +2,7 @@ package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.annotations.SerializedName
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -1955,3 +1956,47 @@ data class cinemetaMeta(
     val name: String,
 )
 
+//OXXFile
+
+data class oxxfile(
+    val id: String,
+    val code: String,
+    val fileName: String,
+    val size: Long,
+    val driveLinks: List<DriveLink>,
+    val metadata: Metadata,
+    val createdAt: String,
+    val views: Long,
+    val status: String,
+    val gdtotLink: String?, // formerly Any?
+    val gdtotName: String?, // formerly Any?
+    val hubcloudLink: String,
+    val filepressLink: String,
+    val vikingLink: String?, // formerly Any?
+    val pixeldrainLink: String?, // formerly Any?
+    @SerializedName("credential_index")
+    val credentialIndex: Long,
+    val duration: String?, // safer to assume it's String for now
+    val userName: String,
+)
+
+data class DriveLink(
+    val fileId: String,
+    val webViewLink: String,
+    val driveLabel: String,
+    val credentialIndex: Int,
+    val isLoginDrive: Boolean,
+    val isDrive2: Boolean
+)
+
+data class Metadata(
+    val mimeType: String,
+    val fileExtension: String,
+    val modifiedTime: String,
+    val createdTime: String,
+    val pixeldrainConversionFailed: Boolean,
+    val pixeldrainConversionFailedAt: String,
+    val pixeldrainConversionError: String,
+    val vikingConversionFailed: Boolean,
+    val vikingConversionFailedAt: String
+)

@@ -76,8 +76,7 @@ class HubCloud : ExtractorApi() {
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
-        val headerDetails = Regex("""\b(?:2160|1080|720|480|360)[pP]\b\s+(.*?)(?:\s+\S+\.(mkv|mp4|avi|mov|webm))?${'$'}""")
-            .find(header)?.groupValues?.getOrNull(1)?.trim().orEmpty()
+        val headerDetails = cleanTitle(header)
 
         val labelExtras = buildString {
             if (headerDetails.isNotEmpty()) append("[$headerDetails]")
@@ -102,7 +101,6 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("Download File", ignoreCase = true) -> {
-                    Log.d("HubCloud", "Phisher text: $text")
                     callback.invoke(
                         newExtractorLink(
                             "$source $labelExtras",
@@ -190,6 +188,46 @@ class HubCloud : ExtractorApi() {
             URI(url).let { "${it.scheme}://${it.host}" }
         } catch (e: Exception) {
             ""
+        }
+    }
+
+    private fun cleanTitle(title: String): String {
+        val parts = title.split(".", "-", "_")
+
+        val qualityTags = listOf(
+            "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
+            "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
+            "HD"
+        )
+
+        val audioTags = listOf(
+            "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
+        )
+
+        val subTags = listOf(
+            "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
+        )
+
+        val codecTags = listOf(
+            "x264", "x265", "H264", "HEVC", "AVC"
+        )
+
+        val startIndex = parts.indexOfFirst { part ->
+            qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
+        }
+
+        val endIndex = parts.indexOfLast { part ->
+            subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                    audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                    codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
+        }
+
+        return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+            parts.subList(startIndex, endIndex + 1).joinToString(".")
+        } else if (startIndex != -1) {
+            parts.subList(startIndex, parts.size).joinToString(".")
+        } else {
+            parts.takeLast(3).joinToString(".")
         }
     }
 }
