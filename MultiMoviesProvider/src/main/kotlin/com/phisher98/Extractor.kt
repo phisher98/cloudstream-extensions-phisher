@@ -8,12 +8,13 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
-import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.M3u8Helper2
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -46,7 +47,7 @@ class Animezia : VidhideExtractor() {
     override var requiresReferer = true
 }
 
-class server1 : MultimoviesVidstack() {
+class server1 : VidStack() {
     override var name = "MultimoviesVidstack"
     override var mainUrl = "https://server1.uns.bio"
     override var requiresReferer = true
@@ -151,28 +152,48 @@ class GDMirrorbot : ExtractorApi() {
 
 
 
-open class MultimoviesVidstack : ExtractorApi() {
+open class VidStack : ExtractorApi() {
     override var name = "Vidstack"
-    override var mainUrl = "https://multimovies.rpmhub.site"
+    override var mainUrl = "https://vidstack.io"
     override val requiresReferer = true
 
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink> {
-        val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
-        val hash=url.substringAfterLast("#")
-        val baseurl=getBaseUrl(url)
-        val encoded= app.get("$baseurl/api/v1/video?id=$hash",headers=headers).text.trim()
-        val decryptedText = AesHelper.decryptAES(encoded, "kiemtienmua911ca", "0123456789abcdef")
-        val m3u8=Regex("\"source\":\"(.*?)\"").find(decryptedText)?.groupValues?.get(1)?.replace("\\/","/") ?:""
-        return listOf(
-            newExtractorLink(
-                this.name,
-                this.name,
-                url = m3u8,
-                ExtractorLinkType.M3U8
-            ) {
-                this.referer = url
-                this.quality = Qualities.P1080.value
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    )
+    {
+        val headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
+        val hash = url.substringAfterLast("#").substringAfter("/")
+        val baseurl = getBaseUrl(url)
+
+        val encoded = app.get("$baseurl/api/v1/video?id=$hash", headers = headers).text.trim()
+
+        val key = "kiemtienmua911ca"
+        val ivList = listOf("1234567890oiuytr", "0123456789abcdef")
+
+        val decryptedText = ivList.firstNotNullOfOrNull { iv ->
+            try {
+                AesHelper.decryptAES(encoded, key, iv)
+            } catch (e: Exception) {
+                null
             }
+        } ?: throw Exception("Failed to decrypt with all IVs")
+
+        val m3u8 = Regex("\"source\":\"(.*?)\"").find(decryptedText)
+            ?.groupValues?.get(1)
+            ?.replace("\\/", "/") ?: ""
+
+        callback.invoke(
+            ExtractorLink(
+                this.name,
+                this.name,
+                m3u8,
+                url,
+                Qualities.P1080.value,
+                type = ExtractorLinkType.M3U8,
+            )
         )
     }
 
@@ -180,7 +201,7 @@ open class MultimoviesVidstack : ExtractorApi() {
         return try {
             URI(url).let { "${it.scheme}://${it.host}" }
         } catch (e: Exception) {
-            Log.e("GDMirrorbot", "getBaseUrl fallback: ${e.message}")
+            Log.e("Vidstack", "getBaseUrl fallback: ${e.message}")
             mainUrl
         }
     }
@@ -205,35 +226,6 @@ object AesHelper {
     }
 }
 
-
-class FilemoonV2 : ExtractorApi() {
-    override var name = "Filemoon"
-    override var mainUrl = "https://movierulz2025.bar"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
-        val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
-        val m3u8= JsUnpacker(res).unpack()?.let { unPacked ->
-            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
-        }
-        callback.invoke(
-            ExtractorLink(
-                this.name,
-                this.name,
-                m3u8 ?:"",
-                url,
-                Qualities.P1080.value,
-                type = ExtractorLinkType.M3U8,
-            )
-        )
-    }
-}
 
 class Streamcasthub : ExtractorApi() {
     override var name = "Streamcasthub"
