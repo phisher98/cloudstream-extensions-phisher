@@ -107,7 +107,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(bulbasaur())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Megacloud())
-        registerExtractorAPI(Megacloud())
         registerExtractorAPI(Cdnstreame())
         registerExtractorAPI(OwlExtractor())
         registerExtractorAPI(Rapidplayers())
@@ -115,6 +114,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Pahe())
         registerExtractorAPI(MegaUp())
         registerExtractorAPI(oxxxfile())
+        registerExtractorAPI(Hblinks())
         registerExtractorAPI(DriveleechPro())
         val activity = context as AppCompatActivity
         openSettings = {

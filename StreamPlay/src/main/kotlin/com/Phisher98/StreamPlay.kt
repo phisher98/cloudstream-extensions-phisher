@@ -704,6 +704,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             res.year,
             res.season,
             res.episode,
+            res.imdbId,
             subtitleCallback,
             callback
         )
@@ -843,6 +844,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         res.season,
         res.episode,
         res.year,
+        res.imdbId,
         subtitleCallback,
         callback
     )

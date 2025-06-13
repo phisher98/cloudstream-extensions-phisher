@@ -2298,3 +2298,31 @@ class HUBCDN : ExtractorApi() {
         }
     }
 }
+
+class Hblinks : ExtractorApi() {
+    override val name = "Hblinks"
+    override val mainUrl = "https://hblinks.pro"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val document = app.get(url).document
+
+        document.select("h3 a, div.entry-content p a").forEach {
+            val link = it.absUrl("href").ifBlank { it.attr("href") }
+            val lower = link.lowercase()
+
+            when {
+                "hubdrive" in lower -> Hubdrive().getUrl(link, name, subtitleCallback, callback)
+                "hubcloud" in lower -> HubCloud().getUrl(link, name, subtitleCallback, callback)
+                "hubcdn" in lower -> HUBCDN().getUrl(link, name, subtitleCallback, callback)
+                else -> loadSourceNameExtractor(name, link, "", subtitleCallback, callback)
+            }
+        }
+    }
+}
+

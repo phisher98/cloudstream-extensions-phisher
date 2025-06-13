@@ -2943,3 +2943,16 @@ fun hdhubpen(value: String): String {
     }.joinToString("")
 }
 
+suspend fun dispatchToExtractor(
+    link: String,
+    source: String,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit
+) {
+    when {
+        link.contains("hubdrive", ignoreCase = true) -> Hubdrive().getUrl(link, source, subtitleCallback, callback)
+        link.contains("hubcloud", ignoreCase = true) -> HubCloud().getUrl(link, source, subtitleCallback, callback)
+        link.contains("hubcdn", ignoreCase = true) -> HUBCDN().getUrl(link, source, subtitleCallback, callback)
+        else -> loadSourceNameExtractor(source, link, "", subtitleCallback, callback)
+    }
+}
