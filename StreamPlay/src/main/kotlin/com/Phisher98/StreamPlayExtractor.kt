@@ -1293,61 +1293,6 @@ object StreamPlayExtractor : StreamPlay() {
     )
 
 
-    /*
-    @SuppressLint("NewApi")
-    suspend fun invokeAnimeKai(
-        malId: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val headers = mapOf(
-            "x-atx" to "12RmYtJexlqnNym38z4ahwy+g1g0la/El8nkkMOVtiQ=",
-            "Origin" to "https://www.miruro.tv"
-        )
-        val response=app.get(
-            "https://www.miruro.to/api/episodes?malId=$malId",
-            headers = headers
-        ).text
-        val miroTV: MiroTV? = Gson().fromJson(response, object : TypeToken<MiroTV>() {}.type)
-        val token = miroTV?.ANIMEKAI
-            ?.asSequence()
-            ?.mapNotNull { it.value.episodeList.episodes.find { ep -> ep.number == episode }?.id }
-            ?.firstOrNull() ?: ""
-        val decoder = AnimekaiDecoder()
-        val servers = listOf("sub", "dub", "softsub").flatMap { type ->
-            val url = "$AnimeKai/ajax/links/list?token=$token&_=${decoder.generateToken(token,
-                emptyList() //TODO
-            )}"
-            app.get(url)
-                .parsed<AnimeKaiResponse>()
-                .getDocument()
-                .select("div.server-items[data-id=$type] span.server[data-lid]") // Selects spans with server info
-                .map { server ->
-                    val lid = server.attr("data-lid")
-                    val serverName = server.text()
-                    Triple(type, lid, serverName)
-                }
-        }.distinct()
-
-        servers.amap { (type, lid, serverName) ->
-            val result =
-                app.get("$AnimeKai/ajax/links/view?id=$lid&_=${decoder.generateToken(lid,
-                    emptyList()
-                )}")
-                    .parsed<AnimeKaiResponse>().result
-
-            val iframe = extractVideoUrlFromJson(decoder.decodeIframeData(result, emptyList()))
-            val nameSuffix = if (type == "softsub") " [Soft Sub]" else "[${type.uppercase()}]"
-            val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix | "
-            loadExtractor(iframe, name, subtitleCallback, callback)
-        }
-
-    }
-
-
-     */
-
     internal suspend fun invokeHianime(
         animeIds: List<String?>? = null,
         url: String?,
@@ -4285,11 +4230,13 @@ object StreamPlayExtractor : StreamPlay() {
         val type = if (season == null) "Movie" else "TV Series"
 
         val searchData = runCatching {
-            val searchJson = app.get("${consumetFlixhqAPI}/$title", timeout = 120L).text
+            val searchJson = app.get("$consumetFlixhqAPI/$title", timeout = 120L).text
             tryParseJson<ConsumetSearch>(searchJson)
         }.getOrNull() ?: return
 
-        val id = searchData.results.firstOrNull { it.title == title && it.type == type }?.id ?: return
+        val id = searchData.results.firstOrNull {
+            it.title.equals(title, ignoreCase = true) && it.type == type
+        }?.id ?: return
 
         val infoData = runCatching {
             val infoJson = app.get("$consumetFlixhqAPI/info?id=$id", timeout = 120L).text
@@ -4302,40 +4249,50 @@ object StreamPlayExtractor : StreamPlay() {
             infoData.episodes.firstOrNull { it.number == episode && it.season == season }?.id
         } ?: return
 
-        val servers = listOf("upcloud", "vidcloud")
+        val epJson = app.get("$consumetFlixhqAPI/servers?episodeId=$epId&mediaId=$id", timeout = 120L).text
+        val serverList = parseWithJSONObject(epJson)
 
-        for (server in servers) {
-            val epData = runCatching {
-                val epJson = app.get("$consumetFlixhqAPI/watch?episodeId=$epId&mediaId=$id&server=$server", timeout = 120L).text
-                tryParseJson<ConsumetWatch>(epJson)
-            }.getOrNull() ?: continue
-
-            val referer = epData.headers.Referer ?: ""
-
-            epData.sources.forEach {
-                callback(
-                    newExtractorLink(
-                        "FlixHQ ${server.uppercase()}",
-                        "FlixHQ ${server.uppercase()}",
-                        url = it.url,
-                        ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = referer
-                        this.quality = it.quality.toIntOrNull() ?: Qualities.Unknown.value
-                    }
-                )
-
-            }
-
-            epData.subtitles.forEach {
-                subtitleCallback(
-                    SubtitleFile(
-                        lang = it.lang,
-                        url = it.url
-                    )
-                )
-            }
+        serverList.forEach {
+            val sourceurl= app.get("$FlixHQ/ajax/episode/sources/${it.url.substringAfterLast(".")}").parsedSafe<FlixHQLinks>()!!.link
+            loadCustomExtractor(
+                "⌜ FlixHQ ⌟ | ${it.name.uppercase()}",
+                sourceurl,
+                "",
+                subtitleCallback,
+                callback,
+            )
         }
+
+
+    }
+
+    data class FlixHQServers(
+        val name: String,
+        val url: String,
+    )
+
+    data class FlixHQLinks(
+        val type: String,
+        val link: String,
+        val sources: List<Any?>,
+        val tracks: List<Any?>,
+        val title: String,
+    )
+
+    private fun parseWithJSONObject(json: String): List<FlixHQServers> {
+        val result = mutableListOf<FlixHQServers>()
+        try {
+            val jsonArray = JSONArray(json)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val name = obj.getString("name")
+                val url = obj.getString("url")
+                result.add(FlixHQServers(name, url))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return result
     }
 
     /*
@@ -5033,7 +4990,6 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     @SuppressLint("NewApi")
-    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invoke4khdhub(
         title: String? = null,
         year: Int? = null,
@@ -5068,14 +5024,21 @@ object StreamPlayExtractor : StreamPlay() {
                 .flatMap { it.select("div.episode-links > a") }
         }
         links.amap {
-            val source = hdhubgetRedirectLinks(it.attr("href"))
-            loadSourceNameExtractor(
-                "4Khdhub",
-                source,
-                "",
-                subtitleCallback,
-                callback
-            )
+            val link = hdhubgetRedirectLinks(it.attr("href"))
+            when {
+                link.contains("Hubdrive", ignoreCase = true) -> {
+                    Hubdrive().getUrl(link, "4Khdhub", subtitleCallback, callback)
+                }
+                link.contains("hubcloud", ignoreCase = true) -> {
+                    HubCloud().getUrl(link, "4Khdhub", subtitleCallback, callback)
+                }
+                link.contains("hubcdn", ignoreCase = true) -> {
+                    HUBCDN().getUrl(link, "4Khdhub", subtitleCallback, callback)
+                }
+                else -> {
+                    loadSourceNameExtractor("4Khdhub", link, "", subtitleCallback, callback)
+                }
+            }
         }
     }
 
@@ -5158,6 +5121,117 @@ object StreamPlayExtractor : StreamPlay() {
 
             streamRes.tracks?.forEach { sub ->
                 subtitleCallback.invoke(SubtitleFile(sub.label ?: return@forEach, sub.file ?: return@forEach))
+            }
+        }
+    }
+
+
+    @SuppressLint("NewApi")
+    suspend fun invokehdhub4u(
+        title: String?,
+        year: Int?,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val hdhub4u = getDomains()?.hdhub4u
+        if (title.isNullOrBlank()) return
+
+        val query = buildString {
+            append(title)
+            if (season != null) append(" season $season")
+            else if (year != null) append(" $year")
+        }.replace(" ", "+")
+
+        val apiUrl = "$hdhub4u/?s=$query"
+        val searchDoc = app.get(apiUrl).document
+
+        val normalizedTitle = title.lowercase().replace(Regex("[^a-z0-9]"), "")
+        val seasonString = season?.toString()
+
+        val posts = searchDoc.select("ul.recent-movies li figcaption a").filter { element ->
+            val text = element.text().lowercase()
+            val normalizedText = text.replace(Regex("[^a-z0-9]"), "")
+            when {
+                season == null && year != null -> normalizedText.contains(normalizedTitle) && text.contains(year.toString())
+                season != null -> normalizedText.contains(normalizedTitle) &&
+                        text.contains("season") &&
+                        text.contains("season $seasonString")
+                else -> false
+            }
+        }
+
+        posts.forEach { element ->
+            val href = element.absUrl("href")
+            val doc = app.get(href).document
+
+            if (season == null) {
+                val movieLinks = doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
+                    .map { it to it.text() }
+
+                movieLinks.forEach { (el, _) ->
+                    val link = hdhubgetRedirectLinks(el.absUrl("href"))
+                    when {
+                        link.contains("Hubdrive", ignoreCase = true) -> {
+                            Hubdrive().getUrl(link, "HDhub4u", subtitleCallback, callback)
+                        }
+                        link.contains("hubcloud", ignoreCase = true) -> {
+                            HubCloud().getUrl(link, "HDhub4u", subtitleCallback, callback)
+                        }
+                        link.contains("hubcdn", ignoreCase = true) -> {
+                            HUBCDN().getUrl(link, "HDhub4u", subtitleCallback, callback)
+                        }
+                        else -> {
+                            loadSourceNameExtractor("HDhub4u", link, "", subtitleCallback, callback)
+                        }
+                    }
+                }
+            } else {
+                val episodeRegex = Regex("EPiSODE\\s*(\\d+)", RegexOption.IGNORE_CASE)
+                doc.select("h3").forEach { h3 ->
+                    val links = h3.select("a[href]")
+                    val episodeLink = links.find { it.text().contains("episode", ignoreCase = true) }
+                    val watchLink = links.find { it.text().equals("watch", ignoreCase = true) }
+
+                    val episodeNum = episodeRegex.find(episodeLink?.text().orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
+                    if (episodeNum != null && (episode == null || episode == episodeNum)) {
+                        val episodeText = "Episode $episodeNum"
+
+                        // --- Episode Link ---
+                        episodeLink?.absUrl("href")?.let { episodeHref ->
+                            val resolvedEpisodeUrl = if ("id=" in episodeHref) hdhubgetRedirectLinks(episodeHref) else episodeHref
+
+                            val episodeDoc = app.get(resolvedEpisodeUrl).document
+
+                            val allLinks = episodeDoc
+                                .select("h3 a[href], h4 a[href], h5 a[href]")
+                                .mapNotNull { it.absUrl("href").takeIf { url -> url.isNotBlank() } }
+
+                            allLinks.forEach { link ->
+                                when {
+                                    link.contains("Hubdrive", ignoreCase = true) -> {
+                                        Hubdrive().getUrl(link, "HDhub4u", subtitleCallback, callback)
+                                    }
+                                    link.contains("hubcloud", ignoreCase = true) -> {
+                                        HubCloud().getUrl(link, "HDhub4u", subtitleCallback, callback)
+                                    }
+                                    link.contains("hubcdn", ignoreCase = true) -> {
+                                    HUBCDN().getUrl(link, "HDhub4u", subtitleCallback, callback)
+                                }
+                                    else -> {
+                                        loadSourceNameExtractor("HDhub4u", link, "", subtitleCallback, callback)
+                                    }
+                                }
+
+                            }
+                        }
+                        watchLink?.absUrl("href")?.let { watchHref ->
+                            val resolvedWatchUrl = if ("id=" in watchHref) hdhubgetRedirectLinks(watchHref) else watchHref
+                            loadSourceNameExtractor("HDhub4u", resolvedWatchUrl, "", subtitleCallback, callback)
+                        }
+                    }
+                }
             }
         }
     }

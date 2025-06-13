@@ -2267,3 +2267,200 @@ class Megacloud : ExtractorApi() {
     }
 
 }
+
+
+class Cdnstreame : ExtractorApi() {
+    override val name = "Cdnstreame"
+    override val mainUrl = "https://cdnstreame.net"
+    override val requiresReferer = false
+
+    @SuppressLint("NewApi")
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val id = url.substringAfterLast("/").substringBefore("?")
+        val apiUrl = "$mainUrl/embed-1/v2/e-1/getSources?id=$id"
+        val response = app.get(apiUrl, referer = url).parsedSafe<MegacloudResponse>() ?: return
+        response.sources.let { encoded ->
+            val key = app.get("https://raw.githubusercontent.com/superbillgalaxy/megacloud-keys/refs/heads/main/api.json")
+                .parsedSafe<Megakey>()?.rabbitstream
+            val decoded = key?.let { decryptOpenSSL(encoded, it) }
+            val m3u8 = decoded?.let {
+                val sourceList = parseSourceJson(it)
+                sourceList.firstOrNull()?.file
+            }
+            if (m3u8 != null) {
+                val m3u8headers = mapOf(
+                    "Referer" to "https://cdnstreame.net",
+                    "Origin" to "https://cdnstreame.net"
+                )
+
+                M3u8Helper.generateM3u8(
+                    name,
+                    m3u8,
+                    mainUrl,
+                    headers = m3u8headers
+                ).forEach(callback)
+
+            }
+        }
+
+
+        response.tracks.forEach { track ->
+            if (track.kind == "captions" || track.kind == "subtitles") {
+                subtitleCallback(
+                    SubtitleFile(
+                        track.label,
+                        track.file
+                    )
+                )
+            }
+        }
+    }
+
+    data class MegacloudResponse(
+        val sources: String,
+        val tracks: List< MegacloudTrack>,
+        val encrypted: Boolean,
+        val intro:  MegacloudIntro,
+        val outro:  MegacloudOutro,
+        val server: Long,
+    )
+
+    data class MegacloudTrack(
+        val file: String,
+        val label: String,
+        val kind: String,
+        val default: Boolean?,
+    )
+
+    data class MegacloudIntro(
+        val start: Long,
+        val end: Long,
+    )
+
+    data class  MegacloudOutro(
+        val start: Long,
+        val end: Long,
+    )
+
+    data class Megakey(
+        val megacloud: String,
+        val modifiedAt: String,
+        val rabbitstream: String,
+    )
+
+    data class Source2(
+        val file: String,
+        val type: String,
+    )
+
+    private fun parseSourceJson(json: String): List<Source2> {
+        val list = mutableListOf<Source2>()
+        try {
+            val jsonArray = JSONArray(json)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val file = obj.getString("file")
+                val type = obj.getString("type")
+                list.add(Source2(file, type))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    private fun opensslKeyIv(password: ByteArray, salt: ByteArray, keyLen: Int = 32, ivLen: Int = 16): Pair<ByteArray, ByteArray> {
+        var d = ByteArray(0)
+        var d_i = ByteArray(0)
+        while (d.size < keyLen + ivLen) {
+            val md = MessageDigest.getInstance("MD5")
+            d_i = md.digest(d_i + password + salt)
+            d += d_i
+        }
+        return Pair(d.copyOfRange(0, keyLen), d.copyOfRange(keyLen, keyLen + ivLen))
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun decryptOpenSSL(encBase64: String, password: String): String {
+        try {
+            val data = java.util.Base64.getDecoder().decode(encBase64)
+            require(data.copyOfRange(0, 8).contentEquals("Salted__".toByteArray()))
+            val salt = data.copyOfRange(8, 16)
+            val (key, iv) = opensslKeyIv(password.toByteArray(), salt)
+
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            val secretKey = SecretKeySpec(key, "AES")
+            val ivSpec = IvParameterSpec(iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+
+            val decrypted = cipher.doFinal(data.copyOfRange(16, data.size))
+            return String(decrypted)
+        } catch (e: Exception) {
+            Log.e("DecryptOpenSSL", "Decryption failed: ${e.message}")
+            return "Decryption Error"
+        }
+    }
+
+}
+
+
+class Hubdrive : ExtractorApi() {
+    override val name = "Hubdrive"
+    override val mainUrl = "https://hubdrive.fit"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        if (href.contains("hubcloud"))
+        {
+            HubCloud().getUrl(href,"HubDrive",subtitleCallback, callback)
+        }
+        else
+            loadExtractor(href,"HubDrive",subtitleCallback, callback)
+    }
+}
+
+class HUBCDN : ExtractorApi() {
+    override val name = "HUBCDN"
+    override val mainUrl = "https://hubcdn.fans"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(url).document
+        val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
+
+        val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")
+            .find(scriptText ?: "")
+            ?.groupValues?.get(1)
+            ?.substringAfter("?r=")
+
+        val decodedUrl = encodedUrl?.let { base64Decode(it) }?.substringAfterLast("link=")
+
+
+        if (decodedUrl != null) {
+            callback(
+                newExtractorLink(
+                    this.name,
+                    this.name,
+                    decodedUrl,
+                    INFER_TYPE,
+                )
+            )
+        }
+    }
+}
