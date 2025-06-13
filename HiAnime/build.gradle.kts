@@ -13,6 +13,9 @@ android {
         buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
     }
 }
+dependencies {
+    implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.4")
+}
 
 
 cloudstream {

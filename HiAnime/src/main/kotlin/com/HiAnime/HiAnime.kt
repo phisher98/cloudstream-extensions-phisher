@@ -34,9 +34,15 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.phisher98.BuildConfig.WASMAPI
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -44,7 +50,7 @@ import java.net.URI
 import kotlin.math.roundToInt
 
 class HiAnime : MainAPI() {
-    override var mainUrl = "https://hianimez.to"
+    override var mainUrl = "https://hianime.to"
     override var name = "HiAnime"
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -271,52 +277,16 @@ class HiAnime : MainAPI() {
                     }
                 }.distinctBy { it.first }
             servers.forEach { (id, label) ->
-                    val sourceurl = app.get("${mainUrl}/ajax/v2/episode/sources?id=$id").parsedSafe<EpisodeServers>()?.link
-                    var attempt = 0
-                    var success = false
-                    while (attempt < 3 && !success) {
-                        try {
-                            val api = "$WASMAPI${sourceurl}&referrer=$mainUrl"
-                            val jsonString = app.get(api).text
-                            val gson = Gson()
-                            val sourceRes: HiAnimeAPI? = try {
-                                gson.fromJson(jsonString, HiAnimeAPI::class.java)
-                            } catch (e: JsonSyntaxException) {
-                                null
-                            }
-
-                            val m3u8 = sourceRes?.sources?.firstOrNull()?.file
-                            val m3u8headers = mapOf(
-                                "Referer" to "https://megacloud.club/",
-                                "Origin" to "https://megacloud.club/"
-                            )
-                            if (!m3u8.isNullOrEmpty()) {
-                                M3u8Helper.generateM3u8(
-                                    "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
-                                    m3u8,
-                                    mainUrl,
-                                    headers = m3u8headers
-                                ).forEach(callback)
-                            }
-
-                            sourceRes?.tracks?.forEach { subtitle ->
-                                subtitleCallback(
-                                    SubtitleFile(
-                                        lang = subtitle.label,
-                                        url = subtitle.file
-                                    )
-                                )
-                            }
-                            success = true
-                        } catch (e: JsonSyntaxException) {
-                            Log.e("HiAnime", "JSON error for : ${e.localizedMessage}")
-                            break
-                        } catch (e: Exception) {
-                            Log.w("HiAnime", "Attempt ${attempt + 1} failed for: ${e.localizedMessage}")
-                            attempt++
-                            delay(500L)
-                        }
-                    }
+                val sourceurl = app.get("${mainUrl}/ajax/v2/episode/sources?id=$id").parsedSafe<EpisodeServers>()?.link
+                if (sourceurl != null) {
+                    loadCustomExtractor(
+                        "HiAnime [$label]",
+                        sourceurl,
+                        "",
+                        subtitleCallback,
+                        callback,
+                    )
+                }
             }
             return true
         } catch (e: Exception) {
@@ -446,6 +416,37 @@ class HiAnime : MainAPI() {
         } catch (e: Exception) {
             e.printStackTrace()
             null // Return null if JSON parsing fails
+        }
+    }
+
+    private suspend fun loadCustomExtractor(
+        name: String? = null,
+        url: String,
+        referer: String? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        quality: Int? = null,
+    ) {
+        loadExtractor(url, referer, subtitleCallback) { link ->
+            CoroutineScope(Dispatchers.IO).launch {
+                callback.invoke(
+                    newExtractorLink(
+                        name ?: link.source,
+                        name ?: link.name,
+                        link.url,
+                    ) {
+                        this.quality = when {
+                            link.name == "VidSrc" -> Qualities.P1080.value
+                            link.type == ExtractorLinkType.M3U8 -> link.quality
+                            else -> quality ?: link.quality
+                        }
+                        this.type = link.type
+                        this.referer = link.referer
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
+                )
+            }
         }
     }
 

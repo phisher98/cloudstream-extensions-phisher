@@ -7,5 +7,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 class HiAnimeProviderPlugin : BasePlugin() {
     override fun load() {
         registerMainAPI(HiAnime())
+        registerExtractorAPI(Megacloud())
     }
 }

@@ -1381,50 +1381,14 @@ object StreamPlayExtractor : StreamPlay() {
             servers?.map { (label, id, effectiveType) ->
                 val sourceurl = app.get("${hianimeAPI}/ajax/v2/episode/sources?id=$id")
                     .parsedSafe<EpisodeServers>()?.link
-                var attempt = 0
-                var success = false
-                while (attempt < 3 && !success) {
-                    try {
-                        val api = "$WASMAPI${sourceurl}&referrer=$hianimeAPI"
-                        val jsonString = app.get(api).text
-                        val gson = Gson()
-                        val sourceRes: HiAnimeAPI? = try {
-                            gson.fromJson(jsonString, HiAnimeAPI::class.java)
-                        } catch (e: JsonSyntaxException) {
-                            null
-                        }
-
-                        val m3u8 = sourceRes?.sources?.firstOrNull()?.file
-                        val m3u8headers = mapOf(
-                            "Referer" to "https://megacloud.club/",
-                            "Origin" to "https://megacloud.club/"
-                        )
-                        if (!m3u8.isNullOrEmpty()) {
-                            M3u8Helper.generateM3u8(
-                                "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
-                                m3u8,
-                                mainUrl,
-                                headers = m3u8headers
-                            ).forEach(callback)
-                        }
-
-                        sourceRes?.tracks?.forEach { subtitle ->
-                            subtitleCallback(
-                                SubtitleFile(
-                                    lang = subtitle.label,
-                                    url = subtitle.file
-                                )
-                            )
-                        }
-                        success = true
-                    } catch (e: JsonSyntaxException) {
-                        Log.e("HiAnime", "JSON error for : ${e.localizedMessage}")
-                        break
-                    } catch (e: Exception) {
-                        Log.w("HiAnime", "Attempt ${attempt + 1} failed for: ${e.localizedMessage}")
-                        attempt++
-                        delay(500L)
-                    }
+                if (sourceurl != null) {
+                    loadCustomExtractor(
+                        "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
+                        sourceurl,
+                        "",
+                        subtitleCallback,
+                        callback,
+                    )
                 }
             }
         }
