@@ -9,12 +9,10 @@ class OnePacePlugin : BasePlugin() {
         //registerMainAPI(OnePace())
         registerMainAPI(OnepaceProvider())
         registerExtractorAPI(Streamruby())
-        registerExtractorAPI(VidStream())
         registerExtractorAPI(Vidmolynet())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Cdnwish())
         registerExtractorAPI(Dhcplay())
-        registerExtractorAPI(raretoonsindia())
         registerExtractorAPI(vidcloudupns())
     }
 }

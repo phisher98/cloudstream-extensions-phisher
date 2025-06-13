@@ -12,7 +12,6 @@ class ToonstreamProvider: BasePlugin() {
         registerMainAPI(Toonstream())
         registerExtractorAPI(StreamSB8())
         registerExtractorAPI(Vidmolyme())
-        registerExtractorAPI(Vidstreamxyz())
         registerExtractorAPI(Streamruby())
         registerExtractorAPI(D000d())
         registerExtractorAPI(vidhidevip())

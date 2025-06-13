@@ -15,7 +15,6 @@ class AnimeDekhoPlugin: BasePlugin() {
         registerMainAPI(OnepaceProvider())
         registerMainAPI(HindiSubAnime())
         registerExtractorAPI(StreamRuby())
-        registerExtractorAPI(VidStream())
         registerExtractorAPI(Vidmolynet())
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Cdnwish())
@@ -27,7 +26,6 @@ class AnimeDekhoPlugin: BasePlugin() {
         registerExtractorAPI(StreamTape())
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Animezia())
-        registerExtractorAPI(Raretoon())
         registerExtractorAPI(Cloudy())
         registerExtractorAPI(vidcloudupns())
     }
