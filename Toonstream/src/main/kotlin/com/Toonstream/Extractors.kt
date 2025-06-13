@@ -18,10 +18,6 @@ class StreamSB8 : StreamSB() {
     override var mainUrl = "https://streamsb.net"
 }
 
-class Vidstreamxyz : Chillx() {
-    override val name = "Vidstream"
-    override val mainUrl = "https://vidstreaming.xyz"
-}
 class Cloudy : VidStack() {
     override var mainUrl = "https://cloudy.upns.one"
 }
