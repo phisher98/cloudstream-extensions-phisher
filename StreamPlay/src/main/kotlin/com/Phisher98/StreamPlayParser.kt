@@ -1913,6 +1913,7 @@ data class DomainsParser(
     val rogmovies: String,
     val luxmovies: String,
     val xprime: String,
+    val extramovies:String,
 )
 
 
@@ -1999,4 +2000,13 @@ data class Metadata(
     val pixeldrainConversionError: String,
     val vikingConversionFailed: Boolean,
     val vikingConversionFailedAt: String
+)
+
+//
+data class Beamup(
+    val meta: BeamupMeta?
+)
+
+data class BeamupMeta(
+    val name: String?
 )
