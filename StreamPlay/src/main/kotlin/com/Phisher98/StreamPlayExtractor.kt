@@ -4305,8 +4305,8 @@ object StreamPlayExtractor : StreamPlay() {
         val epJson = app.get("$consumetFlixhqAPI/servers?episodeId=$epId&mediaId=$id", timeout = 120L).text
         val serverList = parseWithJSONObject(epJson)
 
-        serverList.forEach {
-            val sourceurl= app.get("$FlixHQ/ajax/episode/sources/${it.url.substringAfterLast(".")}").parsedSafe<FlixHQLinks>()!!.link
+        serverList.amap {
+            val sourceurl= app.get("$FlixHQ/ajax/episode/sources/${it.url.substringAfterLast(".")}", timeout = 5000).parsedSafe<FlixHQLinks>()!!.link
             loadCustomExtractor(
                 "⌜ FlixHQ ⌟ | ${it.name.uppercase()}",
                 sourceurl,

@@ -38,7 +38,6 @@ import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
 import com.phisher98.StreamPlayExtractor.invokeSharmaflix
 import com.phisher98.StreamPlayExtractor.invokeShowflix
-import com.phisher98.StreamPlayExtractor.invokeStreamPlay
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeTheyallsayflix
@@ -59,7 +58,8 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
+import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
@@ -92,6 +92,7 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.BuildConfig.PROXYAPI
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeDramacool
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
@@ -126,7 +127,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
-        const val cineMetaAPI = "https://v3-cinemeta.strem.io/meta"
         const val beamupAPI = "https://94c8cb9f702d-tmdb-addon.baby-beamup.club"
         private const val apiKey = BuildConfig.TMDB_API
 
@@ -296,10 +296,12 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         }
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
-        val cineMetares=app.get("$cineMetaAPI/${type.name.lowercase()}/${res.external_ids?.imdb_id}.json").parsedSafe<Cinemeta>()
-        val altTitle = app.get("$beamupAPI/meta/movie/tmdb:${res.id}.json")
-            .parsedSafe<Beamup>()?.meta?.name
-        val title = altTitle ?: res.title ?: res.name ?: return null
+        val altTitle: String? = try {
+            Gson().fromJson(app.get("$beamupAPI/meta/movie/tmdb:${res.id}.json").text, Beamup::class.java)?.meta?.name
+        } catch (e: JsonSyntaxException) {
+            null
+        }
+        val title = res.title ?: res.name ?: return null
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
         val orgTitle = res.originalTitle ?: res.originalName ?: return null

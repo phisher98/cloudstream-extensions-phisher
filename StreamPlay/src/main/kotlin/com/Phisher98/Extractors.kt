@@ -15,6 +15,7 @@ import com.google.gson.JsonParser
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -45,6 +46,7 @@ import java.math.BigInteger
 import java.net.URI
 import java.net.URL
 import java.security.MessageDigest
+import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -1978,7 +1980,7 @@ class Megacloud : ExtractorApi() {
         val apiUrl = "$mainUrl/embed-2/v2/e-1/getSources?id=$id"
         val response = app.get(apiUrl, referer = url).parsedSafe<MegacloudResponse>() ?: return
         response.sources.let { encoded ->
-            val key = app.get("https://raw.githubusercontent.com/superbillgalaxy/megacloud-keys/refs/heads/main/api.json")
+            val key = app.get("https://raw.githubusercontent.com/phisher98/RabbitKeys/refs/heads/main/Keys.json")
                 .parsedSafe<Megakey>()?.megacloud
             val decoded = key?.let { decryptOpenSSL(encoded, it) }
             val m3u8 = decoded?.let {
@@ -2041,7 +2043,6 @@ class Megacloud : ExtractorApi() {
 
     data class Megakey(
         val megacloud: String,
-        val modifiedAt: String,
         val rabbitstream: String,
     )
 
@@ -2113,21 +2114,31 @@ class Cdnstreame : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "X-Requested-With" to "XMLHttpRequest",
+            "Referer" to mainUrl,
+            "User-Agent" to USER_AGENT
+        )
+
         val id = url.substringAfterLast("/").substringBefore("?")
         val apiUrl = "$mainUrl/embed-1/v2/e-1/getSources?id=$id"
-        val response = app.get(apiUrl, referer = url).parsedSafe<MegacloudResponse>() ?: return
+        val response = app.get(apiUrl, headers = headers).parsedSafe<MegacloudResponse>() ?: return
+
         response.sources.let { encoded ->
-            val key = app.get("https://raw.githubusercontent.com/superbillgalaxy/megacloud-keys/refs/heads/main/api.json")
+            val key = app.get("https://raw.githubusercontent.com/phisher98/RabbitKeys/refs/heads/main/Keys.json")
                 .parsedSafe<Megakey>()?.rabbitstream
-            val decoded = key?.let { decryptOpenSSL(encoded, it) }
-            val m3u8 = decoded?.let {
-                val sourceList = parseSourceJson(it)
-                sourceList.firstOrNull()?.file
-            }
+
+            val m3u8 = key
+                ?.let { decryptOpenSSL(encoded, it) }
+                ?.let { parseSourceJson(it).firstOrNull()?.file }
+
+            Log.d("Phisher", m3u8.toString())
+
             if (m3u8 != null) {
                 val m3u8headers = mapOf(
-                    "Referer" to "https://cdnstreame.net",
-                    "Origin" to "https://cdnstreame.net"
+                    "Referer" to mainUrl,
+                    "Origin" to mainUrl
                 )
 
                 generateM3u8(
@@ -2136,29 +2147,22 @@ class Cdnstreame : ExtractorApi() {
                     mainUrl,
                     headers = m3u8headers
                 ).forEach(callback)
-
             }
         }
 
-
-        response.tracks.forEach { track ->
-            if (track.kind == "captions" || track.kind == "subtitles") {
-                subtitleCallback(
-                    SubtitleFile(
-                        track.label,
-                        track.file
-                    )
-                )
+        response.tracks
+            .filter { it.kind == "captions" || it.kind == "subtitles" }
+            .forEach { track ->
+                subtitleCallback(SubtitleFile(track.label, track.file))
             }
-        }
     }
 
     data class MegacloudResponse(
         val sources: String,
-        val tracks: List< MegacloudTrack>,
+        val tracks: List<MegacloudTrack>,
         val encrypted: Boolean,
-        val intro:  MegacloudIntro,
-        val outro:  MegacloudOutro,
+        val intro: MegacloudIntro,
+        val outro: MegacloudOutro,
         val server: Long,
     )
 
@@ -2169,76 +2173,56 @@ class Cdnstreame : ExtractorApi() {
         val default: Boolean?,
     )
 
-    data class MegacloudIntro(
-        val start: Long,
-        val end: Long,
-    )
+    data class MegacloudIntro(val start: Long, val end: Long)
+    data class MegacloudOutro(val start: Long, val end: Long)
 
-    data class  MegacloudOutro(
-        val start: Long,
-        val end: Long,
-    )
-
-    data class Megakey(
-        val megacloud: String,
-        val modifiedAt: String,
-        val rabbitstream: String,
-    )
-
-    data class Source2(
-        val file: String,
-        val type: String,
-    )
+    data class Megakey(val megacloud: String, val rabbitstream: String)
+    data class Source2(val file: String, val type: String)
 
     private fun parseSourceJson(json: String): List<Source2> {
-        val list = mutableListOf<Source2>()
-        try {
+        return try {
             val jsonArray = JSONArray(json)
-            for (i in 0 until jsonArray.length()) {
+            List(jsonArray.length()) { i ->
                 val obj = jsonArray.getJSONObject(i)
-                val file = obj.getString("file")
-                val type = obj.getString("type")
-                list.add(Source2(file, type))
+                Source2(obj.getString("file"), obj.getString("type"))
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
         }
-        return list
     }
 
     private fun opensslKeyIv(password: ByteArray, salt: ByteArray, keyLen: Int = 32, ivLen: Int = 16): Pair<ByteArray, ByteArray> {
         var d = ByteArray(0)
         var d_i = ByteArray(0)
         while (d.size < keyLen + ivLen) {
-            val md = MessageDigest.getInstance("MD5")
-            d_i = md.digest(d_i + password + salt)
+            d_i = MessageDigest.getInstance("MD5").digest(d_i + password + salt)
             d += d_i
         }
-        return Pair(d.copyOfRange(0, keyLen), d.copyOfRange(keyLen, keyLen + ivLen))
+        return d.copyOfRange(0, keyLen) to d.copyOfRange(keyLen, keyLen + ivLen)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun decryptOpenSSL(encBase64: String, password: String): String {
-        try {
-            val data = java.util.Base64.getDecoder().decode(encBase64)
+        return try {
+            val data = Base64.getDecoder().decode(encBase64)
             require(data.copyOfRange(0, 8).contentEquals("Salted__".toByteArray()))
+
             val salt = data.copyOfRange(8, 16)
             val (key, iv) = opensslKeyIv(password.toByteArray(), salt)
 
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            val secretKey = SecretKeySpec(key, "AES")
-            val ivSpec = IvParameterSpec(iv)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").apply {
+                init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(iv))
+            }
 
-            val decrypted = cipher.doFinal(data.copyOfRange(16, data.size))
-            return String(decrypted)
+            String(cipher.doFinal(data.copyOfRange(16, data.size)))
         } catch (e: Exception) {
             Log.e("DecryptOpenSSL", "Decryption failed: ${e.message}")
-            return "Decryption Error"
+            "Decryption Error"
         }
     }
-
 }
+
 
 
 class Hubdrive : ExtractorApi() {
