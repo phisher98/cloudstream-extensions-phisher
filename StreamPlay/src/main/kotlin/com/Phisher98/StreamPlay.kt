@@ -127,6 +127,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
         const val cineMetaAPI = "https://v3-cinemeta.strem.io/meta"
+        const val beamupAPI = "https://94c8cb9f702d-tmdb-addon.baby-beamup.club"
         private const val apiKey = BuildConfig.TMDB_API
 
         /** ALL SOURCES */
@@ -296,7 +297,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
         val cineMetares=app.get("$cineMetaAPI/${type.name.lowercase()}/${res.external_ids?.imdb_id}.json").parsedSafe<Cinemeta>()
-        val altTitle=cineMetares?.meta?.name
+        val altTitle = app.get("$beamupAPI/meta/movie/tmdb:${res.id}.json")
+            .parsedSafe<Beamup>()?.meta?.name
         val title = altTitle ?: res.title ?: res.name ?: return null
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
@@ -949,6 +951,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
+            /*
             {
                 invokeStreamPlay(
                     res.id,
@@ -958,6 +961,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     callback
                 )
             },
+             */
             {
                 if (!res.isAnime) invokeVidSrcXyz(
                     res.imdbId,
@@ -995,7 +999,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isBollywood || !res.isAnime) invoke4khdhub(
-                res.title,
+                res.imdbtitle,
                 res.year,
                 res.season,
                 res.episode,
@@ -1012,6 +1016,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokehdhub4u(
+                    res.imdbId,
                     res.title,
                     res.year,
                     res.season,

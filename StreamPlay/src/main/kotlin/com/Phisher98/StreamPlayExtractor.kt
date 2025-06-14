@@ -163,7 +163,6 @@ object StreamPlayExtractor : StreamPlay() {
                 val link = source.substringAfter("\"").substringBefore("\"")
                 when {
                     !link.contains("youtube") -> {
-                        Log.d("Phisher",link)
                         loadCustomExtractor(
                             "Multimovies",
                             link,
@@ -3987,7 +3986,6 @@ object StreamPlayExtractor : StreamPlay() {
             val detailDoc = runCatching {
                 app.get(detailUrl, interceptor = wpRedisInterceptor).document
             }.getOrNull() ?: return@amap
-            Log.d("Phisher",figure.toString())
 
             val imdbId = detailDoc
                 .select("a[href*=\"imdb.com/title/\"]")
@@ -3997,7 +3995,6 @@ object StreamPlayExtractor : StreamPlay() {
                 ?.substringBefore("/")
                 ?.takeIf { it.isNotBlank() }
                 ?: return@amap
-            Log.d("Phisher",imdbId)
             if (imdbId != id.orEmpty()) return@amap
             matched = true
             if (season == null) {
@@ -5186,6 +5183,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     @SuppressLint("NewApi")
     suspend fun invokehdhub4u(
+        imdbId: String?,
         title: String?,
         year: Int?,
         season: Int? = null,
@@ -5210,24 +5208,42 @@ object StreamPlayExtractor : StreamPlay() {
         val normalizedTitle = title.lowercase().replace(Regex("[^a-z0-9]"), "")
         val seasonStr = season?.toString()
 
-        val posts = searchDoc.select("ul.recent-movies li figcaption a").filter { el ->
-            val text = el.text().lowercase()
+        val posts = searchDoc.select("ul.recent-movies li.thumb").filter { li ->
+            val text = li.selectFirst("figcaption p")?.text()?.lowercase().orEmpty()
             val cleanText = text.replace(Regex("[^a-z0-9]"), "")
             when {
                 season == null && year != null -> cleanText.contains(normalizedTitle) && text.contains(year.toString())
                 season != null -> cleanText.contains(normalizedTitle) && text.contains("season", true) && text.contains("season $seasonStr", true)
-                else -> false
+                else -> cleanText.contains(normalizedTitle)
             }
+        }.mapNotNull { li ->
+            li.selectFirst("figcaption a")  // Return the actual link <a>
         }
 
-        posts.forEach { el ->
+
+        val matchedPosts = if (!imdbId.isNullOrBlank()) {
+            val matched = posts.mapNotNull { post ->
+                val postUrl = post.absUrl("href")
+
+                val postDoc = runCatching { app.get(postUrl).document }.getOrNull() ?: return@mapNotNull null
+                val imdbLink = postDoc.selectFirst("div.kp-hc a[href*=\"imdb.com/title/$imdbId\"]")?.attr("href")
+
+                val matchedImdbId = imdbLink?.substringAfterLast("/tt")?.substringBefore("/")?.let { "tt$it" }
+                if (matchedImdbId == imdbId) post else null
+            }
+            matched.ifEmpty { posts }
+        } else posts
+
+
+        matchedPosts.amap { el ->
             val postUrl = el.absUrl("href")
-            val doc = runCatching { app.get(postUrl).document }.getOrNull() ?: return@forEach
+            val doc =app.get(postUrl).document
 
             if (season == null) {
                 val qualityLinks = doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
-                qualityLinks.forEach { linkEl ->
-                    val resolvedLink = linkEl.absUrl("href")
+                qualityLinks.amap { linkEl ->
+
+                    val resolvedLink = linkEl.attr("href")
                     val resolvedWatch = if ("id=" in resolvedLink) hdhubgetRedirectLinks(resolvedLink) else resolvedLink
                     dispatchToExtractor(resolvedWatch, "HDhub4u", subtitleCallback, callback)
                 }
@@ -5263,7 +5279,6 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
-
 }
 
 

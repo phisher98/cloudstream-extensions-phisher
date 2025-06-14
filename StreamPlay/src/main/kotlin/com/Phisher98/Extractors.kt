@@ -955,7 +955,6 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("Download File", ignoreCase = true) -> {
-                    Log.d("HubCloud", "Phisher text: $text")
                     callback.invoke(
                         newExtractorLink(
                             "$source $labelExtras",
@@ -2293,6 +2292,9 @@ class HUBCDN : ExtractorApi() {
                     decodedUrl,
                     INFER_TYPE,
                 )
+                {
+                    this.quality=Qualities.P1080.value
+                }
             )
         }
     }
