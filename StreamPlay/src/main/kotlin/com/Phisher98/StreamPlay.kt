@@ -58,8 +58,6 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
@@ -121,12 +119,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     /** AUTHOR : hexated & Phisher & Code */
     companion object {
         /** TOOLS */
-        private const val tmdbAPI = "https://api.themoviedb.org/3"
+        private const val tmdbAPI = "https://tmdbapi.supe2372.workers.dev"
         const val gdbot = "https://gdtot.pro"
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
-        const val beamupAPI = "https://94c8cb9f702d-tmdb-addon.baby-beamup.club"
         private const val apiKey = BuildConfig.TMDB_API
 
         /** ALL SOURCES */
@@ -295,11 +292,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         val res = app.get(resUrl,timeout = 10000).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
-        val altTitle: String? = try {
-            Gson().fromJson(app.get("$beamupAPI/meta/movie/tmdb:${res.id}.json").text, Beamup::class.java)?.meta?.name
-        } catch (e: JsonSyntaxException) {
-            null
-        }
         val title = res.title ?: res.name ?: return null
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
@@ -357,7 +349,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             isAsian = isAsian,
                             isBollywood = isBollywood,
                             isCartoon = isCartoon,
-                            imdbtitle=altTitle,
                             alttitle=res.title,
                             nametitle=res.name
                         ).toJson())
@@ -433,7 +424,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                         ?: res.firstAirDate,
                     isAsian = isAsian,
                     isBollywood = isBollywood,
-                    imdbtitle=altTitle,
                     alttitle=res.title,
                     nametitle=res.name
                 ).toJson(),
