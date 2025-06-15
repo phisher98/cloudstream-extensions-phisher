@@ -58,6 +58,7 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
@@ -119,7 +120,37 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     /** AUTHOR : hexated & Phisher & Code */
     companion object {
         /** TOOLS */
-        private const val tmdbAPI = "https://tmdbapi.supe2372.workers.dev"
+        private const val remoteURLList = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
+        private suspend fun fetchTmdbApiList(): List<String> {
+            val officialTmdbUrl = "https://api.themoviedb.org/3"
+            val sampleMovieTestUrl = "$officialTmdbUrl/movie/550?api_key=$apiKey"
+
+            return try {
+                val response = app.get(sampleMovieTestUrl, timeout = 5000)
+                return if (response.code == 200) {
+                    Log.d("Error:", "✅ Official TMDB API is working.")
+                    listOf(officialTmdbUrl)
+                } else {
+                    Log.d("Error:", "⚠️ Official TMDB API returned ${response.code}, falling back.")
+                    fetchFromRemoteList()
+                }
+            } catch (e: Exception) {
+                Log.e("Error:", "❌ Official TMDB API check failed: ${e.message}")
+                fetchFromRemoteList()
+            }
+        }
+
+
+        private suspend fun fetchFromRemoteList(): List<String> {
+            return try {
+                val text = app.get(remoteURLList).text
+                text.split("\n").mapNotNull { it.trim().takeIf { url -> url.isNotEmpty() } }
+            } catch (e: Exception) {
+                Log.e("Phisher", "Fallback proxy list fetch failed: ${e.message}")
+                listOf("https://api.themoviedb.org/3")
+            }
+        }
+
         const val gdbot = "https://gdtot.pro"
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
@@ -219,28 +250,28 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     override val mainPage = mainPageOf(
-        "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending",
-        "$tmdbAPI/trending/movie/week?api_key=$apiKey&region=US&with_original_language=en" to "Popular Movies",
-        "$tmdbAPI/trending/tv/week?api_key=$apiKey&region=US&with_original_language=en" to "Popular TV Shows",
-        "$tmdbAPI/tv/airing_today?api_key=$apiKey&region=US&with_original_language=en" to "Airing Today TV Shows",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=213" to "Netflix",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=1024" to "Amazon",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2739" to "Disney+",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=453" to "Hulu",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2552" to "Apple TV+",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=49" to "HBO",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=3353" to "Peacock",
-        "$tmdbAPI/discover/movie?api_key=$apiKey&language=en-US&page=1&sort_by=popularity.desc&with_origin_country=IN&release_date.gte=${getDate().lastWeekStart}&release_date.lte=${getDate().today}" to "Trending Indian Movies",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=5920" to "Amazon MiniTV",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}" to "Airing Today Anime",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}" to "On The Air Anime",
-        "$tmdbAPI/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
-        "$tmdbAPI/movie/top_rated?api_key=$apiKey&region=US" to "Top Rated Movies",
-        "$tmdbAPI/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_original_language=ko" to "Korean Shows",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_genres=99" to "Documentary",
-        "$tmdbAPI/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
+        "/trending/all/day?api_key=$apiKey&region=US" to "Trending",
+        "/trending/movie/week?api_key=$apiKey&region=US&with_original_language=en" to "Popular Movies",
+        "/trending/tv/week?api_key=$apiKey&region=US&with_original_language=en" to "Popular TV Shows",
+        "/tv/airing_today?api_key=$apiKey&region=US&with_original_language=en" to "Airing Today TV Shows",
+        "/discover/tv?api_key=$apiKey&with_networks=213" to "Netflix",
+        "/discover/tv?api_key=$apiKey&with_networks=1024" to "Amazon",
+        "/discover/tv?api_key=$apiKey&with_networks=2739" to "Disney+",
+        "/discover/tv?api_key=$apiKey&with_networks=453" to "Hulu",
+        "/discover/tv?api_key=$apiKey&with_networks=2552" to "Apple TV+",
+        "/discover/tv?api_key=$apiKey&with_networks=49" to "HBO",
+        "/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
+        "/discover/tv?api_key=$apiKey&with_networks=3353" to "Peacock",
+        "/discover/movie?api_key=$apiKey&language=en-US&page=1&sort_by=popularity.desc&with_origin_country=IN&release_date.gte=${getDate().lastWeekStart}&release_date.lte=${getDate().today}" to "Trending Indian Movies",
+        "/discover/tv?api_key=$apiKey&with_networks=5920" to "Amazon MiniTV",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}" to "Airing Today Anime",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}" to "On The Air Anime",
+        "/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
+        "/movie/top_rated?api_key=$apiKey&region=US" to "Top Rated Movies",
+        "/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows",
+        "/discover/tv?api_key=$apiKey&with_original_language=ko" to "Korean Shows",
+        "/discover/tv?api_key=$apiKey&with_genres=99" to "Documentary",
+        "/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
         )
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
@@ -252,10 +283,12 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val tmdbAPI = fetchTmdbApiList().random()
+
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page", timeout = 10000)
+        val home = app.get("$tmdbAPI${request.data}$adultQuery&page=$page", timeout = 10000)
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -275,12 +308,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
+        val tmdbAPI = fetchTmdbApiList().random()
         return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
             }
     }
     override suspend fun load(url: String): LoadResponse? {
+        val tmdbAPI = fetchTmdbApiList().random()
         val data = parseJson<Data>(url)
         val type = getType(data.type)
         val append = "alternative_titles,credits,external_ids,keywords,videos,recommendations"
