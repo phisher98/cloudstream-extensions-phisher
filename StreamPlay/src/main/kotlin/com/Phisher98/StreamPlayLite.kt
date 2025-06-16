@@ -3,18 +3,13 @@ package com.phisher98
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
-import com.phisher98.StreamPlayExtractor.invokeAoneroom
-import com.phisher98.StreamPlayExtractor.invokeDramaday
-import com.phisher98.StreamPlayExtractor.invokeDreamfilm
 import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeLing
 import com.phisher98.StreamPlayExtractor.invokeNinetv
-import com.phisher98.StreamPlayExtractor.invokeNowTv
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeShowflix
-import com.phisher98.StreamPlayExtractor.invokeWatchCartoon
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
@@ -31,7 +26,6 @@ import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.sharedPref
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -78,31 +72,12 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                if (!res.isAnime && res.isCartoon) invokeWatchCartoon(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
                 if (res.isAnime) invokeAnimes(
                     res.title,
                     res.jpTitle,
                     res.epsTitle,
                     res.date,
                     res.airedDate,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeDreamfilm(
-                    res.title,
                     res.season,
                     res.episode,
                     subtitleCallback,
@@ -135,12 +110,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                if (!res.isAnime) invokeAoneroom(
-                    res.title, res.airedYear
-                        ?: res.year, res.season, res.episode, subtitleCallback, callback
-                )
-            },
-            {
                 if (!res.isAnime) invokeRidomovies(
                     res.id,
                     res.imdbId,
@@ -162,16 +131,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             },
             {
                 if (!res.isAnime) invokeAllMovieland(res.imdbId, res.season, res.episode, callback)
-            },
-            {
-                if (res.isAsian) invokeDramaday(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
             },
             {
                 if (!res.isAnime) invoke2embed(

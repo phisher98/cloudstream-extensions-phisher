@@ -2081,7 +2081,7 @@ class Megacloud : ExtractorApi() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun decryptOpenSSL(encBase64: String, password: String): String {
         try {
-            val data = java.util.Base64.getDecoder().decode(encBase64)
+            val data = Base64.getDecoder().decode(encBase64)
             require(data.copyOfRange(0, 8).contentEquals("Salted__".toByteArray()))
             val salt = data.copyOfRange(8, 16)
             val (key, iv) = opensslKeyIv(password.toByteArray(), salt)
@@ -2384,3 +2384,4 @@ object AesHelper {
         return chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     }
 }
+
