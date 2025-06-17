@@ -31,31 +31,43 @@ class Megacloud : ExtractorApi() {
     ) {
         val id = url.substringAfterLast("/").substringBefore("?")
         val apiUrl = "$mainUrl/embed-2/v2/e-1/getSources?id=$id"
-        val response = app.get(apiUrl, referer = url).parsedSafe<MegacloudResponse>() ?: return
-        response.sources.let { encoded ->
-            val key = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json")
-                .parsedSafe<Megakey>()?.mega
-            val decoded = key?.let { decryptOpenSSL(encoded, it) }
-            val m3u8 = decoded?.let {
-                val sourceList = parseSourceJson(it)
-                sourceList.firstOrNull()?.file
-            }
-            if (m3u8 != null) {
-                val m3u8headers = mapOf(
-                    "Referer" to "https://megacloud.club/",
-                    "Origin" to "https://megacloud.club/"
-                )
+        val gson = Gson()
 
-                M3u8Helper.generateM3u8(
-                    name,
-                    m3u8,
-                    mainUrl,
-                    headers = m3u8headers
-                ).forEach(callback)
+        val response = try {
+            val json = app.get(apiUrl, referer = url).text
+            gson.fromJson(json, MegacloudResponse::class.java)
+        } catch (e: Exception) {
+            Log.e("Megacloud", "Failed to parse MegacloudResponse: ${e.message}")
+            null
+        } ?: return
 
-            }
+        val encoded = response.sources
+        val key = try {
+            val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
+            gson.fromJson(keyJson, Megakey::class.java)?.mega
+        } catch (e: Exception) {
+            Log.e("Megacloud", "Failed to parse Megakey: ${e.message}")
+            null
         }
 
+        val decoded = key?.let { decryptOpenSSL(encoded, it) }
+        val m3u8 = decoded?.let {
+            val sourceList = parseSourceJson(it)
+            sourceList.firstOrNull()?.file
+        }
+
+        if (m3u8 != null) {
+            val m3u8headers = mapOf(
+                "Referer" to "https://megacloud.club/",
+                "Origin" to "https://megacloud.club/"
+            )
+
+            try {
+                M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
+            } catch (e: Exception) {
+                Log.e("Megacloud", "Error generating M3U8: ${e.message}")
+            }
+        }
 
         response.tracks.forEach { track ->
             if (track.kind == "captions" || track.kind == "subtitles") {
@@ -71,29 +83,30 @@ class Megacloud : ExtractorApi() {
 
     data class MegacloudResponse(
         val sources: String,
-        val tracks: List< MegacloudTrack>,
+        val tracks: List<Track>,
         val encrypted: Boolean,
-        val intro:  MegacloudIntro,
-        val outro:  MegacloudOutro,
+        val intro: Intro,
+        val outro: Outro,
         val server: Long,
     )
 
-    data class MegacloudTrack(
+    data class Track(
         val file: String,
         val label: String,
         val kind: String,
         val default: Boolean?,
     )
 
-    data class MegacloudIntro(
+    data class Intro(
         val start: Long,
         val end: Long,
     )
 
-    data class  MegacloudOutro(
+    data class Outro(
         val start: Long,
         val end: Long,
     )
+
 
     data class Megakey(
     val rabbit: String,
