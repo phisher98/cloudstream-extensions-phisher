@@ -2176,7 +2176,7 @@ class Cdnstreame : ExtractorApi() {
     data class MegacloudIntro(val start: Long, val end: Long)
     data class MegacloudOutro(val start: Long, val end: Long)
 
-    data class Megakey(val megacloud: String, val rabbitstream: String)
+    data class Megakey(val mega: String, val rabbit: String)
     data class Source2(val file: String, val type: String)
 
     private fun parseSourceJson(json: String): List<Source2> {
