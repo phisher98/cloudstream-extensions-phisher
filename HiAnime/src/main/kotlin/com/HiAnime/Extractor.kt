@@ -33,8 +33,8 @@ class Megacloud : ExtractorApi() {
         val apiUrl = "$mainUrl/embed-2/v2/e-1/getSources?id=$id"
         val response = app.get(apiUrl, referer = url).parsedSafe<MegacloudResponse>() ?: return
         response.sources.let { encoded ->
-            val key = app.get("https://raw.githubusercontent.com/phisher98/RabbitKeys/refs/heads/main/Keys.json")
-                .parsedSafe<Megakey>()?.megacloud
+            val key = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json")
+                .parsedSafe<Megakey>()?.mega
             val decoded = key?.let { decryptOpenSSL(encoded, it) }
             val m3u8 = decoded?.let {
                 val sourceList = parseSourceJson(it)
@@ -96,8 +96,8 @@ class Megacloud : ExtractorApi() {
     )
 
     data class Megakey(
-    val rabbitstream: String,
-    val megacloud: String,
+    val rabbit: String,
+    val mega: String,
     )
 
 
