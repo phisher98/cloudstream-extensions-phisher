@@ -3648,15 +3648,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val movieDriveAPI = getDomains()?.moviesdrive ?: return
-
-        val cleanTitle = title
-            ?.substringBefore(":")
-            ?.substringBefore("-")
-            ?.lowercase()
-            ?.replace(Regex("[^a-z0-9 ]"), "")
-            ?.replace(Regex("\\s+"), " ")
-            ?.trim()
-            ?: return
+        val cleanTitle = "$title"
 
         val searchUrl = buildString {
             append("$movieDriveAPI/search/")
