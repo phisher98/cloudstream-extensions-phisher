@@ -79,7 +79,6 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.runAllAsync
-import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -99,7 +98,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override val instantLinkLoading = true
     override val useMetaLoadResponse = true
     override val hasQuickSearch = true
-    override val supportedSyncNames = setOf(SyncIdName.Simkl, SyncIdName.Anilist)
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
