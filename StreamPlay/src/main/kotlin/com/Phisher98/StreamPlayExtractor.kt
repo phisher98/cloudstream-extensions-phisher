@@ -3973,77 +3973,79 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        if (title.isNullOrBlank()) return
+
         val type = if (season == null) "Movie" else "TV Series"
+        val searchUrl = "$consumetFlixhqAPI/$title"
 
         val searchData = runCatching {
-            val searchJson = app.get("$consumetFlixhqAPI/$title", timeout = 120L).text
+            val searchJson = app.get(searchUrl, timeout = 120L).text
             tryParseJson<ConsumetSearch>(searchJson)
         }.getOrNull() ?: return
 
         val id = searchData.results.firstOrNull {
-            it.title.equals(title, ignoreCase = true) && it.type == type
+            it.title.equals(title, ignoreCase = true) && it.type.equals(type, ignoreCase = true)
         }?.id ?: return
 
+        val infoUrl = "$consumetFlixhqAPI/info?id=$id"
         val infoData = runCatching {
-            val infoJson = app.get("$consumetFlixhqAPI/info?id=$id", timeout = 120L).text
+            val infoJson = app.get(infoUrl, timeout = 120L).text
             tryParseJson<ConsumetInfo>(infoJson)
         }.getOrNull() ?: return
 
-        val epId = if (season == null) {
+        val episodeId = if (season == null) {
             infoData.episodes.firstOrNull()?.id
         } else {
             infoData.episodes.firstOrNull { it.number == episode && it.season == season }?.id
         } ?: return
 
-        val epJson =
-            app.get("$consumetFlixhqAPI/servers?episodeId=$epId&mediaId=$id", timeout = 120L).text
-        val serverList = parseWithJSONObject(epJson)
+        val serversUrl = "$consumetFlixhqAPI/servers?episodeId=$episodeId&mediaId=$id"
+        val serverListJson = app.get(serversUrl, timeout = 120L).text
+        val serverList = parseServerList(serverListJson)
 
-        serverList.amap {
-            val sourceurl = app.get(
-                "$FlixHQ/ajax/episode/sources/${it.url.substringAfterLast(".")}",
-                timeout = 5000
-            ).parsedSafe<FlixHQLinks>()!!.link
-            loadCustomExtractor(
-                "⌜ FlixHQ ⌟ | ${it.name.uppercase()}",
-                sourceurl,
-                "",
-                subtitleCallback,
-                callback,
-            )
+        serverList.amap { server ->
+            val sourceUrl = runCatching {
+                val endpoint = server.url.substringAfterLast(".")
+                val proxyUrl = "https://proxy.phisher2.workers.dev/?url=$FlixHQ/ajax/episode/sources/$endpoint"
+                app.get(proxyUrl, timeout = 3000).parsedSafe<FlixHQLinks>()?.link
+            }.getOrNull()
+            sourceUrl?.let {
+                loadCustomExtractor(
+                    "⌜ FlixHQ ⌟ | ${server.name.uppercase()}",
+                    it,
+                    "",
+                    subtitleCallback,
+                    callback
+                )
+            }
         }
-
-
     }
 
     data class FlixHQServers(
         val name: String,
-        val url: String,
+        val url: String
     )
 
     data class FlixHQLinks(
         val type: String,
         val link: String,
-        val sources: List<Any?>,
-        val tracks: List<Any?>,
-        val title: String,
     )
 
-    private fun parseWithJSONObject(json: String): List<FlixHQServers> {
-        val result = mutableListOf<FlixHQServers>()
-        try {
-            val jsonArray = JSONArray(json)
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.getJSONObject(i)
-                val name = obj.getString("name")
-                val url = obj.getString("url")
-                result.add(FlixHQServers(name, url))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+
+    private fun parseServerList(json: String): List<FlixHQServers> = runCatching {
+        val jsonArray = JSONArray(json)
+        List(jsonArray.length()) { i ->
+            val obj = jsonArray.getJSONObject(i)
+            FlixHQServers(
+                name = obj.getString("name"),
+                url = obj.getString("url")
+            )
         }
-        return result
+    }.getOrElse {
+        it.printStackTrace()
+        emptyList()
     }
+
 
     /*
     suspend fun invokeHinAuto(

@@ -90,6 +90,8 @@ import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
+import kotlinx.coroutines.delay
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
@@ -120,29 +122,46 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
             return try {
                 val response = app.get(sampleMovieTestUrl, timeout = 5000)
-                return if (response.code == 200) {
-                    Log.d("Error:", "✅ Official TMDB API is working.")
+                if (response.code == 200) {
+                    Log.d("TMDB Check", "✅ Official TMDB API is working.")
                     listOf(officialTmdbUrl)
                 } else {
-                    Log.d("Error:", "⚠️ Official TMDB API returned ${response.code}, falling back.")
+                    Log.d("TMDB Check", "⚠️ Official TMDB API returned ${response.code}, falling back.")
                     fetchFromRemoteList()
                 }
             } catch (e: Exception) {
-                Log.e("Error:", "❌ Official TMDB API check failed: ${e.message}")
+                Log.e("TMDB Check", "❌ Official TMDB API check failed: ${e.message}")
                 fetchFromRemoteList()
             }
         }
 
-
         private suspend fun fetchFromRemoteList(): List<String> {
-            return try {
-                val text = app.get(remoteURLList).text
-                text.split("\n").mapNotNull { it.trim().takeIf { url -> url.isNotEmpty() } }
-            } catch (e: Exception) {
-                Log.e("Phisher", "Fallback proxy list fetch failed: ${e.message}")
-                listOf("https://api.themoviedb.org/3")
+            repeat(3) { attempt ->
+                try {
+                    val response = app.get(remoteURLList, timeout = 5000)
+                    val text = response.text
+                    val proxyList = text.split("\n")
+                        .mapNotNull { it.trim().takeIf { url -> url.isNotEmpty() } }
+
+                    if (proxyList.isNotEmpty()) {
+                        Log.d("Proxy Fetch", "✅ Fetched ${proxyList.size} proxy URLs.")
+                        return proxyList
+                    } else {
+                        Log.w("Proxy Fetch", "⚠️ Remote proxy list is empty.")
+                    }
+                } catch (e: CancellationException) {
+                    Log.e("Proxy Fetch", "❌ Coroutine cancelled.")
+                    throw e // rethrow so coroutine cancellation is respected
+                } catch (e: Exception) {
+                    Log.e("Proxy Fetch", "Attempt ${attempt + 1}: Failed to fetch: ${e.message}")
+                    delay(1000L * (attempt + 1))
+                }
             }
+
+            Log.w("Proxy Fetch", "❌ All attempts failed. Using default TMDB URL.")
+            return listOf("https://api.themoviedb.org/3")
         }
+
 
         const val gdbot = "https://gdtot.pro"
         const val anilistAPI = "https://graphql.anilist.co"
@@ -204,7 +223,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Xprime = "https://xprime.tv"
         const val Vidzee = "https://vidzee.wtf"
         const val Elevenmovies = "https://111movies.com"
-        const val FlixHQ = "https://flixhq.to"
+        const val FlixHQ = "https://myflixerz.to"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
