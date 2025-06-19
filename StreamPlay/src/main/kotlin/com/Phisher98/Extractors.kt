@@ -2010,7 +2010,7 @@ class Megacloud : ExtractorApi() {
             )
 
             try {
-                M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
+                generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
             } catch (e: Exception) {
                 Log.e("Megacloud", "Error generating M3U8: ${e.message}")
             }
@@ -2096,7 +2096,7 @@ class Megacloud : ExtractorApi() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun decryptOpenSSL(encBase64: String, password: String): String {
         try {
-            val data = java.util.Base64.getDecoder().decode(encBase64)
+            val data = Base64.getDecoder().decode(encBase64)
             require(data.copyOfRange(0, 8).contentEquals("Salted__".toByteArray()))
             val salt = data.copyOfRange(8, 16)
             val (key, iv) = opensslKeyIv(password.toByteArray(), salt)
@@ -2292,7 +2292,7 @@ class HUBCDN : ExtractorApi() {
                     INFER_TYPE,
                 )
                 {
-                    this.quality=Qualities.P1080.value
+                    this.quality=Qualities.Unknown.value
                 }
             )
         }
