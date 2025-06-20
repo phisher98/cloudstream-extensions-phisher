@@ -2249,7 +2249,7 @@ class Videostr : ExtractorApi() {
         val decryptedJson = decryptOpenSSL(response.sources, key)
         val m3u8Url = parseSourceJson(decryptedJson).firstOrNull()?.file ?: return
 
-        val m3u8Headers = mapOf("Referer" to mainUrl, "Origin" to mainUrl)
+        val m3u8Headers = mapOf("Referer" to mainUrl, "Origin" to mainUrl,"User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36")
         generateM3u8(name, m3u8Url, mainUrl, headers = m3u8Headers).forEach(callback)
 
         response.tracks

@@ -52,6 +52,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
 
+
 var filmxyCookies: Map<String, String>? = null
 var sfServer: String? = null
 
@@ -2527,20 +2528,25 @@ fun getImdbId(jsonString: String): String? {
 }
 
 
-fun generateVidsrcVrf(n: Int?): String {
-    val secret = "j8MDyaub7B"
-    val sha256 = MessageDigest.getInstance("SHA-256").digest(secret.toByteArray())
-    val key: SecretKey = SecretKeySpec(sha256, "AES")
-    val iv = ByteArray(16).apply { SecureRandom().nextBytes(this) }
-    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").apply {
-        init(Cipher.ENCRYPT_MODE, key, IvParameterSpec(iv))
-    }
-    val inputBytes = (n?.toString() ?: "").toByteArray()
-    val encrypted = cipher.doFinal(inputBytes)
+@SuppressLint("NewApi")
+fun generateVidsrcVrf(movieId: String, userId: String): String {
+    val keyBytes = MessageDigest.getInstance("SHA-256").digest(userId.toByteArray())
+    val key = SecretKeySpec(keyBytes, "AES")
 
-    val ivHex = iv.joinToString("") { "%02x".format(it) }
-    val encryptedHex = encrypted.joinToString("") { "%02x".format(it) }
-    return "$ivHex:$encryptedHex"
+    // 16-byte IV of zeros
+    val iv = IvParameterSpec(ByteArray(16))
+
+    // PKCS7 padding (Java uses PKCS5, which is effectively the same for AES block size)
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, key, iv)
+
+    val plaintext = movieId.toByteArray()
+    val ciphertext = cipher.doFinal(plaintext)
+
+    val encoded = base64Encode(ciphertext)
+    val urlSafe = encoded.replace('+', '-').replace('/', '_').replace("=", "")
+
+    return urlSafe
 }
 
 

@@ -5,12 +5,10 @@ import com.phisher98.StreamPlay.Companion.malsyncAPI
 import com.phisher98.StreamPlayExtractor.invokeAnimeKai
 import com.phisher98.StreamPlayExtractor.invokeAnimeOwl
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
-import com.phisher98.StreamPlayExtractor.invokeAnitaku
 import com.phisher98.StreamPlayExtractor.invokeAnizone
-import com.phisher98.StreamPlayExtractor.invokeGrani
+import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
-import com.phisher98.StreamPlayExtractor.invokeMiruroanimeGogo
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -244,6 +242,7 @@ class StreamPlayAnime : MainAPI() {
         val malId = mediaData.malId
         val episode = mediaData.episode
         val jpTitle = mediaData.jpTitle
+        val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
         val zoro = malsync?.zoro
@@ -253,30 +252,25 @@ class StreamPlayAnime : MainAPI() {
 
         runAllAsync(
             { invokeHianime(zoro?.keys?.toList(), hianimeUrl, episode, subtitleCallback, callback) },
-            {
-                malsync?.animepahe?.values?.firstNotNullOfOrNull { it["title"] }?.let {
-                    invokeMiruroanimeGogo(zoro?.keys?.toList(), it, episode, subtitleCallback, callback)
-                }
-            },
-            {
-                malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let {
-                    invokeAnimepahe(it, episode, subtitleCallback, callback)
-                }
-            },
-            { invokeGrani(zorotitle ?: "", episode, callback) },
-            {
-                malsync?.Gogoanime?.values?.firstNotNullOfOrNull { it["url"] }?.let {
-                    invokeAnitaku(it, episode, subtitleCallback, callback)
-                }
-            },
+            { malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnizone(jpTitle, episode, callback) },
             { invokeAnichi(jpTitle,year,episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
             { invokeAnimeKai(jpTitle,zorotitle,malId, episode, subtitleCallback, callback) },
+            { malId?.let {
+                invokeAnimetosho(
+                    it,
+                    season,
+                    episode,
+                    subtitleCallback,
+                    callback
+                )
+            } },
         )
         return true
     }
+
 
     data class AnilistAPIResponse(
         @JsonProperty("data") val data: AnilistData,
@@ -399,6 +393,13 @@ class StreamPlayAnime : MainAPI() {
         return AniIds(res?.id,res?.idMal)
 
     }
+
+    private fun extractSeason(title: String): Int? {
+        val regex = Regex("""(?i)(?:season\s*|s)\s*(\d+)""")
+        val match = regex.find(title)
+        return match?.groups?.get(1)?.value?.toIntOrNull()
+    }
+
 
 
 }

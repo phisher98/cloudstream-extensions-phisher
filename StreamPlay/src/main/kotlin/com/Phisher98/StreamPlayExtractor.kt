@@ -46,7 +46,10 @@ import kotlinx.coroutines.delay
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okio.IOException
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -315,43 +318,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeAnitaku(
-        url: String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val subDub = if (url?.contains("-dub") == true) "Dub" else "Sub"
-        val epUrl = url?.replace("category/", "")?.plus("-episode-${episode}") ?: return
-        val epRes = app.get(epUrl).document
-
-        epRes.select("div.anime_muti_link > ul > li").forEach { item ->
-            val iframe = item.selectFirst("a")?.attr("data-video") ?: return@forEach
-            val sourceName = item.className()
-            if (sourceName.contains("anime")) {
-                GogoHelper.extractVidstream(
-                    iframe,
-                    "Anitaku Vidstreaming [$subDub]",
-                    callback,
-                    "3134003223491201",
-                    "37911490979715163134003223491201",
-                    "54674138327930866480207815084989",
-                    isUsingAdaptiveKeys = false,
-                    isUsingAdaptiveData = true
-                )
-            } else {
-                loadCustomExtractor(
-                    "Anitaku $sourceName [$subDub]",
-                    iframe,
-                    "",
-                    subtitleCallback,
-                    callback
-                )
-            }
-        }
-
-    }
-
     private suspend fun invokeTokyoInsider(
         jptitle: String? = null,
         title: String? = null,
@@ -532,11 +498,6 @@ object StreamPlayExtractor : StreamPlay() {
             title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
         )
 
-        val jikanSeason = malId?.let {
-            runCatching { app.get("$jikanAPI/anime/$it").parsedSafe<JikanResponse>()?.data?.season }
-                .getOrNull()
-        }
-
         val malsync = malId?.let {
             runCatching {
                 app.get("$malsyncAPI/mal/anime/$it").parsedSafe<MALSyncResponses>()?.sites
@@ -548,10 +509,8 @@ object StreamPlayExtractor : StreamPlay() {
         val zoroIds = zoro?.keys?.toList().orEmpty()
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
-        val animepaheTitle = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["title"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
-        val gogoUrl = malsync?.Gogoanime?.values?.firstNotNullOfOrNull { it["url"] }
         val tmdbYear = date?.substringBefore("-")?.toIntOrNull()
         val jptitleSlug = jptitle.createSlug()
 
@@ -570,24 +529,10 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
             },
-            {
-                animepaheTitle?.let {
-                    invokeMiruroanimeGogo(
-                        zoroIds,
-                        it,
-                        episode,
-                        subtitleCallback,
-                        callback
-                    )
-                }
-            },
             { kaasSlug?.let { invokeKickAssAnime(it, episode, subtitleCallback, callback) } },
             { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
-            { invokeGrani(title.orEmpty(), episode, callback) },
-            { invokeGojo(aniId, jptitleSlug, episode, subtitleCallback, callback) },
             { invokeAnichi(zorotitle, tmdbYear, episode, subtitleCallback, callback) },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
-            { gogoUrl?.let { invokeAnitaku(it, episode, subtitleCallback, callback) } },
             { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
             { invokeAnizone(jptitle, episode, callback) })
     }
@@ -752,15 +697,15 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        val id = app.get(url, headers).document.selectFirst("meta[property=og:url]")
+        val id = app.get("https://proxy.phisher2.workers.dev/?url=$url", headers).document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
         val animeData =
-            app.get("$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
+            app.get("https://proxy.phisher2.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
                 .parsedSafe<animepahe>()?.data
         var session = animeData?.find { it.episode == episode }?.session ?: ""
         if (session.isEmpty()) session =
             animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
-        val document = app.get("$animepaheAPI/play/$id/$session", headers).document
+        val document = app.get("https://proxy.phisher2.workers.dev/?url=$animepaheAPI/play/$id/$session", headers).document
 
         document.select("#resolutionMenu button")
             .map {
@@ -811,71 +756,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeGrani(
-        title: String,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        app.get("https://grani.me/search/$title").document.selectFirst("div.iep a")?.attr("href")
-            ?.let {
-                val document = app.get(it).document
-                val href = document.select("a.infovan")
-                    .firstOrNull {
-                        it.selectFirst("div.infoept2 div.centerv")?.text() == episode.toString()
-                    }
-                    ?.attr("href") ?: ""
-                val iframe = app.get(href).document.select("#iframevideo").attr("src")
-                callback(
-                    newExtractorLink(
-                        "Grani",
-                        "Grani",
-                        url = iframe,
-                        INFER_TYPE
-                    ) {
-                        this.referer = ""
-                        this.quality = Qualities.P1080.value
-                    }
-                )
-            }
-    }
-
-    private suspend fun invokeGojo(
-        aniid: Int? = null,
-        jptitle: String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val sourcelist = listOf("shashh", "roro", "vibe")
-        for (source in sourcelist) {
-            val headers = mapOf("Origin" to "https://gojo.wtf")
-            val endpoint =
-                "${BuildConfig.GojoAPI}/api/anime/tiddies?provider=$source&id=$aniid&watchId=$jptitle-episode-$episode"
-            val response = if (source == "shashh") {
-                app.get(endpoint, headers = headers)
-                    .parsedSafe<Gojoresponseshashh>()?.sources?.map { it.url }
-            } else {
-                app.get(endpoint, headers = headers)
-                    .parsedSafe<Gojoresponsevibe>()?.sources?.map { it.url }
-            }
-            val m3u8 = response?.firstOrNull().orEmpty()
-
-            callback(
-                newExtractorLink(
-                    "GojoAPI [${source.capitalize()}]",
-                    "GojoAPI [${source.capitalize()}]",
-                    url = m3u8,
-                    type = ExtractorLinkType.M3U8
-                ) {
-                    this.referer = ""
-                    this.quality = Qualities.P1080.value
-                    this.headers = headers
-                }
-            )
-        }
-    }
-
-    private suspend fun invokeAnimetosho(
+    suspend fun invokeAnimetosho(
         malId: Int? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -1162,86 +1043,6 @@ object StreamPlayExtractor : StreamPlay() {
         } ?: Log.d("Error:", "Not Found")
     }
 
-
-    suspend fun invokeMiruroanimeGogo(
-        animeIds: List<String?>? = null,
-        title: String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val api = "https://gamma.miruro.tv/?url=https://api.miruro.tv"
-        val header = mapOf("x-atx" to "12RmYtJexlqnNym38z4ahwy+g1g0la/El8nkkMOVtiQ=")
-        val fixtitle = title.createSlug()
-        val sub = "$api/meta/anilist/watch/$fixtitle-episode-$episode"
-        val dub = "$api/meta/anilist/watch/$fixtitle-dub-episode-$episode"
-        val list = listOf(sub, dub)
-        for (url in list) {
-            val json = app.get(url, header).parsedSafe<MiruroanimeGogo>()?.sources
-            json?.amap {
-                val href = it.url
-                var quality = it.quality
-                if (quality.contains("backup")) {
-                    quality = "Master"
-                }
-                val type = if (url.contains("-dub-")) "DUB" else "SUB"
-                if (quality != "Master")
-                    loadNameExtractor(
-                        "Miruro Gogo [$type]",
-                        href,
-                        "",
-                        subtitleCallback,
-                        callback,
-                        getIndexQuality(quality)
-                    )
-            }
-        }
-    }
-
-
-    suspend fun invokeAnimenexus(
-        title: String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val apiurl = "https://api.anime.nexus"
-        val api =
-            "$apiurl/api/anime/shows?search=$title&sortBy=name+asc&page=1&includes%5B%5D=poster&includes%5B%5D=genres&hasVideos=1"
-        val apires = app.get(api, interceptor = UserAgentInterceptor()).parsedSafe<AnimeNexus>()
-        val id = apires?.data?.find {
-            it.name.equals(
-                "$title", true
-            )
-        }?.id
-        val gson = Gson()
-        val epjson =
-            app.get(
-                "$apiurl/api/anime/details/episodes?id=$id&page=1&perPage=24&order=asc",
-                interceptor = UserAgentInterceptor()
-            )
-                .toString()
-        val animeNexusEp = gson.fromJson(epjson, AnimeNexusEp::class.java)
-        val epres = animeNexusEp.data
-        val epid = epres.find { it.number == episode }?.id
-        val iframe = app.get(
-            "$apiurl/api/anime/details/episode/stream?id=$epid",
-            interceptor = UserAgentInterceptor()
-        )
-            .parsedSafe<AnimeNexusservers>()?.data
-        val m3u8 = iframe?.hls ?: ""
-        callback(
-            newExtractorLink(
-                "Animenexus",
-                "Animenexus",
-                url = m3u8,
-                type = INFER_TYPE
-            ) {
-                this.referer = "https://anime.nexus/"
-                this.quality = Qualities.P1080.value
-            }
-        )
-    }
 
     suspend fun invokeLing(
         title: String? = null,
@@ -2367,47 +2168,63 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
-
     //Fix Needed
     @SuppressLint("NewApi")
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
-            "$vidsrctoAPI/v2/embed/movie/$id"
+            "$vidsrctoAPI/v2/embed/movie/$id?autoPlay=false"
         } else {
-            "$vidsrctoAPI/v2/embed/tv/$id/$season/$episode"
+            "$vidsrctoAPI/v2/embed/tv/$id/$season/$episode?autoPlay=false"
         }
         val type = if (season == null) "movie" else "tv"
         val doc = app.get(url).document.toString()
-        val v_value = Regex("var.v.=.\"(.*?)\"").find(doc)?.groupValues?.get(1).toString()
-        val vrfres = app.get("${BuildConfig.Vidsrccc}/vrf/$id").parsedSafe<Vidsrccc>()
-        val vrf = generateVidsrcVrf(id)
-        val timetamp = vrfres?.timestamp
-        val instant = Instant.parse(timetamp)
-        val unixTimeMs = instant.toEpochMilli()
-        val api_url = if (season == null) {
-            "${vidsrctoAPI}/api/$id/servers?id=${id}&type=$type&v=$v_value&vrf=${vrf}"
-        } else {
-            "${vidsrctoAPI}/api/$id/servers?id=${id}&type=$type&season=$season&episode=$episode&v=$v_value&vrf=${vrf}"
+        val regex = Regex("""var\s+(\w+)\s*=\s*(?:"([^"]*)"|(\w+));""")
+        val variables = mutableMapOf<String, String>()
+
+        regex.findAll(doc).forEach { match ->
+            val key = match.groupValues[1]
+            val value = match.groupValues[2].ifEmpty { match.groupValues[3] }
+            variables[key] = value
         }
-        app.get(api_url).parsedSafe<Vidsrcccservers>()?.data?.forEach {
+        val v_value = variables["v"] ?: ""
+        val userId = variables["userId"] ?: ""
+        val imdbId = variables["imdbId"] ?: ""
+        val movieId = variables["movieId"] ?: ""
+        val movieType = variables["movieType"] ?: ""
+
+        val vrf = generateVidsrcVrf(movieId,userId)
+        val apiurl = if (season == null) {
+            "${vidsrctoAPI}/api/$id/servers?id=$id&type=$movieType&v=$v_value=&vrf=$vrf&imdbId=$imdbId"
+        } else {
+            "${vidsrctoAPI}/api/$id/servers?id=$id&type=$movieType&season=$season&episode=$episode&v=$v_value&vrf=${vrf}&imdbId=$imdbId"
+        }
+        app.get(apiurl).parsedSafe<Vidsrcccservers>()?.data?.forEach {
             val servername = it.name
-            val m3u8 = app.get("$vidsrctoAPI/api/source/${it.hash}?t=$unixTimeMs")
+            val iframe = app.get("$vidsrctoAPI/api/source/${it.hash}")
                 .parsedSafe<Vidsrcccm3u8>()?.data?.source
-            callback(
-                newExtractorLink(
-                    "Vidsrc [$servername]",
-                    "Vidsrc [$servername]",
-                    url = m3u8 ?: return,
-                ) {
-                    this.referer = "https://vidsrc.stream/"
-                    this.quality = Qualities.P1080.value
-                }
-            )
+            val sourceUrl = iframe?.let { iframeUrl ->
+                val response = app.get(iframeUrl, referer = vidsrctoAPI).text
+                val urlregex = Regex("""var\s+source\s*=\s*"([^"]+)"""")
+                val match = urlregex.find(response)
+                match?.groups?.get(1)?.value?.replace("""\\/""".toRegex(), "/")
+            }
+
+
+            sourceUrl?.let { url->
+                loadCustomExtractor(
+                    "⌜ Vidsrc ⌟ | [$servername]",
+                    url,
+                    vidsrctoAPI,
+                    subtitleCallback,
+                    callback
+                )
+            }
         }
 
     }

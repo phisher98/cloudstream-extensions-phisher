@@ -30,8 +30,8 @@ data class Vidsrcccm3u8(
 )
 
 data class VidsrcccData(
+    val type: String,
     val source: String,
-    val subtitles: List<VidsrcccSubtitle>,
 )
 
 data class VidsrcccSubtitle(

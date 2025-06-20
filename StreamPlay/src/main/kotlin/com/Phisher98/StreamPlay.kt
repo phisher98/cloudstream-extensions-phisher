@@ -518,7 +518,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokeVidsrccc(
-                    res.id, res.season, res.episode, callback
+                    res.id, res.season, res.episode, subtitleCallback, callback
                 )
             },
             {
