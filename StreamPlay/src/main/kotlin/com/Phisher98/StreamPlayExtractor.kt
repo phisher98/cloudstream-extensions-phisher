@@ -775,15 +775,15 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        val id = app.get("https://proxy.phisher2.workers.dev/?url=$url", headers).document.selectFirst("meta[property=og:url]")
+        val id = app.get(url, headers).document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
         val animeData =
-            app.get("https://proxy.phisher2.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
+            app.get("$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
                 .parsedSafe<animepahe>()?.data
         var session = animeData?.find { it.episode == episode }?.session ?: ""
         if (session.isEmpty()) session =
             animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
-        val document = app.get("https://proxy.phisher2.workers.dev/?url=$animepaheAPI/play/$id/$session", headers).document
+        val document = app.get("$animepaheAPI/play/$id/$session", headers).document
 
         document.select("#resolutionMenu button")
             .map {
