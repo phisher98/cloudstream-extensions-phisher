@@ -43,6 +43,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlayExtractor.invokeAniXL
 import com.phisher98.StreamPlayExtractor.invokeAnichi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -248,6 +249,7 @@ class StreamPlayAnime : MainAPI() {
         val zoro = malsync?.zoro
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
+        val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
 
         runAllAsync(
@@ -267,7 +269,11 @@ class StreamPlayAnime : MainAPI() {
                     callback
                 )
             } },
-        )
+            {
+                if (aniXL != null) {
+                    invokeAniXL(aniXL, episode, callback)
+                }
+            })
         return true
     }
 
