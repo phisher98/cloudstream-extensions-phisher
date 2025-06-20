@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 5
+version = 6
 
 
 cloudstream {
@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","Anime","AnimeMovie")
-    iconUrl="https://animez.org/upload/logos/2024/03/logo_1710148637_65eecc1d2584c.png"
+    iconUrl="https://animeyy.com/upload/logos/2024/03/logo_1710148637_65eecc1d2584c.png"
 
     isCrossPlatform = true
 }
