@@ -1,4 +1,4 @@
-version = 10
+version = 11
 
 
 cloudstream {
@@ -19,7 +19,7 @@ cloudstream {
     tvTypes = listOf(
         "Anime"
     )
-    iconUrl = "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/onepace.png"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/onepace.png"
 
     isCrossPlatform = true
 }

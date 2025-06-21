@@ -1,12 +1,12 @@
 package com.phisher98
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
+@Suppress("NAME_SHADOWING")
 open class OnepaceProvider : MainAPI() {
     override var mainUrl = "https://onepace.me"
     override var name = "OnePace AD"
@@ -88,10 +88,10 @@ open class OnepaceProvider : MainAPI() {
             ?: document.selectFirst("meta[property=og:updated_time]")?.attr("content")
                 ?.substringBefore("-"))?.toIntOrNull()
         val lst = element?.select("ul.seasons-lst.anm-a li")
-        return if (lst!!.isEmpty()) {
+        return if (lst?.isEmpty() != false) {
             newMovieLoadResponse(title, url, TvType.Movie, Media(
                 media.url,
-                mediaType = 1.toString()
+                mediaType = "1"
             ).toJson()) {
                 this.posterUrl = poster
                 this.plot = plot
