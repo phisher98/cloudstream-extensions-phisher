@@ -10,7 +10,7 @@ open class DesicinemasProvider : MainAPI() {
     override var mainUrl = "https://desicinemas.to"
     override var name = "Desicinemas"
     override val hasMainPage = true
-    val proxy="https://proxy.phisher2.workers.dev/"
+    val proxy="https://desicinemas.phisherdesicinema.workers.dev/"
     override val mainPage = mainPageOf(
         "$proxy?url=https://desicinemas.to/" to "Home",
         "$proxy?url=https://desicinemas.to/category/punjabi/" to "Punjabi",

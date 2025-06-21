@@ -39,7 +39,7 @@ class AnimePahe : MainAPI() {
     )
 
     override val mainPage =
-        listOf(MainPageData("Latest Releases", "$mainUrl/api?m=airing&page=", true))
+        listOf(MainPageData("Latest Releases", "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$mainUrl/api?m=airing&page=", true))
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         data class Data(
@@ -260,7 +260,7 @@ class AnimePahe : MainAPI() {
                     data.session
                 }
             } ?: return@suspendSafeApiCall null
-            val html = app.get("https://animepahe.ru/anime/$session",headers=headers).text
+            val html = app.get("$mainUrl/anime/$session",headers=headers).text
             val doc = Jsoup.parse(html)
             val japTitle = doc.selectFirst("h2.japanese")?.text()
             val animeTitle = doc.selectFirst("span.sr-only.unselectable")?.text()

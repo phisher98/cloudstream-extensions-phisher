@@ -778,12 +778,12 @@ object StreamPlayExtractor : StreamPlay() {
         val id = app.get(url, headers).document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
         val animeData =
-            app.get("$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
+            app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
                 .parsedSafe<animepahe>()?.data
         var session = animeData?.find { it.episode == episode }?.session ?: ""
         if (session.isEmpty()) session =
             animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
-        val document = app.get("$animepaheAPI/play/$id/$session", headers).document
+        val document = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/play/$id/$session", headers).document
 
         document.select("#resolutionMenu button")
             .map {
