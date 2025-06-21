@@ -95,10 +95,13 @@ open class Akamaicdn : ExtractorApi() {
     ) {
         val headers= mapOf("user-agent" to "okhttp/4.12.0")
         val res = app.get(url, referer = referer, headers = headers).document
-        val mappers = res.selectFirst("script:containsData(sniff\\()")?.data()?.substringAfter("sniff(")
+        val sniffScript = res.selectFirst("script:containsData(sniff\\()")
+            ?.data()
+            ?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
-        val ids = mappers.split(",").map { it.replace("\"", "") }
-        val m3u8="$mainUrl/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1"
+        val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
+        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
+
         callback.invoke(
             newExtractorLink(
                 name,

@@ -117,11 +117,8 @@ open class Hdmovie2 : Movierulzhd() {
                             ?.substringAfter("sniff(")
                             ?.substringBefore(");")
                             ?: return@amap
-                        Log.d("Phisher repolink", doc.toString())
-
-                        val ids = sniffScript.split(",").map { it.replace("\"", "") }
-                        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1"
-                        Log.d("Phisher repolink", m3u8)
+                        val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
+                        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
 
                         callback.invoke(
                             newExtractorLink(name, name, m3u8, ExtractorLinkType.M3U8) {

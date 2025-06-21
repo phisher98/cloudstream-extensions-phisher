@@ -2481,3 +2481,40 @@ object AesHelper {
     }
 }
 
+internal class Molop : ExtractorApi() {
+    override val name = "Molop"
+    override val mainUrl = "https://molop.art"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers= mapOf("user-agent" to "okhttp/4.12.0")
+        val res = app.get(url, referer = referer, headers = headers).document
+        val sniffScript = res.selectFirst("script:containsData(sniff\\()")
+            ?.data()
+            ?.substringAfter("sniff(")
+            ?.substringBefore(");") ?: return
+        val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
+        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
+
+        callback.invoke(
+            newExtractorLink(
+                name,
+                name,
+                m3u8,
+                ExtractorLinkType.M3U8
+            )
+            {
+                this.referer=url
+                this.quality=Qualities.P1080.value
+                this.headers=headers
+
+            }
+        )
+    }
+}
+

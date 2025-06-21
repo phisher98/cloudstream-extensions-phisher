@@ -4893,6 +4893,50 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokeHdmovie2(
+        title: String? = null,
+        year: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val hdmovie2API = getDomains()?.hdmovie2 ?: return
+        val slug = title?.createSlug() ?: return
+        val url = "$hdmovie2API/movies/$slug-$year"
+
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        )
+
+        val document = app.get(url, headers = headers, allowRedirects = true).document
+
+        document.select("div.wp-content p a").amap { linkElement ->
+            val linkText = linkElement.text()
+            val linkUrl = linkElement.attr("href")
+
+            val isEpisodeMatch = episode?.let {
+                Regex("EP0?$it\\b", RegexOption.IGNORE_CASE).containsMatchIn(linkText)
+            } ?: true
+
+            if (!isEpisodeMatch && episode != null && linkText.contains("EP")) {
+                Log.d("Hdmovie2", "Episode $episode not matched in link: $linkText")
+                return@amap
+            }
+
+            val type = if (episode != null && !linkText.contains("EP")) "(Combined)" else ""
+
+            app.get(linkUrl).document.select("div > p > a").amap {
+                loadSourceNameExtractor(
+                    "Hdmovie2 $type",
+                    it.attr("href"),
+                    "",
+                    subtitleCallback,
+                    callback,
+                )
+            }
+        }
+    }
 }
 
 
