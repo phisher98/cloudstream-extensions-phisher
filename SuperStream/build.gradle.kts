@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 14
+version = 15
 
 android {
     buildFeatures {
@@ -56,7 +56,7 @@ dependencies {
     // FIXME remove this when crossplatform is fully supported
     val cloudstream by configurations
     implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.leanback:leanback:1.0.0")
+    implementation("androidx.leanback:leanback:1.2.0")
     implementation("org.testng:testng:6.9.6")
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
