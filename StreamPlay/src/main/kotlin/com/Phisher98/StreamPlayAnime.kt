@@ -248,18 +248,17 @@ class StreamPlayAnime : MainAPI() {
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
         val zoro = malsync?.zoro
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
-        val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
 
         runAllAsync(
-            { invokeHianime(zoro?.keys?.toList(), hianimeUrl, episode, subtitleCallback, callback) },
+            { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback) },
             { malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnizone(jpTitle, episode, callback) },
             { invokeAnichi(jpTitle,year,episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
-            { invokeAnimeKai(jpTitle,zorotitle,malId, episode, subtitleCallback, callback) },
+            { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback) },
             { malId?.let {
                 invokeAnimetosho(
                     it,

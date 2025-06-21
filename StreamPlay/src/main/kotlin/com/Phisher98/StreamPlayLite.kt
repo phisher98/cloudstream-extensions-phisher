@@ -75,7 +75,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 if (res.isAnime) invokeAnimes(
                     res.title,
                     res.jpTitle,
-                    res.epsTitle,
                     res.date,
                     res.airedDate,
                     res.season,
@@ -286,8 +285,7 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.imdbId,
                     res.season,
                     res.episode,
-                    subtitleCallback,
-                    callback
+                    subtitleCallback
                 )
             },
             {

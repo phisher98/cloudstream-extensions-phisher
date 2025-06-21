@@ -291,7 +291,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeMoviehubAPI(
         id: Int? = null,
-        imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -317,7 +316,6 @@ object StreamPlayExtractor : StreamPlay() {
         jptitle: String? = null,
         title: String? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         fun formatString(input: String?) = input?.replace(" ", "_").orEmpty()
@@ -481,7 +479,6 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokeAnimes(
         title: String?,
         jptitle: String? = null,
-        epsTitle: String? = null,
         date: String?,
         airedDate: String?,
         season: Int? = null,
@@ -489,7 +486,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val (aniId, malId) = convertTmdbToAnimeId(
+        val (_, malId) = convertTmdbToAnimeId(
             title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
         )
 
@@ -503,23 +500,19 @@ object StreamPlayExtractor : StreamPlay() {
         val zoro = malsync?.zoro
         val zoroIds = zoro?.keys?.toList().orEmpty()
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
-        val hianimeUrl = zoro?.values?.firstNotNullOfOrNull { it["url"] }
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
         val tmdbYear = date?.substringBefore("-")?.toIntOrNull()
-        val jptitleSlug = jptitle.createSlug()
-        Log.d("Phisher",aniXL.toString())
 
         runAllAsync(
             { malId?.let { invokeAnimetosho(it, season, episode, subtitleCallback, callback) } },
-            { invokeHianime(zoroIds, hianimeUrl, episode, subtitleCallback, callback) },
+            { invokeHianime(zoroIds, episode, subtitleCallback, callback) },
             {
                 malId?.let {
                     invokeAnimeKai(
                         jptitle,
                         zorotitle,
-                        it,
                         episode,
                         subtitleCallback,
                         callback
@@ -530,7 +523,7 @@ object StreamPlayExtractor : StreamPlay() {
             { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeAnichi(zorotitle, tmdbYear, episode, subtitleCallback, callback) },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
-            { invokeTokyoInsider(jptitle, title, episode, subtitleCallback, callback) },
+            { invokeTokyoInsider(jptitle, title, episode, callback) },
             { invokeAnizone(jptitle, episode, callback) },
             {
                 if (aniXL != null) {
@@ -550,7 +543,7 @@ object StreamPlayExtractor : StreamPlay() {
         val episodeLink = (baseurl + document
             .select("a.btn")
             .firstOrNull { it.text().trim() == episode?.toString() }
-            ?.attr("href")) ?: return
+            ?.attr("href"))
 
         val jsonText = app.get(episodeLink).text
         val parts = jsonText.split(",").map { it.trim('"') }
@@ -626,7 +619,7 @@ object StreamPlayExtractor : StreamPlay() {
         val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
-        var type = ""
+        var type: String
         if (episode == null) {
             type = "Movie"
         } else {
@@ -669,8 +662,7 @@ object StreamPlayExtractor : StreamPlay() {
                             val sourcename = sourceUrl.getHost()
                             loadCustomExtractor(
                                 "Allanime [${i.uppercase()}] [$sourcename]",
-                                sourceUrl
-                                    ?: "",
+                                sourceUrl,
                                 "",
                                 subtitleCallback,
                                 callback,
@@ -889,7 +881,6 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokeAnimeKai(
         jptitle: String? = null,
         title: String? = null,
-        malId: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
@@ -987,7 +978,7 @@ object StreamPlayExtractor : StreamPlay() {
         val doc = Jsoup.parse(html)
 
         for (element in doc.select("a.aitem")) {
-            val href = element.attr("href").substringAfterLast("/") ?: continue
+            val href = element.attr("href").substringAfterLast("/")
             val titleElem = element.selectFirst("h6.title") ?: continue
             val title = titleElem.text().trim()
             val jpTitle = titleElem.attr("data-jp").trim().takeIf { it.isNotBlank() }
@@ -1016,49 +1007,58 @@ object StreamPlayExtractor : StreamPlay() {
 
     internal suspend fun invokeHianime(
         animeIds: List<String?>? = null,
-        url: String?,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val headers = mapOf(
-            "X-Requested-With" to "XMLHttpRequest",
-        )
-        animeIds?.amap { id ->
-            val episodeId = app.get(
-                "$hianimeAPI/ajax/v2/episode/list/${id ?: return@amap}",
-                headers = headers
-            ).parsedSafe<HianimeResponses>()?.html?.let {
-                Jsoup.parse(it)
-            }?.select("div.ss-list a")
-                ?.find { it.attr("data-number") == "${episode ?: 1}" }
-                ?.attr("data-id")
-            val servers = app.get(
-                "$hianimeAPI/ajax/v2/episode/servers?episodeId=${episodeId ?: return@amap}",
-                headers = headers
-            ).parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
-                ?.select("div.item.server-item")?.map {
-                    Triple(
-                        it.text(),
-                        it.attr("data-id"),
-                        it.attr("data-type"),
-                    )
+        val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+        for (api in hianimeAPIs) {
+            try {
+                animeIds?.amap { id ->
+                    val episodeId = app.get(
+                        "$api/ajax/v2/episode/list/${id ?: return@amap}",
+                        headers = headers
+                    ).parsedSafe<HianimeResponses>()?.html?.let {
+                        Jsoup.parse(it)
+                    }?.select("div.ss-list a")
+                        ?.find { it.attr("data-number") == "${episode ?: 1}" }
+                        ?.attr("data-id")
+
+                    val servers = app.get(
+                        "$api/ajax/v2/episode/servers?episodeId=${episodeId ?: return@amap}",
+                        headers = headers
+                    ).parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
+                        ?.select("div.item.server-item")?.map {
+                            Triple(
+                                it.text(),
+                                it.attr("data-id"),
+                                it.attr("data-type"),
+                            )
+                        }
+
+                    servers?.map { (label, id, effectiveType) ->
+                        val sourceurl = app.get("$api/ajax/v2/episode/sources?id=$id")
+                            .parsedSafe<EpisodeServers>()?.link
+                        if (sourceurl != null) {
+                            loadCustomExtractor(
+                                "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
+                                sourceurl,
+                                "",
+                                subtitleCallback,
+                                callback,
+                            )
+                        }
+                    }
                 }
-            servers?.map { (label, id, effectiveType) ->
-                val sourceurl = app.get("${hianimeAPI}/ajax/v2/episode/sources?id=$id")
-                    .parsedSafe<EpisodeServers>()?.link
-                if (sourceurl != null) {
-                    loadCustomExtractor(
-                        "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
-                        sourceurl,
-                        "",
-                        subtitleCallback,
-                        callback,
-                    )
-                }
+                return
+            } catch (e: Exception) {
+                println("Failed with domain $api: ${e.message}")
+                continue
             }
         }
+        println("All hianimeAPI domains failed.")
     }
+
 
 
     suspend fun invokeKickAssAnime(
@@ -1265,7 +1265,6 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
             "$SubtitlesAPI/subtitles/movie/$id.json"
@@ -1502,10 +1501,8 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeTopMovies(
         imdbId: String? = null,
-        title: String? = null,
         year: Int? = null,
         season: Int? = null,
-        lastSeason: Int?,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
@@ -1590,9 +1587,7 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-        maxRetries: Int = 3,
-        delayBetweenRetries: Long = 2000L
+        callback: (ExtractorLink) -> Unit
     ) {
         val MoviesmodAPI = getDomains()?.moviesmod ?: return
         invokeModflix(
@@ -1662,7 +1657,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         )
                                         return@let null
                                     }
-                                detailPageDoc?.select("a.maxbutton-fast-server-gdrive")
+                                detailPageDoc.select("a.maxbutton-fast-server-gdrive")
                                     ?.mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
                                     ?.forEach { driveLink ->
                                         bypassHrefli(driveLink)?.let { streamUrl ->
@@ -1746,7 +1741,6 @@ object StreamPlayExtractor : StreamPlay() {
                 title = title,
                 year = year,
                 season = season,
-                lastSeason = lastSeason,
                 episode = episode,
                 subtitleCallback = subtitleCallback,
                 callback = callback,
@@ -1774,7 +1768,6 @@ object StreamPlayExtractor : StreamPlay() {
                 title = title,
                 year = year,
                 season = season,
-                lastSeason = lastSeason,
                 episode = episode,
                 subtitleCallback = subtitleCallback,
                 callback = callback,
@@ -1884,7 +1877,6 @@ object StreamPlayExtractor : StreamPlay() {
         title: String? = null,
         year: Int? = null,
         season: Int? = null,
-        lastSeason: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
@@ -4222,6 +4214,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    @Suppress("NAME_SHADOWING")
     suspend fun invokeFilm1k(
         id: Int? = null,
         imdbId: String? = null,

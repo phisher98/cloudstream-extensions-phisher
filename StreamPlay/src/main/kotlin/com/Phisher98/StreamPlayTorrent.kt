@@ -5,7 +5,6 @@ import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -172,8 +171,7 @@ override suspend fun loadLinks(
                 id,
                 season,
                 episode,
-                subtitleCallback,
-                callback
+                subtitleCallback
             )
         }
     )

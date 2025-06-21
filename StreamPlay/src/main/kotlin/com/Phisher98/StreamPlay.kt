@@ -173,7 +173,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val filmxyAPI = "https://www.filmxy.online"
         const val MOVIE_API = BuildConfig.MOVIE_API
-        const val hianimeAPI = "https://hianime.nz"
+        val hianimeAPIs = listOf(
+            "https://hianimez.is",
+            "https://hianimez.to",
+            "https://hianime.nz",
+            "https://hianime.bz",
+            "https://hianime.pe"
+        )
         const val AnimeKai = "https://animekai.to"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
@@ -504,7 +510,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 if (res.isAnime) invokeAnimes(
                     res.title,
                     res.jpTitle,
-                    res.epsTitle,
                     res.date,
                     res.airedDate,
                     res.season,
@@ -551,10 +556,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             {
                 if (!res.isAnime) invokeTopMovies(
                     res.imdbId,
-                    res.title,
                     res.year,
                     res.season,
-                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback
@@ -609,7 +612,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokeMoviehubAPI(
-                    res.id, res.imdbId, res.season, res.episode, subtitleCallback, callback
+                    res.id, res.season, res.episode, subtitleCallback, callback
                 )
             },
             {
@@ -841,7 +844,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             //Subtitles Invokes
             {
                 invokeSubtitleAPI(
-                    res.imdbId, res.season, res.episode, subtitleCallback, callback
+                    res.imdbId, res.season, res.episode, subtitleCallback
                 )
             },
             {
