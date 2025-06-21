@@ -70,10 +70,18 @@ open class OnepaceProvider : MainAPI() {
 
     override suspend fun search(query: String): List<AnimeSearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
-        return document.select("ul[data-results] li article").mapNotNull {
-            it.toSearchResult()
+        val links = document.select("main > section > ul li article > a")
+            .mapNotNull { it.attr("href") }
+
+        return links.flatMap { link ->
+            val pageDocument = app.get(link).document
+            val seasonElements = pageDocument.select("div.seasons.aa-crd > div.seasons-bx")
+            seasonElements.mapNotNull { it.toSearchResult() }
         }
     }
+
+
+
 
     override suspend fun load(url: String): LoadResponse {
         val media = parseJson<Media>(url)
