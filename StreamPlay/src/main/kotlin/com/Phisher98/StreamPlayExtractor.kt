@@ -3512,7 +3512,7 @@ object StreamPlayExtractor : StreamPlay() {
         val cleanTitle = "$title"
 
         val searchUrl = buildString {
-            append("$movieDriveAPI/search/")
+            append("$movieDriveAPI/?s=")
             append(cleanTitle)
             if (season == null && year != null) append(" $year")
         }
