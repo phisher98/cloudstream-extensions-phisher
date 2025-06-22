@@ -19,6 +19,7 @@ class AnimePahe : MainAPI() {
     companion object {
         const val MAIN_URL = "https://animepahe.ru"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
+        private val Proxy="https://animepaheproxy.phisheranimepahe.workers.dev/?url="
         //var cookies: Map<String, String> = mapOf()
         private fun getType(t: String): TvType {
             return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
@@ -39,7 +40,7 @@ class AnimePahe : MainAPI() {
     )
 
     override val mainPage =
-        listOf(MainPageData("Latest Releases", "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$mainUrl/api?m=airing&page=", true))
+        listOf(MainPageData("Latest Releases", "$Proxy$mainUrl/api?m=airing&page=", true))
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         data class Data(
@@ -100,7 +101,7 @@ class AnimePahe : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/api?m=search&l=8&q=$query"
+        val url = "$Proxy$mainUrl/api?m=search&l=8&q=$query"
         val headers = mapOf("referer" to "$mainUrl/","Cookie" to "__ddg2_=1234567890")
 
         val req = app.get(url, headers = headers).text
@@ -149,16 +150,16 @@ class AnimePahe : MainAPI() {
         @JsonProperty("session") val session: String,
         @JsonProperty("episode_session") val episode_session: String,
     ) {
-        val headers = mapOf("Cookie" to "__ddg2_=1234567890")
+        private val headers = mapOf("Cookie" to "__ddg2_=1234567890")
         suspend fun getUrl(): String? {
             return if (is_play_page) {
-                "$mainUrl/play/${session}/${episode_session}"
+                "$Proxy$mainUrl/play/${session}/${episode_session}"
             } else {
-                val url = "$mainUrl/api?m=release&id=${session}&sort=episode_asc&page=${page + 1}"
+                val url = "$Proxy$mainUrl/api?m=release&id=${session}&sort=episode_asc&page=${page + 1}"
                 val jsonResponse = app.get(url,headers=headers).parsedSafe<AnimePaheAnimeData>() ?: return null
                 val episode = jsonResponse.data.firstOrNull { it.episode == episode_num }?.session
                     ?: return null
-                "$mainUrl/play/${session}/${episode}"
+                "$Proxy$mainUrl/play/${session}/${episode}"
             }
         }
     }
