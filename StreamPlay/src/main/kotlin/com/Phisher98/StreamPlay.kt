@@ -333,7 +333,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val tmdbAPI = fetchTmdbApiList().random()
         val data = parseJson<Data>(url)
         val type = getType(data.type)
-        val append = "alternative_titles,credits,external_ids,keywords,videos,recommendations"
+        val append = "alternative_titles,credits,external_ids,videos,recommendations"
+
         val resUrl = if (type == TvType.Movie) {
             "$tmdbAPI/movie/${data.id}?api_key=$apiKey&append_to_response=$append"
         } else {
@@ -369,9 +370,20 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val recommendations =
             res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
 
+        /*
         val trailer = res.videos?.results?.filter { it.type == "Trailer" }
             ?.map { "https://www.youtube.com/watch?v=${it.key}" }?.reversed().orEmpty()
             .ifEmpty { res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } }
+
+         */
+        val trailer = res.videos?.results.orEmpty()
+            .filter { it.type == "Trailer" }
+            .map { "https://www.youtube.com/watch?v=${it.key}" }
+            .reversed()
+            .ifEmpty {
+                res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } ?: emptyList()
+            }
+
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->
