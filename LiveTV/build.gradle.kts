@@ -20,7 +20,7 @@ cloudstream {
         "Live"
     )
 
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/TVVV.png"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/main/TVVV.png"
 
     isCrossPlatform = true
 }

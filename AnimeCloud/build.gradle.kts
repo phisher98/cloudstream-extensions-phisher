@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Anime")
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/AnimeCloud.jpg"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/main/AnimeCloud.jpg"
 
     isCrossPlatform = true
 }
