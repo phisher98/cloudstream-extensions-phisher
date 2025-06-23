@@ -262,7 +262,6 @@ class AnimePahe : MainAPI() {
                 }
             } ?: return@suspendSafeApiCall null
             val html = app.get("$Proxy$mainUrl/anime/$session",headers=headers).text
-            Log.d("Phisher","$Proxy$mainUrl/anime/$session")
             val doc = Jsoup.parse(html)
             val japTitle = doc.selectFirst("h2.japanese")?.text()
             val animeTitle = doc.selectFirst("span.sr-only.unselectable")?.text()
