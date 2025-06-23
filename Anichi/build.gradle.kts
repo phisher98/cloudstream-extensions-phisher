@@ -38,8 +38,7 @@ cloudstream {
         "Anime",
         "OVA",
     )
-
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/main/Allanime.png"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Allanime.png"
 
     isCrossPlatform = true
 }

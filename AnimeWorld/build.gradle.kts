@@ -22,7 +22,7 @@ cloudstream {
         "Cartoon"
     )
 
-    iconUrl = "https://myanimeworld.in/public/img/AWI-SiteTitle-1.png"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animeworld.jpg"
 
     isCrossPlatform = true
 }

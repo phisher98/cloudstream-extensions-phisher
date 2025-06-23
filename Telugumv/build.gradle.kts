@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 3
+version = 4
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -24,7 +24,7 @@ cloudstream {
         "Movie",
         "TvSeries",
     )
-    iconUrl = "https://telugumv.xyz/wp-content/uploads/2024/05/20240509_195734-e1715265186634.png"
+    iconUrl = "https://telugumv.fun/wp-content/uploads/2024/05/20240509_195734-e1715265186634.png"
 
     isCrossPlatform = true
 }
