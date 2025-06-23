@@ -10,7 +10,6 @@ class TelugumvPlugin: BasePlugin() {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Telugumv())
         registerExtractorAPI(VidHidePro6())
-        registerExtractorAPI(Autoembed())
         registerExtractorAPI(smoothpre())
         registerExtractorAPI(movearnpre())
         }
