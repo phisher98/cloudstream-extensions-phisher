@@ -15,7 +15,6 @@ import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
 import com.phisher98.StreamPlayExtractor.invokeFlixon
-import com.phisher98.StreamPlayExtractor.invokeHindMoviez
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeLing
 import com.phisher98.StreamPlayExtractor.invokeMoflix
@@ -219,7 +218,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val consumetFlixhqAPI = "https://consumet.8man.me/movies/flixhq"
         const val AnimeOwlAPI = "https://animeowl.me"
         const val Film1kApi = "https://www.film1k.com"
-        const val HindMoviezApi = "https://hindmoviez.co.in"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
         const val KickassAPI = "https://kaa.mx"
@@ -370,12 +368,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val recommendations =
             res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
 
-        /*
-        val trailer = res.videos?.results?.filter { it.type == "Trailer" }
-            ?.map { "https://www.youtube.com/watch?v=${it.key}" }?.reversed().orEmpty()
-            .ifEmpty { res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } }
-
-         */
         val trailer = res.videos?.results.orEmpty()
             .filter { it.type == "Trailer" }
             .map { "https://www.youtube.com/watch?v=${it.key}" }
@@ -785,11 +777,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.year,
                     subtitleCallback,
                     callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeHindMoviez(
-                    res.title, res.imdbId, res.season, res.episode, callback
                 )
             },
             {
