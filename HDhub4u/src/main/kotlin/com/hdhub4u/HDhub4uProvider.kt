@@ -2,6 +2,7 @@ package com.hdhub4u
 
 import android.annotation.SuppressLint
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -86,7 +87,7 @@ class HDhub4uProvider : MainAPI() {
     }
 
     private fun toResult(post: Element): SearchResponse {
-        val title = post.select("figcaption:nth-child(2) > a:nth-child(1) > p:nth-child(1)").text().substringBefore("(")
+        val title = post.select("figcaption:nth-child(2) > a:nth-child(1) > p:nth-child(1)").text()
         val url = post.select("figure:nth-child(1) > a:nth-child(2)").attr("href")
         return newAnimeSearchResponse(title, url, TvType.Movie) {
             this.posterUrl = post.select("figure:nth-child(1) > img:nth-child(1)").attr("src")
@@ -167,7 +168,6 @@ class HDhub4uProvider : MainAPI() {
         }
         if (tvtype==TvType.Movie) {
             val movieList = mutableListOf<String>()
-            val ff = mutableListOf<String>()
 
             movieList.addAll(
                 doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
@@ -186,57 +186,65 @@ class HDhub4uProvider : MainAPI() {
             }
         } else {
             val episodesData = mutableListOf<Episode>()
-            val epLinksMap = mutableMapOf<Int, MutableList<String>>() // Store links by episode number
+            val epLinksMap = mutableMapOf<Int, MutableList<String>>()
             val episodeRegex = Regex("EPiSODE\\s*(\\d+)", RegexOption.IGNORE_CASE)
 
-            doc.select("h3, h4").forEachIndexed { index, element ->
-                val episodeNumberFromTitle = episodeRegex.find(element.text())?.groupValues?.get(1)?.toIntOrNull()
+            val TAG = "EpisodeParser"
 
-                val baseLinks = element.select("a[href]").mapNotNull { it.attr("href") }
+            doc.select("h3, h4").forEach { element ->
+                val episodeNumberFromTitle = episodeRegex.find(element.text())?.groupValues?.get(1)?.toIntOrNull()
+                val baseLinks = element.select("a[href]").mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
+
                 val isDirectLinkBlock = element.select("a").any {
                     it.text().contains(Regex("1080|720|4K|2160", RegexOption.IGNORE_CASE))
                 }
+                val allEpisodeLinks = mutableSetOf<String>()
 
-                val episodeNumber = episodeNumberFromTitle ?: (index + 1)
-
-                val allEpisodeLinks = mutableListOf<String>()
-                allEpisodeLinks.addAll(baseLinks)
                 if (isDirectLinkBlock) {
                     baseLinks.forEach { url ->
                         try {
                             val resolvedUrl = getRedirectLinks(url.trim())
                             val episodeDoc = app.get(resolvedUrl).document
-                            episodeDoc.select("div h5").forEach { h5Element ->
-                                val episodeText = h5Element.text()
-                                val subEpisodeNum = Regex("(\\d+)").find(episodeText)?.value?.toIntOrNull()
-                                val links = h5Element.select("a[href]").mapNotNull { it.attr("href") }
 
-                                val finalEpisodeNum = subEpisodeNum ?: episodeNumber
-                                if (links.isNotEmpty()) {
-                                    epLinksMap.getOrPut(finalEpisodeNum) { mutableListOf() }.addAll(links.distinct())
+                            // Look for structure like: <h5><a>Episode 1 – 4GB</a></h5>
+                            episodeDoc.select("h5 a").forEach { linkElement ->
+                                val text = linkElement.text()
+                                val link = linkElement.attr("href").takeIf { it.isNotBlank() } ?: return@forEach
+                                val epNum = Regex("Episode\\s*(\\d+)", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.toIntOrNull()
+
+                                if (epNum != null) {
+                                    epLinksMap.getOrPut(epNum) { mutableListOf() }.add(link)
+                                } else {
+                                    Log.w(TAG, "Could not parse episode number from: $text")
                                 }
                             }
-                        } catch (_: Exception) {
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error resolving direct link for URL: $url")
                         }
                     }
-                }
-
-                // === If it's a h4 block, grab following sibling links until <hr> ===
-                if (element.tagName() == "h4" && episodeNumberFromTitle != null) {
-                    var nextElement = element.nextElementSibling()
-                    while (nextElement != null && nextElement.tagName() != "hr") {
-                        val siblingLinks = nextElement.select("a[href]").mapNotNull { it.attr("href") }
-                        allEpisodeLinks.addAll(siblingLinks)
-                        nextElement = nextElement.nextElementSibling()
+                } else if (episodeNumberFromTitle != null) {
+                    // Handle sibling links under <h4>
+                    if (element.tagName() == "h4") {
+                        var nextElement = element.nextElementSibling()
+                        while (nextElement != null && nextElement.tagName() != "hr") {
+                            val siblingLinks = nextElement.select("a[href]").mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
+                            allEpisodeLinks.addAll(siblingLinks)
+                            nextElement = nextElement.nextElementSibling()
+                        }
                     }
-                }
 
-                if (allEpisodeLinks.isNotEmpty()) {
-                    epLinksMap.getOrPut(episodeNumber) { mutableListOf() }.addAll(allEpisodeLinks.distinct())
+                    if (baseLinks.isNotEmpty()) {
+                        allEpisodeLinks.addAll(baseLinks)
+                    }
+
+                    if (allEpisodeLinks.isNotEmpty()) {
+                        Log.d(TAG, "Adding links for episode $episodeNumberFromTitle: ${allEpisodeLinks.distinct()}")
+                        epLinksMap.getOrPut(episodeNumberFromTitle) { mutableListOf() }.addAll(allEpisodeLinks.distinct())
+                    }
                 }
             }
 
-            epLinksMap.forEach { (epNum, links) ->
+        epLinksMap.forEach { (epNum, links) ->
                 val info = responseData?.meta?.videos?.find { it.season == seasonNumber && it.episode == epNum }
 
                 episodesData.add(
