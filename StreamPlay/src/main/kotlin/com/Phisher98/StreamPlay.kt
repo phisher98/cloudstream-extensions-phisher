@@ -735,7 +735,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
             {
                 if (!res.isAnime) invokeVidSrcViP(
-                    res.id, res.season, res.episode, res.year, subtitleCallback, callback
+                    res.id, res.season, res.episode, callback
                 )
             },
             {
