@@ -1833,7 +1833,13 @@ open class GDFlix : ExtractorApi() {
                 }
 
                 text.contains("PixelDrain",ignoreCase = true) -> {
-                    loadExtractor("GDFlix",anchor.attr("href"),subtitleCallback,callback)
+                    callback.invoke(
+                        newExtractorLink(
+                            "$referer GDFlix[Pixeldrain]",
+                            "GDFlix[Pixeldrain] [$fileSize]",
+                            anchor.attr("href"),
+                        ) { this.quality = quality }
+                    )
                 }
 
                 else -> {
