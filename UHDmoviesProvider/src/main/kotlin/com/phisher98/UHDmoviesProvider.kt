@@ -10,13 +10,14 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import okhttp3.FormBody
 import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://uhdmovies.tips"
+    override var mainUrl = "https://uhdmovies.email"
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "en"
@@ -223,7 +224,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             ?.attr("href")
     }
 
-    fun Document.getMirrorServer(server: Int): String {
+    private fun Document.getMirrorServer(server: Int): String {
         return this.select("div.text-center a:contains(Server $server)").attr("href")
     }
 
@@ -285,23 +286,32 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        //Log.d("Phisher",data)
-        //val href=bypassHrefli(data)
+    ): Boolean = coroutineScope {
         if (data.startsWith("https://")) {
-            data.let { me ->
-                val driveLink = bypassHrefli(me) ?: ""
-                loadExtractor(driveLink, subtitleCallback, callback)
-
+            val finalLink = if (data.contains("unblockedgames")) {
+                bypassHrefli(data) ?: return@coroutineScope true
+            } else {
+                data
             }
+            loadExtractor(finalLink, subtitleCallback, callback)
         } else {
             val sources = parseJson<ArrayList<UHDLinks>>(data)
-            sources.amap { me ->
-                val link = me.sourceLink
-                val driveLink = bypassHrefli(link) ?: ""
-                loadExtractor(driveLink, subtitleCallback, callback)
+
+            sources.forEach { me ->
+                launch {
+                    runCatching {
+                        val link = me.sourceLink
+                        val finalLink = if (link.contains("unblockedgames")) {
+                            bypassHrefli(link) ?: return@runCatching
+                        } else {
+                            link
+                        }
+                        loadExtractor(finalLink, subtitleCallback, callback)
+                    }.onFailure {
+                    }
+                }
             }
         }
-        return true
+        return@coroutineScope true
     }
 }

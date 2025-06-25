@@ -1097,6 +1097,11 @@ class DriveleechPro : Driveseed() {
     override val mainUrl: String = "https://driveleech.pro"
 }
 
+class DriveleechNet : Driveseed() {
+    override val name: String = "Driveleech"
+    override val mainUrl: String = "https://driveleech.net"
+}
+
 open class Driveseed : ExtractorApi() {
     override val name: String = "Driveseed"
     override val mainUrl: String = "https://driveseed.org"
@@ -1157,7 +1162,8 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun instantLink(finallink: String): String? {
         return runCatching {
-            val host = if (finallink.contains("video-leech")) "video-leech.xyz" else "video-seed.xyz"
+            val uri = URI(finallink)
+            val host = uri.host ?: if (finallink.contains("video-leech")) "video-leech.pro" else "video-seed.pro"
             val token = finallink.substringAfter("url=")
             val response = app.post(
                 "https://$host/api",
@@ -1695,7 +1701,8 @@ open class GDFlix : ExtractorApi() {
         } catch (e: Exception) {
             Log.e("Error", "Failed to fetch redirect: ${e.localizedMessage}")
             return
-        } ?: return
+        } ?: url
+
         val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
@@ -1706,7 +1713,7 @@ open class GDFlix : ExtractorApi() {
             val text = anchor.select("a").text()
 
             when {
-                text.contains("DIRECT DL") -> {
+                text.contains("DIRECT DL",ignoreCase = true) -> {
                     val link = anchor.attr("href")
                     callback.invoke(
                         newExtractorLink("$referer GDFlix[Direct]", "GDFlix[Direct] [$fileSize]", link) {
@@ -1715,7 +1722,7 @@ open class GDFlix : ExtractorApi() {
                     )
                 }
 
-                text.contains("Index Links") -> {
+                text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
                         app.get("https://new6.gdflix.dad$link").document
@@ -1736,7 +1743,7 @@ open class GDFlix : ExtractorApi() {
                     }
                 }
 
-                text.contains("DRIVEBOT") -> {
+                text.contains("DRIVEBOT",ignoreCase = true) -> {
                     try {
                         val driveLink = anchor.attr("href")
                         val id = driveLink.substringAfter("id=").substringBefore("&")
@@ -1787,7 +1794,7 @@ open class GDFlix : ExtractorApi() {
                     }
                 }
 
-                text.contains("Instant DL") -> {
+                text.contains("Instant DL",ignoreCase = true) -> {
                     try {
                         val instantLink = anchor.attr("href")
                         val link = app.get(instantLink, allowRedirects = false)
@@ -1803,7 +1810,7 @@ open class GDFlix : ExtractorApi() {
                     }
                 }
 
-                text.contains("CLOUD DOWNLOAD") -> {
+                text.contains("CLOUD DOWNLOAD",ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink("$referer GDFlix[CLOUD]", "GDFlix[CLOUD] [$fileSize]", anchor.attr("href")) {
                             this.quality = getIndexQuality(fileName)
@@ -1811,7 +1818,7 @@ open class GDFlix : ExtractorApi() {
                     )
                 }
 
-                text.contains("GoFile") -> {
+                text.contains("GoFile",ignoreCase = true) -> {
                     try {
                         app.get(anchor.attr("href")).document
                             .select(".row .row a").amap { gofileAnchor ->
@@ -1823,6 +1830,10 @@ open class GDFlix : ExtractorApi() {
                     } catch (e: Exception) {
                         Log.d("Gofile", e.toString())
                     }
+                }
+
+                text.contains("PixelDrain",ignoreCase = true) -> {
+                    loadExtractor("GDFlix",anchor.attr("href"),subtitleCallback,callback)
                 }
 
                 else -> {

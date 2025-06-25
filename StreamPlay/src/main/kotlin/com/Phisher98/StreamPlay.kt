@@ -6,7 +6,6 @@ import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
 import com.phisher98.StreamPlayExtractor.invokeBollyflix
-import com.phisher98.StreamPlayExtractor.invokeBollyflixvip
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.phisher98.StreamPlayExtractor.invokeDotmovies
 import com.phisher98.StreamPlayExtractor.invokeEmbedsu
@@ -203,14 +202,12 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val zoechipAPI = "https://www1.zoechip.to"
         const val nepuAPI = "https://nepu.to"
         const val dahmerMoviesAPI = "https://a.111477.xyz"
-        const val bollyflixAPI = "https://bollyflix.yoga"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix = "https://catflix.su"
         const val NyaaAPI = "https://nyaa.land"
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val EmbedSu = "https://embed.su"
         const val WyZIESUBAPI = "https://sub.wyzie.ru"
-        const val Theyallsayflix = BuildConfig.Theyallsayflix
         const val TomAPI = "https://tom.autoembed.cc"
         const val RiveStreamAPI = "https://rivestream.org"
         const val VidSrcVip = "https://vidsrc.vip"
@@ -574,19 +571,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokeBollyflix(
-                    res.imdbId, subtitleCallback, callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeBollyflixvip(
-                    res.imdbId,
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.lastSeason,
-                    res.episode,
-                    subtitleCallback,
-                    callback
+                    res.imdbId, res.season, res.episode,subtitleCallback, callback
                 )
             },
             {
@@ -661,7 +646,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.title,
                     res.year,
                     res.season,
-                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback
@@ -673,7 +657,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.title,
                     res.year,
                     res.season,
-                    res.lastSeason,
                     res.episode,
                     subtitleCallback,
                     callback

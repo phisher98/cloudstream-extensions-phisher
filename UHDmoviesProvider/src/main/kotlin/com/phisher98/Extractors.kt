@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 import okhttp3.FormBody
 import com.lagradost.api.Log
+import java.net.URI
 
 class Driveleech : Driveseed() {
     override val name: String = "Driveleech"
@@ -14,6 +15,11 @@ class Driveleech : Driveseed() {
 class DriveleechPro : Driveseed() {
     override val name: String = "Driveleech"
     override val mainUrl: String = "https://driveleech.pro"
+}
+
+class DriveleechNet : Driveseed() {
+    override val name: String = "Driveleech"
+    override val mainUrl: String = "https://driveleech.net"
 }
 
 open class Driveseed : ExtractorApi() {
@@ -76,7 +82,9 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun instantLink(finallink: String): String? {
         return runCatching {
-            val host = if (finallink.contains("video-leech")) "video-leech.xyz" else "video-seed.xyz"
+            val uri = URI(finallink)
+            val host = uri.host ?: if (finallink.contains("video-leech")) "video-leech.pro" else "video-seed.pro"
+
             val token = finallink.substringAfter("url=")
             val response = app.post(
                 "https://$host/api",
@@ -94,6 +102,7 @@ open class Driveseed : ExtractorApi() {
             null
         }
     }
+
 
     override suspend fun getUrl(
         url: String,

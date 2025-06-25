@@ -118,6 +118,8 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(VidStack())
         registerExtractorAPI(Videostr())
         registerExtractorAPI(DriveleechPro())
+        registerExtractorAPI(DriveleechNet())
+        registerExtractorAPI(Molop())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = SettingsFragment(this, sharedPref)
