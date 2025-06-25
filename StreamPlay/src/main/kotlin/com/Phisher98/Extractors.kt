@@ -28,6 +28,7 @@ import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.utils.*
@@ -986,8 +987,8 @@ class HubCloud : ExtractorApi() {
                 "pixeldra" in link -> {
                     callback.invoke(
                         newExtractorLink(
-                            "Pixeldrain $labelExtras",
-                            "Pixeldrain $labelExtras",
+                            "$source Pixeldrain $labelExtras",
+                            "$source Pixeldrain $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -1688,7 +1689,7 @@ open class GDFlix : ExtractorApi() {
 
     override suspend fun getUrl(
         url: String,
-        referer: String?,
+        source: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
@@ -1716,7 +1717,7 @@ open class GDFlix : ExtractorApi() {
                 text.contains("DIRECT DL",ignoreCase = true) -> {
                     val link = anchor.attr("href")
                     callback.invoke(
-                        newExtractorLink("$referer GDFlix[Direct]", "GDFlix[Direct] [$fileSize]", link) {
+                        newExtractorLink("$source GDFlix[Direct]", "$source GDFlix[Direct] [$fileSize]", link) {
                             this.quality = getIndexQuality(fileName)
                         }
                     )
@@ -1732,7 +1733,7 @@ open class GDFlix : ExtractorApi() {
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val source = sourceAnchor.attr("href")
                                         callback.invoke(
-                                            newExtractorLink("$referer GDFlix[Index]", "GDFlix[Index] [$fileSize]", source) {
+                                            newExtractorLink("$source GDFlix[Index]", "$source GDFlix[Index] [$fileSize]", source) {
                                                 this.quality = getIndexQuality(fileName)
                                             }
                                         )
@@ -1782,7 +1783,7 @@ open class GDFlix : ExtractorApi() {
                                 }
 
                                 callback.invoke(
-                                    newExtractorLink("$referer GDFlix[DriveBot]", "GDFlix[DriveBot] [$fileSize]", downloadLink) {
+                                    newExtractorLink("$source GDFlix[DriveBot]", "$source GDFlix[DriveBot] [$fileSize]", downloadLink) {
                                         this.referer = baseUrl
                                         this.quality = getIndexQuality(fileName)
                                     }
@@ -1801,7 +1802,7 @@ open class GDFlix : ExtractorApi() {
                             .headers["location"]?.substringAfter("url=").orEmpty()
 
                         callback.invoke(
-                            newExtractorLink("$referer GDFlix[Instant Download]", "GDFlix[Instant Download] [$fileSize]", link) {
+                            newExtractorLink("$source GDFlix[Instant Download]", "$source GDFlix[Instant Download] [$fileSize]", link) {
                                 this.quality = getIndexQuality(fileName)
                             }
                         )
@@ -1812,7 +1813,7 @@ open class GDFlix : ExtractorApi() {
 
                 text.contains("CLOUD DOWNLOAD",ignoreCase = true) -> {
                     callback.invoke(
-                        newExtractorLink("$referer GDFlix[CLOUD]", "GDFlix[CLOUD] [$fileSize]", anchor.attr("href")) {
+                        newExtractorLink("$source GDFlix[CLOUD]", "$source GDFlix[CLOUD] [$fileSize]", anchor.attr("href")) {
                             this.quality = getIndexQuality(fileName)
                         }
                     )
@@ -1835,8 +1836,8 @@ open class GDFlix : ExtractorApi() {
                 text.contains("PixelDrain",ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$referer GDFlix[Pixeldrain]",
-                            "GDFlix[Pixeldrain] [$fileSize]",
+                            "$source GDFlix[Pixeldrain]",
+                            "$source GDFlix[Pixeldrain] [$fileSize]",
                             anchor.attr("href"),
                         ) { this.quality = quality }
                     )
@@ -1852,12 +1853,12 @@ open class GDFlix : ExtractorApi() {
         try {
             val types = listOf("type=1", "type=2")
             types.map { type ->
-                val source = app.get("${newUrl.replace("file", "wfile")}?$type")
+                val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
                     .document.select("a.btn-success").attr("href")
 
-                if (source.isNotEmpty()) {
+                if (source?.isNotEmpty() == true) {
                     callback.invoke(
-                        newExtractorLink("$referer GDFlix[CF]", "GDFlix[CF] [$fileSize]", source) {
+                        newExtractorLink("$source GDFlix[CF]", "$source GDFlix[CF] [$fileSize]", sourceurl) {
                             this.quality = getIndexQuality(fileName)
                         }
                     )
@@ -2424,79 +2425,7 @@ class Hblinks : ExtractorApi() {
     }
 }
 
-class VidStack : ExtractorApi() {
-    override var name = "Vidstack"
-    override var mainUrl = "https://vidstack.io"
-    override val requiresReferer = true
 
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    )
-    {
-        val headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
-        val hash = url.substringAfterLast("#").substringAfter("/")
-        val baseurl = getBaseUrl(url)
-
-        val encoded = app.get("$baseurl/api/v1/video?id=$hash", headers = headers).text.trim()
-
-        val key = "kiemtienmua911ca"
-        val ivList = listOf("1234567890oiuytr", "0123456789abcdef")
-
-        val decryptedText = ivList.firstNotNullOfOrNull { iv ->
-            try {
-                AesHelper.decryptAES(encoded, key, iv)
-            } catch (e: Exception) {
-                null
-            }
-        } ?: throw Exception("Failed to decrypt with all IVs")
-
-        val m3u8 = Regex("\"source\":\"(.*?)\"").find(decryptedText)
-            ?.groupValues?.get(1)
-            ?.replace("\\/", "/") ?: ""
-
-        callback.invoke(
-            ExtractorLink(
-                this.name,
-                this.name,
-                m3u8,
-                url,
-                Qualities.P1080.value,
-                type = ExtractorLinkType.M3U8,
-            )
-        )
-    }
-
-    private fun getBaseUrl(url: String): String {
-        return try {
-            URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
-            Log.e("Vidstack", "getBaseUrl fallback: ${e.message}")
-            mainUrl
-        }
-    }
-}
-
-object AesHelper {
-    private const val TRANSFORMATION = "AES/CBC/PKCS5PADDING"
-
-    fun decryptAES(inputHex: String, key: String, iv: String): String {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        val secretKey = SecretKeySpec(key.toByteArray(Charsets.UTF_8), "AES")
-        val ivSpec = IvParameterSpec(iv.toByteArray(Charsets.UTF_8))
-
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-        val decryptedBytes = cipher.doFinal(inputHex.hexToByteArray())
-        return String(decryptedBytes, Charsets.UTF_8)
-    }
-
-    private fun String.hexToByteArray(): ByteArray {
-        check(length % 2 == 0) { "Hex string must have an even length" }
-        return chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-    }
-}
 
 internal class Molop : ExtractorApi() {
     override val name = "Molop"
@@ -2534,4 +2463,20 @@ internal class Molop : ExtractorApi() {
         )
     }
 }
+
+class showflixupnshare : VidStack() {
+    override var name: String = "VidStack"
+    override var mainUrl: String = "https://showflix.upns.one"
+}
+
+
+class Rubyvidhub : VidhideExtractor() {
+    override var mainUrl = "https://rubyvidhub.com"
+}
+
+class smoothpre : VidhideExtractor() {
+    override var mainUrl = "https://smoothpre.com"
+    override var requiresReferer = true
+}
+
 

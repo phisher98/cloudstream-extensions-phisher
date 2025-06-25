@@ -18,6 +18,7 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Streamlare
 import com.lagradost.cloudstream3.extractors.VidHidePro6
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.Vidmolyme
 import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.Voe
@@ -120,6 +121,10 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(DriveleechPro())
         registerExtractorAPI(DriveleechNet())
         registerExtractorAPI(Molop())
+        registerExtractorAPI(showflixupnshare())
+        registerExtractorAPI(Embedwish())
+        registerExtractorAPI(Rubyvidhub())
+        registerExtractorAPI(smoothpre())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = SettingsFragment(this, sharedPref)

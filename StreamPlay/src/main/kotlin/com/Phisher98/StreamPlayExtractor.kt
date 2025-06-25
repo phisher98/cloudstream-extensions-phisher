@@ -118,34 +118,46 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val multimoviesApi = getDomains()?.multiMovies ?: return
         val fixTitle = title.createSlug()
+
         val url = if (season == null) {
             "$multimoviesApi/movies/$fixTitle"
         } else {
             "$multimoviesApi/episodes/$fixTitle-${season}x${episode}"
         }
-        val req = app.get(url).document
-        req.select("ul#playeroptionsul li").map {
+
+        Log.d("Phisher", url)
+
+        val req = app.get(url, interceptor = CloudflareKiller()).document
+
+        if (req.body().text().contains("Just a moment", ignoreCase = true)) return
+
+        val playerOptions = req.select("ul#playeroptionsul li").map {
             Triple(
                 it.attr("data-post"),
                 it.attr("data-nume"),
                 it.attr("data-type")
             )
-        }.amap { (id, nume, type) ->
-            if (!nume.contains("trailer")) {
-                val source = app.post(
-                    url = "$multimoviesApi/wp-admin/admin-ajax.php",
-                    data = mapOf(
-                        "action" to "doo_player_ajax",
-                        "post" to id,
-                        "nume" to nume,
-                        "type" to type
-                    ),
-                    referer = url,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                ).parsed<ResponseHash>().embed_url
-                val link = source.substringAfter("\"").substringBefore("\"")
-                when {
-                    !link.contains("youtube") -> {
+        }
+
+        playerOptions.amap { (postId, nume, type) ->
+            if (!nume.contains("trailer", ignoreCase = true)) {
+                runCatching {
+                    val response = app.post(
+                        url = "$multimoviesApi/wp-admin/admin-ajax.php",
+                        data = mapOf(
+                            "action" to "doo_player_ajax",
+                            "post" to postId,
+                            "nume" to nume,
+                            "type" to type
+                        ),
+                        referer = url,
+                        headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                    ).parsed<ResponseHash>()
+
+                    val embedUrl = response.embed_url
+                    val link = embedUrl.substringAfter("\"").substringBefore("\"")
+
+                    if (!link.contains("youtube", ignoreCase = true)) {
                         loadCustomExtractor(
                             "Multimovies",
                             link,
@@ -153,9 +165,11 @@ object StreamPlayExtractor : StreamPlay() {
                             subtitleCallback,
                             callback
                         )
+                    } else {
+                        Log.d("Multimovies", "Skipped YouTube link")
                     }
-
-                    else -> Log.d("Error", "Not Found")
+                }.onFailure {
+                    Log.e("Multimovies", "Failed to extract player: ${it.localizedMessage}")
                 }
             }
         }
@@ -2980,37 +2994,47 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
-        api: String = "https://parse.showflix.shop"
+        api: String = "https://parse.showflix.sbs"
     ) {
         val where = if (season == null) "movieName" else "seriesName"
-        val classes = if (season == null) "movies" else "series"
+        val classes = if (season == null) "moviesv2" else "seriesv2"
         val body = """
-        {
-            "where": {
-                "$where": {
-                    "${'$'}regex": "$title",
-                    "${'$'}options": "i"
-                }
-            },
-            "order": "-updatedAt",
-            "_method": "GET",
-            "_ApplicationId": "SHOWFLIXAPPID",
-            "_JavaScriptKey": "SHOWFLIXMASTERKEY",
-            "_ClientVersion": "js3.4.1",
-            "_InstallationId": "58f0e9ca-f164-42e0-a683-a1450ccf0221"
-        }
-    """.trimIndent().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+    {
+        "where": {
+            "name": {
+                "${'$'}regex": "$title",
+                "${'$'}options": "i"
+            }
+        },
+        "order": "-createdAt",
+        "_method": "GET",
+        "_ApplicationId": "SHOWFLIXAPPID",
+        "_JavaScriptKey": "SHOWFLIXMASTERKEY",
+        "_ClientVersion": "js3.4.1",
+        "_InstallationId": "60f6b1a7-8860-4edf-b255-6bc465b6c704"
+    }
+""".trimIndent().toRequestBody("text/plain".toMediaTypeOrNull())
+
 
         val data =
             app.post("$api/parse/classes/$classes", requestBody = body).text
         val iframes = if (season == null) {
             val result = tryParseJson<ShowflixSearchMovies>(data)?.resultsMovies?.find {
-                it.movieName.equals("$title ($year)", true)
+                it.name.equals("$title ($year)", ignoreCase = true) ||
+                        it.name.equals(title, ignoreCase = true)
             }
+            val streamwish = result?.embedLinks?.get("streamwish")
+            val filelions = result?.embedLinks?.get("filelions")
+            val streamruby = result?.embedLinks?.get("streamruby")
+            val upnshare = result?.embedLinks?.get("upnshare")
+            val vihide = result?.embedLinks?.get("vihide")
+
             listOf(
-                "https://streamwish.to/e/${result?.streamwish}",
-                "https://filelions.to/v/${result?.filelions}.html",
-                "https://streamruby.com/${result?.streamruby}",
+                "https://embedwish.com/e/$streamwish",
+                "https://filelions.to/v/$filelions.html",
+                "https://rubyvidhub.com/embed-$streamruby.html",
+                "https://showflix.upns.one/#$upnshare",
+                "https://smoothpre.com/v/$vihide.html"
             )
         } else {
             val result = tryParseJson<ShowflixSearchSeries>(data)?.resultsSeries?.find {
@@ -3022,6 +3046,7 @@ object StreamPlayExtractor : StreamPlay() {
                 result?.streamruby?.get("Season $season")?.get(episode!!),
             )
         }
+
         iframes.amap { iframe ->
             loadSourceNameExtractor(
                 "Showflix ",
@@ -3422,7 +3447,8 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
         val figures = retry {
-            val allFigures = app.get(searchUrl, interceptor = wpRedisInterceptor).document.select("figure")
+            val allFigures =
+                app.get(searchUrl, interceptor = wpRedisInterceptor).document.select("figure")
             if (season == null) {
                 allFigures
             } else {
@@ -3470,48 +3496,53 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             } else {
                 val seasonPattern = "(?i)Season\\s*0?$season\\b|S0?$season\\b"
-                val episodePattern = "(?i)Ep0?$episode\\b|Ep\\s+$episode\\b"
+                val episodePattern =
+                    "(?i)Ep\\s?0?$episode\\b|Episode\\s+0?$episode\\b|V-Cloud|G-Direct|OXXFile"
 
-                val seasonElement = detailDoc.select("h5:matches($seasonPattern)").firstOrNull() ?: continue
-                val seasonHref = seasonElement.nextElementSibling()
-                    ?.selectFirst("a")
-                    ?.attr("href")
-                    ?.takeIf { it.isNotBlank() } ?: continue
+                val seasonElements = detailDoc.select("h5:matches($seasonPattern)")
+                if (seasonElements.isEmpty()) continue
 
-                val episodeDoc = retry { app.get(seasonHref).document } ?: continue
-                val episodeHeader = episodeDoc.selectFirst("h5:matches($episodePattern)")
+                val allLinks = mutableListOf<String>()
 
-                val links = episodeHeader?.let {
-                    generateSequence(it.nextElementSibling()) { next -> next.nextElementSibling() }
-                        .takeWhile { it.tagName() != "hr" }
-                        .filter { it.tagName() == "h5" }
-                        .mapNotNull { h5 ->
-                            h5.selectFirst("a")?.takeIf { a ->
-                                !a.text().contains("Zip", ignoreCase = true) && a.hasAttr("href")
-                            }?.attr("href")
-                        }
-                        .toList()
+                for (seasonElement in seasonElements) {
+                    val seasonHref = seasonElement.nextElementSibling()
+                        ?.selectFirst("a")
+                        ?.attr("href")
+                        ?.takeIf { it.isNotBlank() } ?: continue
+
+                    val episodeDoc = retry { app.get(seasonHref).document } ?: continue
+                    val episodeHeaders = episodeDoc.select("h5:matches($episodePattern)")
+
+                    for (header in episodeHeaders) {
+
+                        val siblingLinks =
+                            generateSequence(header.nextElementSibling()) { it.nextElementSibling() }
+                                .takeWhile { it.tagName() != "hr" }
+                                .filter { it.tagName() == "h5" }
+                                .mapNotNull { h5 ->
+                                    h5.selectFirst("a")?.takeIf { a ->
+                                        !a.text()
+                                            .contains("Zip", ignoreCase = true) && a.hasAttr("href")
+                                    }?.attr("href")
+                                }.toList()
+
+                        allLinks.addAll(siblingLinks)
+                    }
                 }
-
-                if (!links.isNullOrEmpty()) {
-                    for (serverUrl in links) {
+                if (allLinks.isNotEmpty()) {
+                    for (serverUrl in allLinks) {
                         processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                     }
                 } else {
-                    episodeDoc.selectFirst("h5 a:contains(HubCloud)")
-                        ?.attr("href")
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let { fallbackUrl ->
+                    detailDoc.select("h5 a:contains(HubCloud)")
+                        .mapNotNull { it.attr("href").takeIf { href -> href.isNotBlank() } }
+                        .forEach { fallbackUrl ->
                             processMoviesdriveUrl(fallbackUrl, subtitleCallback, callback)
                         }
                 }
             }
-            break
         }
     }
-
-
-
 
 
     private suspend fun processMoviesdriveUrl(
@@ -3525,14 +3556,9 @@ object StreamPlayExtractor : StreamPlay() {
             }
 
             serverUrl.contains("gdlink", ignoreCase = true) -> {
-                GDFlix().getUrl(
-                    serverUrl,
-                    referer = "MoviesDrive",
-                    subtitleCallback = subtitleCallback,
-                    callback = callback
+                GDFlix().getUrl(serverUrl, referer = "MoviesDrive",
                 )
             }
-
             else -> {
                 loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
             }

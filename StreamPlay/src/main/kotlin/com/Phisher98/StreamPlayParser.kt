@@ -844,27 +844,86 @@ data class EMovieTraks(
     @JsonProperty("label") val label: String? = null,
 )
 
-data class ShowflixResultsMovies(
-    @JsonProperty("movieName") val movieName: String? = null,
-    @JsonProperty("streamwish") val streamwish: String? = null,
-    @JsonProperty("filelions") val filelions: String? = null,
-    @JsonProperty("streamruby") val streamruby: String? = null,
-)
-
-data class ShowflixResultsSeries(
-    @JsonProperty("seriesName") val seriesName: String? = null,
-    @JsonProperty("streamwish") val streamwish: HashMap<String, List<String>>? = hashMapOf(),
-    @JsonProperty("filelions") val filelions: HashMap<String, List<String>>? = hashMapOf(),
-    @JsonProperty("streamruby") val streamruby: HashMap<String, List<String>>? = hashMapOf(),
-)
-
 data class ShowflixSearchMovies(
-    @JsonProperty("results") val resultsMovies: ArrayList<ShowflixResultsMovies>? = arrayListOf(),
+    @JsonProperty("results")
+    val resultsMovies: ArrayList<ShowflixResultsMovies>? = arrayListOf()
+)
+
+data class ShowflixResultsMovies(
+    @JsonProperty("objectId")
+    val objectId: String? = null,
+    @JsonProperty("name")
+    val name: String? = null,
+    @JsonProperty("releaseYear")
+    val releaseYear: Int? = null,
+    @JsonProperty("tmdbId")
+    val tmdbId: Int? = null,
+    @JsonProperty("embedLinks")
+    val embedLinks: Map<String, String>? = null,
+    @JsonProperty("languages")
+    val languages: List<String>? = null,
+    @JsonProperty("genres")
+    val genres: List<String>? = null,
+    @JsonProperty("backdropURL")
+    val backdropURL: String? = null,
+    @JsonProperty("posterURL")
+    val posterURL: String? = null,
+    @JsonProperty("hdLink")
+    val hdLink: String? = null,
+    @JsonProperty("hubCloudLink")
+    val hubCloudLink: String? = null,
+    @JsonProperty("storyline")
+    val storyline: String? = null,
+    @JsonProperty("rating")
+    val rating: String? = null,
+    @JsonProperty("createdAt")
+    val createdAt: String? = null,
+    @JsonProperty("updatedAt")
+    val updatedAt: String? = null
 )
 
 data class ShowflixSearchSeries(
-    @JsonProperty("results") val resultsSeries: ArrayList<ShowflixResultsSeries>? = arrayListOf(),
+    @JsonProperty("results")
+    val resultsSeries: ArrayList<ShowflixResultsSeries>? = arrayListOf()
 )
+
+data class ShowflixResultsSeries(
+    @JsonProperty("objectId")
+    val objectId: String? = null,
+    @JsonProperty("seriesName")
+    val seriesName: String? = null,
+    @JsonProperty("releaseYear")
+    val releaseYear: Int? = null,
+    @JsonProperty("tmdbId")
+    val tmdbId: Int? = null,
+    @JsonProperty("streamwish")
+    val streamwish: Map<String, List<String>>? = null,
+    @JsonProperty("filelions")
+    val filelions: Map<String, List<String>>? = null,
+    @JsonProperty("streamruby")
+    val streamruby: Map<String, List<String>>? = null,
+    @JsonProperty("languages")
+    val languages: List<String>? = null,
+    @JsonProperty("genres")
+    val genres: List<String>? = null,
+    @JsonProperty("backdropURL")
+    val backdropURL: String? = null,
+    @JsonProperty("posterURL")
+    val posterURL: String? = null,
+    @JsonProperty("hdLink")
+    val hdLink: String? = null,
+    @JsonProperty("hubCloudLink")
+    val hubCloudLink: String? = null,
+    @JsonProperty("storyline")
+    val storyline: String? = null,
+    @JsonProperty("rating")
+    val rating: String? = null,
+    @JsonProperty("createdAt")
+    val createdAt: String? = null,
+    @JsonProperty("updatedAt")
+    val updatedAt: String? = null
+)
+
 
 data class SFMoviesSeriess(
     @JsonProperty("title") var title: String? = null,
