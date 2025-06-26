@@ -20,7 +20,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class ShowFlixProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://showflix.site"
+    override var mainUrl = "https://showflix.store"
     override var name = "ShowFlix"
     override val hasMainPage = true
     override var lang = "hi"
