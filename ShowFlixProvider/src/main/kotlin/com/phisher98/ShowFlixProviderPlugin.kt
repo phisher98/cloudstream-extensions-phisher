@@ -13,5 +13,9 @@ class ShowFlixProviderPlugin: BasePlugin() {
         registerExtractorAPI(StreamWishExtractor())
         registerExtractorAPI(VidHidePro3())
         registerExtractorAPI(StreamRuby())
+        registerExtractorAPI(Showflixupnshare())
+        registerExtractorAPI(Rubyvidhub())
+        registerExtractorAPI(Smoothpre())
+        registerExtractorAPI(Showflixarchives())
     }
 }

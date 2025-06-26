@@ -37,10 +37,8 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import okhttp3.FormBody
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1615,7 +1613,7 @@ class OwlExtractor : ExtractorApi() {
     data class VideoData(val resolution: String, val url: String)
 }
 
-
+/*
 internal class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.cc"
@@ -1681,6 +1679,7 @@ internal class MegaUp : ExtractorApi() {
     }
 }
 
+*/
 
 open class GDFlix : ExtractorApi() {
     override val name = "GDFlix"
@@ -1731,9 +1730,9 @@ open class GDFlix : ExtractorApi() {
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
                                 app.get(serverUrl).document
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
-                                        val source = sourceAnchor.attr("href")
+                                        val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
-                                            newExtractorLink("$source GDFlix[Index]", "$source GDFlix[Index] [$fileSize]", source) {
+                                            newExtractorLink("$source GDFlix[Index]", "$source GDFlix[Index] [$fileSize]", sourceurl) {
                                                 this.quality = getIndexQuality(fileName)
                                             }
                                         )
