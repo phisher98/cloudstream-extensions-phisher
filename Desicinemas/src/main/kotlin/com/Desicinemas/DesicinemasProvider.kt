@@ -64,7 +64,7 @@ open class DesicinemasProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data, referer = mainUrl).document.select(".MovieList .OptionBx").amap {
+        app.get("${proxy}?url=${data}", referer = mainUrl).document.select(".MovieList .OptionBx").amap {
             val name = it.select("p.AAIco-dns").text()
             val link = it.select("a").attr("href")
             val headers = mapOf(
