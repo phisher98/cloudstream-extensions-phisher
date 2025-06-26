@@ -129,7 +129,7 @@ object SuperStreamExtractor : SuperStream() {
                     if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
                         ExtractorLink(
-                            "⌜ SuperStream ⌟ ${source.size}",
+                            "⌜ SuperStream ⌟",
                             "⌜ SuperStream ⌟ [Server ${index + 1}] ${source.size}",
                             source.file?.replace("\\/", "/") ?: return@org,
                             "",
