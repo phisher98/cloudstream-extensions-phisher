@@ -1224,7 +1224,7 @@ object StreamPlayExtractor : StreamPlay() {
         val uhdmoviesAPI = getDomains()?.uhdmovies ?: return
         val searchTitle = title?.replace("-", " ")?.replace(":", " ") ?: return
 
-        val searchUrl = "$uhdmoviesAPI/search/$searchTitle $year"
+        val searchUrl = "$uhdmoviesAPI/search/$searchTitle"
 
         val url = try {
             app.get(searchUrl).document
