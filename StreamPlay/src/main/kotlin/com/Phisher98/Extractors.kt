@@ -1,5 +1,3 @@
-@file:Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-
 package com.phisher98
 
 import android.annotation.SuppressLint
@@ -39,6 +37,8 @@ import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1613,7 +1613,7 @@ class OwlExtractor : ExtractorApi() {
     data class VideoData(val resolution: String, val url: String)
 }
 
-/*
+
 internal class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.cc"
@@ -1679,7 +1679,6 @@ internal class MegaUp : ExtractorApi() {
     }
 }
 
-*/
 
 open class GDFlix : ExtractorApi() {
     override val name = "GDFlix"

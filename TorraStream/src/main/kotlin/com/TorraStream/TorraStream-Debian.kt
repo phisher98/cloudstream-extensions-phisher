@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -67,7 +68,7 @@ class TorraStreamDebian() : TraktProvider() {
         }
         val api = if (mainUrl.contains("=")) "https://torrentio.strem.fun/$encodedUrl" else null
         if (api!=null) {
-            argamap(
+            runAllAsync(
                 {
                     invokeTorrentioDebian(
                         api,

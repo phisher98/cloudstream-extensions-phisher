@@ -15,20 +15,16 @@ class TorraStream() : TraktProvider() {
 
     companion object
     {
-        const val TorrentioAPI="https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,ilcorsaronero,magnetdl%7Csort=seeders"
-        const val TorrentgalaxyAPI="https://torrentgalaxy.to"
-        const val TorrentmovieAPI="https://torrentmovie.net"
-        const val OnethreethreesevenxAPI="https://1337x.to"
-        const val TorBoxAPI="https://stremio.torbox.app"
-        const val BitsearchApi="https://bitsearch.to"
-        const val MediafusionApi="https://mediafusion.elfhosted.com"
+        const val TorrentioAPI="https://torrentio.strem.fun/sort=seeders%7Climit=60"
+        const val OnethreethreesevenxAPI="https://proxy.phisher2.workers.dev/?url=https://1337x.to"
+        const val MediafusionApi="https://mediafusion.elfhosted.com/D-_ru4-xVDOkpYNgdQZ-gA6whxWtMNeLLsnAyhb82mkks4eJf4QTlrAksSeBnwFAbIGWQLaokCGFxxsHupxSVxZO8xhhB2UYnyc5nnLeDnIqiLajtkmaGJMB_ZHqMqSYIU2wcGhrw0s4hlXeRAfnnbDywHCW8DLF_ZZfOXYUGPzWS-91cvu7kA2xPs0lJtcqZO"
         const val ThePirateBayApi="https://thepiratebay-plus.strem.fun"
         const val PeerflixApi="https://peerflix.mov"
         const val CometAPI = "https://comet.elfhosted.com"
         const val SubtitlesAPI="https://opensubtitles-v3.strem.io"
         const val AnimetoshoAPI= "https://feed.animetosho.org"
         const val TorrentioAnimeAPI="https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
-        const val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
+        const val TRACKER_LIST_URL="https://newtrackon.com/api/all"
 
     }
 
@@ -36,25 +32,17 @@ class TorraStream() : TraktProvider() {
 
     override val mainPage =
         mainPageOf(
-            "$traktApiUrl/movies/trending?extended=cloud9,full&limit=25" to
-                    "Trending Movies",
+            "$traktApiUrl/movies/trending?extended=cloud9,full&limit=25" to "Trending Movies",
             "$traktApiUrl/movies/popular?extended=cloud9,full&limit=25" to "Popular Movies",
             "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25" to "Trending Shows",
             "$traktApiUrl/shows/popular?extended=cloud9,full&limit=25" to "Popular Shows",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=53,1465" to
-                    "Netflix",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=47,2385" to
-                    "Amazon Prime Video",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=256" to
-                    "Apple TV+",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=41,2018,2566,2567,2597" to
-                    "Disney+",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=87" to
-                    "Hulu",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=1623" to
-                    "Paramount+",
-            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=550,3027" to
-                    "Peacock",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=53,1465" to "Netflix",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=47,2385" to "Amazon Prime Video",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=256" to "Apple TV+",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=41,2018,2566,2567,2597" to "Disney+",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=87" to "Hulu",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=1623" to "Paramount+",
+            "$traktApiUrl/shows/trending?extended=cloud9,full&limit=25&network_ids=550,3027" to "Peacock",
         )
 
     @Suppress("NAME_SHADOWING")
@@ -72,7 +60,7 @@ class TorraStream() : TraktProvider() {
         val year=data.year
         val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
-        argamap(
+        runAllAsync(
             {
                 invokeTorrentio(
                     TorrentioAPI,
@@ -82,20 +70,7 @@ class TorraStream() : TraktProvider() {
                     callback
             )
             },
-            {
-                invokeTorrentgalaxy(
-                    TorrentgalaxyAPI,
-                    id,
-                    callback
-                )
-            },
-            {
-                invokeTorrentmovie(
-                    TorrentmovieAPI,
-                    title,
-                    callback
-                )
-            },
+
             {
                 invoke1337x(
                     OnethreethreesevenxAPI,
@@ -104,79 +79,62 @@ class TorraStream() : TraktProvider() {
                     callback
                 )
             },
-            {
-                invokeTorbox(
-                    TorBoxAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
 
-            },
-            {
-                invokeBitsearch(
-                    BitsearchApi,
-                    title,
-                    season,
-                    episode,
-                    callback
-                )
+           {
+               invokeMediaFusion(
+                   MediafusionApi,
+                   id,
+                   season,
+                   episode,
+                   callback
+               )
 
-            },
-            {
-                invokeMediaFusion(
-                    MediafusionApi,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
+           },
+           {
+               invokeThepiratebay(
+                   ThePirateBayApi,
+                   id,
+                   season,
+                   episode,
+                   callback
+               )
 
-            },
-            {
-                invokeThepiratebay(
-                    ThePirateBayApi,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
+           },
 
-            },
-            {
-                invokePeerFlix(
-                    PeerflixApi,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
-            },
-            {
-                invokeComet(
-                    CometAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
-            },
-            {
-                if (data.isAnime) invokeAnimetosho(
-                    anidbEid,
-                    callback
-                )
-            },
-            {
-                if (data.isAnime) invokeTorrentioAnime(
-                    TorrentioAnimeAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
-            },
+           {
+               invokePeerFlix(
+                   PeerflixApi,
+                   id,
+                   season,
+                   episode,
+                   callback
+               )
+           },
+           {
+               invokeComet(
+                   CometAPI,
+                   id,
+                   season,
+                   episode,
+                   callback
+               )
+           },
+           {
+               if (data.isAnime) invokeAnimetosho(
+                   anidbEid,
+                   callback
+               )
+           },
+           {
+               if (data.isAnime) invokeTorrentioAnime(
+                   TorrentioAnimeAPI,
+                   id,
+                   season,
+                   episode,
+                   callback
+               )
+           },
+
 
             //Subtitles
             {

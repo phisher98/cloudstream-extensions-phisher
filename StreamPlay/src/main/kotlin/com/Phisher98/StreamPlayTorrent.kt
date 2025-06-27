@@ -60,20 +60,7 @@ override suspend fun loadLinks(
                 callback
             )
         },
-        {
-            invokeTorrentgalaxy(
-                TorrentgalaxyAPI,
-                id,
-                callback
-            )
-        },
-        {
-            invokeTorrentmovie(
-                TorrentmovieAPI,
-                title,
-                callback
-            )
-        },
+
         {
             invoke1337x(
                 OnethreethreesevenxAPI,
@@ -82,26 +69,7 @@ override suspend fun loadLinks(
                 callback
             )
         },
-        {
-            invokeTorbox(
-                TorBoxAPI,
-                id,
-                season,
-                episode,
-                callback
-            )
 
-        },
-        {
-            invokeBitsearch(
-                BitsearchApi,
-                title,
-                season,
-                episode,
-                callback
-            )
-
-        },
         {
             invokeMediaFusion(
                 MediafusionApi,
@@ -122,6 +90,7 @@ override suspend fun loadLinks(
             )
 
         },
+
         {
             invokePeerFlix(
                 PeerflixApi,
