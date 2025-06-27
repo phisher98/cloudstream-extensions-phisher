@@ -56,7 +56,6 @@ import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 
 
@@ -271,36 +270,45 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val fixTitle = title.createSlug()
-        val url = if (season == null) {
+        val targetUrl = if (season == null) {
             "$azseriesAPI/embed/$fixTitle"
         } else {
             "$azseriesAPI/episodes/$fixTitle-season-$season-episode-$episode"
         }
-        val res = app.get(url, referer = azseriesAPI)
+
+        val res = app.get(targetUrl, referer = azseriesAPI)
         val document = res.document
-        val id = document.selectFirst("#show_player_lazy")?.attr("movie-id").toString()
-        val serverdoc = app.post(
-            url = "$azseriesAPI/wp-admin/admin-ajax.php", data = mapOf(
-                "action" to "lazy_player",
-                "movieID" to id
-            ), headers = mapOf("X-Requested-With" to "XMLHttpRequest"), referer = azseriesAPI
+
+        val movieId = document.selectFirst("#show_player_lazy")?.attr("movie-id") ?: return
+
+        val serverDoc = app.post(
+            url = "$azseriesAPI/wp-admin/admin-ajax.php",
+            data = mapOf("action" to "lazy_player", "movieID" to movieId),
+            headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
+            referer = azseriesAPI
         ).document
-        serverdoc.select("div#playeroptions > ul > li").forEach {
-            val name=it.text()
-            it.attr("data-vs").let { href ->
-                val response = app.get(
-                    href,
-                    referer = azseriesAPI,
-                    allowRedirects = false
-                ).headers["Location"] ?: ""
-                when (name) {
-                    "Filemoon" -> FileMoonSx().getUrl(response, azseriesAPI, subtitleCallback, callback)
-                    "Streamhide" -> StreamWishExtractor().getUrl(response, azseriesAPI, subtitleCallback, callback)
-                    else -> loadExtractor(response, subtitleCallback, callback)
-                }
+
+        val servers = serverDoc.select("div#playeroptions > ul > li")
+        if (servers.isEmpty()) return
+
+        servers.forEach { server ->
+            val name = server.text().trim()
+            val serverUrl = server.attr("data-vs").takeIf { it.isNotBlank() } ?: return@forEach
+
+            val redirectUrl = app.get(
+                serverUrl,
+                referer = azseriesAPI,
+                allowRedirects = false
+            ).headers["Location"] ?: return@forEach
+
+            when (name) {
+                "Filemoon" -> FileMoonSx().getUrl(redirectUrl, azseriesAPI, subtitleCallback, callback)
+                "Streamhide" -> StreamWishExtractor().getUrl(redirectUrl, azseriesAPI, subtitleCallback, callback)
+                else -> loadExtractor(redirectUrl, subtitleCallback, callback)
             }
         }
     }
+
 
 
     suspend fun invokeMoviehubAPI(
@@ -633,7 +641,7 @@ object StreamPlayExtractor : StreamPlay() {
         val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
-        var type: String
+        val type: String
         if (episode == null) {
             type = "Movie"
         } else {
@@ -1345,84 +1353,97 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val backendAPI = getDomains()?.xprime ?: return
-        val serversUrl = "$backendAPI/servers"
-        val servers = app.get(serversUrl).parsedSafe<XprimeServers>() ?: return
+        val servers = app.get("$backendAPI/servers").parsedSafe<XprimeServers>() ?: return
+
+        val objectMapper = ObjectMapper()
+            .registerModule(KotlinModule.Builder().build())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
         servers.servers.forEach { server ->
             if (server.status != "ok") return@forEach
 
-            val finalUrl = if (server.name == "primebox") {
-                if (season == null) {
-                    "$backendAPI/primebox?name=$title&fallback_year=$year"
-                } else {
-                    "$backendAPI/primebox?name=$title&fallback_year=$year&season=$season&episode=$episode"
-                }
-            } else {
-                if (season == null) {
-                    "$backendAPI/${server.name}?name=$title&year=$year&id=$id&imdb=$id"
-                } else {
-                    "$backendAPI/${server.name}?name=$title&year=$year&id=$id&imdb=$id&season=$season&episode=$episode"
+            val baseUrl = "$backendAPI/${server.name}"
+            val queryParams = buildString {
+                append("?name=${title.orEmpty()}")
+                when (server.name) {
+                    "primebox" -> {
+                        if (year != null) append("&fallback_year=$year")
+                        if (season != null && episode != null) append("&season=$season&episode=$episode")
+                    }
+                    else -> {
+                        if (year != null) append("&year=$year")
+                        if (!id.isNullOrBlank()) append("&id=$id&imdb=$id")
+                        if (season != null && episode != null) append("&season=$season&episode=$episode")
+                    }
                 }
             }
 
+            val finalUrl = baseUrl + queryParams
+
             try {
-                val document = app.get(finalUrl)
-                val objectMapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
-                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                val response = app.get(finalUrl)
+                val json = response.text
+                val serverLabel = "Xprime ${server.name.replaceFirstChar { it.uppercaseChar() }}"
 
                 if (server.name == "primebox") {
-                    val streamText = document.text
-                    val stream: XprimeStream = objectMapper.readValue(streamText)
+                    val stream = objectMapper.readValue<XprimeStream>(json)
+                    val streamsJson = objectMapper.readTree(json).get("streams")
 
                     stream.qualities.forEach { quality ->
-                        val source = objectMapper.readTree(streamText).get("streams").get(quality)
-                            .textValue()
-                        callback.invoke(
-                            newExtractorLink(
-                                source = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
-                                name = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
-                                url = source,
-                                type = ExtractorLinkType.VIDEO
-                            ) {
-                                this.quality = getQualityFromName(quality)
-                                this.headers = mapOf("Origin" to Xprime)
-                                this.referer = Xprime
-                            }
-                        )
-                    }
-
-                    if (stream.hasSubtitles) {
-                        stream.subtitles.forEach {
-                            subtitleCallback.invoke(
-                                SubtitleFile(
-                                    lang = it.label ?: "Unknown",
-                                    url = it.file ?: ""
-                                )
+                        val url = streamsJson?.get(quality)?.textValue()
+                        if (!url.isNullOrBlank()) {
+                            callback(
+                                newExtractorLink(
+                                    source = serverLabel,
+                                    name = serverLabel,
+                                    url = url,
+                                    type = ExtractorLinkType.VIDEO
+                                ) {
+                                    this.quality = getQualityFromName(quality)
+                                    this.headers = mapOf("Origin" to Xprime)
+                                    this.referer = Xprime
+                                }
                             )
                         }
                     }
 
-                } else {
-                    val source = objectMapper.readTree(document.text).get("url").textValue()
-                    callback.invoke(
-                        newExtractorLink(
-                            source = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
-                            name = "Xprime " + server.name.replaceFirstChar { it.uppercase() },
-                            url = source,
-                            type = ExtractorLinkType.M3U8
-                        ) {
-                            this.headers = mapOf("Origin" to Xprime)
-                            this.quality = Qualities.Unknown.value
-                            this.referer = Xprime
+                    if (stream.hasSubtitles) {
+                        stream.subtitles.forEach { subtitle ->
+                            val subUrl = subtitle.file.orEmpty()
+                            if (subUrl.isNotBlank()) {
+                                subtitleCallback(
+                                    SubtitleFile(
+                                        lang = subtitle.label ?: "Unknown",
+                                        url = subUrl
+                                    )
+                                )
+                            }
                         }
-                    )
+                    }
+                } else {
+                    val url = objectMapper.readTree(json).get("url")?.textValue().orEmpty()
+                    if (url.isNotBlank()) {
+                        callback(
+                            newExtractorLink(
+                                source = serverLabel,
+                                name = serverLabel,
+                                url = url,
+                                type = ExtractorLinkType.M3U8
+                            ) {
+                                this.headers = mapOf("Origin" to Xprime)
+                                this.referer = Xprime
+                                this.quality = Qualities.Unknown.value
+                            }
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("XPrimeAPI", "Error on server ${server.name} $e")
             }
         }
-
-
     }
+
+
 
 
     suspend fun invokevidzeeUltra(
@@ -1634,8 +1655,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    @Suppress("LABEL_NAME_CLASH")
-    suspend fun invokeModflix(
+    private suspend fun invokeModflix(
         imdbId: String? = null,
         year: Int? = null,
         season: Int? = null,
@@ -1795,6 +1815,9 @@ object StreamPlayExtractor : StreamPlay() {
 
         val searchDoc = retry { app.get(url, interceptor = cfInterceptor).document } ?: return
         val articles = searchDoc.select("article h2")
+        if (articles.isEmpty()) return
+
+        var foundLinks = false
 
         for (article in articles) {
             val hrefpattern = article.selectFirst("a")?.attr("href").orEmpty()
@@ -1816,12 +1839,16 @@ object StreamPlayExtractor : StreamPlay() {
                     .filterNot { btn -> excludedButtonTexts.any { btn.text().contains(it, ignoreCase = true) } }
                     .mapNotNull { it.closest("a")?.attr("href")?.takeIf { link -> link.isNotBlank() } }
 
+                if (btnLinks.isEmpty()) continue
+
                 for (detailUrl in btnLinks) {
                     val detailDoc = retry { app.get(detailUrl).document } ?: continue
 
                     val streamingLinks = detailDoc.select("button.btn.btn-sm.btn-outline")
                         .filterNot { btn -> excludedButtonTexts.any { btn.text().contains(it, ignoreCase = true) } }
                         .mapNotNull { it.closest("a")?.attr("href")?.takeIf { link -> link.isNotBlank() } }
+
+                    if (streamingLinks.isEmpty()) continue
 
                     for (streamingUrl in streamingLinks) {
                         loadSourceNameExtractor(
@@ -1831,6 +1858,7 @@ object StreamPlayExtractor : StreamPlay() {
                             subtitleCallback,
                             callback
                         )
+                        foundLinks = true
                     }
                 }
 
@@ -1841,11 +1869,15 @@ object StreamPlayExtractor : StreamPlay() {
 
                 val seasonElements = doc.select("h4:matches($seasonPattern), h3:matches($seasonPattern)")
 
+                if (seasonElements.isEmpty()) continue
+
                 for (seasonElement in seasonElements) {
                     val episodeLinks = seasonElement.nextElementSibling()
                         ?.select("a:matches($episodePattern)")
                         ?.mapNotNull { it.attr("href").takeIf { link -> link.isNotBlank() } }
                         ?: continue
+
+                    if (episodeLinks.isEmpty()) continue
 
                     for (episodeUrl in episodeLinks) {
                         val episodeDoc = retry { app.get(episodeUrl).document } ?: continue
@@ -1855,22 +1887,29 @@ object StreamPlayExtractor : StreamPlay() {
                             ?.select("a:matches((?i)(V-Cloud|G-Direct|OxxFile))")
                             ?.mapNotNull { it.attr("href").takeIf { link -> link.isNotBlank() } }
 
-                        if (!matchBlock.isNullOrEmpty()) {
-                            for (streamingUrl in matchBlock) {
-                                loadSourceNameExtractor(
-                                    "VegaMovies",
-                                    streamingUrl,
-                                    "$vegaMoviesAPI/",
-                                    subtitleCallback,
-                                    callback
-                                )
-                            }
+                        if (matchBlock.isNullOrEmpty()) continue
+
+                        for (streamingUrl in matchBlock) {
+                            loadSourceNameExtractor(
+                                "VegaMovies",
+                                streamingUrl,
+                                "$vegaMoviesAPI/",
+                                subtitleCallback,
+                                callback
+                            )
+                            foundLinks = true
                         }
                     }
                 }
             }
         }
+
+        if (!foundLinks) {
+            Log.d("VegaMovies", "No valid streaming links found for: $title")
+            return
+        }
     }
+
 
 
 
@@ -4256,7 +4295,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    @SuppressLint("NewApi")
     suspend fun invoke4khdhub(
         title: String? = null,
         year: Int? = null,
@@ -4285,7 +4323,9 @@ object StreamPlayExtractor : StreamPlay() {
                         titleText.contains(" $normalizedTitle ") ||
                         titleText.contains("$normalizedTitle:")
 
-                val yearMatch = year?.let { metaText.contains(it.toString()) } ?: true
+                val yearMatch = if (season == null) {
+                    year?.let { metaText.contains(it.toString()) } ?: true
+                } else true
 
                 titleMatch && yearMatch
             }?.attr("href") ?: return
@@ -4297,17 +4337,19 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             val seasonText = "S${season.toString().padStart(2, '0')}"
             val episodeText = "E${episode.toString().padStart(2, '0')}"
-
             doc.select("div.episode-download-item:has(div.episode-file-title:contains(${seasonText}${episodeText}))")
                 .flatMap { it.select("div.episode-links > a") }
         }
 
-        links.forEach { element ->
-            val rawHref = element.attr("href").ifBlank { return@forEach }
-            val link = runCatching { hdhubgetRedirectLinks(rawHref) }.getOrNull() ?: return@forEach
+        for (element in links) {
+            val rawHref = element.attr("href")
+            if (rawHref.isBlank()) continue
+
+            val link = runCatching { hdhubgetRedirectLinks(rawHref) }.getOrNull() ?: continue
             dispatchToExtractor(link, "4Khdhub", subtitleCallback, callback)
         }
     }
+
 
     suspend fun invokeElevenmovies(
         id: Int? = null,

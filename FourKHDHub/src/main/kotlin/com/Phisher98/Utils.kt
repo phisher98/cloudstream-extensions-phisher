@@ -1,12 +1,11 @@
 package com.Phisher98
 
-import android.annotation.SuppressLint
+import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import org.json.JSONObject
-import java.util.Base64
 
 suspend fun getRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
@@ -35,9 +34,8 @@ suspend fun getRedirectLinks(url: String): String {
 }
 
 
-@SuppressLint("NewApi")
 fun encode(value: String): String {
-    return Base64.getEncoder().encodeToString(value.toByteArray())
+    return String(Base64.decode(value, Base64.DEFAULT))
 }
 
 fun pen(value: String): String {

@@ -2906,7 +2906,6 @@ suspend fun elevenMoviesTokenV2(rawData: String): String {
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 suspend fun hdhubgetRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
     val regex = "s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'".toRegex()
@@ -2934,10 +2933,10 @@ suspend fun hdhubgetRedirectLinks(url: String): String {
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun hdhubencode(value: String): String {
-    return Base64.getEncoder().encodeToString(value.toByteArray())
+fun hdhubencode(encoded: String): String {
+    return String(android.util.Base64.decode(encoded, android.util.Base64.DEFAULT))
 }
+
 
 fun hdhubpen(value: String): String {
     return value.map {

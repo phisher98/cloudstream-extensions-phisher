@@ -167,42 +167,44 @@ class FourKHDHub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = Regex("""https?://[^",\]\[]+""").findAll(data).map { it.value }.toList()
+        val links = Regex("""https?://[^\s'",\]\[]+""").findAll(data).map { it.value }
+
+        val extractors = mapOf(
+            "hubdrive" to Pair("HUB Drive", Hubdrive()),
+            "hubcloud" to Pair("Hub Cloud", HubCloud())
+        )
+
         for (link in links) {
             try {
-                val lower = link.lowercase()
                 val resolvedLink = try {
-                    if ("id=" in lower) {
-                        getRedirectLinks(link)
-                    } else link
+                    if ("id=" in link.lowercase()) getRedirectLinks(link) else link
                 } catch (e: Exception) {
-                    Log.e("Phisher", "Redirect failed for $link")
+                    Log.e("Phisher", "Redirect failed for $link $e")
                     continue
                 }
 
-                when {
-                    "hubdrive" in resolvedLink.lowercase() -> {
+                val resolvedLower = resolvedLink.lowercase()
+                var matched = false
+
+                for ((key, value) in extractors) {
+                    if (key in resolvedLower) {
+                        matched = true
                         try {
-                            Hubdrive().getUrl(resolvedLink, "HUB Drive", subtitleCallback, callback)
+                            value.second.getUrl(resolvedLink, value.first, subtitleCallback, callback)
                         } catch (e: Exception) {
-                            Log.e("Hubdrive", "Failed: $resolvedLink")
+                            Log.e(key, "Failed: $resolvedLink $e")
                         }
-                    }
-                    "hubcloud" in resolvedLink.lowercase() -> {
-                        try {
-                            HubCloud().getUrl(resolvedLink, "Hub Cloud", subtitleCallback, callback)
-                        } catch (e: Exception) {
-                            Log.e("HubCloud", "Failed: $resolvedLink")
-                        }
-                    }
-                    else -> {
-                        Log.w("Extractor", "Unknown host: $resolvedLink")
                     }
                 }
+
+                if (!matched) {
+                    Log.w("Extractor", "Unknown host: $resolvedLink")
+                }
             } catch (e: Exception) {
-                Log.e("Extractor", "Unexpected error with link: $link")
+                Log.e("Extractor", "Unexpected error with link: $link $e")
             }
         }
+
         return true
     }
 
