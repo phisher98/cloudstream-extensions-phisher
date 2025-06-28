@@ -522,6 +522,7 @@ object StreamPlayExtractor : StreamPlay() {
         val zoro = malsync?.zoro
         val zoroIds = zoro?.keys?.toList().orEmpty()
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
+        val anititle = title
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
@@ -543,7 +544,7 @@ object StreamPlayExtractor : StreamPlay() {
             },
             { kaasSlug?.let { invokeKickAssAnime(it, episode, subtitleCallback, callback) } },
             { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
-            { invokeAnichi(zorotitle, tmdbYear, episode, subtitleCallback, callback) },
+            { invokeAnichi(zorotitle,anititle, tmdbYear, episode, subtitleCallback, callback) },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeTokyoInsider(jptitle, title, episode, callback) },
             { invokeAnizone(jptitle, episode, callback) },
@@ -572,7 +573,6 @@ object StreamPlayExtractor : StreamPlay() {
 
         var dubUrl: String? = null
         var rawUrl: String? = null
-
         for (i in parts.indices) {
             when (parts[i]) {
                 "dub" -> {
@@ -588,6 +588,18 @@ object StreamPlayExtractor : StreamPlay() {
                 }
 
                 "raw" -> {
+                    val possibleUrl = parts.getOrNull(i + 1)
+                    if (possibleUrl != null) {
+                        if (
+                            possibleUrl.endsWith(".m3u8") &&
+                            !possibleUrl.contains(".ico")
+                        ) {
+                            rawUrl = possibleUrl
+                        }
+                    }
+                }
+
+                "sub" -> {
                     val possibleUrl = parts.getOrNull(i + 1)
                     if (possibleUrl != null) {
                         if (
@@ -633,6 +645,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeAnichi(
         name: String?,
+        engtitle: String?,
         year: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -641,113 +654,101 @@ object StreamPlayExtractor : StreamPlay() {
         val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
-        val type: String
-        if (episode == null) {
-            type = "Movie"
-        } else {
-            type = "TV"
-        }
+        val type = if (episode == null) "Movie" else "TV"
 
-        val query =
-            """${BuildConfig.ANICHI_API}?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
-        val response =
-            app.get(query, referer = privatereferer).parsedSafe<AnichiRoot>()?.data?.shows?.edges
-        if (response != null) {
-            val normalizedQuery = name?.trim()?.lowercase() ?: return
+        val normalizedName = name?.trim()?.lowercase()
+        val normalizedEngTitle = engtitle?.trim()?.lowercase()
 
-            val matched = response.find { item ->
-                item.name.trim().lowercase() == normalizedQuery ||
-                        item.englishName.trim().lowercase() == normalizedQuery
-            } ?: response.find { item ->
-                val allTitles = listOfNotNull(item.name, item.englishName).map { it.lowercase() }
-                allTitles.any { it.contains(normalizedQuery) }
+        val query = """${BuildConfig.ANICHI_API}?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+        val response = app.get(query, referer = privatereferer)
+            .parsedSafe<AnichiRoot>()
+            ?.data?.shows?.edges ?: return
+
+        val matched = response.find { item ->
+            val itemName = item.name.trim().lowercase()
+            val itemEnglishName = item.englishName.trim().lowercase()
+            (normalizedName != null && (itemName == normalizedName || itemEnglishName == normalizedName)) ||
+                    (normalizedEngTitle != null && (itemName == normalizedEngTitle || itemEnglishName == normalizedEngTitle))
+        } ?: response.find { item ->
+            val allTitles = listOfNotNull(item.name, item.englishName).map { it.trim().lowercase() }
+            allTitles.any {
+                (normalizedName != null && it.contains(normalizedName)) ||
+                        (normalizedEngTitle != null && it.contains(normalizedEngTitle))
             }
+        } ?: return
 
-            val id = matched?.id ?: return
+        val id = matched.id
+        val langTypes = listOf("sub", "dub")
 
-            val langType = listOf("sub", "dub")
-            for (i in langType) {
-                val epData =
-                    """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$i","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
-                val eplinks = app.get(epData, referer = privatereferer)
-                    .parsedSafe<AnichiEP>()?.data?.episode?.sourceUrls
-                eplinks?.amap { source ->
-                    safeApiCall {
-                        val headers =
-                            mapOf(
-                                "app-version" to "android_c-247",
-                                "platformstr" to "android_c",
-                                "Referer" to "https://allmanga.to"
-                            )
-                        val sourceUrl = source.sourceUrl
-                        if (sourceUrl.startsWith("http")) {
-                            val sourcename = sourceUrl.getHost()
-                            loadCustomExtractor(
-                                "Allanime [${i.uppercase()}] [$sourcename]",
-                                sourceUrl,
-                                "",
-                                subtitleCallback,
-                                callback,
-                            )
-                        } else {
-                            val decodedlink = if (sourceUrl.startsWith("--")) {
-                                decrypthex(sourceUrl)
-                            } else sourceUrl
-                            val fixedLink = decodedlink.fixUrlPath()
-                            val links = try {
-                                app.get(fixedLink, headers = headers)
-                                    .parsedSafe<AnichiVideoApiResponse>()?.links ?: emptyList()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                return@safeApiCall
+        langTypes.forEach { lang ->
+            val epQuery = """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$lang","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
+            val episodeLinks = app.get(epQuery, referer = privatereferer)
+                .parsedSafe<AnichiEP>()
+                ?.data?.episode?.sourceUrls ?: return@forEach
+
+            episodeLinks.amap { source ->
+                safeApiCall {
+                    val sourceUrl = source.sourceUrl
+                    val headers = mapOf(
+                        "app-version" to "android_c-247",
+                        "platformstr" to "android_c",
+                        "Referer" to privatereferer
+                    )
+
+                    if (sourceUrl.startsWith("http")) {
+                        val host = sourceUrl.getHost()
+                        loadCustomExtractor(
+                            "Allanime [${lang.uppercase()}] [$host]",
+                            sourceUrl,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
+                        return@safeApiCall
+                    }
+
+                    val decoded = if (sourceUrl.startsWith("--")) decrypthex(sourceUrl) else sourceUrl
+                    val fixedLink = decoded.fixUrlPath()
+                    val links = try {
+                        app.get(fixedLink, headers = headers)
+                            .parsedSafe<AnichiVideoApiResponse>()
+                            ?.links ?: emptyList()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        return@safeApiCall
+                    }
+
+                    links.forEach { server ->
+                        val host = server.link.getHost()
+                        when {
+                            source.sourceName.contains("Default") && server.resolutionStr in listOf("SUB", "Alt vo_SUB") -> {
+                                getM3u8Qualities(server.link, "https://static.crunchyroll.com/", host)
+                                    .forEach(callback)
                             }
-                            links.forEach { server ->
-                                val host = server.link.getHost()
-                                when {
-                                    source.sourceName.contains("Default") && (server.resolutionStr == "SUB" || server.resolutionStr == "Alt vo_SUB") -> {
-                                        getM3u8Qualities(
-                                            server.link,
-                                            "https://static.crunchyroll.com/",
-                                            host
-                                        ).forEach(callback)
+                            server.hls == null -> {
+                                callback(
+                                    newExtractorLink(
+                                        "Allanime [${lang.uppercase()}] ${host.capitalize()}",
+                                        "Allanime [${lang.uppercase()}] ${host.capitalize()}",
+                                        server.link,
+                                        INFER_TYPE
+                                    ) {
+                                        this.quality = Qualities.P1080.value
                                     }
-
-                                    server.hls == null -> {
-                                        callback.invoke(
-                                            newExtractorLink(
-                                                "Allanime [${i.uppercase()}] ${host.capitalize()}",
-                                                "Allanime [${i.uppercase()}] ${host.capitalize()}",
-                                                server.link,
-                                                INFER_TYPE
-                                            )
-                                            {
-                                                this.quality = Qualities.P1080.value
-                                            }
-                                        )
-                                    }
-
-                                    server.hls == true -> {
-                                        val endpoint = "https://allanime.day/player?uri=" +
-                                                (if (URI(server.link).host.isNotEmpty())
-                                                    server.link
-                                                else "https://allanime.day" + URI(server.link).path)
-
-                                        getM3u8Qualities(
-                                            server.link,
-                                            server.headers?.referer ?: endpoint,
-                                            host
-                                        ).forEach(callback)
-                                    }
-
-                                    else -> {
-                                        server.subtitles?.forEach { sub ->
-                                            val lang = SubtitleHelper.fromTwoLettersToLanguage(
-                                                sub.lang ?: ""
-                                            ) ?: sub.lang.orEmpty()
-                                            val src = sub.src ?: return@forEach
-                                            subtitleCallback(SubtitleFile(lang, httpsify(src)))
-                                        }
-                                    }
+                                )
+                            }
+                            server.hls == true -> {
+                                val endpoint = "https://allanime.day/player?uri=" +
+                                        if (URI(server.link).host.isNotEmpty()) server.link
+                                        else "https://allanime.day${URI(server.link).path}"
+                                getM3u8Qualities(server.link, server.headers?.referer ?: endpoint, host)
+                                    .forEach(callback)
+                            }
+                            else -> {
+                                server.subtitles?.forEach { sub ->
+                                    val langName = SubtitleHelper.fromTwoLettersToLanguage(sub.lang ?: "") ?: sub.lang.orEmpty()
+                                    val src = sub.src ?: return@forEach
+                                    subtitleCallback(SubtitleFile(langName, httpsify(src)))
                                 }
                             }
                         }
@@ -756,6 +757,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
 
     suspend fun invokeAnimeOwl(
         name: String? = null,
@@ -789,7 +791,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        val id = app.get(url, headers).document.selectFirst("meta[property=og:url]")
+        val id = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$url", headers).document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
         val animeData =
             app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)

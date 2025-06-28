@@ -243,6 +243,7 @@ class StreamPlayAnime : MainAPI() {
         val malId = mediaData.malId
         val episode = mediaData.episode
         val jpTitle = mediaData.jpTitle
+        val anititle = mediaData.title
         val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
@@ -256,7 +257,7 @@ class StreamPlayAnime : MainAPI() {
             { malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnizone(jpTitle, episode, callback) },
-            { invokeAnichi(jpTitle,year,episode, subtitleCallback, callback) },
+            { invokeAnichi(jpTitle,anititle,year,episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
             { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback) },
             { malId?.let {
