@@ -8,16 +8,13 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 import java.util.Calendar
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.vegas"
+    override var mainUrl = "https://hdmovie2.services"
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
         "trending" to "Trending",
@@ -56,7 +53,6 @@ open class Hdmovie2 : Movierulzhd() {
                 headers = commonHeaders
             ).parsed<ResponseHash>()
             return response.embed_url.getIframe()
-
         }
 
         if (data.startsWith("{")) {
@@ -66,29 +62,8 @@ open class Hdmovie2 : Movierulzhd() {
                 loadData.nume.orEmpty(),
                 loadData.type.orEmpty()
             )
-            when {
-                source.contains(".art") -> {
-                    val artHeaders = mapOf(
-                        "Referer" to source,
-                        "Sec-Fetch-Mode" to "navigate",
-                    )
 
-                    val doc = app.get(source, referer = mainUrl, headers = artHeaders).document
-                    val sniffScript = doc.selectFirst("script:containsData(sniff\\()")
-                        ?.data()
-                        ?.substringAfter("sniff(")
-                        ?.substringBefore(");")
-                        ?: ""
-                    val ids = sniffScript.split(",").map { it.replace("\"", "") }
-                    val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1"
-                    callback.invoke(
-                        newExtractorLink(name, name, m3u8, ExtractorLinkType.M3U8) {
-                            this.referer = source
-                            this.quality = Qualities.P1080.value
-                            this.headers = artHeaders
-                        }
-                    )
-                }
+            when {
                 !source.contains("youtube") -> {
                     loadExtractor(source, "$directUrl/", subtitleCallback, callback)
                 }
@@ -98,41 +73,43 @@ open class Hdmovie2 : Movierulzhd() {
             val id = document.selectFirst("ul#playeroptionsul > li")?.attr("data-post") ?: return false
             val type = if (data.contains("/movies/")) "movie" else "tv"
 
-            document.select("ul#playeroptionsul > li").map { it.attr("data-nume") }.amap { nume ->
-                val source = fetchSource(id, nume, type)
+            document.select("ul#playeroptionsul > li")
+                .map { it.attr("data-nume") }
+                .amap { nume ->
+                    val source = fetchSource(id, nume, type)
+                    Log.d("Phisher source 2",source)
 
-                when {
-                    source.contains("ok.ru") -> {
-                        loadExtractor("https:$source", "$directUrl/", subtitleCallback, callback)
-                    }
-                    source.contains(".art") -> {
-                        val artHeaders = mapOf(
-                            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0",
-                            "Referer" to source,
-                            "Sec-Fetch-Mode" to "navigate",
-                        )
-                        val doc = app.get(source, referer = mainUrl, headers = artHeaders).document
-                        val sniffScript = doc.selectFirst("script:containsData(sniff\\()")
-                            ?.data()
-                            ?.substringAfter("sniff(")
-                            ?.substringBefore(");")
-                            ?: return@amap
-                        val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
-                        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
+                    when {
+                        source.contains("ok.ru") -> {
+                            loadExtractor("https:$source", "$directUrl/", subtitleCallback, callback)
+                        }
+                        !source.contains("youtube") -> {
+                            loadExtractor(source, "$directUrl/", subtitleCallback, callback)
+                        }
 
-                        callback.invoke(
-                            newExtractorLink(name, name, m3u8, ExtractorLinkType.M3U8) {
-                                this.referer = url
-                                this.quality = Qualities.P1080.value
-                                this.headers = artHeaders
-                            }
-                        )
+                        else -> {
+                            Log.d("Error:","Not Found")
+
+                        }
                     }
-                    !source.contains("youtube") -> {
-                        loadExtractor(source, "$directUrl/", subtitleCallback, callback)
+                }
+        }
+
+        if (data.contains("hdmovie2")) {
+            val directLinks = app.get(data).document.selectFirst("p > a")?.attr("href")
+            directLinks?.let {
+                val doc = app.get(it).document
+                doc.select("p > a").forEach { element ->
+                    val label = element.selectFirst("button")?.text()?.trim() ?: return@forEach
+                    val href = element.attr("href")
+                    if (label.contains("GDFlix", ignoreCase = true)) {
+                        val redirectedurl= app.get(href, allowRedirects = false).headers["location"] ?:""
+                        Log.d("Phisher",redirectedurl)
+                        loadExtractor(redirectedurl,name,subtitleCallback, callback)
                     }
                 }
             }
+            return true
         }
 
         return true
