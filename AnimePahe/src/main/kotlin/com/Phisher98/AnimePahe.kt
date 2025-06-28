@@ -170,7 +170,7 @@ class AnimePahe : MainAPI() {
         val semaphore = Semaphore(5) // Limit to 5 concurrent requests (adjust based on server capability)
 
         try {
-            val uri = "$mainUrl/api?m=release&id=$session&sort=episode_asc&page=1"
+            val uri = "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$mainUrl/api?m=release&id=$session&sort=episode_asc&page=1"
             val req = app.get(uri, headers = headers).text
             val data = parseJson<AnimePaheAnimeData>(req)
 
