@@ -765,24 +765,32 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixtitle = name.createSlug()
-        val url = "$AnimeOwlAPI/anime/$fixtitle"
-        app.get(url).document.select("#anime-cover-sub-content, #anime-cover-dub-content").amap {
-            val subtype = if (it.id() == "anime-cover-sub-content") "SUB" else "DUB"
-            val href = it.select(".episode-node")
-                .firstOrNull { element -> element.text().contains("$episode") }?.select("a")
-                ?.attr("href")
-            if (href != null)
-                loadCustomExtractor(
-                    "AnimeOwl [$subtype]",
-                    href,
-                    AnimeOwlAPI,
-                    subtitleCallback,
-                    callback,
+        val slug = name?.createSlug() ?: return
+        val url = "$AnimeOwlAPI/anime/$slug"
 
-                    )
+        val document = app.get(url).document
+
+        val contentBlocks = document.select("#anime-cover-sub-content, #anime-cover-dub-content")
+
+        contentBlocks.forEach { block ->
+            val type = if (block.id().contains("sub", ignoreCase = true)) "SUB" else "DUB"
+
+            val episodeLink = block.select("a.episode-node")
+                .firstOrNull { it.attr("title") == episode?.toString() }
+                ?.attr("href")
+
+            if (!episodeLink.isNullOrEmpty()) {
+                loadCustomExtractor(
+                    name = "AnimeOwl [$type]",
+                    url = episodeLink,
+                    referer = AnimeOwlAPI,
+                    subtitleCallback = subtitleCallback,
+                    callback = callback
+                )
+            }
         }
     }
+
 
     suspend fun invokeAnimepahe(
         url: String,
@@ -791,49 +799,60 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        val id = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$url", headers).document.selectFirst("meta[property=og:url]")
+
+        val id = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$url", headers)
+            .document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
-        val animeData =
-            app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1", headers)
-                .parsedSafe<animepahe>()?.data
-        var session = animeData?.find { it.episode == episode }?.session ?: ""
-        if (session.isEmpty()) session =
-            animeData?.find { it.episode == (episode?.plus(12) ?: episode) }?.session ?: ""
-        val document = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/play/$id/$session", headers).document
 
-        document.select("#resolutionMenu button")
-            .map {
-                val dubText = it.select("span").text().lowercase()
-                val type = if ("eng" in dubText) "DUB" else "SUB"
+        val animeData = app.get(
+            "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1",
+            headers
+        ).parsedSafe<animepahe>()?.data.orEmpty()
 
-                val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
-                val text = it.text()
-                val match = qualityRegex.find(text)
+        val reversedData = animeData.reversed()
 
-                val source = match?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
-                val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p")?.toIntOrNull()
-                    ?: Qualities.Unknown.value
+        val targetIndex = (episode ?: 1) - 1
+        if (targetIndex !in reversedData.indices) return
+        val session = reversedData[targetIndex].session
 
-                val href = it.attr("data-src")
-                if ("kwik.si" in href) {
-                    loadCustomExtractor(
-                        "Animepahe $source [$type]",
-                        href,
-                        "",
-                        subtitleCallback,
-                        callback,
-                        quality
-                    )
-                }
+        val document = app.get(
+            "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/play/$id/$session",
+            headers
+        ).document
+
+        document.select("#resolutionMenu button").map {
+            val dubText = it.select("span").text().lowercase()
+            val type = if ("eng" in dubText) "DUB" else "SUB"
+
+            val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
+            val text = it.text()
+            val match = qualityRegex.find(text)
+
+            val source = match?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+            val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p")?.toIntOrNull()
+                ?: Qualities.Unknown.value
+
+            val href = it.attr("data-src")
+            if ("kwik.si" in href) {
+                loadCustomExtractor(
+                    "Animepahe $source [$type]",
+                    href,
+                    "",
+                    subtitleCallback,
+                    callback,
+                    quality
+                )
             }
+        }
 
         document.select("div#pickDownload > a").amap {
             val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
 
             val href = it.attr("href")
             var type = "SUB"
-            if (it.select("span").text().contains("eng"))
+            if (it.select("span").text().contains("eng", ignoreCase = true))
                 type = "DUB"
+
             val text = it.text()
             val match = qualityRegex.find(text)
             val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
@@ -849,6 +868,7 @@ object StreamPlayExtractor : StreamPlay() {
             )
         }
     }
+
 
     suspend fun invokeAnimetosho(
         malId: Int? = null,

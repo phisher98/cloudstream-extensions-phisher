@@ -891,6 +891,7 @@ open class PixelDrain : ExtractorApi() {
     }
 }
 
+@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
@@ -1466,7 +1467,7 @@ class GDMirrorbot : ExtractorApi() {
                     val jsonStr = base64Decode(mresultBase64)
                     JsonParser.parseString(jsonStr).asJsonObject
                 } catch (e: Exception) {
-                    Log.e("Phisher", "Failed to decode mresult base64: $e")
+                    Log.e("Error:", "Failed to decode mresult base64: $e")
                     return
                 }
             }
@@ -1565,7 +1566,7 @@ class OwlExtractor : ExtractorApi() {
             } else {
                 callback(
                     newExtractorLink(
-                        "AnimeOwl $key",
+                        "AnimeOwl",
                         "AnimeOwl $key",
                         url = url,
                         type = INFER_TYPE
@@ -1577,7 +1578,9 @@ class OwlExtractor : ExtractorApi() {
                             key.contains("1080") -> Qualities.P1080.value
                             key.contains("1440") -> Qualities.P1440.value
                             key.contains("2160") -> Qualities.P2160.value
-                            else -> Qualities.P1080.value
+                            key.contains("default") -> Qualities.P1080.value
+                            key.contains("2K") -> Qualities.P1440.value
+                            else -> Qualities.P720.value
                         }
                     }
                 )
@@ -1635,7 +1638,7 @@ internal class MegaUp : ExtractorApi() {
         }.getOrNull()
 
         if (encodedResult == null) {
-            Log.d("Phisher", "Encoded result is null")
+            Log.d("Error:", "Encoded result is null")
             return
         }
         val requestBody = encodedResult.toRequestBody("text/plain".toMediaType())
@@ -2146,7 +2149,6 @@ class Cdnstreame : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher","I'm here")
         val headers = mapOf(
             "Accept" to "*/*",
             "X-Requested-With" to "XMLHttpRequest",
@@ -2159,11 +2161,9 @@ class Cdnstreame : ExtractorApi() {
 
         val response = app.get(apiUrl, headers = headers)
             .parsedSafe<MegacloudResponse>() ?: return
-        Log.d("Phisher",response.toString())
 
         val key = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json")
             .parsedSafe<Megakey>()?.rabbit ?: return
-        Log.d("Phisher",key)
 
         val decryptedJson = decryptOpenSSL(response.sources, key)
         val m3u8Url = parseSourceJson(decryptedJson).firstOrNull()?.file ?: return
