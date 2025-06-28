@@ -3676,7 +3676,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-
     suspend fun invokecatflix(
         id: Int? = null,
         epid: Int? = null,
@@ -3685,84 +3684,77 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        try {
-            val fixtitle = title.createSlug()
+        val fixtitle = title.createSlug()
+        val juiceHeaders = mapOf(
+            "Referer" to "https://turbovid.eu",
+            "X-Turbo" to "TurboVidClient",
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+        )
 
-            val juicyKey = runCatching {
-                app.get(BuildConfig.CatflixAPI, referer = Catflix)
-                    .parsedSafe<CatflixJuicy>()
-                    ?.juice
-            }.getOrNull()
+        val juicyKey = runCatching {
+            app.get(BuildConfig.CatflixAPI, headers = juiceHeaders)
+                .parsedSafe<CatflixJuicy>()
+                ?.juice
+        }.getOrNull().orEmpty()
 
-            val href = if (season == null) {
-                "$Catflix/movie/$fixtitle-$id"
-            } else {
-                "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
-            }
-            val pageHtml = runCatching {
-                app.get(href, referer = Catflix).toString()
-            }.getOrNull() ?: return
+        if (juicyKey.isEmpty()) return
 
-            val iframe = runCatching {
-                Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""")
-                    .find(pageHtml)
-                    ?.groupValues?.get(1)
-                    ?.let(::base64Decode)
-            }.getOrNull() ?: return
-
-            val iframeHtml = runCatching {
-                app.get(iframe, referer = Catflix).toString()
-            }.getOrNull() ?: return
-
-            val apkey = Regex("""apkey\s*=\s*['"](.*?)["']""")
-                .find(iframeHtml)
-                ?.groupValues?.getOrNull(1)
-
-            val xxid = Regex("""xxid\s*=\s*['"](.*?)["']""")
-                .find(iframeHtml)
-                ?.groupValues?.getOrNull(1)
-
-            if (apkey.isNullOrEmpty() || xxid.isNullOrEmpty()) return
-
-            val juiceUrl = "https://turbovid.eu/api/cucked/the_juice/?$apkey=$xxid"
-
-            val juiceData = runCatching {
-                app.get(
-                    juiceUrl,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
-                    referer = juiceUrl
-                ).parsedSafe<CatflixJuicydata>()?.data
-            }.getOrNull()
-
-            if (!juiceData.isNullOrEmpty() && !juicyKey.isNullOrEmpty()) {
-                val finalUrl = runCatching {
-                    CatdecryptHexWithKey(juiceData, juicyKey)
-                }.getOrNull()
-
-                if (!finalUrl.isNullOrEmpty()) {
-                    val headers = mapOf(
-                        "Origin" to "https://turbovid.eu/",
-                        "Connection" to "keep-alive"
-                    )
-
-                    callback(
-                        newExtractorLink(
-                            "Catflix",
-                            "Catflix",
-                            url = finalUrl,
-                            INFER_TYPE
-                        ) {
-                            referer = "https://turbovid.eu/"
-                            quality = Qualities.P1080.value
-                            this.headers = headers
-                        }
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("Catflix", "Unexpected error in invokecatflix $e")
+        val href = if (season == null) {
+            "$Catflix/movie/$fixtitle-$id"
+        } else {
+            "$Catflix/episode/${fixtitle}-season-${season}-episode-${episode}/eid-$epid"
         }
+
+        val pageHtml = runCatching {
+            app.get(href, referer = Catflix).toString()
+        }.getOrElse {
+            val proxyUrl = "https://catflix.catflixphisher.workers.dev/?url=$href"
+            runCatching {
+                app.get(proxyUrl, referer = Catflix).toString()
+            }.getOrNull()
+        } ?: return
+
+        val iframe = Regex("""(?:const|let)\s+main_origin\s*=\s*"(.*)";""")
+            .find(pageHtml)
+            ?.groupValues?.getOrNull(1)
+            ?.let(::base64Decode) ?: return
+
+        val iframeHtml = runCatching {
+            app.get(iframe, referer = Catflix).toString()
+        }.getOrNull() ?: return
+
+        val apkey = extractcatflixValue(iframeHtml, "apkey") ?: return
+        val xxid = extractcatflixValue(iframeHtml, "xxid") ?: return
+
+        val juiceUrl = "https://turbovid.eu/api/cucked/the_juice/?$apkey=$xxid"
+
+        val juiceData = runCatching {
+            app.get(juiceUrl, headers = juiceHeaders, referer = juiceUrl)
+                .parsedSafe<CatflixJuicydata>()
+                ?.data
+        }.getOrNull().orEmpty()
+
+        if (juiceData.isEmpty()) return
+
+        val finalUrl = runCatching {
+            catdecryptHexWithKey(juiceData, juicyKey)
+        }.getOrNull() ?: return
+
+        val headers = mapOf(
+            "Origin" to "https://turbovid.eu/",
+            "Connection" to "keep-alive"
+        )
+
+        callback(
+            newExtractorLink("Catflix", "Catflix", url = finalUrl, INFER_TYPE) {
+                referer = "https://turbovid.eu/"
+                quality = Qualities.P1080.value
+                this.headers = headers
+            }
+        )
     }
+
+
 
 
     suspend fun invokeDramacool(

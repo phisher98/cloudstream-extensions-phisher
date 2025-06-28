@@ -1744,9 +1744,22 @@ fun CatxorDecrypt(binary: String, key: String): String {
     return decrypted.toString()
 }
 
-fun CatdecryptHexWithKey(hex: String, key: String): String {
-    val binary = CathexToBinary(hex)
-    return CatxorDecrypt(binary, key)
+
+fun extractcatflixValue(text: String, key: String): String? {
+    val regex = Regex("""$key\s*=\s*['"](.*?)['"]""")
+    return regex.find(text)?.groupValues?.getOrNull(1)
+}
+
+fun catdecryptHexWithKey(hex: String, key: String): String {
+    val cipherBytes = hex.chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+    val keyBytes = base64DecodeArray(key)
+
+    val decryptedChars = cipherBytes.mapIndexed { i, byte ->
+        (byte.toInt() xor keyBytes[i % keyBytes.size].toInt()).toChar()
+    }
+    return decryptedChars.joinToString("")
 }
 
 fun getfullURL(url: String, mainUrl: String): String {
