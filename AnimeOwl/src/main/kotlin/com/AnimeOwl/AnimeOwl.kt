@@ -115,7 +115,7 @@ class Animeowl : MainAPI() {
         val description = document.selectFirst("div.anime-desc")?.text()?.trim()
         val genre=document.select("div.genre a").map { it.text() }
         val type=document.selectFirst("div.type.d-flex a")?.text().toString()
-        val tvtag=if (type=="TV") TvType.TvSeries else TvType.Movie
+        val tvtag=if (type=="TV" || type=="ONA") TvType.TvSeries else TvType.Movie
         return if (tvtag == TvType.TvSeries) {
             val doc= app.get(url).document
             val subEpisodes=doc.select("#anime-cover-sub-content .episode-node").map { info->

@@ -72,20 +72,28 @@ class OwlExtractor : ExtractorApi() {
         }
 
         // Emit results
-        sources.amap { (key, sourceUrl) ->
-            if (sourceUrl.endsWith(".vtt") || sourceUrl.endsWith(".vvt")) {
-                subtitleCallback(SubtitleFile("English", sourceUrl))
+        sources.amap { (key, url) ->
+            if (url.endsWith(".vvt")) {
+                subtitleCallback.invoke(SubtitleFile("English", url))
             } else {
                 callback(
                     newExtractorLink(
+                        "AnimeOwl",
                         "AnimeOwl $key",
-                        "AnimeOwl $key",
-                        url = sourceUrl,
-                        INFER_TYPE
+                        url = url,
+                        type = INFER_TYPE
                     ) {
                         this.referer = mainUrl
-                        this.quality = Qualities.Unknown.value
-
+                        this.quality = when {
+                            key.contains("480") -> Qualities.P480.value
+                            key.contains("720") -> Qualities.P720.value
+                            key.contains("1080") -> Qualities.P1080.value
+                            key.contains("1440") -> Qualities.P1440.value
+                            key.contains("2160") -> Qualities.P2160.value
+                            key.contains("default") -> Qualities.P1080.value
+                            key.contains("2K") -> Qualities.P1440.value
+                            else -> Qualities.P720.value
+                        }
                     }
                 )
             }
