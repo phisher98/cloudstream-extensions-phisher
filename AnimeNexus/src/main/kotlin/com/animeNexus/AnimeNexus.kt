@@ -90,18 +90,21 @@ class AnimeNexus : MainAPI() {
             AnimeNexusLoad::class.java
         )
 
-        val title = document.select("span.block.font-black.leading-none.text-base.lg\\:text-2xl.xl\\:text-4xl.uppercase").text()
-        val imageElement = document.select("div.absolute > picture.relative source").first()
+        val title = document.select("div.absolute > picture.relative img").attr("alt")
+        val imageElement = document.select("div.absolute > picture.relative img").first()
         val srcset = imageElement?.attr("srcset")
+
         val poster = srcset
             ?.split(",")
             ?.map { it.trim() }
-            ?.find { it.endsWith("1560w") }
-            ?.substringBefore("1560w")
-            ?.trim()?.replace(".avif",".jpg")
+            ?.find { it.endsWith("3840w") }
+            ?.substringBefore("3840w")
+            ?.trim()
+            ?.replace(".avif", ".jpg")
+
         val lastPage = response.meta?.lastPage
         val perPage = response.meta?.perPage
-        val description = document.select("div.line-clamp-none").text()
+        val description = document.select("div.relative p").text()
         val allEpisodes = mutableListOf<Episode>()
         // Loop through all pages and collect episodes
         (1..lastPage!!).forEach { page ->
