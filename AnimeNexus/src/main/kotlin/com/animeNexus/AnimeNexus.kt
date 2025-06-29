@@ -37,10 +37,10 @@ class AnimeNexus : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "api/anime/recent" to "Recent",
-        "api/anime/latest" to "Latest",
-        "api/anime/shows?sortBy=name+asc&hasVideos=false&page=1&includes%5B%5D=poster&includes%5B%5D=genres&status%5B%5D=Currently+Airing&type%5B%5D=TV" to "Currently Airing",
-        "api/anime/shows?sortBy=name+asc&hasVideos=false&page=1&includes%5B%5D=poster&includes%5B%5D=genres&type%5B%5D=Movie" to "Movie"
+        "/api/anime/latest/all" to "Latest",
+        "api/anime/shows?sortBy=name+asc&hasVideos=true&page=1&includes%5B%5D=poster&includes%5B%5D=genres&status%5B%5D=Currently+Airing" to "Currently Airing",
+        "api/anime/shows?sortBy=name+asc&hasVideos=false&page=1&includes%5B%5D=poster&includes%5B%5D=genres&type%5B%5D=Movie" to "Movie",
+        "api/anime/shows?sortBy=name+asc&hasVideos=true&page=1&includes%5B%5D=poster&includes%5B%5D=genres&status%5B%5D=Finished+Airing" to "Finished Airing"
     )
 
     override suspend fun getMainPage(

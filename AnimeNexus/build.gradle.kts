@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 1
+version = 2
 dependencies {
     implementation("com.android.identity:identity-jvm:202411.1")
 }
