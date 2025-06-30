@@ -455,30 +455,49 @@ object StreamPlayExtractor : StreamPlay() {
                 referer = "$kissKhAPI/Drama/${getKisskhTitle(contentTitle)}/Episode-${episode ?: 0}?id=$id&ep=$epsId&page=0&pageSize=100"
             ).parsedSafe<KisskhSources>()?.let { source ->
                 listOf(source.video, source.thirdParty).amap { link ->
-                    if (link?.contains(".m3u8") == true) {
-                        M3u8Helper.generateM3u8(
-                            "Kisskh",
-                            link,
-                            "$kissKhAPI/",
-                            headers = mapOf("Origin" to kissKhAPI)
-                        ).forEach(callback)
-                    } else if (link?.contains(".mp4") == true) {
-                        loadNameExtractor(
-                            "Kisskh",
-                            link,
-                            referer = null,
-                            subtitleCallback,
-                            callback,
-                            Qualities.P720.value
-                        )
-                    } else {
-                        loadExtractor(
-                            link?.substringBefore("=http")
-                                ?: return@amap null,
-                            "$kissKhAPI/",
-                            subtitleCallback,
-                            callback
-                        )
+                    val safeLink = link ?: return@amap null
+                    when {
+                        safeLink.contains(".m3u8") -> {
+                            callback(
+                                newExtractorLink(
+                                    "Kisskh",
+                                    "Kisskh",
+                                    safeLink,
+                                    INFER_TYPE
+                                ) {
+                                    referer = kissKhAPI
+                                    quality = Qualities.P720.value
+                                    headers = mapOf("Origin" to kissKhAPI)
+                                }
+                            )
+                        }
+
+                        safeLink.contains(".mp4") -> {
+                            callback(
+                                newExtractorLink(
+                                    "Kisskh",
+                                    "Kisskh",
+                                    safeLink,
+                                    INFER_TYPE
+                                ) {
+                                    referer = kissKhAPI
+                                    quality = Qualities.P720.value
+                                    headers = mapOf("Origin" to kissKhAPI)
+                                }
+                            )
+                        }
+
+                        else -> {
+                            val cleanedLink = safeLink.substringBefore("?").takeIf { it.isNotBlank() } ?: return@amap null
+                            loadSourceNameExtractor(
+                                "Kisskh",
+                                cleanedLink,
+                                "$kissKhAPI/",
+                                subtitleCallback,
+                                callback,
+                                Qualities.P720.value
+                            )
+                        }
                     }
                 }
             }

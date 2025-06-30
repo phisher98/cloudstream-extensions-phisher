@@ -668,7 +668,7 @@ class Embedwish : Filesim() {
     override var mainUrl = "https://embedwish.com"
 }
 
-class dwish : StreamWishExtractor() {
+class dwish : VidhideExtractor() {
     override var mainUrl = "https://dwish.pro"
 }
 
@@ -1683,6 +1683,7 @@ internal class MegaUp : ExtractorApi() {
 }
 
 
+@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 open class GDFlix : ExtractorApi() {
     override val name = "GDFlix"
     override val mainUrl = "https://new6.gdflix.dad"
