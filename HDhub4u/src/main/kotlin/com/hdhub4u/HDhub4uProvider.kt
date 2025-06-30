@@ -1,6 +1,5 @@
 package com.hdhub4u
 
-import android.annotation.SuppressLint
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
@@ -27,6 +26,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import org.json.JSONArray
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
@@ -126,6 +126,7 @@ class HDhub4uProvider : MainAPI() {
     }
 
 
+    @Suppress("LABEL_NAME_CLASH")
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(
             url, cacheTime = 60, headers = headers
@@ -271,28 +272,37 @@ class HDhub4uProvider : MainAPI() {
         }
     }
 
-    @SuppressLint("NewApi")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean = coroutineScope {
-        data.trim()
-            .removeSurrounding("[", "]")
-            .split(',')
-            .asSequence()
-            .mapNotNull { it.trim().removeSurrounding("\"").takeIf { it.isNotEmpty() } }
-            .map { link ->
+    ): Boolean {
+        val links = try {
+            val jsonArray = JSONArray(data)
+            List(jsonArray.length()) { index -> jsonArray.getString(index) }
+                .filter { it.isNotBlank() }
+        } catch (e: Exception) {
+            Log.e("Phisher", "Failed to parse link JSON: ${e.message}")
+            return false
+        }
+
+        coroutineScope {
+            links.map { link ->
                 async {
                     val finalLink = if ("?id=" in link) getRedirectLinks(link) else link
-                    loadExtractor(finalLink, subtitleCallback, callback)
+                    try {
+                        loadExtractor(finalLink, subtitleCallback, callback)
+                    } catch (e: Exception) {
+                        Log.e("Phisher", "Failed to extract $finalLink: ${e.message}")
+                    }
                 }
-            }
-            .toList()
-            .awaitAll()
-        true
+            }.awaitAll()
+        }
+
+        return true
     }
+
 
 
     /**

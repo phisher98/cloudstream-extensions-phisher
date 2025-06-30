@@ -102,6 +102,7 @@ class Hubdrive : ExtractorApi() {
 }
 
 
+@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
@@ -168,7 +169,6 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("Download File", ignoreCase = true) -> {
-                    Log.d("HubCloud", "Phisher text: $text")
                     callback.invoke(
                         newExtractorLink(
                             "$source $labelExtras",

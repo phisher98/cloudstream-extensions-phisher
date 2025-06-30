@@ -1,10 +1,14 @@
 package com.toonhub4u
 
 
+import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 
 class Toonhub4u : MainAPI() {
@@ -122,10 +126,19 @@ class Toonhub4u : MainAPI() {
     ): Boolean {
         val jsonArray = JSONArray(data)
         val links = List(jsonArray.length()) { jsonArray.getString(it) }
-        links.forEach {
-            loadExtractor(it,subtitleCallback, callback)
+
+        coroutineScope {
+            links.map { link ->
+                launch {
+                    try {
+                        loadExtractor(link, subtitleCallback, callback)
+                    } catch (e: Exception) {
+                        Log.e("Phisher", "Error loading $link: ${e.message}")
+                    }
+                }
+            }.joinAll()
         }
+
         return true
     }
-
 }
