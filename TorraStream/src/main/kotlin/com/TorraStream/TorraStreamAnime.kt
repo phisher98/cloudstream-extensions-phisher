@@ -1,6 +1,7 @@
 package com.TorraStream
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -343,6 +344,8 @@ class TorraStreamAnime : MainAPI() {
     )
 
     private suspend fun tmdbToAnimeId(title: String?, year: Int?, type: TvType): AniIds {
+        if (title.isNullOrBlank()) return AniIds(null, null)
+
         val query = """
         query (
           ${'$'}page: Int = 1
@@ -367,24 +370,30 @@ class TorraStreamAnime : MainAPI() {
             }
           }
         }
-    """.trimIndent().trim()
+    """.trimIndent()
 
-        val variables = mapOf(
+        val variables = mutableMapOf(
             "search" to title,
-            "sort" to "SEARCH_MATCH",
+            "sort" to listOf("SEARCH_MATCH"),
             "type" to "ANIME",
-            "season" to "",
-            "seasonYear" to year,
-            "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
-        ).filterValues { value -> value != null && value.toString().isNotEmpty() }
+            "format" to listOf(
+                if (type == TvType.AnimeMovie) "MOVIE" else "TV",
+                "ONA"
+            )
+        )
+
         val data = mapOf(
             "query" to query,
             "variables" to variables
         ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
-        val res = app.post(anilistAPI, requestBody = data)
-            .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
-        return AniIds(res?.id,res?.idMal)
 
+        val res = app.post(anilistAPI, requestBody = data)
+            .parsedSafe<AniSearch>()
+            ?.data
+            ?.let { it.Page?.media ?: it.media }
+            ?.firstOrNull()
+
+        return AniIds(res?.id, res?.idMal)
     }
 
     data class AniIds(var id: Int? = null, var idMal: Int? = null)
@@ -394,10 +403,17 @@ class TorraStreamAnime : MainAPI() {
         @JsonProperty("idMal") var idMal: Int? = null
     )
 
-    data class AniPage(@JsonProperty("media") var media: java.util.ArrayList<AniMedia> = arrayListOf())
+    data class AniPage(
+        @JsonProperty("media") var media: ArrayList<AniMedia> = arrayListOf()
+    )
 
-    data class AniData(@JsonProperty("Page") var Page: AniPage? = AniPage())
+    data class AniData(
+        @JsonProperty("Page") var Page: AniPage? = null,
+        @JsonProperty("media") var media: ArrayList<AniMedia>? = null
+    )
 
-    data class AniSearch(@JsonProperty("data") var data: AniData? = AniData())
+    data class AniSearch(
+        @JsonProperty("data") var data: AniData? = null
+    )
 
 }

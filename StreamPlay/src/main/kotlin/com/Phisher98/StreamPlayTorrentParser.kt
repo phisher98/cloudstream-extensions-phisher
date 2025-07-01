@@ -256,6 +256,7 @@ data class AnidbEidEpisodeWrapper(
     @JsonProperty("episode") val episode: AnidbEidEpisode
 )
 
+
 data class AnidbEidEpisode(
     @JsonProperty("episodeNumber") val episodeNumber: Int?,
     @JsonProperty("anidbEid") val anidbEid: Int?
@@ -287,7 +288,7 @@ data class EpisodeData(
 data class AnimeData(
     @JsonProperty("titles") val titles: Map<String, String>? = null,
     @JsonProperty("images") val images: List<ImageData>? = null,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
 )
 
 

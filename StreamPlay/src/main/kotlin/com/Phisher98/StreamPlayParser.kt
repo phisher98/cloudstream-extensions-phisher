@@ -321,11 +321,18 @@ data class AniMedia(
     @JsonProperty("idMal") var idMal: Int? = null
 )
 
-data class AniPage(@JsonProperty("media") var media: java.util.ArrayList<AniMedia> = arrayListOf())
+data class AniPage(
+    @JsonProperty("media") var media: ArrayList<AniMedia> = arrayListOf()
+)
 
-data class AniData(@JsonProperty("Page") var Page: AniPage? = AniPage())
+data class AniData(
+    @JsonProperty("Page") var Page: AniPage? = null,
+    @JsonProperty("media") var media: ArrayList<AniMedia>? = null
+)
 
-data class AniSearch(@JsonProperty("data") var data: AniData? = AniData())
+data class AniSearch(
+    @JsonProperty("data") var data: AniData? = null
+)
 
 data class GpressSources(
     @JsonProperty("src") val src: String,

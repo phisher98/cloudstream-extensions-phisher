@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -34,6 +35,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlay.Companion
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
@@ -343,7 +345,9 @@ class StreamplayTorrentAnime : MainAPI() {
         @JsonProperty("isCartoon") val isCartoon: Boolean = false,
     )
 
-    private suspend fun tmdbToAnimeId(title: String?, year: Int?, type: TvType): AniIds {
+    private suspend fun tmdbToAnimeId(title: String?, year: Int?, type: TvType): com.phisher98.AniIds {
+        if (title.isNullOrBlank()) return com.phisher98.AniIds(null, null)
+
         val query = """
         query (
           ${'$'}page: Int = 1
@@ -368,24 +372,30 @@ class StreamplayTorrentAnime : MainAPI() {
             }
           }
         }
-    """.trimIndent().trim()
+    """.trimIndent()
 
-        val variables = mapOf(
+        val variables = mutableMapOf(
             "search" to title,
-            "sort" to "SEARCH_MATCH",
+            "sort" to listOf("SEARCH_MATCH"),
             "type" to "ANIME",
-            "season" to "",
-            "seasonYear" to year,
-            "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
-        ).filterValues { value -> value != null && value.toString().isNotEmpty() }
+            "format" to listOf(
+                if (type == TvType.AnimeMovie) "MOVIE" else "TV",
+                "ONA"
+            )
+        )
+
         val data = mapOf(
             "query" to query,
             "variables" to variables
         ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
-        val res = app.post(anilistAPI, requestBody = data)
-            .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
-        return AniIds(res?.id,res?.idMal)
 
+        val res = app.post(StreamPlay.anilistAPI, requestBody = data)
+            .parsedSafe<com.phisher98.AniSearch>()
+            ?.data
+            ?.let { it.Page?.media ?: it.media }
+            ?.firstOrNull()
+
+        return com.phisher98.AniIds(res?.id, res?.idMal)
     }
 
     data class AniIds(var id: Int? = null, var idMal: Int? = null)

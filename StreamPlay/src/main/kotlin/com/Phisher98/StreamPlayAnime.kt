@@ -10,6 +10,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -239,6 +240,7 @@ class StreamPlayAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data.toJson())
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val malId = mediaData.malId
         val episode = mediaData.episode
@@ -356,6 +358,8 @@ class StreamPlayAnime : MainAPI() {
     )
 
     private suspend fun tmdbToAnimeId(title: String?, year: Int?, type: TvType): AniIds {
+        if (title.isNullOrBlank()) return AniIds(null, null)
+
         val query = """
         query (
           ${'$'}page: Int = 1
@@ -380,25 +384,32 @@ class StreamPlayAnime : MainAPI() {
             }
           }
         }
-    """.trimIndent().trim()
+    """.trimIndent()
 
-        val variables = mapOf(
+        val variables = mutableMapOf(
             "search" to title,
-            "sort" to "SEARCH_MATCH",
+            "sort" to listOf("SEARCH_MATCH"),
             "type" to "ANIME",
-            "season" to "",
-            "seasonYear" to year,
-            "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
-        ).filterValues { value -> value != null && value.toString().isNotEmpty() }
+            "format" to listOf(
+                if (type == TvType.AnimeMovie) "MOVIE" else "TV",
+                "ONA"
+            )
+        )
+
         val data = mapOf(
             "query" to query,
             "variables" to variables
         ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
-        val res = app.post(anilistAPI, requestBody = data)
-            .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
-        return AniIds(res?.id,res?.idMal)
 
+        val res = app.post(anilistAPI, requestBody = data)
+            .parsedSafe<AniSearch>()
+            ?.data
+            ?.let { it.Page?.media ?: it.media }
+            ?.firstOrNull()
+        return AniIds(res?.id, res?.idMal)
     }
+
+
 
     private fun extractSeason(title: String): Int? {
         val regex = Regex("""(?i)(?:season\s*|s)\s*(\d+)""")
