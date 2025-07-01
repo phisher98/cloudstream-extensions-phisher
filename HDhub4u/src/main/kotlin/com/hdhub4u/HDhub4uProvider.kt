@@ -156,7 +156,6 @@ class HDhub4uProvider : MainAPI() {
             } else null } else null
         var cast: List<String> = emptyList()
         val genre: List<String>? = null
-        //var imdbRating: String = ""
         var year = ""
         var background: String = image
         var description: String? = null
