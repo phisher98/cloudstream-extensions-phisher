@@ -4576,7 +4576,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
+    //TODO
     suspend fun invokeHdmovie2(
         title: String? = null,
         year: Int? = null,
@@ -4628,7 +4628,8 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val link = app.get("https://dramadrip.com/?s=$imdbId").document.selectFirst("article > a")?.attr("href") ?: return
+        val dramadripAPI = getDomains()?.dramadrip ?: return
+        val link = app.get("$dramadripAPI/?s=$imdbId").document.selectFirst("article > a")?.attr("href") ?: return
         val document = app.get(link).document
         if(season != null && episode != null) {
             val seasonLink = document.select("div.file-spoiler h2").filter { element ->
@@ -4642,11 +4643,10 @@ object StreamPlayExtractor : StreamPlay() {
             seasonLink.amap { seasonUrl ->
                 val episodeDoc = app.get(seasonUrl).document
 
-                val episodeHref = episodeDoc.select("h3 > a")
+                val episodeHref = episodeDoc.select("h3 > a,div.wp-block-button a")
                     .firstOrNull { it.text().contains("Episode $episode") }
                     ?.attr("href")
                     ?: return@amap
-
                 val finalUrl = if ("unblockedgames" in episodeHref) { bypassHrefli(episodeHref) } else { episodeHref }
                 if (finalUrl != null) {
                     loadSourceNameExtractor("DramaDrip", finalUrl, "", subtitleCallback, callback)

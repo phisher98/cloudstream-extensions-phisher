@@ -1980,6 +1980,7 @@ data class DomainsParser(
     val luxmovies: String,
     val xprime: String,
     val extramovies:String,
+    val dramadrip:String
 )
 
 
