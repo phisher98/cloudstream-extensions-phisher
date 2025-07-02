@@ -4580,6 +4580,7 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokeHdmovie2(
         title: String? = null,
         year: Int? = null,
+        season: Int?=null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
@@ -4594,30 +4595,52 @@ object StreamPlayExtractor : StreamPlay() {
 
         val document = app.get(url, headers = headers, allowRedirects = true).document
 
-        document.select("div.wp-content p a").amap { linkElement ->
+        document.selectFirst("div.wp-content p a")?.map { linkElement ->
             val linkText = linkElement.text()
             val linkUrl = linkElement.attr("href")
-
             val isEpisodeMatch = episode?.let {
                 Regex("EP0?$it\\b", RegexOption.IGNORE_CASE).containsMatchIn(linkText)
             } ?: true
 
             if (!isEpisodeMatch && episode != null && linkText.contains("EP")) {
                 Log.d("Hdmovie2", "Episode $episode not matched in link: $linkText")
-                return@amap
+                return@map
             }
 
             val type = if (episode != null && !linkText.contains("EP")) "(Combined)" else ""
 
+            /*
             app.get(linkUrl).document.select("div > p > a").amap {
-                loadSourceNameExtractor(
-                    "Hdmovie2 $type",
-                    it.attr("href"),
-                    "",
-                    subtitleCallback,
-                    callback,
-                )
+                if (it.text().contains("GDFlix"))
+                {
+                    val href = it.attr("href")
+                    var redirectedUrl: String? = null
+                    val gg = app.get(href).url
+                    Log.d("gg", "Success on attempt ${gg + 1}gg")
+
+                    repeat(10) { attempt ->
+                        val response = app.get(href, allowRedirects = false)
+                        redirectedUrl = response.headers["location"]
+                        if (!redirectedUrl.isNullOrEmpty()) {
+                            Log.d("Retry", "Success on attempt ${attempt + 1}")
+                            return@repeat
+                        }
+                        Log.d("Retry", "Attempt ${attempt + 1}: No location header found")
+                    }
+                    redirectedUrl = redirectedUrl ?: ""
+                    Log.d("Phisher", redirectedUrl!!)
+
+                    loadSourceNameExtractor(
+                        "Hdmovie2 $type",
+                        redirectedUrl!!,
+                        "",
+                        subtitleCallback,
+                        callback,
+                    )
+                }
             }
+
+             */
         }
     }
 

@@ -821,7 +821,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 )
             },
             {
-                if (!res.isAnime) invokeHdmovie2(res.title, res.season, res.episode, subtitleCallback, callback)
+                if (!res.isAnime) invokeHdmovie2(res.title,res.year,res.season, res.episode, subtitleCallback, callback)
             },
             {
                 if (!res.isAnime) invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)

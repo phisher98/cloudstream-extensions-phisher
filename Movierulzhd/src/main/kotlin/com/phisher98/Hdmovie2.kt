@@ -14,7 +14,7 @@ import java.util.Calendar
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.services"
+    override var mainUrl = "https://hdmovie2.property"
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
         "trending" to "Trending",
@@ -104,7 +104,6 @@ open class Hdmovie2 : Movierulzhd() {
                     val href = element.attr("href")
                     if (label.contains("GDFlix", ignoreCase = true)) {
                         val redirectedurl= app.get(href, allowRedirects = false).headers["location"] ?:""
-                        Log.d("Phisher",redirectedurl)
                         loadExtractor(redirectedurl,name,subtitleCallback, callback)
                     }
                 }

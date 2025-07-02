@@ -82,21 +82,7 @@ open class Akamaicdn : ExtractorApi() {
             ?.substringBefore(");") ?: return
         val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
         val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
-
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                m3u8,
-                ExtractorLinkType.M3U8
-            )
-            {
-                this.referer=url
-                this.quality=Qualities.P1080.value
-                this.headers=headers
-
-            }
-        )
+        M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = headers).forEach(callback)
     }
 }
 
