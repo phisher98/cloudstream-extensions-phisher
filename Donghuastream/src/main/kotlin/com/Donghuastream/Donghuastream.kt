@@ -1,13 +1,33 @@
 package com.Donghuastream
 
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import org.jsoup.nodes.Element
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
-import okhttp3.RequestBody.Companion.toRequestBody
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.httpsify
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 
 open class Donghuastream : MainAPI() {
     override var mainUrl              = "https://donghuastream.org"
@@ -115,28 +135,13 @@ open class Donghuastream : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val postReq = app.post(data, requestBody = "".toRequestBody()).text
+        val html = app.get(data).document
 
-        val regex = Regex("'get_video_servers'\\s*,\\s*\\w+\\s*:\\s*'([^']+)'\\s*,\\s*\\w+\\s*:\\s*'([^']+)'")
-        val match = regex.find(postReq) ?: return false
-        val postId = match.groupValues[1]
-        val nonce = match.groupValues[2]
-
-        val formData = mapOf(
-            "action" to "get_video_servers",
-            "post_id" to postId,
-            "nonce" to nonce
-        )
-
-        val html = app.post("$mainUrl/wp-admin/admin-ajax.php", data = formData)
-            .parsedSafe<Resp>()?.data?.data?.html ?: return false
-
-        val options = Jsoup.parse(html).select("select.mirror > option")
+        val options = html.select("option[data-index]")
 
         for (option in options) {
             val base64 = option.attr("value")
             if (base64.isBlank()) continue
-
             val label = option.text().trim()
             val decodedHtml = try {
                 base64Decode(base64)
@@ -147,8 +152,6 @@ open class Donghuastream : MainAPI() {
 
             val iframeUrl = Jsoup.parse(decodedHtml).selectFirst("iframe")?.attr("src")?.let(::httpsify)
             if (iframeUrl.isNullOrEmpty()) continue
-
-            Log.d("Phisher", "[$label] iframe URL: $iframeUrl")
 
             when {
                 "vidmoly" in iframeUrl -> {
@@ -176,22 +179,4 @@ open class Donghuastream : MainAPI() {
 
         return true
     }
-
-
-    data class Resp(
-        val success: Boolean,
-        val data: Data,
-    )
-
-    data class Data(
-        val data: Data2,
-        @JsonProperty("post_id")
-        val postId: Long,
-    )
-
-    data class Data2(
-        val html: String,
-        val status: String,
-    )
-
 }

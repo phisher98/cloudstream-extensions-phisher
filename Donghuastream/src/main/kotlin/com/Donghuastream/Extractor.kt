@@ -145,7 +145,6 @@ class Rumble : ExtractorApi() {
                     this.quality = getQualityFromName("")
                 }
             )
-
         }
     }
 }
@@ -170,10 +169,19 @@ open class PlayStreamplay : ExtractorApi() {
         val apiUrl = "$mainUrl/api/?$token"
         val response = app.get(apiUrl).parsedSafe<Response>() ?: return
 
-        val m3u8Url = response.sources.firstOrNull()?.file
+        val m3u8Url = response.sources.find { it.file.isNotBlank() }?.file
         if (!m3u8Url.isNullOrEmpty()) {
-            M3u8Helper.generateM3u8(name, m3u8Url, referer = "$mainUrl/")
-                .forEach(callback)
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    m3u8Url,
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.Unknown.value
+                }
+            )
         }
 
         response.tracks.forEach { subtitle ->
@@ -219,5 +227,6 @@ open class PlayStreamplay : ExtractorApi() {
         val label: String,
         val default: Boolean?,
     )
+
 }
 
