@@ -4620,6 +4620,57 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokeDramadrip(
+        imdbId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val link = app.get("https://dramadrip.com/?s=$imdbId").document.selectFirst("article > a")?.attr("href") ?: return
+        val document = app.get(link).document
+        if(season != null && episode != null) {
+            val seasonLink = document.select("div.file-spoiler h2").filter { element ->
+                val text = element.text().trim().lowercase()
+                "season $season ".lowercase() in text && "zip" !in text
+            }.flatMap { h2 ->
+                val sibling = h2.nextElementSibling()
+                sibling?.select("a")?.mapNotNull { it.attr("href") } ?: emptyList()
+            }
+
+            seasonLink.amap { seasonUrl ->
+                val episodeDoc = app.get(seasonUrl).document
+
+                val episodeHref = episodeDoc.select("h3 > a")
+                    .firstOrNull { it.text().contains("Episode $episode") }
+                    ?.attr("href")
+                    ?: return@amap
+
+                val finalUrl = if ("unblockedgames" in episodeHref) { bypassHrefli(episodeHref) } else { episodeHref }
+                if (finalUrl != null) {
+                    loadSourceNameExtractor("DramaDrip", finalUrl, "", subtitleCallback, callback)
+                }
+            }
+        } else {
+            document.select("div.file-spoiler a").amap {
+                val doc = app.get(it.attr("href")).document
+                doc.select("a.wp-element-button").amap { source ->
+                    val finalUrl = if ("unblockedgames" in source.attr("href")) { bypassHrefli(source.attr("href")) } else { source.attr("href") }
+                    if (finalUrl != null) {
+                        loadSourceNameExtractor(
+                            "DramaDrip",
+                            finalUrl,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
+                    }
+
+                }
+            }
+        }
+    }
 }
 
 

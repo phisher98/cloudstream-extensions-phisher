@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = -1
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Kdrama Extension by ModFlix Team"
+    description = "K-Drama,Dramas Extension by ModFlix Team"
     language    = "en"
     authors = listOf("Phisher98")
 

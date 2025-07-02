@@ -29,6 +29,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
@@ -276,7 +277,9 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     callback
                 )
             },
-
+            {
+                if (!res.isAnime) invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            },
 
 
             //Subtitles Invokes

@@ -160,14 +160,14 @@ open class PlayStreamplay : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
+        val doc = app.get(url, timeout = 10000).document
         val packedScript = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data() ?: return
         val evalRegex = Regex("""eval\(.*?\)\)\)""", RegexOption.DOT_MATCHES_ALL)
         val packedCode = evalRegex.find(packedScript)?.value ?: return
         val unpackedJs = JsUnpacker(packedCode).unpack() ?: return
         val token = Regex("""kaken="(.*?)"""").find(unpackedJs)?.groupValues?.getOrNull(1) ?: return
         val apiUrl = "$mainUrl/api/?$token"
-        val response = app.get(apiUrl).parsedSafe<Response>() ?: return
+        val response = app.get(apiUrl, timeout = 10000).parsedSafe<Response>() ?: return
 
         val m3u8Url = response.sources.find { it.file.isNotBlank() }?.file
         if (!m3u8Url.isNullOrEmpty()) {

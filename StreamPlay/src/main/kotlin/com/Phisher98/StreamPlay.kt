@@ -84,6 +84,7 @@ import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeDramacool
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
+import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
@@ -821,6 +822,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokeHdmovie2(res.title, res.season, res.episode, subtitleCallback, callback)
+            },
+            {
+                if (!res.isAnime) invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
             },
 
             //Subtitles Invokes
