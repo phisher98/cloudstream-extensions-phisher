@@ -23,7 +23,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Document
 
 class MyFlixer : MainAPI() {
-    override var mainUrl = "https://myflixer.phisherdesicinema.workers.dev/?url=https://myflixerz.to"
+    override var mainUrl = "https://watch32.sx"
     override var name = "MyFlixer"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override var lang = "en"
