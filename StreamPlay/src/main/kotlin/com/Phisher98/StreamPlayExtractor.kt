@@ -907,8 +907,6 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
         }
-        Log.d("Phisher invokeAnimetosho","$jikanAPI/anime/$malId/full")
-
         val (seasonSLug, episodeSlug) = getEpisodeSlug(season, episode)
         val jikan =
             app.get("$jikanAPI/anime/$malId/full").parsedSafe<JikanResponse>()?.data
@@ -930,7 +928,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }.map {
                 loadCustomTagExtractor(
-                    it.second,
+                    "Animetosho",
                     it.first,
                     "$animetoshoAPI/",
                     subtitleCallback,

@@ -2562,9 +2562,9 @@ class BuzzServer : ExtractorApi() {
             if (redirectUrl.isNotEmpty()) {
                 callback.invoke(
                     newExtractorLink(
-                        "[BuzzServer]",
-                        "[BuzzServer]",
-                        baseUrl + redirectUrl,
+                        "BuzzServer",
+                        "BuzzServer",
+                        redirectUrl,
                     ) {
                         this.quality = quality
                     }
