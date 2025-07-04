@@ -898,7 +898,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         fun Elements.getLinks(): List<Triple<String, String, Int>> {
             return this.flatMap { ele ->
-                ele.select("div.links a:matches(KrakenFiles|GoFile)").map {
+                ele.select("div.links a:matches(KrakenFiles|GoFile|Akirabox|BuzzHeavier)").map {
                     Triple(
                         it.attr("href"),
                         ele.select("div.size").text(),
@@ -907,6 +907,7 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
         }
+        Log.d("Phisher invokeAnimetosho","$jikanAPI/anime/$malId/full")
 
         val (seasonSLug, episodeSlug) = getEpisodeSlug(season, episode)
         val jikan =

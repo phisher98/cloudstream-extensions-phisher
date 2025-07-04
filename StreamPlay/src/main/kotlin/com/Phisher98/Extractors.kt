@@ -1537,7 +1537,25 @@ class OwlExtractor : ExtractorApi() {
 
         val jsonString = retryIO { app.get("$referer$datasrc").text }
         val mapper = jacksonObjectMapper()
-        val servers: Map<String, List<VideoData>> = mapper.readValue(jsonString)
+        val root = mapper.readTree(jsonString)
+
+        val servers = mutableMapOf<String, List<VideoData>>()
+        listOf("luffy", "kaido", "zoro").forEach { key ->
+            val node = root[key]
+            if (node != null && node.isArray) {
+                val videos: List<VideoData> = mapper.readValue(node.toString())
+                servers[key] = videos
+            }
+        }
+
+        val subtitlesNode = root["subtitles"]
+        subtitlesNode?.forEach {
+            val language = it["language"]?.asText()
+            val subUrl = it["url"]?.asText()
+            if (!language.isNullOrEmpty() && !subUrl.isNullOrEmpty()) {
+                subtitleCallback.invoke(SubtitleFile(language, subUrl))
+            }
+        }
 
         val sources = mutableListOf<Pair<String, String>>()
 
@@ -1560,15 +1578,15 @@ class OwlExtractor : ExtractorApi() {
             sources += "Zoro" to vtt
         }
 
-        sources.amap { (key, url) ->
-            if (url.endsWith(".vvt")) {
-                subtitleCallback.invoke(SubtitleFile("English", url))
+        sources.amap { (key, finalUrl) ->
+            if (finalUrl.endsWith(".vtt") || finalUrl.endsWith(".ass")) {
+                subtitleCallback.invoke(SubtitleFile("English", finalUrl))
             } else {
                 callback(
                     newExtractorLink(
                         "AnimeOwl",
                         "AnimeOwl $key",
-                        url = url,
+                        url = finalUrl,
                         type = INFER_TYPE
                     ) {
                         this.referer = mainUrl
@@ -1597,8 +1615,6 @@ class OwlExtractor : ExtractorApi() {
         return url // Can wrap with retryIO if logic is added
     }
 
-    data class ZoroResponse(val url: String, val subtitle: String)
-
     private suspend fun getZoroJson(url: String): String {
         return app.get(url).text
     }
@@ -1614,6 +1630,9 @@ class OwlExtractor : ExtractorApi() {
     }
 
     data class VideoData(val resolution: String, val url: String)
+
+    data class ZoroResponse(val url: String, val subtitle: String)
+
 }
 
 
@@ -1886,55 +1905,59 @@ class Gofile : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
 
-        //val res = app.get(url).document
-        val id = Regex("/(?:\\?c=|d/)([\\da-zA-Z-]+)").find(url)?.groupValues?.get(1) ?: return
-        val genAccountRes = app.post("$mainApi/accounts").text
-        val jsonResp = JSONObject(genAccountRes)
-        val token = jsonResp.getJSONObject("data").getString("token") ?: return
+        try {
+            val id = Regex("/(?:\\?c=|d/)([\\da-zA-Z-]+)").find(url)?.groupValues?.get(1) ?: return
+            val responseText = app.post("$mainApi/accounts").text
+            val json = JSONObject(responseText)
+            val token = json.getJSONObject("data").getString("token")
 
-        val globalRes = app.get("$mainUrl/dist/js/global.js").text
-        val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""").find(globalRes)?.groupValues?.get(1) ?: return
+            val globalJs = app.get("$mainUrl/dist/js/global.js").text
+            val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""")
+                .find(globalJs)?.groupValues?.getOrNull(1) ?: return
 
-        val response = app.get("$mainApi/contents/$id?wt=$wt",
-            headers = mapOf(
-                "Authorization" to "Bearer $token",
-            )
-        ).text
+            val responseTextfile = app.get(
+                "$mainApi/contents/$id?wt=$wt",
+                headers = mapOf("Authorization" to "Bearer $token")
+            ).text
 
-        val jsonResponse = JSONObject(response)
-        val data = jsonResponse.getJSONObject("data")
-        val children = data.getJSONObject("children")
-        val oId = children.keys().next()
-        val link = children.getJSONObject(oId).getString("link")
-        val fileName = children.getJSONObject(oId).getString("name")
-        val size = children.getJSONObject(oId).getLong("size")
-        val formattedSize = if (size < 1024L * 1024 * 1024) {
-            val sizeInMB = size.toDouble() / (1024 * 1024)
-            "%.2f MB".format(sizeInMB)
-        } else {
-            val sizeInGB = size.toDouble() / (1024 * 1024 * 1024)
-            "%.2f GB".format(sizeInGB)
-        }
+            val fileDataJson = JSONObject(responseTextfile)
 
-        callback.invoke(
-            newExtractorLink(
-                "Gofile",
-                "Gofile [$formattedSize]",
-                link,
-            ) {
-                this.quality = getQuality(fileName)
-                this.headers = mapOf(
-                    "Cookie" to "accountToken=$token"
-                )
+            val data = fileDataJson.getJSONObject("data")
+            val children = data.getJSONObject("children")
+            val firstFileId = children.keys().asSequence().first()
+            val fileObj = children.getJSONObject(firstFileId)
+
+            val link = fileObj.getString("link")
+            val fileName = fileObj.getString("name")
+            val fileSize = fileObj.getLong("size")
+
+            val sizeFormatted = if (fileSize < 1024L * 1024 * 1024) {
+                "%.2f MB".format(fileSize / 1024.0 / 1024)
+            } else {
+                "%.2f GB".format(fileSize / 1024.0 / 1024 / 1024)
             }
-        )
+
+            callback.invoke(
+                newExtractorLink(
+                    "Gofile",
+                    "Gofile [$sizeFormatted]",
+                    link
+                ) {
+                    this.quality = getQuality(fileName)
+                    this.headers = mapOf("Cookie" to "accountToken=$token")
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("Gofile", "Error occurred: ${e.message}")
+        }
     }
 
-    private fun getQuality(str: String?): Int {
-        return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
+    private fun getQuality(fileName: String?): Int {
+        return Regex("(\\d{3,4})[pP]").find(fileName ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.Unknown.value
     }
 }
+
 
 class UqloadsXyz : ExtractorApi() {
     override val name = "Uqloadsxyz"
@@ -2476,6 +2499,83 @@ class Rubyvidhub : VidhideExtractor() {
 class smoothpre : VidhideExtractor() {
     override var mainUrl = "https://smoothpre.com"
     override var requiresReferer = true
+}
+
+
+internal class Akirabox : ExtractorApi() {
+    override val name = "Akirabox"
+    override val mainUrl = "https://akirabox.com"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val id=url.substringAfter("$mainUrl/").substringBefore("/")
+        val m3u8= app.post("$mainUrl/$id/file/generate", headers = mapOf("x-csrf-token" to "L57KI068FpaS5Ttgo1W20tQMlFhtEwCJGkOgIdSH")).parsedSafe<AkiraboxRes>()?.downloadLink
+        if (m3u8!=null)
+        {
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    m3u8,
+                    ExtractorLinkType.M3U8
+                )
+                {
+                    this.referer=url
+                    this.quality=Qualities.P1080.value
+                    this.headers=headers
+
+                }
+            )
+        }
+    }
+
+    data class AkiraboxRes(
+        @JsonProperty("download_link")
+        val downloadLink: String,
+    )
+
+}
+
+class BuzzServer : ExtractorApi() {
+    override val name = "BuzzServer"
+    override val mainUrl = "https://buzzheavier.com"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        try {
+            val qualityText = app.get(url).document.selectFirst("div.max-w-2xl > span")?.text()
+            val quality = getQualityFromName(qualityText)
+            val response = app.get("$url/download", referer = url, allowRedirects = false)
+            val redirectUrl = response.headers["hx-redirect"] ?: ""
+            val baseUrl = getBaseUrl(url)
+
+            if (redirectUrl.isNotEmpty()) {
+                callback.invoke(
+                    newExtractorLink(
+                        "[BuzzServer]",
+                        "[BuzzServer]",
+                        baseUrl + redirectUrl,
+                    ) {
+                        this.quality = quality
+                    }
+                )
+            } else {
+                Log.w("BuzzServer", "No redirect URL found in headers.")
+            }
+        } catch (e: Exception) {
+            Log.e("BuzzServer", "Exception occurred: ${e.message}")
+        }
+    }
 }
 
 

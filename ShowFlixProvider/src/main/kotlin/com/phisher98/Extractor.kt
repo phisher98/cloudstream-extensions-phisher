@@ -279,52 +279,55 @@ class Gofile : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
 
-        //val res = app.get(url).document
-        val id = Regex("/(?:\\?c=|d/)([\\da-zA-Z-]+)").find(url)?.groupValues?.get(1) ?: return
-        val genAccountRes = app.post("$mainApi/accounts").text
-        val jsonResp = JSONObject(genAccountRes)
-        val token = jsonResp.getJSONObject("data").getString("token") ?: return
+        try {
+            val id = Regex("/(?:\\?c=|d/)([\\da-zA-Z-]+)").find(url)?.groupValues?.get(1) ?: return
+            val responseText = app.post("$mainApi/accounts").text
+            val json = JSONObject(responseText)
+            val token = json.getJSONObject("data").getString("token")
 
-        val globalRes = app.get("$mainUrl/dist/js/global.js").text
-        val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""").find(globalRes)?.groupValues?.get(1) ?: return
+            val globalJs = app.get("$mainUrl/dist/js/global.js").text
+            val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""")
+                .find(globalJs)?.groupValues?.getOrNull(1) ?: return
 
-        val response = app.get("$mainApi/contents/$id?wt=$wt",
-            headers = mapOf(
-                "Authorization" to "Bearer $token",
-            )
-        ).text
+            val responseTextfile = app.get(
+                "$mainApi/contents/$id?wt=$wt",
+                headers = mapOf("Authorization" to "Bearer $token")
+            ).text
 
-        val jsonResponse = JSONObject(response)
-        val data = jsonResponse.getJSONObject("data")
-        val children = data.getJSONObject("children")
-        val oId = children.keys().next()
-        val link = children.getJSONObject(oId).getString("link")
-        val fileName = children.getJSONObject(oId).getString("name")
-        val size = children.getJSONObject(oId).getLong("size")
-        val formattedSize = if (size < 1024L * 1024 * 1024) {
-            val sizeInMB = size.toDouble() / (1024 * 1024)
-            "%.2f MB".format(sizeInMB)
-        } else {
-            val sizeInGB = size.toDouble() / (1024 * 1024 * 1024)
-            "%.2f GB".format(sizeInGB)
-        }
+            val fileDataJson = JSONObject(responseTextfile)
 
-        callback.invoke(
-            newExtractorLink(
-                "Gofile",
-                "Gofile [$formattedSize]",
-                link,
-            ) {
-                this.quality = getQuality(fileName)
-                this.headers = mapOf(
-                    "Cookie" to "accountToken=$token"
-                )
+            val data = fileDataJson.getJSONObject("data")
+            val children = data.getJSONObject("children")
+            val firstFileId = children.keys().asSequence().first()
+            val fileObj = children.getJSONObject(firstFileId)
+
+            val link = fileObj.getString("link")
+            val fileName = fileObj.getString("name")
+            val fileSize = fileObj.getLong("size")
+
+            val sizeFormatted = if (fileSize < 1024L * 1024 * 1024) {
+                "%.2f MB".format(fileSize / 1024.0 / 1024)
+            } else {
+                "%.2f GB".format(fileSize / 1024.0 / 1024 / 1024)
             }
-        )
+
+            callback.invoke(
+                newExtractorLink(
+                    "Gofile",
+                    "Gofile [$sizeFormatted]",
+                    link
+                ) {
+                    this.quality = getQuality(fileName)
+                    this.headers = mapOf("Cookie" to "accountToken=$token")
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("Gofile", "Error occurred: ${e.message}")
+        }
     }
 
-    private fun getQuality(str: String?): Int {
-        return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
+    private fun getQuality(fileName: String?): Int {
+        return Regex("(\\d{3,4})[pP]").find(fileName ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.Unknown.value
     }
 }

@@ -979,11 +979,14 @@ fun getEpisodeSlug(
     season: Int? = null,
     episode: Int? = null,
 ): Pair<String, String> {
-    return if (season == null && episode == null) {
+    val result = if (season == null && episode == null) {
         "" to ""
     } else {
-        (if (season!! < 10) "0$season" else "$season") to (if (episode!! < 10) "0$episode" else "$episode")
+        val seasonSlug = if (season!! < 10) "0$season" else "$season"
+        val episodeSlug = if (episode!! < 10) "0$episode" else "$episode"
+        seasonSlug to episodeSlug
     }
+    return result
 }
 
 fun getTitleSlug(title: String? = null): Pair<String?, String?> {
