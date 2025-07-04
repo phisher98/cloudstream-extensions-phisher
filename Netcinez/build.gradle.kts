@@ -6,7 +6,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Movies,Series and Anime Portuguese Extension "
-    language    = "BR"
+    language    = "pt-br"
     authors = listOf("Phisher98")
 
     /**

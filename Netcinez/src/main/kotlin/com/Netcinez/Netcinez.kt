@@ -31,7 +31,7 @@ class Netcinez : MainAPI() {
     override var mainUrl = "https://netcinez.si"
     override var name = "Netcinez"
     override val hasMainPage = true
-    override var lang = "BR"
+    override var lang = "pt-br"
     override val hasDownloadSupport = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(TvType.Movie, TvType.Anime, TvType.TvSeries)
