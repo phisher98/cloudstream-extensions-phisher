@@ -240,7 +240,6 @@ class StreamPlayAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data.toJson())
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val malId = mediaData.malId
         val episode = mediaData.episode
@@ -307,12 +306,34 @@ class StreamPlayAnime : MainAPI() {
             @JsonProperty("airingSchedule") val airingSchedule: AiringScheduleNodes?,
             @JsonProperty("recommendations") val recommendations: RecommendationConnection?,
             @JsonProperty("format") val format: String?,
+            @JsonProperty("relations") val relations: RelationList? = null
         ) {
             data class StartDate(@JsonProperty("year") val year: Int)
 
             data class AiringScheduleNodes(
                 @JsonProperty("nodes") val nodes: List<SeasonNextAiringEpisode>?
             )
+
+
+
+            data class RelationList(
+                @JsonProperty("edges") val edges: List<RelationEdge>?
+            )
+
+            data class RelationEdge(
+                @JsonProperty("relationType") val relationType: String?,
+                @JsonProperty("node") val node: RelatedMedia
+            )
+
+            data class RelatedMedia(
+                @JsonProperty("id") val id: Int,
+                @JsonProperty("title") val title: Title,
+                @JsonProperty("type") val type: String?,
+                @JsonProperty("episodes") val episodes: Int?,
+                @JsonProperty("startDate") val startDate: StartDate?,
+                @JsonProperty("coverImage") val coverImage: CoverImage?
+            )
+
 
             fun totalEpisodes(): Int {
                 return nextAiringEpisode?.episode?.minus(1)

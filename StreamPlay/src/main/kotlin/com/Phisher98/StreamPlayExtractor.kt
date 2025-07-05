@@ -524,18 +524,25 @@ object StreamPlayExtractor : StreamPlay() {
         airedDate: String?,
         season: Int? = null,
         episode: Int? = null,
+        Aniid: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val (_, malId) = convertTmdbToAnimeId(
-            title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
-        )
+        val malId = getMalIdFromAniId(Aniid)
+        val finalMalId = malId ?: run {
+            val (_, fallbackMalId) = convertTmdbToAnimeId(
+                title, date, airedDate,
+                if (season == null) TvType.AnimeMovie else TvType.Anime
+            )
+            fallbackMalId
+        }
 
-        val malsync = malId?.let {
+        val malsync = finalMalId?.let {
             runCatching {
-                app.get("$malsyncAPI/mal/anime/$it").parsedSafe<MALSyncResponses>()?.sites
-            }
-                .getOrNull()
+                app.get("$malsyncAPI/mal/anime/$it")
+                    .parsedSafe<MALSyncResponses>()
+                    ?.sites
+            }.getOrNull()
         }
 
         val zoro = malsync?.zoro

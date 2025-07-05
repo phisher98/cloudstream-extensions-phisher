@@ -263,13 +263,13 @@ data class AnidbEidEpisode(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class ImageData(
+data class ImageData1(
     @JsonProperty("coverType") val coverType: String?,
     @JsonProperty("url") val url: String?
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class EpisodeData(
+data class EpisodeData1(
     @JsonProperty("episode") val episode: String?,
     @JsonProperty("airdate") val airdate: String?,
     @JsonProperty("airDate") val airDate: String?,
@@ -287,8 +287,8 @@ data class EpisodeData(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class AnimeData(
     @JsonProperty("titles") val titles: Map<String, String>? = null,
-    @JsonProperty("images") val images: List<ImageData>? = null,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
+    @JsonProperty("images") val images: List<ImageData1>? = null,
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeData1>? = null,
 )
 
 

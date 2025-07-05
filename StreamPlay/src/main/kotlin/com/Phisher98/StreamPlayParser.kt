@@ -2077,3 +2077,66 @@ data class Beamup(
 data class BeamupMeta(
     val name: String?
 )
+
+
+//Anilist
+
+
+data class AniListResponse(val data: MediaData)
+
+data class MediaData(val media: Media?)
+
+data class Media(
+    val id: Int,
+    val type: String?,
+    val title: Title,
+    val startDate: StartDate?,
+    val genres: List<String>?,
+    val description: String?,
+    val averageScore: Int?,
+    val bannerImage: String?,
+    val coverImage: CoverImage?,
+    val episodes: Int?,
+    val format: String?,
+    val nextAiringEpisode: AiringEpisode?,
+    val airingSchedule: AiringSchedule?,
+    val recommendations: RecommendationList?,
+    val relations: RelationList?
+)
+
+data class Title(val romaji: String?, val english: String?)
+data class StartDate(val year: Int?)
+data class CoverImage(val extraLarge: String?, val large: String?, val medium: String?)
+data class AiringEpisode(val episode: Int?)
+data class AiringSchedule(val nodes: List<AiringNode>?)
+data class AiringNode(val episode: Int?)
+data class RecommendationList(val edges: List<RecommendationEdge>?)
+data class RecommendationEdge(val node: RecommendationNode)
+data class RecommendationNode(val id: Int, val mediaRecommendation: MediaRecommendation?)
+data class MediaRecommendation(val id: Int, val title: Title?, val coverImage: CoverImage?)
+
+data class RelationList(val edges: List<RelationEdge>?)
+data class RelationEdge(val relationType: String?, val node: RelatedMedia)
+
+data class RelatedMedia(
+    val id: Int,
+    val title: Title,
+    val type: String?,
+    val episodes: Int?,
+    val startDate: StartDate?,
+    val coverImage: CoverImage?
+)
+
+
+data class GetMalIdFromAniIdResponse(
+    @JsonProperty("data") val data: GetMalIdData?
+)
+
+data class GetMalIdData(
+    @JsonProperty("Media") val media: AniMedia?
+)
+
+data class GetMalAniMedia(
+    @JsonProperty("id") val id: Int?,
+    @JsonProperty("idMal") val idMal: Int?
+)

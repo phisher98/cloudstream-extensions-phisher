@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.StringUtils.encodeUri
 import com.lagradost.nicehttp.NiceResponse
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlayAnime.AnilistAPIResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -46,7 +47,6 @@ import java.security.spec.X509EncodedKeySpec
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.crypto.Cipher
-import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -2977,3 +2977,114 @@ suspend fun dispatchToExtractor(
         else -> loadSourceNameExtractor(source, link, "", subtitleCallback, callback)
     }
 }
+
+suspend fun anilistAPICall(query: String): AnilistAPIResponse {
+    val data = mapOf("query" to query)
+    val headerJSON =
+        mapOf("Accept" to "application/json", "Content-Type" to "application/json")
+    val test = app.post(anilistAPI, headers = headerJSON, data = data)
+    val res =
+        test.parsedSafe<AnilistAPIResponse>()
+            ?: throw Exception("Unable to fetch or parse Anilist api response")
+    return res
+}
+
+fun extractAnilistId(jsonText: String): Int? {
+    val regex = """"anilist_id"\s*:\s*(\d+)""".toRegex()
+    val match = regex.find(jsonText)
+    return match?.groupValues?.get(1)?.toIntOrNull()
+}
+
+
+suspend fun collectAllSequels(
+    media: StreamPlayAnime.AnilistAPIResponse.anilistMedia,
+    anilistAPICall: suspend (String) -> StreamPlayAnime.AnilistAPIResponse
+): List<StreamPlayAnime.AnilistAPIResponse.anilistMedia> {
+    val visited = mutableSetOf<Int>()
+    val result = mutableListOf<StreamPlayAnime.AnilistAPIResponse.anilistMedia>()
+
+    suspend fun dfs(current: StreamPlayAnime.AnilistAPIResponse.anilistMedia) {
+        if (!visited.add(current.id)) return
+        result.add(current)
+
+        val sequelEdges = current.relations?.edges
+            ?.filter { it.relationType == "SEQUEL" } ?: return
+
+        for (edge in sequelEdges) {
+            val sequelId = edge.node.id
+
+            val query = """
+                query {
+                    Media(id: $sequelId, type: ANIME) {
+                        id
+                        type
+                        title { romaji english }
+                        startDate { year }
+                        genres
+                        description
+                        averageScore
+                        bannerImage
+                        coverImage { extraLarge large medium }
+                        episodes
+                        format
+                        nextAiringEpisode { episode }
+                        airingSchedule {
+                            nodes {
+                                episode
+                                airingAt
+                            }
+                        }
+                        relations {
+                            edges {
+                                relationType
+                                node {
+                                    id
+                                    title { romaji english }
+                                    type
+                                    episodes
+                                    startDate { year }
+                                    coverImage { large }
+                                }
+                            }
+                        }
+                    }
+                }
+            """.trimIndent()
+
+            val nextMedia = anilistAPICall(query).data.media ?: continue
+            dfs(nextMedia)
+        }
+    }
+
+    dfs(media)
+    return result.sortedBy { it.startDate.year }
+}
+suspend fun getMalIdFromAniId(aniId: Int?): Int? {
+    val query = """
+        query (${'$'}id: Int) {
+            Media(id: ${'$'}id, type: ANIME) {
+                id
+                idMal
+            }
+        }
+    """.trimIndent()
+
+    val variables = mapOf("id" to aniId)
+
+    val requestBody = mapOf(
+        "query" to query,
+        "variables" to variables
+    ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+
+    val result = app.post(anilistAPI, requestBody = requestBody)
+        .parsedSafe<GetMalIdFromAniIdResponse>()
+        ?.data
+        ?.media
+    return result?.idMal
+
+}
+
+
+
+
+
