@@ -80,7 +80,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.airedDate,
                     res.season,
                     res.episode,
-                    res.aniId,
                     subtitleCallback,
                     callback
                 )
