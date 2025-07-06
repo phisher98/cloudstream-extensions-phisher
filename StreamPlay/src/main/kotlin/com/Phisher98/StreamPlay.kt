@@ -429,7 +429,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 val cinejson = runCatching {
                     gson.fromJson(cineJsonText, CinemetaRes::class.java)
                 }.getOrNull()
-                val animeepisodes = cinejson?.meta?.videos?.map { video ->
+                val animeepisodes = cinejson?.meta?.videos?.filter { it.season != 0 } ?.map { video ->
                     newEpisode(
                         LinkData(
                             id = data.id,
