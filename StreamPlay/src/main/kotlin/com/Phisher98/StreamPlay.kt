@@ -48,6 +48,8 @@ import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -79,6 +81,7 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeDramacool
@@ -167,6 +170,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
         private const val apiKey = BuildConfig.TMDB_API
+        private const val Cinemeta = "https://v3-cinemeta.strem.io"
 
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
@@ -418,19 +422,65 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     }
             }?.flatten() ?: listOf()
             if (isAnime) {
+                val gson = Gson()
+                val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
+                val imdbId = res.external_ids?.imdb_id.orEmpty()
+                val cineJsonText = app.get("$Cinemeta/meta/$animeType/$imdbId.json").text
+                val cinejson = runCatching {
+                    gson.fromJson(cineJsonText, CinemetaRes::class.java)
+                }.getOrNull()
+                val animeepisodes = cinejson?.meta?.videos?.map { video ->
+                    newEpisode(
+                        LinkData(
+                            id = data.id,
+                            imdbId = res.external_ids?.imdb_id,
+                            tvdbId = res.external_ids?.tvdb_id,
+                            type = data.type,
+                            season = video.season,
+                            episode = video.number,
+                            epid = null,
+                            aniId = null,
+                            animeId = null,
+                            title = title,
+                            year = video.released?.split("-")?.firstOrNull()?.toIntOrNull(),
+                            orgTitle = orgTitle,
+                            isAnime = true,
+                            airedYear = year,
+                            lastSeason = null,
+                            epsTitle = video.name,
+                            jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
+                            date = video.released,
+                            airedDate = res.releaseDate ?: res.firstAirDate,
+                            isAsian = isAsian,
+                            isBollywood = isBollywood,
+                            isCartoon = isCartoon,
+                            alttitle = res.title,
+                            nametitle = res.name
+                        ).toJson()
+                    ) {
+                        this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
+                        this.season = video.season
+                        this.episode = video.number
+                        this.posterUrl = video.thumbnail
+                        this.rating = video.rating.times(10).roundToInt()
+                        this.description = video.description
+                    }.apply {
+                        this.addDate(video.released)
+                    }
+                } ?: emptyList()
+
                 return newAnimeLoadResponse(title, url, TvType.Anime) {
-                    addEpisodes(DubStatus.Subbed, episodes)
+                    addEpisodes(DubStatus.Subbed, animeepisodes)
                     this.posterUrl = poster
                     this.backgroundPosterUrl = bgPoster
                     this.year = year
                     this.plot = res.overview
-                    this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
+                    this.tags = keywords?.map { it.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
                     this.rating = rating
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -448,7 +498,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)

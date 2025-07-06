@@ -2077,3 +2077,91 @@ data class Beamup(
 data class BeamupMeta(
     val name: String?
 )
+
+// CinemetaRes
+
+data class CinemetaRes(
+    val meta: CinemetaResMeta,
+)
+
+data class CinemetaResMeta(
+    @JsonProperty("imdb_id")
+    val imdbId: String,
+    val name: String,
+    val popularities: CinemetaResPopularities,
+    val type: String,
+    val cast: List<String>,
+    val country: String,
+    val description: String,
+    val genre: List<String>,
+    val imdbRating: String,
+    val released: String,
+    val slug: String,
+    val writer: List<String>,
+    val year: String,
+    val runtime: String,
+    val status: String,
+    @JsonProperty("tvdb_id")
+    val tvdbId: Long,
+    @JsonProperty("moviedb_id")
+    val moviedbId: Long,
+    val poster: String,
+    val trailers: List<CinemetaResTrailer>,
+    val director: List<Any?>,
+    val background: String,
+    val logo: String,
+    val awards: String,
+    val popularity: Double,
+    val id: String,
+    val genres: List<String>,
+    val releaseInfo: String,
+    val videos: List<CinemetaResVideo>,
+    val trailerStreams: List<CinemetaResTrailerStream>,
+    val links: List<CinemetaResLink>,
+    val behaviorHints: CinemetaResBehaviorHints,
+)
+
+data class CinemetaResPopularities(
+    val trakt: Long,
+    val moviedb: Double,
+    val stremio: Double,
+    @JsonProperty("stremio_lib")
+    val stremioLib: Long,
+)
+
+data class CinemetaResTrailer(
+    val source: String,
+    val type: String,
+)
+
+data class CinemetaResVideo(
+    val name: String,
+    val season: Int,
+    val number: Int,
+    val firstAired: String?,
+    @JsonProperty("tvdb_id")
+    val tvdbId: Long,
+    val rating: Double,
+    val overview: String,
+    val thumbnail: String,
+    val id: String,
+    val released: String?,
+    val episode: Long,
+    val description: String?,
+)
+
+data class CinemetaResTrailerStream(
+    val title: String,
+    val ytId: String,
+)
+
+data class CinemetaResLink(
+    val name: String,
+    val category: String,
+    val url: String,
+)
+
+data class CinemetaResBehaviorHints(
+    val defaultVideoId: Any?,
+    val hasScheduledVideos: Boolean,
+)
