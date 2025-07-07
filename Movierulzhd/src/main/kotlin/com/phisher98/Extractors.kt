@@ -2,19 +2,15 @@ package com.phisher98
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import okhttp3.FormBody
 import org.json.JSONObject
-import java.net.URI
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class FMHD : Filesim() {
     override val name = "FMHD"
@@ -74,95 +70,6 @@ class Movierulzups : VidStack() {
     override var mainUrl = "https://movierulz2025.upns.pro"
 }
 
-open class VidStack : ExtractorApi() {
-    override var name = "Vidstack"
-    override var mainUrl = "https://vidstack.io"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    )
-    {
-
-        val headers = mapOf(
-            "Referer" to mainUrl,
-            "Origin" to mainUrl,
-            "User-Agent" to USER_AGENT,
-            "Accept" to "*/*"
-        )
-        val hash = url.substringAfterLast("#").substringAfter("/")
-        val baseurl = getBaseUrl(url)
-
-        val encoded = app.get("$baseurl/api/v1/video?id=$hash", headers = headers).text.trim()
-
-        val key = "kiemtienmua911ca"
-        val ivList = listOf("1234567890oiuytr", "0123456789abcdef")
-
-        val decryptedText = ivList.firstNotNullOfOrNull { iv ->
-            try {
-                AesHelper.decryptAES(encoded, key, iv)
-            } catch (e: Exception) {
-                null
-            }
-        } ?: throw Exception("Failed to decrypt with all IVs")
-        val m3u8 = Regex("\"source\":\"(.*?)\"").find(decryptedText)
-            ?.groupValues?.get(1)
-            ?.replace("\\/", "/") ?: ""
-        Log.d("Phisher",m3u8)
-
-        M3u8Helper.generateM3u8(
-            this.name,
-            fixUrl(m3u8),
-            "$mainUrl/",
-            headers = headers
-        ).forEach(callback)
-
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                fixUrl(m3u8),
-                INFER_TYPE
-            )
-            {
-                this.quality=Qualities.P1080.value
-                this.headers=headers
-                this.referer=url
-            }
-        )
-    }
-
-    private fun getBaseUrl(url: String): String {
-        return try {
-            URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
-            Log.e("Vidstack", "getBaseUrl fallback: ${e.message}")
-            mainUrl
-        }
-    }
-}
-
-object AesHelper {
-    private const val TRANSFORMATION = "AES/CBC/PKCS5PADDING"
-
-    fun decryptAES(inputHex: String, key: String, iv: String): String {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        val secretKey = SecretKeySpec(key.toByteArray(Charsets.UTF_8), "AES")
-        val ivSpec = IvParameterSpec(iv.toByteArray(Charsets.UTF_8))
-
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-        val decryptedBytes = cipher.doFinal(inputHex.hexToByteArray())
-        return String(decryptedBytes, Charsets.UTF_8)
-    }
-
-    private fun String.hexToByteArray(): ByteArray {
-        check(length % 2 == 0) { "Hex string must have an even length" }
-        return chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-    }
-}
 
 open class FMX : ExtractorApi() {
     override var name = "FMX"
