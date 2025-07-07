@@ -17,7 +17,8 @@ class MovierulzhdPlugin: BasePlugin() {
         registerExtractorAPI(FMX())
         registerExtractorAPI(Lulust())
         registerExtractorAPI(Playonion())
-        registerExtractorAPI(Movierulz())
         registerExtractorAPI(GDFlix())
+        registerExtractorAPI(Movierulzups())
+        registerExtractorAPI(Movierulz())
     }
 }

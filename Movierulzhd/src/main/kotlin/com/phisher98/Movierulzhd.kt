@@ -2,7 +2,6 @@ package com.phisher98
 
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -17,7 +16,7 @@ import java.net.URI
 
 open class Movierulzhd : MainAPI() {
 
-    override var mainUrl = "https://1movierulzhd.fit"
+    override var mainUrl = "https://1movierulzhd.art"
     var directUrl = ""
     override var name = "Movierulzhd"
     override val hasMainPage = true
@@ -126,7 +125,7 @@ open class Movierulzhd : MainAPI() {
         val tvType = if (document.select("ul#section > li:nth-child(1)").text()
                 .contains("Episodes") || document.select("ul#playeroptionsul li span.title")
                 .text().contains(
-                    Regex("Episode\\s+\\d+|EP\\d+|PE\\d+")
+                    Regex("Episode\\s+\\d+|EP\\d+|PE\\d+|S\\d{2}|E\\d{2}")
                 )
         ) TvType.TvSeries else TvType.Movie
         val description = document.select("div.wp-content > p").text().trim()
