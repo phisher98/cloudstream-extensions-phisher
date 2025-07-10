@@ -2165,3 +2165,11 @@ data class CinemetaResBehaviorHints(
     val defaultVideoId: Any?,
     val hasScheduledVideos: Boolean,
 )
+
+
+data class VidfastServerData(
+    val name: String,
+    val description: String,
+    val image: String,
+    val data: String?
+)

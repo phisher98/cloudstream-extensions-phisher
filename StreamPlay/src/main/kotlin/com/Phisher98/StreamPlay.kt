@@ -88,6 +88,7 @@ import com.phisher98.StreamPlayExtractor.invokeDramacool
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
+import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
@@ -230,6 +231,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Vidzee = "https://vidzee.wtf"
         const val Elevenmovies = "https://111movies.com"
         const val FlixHQ = "https://myflixerz.to"
+        const val Vidfast = "https://vidfast.pro"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -874,6 +876,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             },
             {
                 if (!res.isAnime) invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            },
+            {
+                if (!res.isAnime) invokeVidfast(res.imdbId, res.season, res.episode, callback)
             },
 
             //Subtitles Invokes

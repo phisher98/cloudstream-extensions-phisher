@@ -2977,3 +2977,19 @@ suspend fun dispatchToExtractor(
         else -> loadSourceNameExtractor(source, link, "", subtitleCallback, callback)
     }
 }
+
+
+fun customBase64EncodeVidfast(input: ByteArray): String {
+    val sourceChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+    val targetChars = "Ju9Egn27FZNe-kaMUtOBAmf0qp3xDYlTX6PhiL5SRjzQIsHvoVw_WC4dGc1Ky8rb"
+
+    // Standard Base64 URL-safe encode, no padding or wrap
+    val base64 = android.util.Base64.encodeToString(
+        input,
+        android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP
+    )
+
+    // Translate characters to custom charset
+    val translationMap = sourceChars.zip(targetChars).toMap()
+    return base64.map { translationMap[it] ?: it }.joinToString("")
+}
