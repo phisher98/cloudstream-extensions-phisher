@@ -156,20 +156,17 @@ class AniList(val plugin: UltimaPlugin) : MainAPI() {
             this.backgroundPosterUrl = data.bannerImage
             this.posterUrl = data.getCoverImage()
             this.tags = data.genres
-            this.recommendations =
-                    data.recommendations?.edges?.map {
-                        val recommendation = it.node.mediaRecommendation
-                        val title =
-                                recommendation.title?.english
-                                        ?: recommendation.title?.romaji
-                                                ?: throw Exception(
-                                                "Unable to load name of recommendation"
-                                        )
-                        val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
-                        newAnimeSearchResponse(title, recommendationUrl, TvType.Anime) {
-                            this.posterUrl = recommendation.coverImage?.large
-                        }
+            this.recommendations = data.recommendations?.edges
+                ?.mapNotNull { edge ->
+                    val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
+                    val title = recommendation.title?.english
+                        ?: recommendation.title?.romaji
+                        ?: "Unknown"
+                    val recommendationUrl = "$mainUrl/anime/${recommendation.id}"
+                    newAnimeSearchResponse(title, recommendationUrl, TvType.Anime).apply {
+                        this.posterUrl = recommendation.coverImage?.large
                     }
+                }
         }
     }
 
