@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
@@ -4405,9 +4406,15 @@ object StreamPlayExtractor : StreamPlay() {
             ?.substringBefore("\",")
 
         if (encodedToken == null) return
-        val json =
-            app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/output.json")
-                .parsedSafe<Elevenmoviesjson>()
+        val jsonString = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json").text
+        val gson = Gson()
+
+        val json: Elevenmoviesjson? = try {
+            gson.fromJson(jsonString, Elevenmoviesjson::class.java)
+        } catch (e: JsonSyntaxException) {
+            e.printStackTrace()
+            null
+        }
         requireNotNull(json) { "Failed to parse Elevenmovies JSON" }
         val token = elevenMoviesTokenV2(encodedToken)
 
@@ -4417,7 +4424,6 @@ object StreamPlayExtractor : StreamPlay() {
             "Referer" to Elevenmovies,
             "User-Agent" to USER_AGENT,
             "Content-Type" to json.contentTypes,
-            "X-CSRF-Token" to json.csrfToken,
             "X-Requested-With" to "XMLHttpRequest"
         )
         val responseString = if (json.httpMethod == "GET") {
