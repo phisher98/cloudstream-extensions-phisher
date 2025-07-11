@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.MediaObject
 import com.lagradost.cloudstream3.SimklSyncServices
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.getPosterUrl
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -112,14 +113,12 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     ): Episode {
         val poster = "https://simkl.in/episodes/${img}_c.webp"
         val linkData = this.toLinkData(showName, ids, year, isAnime).toStringData()
-        return Episode(
-                data = linkData,
-                name = title,
-                description = desc,
-                posterUrl = poster,
-                season = season,
-                episode = episode
-        )
+        return newEpisode(linkData)
+        {
+            this.name = title
+            this.description = desc
+            this.posterUrl = poster
+        }
     }
 
     // this method is added to tackle current API limitation of 100 req per day
@@ -139,11 +138,11 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
 
     override val mainPage =
             mainPageOf(
-                    "$apiUrl/tv/trending/month?type=series&client_id=$auth&extended=overview&limit=$mediaLimit&page=" to
+                    "$apiUrl/tv/trending/month?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
                             "Trending TV Shows",
-                    "$apiUrl/movies/trending/month?client_id=$auth&extended=overview&limit=$mediaLimit&page=" to
+                    "$apiUrl/movies/trending/month?client_id=&extended=overview&limit=$mediaLimit&page=" to
                             "Trending Movies",
-                    "$apiUrl/tv/best/all?type=series&client_id=$auth&extended=overview&limit=$mediaLimit&page=" to
+                    "$apiUrl/tv/best/all?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
                             "Best TV Shows",
                     // "$apiUrl/movies/best/all?client_id=$auth&extended=overview&limit=$limit&page=" to
                     //         "Best Movies",
@@ -182,7 +181,7 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data =
-                app.get("$apiUrl/tv/$id?client_id=$auth&extended=full")
+                app.get("$apiUrl/tv/$id?client_id=&extended=full")
                         .parsedSafe<SimklMediaObject>()
                         ?: throw ErrorLoadingException("Unable to load data")
         val year = data.year
@@ -198,7 +197,7 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
             }
         } else {
             val eps =
-                    app.get("$apiUrl/tv/episodes/$id?client_id=$auth&extended=full")
+                    app.get("$apiUrl/tv/episodes/$id?client_id=&extended=full")
                             .parsedSafe<Array<SimklEpisodeObject>>()
                             ?: buildSimklEpisodes(data.total_episodes)
                                     ?: throw Exception("Unable to fetch episodes")

@@ -22,6 +22,7 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
@@ -138,7 +139,11 @@ class MyAnimeList(val plugin: UltimaPlugin) : MainAPI() {
                                             isAnime = true
                                     )
                                     .toStringData()
-                    Episode(linkData, season = 1, episode = i)
+                    newEpisode(linkData)
+                    {
+                        this.season= 1
+                        this.episode = i
+                    }
                 }
         return newAnimeLoadResponse(
                 data.title ?: throw NotImplementedError("Unable to parse title"),
