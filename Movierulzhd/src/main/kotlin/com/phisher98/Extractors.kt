@@ -115,8 +115,12 @@ open class Akamaicdn : ExtractorApi() {
             ?.data()
             ?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
-        val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
-        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
+        
+        val cleaned = sniffScript.replace(Regex("\\[.*?\\]"), "")
+        val regex = Regex("\"(.*?)\"")
+        val args = regex.findAll(cleaned).map { it.groupValues[1].trim() }.toList()
+        val token = args.lastOrNull().orEmpty()
+        val m3u8 = "$mainUrl/m3u8/${args[1]}/${args[2]}/master.txt?s=1&cache=1&plt=$token"
         M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = headers).forEach(callback)
     }
 }
