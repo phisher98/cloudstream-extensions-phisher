@@ -2466,23 +2466,12 @@ internal class Molop : ExtractorApi() {
             ?.data()
             ?.substringAfter("sniff(")
             ?.substringBefore(");") ?: return
-        val ids = sniffScript.split(",").map { it.replace("\"", "").trim() }
-        val m3u8 = "https://molop.art/m3u8/${ids[1]}/${ids[2]}/master.txt?s=1&cache=1&plt=${ids[16].substringBefore(" //")}"
-
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                m3u8,
-                ExtractorLinkType.M3U8
-            )
-            {
-                this.referer=url
-                this.quality=Qualities.P1080.value
-                this.headers=headers
-
-            }
-        )
+        val cleaned = sniffScript.replace(Regex("\\[.*?\\]"), "")
+        val regex = Regex("\"(.*?)\"")
+        val args = regex.findAll(cleaned).map { it.groupValues[1].trim() }.toList()
+        val token = args.lastOrNull().orEmpty()
+        val m3u8 = "$mainUrl/m3u8/${args[1]}/${args[2]}/master.txt?s=1&cache=1&plt=$token"
+        M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = headers).forEach(callback)
     }
 }
 
