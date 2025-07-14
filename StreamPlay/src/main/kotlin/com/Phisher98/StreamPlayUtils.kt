@@ -2878,9 +2878,8 @@ suspend fun <T> retryIO(
 @SuppressLint("NewApi")
 suspend fun elevenMoviesTokenV2(rawData: String): String {
     val json= app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/output.json").parsedSafe<Elevenmoviesjson>() ?: return ""
-    val keyHex = json.keyHex
-    val ivHex = json.ivHex
-
+    val keyHex = json.key_hex
+    val ivHex = json.iv_hex
     val aesKey = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     val aesIv = ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
@@ -2894,7 +2893,7 @@ suspend fun elevenMoviesTokenV2(rawData: String): String {
     val hexString = encrypted.joinToString("") { "%02x".format(it) }
 
     // XOR key from hex string
-    val xorKeyHex = json.xorKey
+    val xorKeyHex = json.xor_key
     val xorKey = xorKeyHex.chunked(2)
         .map { it.toInt(16).toByte() }
         .toByteArray()
@@ -2981,7 +2980,7 @@ suspend fun dispatchToExtractor(
 
 fun customBase64EncodeVidfast(input: ByteArray): String {
     val sourceChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-    val targetChars = "Ju9Egn27FZNe-kaMUtOBAmf0qp3xDYlTX6PhiL5SRjzQIsHvoVw_WC4dGc1Ky8rb"
+    val targetChars = "7EkRi2WnMSlgLbXm_jy1vtO69ehrAV0-saUB5FGpoq3QuNIZ8wJ4PfdHxzTDKYCc"
 
     // Standard Base64 URL-safe encode, no padding or wrap
     val base64 = android.util.Base64.encodeToString(

@@ -1268,7 +1268,11 @@ object StreamPlayExtractor : StreamPlay() {
         val uhdmoviesAPI = getDomains()?.uhdmovies ?: return
         val searchTitle = title?.replace("-", " ")?.replace(":", " ") ?: return
 
-        val searchUrl = "$uhdmoviesAPI/search/$searchTitle"
+        val searchUrl = if (season != null) {
+            "$uhdmoviesAPI/search/$searchTitle $year"
+        } else {
+            "$uhdmoviesAPI/search/$searchTitle"
+        }
 
         val url = try {
             app.get(searchUrl).document
@@ -4405,70 +4409,90 @@ object StreamPlayExtractor : StreamPlay() {
             ?.substringAfter("{\"data\":\"")
             ?.substringBefore("\",")
 
-        if (encodedToken == null) return
-        val jsonString = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json").text
-        val gson = Gson()
+        checkNotNull(encodedToken) { "❌ Encoded token not found. Check if the page structure has changed." }
 
-        val json: Elevenmoviesjson? = try {
+        val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json"
+        val jsonString = try {
+            app.get(jsonUrl).text
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw RuntimeException("❌ Failed to fetch JSON from GitHub: $jsonUrl")
+        }
+
+        println("✅ Fetched JSON from GitHub")
+
+        val gson = Gson()
+        val json: Elevenmoviesjson = try {
             gson.fromJson(jsonString, Elevenmoviesjson::class.java)
         } catch (e: JsonSyntaxException) {
             e.printStackTrace()
-            null
+            throw RuntimeException("❌ Failed to parse Elevenmovies JSON")
         }
-        requireNotNull(json) { "Failed to parse Elevenmovies JSON" }
-        val token = elevenMoviesTokenV2(encodedToken)
 
-        val staticPath = json.staticPath
-        val apiServerUrl = "$Elevenmovies/$staticPath/$token/sr"
+        val token = elevenMoviesTokenV2(encodedToken)
+        val staticPath = json.static_path
+        val apiServerUrl = "$Elevenmovies/$staticPath/${token}/sr"
+
         val headers = mapOf(
             "Referer" to Elevenmovies,
-            "User-Agent" to USER_AGENT,
-            "Content-Type" to json.contentTypes,
-            "X-Requested-With" to "XMLHttpRequest"
+            "Content-Type" to json.content_types,
         )
-        val responseString = if (json.httpMethod == "GET") {
-            app.get(apiServerUrl, headers = headers).body.string()
-        } else {
-            val postHeaders = mapOf(
-                "Referer" to Elevenmovies,
-                "Content-Type" to json.contentTypes,
-                "X-CSRF-Token" to json.csrfToken,
-                "X-Requested-With" to "XMLHttpRequest"
-            )
-            val mediaType = json.contentTypes.toMediaType()
-            val requestBody = "".toRequestBody(mediaType)
-            app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
+
+        val responseString = try {
+            if (json.http_method == "GET") {
+                app.get(apiServerUrl, headers = headers).body.string()
+            } else {
+                val postHeaders = headers + mapOf("X-Requested-With" to "XMLHttpRequest")
+                val mediaType = json.content_types.toMediaType()
+                val requestBody = "".toRequestBody(mediaType)
+                app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw RuntimeException("❌ Failed to fetch server list from Elevenmovies")
         }
 
         val listType = object : TypeToken<List<ElevenmoviesServerEntry>>() {}.type
-        val serverList: List<ElevenmoviesServerEntry> = Gson().fromJson(responseString, listType)
+        val serverList: List<ElevenmoviesServerEntry> = try {
+            gson.fromJson(responseString, listType)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw RuntimeException("❌ Failed to parse server list")
+        }
 
         for (entry in serverList) {
             val serverToken = entry.data
             val serverName = entry.name
-
             val streamApiUrl = "$Elevenmovies/$staticPath/$serverToken"
-            val streamResponseString = if (json.httpMethod == "GET") {
-                app.get(streamApiUrl, headers = headers).body.string()
-            } else {
-                val postHeaders = mapOf(
-                    "Referer" to Elevenmovies,
-                    "Content-Type" to "application/vnd.api+json",
-                    "X-CSRF-Token" to json.csrfToken,
-                    "X-Requested-With" to "XMLHttpRequest"
-                )
-                val mediaType = "application/vnd.api+json".toMediaType()
-                val requestBody = "".toRequestBody(mediaType)
-                app.post(
-                    streamApiUrl,
-                    headers = postHeaders,
-                    requestBody = requestBody
-                ).body.string()
+
+            val streamResponseString = try {
+                if (json.http_method == "GET") {
+                    app.get(streamApiUrl, headers = headers).body.string()
+                } else {
+                    val postHeaders = mapOf(
+                        "Referer" to Elevenmovies,
+                        "Content-Type" to "application/vnd.api+json",
+                        "X-Requested-With" to "XMLHttpRequest"
+                    )
+                    val mediaType = "application/vnd.api+json".toMediaType()
+                    val requestBody = "".toRequestBody(mediaType)
+                    app.post(streamApiUrl, headers = postHeaders, requestBody = requestBody).body.string()
+                }
+            } catch (e: Exception) {
+                println("⚠️ Failed to fetch stream for server $serverName")
+                e.printStackTrace()
+                continue
             }
-            val streamRes =
-                Gson().fromJson(streamResponseString, ElevenmoviesStreamResponse::class.java)
-                    ?: continue
-            val videoUrl = streamRes.url ?: continue
+
+            val streamRes = try {
+                gson.fromJson(streamResponseString, ElevenmoviesStreamResponse::class.java)
+            } catch (e: Exception) {
+                println("⚠️ Failed to parse stream response for server $serverName")
+                e.printStackTrace()
+                continue
+            }
+
+            val videoUrl = streamRes?.url ?: continue
 
             M3u8Helper.generateM3u8(
                 "Eleven Movies $serverName",
@@ -4477,15 +4501,13 @@ object StreamPlayExtractor : StreamPlay() {
             ).forEach(callback)
 
             streamRes.tracks?.forEach { sub ->
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        sub.label ?: return@forEach,
-                        sub.file ?: return@forEach
-                    )
-                )
+                val label = sub.label ?: return@forEach
+                val file = sub.file ?: return@forEach
+                subtitleCallback.invoke(SubtitleFile(label, file))
             }
         }
     }
+
 
 
     @SuppressLint("NewApi")
@@ -4721,9 +4743,12 @@ object StreamPlayExtractor : StreamPlay() {
 
         val rawData = regex.find(regexData)?.groupValues?.getOrNull(1)
             ?: return println("❌ No match found.")
+        val vidFastKey = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/main/Vidfast.json")
+            .parsedSafe<VidFastkey>()
 
-        val keyHex = "13346e2c05211f72e46a465e953fd5410826715e28d927f92ea5f4daee985c8b"
-        val ivHex = "b83bcd42b90f5364e9b95c398264bca4"
+        val keyHex = vidFastKey?.keyHex ?: "Key Hex not Found"
+        val ivHex = vidFastKey?.ivHex ?: "Key IV Hex not Found"
+
         val aesKey = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         val aesIv = ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
@@ -4736,33 +4761,39 @@ object StreamPlayExtractor : StreamPlay() {
         val padLength = blockSize - rawData.toByteArray().size % blockSize
         val paddedData = rawData.toByteArray() + ByteArray(padLength) { padLength.toByte() }
         val encrypted = cipher.doFinal(paddedData)
-
-        val xorKey = "3fc3e051ddc9dd8a74".chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val xorKeyHexRaw = vidFastKey?.xorKey ?: "XorKey Hex not Found"
+        val xorKeyHex = if (xorKeyHexRaw.length > 1) xorKeyHexRaw.dropLast(1) else xorKeyHexRaw
+        val xorKey = xorKeyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         val xorResult = ByteArray(encrypted.size) { i ->
             (encrypted[i].toInt() xor xorKey[i % xorKey.size].toInt()).toByte()
         }
         val headers = mapOf(
             "Accept" to "*/*",
             "Referer" to Vidfast,
+            "Origin" to "$Vidfast/",
+            "User-Agent" to USER_AGENT,
             "x-session" to "",
-            "X-Requested-With" to "XMLHttpRequest",
-            "X-Csrf-Token" to "lVx7BVtk9c3SMNbF49PNvUc7GV5zzdem"
+            "Content-Type" to "application/json",
+            "X-Requested-With" to "XMLHttpRequest"
         )
 
+
         val encodedFinal = customBase64EncodeVidfast(xorResult)
-        val staticPath = "rebivol/ad/w/2c7998b18129848378021254f87db35df8f562b2/2cf30a7c/APA91nNHHa3xbnvasl8ciswLATkt2fIiVFciF5RLarK4oR7nrTpEDSBjO_kRoBJD730BWfo6bQZIpxCr-PAlSGc8GAAxueegNH5gNzrcqhPDliciuUDv0GTqb_2t1ik9pIAXpVaZ8inm6ey56Qf44wrOOPUfZYlkKuKs18mNKqBluBYTB5lBXWF/775d49bf3b9b4d082f5156cd9f36e21d42014547cd9282b1fe62ccbe3d09f66b/1000094661747536"
-        val apiServersUrl = "https://vidfast.pro/$staticPath/k33a7dwPZst1/$encodedFinal"
+        val staticPath = vidFastKey?.staticPath
+        val subpath= vidFastKey?.subPath
+        val apiServersUrl = "$Vidfast/$staticPath/$subpath/$encodedFinal"
         val gson = Gson()
-        val jsonMedia = "{}".toRequestBody("application/json".toMediaTypeOrNull())
+        val jsonMedia = "{}".toRequestBody()
         val responseBody = app.post(apiServersUrl, headers = headers, requestBody = jsonMedia).body.string()
         val type = object : TypeToken<List<VidfastServerData>>() {}.type
         val apiResponse: List<VidfastServerData>? = gson.fromJson(responseBody, type)
+        val apisubpath= vidFastKey?.apisubpath
 
         if (apiResponse != null) {
             for (item in apiResponse) {
                 val serverName = item.name
                 val serverData = item.data ?: continue
-                val apiStream = "https://vidfast.pro/$staticPath/p6PWA5s/$serverData"
+                val apiStream = "$Vidfast/$staticPath/$apisubpath/$serverData"
 
                 try {
                     val streamResponse = app.post(apiStream, headers = headers, requestBody = jsonMedia)

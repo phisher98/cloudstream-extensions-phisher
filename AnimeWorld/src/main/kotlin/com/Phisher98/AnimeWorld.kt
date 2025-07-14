@@ -82,19 +82,26 @@ class AnimeWorld : MainAPI() {
         val description = document.selectFirst("div.description p")?.text()?.trim()
         val recommendations = document.select("section.section.episodes div.owl-carousel article").mapNotNull { it.toSearchResult() }
         return if (tvType == TvType.TvSeries) {
-                val episodes = mutableListOf<Episode>()
-                document.select("#episode_by_temp li").map { ep->
-                        val href = ep.select("a").attr("href")
-                        val name = "Episode "+ ep.select("header.entry-header h2").text().substringAfter("EP").trim()
-                        val image = ep.select("div.post-thumbnail img").attr("data-src")
-                        val episode =ep.select("header.entry-header span").text().substringAfter("x").toIntOrNull()
-                        episodes.add(newEpisode(href)
-                        {
-                            this.name=name
-                            this.episode=episode
-                            this.posterUrl=image
-                        })
+            val episodes = mutableListOf<Episode>()
+            val seasonLinks = document.select("ul.aa-cnt li a").map { it.attr("href") }
+            for (seasonUrl in seasonLinks) {
+                val seasonDoc = app.get(mainUrl+seasonUrl).document
+                seasonDoc.select("#episode_by_temp li").forEach { ep ->
+                    val href = ep.select("a").attr("href")
+                    val name = "Episode " + ep.select("header.entry-header h2").text().substringAfter("EP").trim()
+                    val image = ep.select("div.post-thumbnail img").attr("data-src")
+                    val episode = ep.select("header.entry-header span").text().substringAfter("x").toIntOrNull()
+                    val season = ep.select("header.entry-header span").text().substringBefore("x").toIntOrNull()
+
+                    episodes.add(newEpisode(href) {
+                        this.name = name
+                        this.season = season
+                        this.episode = episode
+                        this.posterUrl = image
+                    })
                 }
+            }
+
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.year = year

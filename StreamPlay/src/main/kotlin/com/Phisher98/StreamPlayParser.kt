@@ -1940,21 +1940,14 @@ data class ElevenmoviesSubtitle(
 data class Elevenmoviesjson(
     val src: String,
     val dst: String,
-    @SerializedName("static_path")
-    val staticPath: String,
-    @SerializedName("http_method")
-    val httpMethod: String,
-    @SerializedName("key_hex")
-    val keyHex: String,
-    @SerializedName("iv_hex")
-    val ivHex: String,
-    @SerializedName("xor_key")
-    val xorKey: String,
-    @SerializedName("csrf_token")
-    val csrfToken: String,
-    @SerializedName("content_types")
-    val contentTypes: String
+    val static_path: String,
+    val http_method: String,
+    val key_hex: String,
+    val iv_hex: String,
+    val xor_key: String,
+    val content_types: String,
 )
+
 
 
 //Domains Parser
@@ -2171,3 +2164,33 @@ data class VidfastServerData(
     val image: String,
     val data: String?
 )
+
+
+//VidFast Keys
+
+
+data class VidFastkey(
+    @JsonProperty("static_path")
+    val staticPath: String,
+    @JsonProperty("key_hex")
+    val keyHex: String,
+    @JsonProperty("iv_hex")
+    val ivHex: String,
+    @JsonProperty("xor_key")
+    val xorKey: String,
+    val method: String,
+    @JsonProperty("content_type")
+    val contentType: String,
+    val headers: Headers,
+    @JsonProperty("sub_path")
+    val subPath: String,
+    val apisubpath: String,
+)
+
+data class VidFastkeyHeaders(
+    @JsonProperty("Content-Type")
+    val contentType: String,
+    @JsonProperty("X-Requested-With")
+    val xRequestedWith: String,
+)
+

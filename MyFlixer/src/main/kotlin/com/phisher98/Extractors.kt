@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.Rabbitstream
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
@@ -46,15 +47,21 @@ class Videostr : ExtractorApi() {
         )
 
         val id = url.substringAfterLast("/").substringBefore("?")
-        val apiUrl = "$mainUrl/embed-1/v2/e-1/getSources?id=$id"
+        val html= app.get(url, referer = url).text
+        val regex = Regex("""\b[a-zA-Z0-9]{48}\b""")
+        val hash = regex.find(html)?.value
+            ?: throw Exception("No 48-character token found")
+        val apiUrl = "$mainUrl/embed-1/v3/e-1/getSources?id=$id&_k=$hash"
 
         val json = app.get(apiUrl, headers = headers).text
         val response = Gson().fromJson(json, MediaData::class.java)
-
+        Log.d("Phisher",response.toJson())
         val key = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json")
             .parsedSafe<Megakey>()?.vidstr ?: return
 
         val decryptedJson = decryptOpenSSL(response.sources, key)
+        Log.d("Phisher",decryptedJson.toJson())
+
         val m3u8Url = parseSourceJson(decryptedJson).firstOrNull()?.file ?: return
 
         val m3u8Headers = mapOf("Referer" to mainUrl, "Origin" to mainUrl)

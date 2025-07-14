@@ -31,6 +31,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
+import com.phisher98.StreamPlayExtractor.invokeTom
 import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
@@ -284,7 +285,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             {
                 if (!res.isAnime) invokeVidfast(res.imdbId, res.season, res.episode, callback)
             },
-
 
             //Subtitles Invokes
             {
