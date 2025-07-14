@@ -187,55 +187,78 @@ class IptvPlaylistParser {
             throw PlaylistParserException.InvalidHeader()
         }
 
-        val playlistItems: MutableList<PlaylistItem> = mutableListOf()
-        var currentIndex = 0
+        val playlistItems = mutableListOf<PlaylistItem>()
 
-        var line: String? = reader.readLine()
+        var currentTitle: String? = null
+        var currentAttributes: Map<String, String> = emptyMap()
+        var currentUserAgent: String? = null
+        var currentReferrer: String? = null
+        var currentHeaders: Map<String, String> = emptyMap()
 
-        while (line != null) {
-            if (line.isNotEmpty()) {
-                if (line.startsWith(EXT_INF)) {
-                    val title = line.getTitle()
-                    val attributes = line.getAttributes()
-                    playlistItems.add(PlaylistItem(title, attributes))
-                } else if (line.startsWith(EXT_VLC_OPT)) {
-                    val item = playlistItems[currentIndex]
-                    val userAgent = line.getTagValue("http-user-agent")
-                    val referrer = line.getTagValue("http-referrer")
-                    val headers = if (referrer != null) {
-                        item.headers + mapOf("referrer" to referrer)
-                    } else item.headers
-                    playlistItems[currentIndex] =
-                        item.copy(userAgent = userAgent, headers = headers)
-                } else {
-                    if (!line.startsWith("#")) {
-                        val item = playlistItems[currentIndex]
-                        val url = line.getUrl()
-                        val userAgent = line.getUrlParameter("user-agent")
-                        val referrer = line.getUrlParameter("referer")
-                        val key = line.getUrlParameter("key")
-                        val keyid = line.getUrlParameter("keyid")
-                        val urlHeaders = if (referrer != null) {
-                            item.headers + mapOf("referrer" to referrer)
-                        } else item.headers
-                        playlistItems[currentIndex] =
-                            item.copy(
-                                url = url,
-                                headers = item.headers + urlHeaders,
-                                userAgent = userAgent,
-                                key=key,
-                                keyid=keyid
-                            )
-                        currentIndex++
+        reader.forEachLine { line ->
+            val trimmedLine = line.trim()
+            if (trimmedLine.isEmpty()) return@forEachLine
+
+            when {
+                trimmedLine.startsWith(EXT_INF) -> {
+                    currentTitle = trimmedLine.getTitle()
+                    currentAttributes = trimmedLine.getAttributes()
+                    // Reset fields in case the last item was incomplete
+                    currentUserAgent = null
+                    currentReferrer = null
+                    currentHeaders = emptyMap()
+                }
+
+                trimmedLine.startsWith(EXT_VLC_OPT) -> {
+                    val userAgent = trimmedLine.getTagValue("http-user-agent")
+                    val referrer = trimmedLine.getTagValue("http-referrer")
+                    currentUserAgent = userAgent ?: currentUserAgent
+                    currentReferrer = referrer ?: currentReferrer
+                    if (currentReferrer != null) {
+                        currentHeaders = currentHeaders + mapOf("referrer" to currentReferrer!!)
                     }
                 }
-            }
 
-            line = reader.readLine()
+                !trimmedLine.startsWith("#") -> {
+                    val url = trimmedLine.getUrl()
+                    val uaParam = trimmedLine.getUrlParameter("user-agent")
+                    val refParam = trimmedLine.getUrlParameter("referer")
+                    val key = trimmedLine.getUrlParameter("key")
+                    val keyid = trimmedLine.getUrlParameter("keyid")
+
+                    val combinedUserAgent = uaParam ?: currentUserAgent
+                    val ref = refParam ?: currentReferrer
+
+                    val urlHeaders = if (ref != null) {
+                        currentHeaders + mapOf("referrer" to ref)
+                    } else currentHeaders
+
+                    if (currentTitle != null) {
+                        playlistItems.add(
+                            PlaylistItem(
+                                currentTitle ?: "",
+                                attributes = currentAttributes,
+                                url = url,
+                                userAgent = combinedUserAgent,
+                                headers = urlHeaders,
+                                key = key,
+                                keyid = keyid
+                            )
+                        )
+                    }
+
+                    // Reset state for next block
+                    currentTitle = null
+                    currentAttributes = emptyMap()
+                    currentUserAgent = null
+                    currentReferrer = null
+                    currentHeaders = emptyMap()
+                }
+            }
         }
+
         return Playlist(playlistItems)
     }
-
     /**
      * Replace "" (quotes) from given string.
      */
