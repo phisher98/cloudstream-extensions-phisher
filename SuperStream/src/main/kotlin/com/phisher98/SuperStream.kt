@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import com.phisher98.SuperStreamExtractor.invokeSubtitleAPI
 import com.phisher98.SuperStreamExtractor.invokeSuperstream
-import com.phisher98.SuperStreamExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.lagradost.api.Log
@@ -120,12 +119,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
             return listOf("https://api.themoviedb.org/3")
         }
 
-
-
-
-
         private const val apiKey = BuildConfig.TMDB_API
-        const val Catflix= "https://catflix.su"
         const val febbox="https://www.febbox.com"
         fun getType(t: String?): TvType {
             return when (t) {
@@ -511,16 +505,6 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                         callback
                     )
                 },
-                {
-                    if (!res.isAnime) invokecatflix(
-                        res.id,
-                        res.epid,
-                        res.title,
-                        res.episode,
-                        res.season,
-                        callback
-                    )
-                }
             )
         }
         return true
