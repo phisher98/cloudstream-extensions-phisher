@@ -25,7 +25,6 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.MediaObject
-import com.lagradost.cloudstream3.SimklSyncServices
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.getPosterUrl
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -44,7 +43,6 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     private val api = AccountManager.simklApi
     private val apiUrl = "https://api.simkl.com"
     private final val mediaLimit = 20
-    private val auth = BuildConfig.SIMKL_API
 
     protected fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -144,8 +142,8 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
                             "Trending Movies",
                     "$apiUrl/tv/best/all?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
                             "Best TV Shows",
-                    // "$apiUrl/movies/best/all?client_id=$auth&extended=overview&limit=$limit&page=" to
-                    //         "Best Movies",
+                    //"$apiUrl/movies/best/all?client_id=&extended=overview&limit=$mediaLimit&page=" to
+                    //       "Best Movies",
                     "Personal" to "Personal"
             )
 
@@ -162,7 +160,7 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
                             emptyList<SearchResponse>(),
                             false
                     )
-            var homePageList =
+            val homePageList =
                     api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null
                         val libraryName =
@@ -221,7 +219,7 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mediaData = AppUtils.parseJson<LinkData>(data)
+        val mediaData = parseJson<LinkData>(data)
         if (mediaData.isAnime)
                 invokeExtractors(Category.ANIME, mediaData, subtitleCallback, callback)
         else invokeExtractors(Category.MEDIA, mediaData, subtitleCallback, callback)

@@ -62,7 +62,6 @@ jobs:
           SUPERSTREAM_SECOND_API: ${{ secrets.SUPERSTREAM_SECOND_API }}
           SUPERSTREAM_THIRD_API: ${{ secrets.SUPERSTREAM_THIRD_API }}
           SUPERSTREAM_FOURTH_API: ${{ secrets.SUPERSTREAM_FOURTH_API }}
-          MOVIE_API: ${{ secrets.MOVIE_API }}
           AsianDrama_API: ${{ secrets.AsianDrama_API }}
           FanCode_API: ${{ secrets.FanCode_API }}
           Whvx_API: ${{ secrets.Whvx_API }}
@@ -88,6 +87,7 @@ jobs:
           StreamPlayAPI: ${{ secrets.StreamPlayAPI }}
           PROXYAPI: ${{ secrets.PROXYAPI }}
           KAISVA: ${{ secrets.KAISVA }}
+          MAL_API: ${{ secrets.MAL_API }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -107,7 +107,6 @@ jobs:
           echo SUPERSTREAM_SECOND_API=$SUPERSTREAM_SECOND_API >> local.properties
           echo SUPERSTREAM_THIRD_API=$SUPERSTREAM_THIRD_API >> local.properties
           echo SUPERSTREAM_FOURTH_API=$SUPERSTREAM_FOURTH_API >> local.properties
-          echo MOVIE_API=$MOVIE_API >> local.properties
           echo AsianDrama_API=$AsianDrama_API >> local.properties
           echo FanCode_API=$FanCode_API >> local.properties
           echo Whvx_API=$Whvx_API >> local.properties
@@ -132,6 +131,7 @@ jobs:
           echo StreamPlayAPI=$StreamPlayAPI >> local.properties
           echo PROXYAPI=$PROXYAPI >> local.properties
           echo KAISVA=$KAISVA >> local.properties
+          echo MAL_API=$MAL_API >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

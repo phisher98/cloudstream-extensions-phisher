@@ -17,7 +17,7 @@ import com.phisher98.StreamPlayPlugin
 import com.lagradost.cloudstream3.CommonActivity.showToast
 
 class SettingsFragment(
-    private val plugin: StreamPlayPlugin,
+    plugin: StreamPlayPlugin,
     private val sharedPref: SharedPreferences,
 ) : BottomSheetDialogFragment() {
     private val res = plugin.resources ?: throw Exception("Unable to read resources")
