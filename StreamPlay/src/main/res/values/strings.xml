@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Settings</string>
+    <string name="notification_preferences">Notification Preferences</string>
+    <string name="other_settings">Other Settings</string>
+    <string name="reset">Reset</string>
+    <string name="save_token">Save Token</string>
+    <string name="paste_token_or_use_login">Paste Token or use Login</string>
+    <string name="token_management">Token Management</string>
+    <string name="toggle_extensions">Toggle Extensions</string>
+    <string name="login">Login</string>
+    <string name="go_to_login">Go to Login</string>
+</resources>

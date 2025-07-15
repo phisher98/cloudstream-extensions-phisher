@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toggle_fragment_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Switch
+        android:id="@+id/toggle_my_feature"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enable StreamPlay" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/extensionsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="never"/>
+</LinearLayout>

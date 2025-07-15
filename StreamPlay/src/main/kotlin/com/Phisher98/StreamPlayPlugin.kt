@@ -2,7 +2,7 @@ package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
-import com.phisher98.settings.SettingsFragment
+import com.Phisher98.settings.MainSettingsFragment
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor
 import com.lagradost.cloudstream3.extractors.FileMoon
@@ -128,7 +128,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(BuzzServer())
         val activity = context as AppCompatActivity
         openSettings = {
-            val frag = SettingsFragment(this, sharedPref)
+            val frag = MainSettingsFragment(this, sharedPref)
             frag.show(activity.supportFragmentManager, "Frag")
         }
     }
