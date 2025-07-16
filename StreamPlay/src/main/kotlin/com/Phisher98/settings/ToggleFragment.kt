@@ -65,6 +65,8 @@ class ToggleFragment(
 
         val currentSet = savedSet?.toSet() ?: defaultEnabled
 
+        val outlineDrawable = getDrawable("outline")
+
         for (api in apis) {
             val toggleItem = getLayout("list_toggle_item", inflater, container)
             val label = toggleItem.findView<TextView>("toggle_title")
@@ -73,7 +75,16 @@ class ToggleFragment(
             label.text = api.name
             toggleSwitch.isChecked = currentSet.contains(api.name)
 
-            toggleItem.makeTvCompatible()
+            // Set background if checked initially
+            if (toggleSwitch.isChecked) {
+                toggleItem.background = outlineDrawable
+            }
+
+            // Update background dynamically on toggle
+            toggleSwitch.setOnCheckedChangeListener { _, isChecked ->
+                toggleItem.background = if (isChecked) outlineDrawable else null
+            }
+
             extensionList.addView(toggleItem)
         }
 
