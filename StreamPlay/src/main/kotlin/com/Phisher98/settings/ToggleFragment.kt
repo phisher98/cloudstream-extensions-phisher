@@ -15,10 +15,13 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
 
+
 class ToggleFragment(
     private val plugin: StreamPlayPlugin,
-    private val sharedPref: SharedPreferences
+    private val sharedPref: SharedPreferences,
+    private val reloadPlugin: () -> Unit
 ) : BottomSheetDialogFragment() {
+
 
     private val res: Resources = plugin.resources ?: throw Exception("Unable to access plugin resources")
 
@@ -102,6 +105,7 @@ class ToggleFragment(
             holder.toggleSwitch.isChecked = sharedPref.getBoolean(key, true)
             holder.toggleSwitch.setOnCheckedChangeListener { _, isChecked ->
                 sharedPref.edit().putBoolean(key, isChecked).apply()
+                reloadPlugin()
             }
         }
 

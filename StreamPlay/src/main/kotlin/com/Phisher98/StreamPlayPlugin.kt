@@ -27,12 +27,23 @@ import com.lagradost.cloudstream3.plugins.Plugin
 class StreamPlayPlugin: Plugin() {
     override fun load(context: Context) {
         val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
-        registerMainAPI(StreamPlay(sharedPref))
-        registerMainAPI(StreamPlayLite())
-        registerMainAPI(StreamPlayTorrent())
-        //registerMainAPI(StreamPlayTest(sharedPref))
-        registerMainAPI(StreamPlayAnime())
-        registerMainAPI(StreamplayTorrentAnime())
+        
+if (sharedPref.getBoolean("enabled_StreamPlay", true)) {
+    registerMainAPI(StreamPlay(sharedPref))
+}
+if (sharedPref.getBoolean("enabled_StreamPlayLite", true)) {
+    registerMainAPI(StreamPlayLite())
+}
+if (sharedPref.getBoolean("enabled_StreamPlayTorrent", true)) {
+    registerMainAPI(StreamPlayTorrent())
+}
+if (sharedPref.getBoolean("enabled_StreamPlayAnime", true)) {
+    registerMainAPI(StreamPlayAnime())
+}
+if (sharedPref.getBoolean("enabled_StreamplayTorrentAnime", true)) {
+    registerMainAPI(StreamplayTorrentAnime())
+}
+
         registerExtractorAPI(Animefever())
         registerExtractorAPI(Multimovies())
         registerExtractorAPI(MultimoviesSB())
@@ -128,8 +139,10 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(BuzzServer())
         val activity = context as AppCompatActivity
         openSettings = {
-            val frag = MainSettingsFragment(this, sharedPref)
-            frag.show(activity.supportFragmentManager, "Frag")
+            
+val frag = MainSettingsFragment(this, sharedPref) {
+    (context as? AppCompatActivity)?.recreate()
+}
         }
     }
 }
