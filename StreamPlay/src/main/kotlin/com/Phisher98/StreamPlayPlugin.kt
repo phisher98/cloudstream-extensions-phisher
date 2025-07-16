@@ -159,7 +159,4 @@ class StreamPlayPlugin: Plugin() {
             frag.show(activity.supportFragmentManager, "Frag")
         }
     }
-    fun getAllMainApis(): List<MainAPI> {
-        return registeredMainApis
-    }
 }

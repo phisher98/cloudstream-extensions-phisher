@@ -107,7 +107,7 @@ class ToggleFragment(
             }
 
             sharedPref.edit {
-                putStringSet(savedKey, enabledPluginNames.toSet())
+                putStringSet(savedKey, enabledPluginNames.toSet()).commit()
             }
             showToast("Settings saved. Please restart the app to apply changes.")
             dismiss()
