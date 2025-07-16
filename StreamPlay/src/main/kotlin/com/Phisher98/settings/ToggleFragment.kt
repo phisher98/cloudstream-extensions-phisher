@@ -3,17 +3,16 @@ package com.phisher98.settings
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.content.res.Resources
+import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import android.widget.Switch
-import android.widget.TextView
+import android.view.*
+import android.widget.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
+import androidx.core.content.edit
+import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.phisher98.*
 
 class ToggleFragment(
     private val plugin: StreamPlayPlugin,
@@ -26,85 +25,83 @@ class ToggleFragment(
     private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
         val id = res.getIdentifier(name, "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
         if (id == 0) throw Resources.NotFoundException("Layout $name not found.")
-        return inflater.inflate(id, container, false)
+        val layout = res.getLayout(id)
+        return inflater.inflate(layout, container, false)
+    }
+
+    private fun getDrawable(name: String): Drawable {
+        val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return res.getDrawable(id, null)
+            ?: throw Resources.NotFoundException("Drawable $name not found.")
     }
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-        if (id == 0) throw Resources.NotFoundException("ID $name not found.")
+        if (id == 0) throw Resources.NotFoundException("View ID $name not found.")
         return this.findViewById(id)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        println("DEBUG: ToggleFragment onCreateView started")
-
-        try {
-            val layoutName = "fragment_toggle_extensions" // or your actual layout file name (no .xml)
-            val id = res.getIdentifier(layoutName, "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
-            println("DEBUG: Layout ID resolved to: $id")
-
-            if (id == 0) {
-                throw Resources.NotFoundException("Layout $layoutName not found in package ${BuildConfig.LIBRARY_PACKAGE_NAME}")
-            }
-
-            val layout = res.getLayout(id) // This line will crash if layout is missing
-            println("DEBUG: Layout loaded from resources")
-
-            val view = inflater.inflate(layout, container, false)
-            println("DEBUG: Layout inflated successfully")
-            return view
-
-        } catch (e: Exception) {
-            println("ERROR: ToggleFragment crashed in onCreateView: ${e.message}")
-            e.printStackTrace()
-            return null
-        }
+    private fun View.makeTvCompatible() {
+        val id = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.background = res.getDrawable(id, null)
     }
 
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        val root = getLayout("fragment_toggle_extensions", inflater, container)
+        val extensionList = root.findView<LinearLayout>("toggle_list_container")
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val toggleList: RecyclerView = view.findView("extensionsRecyclerView")
-        toggleList.layoutManager = LinearLayoutManager(context)
-        toggleList.adapter = ToggleAdapter()
-    }
-
-    inner class ToggleAdapter : RecyclerView.Adapter<ToggleAdapter.ToggleViewHolder>() {
-
-        private val toggles = listOf(
-            "enabled_StreamPlay",
-            "enabled_StreamPlayLite",
-            "enabled_StreamPlayTorrent",
-            "enabled_StreamPlayAnime",
-            "enabled_StreamplayTorrentAnime"
+        val apis = listOf(
+            StreamPlay(sharedPref),
+            StreamPlayLite(),
+            StreamPlayTorrent(),
+            StreamPlayAnime(),
+            StreamplayTorrentAnime()
         )
 
-        inner class ToggleViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-            val label: TextView = view.findViewById(
-                res.getIdentifier("toggle_title", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-            )
-            val toggleSwitch: Switch = view.findViewById(
-                res.getIdentifier("toggle_switch", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-            )
+        val savedKey = "enabled_plugins_saved"
+        val savedSet = sharedPref.getStringSet(savedKey, null)
+        val defaultEnabled = apis.map { it.name }.toSet()
+
+        val currentSet = savedSet?.toSet() ?: defaultEnabled
+
+        for (api in apis) {
+            val toggleItem = getLayout("list_toggle_item", inflater, container)
+            val label = toggleItem.findView<TextView>("toggle_title")
+            val toggleSwitch = toggleItem.findView<Switch>("toggle_switch")
+
+            label.text = api.name
+            toggleSwitch.isChecked = currentSet.contains(api.name)
+
+            toggleItem.makeTvCompatible()
+            extensionList.addView(toggleItem)
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ToggleViewHolder {
-            val itemView = getLayout("list_toggle_item", LayoutInflater.from(parent.context), parent)
-            return ToggleViewHolder(itemView)
-        }
-
-        override fun onBindViewHolder(holder: ToggleViewHolder, position: Int) {
-            val key = toggles[position]
-            holder.label.text = key.removePrefix("enabled_")
-            holder.toggleSwitch.isChecked = sharedPref.getBoolean(key, true)
-            holder.toggleSwitch.setOnCheckedChangeListener { _, isChecked ->
-                sharedPref.edit().putBoolean(key, isChecked).apply()
+        val saveBtn = root.findView<ImageView>("saveIcon")
+        saveBtn.setImageDrawable(getDrawable("save_icon"))
+        saveBtn.makeTvCompatible()
+        saveBtn.setOnClickListener {
+            val enabledPluginNames = mutableListOf<String>()
+            for (i in 0 until extensionList.childCount) {
+                val toggleItem = extensionList.getChildAt(i)
+                val label = toggleItem.findViewById<TextView>(
+                    res.getIdentifier("toggle_title", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+                )
+                val toggleSwitch = toggleItem.findViewById<Switch>(
+                    res.getIdentifier("toggle_switch", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+                )
+                if (toggleSwitch.isChecked) {
+                    enabledPluginNames.add(label.text.toString())
+                }
             }
+
+            sharedPref.edit {
+                putStringSet(savedKey, enabledPluginNames.toSet())
+            }
+            showToast("Settings saved. Please restart the app to apply changes.")
+            dismiss()
         }
 
-        override fun getItemCount(): Int = toggles.size
+        return root
     }
 }

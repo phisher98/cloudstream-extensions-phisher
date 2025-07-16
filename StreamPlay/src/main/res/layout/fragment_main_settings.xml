@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/optionListFragment"
@@ -7,15 +8,34 @@
     android:padding="16dp"
     android:background="#121212">
 
-    <!-- Title -->
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Title with Save Icon -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Options"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="16dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Plugin Settings"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <ImageView
+            android:id="@+id/saveIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:clickable="true"
+            android:src="@android:drawable/ic_menu_save"
+            android:contentDescription="Save Settings" />
+    </LinearLayout>
 
     <!-- Login Option Card -->
     <com.google.android.material.card.MaterialCardView
@@ -24,7 +44,10 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
         android:backgroundTint="#1E1E1E"
-        android:elevation="4dp">
+        android:elevation="4dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:clickable="true">
 
         <LinearLayout
             android:id="@+id/loginOption"
@@ -32,7 +55,9 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true">
 
             <TextView
                 android:layout_width="0dp"
@@ -47,7 +72,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@android:drawable/ic_menu_manage"
-                android:contentDescription="@string/go_to_login" />
+                android:contentDescription="Go to Login" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -58,7 +83,10 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
         android:backgroundTint="#1E1E1E"
-        android:elevation="4dp">
+        android:elevation="4dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:clickable="true">
 
         <LinearLayout
             android:id="@+id/featureToggleOption"
@@ -66,7 +94,9 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true">
 
             <TextView
                 android:layout_width="0dp"

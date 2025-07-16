@@ -1,21 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toggle_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="12dp"
-    android:gravity="center_vertical">
+    android:gravity="center_vertical"
+    android:background="#121212"> <!-- Dark background -->
 
     <TextView
         android:id="@+id/toggle_title"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:text="Toggle Label"
-        android:textSize="16sp" />
+        android:layout_weight="1"
+        android:text="API Name"
+        android:textSize="16sp"
+        android:textColor="#FFFFFF"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
     <Switch
         android:id="@+id/toggle_switch"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:thumbTint="#007AFF"
+        android:trackTint="#444444" />
 </LinearLayout>

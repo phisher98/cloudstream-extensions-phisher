@@ -110,7 +110,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         TvType.Cartoon,
     )
 
-    private val token = sharedPref?.getString("token", null)
+    val token = sharedPref?.getString("token", null)
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
     /** AUTHOR : hexated & Phisher & Code */
