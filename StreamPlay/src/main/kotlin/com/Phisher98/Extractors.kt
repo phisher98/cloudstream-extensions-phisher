@@ -343,27 +343,33 @@ class VCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String?
+                    var finalUrl: String? = null
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
-                        redirectUrl = response.headers["location"]
-                        if (redirectUrl == null) {
-                            Log.e("HubCloud", "10Gbps: No redirect")
+                        val redirect = response.headers["location"]
+                        if (redirect == null) {
+                            Log.i("Error:", "No more redirects. Final URL: $currentLink")
                             break
                         }
-                        if ("id=" in redirectUrl) break
-                        currentLink = redirectUrl
+
+                        if ("link=" in redirect) {
+                            finalUrl = redirect.substringAfter("link=")
+                            break
+                        }
+
+                        currentLink = redirect
                     }
 
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
-                    callback.invoke(
-                        newExtractorLink(
-                            "[Download] $labelExtras",
-                            "[Download] $labelExtras",
-                            finalLink,
-                        ) { this.quality = quality }
-                    )
+                    finalUrl?.let { finalLink ->
+                        callback.invoke(
+                            newExtractorLink(
+                                "[Download] $labelExtras",
+                                "[Download] $labelExtras",
+                                finalLink,
+                            ) { this.quality = quality }
+                        )
+                    }
                 }
 
                 text.contains("S3 Server", ignoreCase = true) -> {
@@ -902,7 +908,6 @@ class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val realUrl = try {
             val originalUrl = URL(url)
             val parts = originalUrl.host.split(".").toMutableList()
@@ -914,7 +919,6 @@ class HubCloud : ExtractorApi() {
             Log.e("HubCloud", "Invalid URL: ${e.message}")
             return
         }
-
         val href = if ("hubcloud.php" in realUrl) {
             realUrl
         } else {
@@ -943,7 +947,6 @@ class HubCloud : ExtractorApi() {
         document.select("div.card-body h2 a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.text()
-            val baseUrl = getBaseUrl(link)
 
             when {
                 text.contains("FSL Server", ignoreCase = true) -> {
@@ -974,7 +977,7 @@ class HubCloud : ExtractorApi() {
                             newExtractorLink(
                                 "$source [BuzzServer] $labelExtras",
                                 "$source [BuzzServer] $labelExtras",
-                                baseUrl + dlink,
+                                dlink,
                             ) { this.quality = quality }
                         )
                     } else {
@@ -1004,27 +1007,33 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String?
+                    var finalUrl: String? = null
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
-                        redirectUrl = response.headers["location"]
-                        if (redirectUrl == null) {
-                            Log.e("HubCloud", "10Gbps: No redirect")
+                        val redirect = response.headers["location"]
+                        if (redirect == null) {
+                            Log.i("Error:", "No more redirects. Final URL: $currentLink")
                             break
                         }
-                        if ("id=" in redirectUrl) break
-                        currentLink = redirectUrl
+
+                        if ("link=" in redirect) {
+                            finalUrl = redirect.substringAfter("link=")
+                            break
+                        }
+
+                        currentLink = redirect
                     }
 
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
-                    callback.invoke(
-                        newExtractorLink(
-                            "$source [Download] $labelExtras",
-                            "$source [Download] $labelExtras",
-                            finalLink,
-                        ) { this.quality = quality }
-                    )
+                    finalUrl?.let { finalLink ->
+                        callback.invoke(
+                            newExtractorLink(
+                                "[Download] $labelExtras",
+                                "[Download] $labelExtras",
+                                finalLink,
+                            ) { this.quality = quality }
+                        )
+                    }
                 }
 
                 else -> {

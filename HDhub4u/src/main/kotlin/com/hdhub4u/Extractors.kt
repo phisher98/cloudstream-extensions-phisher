@@ -155,7 +155,6 @@ class HubCloud : ExtractorApi() {
         document.select("div.card-body h2 a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.text()
-            val baseUrl = getBaseUrl(link)
 
             when {
                 text.contains("FSL Server", ignoreCase = true) -> {
@@ -186,7 +185,7 @@ class HubCloud : ExtractorApi() {
                             newExtractorLink(
                                 "$source [BuzzServer] $labelExtras",
                                 "$source [BuzzServer] $labelExtras",
-                                baseUrl + dlink,
+                                dlink,
                             ) { this.quality = quality }
                         )
                     } else {
@@ -216,27 +215,33 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String?
+                    var finalUrl: String? = null
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
-                        redirectUrl = response.headers["location"]
-                        if (redirectUrl == null) {
-                            Log.e("HubCloud", "10Gbps: No redirect")
+                        val redirect = response.headers["location"]
+                        if (redirect == null) {
+                            Log.i("Error:", "No more redirects. Final URL: $currentLink")
                             break
                         }
-                        if ("id=" in redirectUrl) break
-                        currentLink = redirectUrl
+
+                        if ("link=" in redirect) {
+                            finalUrl = redirect.substringAfter("link=")
+                            break
+                        }
+
+                        currentLink = redirect
                     }
 
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
-                    callback.invoke(
-                        newExtractorLink(
-                            "$source [Download] $labelExtras",
-                            "$source [Download] $labelExtras",
-                            finalLink,
-                        ) { this.quality = quality }
-                    )
+                    finalUrl?.let { finalLink ->
+                        callback.invoke(
+                            newExtractorLink(
+                                "[Download] $labelExtras",
+                                "[Download] $labelExtras",
+                                finalLink,
+                            ) { this.quality = quality }
+                        )
+                    }
                 }
 
                 else -> {
