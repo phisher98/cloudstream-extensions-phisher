@@ -1,6 +1,8 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -10,6 +12,7 @@ import android.view.View
 import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -67,6 +70,7 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
     }
     // #endregion - necessary functions
 
+    @SuppressLint("SetTextI18n")
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -79,9 +83,10 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         saveBtn.setImageDrawable(getDrawable("save_icon"))
         saveBtn.makeTvCompatible()
         saveBtn.setOnClickListener {
-            plugin.reload(context)
+            plugin.reload(requireContext())
             showToast("Saved and Reloaded")
             dismiss()
+            restartApp()
         }
         // #endregion - building save button and its click listener
 
@@ -106,82 +111,62 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         val configBtn = settings.findView<ImageView>("config_img")
         configBtn.setImageDrawable(getDrawable("edit_icon"))
         configBtn.makeTvCompatible()
-        configBtn.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        val configure = UltimaConfigureExtensions(plugin)
-                        configure.show(
-                                activity?.supportFragmentManager
-                                        ?: throw Exception(
-                                                "Unable to open configure extensions settings"
-                                        ),
-                                ""
-                        )
-                        dismiss()
-                    }
-                }
-        )
+        configBtn.setOnClickListener {
+            val configure = UltimaConfigureExtensions(plugin)
+            configure.show(
+                activity?.supportFragmentManager
+                    ?: throw Exception(
+                        "Unable to open configure extensions settings"
+                    ),
+                ""
+            )
+            dismiss()
+        }
         // #endregion - building config extensions button and its click listener
 
         // #region - building reorder button and its click listener
         val reorderBtn = settings.findView<ImageView>("reorder_img")
         reorderBtn.setImageDrawable(getDrawable("edit_icon"))
         reorderBtn.makeTvCompatible()
-        reorderBtn.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        val reorder = UltimaReorder(plugin)
-                        reorder.show(
-                                activity?.supportFragmentManager
-                                        ?: throw Exception("Unable to open reorder settings"),
-                                ""
-                        )
-                        dismiss()
-                    }
-                }
-        )
+        reorderBtn.setOnClickListener {
+            val reorder = UltimaReorder(plugin)
+            reorder.show(
+                activity?.supportFragmentManager
+                    ?: throw Exception("Unable to open reorder settings"),
+                ""
+            )
+            dismiss()
+        }
         // #endregion - building reorder button and its click listener
 
         // #region - building reorder button and its click listener
         val watchSyncBtn = settings.findView<ImageView>("watch_sync_img")
         watchSyncBtn.setImageDrawable(getDrawable("edit_icon"))
         watchSyncBtn.makeTvCompatible()
-        watchSyncBtn.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        val reorder = UltimaConfigureWatchSync(plugin)
-                        reorder.show(
-                                activity?.supportFragmentManager
-                                        ?: throw Exception("Unable to open reorder settings"),
-                                ""
-                        )
-                        dismiss()
-                    }
-                }
-        )
+        watchSyncBtn.setOnClickListener {
+            val reorder = UltimaConfigureWatchSync(plugin)
+            reorder.show(
+                activity?.supportFragmentManager
+                    ?: throw Exception("Unable to open reorder settings"),
+                ""
+            )
+            dismiss()
+        }
         // #endregion - building reorder button and its click listener
 
         // #region - building delete button with its click listener
-        val deleteIconId = res.getIdentifier("delete_icon", "drawable", "com.RowdyAvocado")
-        val deleteBtn = settings.findView<ImageView>("delete_img")
-        val drawable = if (deleteIconId != 0) {
-            ContextCompat.getDrawable(requireContext(), deleteIconId)
-        } else {
-            Log.e("UltimaSettings", "Drawable not found")
-            null
-        }
+        val deleteBtn = settings.findView<TextView>("delete_img")
 
-        deleteBtn.setImageDrawable(drawable)
+        deleteBtn.text = "Reset"
         deleteBtn.makeTvCompatible()
+
         deleteBtn.setOnClickListener {
             AlertDialog.Builder(
                 context ?: throw Exception("Unable to build alert dialog")
             )
                 .setTitle("Reset Ultima")
                 .setMessage("This will delete all selected sections.")
-                .setPositiveButton(
-                    "Reset"
-                ) { _, _ ->
+                .setPositiveButton("Reset") { _, _ ->
                     sm.deleteAllData()
                     plugin.reload(context)
                     showToast("Sections cleared")
@@ -198,4 +183,18 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {}
+
+
+    private fun restartApp() {
+        val context = requireContext().applicationContext
+        val packageManager = context.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+        val componentName = intent?.component
+
+        if (componentName != null) {
+            val restartIntent = Intent.makeRestartActivityTask(componentName)
+            context.startActivity(restartIntent)
+            Runtime.getRuntime().exit(0)
+        }
+    }
 }

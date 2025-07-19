@@ -45,34 +45,23 @@
         android:layout_marginBottom="12dp"
         android:backgroundTint="#1E1E1E"
         android:elevation="4dp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:clickable="true">
+        android:clickable="true"
+        android:focusable="true" >
 
         <LinearLayout
-            android:id="@+id/loginOption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true">
+            android:padding="16dp">
 
             <TextView
-                android:layout_width="0dp"
+                android:id="@+id/loginText"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Febbox Login"
                 android:textSize="16sp"
                 android:textColor="#FFFFFF" />
-
-            <ImageView
-                android:id="@+id/loginGear"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@android:drawable/ic_menu_manage"
-                android:contentDescription="Go to Login" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -84,34 +73,23 @@
         android:layout_marginBottom="12dp"
         android:backgroundTint="#1E1E1E"
         android:elevation="4dp"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:clickable="true">
+        android:clickable="true"
+        android:focusable="true" >
 
         <LinearLayout
-            android:id="@+id/featureToggleOption"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true">
+            android:padding="16dp">
 
             <TextView
-                android:layout_width="0dp"
+                android:id="@+id/featureText"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Toggle Extensions"
                 android:textSize="16sp"
                 android:textColor="#FFFFFF" />
-
-            <ImageView
-                android:id="@+id/featureGear"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@android:drawable/ic_menu_manage"
-                android:contentDescription="Go to Feature Toggle" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

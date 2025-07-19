@@ -2,6 +2,7 @@ package com.phisher98
 
 // import com.phisher98.UltimaUtils.Provider
 
+import com.lagradost.api.Log
 import com.phisher98.UltimaUtils.ExtensionInfo
 import com.phisher98.UltimaUtils.MediaProviderState
 import com.phisher98.UltimaUtils.SectionInfo
@@ -58,78 +59,57 @@ object UltimaStorageManager {
                 .forEach { setKey(it, null) }
     }
 
-    fun fetchExtensions(): Array<ExtensionInfo> {
-        synchronized(allProviders) {
-            var providers = allProviders
-            var newProviderList = emptyArray<ExtensionInfo>()
 
-            providers.forEach { provider ->
-                if (!provider.name.equals("Ultima")) {
-                    val doesProviderExist =
-                            getKey<Array<ExtensionInfo>>("ULTIMA_EXTENSIONS_LIST")?.find {
-                                it.name == provider.name
-                            }
-                    if (doesProviderExist == null) {
-                        var mainPageList = emptyArray<SectionInfo>()
-                        provider.mainPage.forEach { section ->
-                            var sectionData =
-                                    SectionInfo(section.name, section.data, provider.name, false)
-                            mainPageList += sectionData
-                        }
-                        var providerData = ExtensionInfo(provider.name, mainPageList)
-                        newProviderList += providerData
-                    } else {
-                        newProviderList += doesProviderExist
-                    }
-                }
-            }
+    fun fetchExtensions(): Array<ExtensionInfo> = synchronized(allProviders) {
+        val cachedExtensions = getKey<Array<ExtensionInfo>>("ULTIMA_EXTENSIONS_LIST")
+        val providers = allProviders.filter { it.name != "Ultima" }
 
-            if (newProviderList.size == providers.size) {
-                return newProviderList
-            } else {
-                return newProviderList
-                        .filter { new -> providers.find { new.name == it.name } != null }
-                        .toTypedArray()
-            }
-        }
+        providers.map { provider ->
+            val existing = cachedExtensions?.find { it.name == provider.name }
+            existing ?: ExtensionInfo(
+                name = provider.name,
+                provider.mainPage.map { section ->
+                    SectionInfo(
+                        name = section.name,
+                        section.data,
+                        provider.name,
+                        false
+                    )
+                }.toTypedArray()
+            )
+        }.toTypedArray()
     }
 
-    fun listMetaProviders(): Array<Pair<String, Boolean>> {
-        val metaProviders = UltimaMetaProviderUtils.metaProviders
-        val stored = getKey<Array<Pair<String, Boolean>>>("ULTIMA_CURRENT_META_PROVIDERS")
-        stored ?: return metaProviders
-        if (stored
-                        .map { it.first }
-                        .sorted()
-                        .toString()
-                        .equals(metaProviders.map { it.first }.sorted().toString())
-        )
-                return stored
-        return metaProviders
-                .map { metaProvider ->
-                    stored.find { it.first.equals(metaProvider.first) } ?: metaProvider
-                }
-                .toTypedArray()
+
+    private fun listMetaProviders(): Array<Pair<String, Boolean>> {
+        val currentProviders = UltimaMetaProviderUtils.metaProviders
+        val storedProviders = getKey<Array<Pair<String, Boolean>>>("ULTIMA_CURRENT_META_PROVIDERS")
+            ?: return currentProviders
+
+        val currentNames = currentProviders.map { it.first }.sorted()
+        val storedNames = storedProviders.map { it.first }.sorted()
+
+        // If the names match (ignoring order), use the stored version
+        if (currentNames == storedNames) return storedProviders
+
+        // Merge stored flags if available, otherwise use default
+        return currentProviders.map { provider ->
+            storedProviders.find { it.first == provider.first } ?: provider
+        }.toTypedArray()
     }
 
-    fun listMediaProviders(): Array<MediaProviderState> {
-        val mediaProvidersList = UltimaMediaProvidersUtils.mediaProviders.map { it.name }
+
+    private fun listMediaProviders(): Array<MediaProviderState> {
+        val currentProviderNames = UltimaMediaProvidersUtils.mediaProviders.map { it.name }
         val stored = getKey<Array<MediaProviderState>>("ULTIMA_CURRENT_MEDIA_PROVIDERS")
-        stored
-                ?: return mediaProvidersList
-                        .map { MediaProviderState(it, true, null) }
-                        .toTypedArray()
-        if (mediaProvidersList
-                        .sorted()
-                        .toString()
-                        .equals(stored.map { it.name }.sorted().toString())
-        )
-                return stored
-        return mediaProvidersList
-                .map { mediaProvider ->
-                    stored.find { it.name.equals(mediaProvider) }
-                            ?: MediaProviderState(mediaProvider, true, null)
-                }
-                .toTypedArray()
+            ?: return currentProviderNames.map { MediaProviderState(it, enabled = true, null) }.toTypedArray()
+
+        val storedNames = stored.map { it.name }.sorted()
+        if (currentProviderNames.sorted() == storedNames) return stored
+
+        return currentProviderNames.map { name ->
+            stored.find { it.name == name } ?: MediaProviderState(name, enabled = true,  null)
+        }.toTypedArray()
     }
+
 }

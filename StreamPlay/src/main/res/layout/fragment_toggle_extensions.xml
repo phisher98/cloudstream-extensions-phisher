@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/toggle_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp"
     android:background="#121212">
@@ -27,10 +27,13 @@
 
         <ImageView
             android:id="@+id/saveIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="4dp"
             android:src="@android:drawable/ic_menu_save"
-            android:contentDescription="Save Settings" />
+            android:contentDescription="Save Settings"
+            android:focusable="true"
+            android:focusableInTouchMode="true" />
     </LinearLayout>
 
     <!-- Scrollable List -->
@@ -45,7 +48,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="8dp"
-            android:textColor="#FFFFFF" />
+            android:layout_marginTop="8dp" />
     </ScrollView>
 </LinearLayout>

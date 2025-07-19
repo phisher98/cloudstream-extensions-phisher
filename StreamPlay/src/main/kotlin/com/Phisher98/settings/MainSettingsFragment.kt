@@ -46,16 +46,14 @@ class MainSettingsFragment(
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val loginGear: ImageView = view.findView("loginGear")
-        val featureGear: ImageView = view.findView("featureGear")
+        val loginCard: View = view.findView("loginCard")
+        val featureCard: View = view.findView("featureCard")
         val saveIcon: ImageView = view.findView("saveIcon")
 
-        // Make them compatible with TV using your outline.xml
-        loginGear.makeTvCompatible()
-        featureGear.makeTvCompatible()
+        // Optional: highlight save icon on TV
         saveIcon.makeTvCompatible()
 
-        loginGear.setOnClickListener {
+        loginCard.setOnClickListener {
             val loginSettings = SettingsFragment(plugin, sharedPref)
             loginSettings.show(
                 activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
@@ -63,10 +61,12 @@ class MainSettingsFragment(
             )
         }
 
-        featureGear.setOnClickListener {
+        featureCard.setOnClickListener {
             val toggleFragment = ToggleFragment(plugin, sharedPref)
-            val fragmentManager = activity?.supportFragmentManager ?: return@setOnClickListener
-            toggleFragment.show(fragmentManager, "fragment_toggle_extensions")
+            toggleFragment.show(
+                activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
+                "fragment_toggle_extensions"
+            )
         }
 
         saveIcon.setOnClickListener {

@@ -2,6 +2,7 @@ package com.phisher98
 
 import com.phisher98.UltimaUtils.SectionInfo
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
@@ -26,35 +27,45 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     private val sm = UltimaStorageManager
     private val deviceSyncData = sm.deviceSyncCreds
 
-    val mapper = jacksonObjectMapper()
-    var sectionNamesList: List<String> = emptyList()
+    private val mapper = jacksonObjectMapper()
+    private var sectionNamesList: List<String> = emptyList()
 
-    fun loadSections(): List<MainPageData> {
+    private fun loadSections(): List<MainPageData> {
         sectionNamesList = emptyList()
-        var data: List<MainPageData> = emptyList()
-        data += mainPageOf("" to "watch_sync")
-        var enabledSections: List<SectionInfo> = emptyList()
+
+        val result = mutableListOf<MainPageData>()
         val savedPlugins = sm.currentExtensions
-        savedPlugins.forEach { plugin ->
-            plugin.sections?.forEach { section -> if (section.enabled) enabledSections += section }
+
+        // Always include the "watch_sync" section
+        result += mainPageOf("" to "watch_sync")
+
+        // Extract and filter enabled sections from extensions
+        val enabledSections = savedPlugins
+            .flatMap { it.sections?.asList() ?: emptyList() }
+            .filter { it.enabled }
+            .sortedByDescending { it.priority }
+
+        enabledSections.forEachIndexed { _, section ->
+            try {
+                val sectionKey = mapper.writeValueAsString(section)
+                val sectionName = buildSectionName(section)
+                result += mainPageOf(sectionKey to sectionName)
+            } catch (e: Exception) {
+                Log.e("loadSections", "Failed to load section ${section.name}: ${e.message}")
+            }
         }
-        enabledSections.sortedByDescending { it.priority }.forEach { section ->
-            data +=
-                    mainPageOf(
-                            mapper.writeValueAsString(section) to
-                                    buildSectionName(section)
-                    )
+
+        if (result.isEmpty()) {
+            return mainPageOf("" to "")
         }
-        if (data.size.equals(0)) return mainPageOf("" to "") else return data
+        return result
     }
 
     private fun buildSectionName(section: SectionInfo): String {
-        var name: String
-        if (sm.extNameOnHome) name = section.pluginName + ": " + section.name
+        val name: String = if (sm.extNameOnHome) section.pluginName + ": " + section.name
         else if (sectionNamesList.contains(section.name))
-                name =
-                        "${section.name} ${sectionNamesList.filter { it.contains(section.name) }.size + 1}"
-        else name = section.name
+            "${section.name} ${sectionNamesList.filter { it.contains(section.name) }.size + 1}"
+        else section.name
         sectionNamesList += name
         return name
     }
@@ -62,57 +73,76 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     override val mainPage = loadSections()
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
-        sm.deviceSyncCreds?.syncThisDevice()
-        if (request.name.isNotEmpty()) {
-            try {
-                if (request.name.equals("watch_sync")) {
-                    val res =
-                            sm.deviceSyncCreds
-                                    ?.fetchDevices()
-                                    ?.filter {
-                                        deviceSyncData?.enabledDevices?.contains(it.deviceId)
-                                                ?: false
-                                    }
-                                    ?.map {
-                                        HomePageList(
-                                                "Continue from: ${it.name}",
-                                                it.syncedData ?: emptyList()
-                                        )
-                                    }
-                                    ?: return null
-                    return newHomePageResponse(res, false)
-                } else {
-                    val realSection: SectionInfo = AppUtils.parseJson<SectionInfo>(request.data)
-                    val provider = allProviders.find { it.name == realSection.pluginName }
-                    return provider?.getMainPage(
-                            page,
-                            MainPageRequest(
-                                    request.name,
-                                    realSection.url.toString(),
-                                    request.horizontalImages
-                            )
-                    )
+        val creds = sm.deviceSyncCreds
+        creds?.syncThisDevice()
+        if (request.name.isEmpty()) {
+            throw ErrorLoadingException(
+                "Select sections from the extension's settings page to show here."
+            )
+        }
+
+        return try {
+            if (request.name == "watch_sync") {
+                val syncedDevices = creds?.fetchDevices()
+                val filteredDevices = syncedDevices?.filter {
+                    deviceSyncData?.enabledDevices?.contains(it.deviceId) == true
+                } ?: emptyList()
+
+                if (filteredDevices.isEmpty()) {
+                    Log.w("getMainPage", "No enabled devices found in the synced list.")
+                    return null
                 }
-            } catch (e: Throwable) {
-                return null
-            }
-        } else
-                throw ErrorLoadingException(
-                        "Select sections from extension's settings page to show here."
+
+                val homeSections = filteredDevices.map {
+                    val syncedContent = it.syncedData ?: emptyList()
+                    HomePageList("Continue from: ${it.name}", syncedContent)
+                }
+
+                newHomePageResponse(homeSections, false)
+            } else {
+                val section = AppUtils.parseJson<SectionInfo>(request.data)
+                val provider = allProviders.find { it.name == section.pluginName }
+
+                if (provider == null) {
+                    throw ErrorLoadingException("Provider '${section.pluginName}' is not available.")
+                }
+
+                provider.getMainPage(
+                    page,
+                    MainPageRequest(
+                        name = request.name,
+                        data = section.url,
+                        horizontalImages = request.horizontalImages
+                    )
                 )
+            }
+        } catch (e: Throwable) {
+            Log.e("getMainPage", "Error loading main page: ${e.message}")
+            e.printStackTrace()
+            null
+        }
     }
 
+
     override suspend fun load(url: String): LoadResponse {
-        val enabledPlugins =
-                mainPage.filter { !it.name.equals("watch_sync") }.map {
+        val enabledPlugins = mainPage
+            .filter { !it.name.equals("watch_sync", ignoreCase = true) }
+            .mapNotNull {
+                try {
                     AppUtils.parseJson<SectionInfo>(it.data).pluginName
+                } catch (_: Exception) {
+                    null
                 }
-        val provider = allProviders.filter { it.name in enabledPlugins }
-        for (i in 0 until (provider.size)) {
+            }
+        val providersToTry = allProviders.filter { it.name in enabledPlugins }
+
+        providersToTry.forEach { provider ->
             try {
-                return provider.get(i).load(url)!!
-            } catch (e: Throwable) {}
+                val response = provider.load(url)
+                if (response != null) return response
+            } catch (_: Throwable) {}
         }
         return newMovieLoadResponse("Welcome to Ultima", "", TvType.Others, "")
     }
+
 }

@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.plugins.Plugin
 import androidx.core.content.edit
+import com.lagradost.api.Log
 
 @CloudstreamPlugin
 class StreamPlayPlugin: Plugin() {
@@ -31,8 +32,33 @@ class StreamPlayPlugin: Plugin() {
 
     override fun load(context: Context) {
 
-        //=====================Settings============================//
+        Log.d("StreamPlay", "Plugin loading with context: $context")
+        val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
+        val mainApis = listOf(
+            StreamPlay(sharedPref), StreamPlayLite(),
+            StreamPlayTorrent(), StreamPlayAnime(), StreamplayTorrentAnime()
+        )
+        val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)
+        val defaultEnabled = mainApis.map { it.name }.toSet()
+        val enabledSet = savedSet ?: defaultEnabled
 
+        Log.d("StreamPlay", "SavedSet: $savedSet, DefaultEnabled: $defaultEnabled")
+        Log.d("StreamPlay", "Final enabled set: $enabledSet")
+
+        for (api in mainApis) {
+            if (enabledSet.contains(api.name)) {
+                registerMainAPI(api)
+                registeredMainApis.add(api)
+                Log.d("StreamPlay", "Registered plugin: ${api.name}")
+            } else {
+                Log.d("StreamPlay", "Not enabled: ${api.name}")
+            }
+        }
+
+        sharedPref.edit { remove("enabled_plugins_set") }
+
+        //=====================Settings============================//
+/*
         val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
         val mainApis = listOf(
             StreamPlay(sharedPref),
@@ -52,7 +78,7 @@ class StreamPlayPlugin: Plugin() {
             }
         }
         sharedPref.edit { remove("enabled_plugins_set") }
-
+ */
 
         //=====================MainAPI============================//
 

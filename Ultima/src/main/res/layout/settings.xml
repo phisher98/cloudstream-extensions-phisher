@@ -216,12 +216,15 @@
                 android:layout_height="wrap_content"
                 android:gravity="right">
 
-                <ImageView
+                <TextView
                     android:id="@+id/delete_img"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="5dp"
+                    android:padding="10dp"
                     android:focusable="true"
+                    android:text="Reset"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
                     android:nextFocusDown="@id/delete_img"
                     android:nextFocusUp="@id/watch_sync_img" />
 

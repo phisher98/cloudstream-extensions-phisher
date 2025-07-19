@@ -1,8 +1,11 @@
 package com.phisher98.settings
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.*
@@ -62,10 +65,10 @@ class ToggleFragment(
         val savedKey = "enabled_plugins_saved"
         val savedSet = sharedPref.getStringSet(savedKey, null)
         val defaultEnabled = apis.map { it.name }.toSet()
-
         val currentSet = savedSet?.toSet() ?: defaultEnabled
 
         val outlineDrawable = getDrawable("outline")
+        val defaultBackground = ColorDrawable(Color.parseColor("#121212"))
 
         for (api in apis) {
             val toggleItem = getLayout("list_toggle_item", inflater, container)
@@ -75,14 +78,24 @@ class ToggleFragment(
             label.text = api.name
             toggleSwitch.isChecked = currentSet.contains(api.name)
 
-            // Set background if checked initially
-            if (toggleSwitch.isChecked) {
-                toggleItem.background = outlineDrawable
+            fun updateBackground(isChecked: Boolean) {
+                toggleItem.background = if (isChecked) outlineDrawable else defaultBackground
             }
 
-            // Update background dynamically on toggle
-            toggleSwitch.setOnCheckedChangeListener { _, isChecked ->
-                toggleItem.background = if (isChecked) outlineDrawable else null
+            // Set initial background state
+            updateBackground(toggleSwitch.isChecked)
+
+            val listener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
+                updateBackground(isChecked)
+            }
+
+            toggleSwitch.setOnCheckedChangeListener(listener)
+
+            toggleItem.setOnClickListener {
+                toggleSwitch.setOnCheckedChangeListener(null) // Prevent double trigger
+                toggleSwitch.isChecked = !toggleSwitch.isChecked
+                updateBackground(toggleSwitch.isChecked)
+                toggleSwitch.setOnCheckedChangeListener(listener)
             }
 
             extensionList.addView(toggleItem)
@@ -91,8 +104,10 @@ class ToggleFragment(
         val saveBtn = root.findView<ImageView>("saveIcon")
         saveBtn.setImageDrawable(getDrawable("save_icon"))
         saveBtn.makeTvCompatible()
+
         saveBtn.setOnClickListener {
             val enabledPluginNames = mutableListOf<String>()
+
             for (i in 0 until extensionList.childCount) {
                 val toggleItem = extensionList.getChildAt(i)
                 val label = toggleItem.findViewById<TextView>(
@@ -109,7 +124,13 @@ class ToggleFragment(
             sharedPref.edit {
                 putStringSet(savedKey, enabledPluginNames.toSet()).commit()
             }
-            showToast("Settings saved. Please restart the app to apply changes.")
+
+            showToast("Settings saved. Restarting app...")
+            val pm = context?.packageManager
+            val intent = pm?.getLaunchIntentForPackage(context?.packageName ?: "")
+            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+            startActivity(mainIntent)
+            Runtime.getRuntime().exit(0)
             dismiss()
         }
 
