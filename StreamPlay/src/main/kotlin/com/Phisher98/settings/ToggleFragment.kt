@@ -129,12 +129,7 @@ class ToggleFragment(
                 commit()
             }
 
-            showToast("Settings saved. Restarting app...")
-            val pm = context?.packageManager
-            val intent = pm?.getLaunchIntentForPackage(context?.packageName ?: "")
-            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-            startActivity(mainIntent)
-            Runtime.getRuntime().exit(0)
+            showToast("Settings saved")
             dismiss()
         }
 

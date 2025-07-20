@@ -6,8 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
 import com.phisher98.settings.SettingsFragment
@@ -71,10 +73,22 @@ class MainSettingsFragment(
         }
 
         saveIcon.setOnClickListener {
-            showToast("Settings Saved. Please restart the app to apply changes.")
-            restartApp()
-            dismiss()
+            AlertDialog.Builder(
+                context ?: throw Exception("Unable to build alert dialog")
+            )
+                .setTitle("Save & Reload")
+                .setMessage("Changes have been saved. Do you want to restart the app to apply them ?")
+                .setPositiveButton("Yes") { _, _ ->
+                    restartApp()
+                    showToast("Saved and Reloaded")
+                    dismiss()
+                    restartApp()
+                }
+                .setNegativeButton("No", null)
+                .show()
+                .setDefaultFocus()
         }
+
     }
 
     private fun restartApp() {

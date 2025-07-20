@@ -83,10 +83,20 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         saveBtn.setImageDrawable(getDrawable("save_icon"))
         saveBtn.makeTvCompatible()
         saveBtn.setOnClickListener {
-            plugin.reload(requireContext())
-            showToast("Saved and Reloaded")
-            dismiss()
-            restartApp()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Restart Required")
+                .setMessage("Changes have been saved. Do you want to restart the app to apply them ?")
+                .setPositiveButton("Yes") { _, _ ->
+                    plugin.reload(requireContext())
+                    showToast("Saved and Restarting...")
+                    dismiss()
+                    restartApp()
+                }
+                .setNegativeButton("No") { dialog, _ ->
+                    showToast("Saved. Restart later to apply changes.")
+                    dialog.dismiss()
+                    dismiss()
+                }.show()
         }
         // #endregion - building save button and its click listener
 
