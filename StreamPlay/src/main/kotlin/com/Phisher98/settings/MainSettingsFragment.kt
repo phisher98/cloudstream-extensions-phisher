@@ -1,5 +1,6 @@
 package com.Phisher98.settings
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -41,7 +42,7 @@ class MainSettingsFragment(
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         return getLayout("fragment_main_settings", inflater, container)
     }
 
@@ -71,7 +72,21 @@ class MainSettingsFragment(
 
         saveIcon.setOnClickListener {
             showToast("Settings Saved. Please restart the app to apply changes.")
+            restartApp()
             dismiss()
+        }
+    }
+
+    private fun restartApp() {
+        val context = requireContext().applicationContext
+        val packageManager = context.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+        val componentName = intent?.component
+
+        if (componentName != null) {
+            val restartIntent = Intent.makeRestartActivityTask(componentName)
+            context.startActivity(restartIntent)
+            Runtime.getRuntime().exit(0)
         }
     }
 }

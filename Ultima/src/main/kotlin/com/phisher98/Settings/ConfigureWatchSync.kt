@@ -1,37 +1,34 @@
 package com.phisher98
 
-import android.content.DialogInterface
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Switch
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.coroutineScope
-import com.phisher98.WatchSyncUtils.WatchSyncCreds
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.phisher98.BuildConfig
-import kotlinx.coroutines.*
+import com.phisher98.WatchSyncUtils.WatchSyncCreds
+import kotlinx.coroutines.launch
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
 
-class UltimaConfigureWatchSync(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
+class UltimaConfigureWatchSync(private val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
     private var param1: String? = null
     private var param2: String? = null
     private val sm = UltimaStorageManager
     private val deviceData = sm.deviceSyncCreds
     private val res: Resources = plugin.resources ?: throw Exception("Unable to read resources")
+    private val packageName = BuildConfig.LIBRARY_PACKAGE_NAME
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,186 +40,154 @@ class UltimaConfigureWatchSync(val plugin: UltimaPlugin) : BottomSheetDialogFrag
 
     // #region - necessary functions
     private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
-        val id = res.getIdentifier(name, "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = res.getIdentifier(name, "layout", packageName)
         val layout = res.getLayout(id)
         return inflater.inflate(layout, container, false)
     }
 
     private fun getDrawable(name: String): Drawable {
-        val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = res.getIdentifier(name, "drawable", packageName)
         return res.getDrawable(id, null) ?: throw Exception("Unable to find drawable $name")
     }
 
     private fun getString(name: String): String {
-        val id = res.getIdentifier(name, "string", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = res.getIdentifier(name, "string", packageName)
         return res.getString(id)
     }
 
     private fun <T : View> View.findView(name: String): T {
-        val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = res.getIdentifier(name, "id", packageName)
         return this.findViewById(id)
     }
 
     private fun View.makeTvCompatible() {
-        val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val outlineId = res.getIdentifier("outline", "drawable", packageName)
         this.background = res.getDrawable(outlineId, null)
     }
-    // #endregion - necessary functions
+    // #endregion
 
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
         val settings = getLayout("configure_watch_sync", inflater, container)
 
-        // #region - building save button and its click listener
-        val saveBtn = settings.findView<ImageView>("save")
-        saveBtn.setImageDrawable(getDrawable("save_icon"))
-        saveBtn.makeTvCompatible()
-        saveBtn.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        sm.deviceSyncCreds = deviceData
-                        plugin.reload(context)
-                        showToast("Saved")
-                        dismiss()
-                    }
-                }
-        )
-        // #endregion - building save button and its click listener
+        // #region - save button
+        settings.findView<ImageView>("save").apply {
+            setImageDrawable(getDrawable("save_icon"))
+            makeTvCompatible()
+            setOnClickListener {
+                sm.deviceSyncCreds = deviceData
+                plugin.reload(context)
+                showToast("Saved")
+                dismiss()
+            }
+        }
+        // #endregion
 
-        // #region - building watch sync creds and its click listener
-        val CredsBtn = settings.findView<ImageView>("watch_sync_creds_btn")
-        CredsBtn.setImageDrawable(getDrawable("edit_icon"))
-        CredsBtn.makeTvCompatible()
-        CredsBtn.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        val credsView = getLayout("watch_sync_creds", inflater, container)
-                        val tokenInput = credsView.findView<EditText>("token")
-                        tokenInput.setText(sm.deviceSyncCreds?.token)
-                        val prNumInput = credsView.findView<EditText>("project_num")
-                        prNumInput.setText(sm.deviceSyncCreds?.projectNum?.toString())
-                        val deviceNameInput = credsView.findView<EditText>("device_name")
-                        deviceNameInput.setText(sm.deviceSyncCreds?.deviceName)
+        // #region - watch sync creds
+        settings.findView<ImageView>("watch_sync_creds_btn").apply {
+            setImageDrawable(getDrawable("edit_icon"))
+            makeTvCompatible()
+            setOnClickListener {
+                val credsView = getLayout("watch_sync_creds", inflater, container)
+                val tokenInput = credsView.findView<EditText>("token")
+                val prNumInput = credsView.findView<EditText>("project_num")
+                val deviceNameInput = credsView.findView<EditText>("device_name")
 
-                        AlertDialog.Builder(
-                                        context ?: throw Exception("Unable to build alert dialog")
+                tokenInput.setText(sm.deviceSyncCreds?.token)
+                prNumInput.setText(sm.deviceSyncCreds?.projectNum?.toString())
+                deviceNameInput.setText(sm.deviceSyncCreds?.deviceName)
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Set your creds")
+                    .setView(credsView)
+                    .setPositiveButton("Save") { _, _ ->
+                        val token = tokenInput.text.trim().toString()
+                        val prNum = prNumInput.text.toString().toIntOrNull()
+                        val deviceName = deviceNameInput.text.trim().toString()
+
+                        if (token.isEmpty() || prNum == null || deviceName.isEmpty()) {
+                            showToast("Invalid details")
+                        } else {
+                            activity?.lifecycle?.coroutineScope?.launch {
+                                sm.deviceSyncCreds = WatchSyncCreds(token, prNum, deviceName)
+                                showToast(
+                                    sm.deviceSyncCreds
+                                        ?.syncProjectDetails()
+                                        ?.second
                                 )
-                                .setTitle("Set your creds")
-                                .setView(credsView)
-                                .setPositiveButton(
-                                        "Save",
-                                        object : DialogInterface.OnClickListener {
-                                            override fun onClick(p0: DialogInterface, p1: Int) {
-                                                var token = tokenInput.text.trim().toString()
-                                                var prNum = prNumInput.text.toString().toIntOrNull()
-                                                var deviceName =
-                                                        deviceNameInput.text.trim().toString()
-                                                if (token.isNullOrEmpty() ||
-                                                                prNum == null ||
-                                                                deviceName.isNullOrEmpty()
-                                                )
-                                                        showToast("Invalid details")
-                                                else {
-                                                    activity?.lifecycle?.coroutineScope?.launch {
-                                                        sm.deviceSyncCreds =
-                                                                WatchSyncCreds(
-                                                                        token,
-                                                                        prNum,
-                                                                        deviceName
-                                                                )
-
-                                                        showToast(
-                                                                sm.deviceSyncCreds
-                                                                        ?.syncProjectDetails()
-                                                                        ?.second
-                                                        )
-                                                    }
-                                                }
-                                                dismiss()
-                                            }
-                                        }
-                                )
-                                .setNegativeButton(
-                                        "Reset",
-                                        object : DialogInterface.OnClickListener {
-                                            override fun onClick(p0: DialogInterface, p1: Int) {
-                                                sm.deviceSyncCreds = WatchSyncCreds()
-                                                showToast("Credentials removed")
-                                                dismiss()
-                                            }
-                                        }
-                                )
-                                .show()
-                                .setDefaultFocus()
-                    }
-                }
-        )
-        // #endregion - building toggle for extension_name_on_home and its click listener
-
-        // #region - building toggle for sync this device and its click listener
-        val syncThisDeviceBtn = settings.findView<Switch>("sync_this_device")
-        syncThisDeviceBtn.makeTvCompatible()
-        syncThisDeviceBtn.isChecked = sm.deviceSyncCreds?.isThisDeviceSync ?: false
-        syncThisDeviceBtn.setOnClickListener(
-                object : OnClickListener {
-                    override fun onClick(btn: View) {
-                        activity?.lifecycle?.coroutineScope?.launch {
-                            sm.deviceSyncCreds?.let {
-                                val res =
-                                        if (syncThisDeviceBtn.isChecked) it.registerThisDevice()
-                                        else it.deregisterThisDevice()
-                                showToast(res.second)
-                                if (res.first) dismiss()
                             }
                         }
+                        dismiss()
+                    }
+                    .setNegativeButton("Reset") { _, _ ->
+                        sm.deviceSyncCreds = WatchSyncCreds()
+                        showToast("Credentials removed")
+                        dismiss()
+                    }
+                    .show()
+                    .setDefaultFocus()
+            }
+        }
+        // #endregion
+
+        // #region - toggle for sync this device
+        settings.findView<Switch>("sync_this_device").apply {
+            makeTvCompatible()
+            isChecked = sm.deviceSyncCreds?.isThisDeviceSync ?: false
+            setOnClickListener {
+                activity?.lifecycle?.coroutineScope?.launch {
+                    sm.deviceSyncCreds?.let {
+                        val res = if (isChecked) it.registerThisDevice()
+                        else it.deregisterThisDevice()
+                        showToast(res.second)
+                        if (res.first) dismiss()
                     }
                 }
-        )
-        // #endregion - building toggle for sync this device and its click listener
+            }
+        }
+        // #endregion
 
-        // #region - building list of devices with its click listener
+        // #region - list of devices
         val devicesListLayout = settings.findView<LinearLayout>("devices_list")
-        val activeDevices = deviceData?.enabledDevices ?: mutableListOf<String>()
+        val activeDevices = deviceData?.enabledDevices?.toMutableList() ?: mutableListOf()
         activity?.lifecycle?.coroutineScope?.launch {
             val devices = deviceData?.fetchDevices()
             devices?.forEach { device ->
-                val currentDevice = sm.deviceSyncCreds?.deviceId.equals(device.deviceId)
+                val currentDevice = sm.deviceSyncCreds?.deviceId == device.deviceId
                 val syncDeviceView = getLayout("watch_sync_device", inflater, container)
                 val deviceName = syncDeviceView.findView<Switch>("watch_sync_device_name")
-                deviceName.text = device.name + if (currentDevice) " (current device)" else ""
-                deviceName.isChecked =
-                        sm.deviceSyncCreds?.enabledDevices?.contains(device.deviceId) ?: false
-                deviceName.setOnClickListener(
-                        object : OnClickListener {
-                            override fun onClick(btn: View) {
-                                if (deviceName.isChecked) {
-                                    if (currentDevice) deviceName.isChecked = false
-                                    else activeDevices.add(device.deviceId)
-                                } else activeDevices.remove(device.deviceId)
-                                deviceData?.enabledDevices = activeDevices
-                            }
+
+                deviceName.apply {
+                    text = device.name + if (currentDevice) " (current device)" else ""
+                    isChecked = sm.deviceSyncCreds?.enabledDevices?.contains(device.deviceId) ?: false
+                    setOnClickListener {
+                        if (isChecked) {
+                            if (currentDevice) isChecked = false
+                            else activeDevices.add(device.deviceId)
+                        } else {
+                            activeDevices.remove(device.deviceId)
                         }
-                )
+                        deviceData?.enabledDevices = activeDevices
+                    }
+                }
+
                 devicesListLayout.addView(syncDeviceView)
             }
         }
-        // #endregion - building list of devices with its click listener
+        // #endregion
 
         return settings
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {}
-
     override fun onDetach() {
         val settings = UltimaSettings(plugin)
         settings.show(
-                activity?.supportFragmentManager
-                        ?: throw Exception("Unable to open configure settings"),
-                ""
+            activity?.supportFragmentManager
+                ?: throw Exception("Unable to open configure settings"),
+            ""
         )
         super.onDetach()
     }

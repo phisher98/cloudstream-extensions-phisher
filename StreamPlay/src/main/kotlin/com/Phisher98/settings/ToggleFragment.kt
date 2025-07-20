@@ -67,7 +67,7 @@ class ToggleFragment(
         val defaultEnabled = apis.map { it.name }.toSet()
         val currentSet = savedSet?.toSet() ?: defaultEnabled
 
-        val outlineDrawable = getDrawable("outline")
+        val selectedBackground = ColorDrawable(Color.parseColor("#1E1E1E"))
         val defaultBackground = ColorDrawable(Color.parseColor("#121212"))
 
         for (api in apis) {
@@ -79,11 +79,14 @@ class ToggleFragment(
             toggleSwitch.isChecked = currentSet.contains(api.name)
 
             fun updateBackground(isChecked: Boolean) {
-                toggleItem.background = if (isChecked) outlineDrawable else defaultBackground
+                toggleItem.background = if (isChecked) selectedBackground else defaultBackground
             }
 
             // Set initial background state
             updateBackground(toggleSwitch.isChecked)
+
+            // Make it TV friendly if needed
+            toggleItem.makeTvCompatible()
 
             val listener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
                 updateBackground(isChecked)
@@ -92,7 +95,7 @@ class ToggleFragment(
             toggleSwitch.setOnCheckedChangeListener(listener)
 
             toggleItem.setOnClickListener {
-                toggleSwitch.setOnCheckedChangeListener(null) // Prevent double trigger
+                toggleSwitch.setOnCheckedChangeListener(null)
                 toggleSwitch.isChecked = !toggleSwitch.isChecked
                 updateBackground(toggleSwitch.isChecked)
                 toggleSwitch.setOnCheckedChangeListener(listener)
@@ -122,7 +125,8 @@ class ToggleFragment(
             }
 
             sharedPref.edit {
-                putStringSet(savedKey, enabledPluginNames.toSet()).commit()
+                putStringSet(savedKey, enabledPluginNames.toSet())
+                commit()
             }
 
             showToast("Settings saved. Restarting app...")

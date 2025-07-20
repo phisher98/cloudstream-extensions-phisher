@@ -11,6 +11,8 @@ import android.webkit.*
 import android.widget.Button
 import android.widget.EditText
 import androidx.annotation.RequiresApi
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
@@ -35,6 +37,16 @@ class SettingsFragment(
         val layout = res.getLayout(id)
         return inflater.inflate(layout, container, false)
     }
+
+    override fun onStart() {
+        super.onStart()
+        (dialog as? BottomSheetDialog)?.behavior?.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
+            isDraggable = false // optional: prevent dragging at all
+        }
+    }
+
 
     @SuppressLint("SetJavaScriptEnabled", "SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.M)
@@ -95,6 +107,22 @@ class SettingsFragment(
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+
+                // Resize WebView to content height
+                view?.evaluateJavascript(
+                    "(function() { return document.body.scrollHeight; })();"
+                ) { value ->
+                    val height = value.replace("\"", "").toFloatOrNull()
+                    if (height != null) {
+                        val density = resources.displayMetrics.density
+                        val layoutParams = view.layoutParams
+                        layoutParams.height = (height * density).toInt()
+                        view.layoutParams = layoutParams
+                    }
+                }
+
+                // Existing token scraping logic
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookie(url ?: "")
 

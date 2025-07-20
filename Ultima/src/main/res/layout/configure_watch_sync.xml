@@ -14,123 +14,112 @@
         android:paddingBottom="20dp"
         tools:background="@color/cardview_dark_background">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_rowWeight="1"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="5dp"
-                android:text="Sync watch history"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="right">
-
-                <ImageView
-                    android:id="@+id/save"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="5dp"
-                    android:padding="5dp"
-                    android:focusable="true" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <ImageView
-            android:src="@android:drawable/divider_horizontal_dark"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:scaleType="fitXY"
-            android:paddingLeft="2dp"
-            android:paddingRight="2dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginTop="10dp" />
-
+        <!-- Header Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="10dp">
+            android:gravity="center_vertical"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="5dp">
 
             <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Sync Watch History"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/save"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_rowWeight="1"
-                android:text="login data"
+                android:padding="5dp"
+                android:contentDescription="Save"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Divider -->
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="10dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:scaleType="fitXY"
+            android:src="@android:drawable/divider_horizontal_dark" />
+
+        <!-- Credentials Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Login data"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:id="@+id/watch_sync_creds_btn"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="right">
-
-                <ImageView
-                    android:id="@+id/watch_sync_creds_btn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:padding="5dp"
-                    android:focusable="true" />
-
-            </LinearLayout>
-
+                android:padding="5dp"
+                android:contentDescription="Edit"
+                android:focusable="true" />
         </LinearLayout>
 
+        <!-- Divider -->
         <ImageView
-            android:src="@android:drawable/divider_horizontal_dark"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginVertical="10dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
             android:scaleType="fitXY"
-            android:paddingLeft="2dp"
-            android:paddingRight="2dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginTop="10dp" />
+            android:src="@android:drawable/divider_horizontal_dark" />
 
+        <!-- Sync Toggle -->
         <Switch
             android:id="@+id/sync_this_device"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="Sync this device"
             android:textSize="17sp"
             android:padding="5dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginBottom="5dp"
-            android:text="Sync this device"
-            android:focusable="true" />
+            android:layout_marginVertical="5dp" />
 
+        <!-- Divider -->
         <ImageView
-            android:src="@android:drawable/divider_horizontal_dark"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginVertical="10dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
             android:scaleType="fitXY"
-            android:paddingLeft="2dp"
-            android:paddingRight="2dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginTop="10dp" />
+            android:src="@android:drawable/divider_horizontal_dark" />
 
+        <!-- Device List Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Devices"
-            android:textSize="18sp" />
+            android:textSize="18sp"
+            android:layout_marginBottom="5dp" />
 
+        <!-- Devices List -->
         <LinearLayout
             android:id="@+id/devices_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="10dp">
-        </LinearLayout>
+            android:paddingBottom="10dp" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
