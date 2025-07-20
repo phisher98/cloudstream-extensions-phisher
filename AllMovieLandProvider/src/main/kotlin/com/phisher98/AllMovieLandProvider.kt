@@ -14,7 +14,7 @@ import okhttp3.FormBody
 import org.jsoup.nodes.Element
 
 class AllMovieLandProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://allmovieland.fun"
+    override var mainUrl = "https://allmovieland.ac"
     override var name = "AllMovieLand"
     override val hasMainPage = true
     override var lang = "hi"
@@ -185,7 +185,6 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         }.filter { it.contains("youtube") }.joinToString()
         val trailer = fixUrlNull(trailerLink)
         //Log.d("mygodtrailer", trailerLink)
-        val rating = doc.select("b.imdb__value").text().replace(",", ".").toRatingInt()
         //Log.d("rating", rating.toString())
         val duration =
             doc.select("li.xfs__item_op:nth-child(3) > b").text().removeSuffix(" min.").trim()
@@ -253,7 +252,6 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     this.year = year
                     this.plot = description
                     this.tags = tags
-                    this.rating = rating
                     this.duration = duration
                     this.actors = actors
                     this.recommendations = recommendations
@@ -266,7 +264,6 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     this.year = year
                     this.plot = description
                     this.tags = tags
-                    this.rating = rating
                     this.duration = duration
                     this.actors = actors
                     this.recommendations = recommendations
@@ -279,7 +276,6 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     this.year = year
                     this.plot = description
                     this.tags = tags
-                    this.rating = rating
                     this.duration = duration
                     this.actors = actors
                     this.recommendations = recommendations

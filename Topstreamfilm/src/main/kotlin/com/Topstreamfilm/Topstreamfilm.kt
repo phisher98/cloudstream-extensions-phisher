@@ -63,7 +63,7 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
         val poster = fixUrlNull(document.select("article div.TPostBg img.TPostBg").attr("data-src"))
         val year=document.selectFirst("span.Date.AAIco-date_range")?.text()?.toIntOrNull()
         val tags=document.select("ul li.AAIco-adjust:contains(Genre) a").map { it.text() }
-        val rating=document.select("ul li.AAIco-adjust:contains(Rating) span").text().toRatingInt()
+        val rating=document.select("ul li.AAIco-adjust:contains(Rating) span").text()
         val checkSeason=document.selectFirst("div.tt_season")?.text()
         val type=if (checkSeason!=null) TvType.TvSeries else TvType.Movie
         return if (type==TvType.TvSeries)
@@ -89,14 +89,14 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
                 this.posterUrl = poster
                 this.year = year
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from10(rating)
             }
         }
         else
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.tags=tags
             this.year = year
-            this.rating = rating
+            this.score = Score.from10(rating)
             this.posterUrl = poster
             this.plot=plot
 

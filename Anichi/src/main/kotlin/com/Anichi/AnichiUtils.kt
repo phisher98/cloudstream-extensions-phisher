@@ -5,11 +5,8 @@ import com.Anichi.Anichi.Companion.apiEndPoint
 import com.Anichi.AnichiParser.AkIframe
 import com.Anichi.AnichiParser.AniMedia
 import com.Anichi.AnichiParser.AniSearch
-import com.Anichi.AnichiParser.AnichiLoadData
-import com.Anichi.AnichiParser.AvailableEpisodesDetail
 import com.Anichi.AnichiParser.DataAni
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.fixTitle
@@ -124,21 +121,6 @@ object AnichiUtils {
                     "streaming.php",
             )
 
-    fun AvailableEpisodesDetail.getEpisode(
-            lang: String,
-            id: String,
-            malId: Int?,
-    ): List<Episode> {
-        val meta = if (lang == "sub") this.sub else this.dub
-        return meta
-                .map { eps ->
-                    Episode(
-                            AnichiLoadData(id, lang, eps, malId).toJson(),
-                            episode = eps.toIntOrNull()
-                    )
-                }
-                .reversed()
-    }
 
     suspend fun getM3u8Qualities(
             m3u8Link: String,

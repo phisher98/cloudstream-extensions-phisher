@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -159,11 +160,7 @@ class AnimeKai : MainAPI() {
                 subEpisodes += newEpisode("sub|" + ep.attr("token")) {
                     name = ep.selectFirst("span")?.text()
                     episode = index + 1
-                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                        ?.toDoubleOrNull()
-                        ?.times(10)
-                        ?.roundToInt()
-                        ?: 0
+                    this.score = Score.from10(animeData?.episodes?.get(episode?.toString())?.rating)
                     this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
                         ?: return@newEpisode
                     this.description = animeData.episodes[episode?.toString()]?.overview
@@ -176,11 +173,7 @@ class AnimeKai : MainAPI() {
                     dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
                         name = ep.selectFirst("span")?.text()
                         episode = ep.attr("num").toIntOrNull()
-                        this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                            ?.toDoubleOrNull()
-                            ?.times(10)
-                            ?.roundToInt()
-                            ?: 0
+                        this.score = Score.from10(animeData?.episodes?.get(episode?.toString())?.rating)
                         this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
                             ?: return@newEpisode
                         this.description = animeData.episodes[episode?.toString()]?.overview

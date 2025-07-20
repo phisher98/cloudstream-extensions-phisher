@@ -76,7 +76,7 @@ open class YTS : MainAPI() {
                 this.posterUrl = poster
                 this.plot = title
                 this.year = year
-                this.rating=rating
+                this.score = Score.from10(rating)
                 this.tags = tags
             }
     }

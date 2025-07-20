@@ -119,7 +119,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val poster = fixUrlNull(doc.selectFirst("img.relative")?.attr("src"))
         val tags = doc.select("div.relative a[class*=\"py-0.5\"]").map { it.text() }
         val description = doc.selectFirst("p.leading-tight")?.text()?.trim()
-        val rating = doc.select("span.text-xl").text().toRatingInt()
+        val rating = doc.select("span.text-xl").text()
         val actors = doc.select("div.font-semibold span.text-blue-300").map { it.text() }
         val recommendations = doc.select("a.block").mapNotNull {
             it.toSearchResult()
@@ -133,7 +133,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
                 episodes.add(
                     newEpisode(mainUrl + it.attr("href"))
                     {
-                        this.name=it.ownText().toString().removePrefix("Episode ").substring(2)
+                        this.name= it.ownText().removePrefix("Episode ").substring(2)
                         this.season=titRegex.find(seasonNum)?.value?.toInt()
                         this.episode=titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
                     }
@@ -144,7 +144,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             this.posterUrl = poster
             this.plot = description
             this.tags = tags
-            this.rating = rating
+            this.score = Score.from10(rating)
             addActors(actors)
             this.recommendations = recommendations
         }

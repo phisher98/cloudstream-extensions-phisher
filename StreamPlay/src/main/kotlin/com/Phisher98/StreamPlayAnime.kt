@@ -19,6 +19,7 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -189,11 +190,7 @@ class StreamPlayAnime : MainAPI() {
                 this.episode = i
                 this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                 this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                this.rating = animeData.episodes[episode?.toString()]?.rating
-                    ?.toDoubleOrNull()
-                    ?.times(10)
-                    ?.roundToInt()
-                    ?: 0
+                this.score = Score.from10(animeData.episodes[episode?.toString()]?.rating)
             }
         }
 

@@ -19,6 +19,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -293,7 +294,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
         val orgTitle = res.originalTitle ?: res.originalName ?: return null
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
-        val rating = res.vote_average.toString().toRatingInt()
+        val rating = res.vote_average.toString()
         val genres = res.genres?.mapNotNull { it.name }
 
         val isCartoon = genres?.contains("Animation") ?: false
@@ -357,7 +358,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                             this.season=eps.seasonNumber
                             this.episode=eps.episodeNumber
                             this.posterUrl=getImageUrl(eps.stillPath)
-                            this.rating=eps.voteAverage?.times(10)?.roundToInt()
+                            this.score = Score.from10(eps.voteAverage)
                             this.description=eps.overview
                         }.apply {
                             this.addDate(eps.airDate)
@@ -375,7 +376,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                         ?.map { word -> word.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() }
                         ?: genres
-                    this.rating = rating
+                    this.score = Score.from10(rating)
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
@@ -395,7 +396,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                         ?.takeIf { it.isNotEmpty() }
                         ?: genres
 
-                    this.rating = rating
+                    this.score = Score.from10(rating)
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
@@ -437,7 +438,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                     ?.takeIf { it.isNotEmpty() }
                     ?: genres
 
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.recommendations = recommendations
                 this.actors = actors
                 this.contentRating = fetchContentRating(data.id, "US")
