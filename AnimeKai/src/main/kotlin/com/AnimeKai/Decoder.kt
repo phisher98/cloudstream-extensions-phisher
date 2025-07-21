@@ -12,7 +12,6 @@ import java.util.Base64
 //Special Credit: Thanks to amarullz
 //https://github.com/amarullz/AnimeTV
 
-@Suppress("DEPRECATION")
 class AnimekaiDecoder {
     @SuppressLint("NewApi")
     fun generateToken(input: String, kaiKeysSrc: List<List<String>>): String {

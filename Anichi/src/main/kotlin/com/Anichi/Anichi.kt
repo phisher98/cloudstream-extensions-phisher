@@ -25,7 +25,6 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -235,8 +234,13 @@ open class Anichi : MainAPI() {
                     AnichiLoadData(id, "sub", eps, trackers?.idMal).toJson()
                 ) {
                     episode = eps.toIntOrNull()
+                    Log.d("Phisher",episode.toString())
                     this.name = animeData?.episodes?.get(episode?.toString())?.title?.get("en")
-                    this.score = Score.from10(animeData?.episodes?.get(episode?.toString())?.rating)
+                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
+                        ?.toDoubleOrNull()
+                        ?.times(10)
+                        ?.roundToInt()
+                        ?: 0
                     this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
                         ?: return@newEpisode
                     this.description = animeData.episodes[episode?.toString()]?.overview
@@ -250,7 +254,11 @@ open class Anichi : MainAPI() {
                 ) {
                     episode = eps.toIntOrNull()
                     this.name = animeData?.episodes?.get(episode?.toString())?.title?.get("en")
-                    this.score = Score.from10(animeData?.episodes?.get(episode?.toString())?.rating)
+                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
+                        ?.toDoubleOrNull()
+                        ?.times(10)
+                        ?.roundToInt()
+                        ?: 0
                     this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
                         ?: return@newEpisode
                     this.description = animeData.episodes[episode?.toString()]?.overview
@@ -278,8 +286,7 @@ open class Anichi : MainAPI() {
         return newAnimeLoadResponse(title ?: "", url, TvType.Anime) {
             engName = showData.altNames?.firstOrNull()
             posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
-            this.score = Score.from100(showData.averageScore)
-
+            rating = showData.averageScore?.times(100)
             tags = showData.genres
             year = showData.airedStart?.year
             duration = showData.episodeDuration?.div(60_000)

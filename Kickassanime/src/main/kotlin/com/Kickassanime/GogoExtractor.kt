@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
-import com.lagradost.cloudstream3.mvvm.safe
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -26,7 +25,7 @@ object GogoExtractor {
      * @return the encryption key
      * */
     private fun getKey(id: String): String? {
-        return safe {
+        return normalSafeApiCall {
             id.map {
                 it.code.toString(16)
             }.joinToString("").substring(0, 32)

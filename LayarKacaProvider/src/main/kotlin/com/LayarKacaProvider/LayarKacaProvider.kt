@@ -102,7 +102,8 @@ class LayarKacaProvider : MainAPI() {
         ) TvType.TvSeries else TvType.Movie
         val description = document.select("div.content > blockquote").text().trim()
         val trailer = document.selectFirst("div.action-player li > a.fancybox")?.attr("href")
-        val rating = document.selectFirst("div.content > div:nth-child(6) > h3")?.text()
+        val rating =
+            document.selectFirst("div.content > div:nth-child(6) > h3")?.text()?.toRatingInt()
         val actors =
             document.select("div.col-xs-9.content > div:nth-child(3) > h3 > a").map { it.text() }
         val imdbId =
@@ -139,8 +140,7 @@ class LayarKacaProvider : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.score = Score.from10(rating)
-
+                this.rating = rating
                 addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
@@ -152,7 +152,7 @@ class LayarKacaProvider : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.score = Score.from10(rating)
+                this.rating = rating
                 addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)

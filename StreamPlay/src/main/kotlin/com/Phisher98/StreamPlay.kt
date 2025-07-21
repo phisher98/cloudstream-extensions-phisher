@@ -61,7 +61,6 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -352,7 +351,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val orgTitle = res.originalTitle ?: res.originalName ?: return null
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
-        val rating = res.vote_average.toString()
+        val rating = res.vote_average.toString().toRatingInt()
         val genres = res.genres?.mapNotNull { it.name }
 
         val isCartoon = genres?.contains("Animation") ?: false
@@ -417,7 +416,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             this.season = eps.seasonNumber
                             this.episode = eps.episodeNumber
                             this.posterUrl = getImageUrl(eps.stillPath)
-                            this.score = Score.from10(eps.voteAverage)
+                            this.rating = eps.voteAverage?.times(10)?.roundToInt()
                             this.description = eps.overview
                         }.apply {
                             this.addDate(eps.airDate)
@@ -465,7 +464,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                         this.season = video.season
                         this.episode = video.number
                         this.posterUrl = video.thumbnail
-                        this.score = Score.from10(video.rating)
+                        this.rating = video.rating.times(10).roundToInt()
                         this.description = video.description
                     }.apply {
                         this.addDate(video.released)
@@ -480,7 +479,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.plot = res.overview
                     this.tags = keywords?.map { it.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
-                    this.score = Score.from10(rating)
+                    this.rating = rating
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
@@ -496,7 +495,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.plot = res.overview
                     this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
-                    this.score = Score.from10(rating)
+
+                    this.rating = rating
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
@@ -536,7 +536,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
                     ?.takeIf { it.isNotEmpty() } ?: genres
 
-                this.score = Score.from10(rating)
+                this.rating = rating
                 this.recommendations = recommendations
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"

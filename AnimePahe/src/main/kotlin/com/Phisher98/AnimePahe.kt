@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.mvvm.safeAsync
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -251,7 +250,7 @@ class AnimePahe : MainAPI() {
     data class LoadData(val session: String, val sessionDate: Long, val name: String)
 
     override suspend fun load(url: String): LoadResponse? {
-        return safeAsync {
+        return suspendSafeApiCall {
             val session = parseJson<LoadData>(url).let { data ->
                 // Outdated
                 if (data.sessionDate + 60 * 10 < unixTime) {
@@ -261,7 +260,7 @@ class AnimePahe : MainAPI() {
                 } else {
                     data.session
                 }
-            } ?: return@safeAsync null
+            } ?: return@suspendSafeApiCall null
             val html = app.get("$Proxy$mainUrl/anime/$session",headers=headers).text
             val doc = Jsoup.parse(html)
             val japTitle = doc.selectFirst("h2.japanese")?.text()

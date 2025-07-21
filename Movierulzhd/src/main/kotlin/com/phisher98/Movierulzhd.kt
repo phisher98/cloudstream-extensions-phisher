@@ -131,7 +131,7 @@ open class Movierulzhd : MainAPI() {
         val description = document.select("div.wp-content > p").text().trim()
         val trailer = document.selectFirst("div.embed iframe")?.attr("src")
         val rating =
-            document.selectFirst("span.dt_rating_vgs")?.text()
+            document.selectFirst("span.dt_rating_vgs")?.text()?.toRatingInt()
         val actors = document.select("div.persons > div[itemprop=actor]").map {
             Actor(
                 it.select("meta[itemprop=name]").attr("content"),
@@ -200,8 +200,7 @@ open class Movierulzhd : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.score = Score.from10(rating)
-
+                this.rating = rating
                 addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
@@ -213,7 +212,7 @@ open class Movierulzhd : MainAPI() {
                 this.backgroundPosterUrl= background
                 this.plot = description
                 this.tags = tags
-                this.score = Score.from10(rating)
+                this.rating = rating
                 addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)

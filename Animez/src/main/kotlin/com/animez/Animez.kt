@@ -81,7 +81,7 @@ open class Animez : MainAPI() {
         val tvType = if (document.select("ul.version-chap li").size > 1) TvType.TvSeries else TvType.Movie
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val trailer = document.selectFirst("div.embed iframe")?.attr("src")
-        val rating = document.selectFirst("div.mrt5.mrb10 > span > span:nth-child(1)")?.text()
+        val rating = document.selectFirst("div.mrt5.mrb10 > span > span:nth-child(1)")?.text()?.toRatingInt()
         val status=document.select("div.mvici-left > ul > li:nth-child(2)").text().substringAfter(":").trim()
         val recommendations = document.select("div.TPostMv").map {
             val recName = it.selectFirst("a")!!.attr("title").removeSuffix("/").split("/").last()
@@ -171,7 +171,7 @@ open class Animez : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.score = Score.from10(rating)
+                this.rating = rating
                 this.recommendations = recommendations
                 addTrailer(trailer)
                 addEpisodes(DubStatus.Subbed, subEpisodes.reversed())
@@ -184,7 +184,7 @@ open class Animez : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.score = Score.from10(rating)
+                this.rating = rating
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }

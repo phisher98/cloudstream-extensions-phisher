@@ -121,7 +121,6 @@ object AnichiUtils {
                     "streaming.php",
             )
 
-
     suspend fun getM3u8Qualities(
             m3u8Link: String,
             referer: String,

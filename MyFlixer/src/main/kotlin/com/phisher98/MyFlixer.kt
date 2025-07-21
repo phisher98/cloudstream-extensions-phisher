@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -71,11 +70,12 @@ class MyFlixer : MainAPI() {
             return newMovieLoadResponse(name, url, TvType.Movie, "list/$contentId") {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
-                this.score = Score.from10(details.select("button.btn-imdb")
-                    .text()
-                    .replace("N/A", "")
-                    .replace("IMDB: ", "")
-                    .toIntOrNull())
+                this.rating =
+                        details.select("button.btn-imdb")
+                                .text()
+                                .replace("N/A", "")
+                                .replace("IMDB: ", "")
+                                .toIntOrNull()
                 addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
             }
         } else {
@@ -108,11 +108,12 @@ class MyFlixer : MainAPI() {
             return newTvSeriesLoadResponse(name, url, TvType.TvSeries, episodes) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
-                this.score = Score.from10(details.select("button.btn-imdb")
-                    .text()
-                    .replace("N/A", "")
-                    .replace("IMDB: ", "")
-                    .toIntOrNull())
+                this.rating =
+                        details.select("button.btn-imdb")
+                                .text()
+                                .replace("N/A", "")
+                                .replace("IMDB: ", "")
+                                .toIntOrNull()
                 addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
             }
         }
