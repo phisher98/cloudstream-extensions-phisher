@@ -6,7 +6,7 @@
     android:padding="16dp"
     android:background="#121212">
 
-    <!-- Title with Save Icon -->
+    <!-- Title Row with Save Icon -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -23,19 +23,16 @@
             android:textStyle="bold"
             android:textColor="#FFFFFF" />
 
-        <!-- Save Icon with ripple and no double-click issue -->
         <ImageView
             android:id="@+id/saveIcon"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:padding="8dp"
-            android:src="@drawable/save_icon"
-            android:scaleType="centerInside"
-            android:contentDescription="Save"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:layout_marginStart="8dp"
             android:focusable="true"
-            android:focusableInTouchMode="false"
-            android:clickable="true" />
+            android:clickable="true"
+            android:contentDescription="Save"
+            android:foreground="?android:attr/selectableItemBackgroundBorderless" />
     </LinearLayout>
 
     <!-- Login Option Card -->

@@ -46,8 +46,6 @@ class ToggleFragment(
     private fun View.makeTvCompatible() {
         val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         this.background = res.getDrawable(outlineId, null)
-        this.isFocusable = true
-        this.isFocusableInTouchMode = true
     }
 
     @SuppressLint("UseSwitchCompatOrMaterialCode")

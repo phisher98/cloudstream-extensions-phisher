@@ -37,13 +37,17 @@
 
             <ImageView
                 android:id="@+id/saveIcon"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:padding="4dp"
-                android:src="@android:drawable/ic_menu_save"
-                android:contentDescription="Save Settings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="4dp"
                 android:focusable="true"
-                android:focusableInTouchMode="false" />
+                android:clickable="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Save"
+                android:nextFocusDown="@id/toggle_item"
+                android:scaleType="centerInside" />
         </LinearLayout>
 
         <TextView

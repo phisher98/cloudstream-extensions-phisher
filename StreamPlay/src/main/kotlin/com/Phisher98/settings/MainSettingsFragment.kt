@@ -1,6 +1,7 @@
 package com.Phisher98.settings
 
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +15,7 @@ import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
 import com.phisher98.settings.SettingsFragment
 import com.phisher98.settings.ToggleFragment
+import kotlinx.coroutines.delay
 
 class MainSettingsFragment(
     private val plugin: StreamPlayPlugin,
@@ -22,6 +24,11 @@ class MainSettingsFragment(
 
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
 
+    private fun getDrawable(name: String): Drawable {
+        val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return res.getDrawable(id, null) ?: throw Exception("Drawable $name not found")
+    }
+
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
         if (id == 0) throw Exception("View ID $name not found.")
@@ -29,9 +36,8 @@ class MainSettingsFragment(
     }
 
     private fun View.makeTvCompatible() {
-        val id = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        if (id == 0) throw Exception("Drawable 'outline' not found.")
-        this.background = res.getDrawable(id, null)
+        val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.background = res.getDrawable(outlineId, null)
     }
 
     private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
@@ -45,15 +51,11 @@ class MainSettingsFragment(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return getLayout("fragment_main_settings", inflater, container)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val view = getLayout("fragment_main_settings", inflater, container)
         val loginCard: View = view.findView("loginCard")
         val featureCard: View = view.findView("featureCard")
-        val saveIcon: ImageView = view.findView("saveIcon")
-
-        // Optional: highlight save icon on TV
+        val saveIcon = view.findView<ImageView>("saveIcon")
+        saveIcon.setImageDrawable(getDrawable("save_icon"))
         saveIcon.makeTvCompatible()
 
         loginCard.setOnClickListener {
@@ -87,9 +89,12 @@ class MainSettingsFragment(
                 .setNegativeButton("No", null)
                 .show()
                 .setDefaultFocus()
+                dismiss()
         }
-
+        return view
     }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {}
 
     private fun restartApp() {
         val context = requireContext().applicationContext
