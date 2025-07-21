@@ -41,7 +41,7 @@ class Megacloud : ExtractorApi() {
         }
 
         Log.e("Megacloud", "MegacloudResponse nonce: $nonce")
-        val apiUrl = "$mainUrl/embed-1/v3/e-1/getSources?id=$id&_k=$nonce"
+        val apiUrl = "$mainUrl/embed-2/v3/e-1/getSources?id=$id&_k=$nonce"
         val gson = Gson()
 
 
