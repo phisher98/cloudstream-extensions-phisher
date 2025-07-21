@@ -442,12 +442,22 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                 return
             }
 
-            val href = if ("hubcloud.php" in realUrl) {
-                realUrl
-            } else {
-                val scriptData = app.get(realUrl).document
-                    .selectFirst("script:containsData(url)")?.toString().orEmpty()
-                Regex("var url = '([^']*)'").find(scriptData)?.groupValues?.getOrNull(1).orEmpty()
+            val baseUrl=getBaseUrl(realUrl)
+
+            val href = try {
+                if ("hubcloud.php" in realUrl) {
+                    realUrl
+                } else {
+                    val rawHref = app.get(realUrl).document.select("#download").attr("href")
+                    if (rawHref.startsWith("http", ignoreCase = true)) {
+                        rawHref
+                    } else {
+                        baseUrl.trimEnd('/') + "/" + rawHref.trimStart('/')
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("HubCloud", "Failed to extract href: ${e.message}")
+                ""
             }
 
             if (href.isBlank()) {

@@ -3532,7 +3532,6 @@ object StreamPlayExtractor : StreamPlay() {
                 append(" $year")
             }
         }
-
         val figures = retry {
             val allFigures =
                 app.get(searchUrl, interceptor = wpRedisInterceptor).document.select("figure")
@@ -3551,6 +3550,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         for (figure in figures) {
             val detailUrl = figure.selectFirst("a[href]")?.attr("href").orEmpty()
+
             if (detailUrl.isBlank()) continue
 
             val detailDoc = retry {
@@ -3563,10 +3563,11 @@ object StreamPlayExtractor : StreamPlay() {
                 ?.attr("href")
                 ?.substringAfter("title/")
                 ?.substringBefore("/")
-                ?.takeIf { it.isNotBlank() } ?: continue
+                ?.takeIf { it.isNotBlank() }
+            Log.d("Phisher",imdbId.toString())
 
             val titleMatch = imdbId == id.orEmpty() || detailDoc
-                .select("main > p:nth-child(10)")
+                .select("main > p:nth-child(10),p strong:contains(Movie Name:) + span")
                 .firstOrNull()
                 ?.text()
                 ?.contains(cleanTitle, ignoreCase = true) == true
@@ -3575,6 +3576,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             if (season == null) {
                 val links = detailDoc.select("h5 a")
+
                 for (element in links) {
                     val urls = retry { extractMdrive(element.attr("href")) } ?: continue
                     for (serverUrl in urls) {
