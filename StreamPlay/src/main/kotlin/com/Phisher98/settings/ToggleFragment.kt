@@ -1,7 +1,6 @@
 package com.phisher98.settings
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Resources
 import android.graphics.Color
@@ -45,8 +44,10 @@ class ToggleFragment(
     }
 
     private fun View.makeTvCompatible() {
-        val id = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
-        this.background = res.getDrawable(id, null)
+        val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.background = res.getDrawable(outlineId, null)
+        this.isFocusable = true
+        this.isFocusableInTouchMode = true
     }
 
     @SuppressLint("UseSwitchCompatOrMaterialCode")
@@ -66,10 +67,6 @@ class ToggleFragment(
         val savedSet = sharedPref.getStringSet(savedKey, null)
         val defaultEnabled = apis.map { it.name }.toSet()
         val currentSet = savedSet?.toSet() ?: defaultEnabled
-
-        val selectedBackground = ColorDrawable(Color.parseColor("#1E1E1E"))
-        val defaultBackground = ColorDrawable(Color.parseColor("#121212"))
-
         for (api in apis) {
             val toggleItem = getLayout("list_toggle_item", inflater, container)
             val label = toggleItem.findView<TextView>("toggle_title")
@@ -78,27 +75,13 @@ class ToggleFragment(
             label.text = api.name
             toggleSwitch.isChecked = currentSet.contains(api.name)
 
-            fun updateBackground(isChecked: Boolean) {
-                toggleItem.background = if (isChecked) selectedBackground else defaultBackground
-            }
 
-            // Set initial background state
-            updateBackground(toggleSwitch.isChecked)
 
-            // Make it TV friendly if needed
+            toggleSwitch.isChecked
             toggleItem.makeTvCompatible()
-
-            val listener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
-                updateBackground(isChecked)
-            }
-
-            toggleSwitch.setOnCheckedChangeListener(listener)
-
             toggleItem.setOnClickListener {
                 toggleSwitch.setOnCheckedChangeListener(null)
                 toggleSwitch.isChecked = !toggleSwitch.isChecked
-                updateBackground(toggleSwitch.isChecked)
-                toggleSwitch.setOnCheckedChangeListener(listener)
             }
 
             extensionList.addView(toggleItem)

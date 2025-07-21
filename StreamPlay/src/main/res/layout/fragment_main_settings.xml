@@ -34,8 +34,8 @@
             android:contentDescription="Save"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:focusable="true"
-            android:clickable="true"
-            android:importantForAccessibility="yes" />
+            android:focusableInTouchMode="false"
+            android:clickable="true" />
     </LinearLayout>
 
     <!-- Login Option Card -->
