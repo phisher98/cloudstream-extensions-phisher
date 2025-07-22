@@ -11,24 +11,24 @@ import android.webkit.*
 import android.widget.Button
 import android.widget.EditText
 import androidx.annotation.RequiresApi
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
-import com.phisher98.SuperStreamPlugin
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.phisher98.SuperStreamPlugin
 
 class SettingsFragment(
-    private val plugin: SuperStreamPlugin,
+    plugin: SuperStreamPlugin,
     private val sharedPref: SharedPreferences,
 ) : BottomSheetDialogFragment() {
     private val res = plugin.resources ?: throw Exception("Unable to read resources")
 
-    @SuppressLint("DiscouragedApi")
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
         return this.findViewById(id)
     }
 
-    @SuppressLint("DiscouragedApi")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
@@ -38,7 +38,17 @@ class SettingsFragment(
         return inflater.inflate(layout, container, false)
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    override fun onStart() {
+        super.onStart()
+        (dialog as? BottomSheetDialog)?.behavior?.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
+            isDraggable = false // optional: prevent dragging at all
+        }
+    }
+
+
+    @SuppressLint("SetJavaScriptEnabled", "SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val tokenInput = view.findView<EditText>("tokenInput")
@@ -46,7 +56,6 @@ class SettingsFragment(
         val resetButton = view.findView<Button>("resetButton")
         val loginButton = view.findView<Button>("loginButton")
         val webView = view.findView<WebView>("authWebView")
-
         val savedToken = sharedPref.getString("token", null)
         if (!savedToken.isNullOrEmpty()) {
             tokenInput.setText(savedToken)
@@ -98,6 +107,22 @@ class SettingsFragment(
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+
+                // Resize WebView to content height
+                view?.evaluateJavascript(
+                    "(function() { return document.body.scrollHeight; })();"
+                ) { value ->
+                    val height = value.replace("\"", "").toFloatOrNull()
+                    if (height != null) {
+                        val density = resources.displayMetrics.density
+                        val layoutParams = view.layoutParams
+                        layoutParams.height = (height * density).toInt()
+                        view.layoutParams = layoutParams
+                    }
+                }
+
+                // Existing token scraping logic
                 val cookieManager = CookieManager.getInstance()
                 val cookies = cookieManager.getCookie(url ?: "")
 
@@ -119,6 +144,7 @@ class SettingsFragment(
                             putString("token", finalToken)
                             apply()
                         }
+
                         showToast("Login successful!")
                         webView.visibility = View.GONE
                     }
