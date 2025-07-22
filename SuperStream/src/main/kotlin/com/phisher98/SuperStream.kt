@@ -19,6 +19,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -229,6 +230,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
             TvType.Movie,
         ) {
             this.posterUrl = getImageUrl(posterPath)
+            this.score= Score.from10(voteAverage)
         }
     }
 
@@ -552,6 +554,7 @@ data class Media(
 @JsonProperty("original_title") val originalTitle: String? = null,
 @JsonProperty("media_type") val mediaType: String? = null,
 @JsonProperty("poster_path") val posterPath: String? = null,
+@JsonProperty("vote_average") val voteAverage: Double? = null
 )
 
 data class Genres(
