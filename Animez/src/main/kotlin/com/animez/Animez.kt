@@ -203,10 +203,14 @@ open class Animez : MainAPI() {
         document.select("#list_sv a").map {
             val host=it.attr("data-link")
             val m3u8="$host/anime/$token"
+            val headers = mapOf(
+                "referer" to m3u8,
+            )
             M3u8Helper.generateM3u8(
                 name,
                 m3u8,
                 m3u8,
+                headers = headers
             ).forEach(callback)
         }
         return true
