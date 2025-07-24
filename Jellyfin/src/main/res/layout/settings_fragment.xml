@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:fillViewport="true"
+    android:layoutDirection="ltr">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Login"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <ImageView
+                android:id="@+id/closeButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="4dp"
+                android:focusable="true"
+                android:clickable="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Close"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:scaleType="centerInside" />
+        </LinearLayout>
+
+        <!-- Server URL -->
+        <EditText
+            android:id="@+id/urlInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Server URL"
+            android:textColorHint="#BBBBBB"
+            android:textColor="#FFFFFF"
+            android:inputType="textUri"
+            android:textSize="18sp"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="?android:attr/editTextBackground"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusDown="@id/usernameInput" />
+
+        <!-- Username -->
+        <EditText
+            android:id="@+id/usernameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Username"
+            android:textColorHint="#BBBBBB"
+            android:textColor="#FFFFFF"
+            android:inputType="textEmailAddress"
+            android:textSize="18sp"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="?android:attr/editTextBackground"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusDown="@id/passwordInput" />
+
+        <!-- Password + Eye -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <EditText
+                android:id="@+id/passwordInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Password"
+                android:textColorHint="#BBBBBB"
+                android:textColor="#FFFFFF"
+                android:inputType="textPassword"
+                android:textSize="18sp"
+                android:padding="16dp"
+                android:background="?android:attr/editTextBackground"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusRight="@id/togglePasswordVisibility"
+                android:nextFocusDown="@id/saveCredentialsButton" />
+
+            <ImageView
+                android:id="@+id/togglePasswordVisibility"
+                android:layout_width="48dp"
+                android:layout_height="match_parent"
+                android:padding="12dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:contentDescription="Toggle Password Visibility"
+                android:focusable="true"
+                android:clickable="true"
+                android:scaleType="centerInside"
+                android:src="@android:drawable/ic_menu_view"
+                android:nextFocusDown="@id/saveCredentialsButton" />
+        </LinearLayout>
+
+        <!-- Save Button -->
+        <Button
+            android:id="@+id/saveCredentialsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SAVE CREDENTIALS"
+            android:textColor="#FFFFFF"
+            android:textAllCaps="true"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:background="@android:drawable/btn_default"
+            android:backgroundTint="#4285F4"
+            android:padding="14dp"
+            android:elevation="4dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusUp="@id/passwordInput" />
+
+        <Button
+            android:id="@+id/resetCredentialsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset CREDENTIALS"
+            android:textColor="#FFFFFF"
+            android:textAllCaps="true"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:background="@android:drawable/btn_default"
+            android:backgroundTint="#4285F4"
+            android:padding="14dp"
+            android:elevation="4dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:nextFocusUp="@id/saveCredentialsButton" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

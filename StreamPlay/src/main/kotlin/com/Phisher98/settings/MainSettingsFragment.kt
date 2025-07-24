@@ -81,8 +81,6 @@ class MainSettingsFragment(
                 .setTitle("Save & Reload")
                 .setMessage("Changes have been saved. Do you want to restart the app to apply them ?")
                 .setPositiveButton("Yes") { _, _ ->
-                    restartApp()
-                    showToast("Saved and Reloaded")
                     dismiss()
                     restartApp()
                 }

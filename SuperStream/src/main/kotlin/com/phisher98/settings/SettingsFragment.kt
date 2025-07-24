@@ -1,6 +1,7 @@
 package com.phisher98.settings
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -11,11 +12,13 @@ import android.webkit.*
 import android.widget.Button
 import android.widget.EditText
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.phisher98.SuperStreamPlugin
 
 class SettingsFragment(
@@ -69,17 +72,28 @@ class SettingsFragment(
         }
 
         addButton.setOnClickListener {
-            var token = tokenInput.text.toString().trim()
+            val token = tokenInput.text.toString().trim()
             if (token.isNotEmpty()) {
-                if (!token.startsWith("ui=")) {
-                    token = "ui=$token"
+                val finalToken = if (token.startsWith("ui=")) token else "ui=$token"
+
+                sharedPref.edit().putString("token", finalToken).apply()
+
+                val ctx = context ?: run {
+                    showToast("Error: Context is null")
+                    return@setOnClickListener
                 }
-                sharedPref.edit()?.apply {
-                    putString("token", token)
-                    apply()
-                }
-                showToast("Token saved successfully. Restart the app.")
-                dismiss()
+
+                AlertDialog.Builder(ctx)
+                    .setTitle("Save & Reload")
+                    .setMessage("Changes have been saved. Do you want to restart the app to apply them?")
+                    .setPositiveButton("Yes") { _, _ ->
+                        dismiss()
+                        restartApp()
+                    }
+                    .setNegativeButton("No") { _, _ ->
+                        dismiss()
+                    }
+                    .show()
             } else {
                 showToast("Please enter a valid token")
             }
@@ -150,6 +164,19 @@ class SettingsFragment(
                     }
                 }
             }
+        }
+    }
+
+    private fun restartApp() {
+        val context = requireContext().applicationContext
+        val packageManager = context.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+        val componentName = intent?.component
+
+        if (componentName != null) {
+            val restartIntent = Intent.makeRestartActivityTask(componentName)
+            context.startActivity(restartIntent)
+            Runtime.getRuntime().exit(0)
         }
     }
 }
