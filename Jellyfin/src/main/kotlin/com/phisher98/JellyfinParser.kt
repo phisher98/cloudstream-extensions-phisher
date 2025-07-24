@@ -72,7 +72,23 @@ data class LoadURL(
 
 data class MediaSource(
     @JsonProperty("TranscodingUrl")
-    val transcodingUrl: String,
+    val transcodingUrl: String? = null,
+    @JsonProperty("Path")
+    val path: String? = null,
+    @JsonProperty("SupportsDirectPlay")
+    val supportsDirectPlay: Boolean = false,
+    @JsonProperty("Protocol")
+    val protocol: String = "",
+    @JsonProperty("SupportsTranscoding")
+    val supportsTranscoding: Boolean = false,
+    @JsonProperty("SupportsDirectStream")
+    val supportsDirectStream: Boolean = false,
+    @JsonProperty("Id")
+    val id: String? = null,
+    @JsonProperty("Container")
+    val container: String? = null,
+    @JsonProperty("DefaultAudioStreamIndex")
+    val defaultAudioStreamIndex: Int? = null
 )
 
 data class SeriesInfo(

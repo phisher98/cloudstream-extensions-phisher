@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
@@ -165,7 +166,6 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             val type = loadData.type
             val movieApi = "$baseUrl/Users/$userId/Items/$id"
             val moviefetch = app.get(movieApi, headers).parsedSafe<MovieMetadata>()
-            val streamUrl = baseUrl + fetchPlaybackInfo(id, userId)
 
             if (type == TvType.TvSeries) {
                 val parentId = app.get("$baseUrl/Users/$userId/Items/$id", headers).parsedSafe<SeriesInfo>()?.id
@@ -181,7 +181,7 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
 
                     episoderes?.items?.map { item ->
                         val season = Regex("""\d+""").find(item.seasonName ?: "")?.value?.toIntOrNull() ?: 1
-                        val href = baseUrl + fetchPlaybackInfo(item.id, userId)
+                        val href = item.id
                         newEpisode(href) {
                             this.name = item.name
                             this.episode = item.indexNumber
@@ -202,7 +202,7 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
                     addTrailer(moviefetch?.remoteTrailers?.firstOrNull { it.url.contains("youtube", true) }?.url)
                 }
             } else {
-                newMovieLoadResponse(loadData.name, url, type, streamUrl) {
+                newMovieLoadResponse(loadData.name, url, type, id) {
                     this.posterUrl = loadData.posterurl
                     this.plot = moviefetch?.overview
                     this.tags = moviefetch?.genres
@@ -222,12 +222,16 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        callback(
-            newExtractorLink(name, name, data, INFER_TYPE) {
-                this.quality = quality
-            }
-        )
-        return true
+        return withAuthRetry { auth ->
+            val streamUrl = fetchPlaybackInfo(data, auth.user.id)
+
+            callback(
+                newExtractorLink(name, name, streamUrl, INFER_TYPE) {
+                    this.quality = getQualityFromName(streamUrl)
+                }
+            )
+            true
+        }
     }
 
     private suspend fun fetchPlaybackInfo(id: String, userId: String): String {
@@ -239,21 +243,51 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             )
 
             val body = """
-            {
-                "UserId": "$userId",
-                "StartTimeTicks": 0,
-                "IsPlayback": true,
-                "AutoOpenLiveStream": true,
-                "MediaSourceId": "$id"
-            }
+        {
+            "UserId": "$userId",
+            "StartTimeTicks": 0,
+            "IsPlayback": true,
+            "AutoOpenLiveStream": true,
+            "MediaSourceId": "$id"
+        }
         """.trimIndent()
 
-            retryRequest {
+            val response = retryRequest {
                 app.post(apiUrl, headers, requestBody = body.toRequestBody("application/json".toMediaType()))
-                    .parsedSafe<LoadURL>()?.mediaSources?.firstOrNull()?.transcodingUrl
-            } ?: "/Videos/$id/stream.mp4?Static=true&mediaSourceId=$id"
+                    .parsedSafe<LoadURL>()
+            }
+
+            val mediaSource = response?.mediaSources?.firstOrNull()
+            val httpPath = mediaSource?.path
+
+            // Prefer direct play if supported
+            if (
+                httpPath != null &&
+                httpPath.startsWith("http", ignoreCase = true) &&
+                mediaSource.supportsDirectPlay &&
+                mediaSource.protocol.equals("http", ignoreCase = true)
+            ) {
+                val redirectUrl = app.get(httpPath, allowRedirects = false).headers["location"] ?: ""
+                if (redirectUrl.isNotEmpty()) return@withAuthRetry redirectUrl
+                return@withAuthRetry httpPath
+            }
+
+            // Handle transcodingUrl (ensure full URL)
+            mediaSource?.transcodingUrl?.let { transcodingUrl ->
+                return@withAuthRetry if (transcodingUrl.startsWith("http", ignoreCase = true)) {
+                    transcodingUrl
+                } else {
+                    "$url$transcodingUrl"
+                }
+            }
+
+            // Fallback
+            return@withAuthRetry "$url/Videos/$id/stream.mp4?Static=true&mediaSourceId=$id"
         }
     }
+
+
+
 
 
     private fun EpisodeItem.getPosterUrl(baseUrl: String): String? {
@@ -272,7 +306,7 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             } catch (e: Exception) {
                 if (!e.message.orEmpty().contains("500")) throw e
             }
-            kotlinx.coroutines.delay(delayMillis)
+            delay(delayMillis)
         }
         return try { block() } catch (e: Exception) {
             if (e.message.orEmpty().contains("500")) null else throw e
