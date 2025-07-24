@@ -23,10 +23,7 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
     override val instantLinkLoading = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(
-        TvType.Movie,
-        TvType.TvSeries,
-        TvType.Anime,
-        TvType.Cartoon,
+        TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.Cartoon
     )
 
     private val url = sharedPref?.getString("url", null)
@@ -35,7 +32,7 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
 
     private var cachedAuth: Authparser? = null
     private var lastAuthTime: Long = 0
-    private val authCacheDuration = 5 * 60 * 1000
+    private val authCacheDuration = 30 * 60 * 1000 // 30 minutes
 
     private fun buildAuthHeader(token: String? = null): String {
         return buildString {
@@ -49,7 +46,6 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
         if (cachedAuth != null && (currentTime - lastAuthTime) < authCacheDuration) {
             return cachedAuth!!
         }
-
         val newAuth = authenticateJellyfin(username, password, url)
             ?: throw Exception("Authentication failed. Check Jellyfin credentials.")
         cachedAuth = newAuth
@@ -66,15 +62,19 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             try {
                 return block(getValidAuth())
             } catch (e: Exception) {
-                Log.d("AuthRetry", "Auth attempt ${it + 1} failed: ${e.message}")
-                cachedAuth = null
-                lastAuthTime = 0
+                val msg = e.message.orEmpty()
+                Log.d("AuthRetry", "Auth attempt ${it + 1} failed: $msg")
+                if (msg.contains("401") || msg.contains("403") || msg.contains("token", ignoreCase = true)) {
+                    cachedAuth = null
+                    lastAuthTime = 0
+                } else {
+                    throw e
+                }
                 delay(delayMillis)
             }
         }
-        return block(getValidAuth()) // final attempt
+        return block(getValidAuth())
     }
-
 
     private suspend fun authenticateJellyfin(
         username: String?, password: String?, url: String?
@@ -108,7 +108,6 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
                     val itemsApi = "$url/Users/${auth.user.id}/Items?ParentId=${parentItem.id}&SortOrder=Ascending"
                     val items = app.get(itemsApi, headers).parsedSafe<Home>()?.items.orEmpty()
                     if (items.isEmpty()) return@mapNotNull null
-
                     val list = items.map { toSearchResponseBase(it.id, it.name, it.type, auth.user.id) }
                     HomePageList(name = parentItem.name, list = list)
                 }
@@ -131,23 +130,22 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+    override suspend fun quickSearch(query: String) = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val auth = authenticateJellyfin(username, password, url) ?: return emptyList()
+        return withAuthRetry { auth ->
+            val headers = mapOf(
+                "Accept" to "application/json",
+                "Authorization" to buildAuthHeader(auth.accessToken),
+                "Content-Type" to "application/json"
+            )
+            val response = app.get(
+                "$url/Items?userId=${auth.user.id}&limit=100&recursive=true&searchTerm=$query",
+                headers = headers
+            ).parsedSafe<SearchResult>()
 
-        val headers = mapOf(
-            "Accept" to "application/json",
-            "Authorization" to buildAuthHeader(auth.accessToken),
-            "Content-Type" to "application/json"
-        )
-
-        val response = app.get(
-            "$url/Items?userId=${auth.user.id}&limit=100&recursive=true&searchTerm=$query",
-            headers = headers
-        ).parsedSafe<SearchResult>()
-
-        return response?.items?.map { toSearchResponseBase(it.id, it.name, it.type, auth.user.id) } ?: emptyList()
+            response?.items?.map { toSearchResponseBase(it.id, it.name, it.type, auth.user.id) } ?: emptyList()
+        }
     }
 
     override suspend fun load(url: String): LoadResponse? {
@@ -168,7 +166,7 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             val moviefetch = app.get(movieApi, headers).parsedSafe<MovieMetadata>()
 
             if (type == TvType.TvSeries) {
-                val parentId = app.get("$baseUrl/Users/$userId/Items/$id", headers).parsedSafe<SeriesInfo>()?.id
+                val parentId = app.get(movieApi, headers).parsedSafe<SeriesInfo>()?.id
                 val seasons = app.get("$baseUrl/Shows/$parentId/Seasons?userId=$userId", headers)
                     .parsedSafe<SeasonResponse>()?.items.orEmpty()
                     .filter { it.name.contains("Season", ignoreCase = true) }
@@ -177,28 +175,27 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
                 val episodes = seasons.flatMap { (seasonId, _) ->
                     val episoderes = app.get(
                         "$baseUrl/Shows/$parentId/Episodes?seasonId=$seasonId&userId=$userId", headers
-                    ).parsedSafe<EpisodeJson>()
+                    ).parsedSafe<EpisodeJson>()?.items.orEmpty()
 
-                    episoderes?.items?.map { item ->
+                    episoderes.map { item ->
                         val season = Regex("""\d+""").find(item.seasonName ?: "")?.value?.toIntOrNull() ?: 1
-                        val href = item.id
-                        newEpisode(href) {
+                        newEpisode(item.id) {
                             this.name = item.name
                             this.episode = item.indexNumber
                             this.season = season
                             this.posterUrl = item.getPosterUrl(baseUrl)
                         }
-                    } ?: emptyList()
+                    }
                 }
 
                 newTvSeriesLoadResponse(loadData.name, url, type, episodes) {
                     this.posterUrl = loadData.posterurl
+                    this.plot = moviefetch?.overview
+                    this.tags = moviefetch?.genres
                     addActors(moviefetch?.people?.map { it.name })
                     addImdbId(moviefetch?.providerIds?.imdb)
                     addImdbId(moviefetch?.providerIds?.tmdb)
                     addImdbUrl(moviefetch?.externalUrls?.firstOrNull { it.name.equals("IMDb", true) }?.url)
-                    this.plot = moviefetch?.overview
-                    this.tags = moviefetch?.genres
                     addTrailer(moviefetch?.remoteTrailers?.firstOrNull { it.url.contains("youtube", true) }?.url)
                 }
             } else {
@@ -223,13 +220,10 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         return withAuthRetry { auth ->
-            val streamUrl = fetchPlaybackInfo(data, auth.user.id)
-
-            callback(
-                newExtractorLink(name, name, streamUrl, INFER_TYPE) {
-                    this.quality = getQualityFromName(streamUrl)
-                }
-            )
+            val streamUrl = fetchPlaybackInfo(data.substringAfter("/"), auth.user.id)
+            callback(newExtractorLink(name, name, streamUrl, INFER_TYPE) {
+                this.quality = getQualityFromName(streamUrl)
+            })
             true
         }
     }
@@ -241,16 +235,15 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
                 "Authorization" to buildAuthHeader(auth.accessToken),
                 "Content-Type" to "application/json"
             )
-
             val body = """
-        {
-            "UserId": "$userId",
-            "StartTimeTicks": 0,
-            "IsPlayback": true,
-            "AutoOpenLiveStream": true,
-            "MediaSourceId": "$id"
-        }
-        """.trimIndent()
+            {
+                "UserId": "$userId",
+                "StartTimeTicks": 0,
+                "IsPlayback": true,
+                "AutoOpenLiveStream": true,
+                "MediaSourceId": "$id"
+            }
+            """.trimIndent()
 
             val response = retryRequest {
                 app.post(apiUrl, headers, requestBody = body.toRequestBody("application/json".toMediaType()))
@@ -260,7 +253,6 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             val mediaSource = response?.mediaSources?.firstOrNull()
             val httpPath = mediaSource?.path
 
-            // Prefer direct play if supported
             if (
                 httpPath != null &&
                 httpPath.startsWith("http", ignoreCase = true) &&
@@ -268,11 +260,9 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
                 mediaSource.protocol.equals("http", ignoreCase = true)
             ) {
                 val redirectUrl = app.get(httpPath, allowRedirects = false).headers["location"] ?: ""
-                if (redirectUrl.isNotEmpty()) return@withAuthRetry redirectUrl
-                return@withAuthRetry httpPath
+                return@withAuthRetry if (redirectUrl.isNotEmpty()) redirectUrl else httpPath
             }
 
-            // Handle transcodingUrl (ensure full URL)
             mediaSource?.transcodingUrl?.let { transcodingUrl ->
                 return@withAuthRetry if (transcodingUrl.startsWith("http", ignoreCase = true)) {
                     transcodingUrl
@@ -281,14 +271,9 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
                 }
             }
 
-            // Fallback
             return@withAuthRetry "$url/Videos/$id/stream.mp4?Static=true&mediaSourceId=$id"
         }
     }
-
-
-
-
 
     private fun EpisodeItem.getPosterUrl(baseUrl: String): String? {
         return imageTags?.primary?.let { "$baseUrl/Items/$id/Images/Primary?tag=$it" }
@@ -312,5 +297,4 @@ open class Jellyfin(sharedPref: SharedPreferences? = null) : MainAPI() {
             if (e.message.orEmpty().contains("500")) null else throw e
         }
     }
-
 }
