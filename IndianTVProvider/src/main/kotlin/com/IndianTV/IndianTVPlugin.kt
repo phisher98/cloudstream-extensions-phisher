@@ -32,6 +32,7 @@ class IndianTVPlugin : MainAPI() {
         "https://raw.githubusercontent.com/alex4528/m3u/refs/heads/main/artl.m3u",
         "https://raw.githubusercontent.com/alex4528/m3u/refs/heads/main/z5.m3u",
         "https://raw.githubusercontent.com/alex4528/m3u/main/jstar.m3u",
+        "https://raw.githubusercontent.com/bugsfreeweb/LiveTVCollector/refs/heads/main/LiveTV/India/LiveTV.m3u"
     )
 
     // ✅ Fetch and combine all playlists
