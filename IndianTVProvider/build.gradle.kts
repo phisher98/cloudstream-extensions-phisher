@@ -23,5 +23,5 @@ cloudstream {
     tvTypes = listOf("Live")
     iconUrl = "https://www.freepnglogos.com/uploads/tv-png/tv-png-box-television-set-cable-screen-icon-31.png"
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
