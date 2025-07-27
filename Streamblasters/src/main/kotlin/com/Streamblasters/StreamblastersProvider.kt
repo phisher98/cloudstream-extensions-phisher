@@ -16,5 +16,8 @@ class StreamblastersProvider: BasePlugin() {
         registerExtractorAPI(wishonly())
         registerExtractorAPI(smoothpre())
         registerExtractorAPI(cybervynx())
+        registerExtractorAPI(luluvdoo())
+        registerExtractorAPI(hglink())
+        registerExtractorAPI(mivalyo())
     }
 }

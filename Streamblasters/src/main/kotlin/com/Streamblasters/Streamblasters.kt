@@ -1,15 +1,15 @@
 package com.Streamblasters
 
 
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
+import org.json.JSONArray
 
 class Streamblasters : MainAPI() {
-    override var mainUrl              = "https://www.streamblasters.pm"
+    override var mainUrl              = "https://www.streamblasters.city"
     override var name                 = "Streamblasters"
     override val hasMainPage          = true
     override var lang                 = "hi"
@@ -79,6 +79,7 @@ class Streamblasters : MainAPI() {
         {
             poster="https://img.freepik.com/free-photo/assortment-cinema-elements-red-background-with-copy-space_23-2148457848.jpg?size=626&ext=jpg&ga=GA1.1.2082370165.1716422400&semt=ais_user"
         }
+        val href=document.select("div.series-listing > a").map { it.attr("href") }.toList()
         val description = document.selectFirst("div.actor-element > p")?.text()?.trim()
         val trailer = document.selectFirst("div.tmdb-trailer > iframe")?.attr("src")
         val actors = document.select("div.ac-di-content").map {
@@ -87,13 +88,13 @@ class Streamblasters : MainAPI() {
                 it.select("div.ac-di-content > div.post-img > span > img").attr("src")
             )
         }
-        val tvType=if (document.select("div.series-listing").isEmpty()) TvType.Movie else TvType.TvSeries
+        val tvType = if (document.select("div.series-listing:contains(Player)").isNotEmpty()) TvType.Movie else TvType.TvSeries
         return if (tvType == TvType.TvSeries) {
             val episodes =
                 document.select("div.series-listing > a").mapNotNull {
-                    val href = it.attr("href")
+                    val hreff = it.attr("href")
                     val episode = it.select("span").text()
-                    newEpisode(href)
+                    newEpisode(hreff)
                     {
                         this.name=episode
                     }
@@ -104,11 +105,11 @@ class Streamblasters : MainAPI() {
             }
         }
         else {
-            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+            return newMovieLoadResponse(title, url, TvType.Movie, href) {
                 this.posterUrl = poster.ifEmpty {
                     ({
                         posterUrl =
-                            "https://www.streamblasters.link/wp-content/uploads/2022/05/cropped-png12.png"
+                            "https://www.streamblasters.city/wp-content/uploads/2022/05/cropped-png12.png"
                     }).toString()
                 }
                 this.plot = description
@@ -119,10 +120,21 @@ class Streamblasters : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
-        val server=document.selectFirst("#player-api-control > iframe")?.attr("src") ?:""
-        Log.d("Phisher test",server)
-        loadExtractor(server,subtitleCallback, callback)
+        if (data.startsWith("["))
+        {
+            val servers = JSONArray(data)
+            for (i in 0 until servers.length()) {
+                val server = servers.getString(i)
+                val iframe = app.get(server).document.select("#player-api-control > iframe").attr("src")
+                loadExtractor(iframe, subtitleCallback, callback)
+            }
+        }
+        else
+        {
+            val iframe= app.get(data).document
+            val server=iframe.selectFirst("#player-api-control > iframe")?.attr("src") ?:""
+            loadExtractor(server,subtitleCallback, callback)
+        }
         return true
     }
 }
