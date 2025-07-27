@@ -133,7 +133,7 @@ class Streamblasters : MainAPI() {
         {
             val iframe= app.get(data).document
             val server=iframe.selectFirst("#player-api-control > iframe")?.attr("src") ?:""
-            loadExtractor(server,subtitleCallback, callback)
+            loadExtractor(server,server,subtitleCallback, callback)
         }
         return true
     }
