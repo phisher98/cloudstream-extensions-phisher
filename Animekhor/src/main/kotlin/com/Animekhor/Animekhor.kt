@@ -5,7 +5,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-class Animekhor : MainAPI() {
+open class Animekhor : MainAPI() {
     override var mainUrl              = "https://animekhor.org"
     override var name                 = "Animekhor"
     override val hasMainPage          = true

@@ -116,7 +116,7 @@ open class Ultrahd : ExtractorApi() {
 class Rumble : ExtractorApi() {
     override var name = "Rumble"
     override var mainUrl = "https://rumble.com"
-    override val requiresReferer = false
+    override val requiresReferer = true
 
     override suspend fun getUrl(
         url: String,
@@ -124,26 +124,31 @@ class Rumble : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val response = app.get(
-            url, referer = referer ?: "$mainUrl/"
-        )
-        val playerScript =
-            response.document.selectFirst("script:containsData(mp4)")?.data()
-                ?.substringAfter("{\"mp4")?.substringBefore("\"evt\":{") ?:""
-        val regex = """"url":"(.*?)"|h":(.*?)\}""".toRegex()
-        val matches = regex.findAll(playerScript)
-        for (match in matches) {
-            val href = match.groupValues[1].replace("\\/", "/")
-            callback.invoke(
-                newExtractorLink(
-                    name,
-                    name,
-                    url = href,
-                    INFER_TYPE
-                ) {
-                    this.referer = ""
-                    this.quality = getQualityFromName("")
-                }
+        val response = app.get(url, referer = referer ?: "$mainUrl/")
+        val document = response.document
+
+        val playerScript = document.selectFirst("script:containsData(jwplayer)")?.data()
+            ?: return
+
+        // Extract sources (mp4 or m3u8)
+        val sourceRegex = """"file"\s*:\s*"(https:[^"]+\.(?:mp4|m3u8)[^"]*)"""".toRegex()
+        val sources = sourceRegex.findAll(playerScript)
+
+        for (source in sources) {
+            val fileUrl = source.groupValues[1].replace("\\/", "/")
+            M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
+        }
+
+        // Extract subtitle tracks
+        val trackRegex = """"file"\s*:\s*"(https:[^"]+\.vtt[^"]*)"\s*,\s*"label"\s*:\s*"([^"]+)"""".toRegex()
+        val tracks = trackRegex.findAll(playerScript)
+
+        for (track in tracks) {
+            val fileUrl = track.groupValues[1].replace("\\/", "/")
+            val label = track.groupValues[2]
+
+            subtitleCallback.invoke(
+                SubtitleFile(label, fileUrl)
             )
         }
     }
