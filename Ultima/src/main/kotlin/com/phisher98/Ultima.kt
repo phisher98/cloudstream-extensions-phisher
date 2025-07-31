@@ -4,6 +4,7 @@ import com.phisher98.UltimaUtils.SectionInfo
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.allProviders
+import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
@@ -11,11 +12,17 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.MovieSearchResponse
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.TvSeriesSearchResponse
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.nicehttp.Requests.Companion.await
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlin.collections.forEach
 
 class Ultima(val plugin: UltimaPlugin) : MainAPI() {
@@ -31,54 +38,55 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     private var sectionNamesList: List<String> = emptyList()
 
     private fun loadSections(): List<MainPageData> {
-        sectionNamesList = emptyList()
+        val tempSectionNames = mutableListOf<String>()
 
         val result = mutableListOf<MainPageData>()
         val savedPlugins = sm.currentExtensions
 
-        // Always include the "watch_sync" section
         result += mainPageOf("" to "watch_sync")
 
-        // Extract and filter enabled sections from extensions
         val enabledSections = savedPlugins
             .flatMap { it.sections?.asList() ?: emptyList() }
             .filter { it.enabled }
             .sortedByDescending { it.priority }
 
-        enabledSections.forEachIndexed { _, section ->
+        enabledSections.forEach { section ->
             try {
                 val sectionKey = mapper.writeValueAsString(section)
-                val sectionName = buildSectionName(section)
+                val sectionName = buildSectionName(section, tempSectionNames)
                 result += mainPageOf(sectionKey to sectionName)
             } catch (e: Exception) {
                 Log.e("loadSections", "Failed to load section ${section.name}: ${e.message}")
             }
         }
 
-        if (result.isEmpty()) {
-            return mainPageOf("" to "")
-        }
-        return result
+        sectionNamesList = tempSectionNames
+
+        return if (result.size <= 1) mainPageOf("" to "") else result
     }
 
-    private fun buildSectionName(section: SectionInfo): String {
-        val name: String = if (sm.extNameOnHome) section.pluginName + ": " + section.name
-        else if (sectionNamesList.contains(section.name))
-            "${section.name} ${sectionNamesList.filter { it.contains(section.name) }.size + 1}"
-        else section.name
-        sectionNamesList += name
+
+    private fun buildSectionName(section: SectionInfo, names: MutableList<String>): String {
+        val name = if (sm.extNameOnHome) {
+            "${section.pluginName}: ${section.name}"
+        } else if (names.contains(section.name)) {
+            "${section.name} ${names.count { it.startsWith(section.name) } + 1}"
+        } else {
+            section.name
+        }
+        names += name
         return name
     }
+
 
     override val mainPage = loadSections()
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         val creds = sm.deviceSyncCreds
         creds?.syncThisDevice()
+
         if (request.name.isEmpty()) {
-            throw ErrorLoadingException(
-                "Select sections from the extension's settings page to show here."
-            )
+            throw ErrorLoadingException("Select sections from the extension's settings page to show here.")
         }
 
         return try {
@@ -93,19 +101,18 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                     return null
                 }
 
-                val homeSections = filteredDevices.map {
-                    val syncedContent = it.syncedData ?: emptyList()
-                    HomePageList("Continue from: ${it.name}", syncedContent)
+                val homeSections = ArrayList<HomePageList>(filteredDevices.size)
+
+                for (device in filteredDevices) {
+                    val syncedContent = device.syncedData ?: continue
+                    homeSections += HomePageList("Continue from: ${device.name}", syncedContent)
                 }
 
                 newHomePageResponse(homeSections, false)
             } else {
                 val section = AppUtils.parseJson<SectionInfo>(request.data)
                 val provider = allProviders.find { it.name == section.pluginName }
-
-                if (provider == null) {
-                    throw ErrorLoadingException("Provider '${section.pluginName}' is not available.")
-                }
+                    ?: throw ErrorLoadingException("Provider '${section.pluginName}' is not available.")
 
                 provider.getMainPage(
                     page,
@@ -124,6 +131,49 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     }
 
 
+    override suspend fun search(query: String): List<SearchResponse>? {
+        val enabledSections = mainPage
+            .filter { !it.name.equals("watch_sync", ignoreCase = true) }
+            .mapNotNull {
+                try {
+                    val section = AppUtils.parseJson<SectionInfo>(it.data)
+                    section.pluginName to section
+                } catch (_: Exception) {
+                    null
+                }
+            }
+
+        val tasks = mutableListOf<suspend () -> List<SearchResponse>>()
+
+        for ((pluginName, _) in enabledSections) {
+            val provider = allProviders.find { it.name == pluginName } ?: continue
+
+            tasks += suspend {
+                try {
+                    when (val result = provider.search(query)) {
+                        is List<*> -> {
+                            result.map { item ->
+                                when (item) {
+                                    is MovieSearchResponse -> item.copy(name = "[$pluginName] ${item.name}")
+                                    is AnimeSearchResponse -> item.copy(name = "[$pluginName] ${item.name}")
+                                    is TvSeriesSearchResponse -> item.copy(name = "[$pluginName] ${item.name}")
+                                    else -> item
+                                }
+                            }
+                        }
+                        else -> emptyList()
+                    }
+                } catch (e: Exception) {
+                    Log.e("search", "Search failed for provider $pluginName: ${e.message}")
+                    emptyList()
+                }
+            }
+        }
+
+
+        return runLimitedParallel(limit = 4, tasks).flatten()
+    }
+
     override suspend fun load(url: String): LoadResponse {
         val enabledPlugins = mainPage
             .filter { !it.name.equals("watch_sync", ignoreCase = true) }
@@ -134,15 +184,27 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                     null
                 }
             }
+
         val providersToTry = allProviders.filter { it.name in enabledPlugins }
 
-        providersToTry.forEach { provider ->
+        for (provider in providersToTry) {
             try {
                 val response = provider.load(url)
-                if (response != null) return response
-            } catch (_: Throwable) {}
+
+                if (response != null &&
+                    response.name.isNotBlank() &&
+                    !response.posterUrl.isNullOrBlank()
+                ) {
+                    return response
+                }
+            } catch (_: Throwable) {
+                // Optional: Log specific provider failure if debugging
+                Log.e("Ultima load", "Failed loading from ${provider.name}")
+            }
         }
+
         return newMovieLoadResponse("Welcome to Ultima", "", TvType.Others, "")
     }
+
 
 }

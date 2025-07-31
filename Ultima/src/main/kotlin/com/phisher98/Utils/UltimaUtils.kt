@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import kotlinx.coroutines.delay
 import com.lagradost.cloudstream3.app
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 object UltimaUtils {
     data class SectionInfo(
@@ -122,4 +125,16 @@ suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
     return cachedDomains
 }
 
-
+suspend fun <T> runLimitedParallel(
+    limit: Int = 4,
+    blockList: List<suspend () -> T>
+): List<T> {
+    val semaphore = Semaphore(limit)
+    return coroutineScope {
+        blockList.map { block ->
+            async(Dispatchers.IO) {
+                semaphore.withPermit { block() }
+            }
+        }.awaitAll()
+    }
+}
