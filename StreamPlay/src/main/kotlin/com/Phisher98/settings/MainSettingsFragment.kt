@@ -75,19 +75,17 @@ class MainSettingsFragment(
         }
 
         saveIcon.setOnClickListener {
-            AlertDialog.Builder(
-                context ?: throw Exception("Unable to build alert dialog")
-            )
+            val context = this.context ?: return@setOnClickListener
+
+            AlertDialog.Builder(context)
                 .setTitle("Save & Reload")
-                .setMessage("Changes have been saved. Do you want to restart the app to apply them ?")
+                .setMessage("Changes have been saved. Do you want to restart the app to apply them?")
                 .setPositiveButton("Yes") { _, _ ->
                     dismiss()
                     restartApp()
                 }
                 .setNegativeButton("No", null)
                 .show()
-                .setDefaultFocus()
-                dismiss()
         }
         return view
     }

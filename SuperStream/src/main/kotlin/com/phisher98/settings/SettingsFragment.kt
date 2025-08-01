@@ -20,6 +20,7 @@ import com.phisher98.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.phisher98.SuperStreamPlugin
+import androidx.core.content.edit
 
 class SettingsFragment(
     plugin: SuperStreamPlugin,
@@ -76,7 +77,7 @@ class SettingsFragment(
             if (token.isNotEmpty()) {
                 val finalToken = if (token.startsWith("ui=")) token else "ui=$token"
 
-                sharedPref.edit().putString("token", finalToken).apply()
+                sharedPref.edit { putString("token", finalToken) }
 
                 val ctx = context ?: run {
                     showToast("Error: Context is null")
