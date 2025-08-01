@@ -568,7 +568,6 @@ object StreamPlayExtractor : StreamPlay() {
             { kaasSlug?.let { invokeKickAssAnime(it, episode, subtitleCallback, callback) } },
             { animepaheUrl?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
             { invokeAnichi(zorotitle,anititle, tmdbYear, episode, subtitleCallback, callback) },
-            { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeTokyoInsider(jptitle, title, episode, callback) },
             { invokeAnizone(jptitle, episode, callback) },
             {
@@ -777,39 +776,6 @@ object StreamPlayExtractor : StreamPlay() {
                         }
                     }
                 }
-            }
-        }
-    }
-
-
-    suspend fun invokeAnimeOwl(
-        name: String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val slug = name?.createSlug() ?: return
-        val url = "$AnimeOwlAPI/anime/$slug"
-
-        val document = app.get(url).document
-
-        val contentBlocks = document.select("#anime-cover-sub-content, #anime-cover-dub-content")
-
-        contentBlocks.forEach { block ->
-            val type = if (block.id().contains("sub", ignoreCase = true)) "SUB" else "DUB"
-
-            val episodeLink = block.select("a.episode-node")
-                .firstOrNull { it.attr("title") == episode?.toString() }
-                ?.attr("href")
-
-            if (!episodeLink.isNullOrEmpty()) {
-                loadCustomExtractor(
-                    name = "AnimeOwl [$type]",
-                    url = episodeLink,
-                    referer = AnimeOwlAPI,
-                    subtitleCallback = subtitleCallback,
-                    callback = callback
-                )
             }
         }
     }
@@ -3384,14 +3350,15 @@ object StreamPlayExtractor : StreamPlay() {
 
             val json = tryParseJson<AllMovielandPlaylist>("{$resData}") ?: return
             val headers = mapOf(("X-CSRF-TOKEN" to "${json.key}"))
-
+            val jsonfile=if (json.file?.startsWith("http") == true) json.file else host+json.file
             val serverJson = app.get(
-                fixUrl(json.file ?: return, host),
+                jsonfile,
                 headers = headers,
                 referer = "$allmovielandAPI/"
             ).text.replace(Regex(""",\\s*\\/"""), "")
+            val cleanedJson = serverJson.replace(Regex(",\\s*\\[\\s*]"), "")
 
-            val servers = tryParseJson<ArrayList<AllMovielandServer>>(serverJson)?.let { list ->
+            val servers = tryParseJson<ArrayList<AllMovielandServer>>(cleanedJson)?.let { list ->
                 if (season == null) {
                     list.mapNotNull { it.file?.let { file -> file to it.title.orEmpty() } }
                 } else {

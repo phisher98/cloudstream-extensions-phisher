@@ -3,7 +3,6 @@ package com.phisher98
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.malsyncAPI
 import com.phisher98.StreamPlayExtractor.invokeAnimeKai
-import com.phisher98.StreamPlayExtractor.invokeAnimeOwl
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
@@ -257,7 +256,6 @@ class StreamPlayAnime : MainAPI() {
         runAllAsync(
             { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback) },
             { malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
-            { invokeAnimeOwl(zorotitle, episode, subtitleCallback, callback) },
             { invokeAnizone(jpTitle, episode, callback) },
             { invokeAnichi(jpTitle,anititle,year,episode, subtitleCallback, callback) },
             { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },

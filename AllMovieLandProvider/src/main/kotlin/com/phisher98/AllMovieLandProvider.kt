@@ -12,9 +12,10 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 import org.jsoup.nodes.Element
+import java.net.URI
 
 class AllMovieLandProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://allmovieland.fun"
+    override var mainUrl = "https://allmovieland.ac"
     override var name = "AllMovieLand"
     override val hasMainPage = true
     override var lang = "hi"
@@ -57,12 +58,14 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
     }
 
     private suspend fun getDlJson(link: String, url: String): String {
+        val baseurl=getBaseUrl(link)
         val doc = app.get(link, referer = url).document
         val jsonString = Regex("""\{.*\}""").find(doc.select("body > script:last-child").toString())?.value.toString()
         val json = parseJson<Getfile>(jsonString)
         tokenKey = json.key
+        val jsonfile=if (json.file.startsWith("http")) json.file else baseurl+json.file
         val m3u8Langs = app.post(
-            json.file,
+            jsonfile,
             referer = link,
             headers = mapOf(
                 "X-CSRF-TOKEN" to "${json.key}",
@@ -204,12 +207,9 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
         // Automating awful player domain changes
         val playerScript = doc.select("script:containsData(AwsIndStreamDomain)").toString()
-        Log.d("Phisher", playerScript)
 
         val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
         playerDomain = domainRegex.find(playerScript)?.groups?.get(1)?.value
-        Log.d("Phisher", playerDomain.toString())
-
         val embedLink = "$playerDomain/play/$id"
         val jsonReceive = getDlJson(embedLink, url)
         var episodes: List<Episode> = listOf()
@@ -359,5 +359,11 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
             }
         }
         return true
+    }
+
+    fun getBaseUrl(url: String): String {
+        return URI(url).let {
+            "${it.scheme}://${it.host}"
+        }
     }
 }
