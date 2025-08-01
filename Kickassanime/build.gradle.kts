@@ -23,7 +23,7 @@ cloudstream {
         "OVA",
     )
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=www2.kickassanime.ro&sz=%size%"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/KAA.png"
 
     isCrossPlatform = true
 }

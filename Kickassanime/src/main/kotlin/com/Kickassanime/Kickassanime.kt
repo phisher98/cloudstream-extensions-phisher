@@ -13,11 +13,12 @@ import org.jsoup.Jsoup
 import java.security.MessageDigest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.net.URLEncoder
 import java.util.Calendar
 
 class Kickassanime : MainAPI() {
-    override var mainUrl = "https://kaa.mx"
+    override var mainUrl = "https://kaa.to"
     override var name = "Kickassanime"
     override val hasMainPage = true
     override var lang = "en"
@@ -35,7 +36,7 @@ class Kickassanime : MainAPI() {
     )
 
     companion object {
-        var mainUrl = "https://kaa.mx"
+        var mainUrl = "https://kaa.to"
         fun getStatus(t: String): ShowStatus {
             return when (t) {
                 "finished_airing" -> ShowStatus.Completed
@@ -173,7 +174,7 @@ val json = """
                     mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
                 val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
                 val query = it.src.substringAfter("?id=").substringBefore("&")
-                val html = app.get(it.src).toString()
+                val html = app.get("https://thingproxy.freeboard.io/fetch/${it.src}").toString()
                 val (sig, timeStamp, route) = getSignature(html, it.name, query, key) ?: return@amap
                 val sourceurl = "$host$route?id=$query&e=$timeStamp&s=$sig"
                 val encjson = app.get(sourceurl, headers = headers).parsedSafe<Encrypted>()?.data
@@ -215,9 +216,100 @@ val json = """
                 }
             }
             else
+            if (it.name.contains("BirdStream"))
             {
-                    Log.d("Phisher","Not Found")
+                val headers = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+                )
+
+                val res= app.get(it.src, headers = headers).text
+
+                val regex = Regex("""props="(.*?)"""")
+                val match = regex.find(res)
+                val encodedJson = match?.groupValues?.get(1)
+
+                if (encodedJson != null) {
+                    val unescapedJson = org.jsoup.parser.Parser.unescapeEntities(encodedJson, false)
+                    val json = JSONObject(unescapedJson)
+
+                    val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
+                    callback.invoke(
+                        ExtractorLink(
+                            "CatStream",
+                            "CatStream DASH",
+                            videoUrl,
+                            "",
+                            Qualities.P1080.value,
+                            type = ExtractorLinkType.M3U8,
+                        )
+                    )
+
+                    val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
+
+                    for (i in 0 until subtitleArray.length()) {
+                        val sub = subtitleArray.getJSONArray(i).getJSONObject(1)
+
+                        val src = sub.getJSONArray("src").getString(1)
+                        val name = sub.getJSONArray("name").getString(1)
+                        subtitleCallback.invoke(
+                            SubtitleFile(
+                                name,  // Use label for the name
+                                src    // Use extracted URL
+                            )
+                        )
+                    }
+
+                } else {
+                    println("Could not find embedded JSON in props attribute")
+                }
             }
+            else
+                if (it.name.contains("CatStream")) {
+                    val headers = mapOf(
+                        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+                    )
+
+                    val res = app.get("https://thingproxy.freeboard.io/fetch/${it.src}", headers = headers).text
+
+                    val regex = Regex("""props="(.*?)"""")
+                    val match = regex.find(res)
+                    val encodedJson = match?.groupValues?.get(1)
+
+                    if (encodedJson != null) {
+                        val unescapedJson = org.jsoup.parser.Parser.unescapeEntities(encodedJson, false)
+                        val json = JSONObject(unescapedJson)
+
+                        val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
+                        callback.invoke(
+                            ExtractorLink(
+                                "CatStream",
+                                "CatStream HLS",
+                                videoUrl,
+                                "",
+                                Qualities.P1080.value,
+                                type = ExtractorLinkType.M3U8,
+                            )
+                        )
+
+                        val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
+
+                        for (i in 0 until subtitleArray.length()) {
+                            val sub = subtitleArray.getJSONArray(i).getJSONObject(1)
+
+                            val src = sub.getJSONArray("src").getString(1)
+                            val name = sub.getJSONArray("name").getString(1)
+                            subtitleCallback.invoke(
+                                SubtitleFile(
+                                    name,  // Use label for the name
+                                    src    // Use extracted URL
+                                )
+                            )
+                        }
+
+                    } else {
+                        println("Could not find embedded JSON in props attribute")
+                    }
+                }
         }
 
         return true

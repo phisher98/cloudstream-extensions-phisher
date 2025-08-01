@@ -1143,52 +1143,107 @@ object StreamPlayExtractor : StreamPlay() {
         val href = "$KickassAPI/api/show/$slug/episode/ep-$episode-$matchedSlug"
         val servers = app.get(href).parsedSafe<ServersResKAA>()?.servers ?: return
 
-        servers.firstOrNull { it.name.contains("VidStreaming") }?.let { server ->
-            val host = getBaseUrl(server.src)
-            val headers = mapOf(
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-            )
-
-            val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
-            val query = server.src.substringAfter("?id=").substringBefore("&")
-            val html = app.get(server.src).toString()
-
-            val (sig, timeStamp, route) = getSignature(html, server.name, query, key) ?: return
-            val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
-
-            val encJson =
-                app.get(sourceUrl, headers = headers).parsedSafe<EncryptedKAA>()?.data ?: return
-            val (encryptedData, ivHex) = encJson.substringAfter(":\"").substringBefore('"')
-                .split(":")
-            val decrypted = tryParseJson<m3u8KAA>(
-                CryptoAES.decrypt(encryptedData, key, ivHex.decodeHex()).toJson()
-            ) ?: return
-
-            val m3u8 = httpsify(decrypted.hls)
-            val videoHeaders = mapOf(
-                "Accept" to "*/*",
-                "Accept-Language" to "en-US,en;q=0.5",
-                "Origin" to host,
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "cross-site"
-            )
-
-            callback(
-                ExtractorLink(
-                    "VidStreaming", "VidStreaming", m3u8, "", Qualities.P1080.value,
-                    type = ExtractorLinkType.M3U8, headers = videoHeaders
+        servers.forEach { server ->
+            if (server.name.contains("VidStreaming")) {
+                val host = getBaseUrl(server.src)
+                val headers = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
                 )
-            )
 
-            decrypted.subtitles.forEach { subtitle ->
-                subtitleCallback(SubtitleFile(subtitle.name, subtitle.src))
+                val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
+                val query = server.src.substringAfter("?id=").substringBefore("&")
+                val html = app.get(server.src).toString()
+
+                val (sig, timeStamp, route) = getSignature(html, server.name, query, key)
+                    ?: return@forEach
+                val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
+
+                val encJson = app.get(sourceUrl, headers = headers).parsedSafe<EncryptedKAA>()?.data
+                    ?: return@forEach
+
+                val (encryptedData, ivHex) = encJson
+                    .substringAfter(":\"")
+                    .substringBefore('"')
+                    .split(":")
+                val decrypted = tryParseJson<m3u8KAA>(
+                    CryptoAES.decrypt(encryptedData, key, ivHex.decodeHex()).toJson()
+                ) ?: return@forEach
+
+                val m3u8 = httpsify(decrypted.hls)
+                val videoHeaders = mapOf(
+                    "Accept" to "*/*",
+                    "Accept-Language" to "en-US,en;q=0.5",
+                    "Origin" to host,
+                    "Sec-Fetch-Dest" to "empty",
+                    "Sec-Fetch-Mode" to "cors",
+                    "Sec-Fetch-Site" to "cross-site"
+                )
+
+                callback(
+                    ExtractorLink(
+                        server.name, server.name, m3u8, "", Qualities.P1080.value,
+                        type = ExtractorLinkType.M3U8, headers = videoHeaders
+                    )
+                )
+
+                decrypted.subtitles.forEach { subtitle ->
+                    subtitleCallback(SubtitleFile(subtitle.name, subtitle.src))
+                }
+            } else if (server.name.contains("CatStream")) {
+                val headers = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+                )
+
+                val res = app.get(
+                    "https://thingproxy.freeboard.io/fetch/${server.src}",
+                    headers = headers
+                ).text
+
+                val regex = Regex("""props="(.*?)"""")
+                val match = regex.find(res)
+                val encodedJson = match?.groupValues?.get(1)
+
+                if (encodedJson != null) {
+                    val unescapedJson = org.jsoup.parser.Parser.unescapeEntities(encodedJson, false)
+                    val json = JSONObject(unescapedJson)
+
+                    val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
+                    callback.invoke(
+                        ExtractorLink(
+                            "CatStream",
+                            "CatStream HLS",
+                            videoUrl,
+                            "",
+                            Qualities.P1080.value,
+                            type = ExtractorLinkType.M3U8,
+                        )
+                    )
+
+                    val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
+
+                    for (i in 0 until subtitleArray.length()) {
+                        val sub = subtitleArray.getJSONArray(i).getJSONObject(1)
+
+                        val src = sub.getJSONArray("src").getString(1)
+                        val name = sub.getJSONArray("name").getString(1)
+                        subtitleCallback.invoke(
+                            SubtitleFile(
+                                name,  // Use label for the name
+                                src    // Use extracted URL
+                            )
+                        )
+                    }
+
+                } else {
+                    println("Could not find embedded JSON in props attribute")
+                }
             }
-        } ?: Log.d("Error:", "Not Found")
+        }
     }
 
 
-    suspend fun invokeLing(
+
+        suspend fun invokeLing(
         title: String? = null,
         year: Int? = null,
         season: Int? = null,
