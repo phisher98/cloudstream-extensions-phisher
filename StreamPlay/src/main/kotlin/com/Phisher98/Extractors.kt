@@ -909,17 +909,10 @@ class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val realUrl = try {
-            val originalUrl = URL(url)
-            val parts = originalUrl.host.split(".").toMutableList()
-            if (parts.size > 1) {
-                parts[parts.lastIndex] = "dad"
-                URL(originalUrl.protocol, parts.joinToString("."), originalUrl.port, originalUrl.file).toString()
-            } else url
-        } catch (e: Exception) {
-            Log.e("HubCloud", "Invalid URL: ${e.message}")
-            return
-        }
+        val realUrl = url.takeIf {
+            try { URL(it); true } catch (e: Exception) { Log.e("HubCloud", "Invalid URL: ${e.message}"); false }
+        } ?: return
+
         val baseUrl=getBaseUrl(realUrl)
 
         val href = try {

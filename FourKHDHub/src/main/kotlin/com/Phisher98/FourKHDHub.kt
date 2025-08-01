@@ -177,7 +177,11 @@ class FourKHDHub : MainAPI() {
         for (link in links) {
             try {
                 val resolvedLink = try {
-                    if ("id=" in link.lowercase()) getRedirectLinks(link) else link
+                    if ("id=" in link.lowercase()) {
+                        getRedirectLinks(link)
+                    } else {
+                        link
+                    }
                 } catch (e: Exception) {
                     Log.e("Phisher", "Redirect failed for $link $e")
                     continue
@@ -192,21 +196,20 @@ class FourKHDHub : MainAPI() {
                         try {
                             value.second.getUrl(resolvedLink, value.first, subtitleCallback, callback)
                         } catch (e: Exception) {
-                            Log.e(key, "Failed: $resolvedLink $e")
+                            Log.e(key, "Extractor failed for $resolvedLink")
                         }
                     }
                 }
 
                 if (!matched) {
-                    Log.w("Extractor", "Unknown host: $resolvedLink")
+                    Log.w("Extractor", "No extractor matched: $resolvedLink")
                 }
             } catch (e: Exception) {
-                Log.e("Extractor", "Unexpected error with link: $link $e")
+                Log.e("Extractor", "Unexpected error while processing: $link")
             }
         }
 
         return true
     }
-
 
 }

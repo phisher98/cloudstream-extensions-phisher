@@ -44,22 +44,14 @@ class HubCloud : ExtractorApi() {
 
     override suspend fun getUrl(
         url: String,
-        source: String?,
+        referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
 
-        val realUrl = try {
-            val originalUrl = URL(url)
-            val parts = originalUrl.host.split(".").toMutableList()
-            if (parts.size > 1) {
-                parts[parts.lastIndex] = "dad"
-                URL(originalUrl.protocol, parts.joinToString("."), originalUrl.port, originalUrl.file).toString()
-            } else url
-        } catch (e: Exception) {
-            Log.e("HubCloud", "Invalid URL: ${e.message}")
-            return
-        }
+        val realUrl = url.takeIf {
+            try { URL(it); true } catch (e: Exception) { Log.e("HubCloud", "Invalid URL: ${e.message}"); false }
+        } ?: return
 
         val baseUrl=getBaseUrl(realUrl)
 
@@ -105,8 +97,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source [FSL Server] $labelExtras",
-                            "$source [FSL Server] $labelExtras",
+                            "$referer [FSL Server] $labelExtras",
+                            "$referer [FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -115,8 +107,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("Download File", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source $labelExtras",
-                            "$source $labelExtras",
+                            "$referer $labelExtras",
+                            "$referer $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -128,8 +120,8 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                "$source [BuzzServer] $labelExtras",
-                                "$source [BuzzServer] $labelExtras",
+                                "$referer [BuzzServer] $labelExtras",
+                                "$referer [BuzzServer] $labelExtras",
                                 baseUrl + dlink,
                             ) { this.quality = quality }
                         )
@@ -151,8 +143,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source S3 Server $labelExtras",
-                            "$source S3 Server $labelExtras",
+                            "$referer S3 Server $labelExtras",
+                            "$referer S3 Server $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -176,8 +168,8 @@ class HubCloud : ExtractorApi() {
                     val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
-                            "$source [Download] $labelExtras",
-                            "$source [Download] $labelExtras",
+                            "$referer [Download] $labelExtras",
+                            "$referer [Download] $labelExtras",
                             finalLink,
                         ) { this.quality = quality }
                     )

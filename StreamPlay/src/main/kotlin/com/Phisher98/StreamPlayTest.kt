@@ -10,6 +10,8 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
+import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 
 class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sharedPreferences) {
     override var name = "StreamPlay-Test"
@@ -22,13 +24,7 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
             {
-                if (!res.isAnime) invoke2embed(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
+                invokeFlixAPIHQ(res.title, res.season, res.episode, subtitleCallback, callback)
             },
         )
         return true
