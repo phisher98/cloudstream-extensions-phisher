@@ -17,7 +17,7 @@ import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://uhdmovies.email"
+    override var mainUrl = "https://uhdmovies.cat"
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "en"
