@@ -12,7 +12,7 @@ import com.phisher98.StreamPlayExtractor.invokeEmbedsu
 import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
-import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeLing
@@ -219,7 +219,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val RiveStreamAPI = "https://rivestream.org"
         const val VidSrcVip = "https://vidsrc.vip"
         const val Primewire = "https://www.primewire.tf"
-        const val consumetFlixhqAPI = "https://consumet.8man.me/movies/flixhq"
         const val Film1kApi = "https://www.film1k.com"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
@@ -230,7 +229,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Xprime = "https://xprime.tv"
         const val Vidzee = "https://vidzee.wtf"
         const val Elevenmovies = "https://111movies.com"
-        const val FlixHQ = "https://watch32.sx"
+        const val Watch32 = "https://watch32.sx"
         const val Vidfast = "https://vidfast.pro"
         fun getType(t: String?): TvType {
             return when (t) {
@@ -593,7 +592,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeNepu(res.title, res.airedYear ?: res.year, res.season, res.episode, callback) }
                 add { invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback) }
-                add { invokeFlixAPIHQ(res.title, res.season, res.episode, subtitleCallback, callback) }
+                add { invokeWatch32APIHQ(res.title, res.season, res.episode,res.year, subtitleCallback, callback) }
                 add { invokeVidSrcViP(res.id, res.season, res.episode, callback) }
                 add { invokePrimeWire(res.id, res.imdbId, res.title, res.season, res.episode, res.year, subtitleCallback, callback) }
                 add { invokeFilm1k(res.id, res.imdbId, res.title, res.season, res.episode, res.year, subtitleCallback, callback) }

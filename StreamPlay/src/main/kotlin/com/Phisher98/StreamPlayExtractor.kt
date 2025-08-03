@@ -3864,85 +3864,88 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
-    //TODO //API Dead
-    suspend fun invokeFlixAPIHQ(
+
+    suspend fun invokeWatch32APIHQ(
         title: String?,
         season: Int? = null,
         episode: Int? = null,
+        year: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         if (title.isNullOrBlank()) return
 
-        val type = if (season == null) "Movie" else "TV Series"
-        val searchUrl = "$consumetFlixhqAPI/$title"
+        val type = if (season == null) "Movie" else "TV"
+        val searchUrl = "$Watch32/search/${title.trim().replace(" ", "-")}"
 
-        val searchData = runCatching {
-            val searchJson = app.get(searchUrl, timeout = 120L).text
-            tryParseJson<ConsumetSearch>(searchJson)
+        val matchedElement = runCatching {
+            val doc = app.get(searchUrl, timeout = 120L).document
+            val results = doc.select("div.flw-item")
+
+            results.firstOrNull { item ->
+                val titleElement = item.selectFirst("h2.film-name a")
+                val typeElement = item.selectFirst("span.fdi-type")
+                val name = titleElement?.text()?.trim() ?: return@firstOrNull false
+                val mediaType = typeElement?.text()?.trim() ?: return@firstOrNull false
+
+                name.contains(title, ignoreCase = true) && mediaType.equals(type, ignoreCase = true)
+            }?.selectFirst("h2.film-name a")
         }.getOrNull() ?: return
+        val detailUrl = Watch32+matchedElement.attr("href")
+        val typee=if (type=="Movie") TvType.Movie else TvType.TvSeries
+        val infoId=detailUrl.substringAfterLast("-")
 
-        val id = searchData.results.firstOrNull {
-            it.title.equals(title, ignoreCase = true) && it.type.equals(type, ignoreCase = true)
-        }?.id ?: return
+        if (typee == TvType.TvSeries) {
+            val seasonLinks = runCatching {
+                app.get("$Watch32/ajax/season/list/$infoId").document.select("div.dropdown-menu a")
+            }.getOrNull() ?: return
 
-        val infoUrl = "$consumetFlixhqAPI/info?id=$id"
-        val infoData = runCatching {
-            val infoJson = app.get(infoUrl, timeout = 120L).text
-            tryParseJson<ConsumetInfo>(infoJson)
-        }.getOrNull() ?: return
+            val matchedSeason = seasonLinks.firstOrNull {
+                it.text().contains("Season $season", ignoreCase = true)
+            } ?: return
 
-        val episodeId = if (season == null) {
-            infoData.episodes.firstOrNull()?.id
-        } else {
-            infoData.episodes.firstOrNull { it.number == episode && it.season == season }?.id
-        } ?: return
+            val seasonId = matchedSeason.attr("data-id")
 
-        val serversUrl = "$consumetFlixhqAPI/servers?episodeId=$episodeId&mediaId=$id"
-        val serverListJson = app.get(serversUrl, timeout = 120L).text
-        val serverList = parseServerList(serverListJson)
+            val episodeLinks = runCatching {
+                app.get("$Watch32/ajax/season/episodes/$seasonId").document.select("li.nav-item a")
+            }.getOrNull() ?: return
 
-        serverList.amap { server ->
-            val sourceUrl = runCatching {
-                val endpoint = server.url.substringAfterLast(".")
-                val proxyUrl = "$FlixHQ/ajax/episode/sources/$endpoint"
-                app.get(proxyUrl, timeout = 3000).parsedSafe<FlixHQLinks>()?.link
-            }.getOrNull()
-            sourceUrl?.let {
-                loadCustomExtractor(
-                    "⌜ FlixHQ ⌟ | ${server.name.uppercase()}",
-                    it,
-                    "",
-                    subtitleCallback,
-                    callback
-                )
+            val matchedEpisode = episodeLinks.firstOrNull {
+                it.text().contains("Eps $episode:", ignoreCase = true)
+            } ?: return
+
+            val dataId = matchedEpisode.attr("data-id")
+
+            val serverDoc = runCatching {
+                app.get("$Watch32/ajax/episode/servers/$dataId").document
+            }.getOrNull() ?: return
+
+            val sourceButtons = serverDoc.select("li.nav-item a")
+            for (source in sourceButtons) {
+                val sourceId = source.attr("data-id") ?: continue
+
+                val iframeUrl = runCatching {
+                    app.get("$Watch32/ajax/episode/sources/$sourceId")
+                        .parsedSafe<Watch32>()?.link
+                }.getOrNull() ?: continue
+                loadSourceNameExtractor("Watch32 ",iframeUrl,"",subtitleCallback,callback, Qualities.Unknown.value)
             }
         }
-    }
+        else
+        {
+            val episodeLinks = runCatching {
+                app.get("$Watch32/ajax/episode/list/$infoId").document.select("li.nav-item a")
+            }.getOrNull() ?: return
 
-    data class FlixHQServers(
-        val name: String,
-        val url: String
-    )
-
-    data class FlixHQLinks(
-        val type: String,
-        val link: String,
-    )
-
-
-    private fun parseServerList(json: String): List<FlixHQServers> = runCatching {
-        val jsonArray = JSONArray(json)
-        List(jsonArray.length()) { i ->
-            val obj = jsonArray.getJSONObject(i)
-            FlixHQServers(
-                name = obj.getString("name"),
-                url = obj.getString("url")
-            )
-        }
-    }.getOrElse {
-        it.printStackTrace()
-        emptyList()
+                episodeLinks.forEach { ep ->
+                    val dataId = ep.attr("data-id")
+                    val iframeUrl = runCatching {
+                        app.get("$Watch32/ajax/episode/sources/$dataId")
+                        .parsedSafe<Watch32>()?.link
+                        }.getOrNull() ?: return@forEach
+                    loadSourceNameExtractor("Watch32 ",iframeUrl,"",subtitleCallback,callback, Qualities.Unknown.value)
+                }
+            }
     }
 
 

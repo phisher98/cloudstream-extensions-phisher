@@ -13,7 +13,7 @@ import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
-import com.phisher98.StreamPlayExtractor.invokeFlixAPIHQ
+import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokePlayer4U
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
@@ -182,10 +182,11 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                if (!res.isAnime) invokeFlixAPIHQ(
+                if (!res.isAnime) invokeWatch32APIHQ(
                     res.title,
                     res.season,
                     res.episode,
+                    res.year,
                     subtitleCallback,
                     callback
                 )

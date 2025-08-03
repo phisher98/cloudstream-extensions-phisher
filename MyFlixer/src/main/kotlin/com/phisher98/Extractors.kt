@@ -72,7 +72,7 @@ class Videostr : ExtractorApi() {
         val m3u8: String = if (".m3u8" in encoded) {
             encoded
         } else {
-            val decodeUrl = "https://script.google.com/macros/s/AKfycbx-yHTwupis_JD0lNzoOnxYcEYeXmJZrg7JeMxYnEZnLBy5V0--UxEvP-y9txHyy1TX9Q/exec"
+            val decodeUrl = "https://script.google.com/macros/s/AKfycbxHbYHbrGMXYD2-bC-C43D3njIbU-wGiYQuJL61H4vyy6YVXkybMNNEPJNPPuZrD1gRVA/exec"
 
             val fullUrl = buildString {
                 append(decodeUrl)

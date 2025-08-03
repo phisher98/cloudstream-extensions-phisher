@@ -2194,3 +2194,9 @@ data class VidFastkeyHeaders(
     val xRequestedWith: String,
 )
 
+
+data class Watch32(
+    val type: String,
+    val link: String,
+)
+
