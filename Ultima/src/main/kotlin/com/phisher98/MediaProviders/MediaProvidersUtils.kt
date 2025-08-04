@@ -35,6 +35,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 import java.net.URL
+import java.net.URLEncoder
 import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -634,12 +635,29 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "X-Requested-With" to "XMLHttpRequest",
+            "Referer" to mainUrl
+        )
+
+
         val id = url.substringAfterLast("/").substringBefore("?")
-        val apiUrl = "$mainUrl/embed-2/v2/e-1/getSources?id=$id"
+        val responsenonce= app.get(url, headers = headers).text
+        val match1 = Regex("""\b[a-zA-Z0-9]{48}\b""").find(responsenonce)
+        val match2 = Regex("""\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b""").find(responsenonce)
+
+        val nonce = match1?.value ?: match2?.let {
+            it.groupValues[1] + it.groupValues[2] + it.groupValues[3]
+        }
+
+        Log.e("Megacloud", "MegacloudResponse nonce: $nonce")
+        val apiUrl = "$mainUrl/embed-2/v3/e-1/getSources?id=$id&_k=$nonce"
         val gson = Gson()
 
+
         val response = try {
-            val json = app.get(apiUrl, referer = url).text
+            val json = app.get(apiUrl,headers).text
             gson.fromJson(json, MegacloudResponse::class.java)
         } catch (e: Exception) {
             Log.e("Megacloud", "Failed to parse MegacloudResponse: ${e.message}")
@@ -655,23 +673,35 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
             null
         }
 
-        val decoded = key?.let { decryptOpenSSL(encoded, it) }
-        val m3u8 = decoded?.let {
-            val sourceList = parseSourceJson(it)
-            sourceList.firstOrNull()?.file
+        val m3u8: String = if (".m3u8" in encoded) {
+            encoded
+        } else {
+            val decodeUrl = "https://script.google.com/macros/s/AKfycbxHbYHbrGMXYD2-bC-C43D3njIbU-wGiYQuJL61H4vyy6YVXkybMNNEPJNPPuZrD1gRVA/exec"
+
+            val fullUrl = buildString {
+                append(decodeUrl)
+                append("?encrypted_data=").append(URLEncoder.encode(encoded, "UTF-8"))
+                append("&nonce=").append(URLEncoder.encode(nonce, "UTF-8"))
+                append("&secret=").append(URLEncoder.encode(key, "UTF-8"))
+            }
+
+            val decryptedResponse = app.get(fullUrl).text
+            Regex("\"file\":\"(.*?)\"")
+                .find(decryptedResponse)
+                ?.groupValues?.get(1)
+                ?: throw Exception("Video URL not found in decrypted response")
         }
 
-        if (m3u8 != null) {
-            val m3u8headers = mapOf(
-                "Referer" to "https://megacloud.club/",
-                "Origin" to "https://megacloud.club/"
-            )
 
-            try {
-                M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
-            } catch (e: Exception) {
-                Log.e("Megacloud", "Error generating M3U8: ${e.message}")
-            }
+        val m3u8headers = mapOf(
+            "Referer" to "https://megacloud.club/",
+            "Origin" to "https://megacloud.club/"
+        )
+
+        try {
+            M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
+        } catch (e: Exception) {
+            Log.e("Megacloud", "Error generating M3U8: ${e.message}")
         }
 
         response.tracks.forEach { track ->
@@ -717,60 +747,6 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
         val rabbit: String,
         val mega: String,
     )
-
-
-    data class Source2(
-        val file: String,
-        val type: String,
-    )
-
-    private fun parseSourceJson(json: String): List<Source2> {
-        val list = mutableListOf<Source2>()
-        try {
-            val jsonArray = JSONArray(json)
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.getJSONObject(i)
-                val file = obj.getString("file")
-                val type = obj.getString("type")
-                list.add(Source2(file, type))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return list
-    }
-
-    private fun opensslKeyIv(password: ByteArray, salt: ByteArray, keyLen: Int = 32, ivLen: Int = 16): Pair<ByteArray, ByteArray> {
-        var d = ByteArray(0)
-        var d_i = ByteArray(0)
-        while (d.size < keyLen + ivLen) {
-            val md = MessageDigest.getInstance("MD5")
-            d_i = md.digest(d_i + password + salt)
-            d += d_i
-        }
-        return Pair(d.copyOfRange(0, keyLen), d.copyOfRange(keyLen, keyLen + ivLen))
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun decryptOpenSSL(encBase64: String, password: String): String {
-        try {
-            val data = java.util.Base64.getDecoder().decode(encBase64)
-            require(data.copyOfRange(0, 8).contentEquals("Salted__".toByteArray()))
-            val salt = data.copyOfRange(8, 16)
-            val (key, iv) = opensslKeyIv(password.toByteArray(), salt)
-
-            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-            val secretKey = SecretKeySpec(key, "AES")
-            val ivSpec = IvParameterSpec(iv)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-
-            val decrypted = cipher.doFinal(data.copyOfRange(16, data.size))
-            return String(decrypted)
-        } catch (e: Exception) {
-            Log.e("DecryptOpenSSL", "Decryption failed: ${e.message}")
-            return "Decryption Error"
-        }
-    }
 }
 
 class AnyFilelions(provider: String?, dubType: String?, domain: String = "") : VidhideExtractor() {

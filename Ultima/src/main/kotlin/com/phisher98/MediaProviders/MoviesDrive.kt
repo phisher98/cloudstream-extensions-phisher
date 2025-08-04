@@ -15,7 +15,7 @@ import com.phisher98.UltimaMediaProvidersUtils.commonLinkLoader
 
 class MoviesDriveProvider : MediaProvider() {
     override val name = "MoviesDrive"
-    override val domain = "https://moviesdrive.design"
+    override val domain = "https://moviesdrive.channel"
     override val categories = listOf(Category.MEDIA)
 
     @RequiresApi(Build.VERSION_CODES.O)

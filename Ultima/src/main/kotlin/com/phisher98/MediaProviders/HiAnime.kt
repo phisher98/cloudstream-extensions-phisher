@@ -18,7 +18,7 @@ val tag = "rowdy"
 
 class HiAnimeMediaProvider : MediaProvider() {
     override val name = "HiAnime"
-    override val domain = "https://hianime.to"
+    override val domain = "https://hianime.bz"
     override val categories = listOf(Category.ANIME)
 
     @RequiresApi(Build.VERSION_CODES.O)
