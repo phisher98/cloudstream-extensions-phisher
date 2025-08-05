@@ -234,7 +234,6 @@ open class Anichi : MainAPI() {
                     AnichiLoadData(id, "sub", eps, trackers?.idMal).toJson()
                 ) {
                     episode = eps.toIntOrNull()
-                    Log.d("Phisher",episode.toString())
                     this.name = animeData?.episodes?.get(episode?.toString())?.title?.get("en")
                     this.rating = animeData?.episodes?.get(episode?.toString())?.rating
                         ?.toDoubleOrNull()

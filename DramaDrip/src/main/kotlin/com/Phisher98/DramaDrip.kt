@@ -1,5 +1,7 @@
 package com.Phisher98
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
@@ -251,6 +253,7 @@ class DramaDrip : MainAPI() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -261,10 +264,10 @@ class DramaDrip : MainAPI() {
         if (links.isEmpty()) return false
         for (link in links) {
             try {
-                val finalLink = if ("unblockedgames" in link) {
-                    bypassHrefli(link)
-                } else {
-                    link
+                val finalLink = when {
+                    "safelink=" in link -> cinematickitBypass(link)
+                    "unblockedgames" in link -> bypassHrefli(link)
+                    else -> link
                 }
                 if (finalLink != null) {
                     loadExtractor(finalLink, subtitleCallback, callback)

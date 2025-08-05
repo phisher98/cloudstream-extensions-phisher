@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.plugins.Plugin
 import androidx.core.content.edit
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.extractors.Vidguardto2
 
 @CloudstreamPlugin
 class StreamPlayPlugin: Plugin() {
@@ -179,6 +180,9 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(smoothpre())
         registerExtractorAPI(Akirabox())
         registerExtractorAPI(BuzzServer())
+        registerExtractorAPI(StreamWishExtractor())
+        registerExtractorAPI(FilemoonV2())
+        registerExtractorAPI(Vidguardto2())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = MainSettingsFragment(this, sharedPref)

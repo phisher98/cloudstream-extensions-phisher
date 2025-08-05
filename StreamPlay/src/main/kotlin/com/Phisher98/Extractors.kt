@@ -2631,3 +2631,67 @@ class BuzzServer : ExtractorApi() {
 }
 
 
+class FilemoonV2 : ExtractorApi() {
+    override var name = "Filemoon"
+    override var mainUrl = "https://filemoon.to"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers = mapOf(
+            "Referer" to url,
+            "Sec-Fetch-Dest" to "iframe",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "cross-site",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0"
+        )
+
+
+        val href = app.get(url,headers).document.selectFirst("iframe")?.attr("src") ?: ""
+        val scriptContent = app.get(
+            href,
+            headers = mapOf("Accept-Language" to "en-US,en;q=0.5", "sec-fetch-dest" to "iframe")
+        ).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+
+        val m3u8 = JsUnpacker(scriptContent).unpack()?.let { unpacked ->
+            Regex("sources:\\[\\{file:\"(.*?)\"").find(unpacked)?.groupValues?.get(1)
+        }
+
+        if (m3u8 != null) {
+            M3u8Helper.generateM3u8(
+                name,
+                m3u8,
+                mainUrl,
+                headers = headers
+            ).forEach(callback)
+        } else {
+            val resolver = WebViewResolver(
+                interceptUrl = Regex("""(m3u8|master\.txt)"""),
+                additionalUrls = listOf(Regex("""(m3u8|master\.txt)""")),
+                useOkhttp = false,
+                timeout = 15_000L
+            )
+
+            val m3u82 = app.get(
+                href,
+                referer = referer,
+                interceptor = resolver
+            ).url
+
+            if (m3u82.isNotEmpty()) {
+                M3u8Helper.generateM3u8(
+                    name,
+                    m3u82,
+                    mainUrl,
+                    headers = headers
+                ).forEach(callback)
+            } else {
+                Log.d("Error", "No m3u8 intercepted in fallback.")
+            }
+        }
+    }
+}

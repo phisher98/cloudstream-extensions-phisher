@@ -4759,7 +4759,12 @@ object StreamPlayExtractor : StreamPlay() {
             document.select("div.file-spoiler a").amap {
                 val doc = app.get(it.attr("href")).document
                 doc.select("a.wp-element-button").amap { source ->
-                    val finalUrl = if ("unblockedgames" in source.attr("href")) { bypassHrefli(source.attr("href")) } else { source.attr("href") }
+                    val rawHref = source.attr("href")
+                    val finalUrl = when {
+                        "safelink=" in rawHref -> cinematickitBypass(rawHref)
+                        "unblockedgames" in rawHref -> bypassHrefli(rawHref)
+                        else -> rawHref
+                    }
                     if (finalUrl != null) {
                         loadSourceNameExtractor(
                             "DramaDrip",

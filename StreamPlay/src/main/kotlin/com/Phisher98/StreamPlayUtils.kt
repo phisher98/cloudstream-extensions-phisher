@@ -599,33 +599,25 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-suspend fun getTvMoviesServer(url: String, season: Int?, episode: Int?): Pair<String, String?>? {
-
-    val req = app.get(url)
-    if (!req.isSuccessful) return null
-    val doc = req.document
-
-    return if (season == null) {
-        doc.select("table.wp-block-table tr:last-child td:first-child").text() to
-                doc.selectFirst("table.wp-block-table tr a")?.attr("href").let { link ->
-                    app.get(link ?: return null).document.select("div#text-url a")
-                        .mapIndexed { index, element ->
-                            element.attr("href") to element.parent()?.textNodes()?.getOrNull(index)
-                                ?.text()
-                        }.filter { it.second?.contains("Subtitles", true) == false }
-                        .map { it.first }
-                }.lastOrNull()
-    } else {
-        doc.select("div.vc_tta-panels div#Season-$season table.wp-block-table tr:last-child td:first-child")
-            .text() to
-                doc.select("div.vc_tta-panels div#Season-$season table.wp-block-table tr a")
-                    .mapNotNull { ele ->
-                        app.get(ele.attr("href")).document.select("div#text-url a")
-                            .mapIndexed { index, element ->
-                                element.attr("href") to element.parent()?.textNodes()
-                                    ?.getOrNull(index)?.text()
-                            }.find { it.second?.contains("Episode $episode", true) == true }?.first
-                    }.lastOrNull()
+suspend fun cinematickitBypass(url: String): String? {
+    return try {
+        val cleanedUrl = url.replace("&#038;", "&")
+        val encodedLink = cleanedUrl.substringAfter("safelink=", "").substringBefore("--")
+        if (encodedLink.isEmpty()) return null
+        val decodedUrl = base64Decode(encodedLink)
+        val doc = app.get(decodedUrl).document
+        val goValue = doc.select("form#landing input[name=go]").attr("value")
+        if (goValue.isBlank()) return null
+        val decodedGoUrl = base64Decode(goValue).replace("&#038;", "&")
+        val responseDoc = app.get(decodedGoUrl).document
+        val script = responseDoc.select("script").firstOrNull { it.data().contains("window.location.replace") }?.data() ?: return null
+        val regex = Regex("""window\.location\.replace\s*\(\s*["'](.+?)["']\s*\)\s*;?""")
+        val match = regex.find(script) ?: return null
+        val redirectPath = match.groupValues[1]
+        return if (redirectPath.startsWith("http")) redirectPath else URI(decodedGoUrl).let { "${it.scheme}://${it.host}$redirectPath" }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }
 
@@ -634,9 +626,6 @@ suspend fun getSfServer() = sfServer ?: fetchSfServer().also { sfServer = it }
 suspend fun fetchSfServer(): String {
     return app.get("https://raw.githubusercontent.com/hexated/cloudstream-resources/main/sfmovies_server").text
 }
-
-suspend fun getFilmxyCookies(url: String) =
-    filmxyCookies ?: fetchFilmxyCookies(url).also { filmxyCookies = it }
 
 suspend fun fetchFilmxyCookies(url: String): Map<String, String> {
 
