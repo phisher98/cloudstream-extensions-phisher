@@ -3056,7 +3056,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }.ifEmpty { return }
 
-        fun decode(input: String): String = java.net.URLDecoder.decode(input, "utf-8")
+        fun decode(input: String): String = URLDecoder.decode(input, "utf-8")
         paths.map {
             val quality = getIndexQuality(it.first)
             val tags = getIndexQualityTags(it.first)
@@ -4887,6 +4887,53 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+
+    suspend fun invokeEmbedlc(
+        imdbId: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null)
+            "$Embedlc/api/embed/$imdbId"
+        else
+            "$Embedlc/api/embed/$imdbId/$season/$episode"
+
+        val response = app.get(url)
+        val scriptTag = response.document.select("script")
+            .firstOrNull { it.data().contains("playlist") && it.data().contains("decodeURIComponent") }
+            ?: run {
+                Log.e("Embedlc", "❌ No playlist script found.")
+                return
+            }
+
+        val js = scriptTag.data()
+
+        val trackRegex = Regex("""\{\s*kind:\s*"captions",\s*file:\s*"([^"]+)",\s*code:\s*"[^"]+",\s*label:\s*"([^"]+)"""")
+        val tracks = trackRegex.findAll(js).map { it.groupValues[2] to it.groupValues[1] }.toList()
+
+        val sourceRegex = Regex("""\{\s*file:\s*"([^"]+)",\s*type:\s*"([^"]+)"""")
+        val sources = sourceRegex.findAll(js).map { it.groupValues[2] to it.groupValues[1] }.toList()
+
+        tracks.forEach { (label, file) ->
+            val subtitlefile=Embedlc+file
+            Log.d("Phisher",subtitlefile)
+            subtitleCallback(
+                SubtitleFile(
+                    label,
+                    subtitlefile
+                )
+            )
+        }
+
+        sources.forEach { (_, file) ->
+            M3u8Helper.generateM3u8("EmbedLC", Embedlc+file, url).forEach(callback)
+        }
+    }
+
+
 }
 
 

@@ -82,13 +82,13 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeDramacool
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
+import com.phisher98.StreamPlayExtractor.invokeEmbedlc
 import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
@@ -231,6 +231,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Elevenmovies = "https://111movies.com"
         const val Watch32 = "https://watch32.sx"
         const val Vidfast = "https://vidfast.pro"
+        const val Embedlc = "https://embed.lc"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -608,6 +609,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeHdmovie2(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeVidfast(res.imdbId, res.season, res.episode, callback) }
+                add { invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {
