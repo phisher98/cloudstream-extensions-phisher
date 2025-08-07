@@ -25,7 +25,7 @@ class MoviesDriveProvider : MediaProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val movieDriveAPI = getDomains()?.moviesdrive ?: return ?: domain
+        val movieDriveAPI = getDomains()?.moviesdrive ?: return
         val cleanTitle = data.title.orEmpty()
         val season =data.season
         val episode=data.episode

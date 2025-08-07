@@ -1821,12 +1821,6 @@ data class Skip(
     val outro: List<Long>,
 )
 
-fun extractVideoUrlFromJson(jsonData: String): String {
-    val gson = com.google.gson.Gson()
-    val videoData = gson.fromJson(jsonData, VideoData::class.java)
-    return videoData.url
-}
-
 fun extractVideoUrlFromJsonAnimekai(jsonData: String): String {
     val jsonObject = JSONObject(jsonData)
     return jsonObject.getString("url")

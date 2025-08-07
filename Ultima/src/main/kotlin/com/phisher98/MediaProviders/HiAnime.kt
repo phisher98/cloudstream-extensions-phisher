@@ -14,8 +14,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
-val tag = "rowdy"
-
 class HiAnimeMediaProvider : MediaProvider() {
     override val name = "HiAnime"
     override val domain = "https://hianime.bz"
