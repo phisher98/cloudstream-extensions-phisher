@@ -40,7 +40,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
 import kotlin.math.roundToInt
 
-class TorraStreamAnime : MainAPI() {
+open class TorraStreamAnime : MainAPI() {
     override var name = "TorraStream-Anime"
     override var mainUrl = "https://anilist.co"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
@@ -56,7 +56,7 @@ class TorraStreamAnime : MainAPI() {
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
 
-    protected fun Any.toStringData(): String {
+    private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
     }
 
@@ -119,7 +119,7 @@ class TorraStreamAnime : MainAPI() {
                     false
                 )
             val homePageList =
-                api.getPersonalLibrary().allLibraryLists.mapNotNull {
+                api.getPersonalLibrary()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)

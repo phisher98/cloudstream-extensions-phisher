@@ -129,7 +129,7 @@ class StreamPlayAnime : MainAPI() {
                     false
                 )
             val homePageList =
-                api.getPersonalLibrary().allLibraryLists.mapNotNull {
+                api.getPersonalLibrary()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)

@@ -148,7 +148,8 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
             )
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        return api.search(query)
+        //return api.search(query)
+        return null
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {

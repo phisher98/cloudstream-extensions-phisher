@@ -50,11 +50,10 @@ open class MyAnimeList(val plugin: UltimaPlugin) : MainAPI() {
     }
 
     private suspend fun malAPICall(query: String): MalApiResponse {
-        malApi.init()
-        val accountId = "${malApi.idPrefix}_account_${malApi.accountIndex}"
-        val authToken = AcraApplication.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
+        //val accountId = "${malApi.idPrefix}_account_${malApi.accountIndex}"
+        //val authToken = AcraApplication.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
         val res =
-                app.get(query, headers = mapOf("Authorization" to "Bearer $authToken"))
+                app.get(query, headers = mapOf("Authorization" to "Bearer $"))
                         .parsedSafe<MalApiResponse>()
                         ?: throw Exception("Unable to fetch content from API")
         return res
@@ -104,7 +103,7 @@ open class MyAnimeList(val plugin: UltimaPlugin) : MainAPI() {
                             false
                     )
             val homePageList =
-                    api.getPersonalLibrary().allLibraryLists.mapNotNull {
+                    api.getPersonalLibrary()!!.allLibraryLists.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null
                         val libraryName =
                                 it.name.asString(plugin.activity ?: return@mapNotNull null)
@@ -121,14 +120,11 @@ open class MyAnimeList(val plugin: UltimaPlugin) : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        malApi.init()
-        val accountId = "${malApi.idPrefix}_account_${malApi.accountIndex}"
-        val authToken = AcraApplication.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data =
                 app.get(
                                 "$apiUrl/anime/$id?fields=id,title,synopsis,main_picture,start_season,num_episodes,recommendations,genres",
-                                headers = mapOf("Authorization" to "Bearer $authToken")
+                                headers = mapOf("Authorization" to "Bearer ")
                         )
                         .parsedSafe<MalAnime>()
                         ?: throw ErrorLoadingException("Unable to fetch show details")

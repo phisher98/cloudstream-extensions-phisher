@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 
-class WatchSync(val plugin: UltimaPlugin) : MainAPI() {
+open class WatchSync(val plugin: UltimaPlugin) : MainAPI() {
     override var name = "WatchSync"
     override var mainUrl = "https://anilist.co"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
