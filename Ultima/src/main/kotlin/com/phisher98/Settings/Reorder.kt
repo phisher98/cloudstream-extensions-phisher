@@ -12,13 +12,13 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
-import com.phisher98.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
+private var selectedSection: UltimaUtils.SectionInfo? = null
 
 class UltimaReorder(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
     private var param1: String? = null
@@ -99,14 +99,16 @@ class UltimaReorder(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         noSectionWarning: TextView? = null,
-        focusingSection: Int? = null,
-        focusOn: String? = null
+        currentSections: List<UltimaUtils.SectionInfo>? = null
     ) {
         sectionsListView.removeAllViews()
 
-        var sections = emptyList<UltimaUtils.SectionInfo>()
-        extensions.forEach { ext ->
-            ext.sections?.filter { it.enabled }?.let { sections += it }
+        val sections = currentSections ?: run {
+            var freshSections = emptyList<UltimaUtils.SectionInfo>()
+            extensions.forEach { ext ->
+                ext.sections?.filter { it.enabled }?.let { freshSections += it }
+            }
+            freshSections
         }
 
         if (sections.isEmpty()) {
@@ -114,92 +116,65 @@ class UltimaReorder(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
             return
         }
 
-        var counter = sections.size
         val sortedSections = sections.sortedByDescending { it.priority }
+        var counter = sortedSections.size
 
         sortedSections.forEach { section ->
             val sectionView = getLayout("list_section_reorder_item", inflater, container)
             val sectionName = sectionView.findView<TextView>("section_name")
-            val increaseBtn = sectionView.findView<ImageView>("increase")
-            val decreaseBtn = sectionView.findView<ImageView>("decrease")
-
-            increaseBtn.setImageDrawable(getDrawable("triangle"))
-            decreaseBtn.setImageDrawable(getDrawable("triangle"))
-            decreaseBtn.rotation = 180f
 
             if (section.priority == 0) section.priority = counter
-
             sectionName.text = "${section.pluginName}: ${section.name}"
 
-            increaseBtn.makeTvCompatible()
-            increaseBtn.setOnClickListener {
-                if (section.priority < sections.size) {
-                    val nextSection = sections.find { it.priority == section.priority + 1 }
-                    if (nextSection == null) {
-                        showToast("Cannot increase priority further")
-                        return@setOnClickListener
+            sectionView.setBackgroundColor(
+                if (section == selectedSection) 0x2200FF00 else 0x00000000
+            )
+
+            sectionView.setOnClickListener {
+                if (selectedSection == null) {
+                    selectedSection = section
+                    showToast("Selected: ${section.name}. Now tap a target position.")
+                    updateSectionList(sectionsListView, inflater, container, noSectionWarning, sections)
+                } else if (selectedSection == section) {
+                    selectedSection = null
+                    showToast("Selection cleared")
+                    updateSectionList(sectionsListView, inflater, container, noSectionWarning, sections)
+                } else {
+                    val selected = selectedSection!!
+
+                    val sectionsMutable = sections.toMutableList()
+
+                    val selectedIndex = sectionsMutable.indexOf(selected)
+                    val targetIndex = sectionsMutable.indexOf(section)
+
+                    sectionsMutable.removeAt(selectedIndex)
+
+                    val insertIndex = if (selectedIndex < targetIndex) {
+                        targetIndex.coerceAtMost(sectionsMutable.size)
+                    } else {
+                        targetIndex
                     }
 
-                    // Swap priorities
-                    nextSection.priority -= 1
-                    section.priority += 1
+                    sectionsMutable.add(insertIndex, selected)
 
-                    // Normalize priorities to ensure consistency
-                    normalizePriorities(sections)
-
-                    // Update UI
-                    updateSectionList(
-                        sectionsListView,
-                        inflater,
-                        container,
-                        null,
-                        section.priority,
-                        "increase"
-                    )
-                }
-            }
-
-
-            decreaseBtn.makeTvCompatible()
-            decreaseBtn.setOnClickListener {
-                if (section.priority > 1) {
-                    val prevSection = sections.find { it.priority == section.priority - 1 }
-                    if (prevSection == null) {
-                        showToast("Cannot decrease priority further")
-                        return@setOnClickListener
+                    sectionsMutable.forEachIndexed { index, sec ->
+                        sec.priority = sectionsMutable.size - index
                     }
 
-                    // Swap priorities
-                    prevSection.priority += 1
-                    section.priority -= 1
+                    selectedSection = null
 
-                    // Re-normalize the full list to keep priorities clean
-                    normalizePriorities(sections)
+                    updateSectionList(sectionsListView, inflater, container, noSectionWarning, sectionsMutable)
 
-                    // Update UI
-                    updateSectionList(
-                        sectionsListView,
-                        inflater,
-                        container,
-                        null,
-                        section.priority,
-                        "decrease"
-                    )
-                }
-            }
-
-
-            if (counter == focusingSection) {
-                when (focusOn) {
-                    "increase" -> increaseBtn.requestFocus()
-                    "decrease" -> decreaseBtn.requestFocus()
+                    showToast("Moved ${selected.name} to position ${insertIndex + 1}")
                 }
             }
 
             counter -= 1
             sectionsListView.addView(sectionView)
-        }
     }
+}
+
+
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {}
