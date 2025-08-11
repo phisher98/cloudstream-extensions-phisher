@@ -1290,6 +1290,18 @@ open class Driveseed : ExtractorApi() {
                             )
                         }
                     }
+
+                    text.contains("Cloud Download", ignoreCase = true) -> {
+                        callback(
+                            newExtractorLink(
+                                "$name Cloud Download $labelExtras",
+                                "$name Cloud Download $labelExtras",
+                                url = href
+                            ) {
+                                this.quality = getIndexQuality(qualityText)
+                            }
+                        )
+                    }
                 }
             }
         }

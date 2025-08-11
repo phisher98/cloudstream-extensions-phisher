@@ -602,7 +602,7 @@ suspend fun bypassHrefli(url: String): String? {
 suspend fun cinematickitBypass(url: String): String? {
     return try {
         val cleanedUrl = url.replace("&#038;", "&")
-        val encodedLink = cleanedUrl.substringAfter("safelink=", "").substringBefore("--")
+        val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
         if (encodedLink.isEmpty()) return null
         val decodedUrl = base64Decode(encodedLink)
         val doc = app.get(decodedUrl).document

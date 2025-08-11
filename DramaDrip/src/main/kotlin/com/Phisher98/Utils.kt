@@ -3,6 +3,7 @@ package com.Phisher98
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.app
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -118,9 +119,10 @@ fun fixUrl(url: String, domain: String): String {
 suspend fun cinematickitBypass(url: String): String? {
     return try {
         val cleanedUrl = url.replace("&#038;", "&")
-        val encodedLink = cleanedUrl.substringAfter("safelink=", "").substringBefore("--")
+        val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
         if (encodedLink.isEmpty()) return null
         val decodedUrl = base64Decode(encodedLink)
+        Log.d("Phisher",decodedUrl)
         val doc = app.get(decodedUrl).document
         val goValue = doc.select("form#landing input[name=go]").attr("value")
         if (goValue.isBlank()) return null
