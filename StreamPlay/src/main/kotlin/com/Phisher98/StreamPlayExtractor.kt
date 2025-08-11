@@ -2106,19 +2106,29 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val seasonPattern = "(?i)(season\\s*$season|s0?$season\\b)"
+        val seasonPattern = "(?i)season\\s*$season\\b.*"
         val episodePattern = "(?i)(V-Cloud|Single|Episode|G-Direct|Download Now)"
 
         val episodeLinks = doc.select("h4:matches($seasonPattern), h3:matches($seasonPattern), h5:matches($seasonPattern)")
-            .flatMap { h4 ->
-                h4.nextElementSibling()?.select("a:matches($episodePattern)")?.toList() ?: emptyList()
+            .flatMap { header ->
+                var sibling = header.nextElementSibling()
+                while (sibling != null && sibling.select("a").isEmpty()) {
+                    Log.d("Phisher", "Skipping sibling tag: ${sibling.tagName()} text: ${sibling.text()}")
+                    sibling = sibling.nextElementSibling()
+                }
+
+                val links = sibling?.select("a").orEmpty().filter {
+                    it.text().contains(Regex(episodePattern, RegexOption.IGNORE_CASE))
+                }
+                links
             }
 
         for (episodeLink in episodeLinks) {
             val episodeUrl = episodeLink.attr("href")
             runCatching {
                 val res = app.get(episodeUrl).document
-                val streamingUrls = res.selectFirst("h4:contains(Episodes):contains($episode)")
+
+                val streamingUrls = res.selectFirst("h4:contains(Episode):contains($episode), h4:contains(Episodes):contains($episode)")
                     ?.nextElementSibling()
                     ?.select("a:matches((?i)(V-Cloud|G-Direct|OXXFile))")
                     ?.mapNotNull { it.attr("href").takeIf { url -> url.isNotBlank() } }
@@ -2132,6 +2142,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
 
 
 
@@ -3586,13 +3597,13 @@ object StreamPlayExtractor : StreamPlay() {
                 ?.substringAfter("title/")
                 ?.substringBefore("/")
                 ?.takeIf { it.isNotBlank() }
-            Log.d("Phisher",imdbId.toString())
 
             val titleMatch = imdbId == id.orEmpty() || detailDoc
-                .select("main > p:nth-child(10),p strong:contains(Movie Name:) + span")
+                .select("main > p:nth-child(10),p strong:contains(Movie Name:) + span,p strong:contains(Series Name:)")
                 .firstOrNull()
                 ?.text()
                 ?.contains(cleanTitle, ignoreCase = true) == true
+            Log.d("Phisher",titleMatch.toString())
 
             if (!titleMatch) continue
 
@@ -3611,6 +3622,8 @@ object StreamPlayExtractor : StreamPlay() {
                     "(?i)Ep\\s?0?$episode\\b|Episode\\s+0?$episode\\b|V-Cloud|G-Direct|OXXFile"
 
                 val seasonElements = detailDoc.select("h5:matches($seasonPattern)")
+                Log.d("Phisher",seasonElements.toString())
+
                 if (seasonElements.isEmpty()) continue
 
                 val allLinks = mutableListOf<String>()
