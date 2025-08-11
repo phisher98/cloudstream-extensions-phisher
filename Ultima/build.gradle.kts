@@ -10,7 +10,7 @@ dependencies {
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
 // use an integer for version numbers
-version = 10
+version = 11
 
 
 cloudstream {

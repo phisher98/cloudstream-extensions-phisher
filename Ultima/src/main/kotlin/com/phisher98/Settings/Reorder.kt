@@ -1,7 +1,10 @@
 package com.phisher98
 
 import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.*
@@ -119,60 +122,89 @@ class UltimaReorder(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         val sortedSections = sections.sortedByDescending { it.priority }
         var counter = sortedSections.size
 
-        sortedSections.forEach { section ->
+        val displaySections = (currentSections ?: run {
+            val freshSections = emptyList<UltimaUtils.SectionInfo>().toMutableList()
+            extensions.forEach { ext ->
+                ext.sections?.filter { it.enabled }?.let { freshSections += it }
+            }
+            freshSections
+        }).sortedByDescending { it.priority } // Display order
+
+        if (displaySections.isEmpty()) {
+            noSectionWarning?.visibility = View.VISIBLE
+            return
+        }
+
+        displaySections.forEach { section ->
             val sectionView = getLayout("list_section_reorder_item", inflater, container)
             val sectionName = sectionView.findView<TextView>("section_name")
 
             if (section.priority == 0) section.priority = counter
             sectionName.text = "${section.pluginName}: ${section.name}"
 
-            sectionView.setBackgroundColor(
-                if (section == selectedSection) 0x2200FF00 else 0x00000000
+            sectionView.background = LayerDrawable(
+                arrayOf(
+                    ColorDrawable(if (section == selectedSection) 0x2200FF00.toInt() else Color.TRANSPARENT),
+                    getDrawable("outline")
+                )
             )
 
             sectionView.setOnClickListener {
-                if (selectedSection == null) {
-                    selectedSection = section
-                    showToast("Selected: ${section.name}. Now tap a target position.")
-                    updateSectionList(sectionsListView, inflater, container, noSectionWarning, sections)
-                } else if (selectedSection == section) {
-                    selectedSection = null
-                    showToast("Selection cleared")
-                    updateSectionList(sectionsListView, inflater, container, noSectionWarning, sections)
-                } else {
-                    val selected = selectedSection!!
+                val focusedSectionBefore = section  // store the actual section object
 
-                    val sectionsMutable = sections.toMutableList()
-
-                    val selectedIndex = sectionsMutable.indexOf(selected)
-                    val targetIndex = sectionsMutable.indexOf(section)
-
-                    sectionsMutable.removeAt(selectedIndex)
-
-                    val insertIndex = if (selectedIndex < targetIndex) {
-                        targetIndex.coerceAtMost(sectionsMutable.size)
-                    } else {
-                        targetIndex
+                when (selectedSection) {
+                    null -> {
+                        selectedSection = section
+                        showToast("Picked! Now tap a target.")
+                        updateSectionList(sectionsListView, inflater, container, noSectionWarning, displaySections)
                     }
-
-                    sectionsMutable.add(insertIndex, selected)
-
-                    sectionsMutable.forEachIndexed { index, sec ->
-                        sec.priority = sectionsMutable.size - index
+                    section -> {
+                        selectedSection = null
+                        updateSectionList(sectionsListView, inflater, container, noSectionWarning, displaySections)
                     }
+                    else -> {
+                        val selected = selectedSection!!
+                        val sectionsMutable = displaySections.toMutableList()
 
-                    selectedSection = null
+                        val selectedIndex = sectionsMutable.indexOf(selected)
+                        val targetIndex = sectionsMutable.indexOf(section)
 
-                    updateSectionList(sectionsListView, inflater, container, noSectionWarning, sectionsMutable)
+                        if (selectedIndex == targetIndex) {
+                            showToast("Already in this position")
+                            return@setOnClickListener
+                        }
 
-                    showToast("Moved ${selected.name} to position ${insertIndex + 1}")
+                        sectionsMutable.removeAt(selectedIndex)
+                        sectionsMutable.add(targetIndex, selected)
+
+                        sectionsMutable.forEachIndexed { index, sec ->
+                            sec.priority = sectionsMutable.size - index
+                        }
+
+                        selectedSection = null
+                        updateSectionList(sectionsListView, inflater, container, noSectionWarning, sectionsMutable)
+                        showToast("Moved to position ${targetIndex + 1}")
+                    }
+                }
+
+                sectionsListView.post {
+                    for (i in 0 until sectionsListView.childCount) {
+                        val child = sectionsListView.getChildAt(i)
+                        val nameView = child.findView<TextView>("section_name")
+                        if (nameView.text.contains(focusedSectionBefore.name, ignoreCase = true)) {
+                            child.requestFocus()
+                            break
+                        }
+                    }
                 }
             }
 
+
+
             counter -= 1
             sectionsListView.addView(sectionView)
+        }
     }
-}
 
 
 
