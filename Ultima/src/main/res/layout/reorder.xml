@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layoutDirection="ltr">
+    android:layoutDirection="ltr"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,15 +21,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingTop="20dp"
-            android:paddingBottom="5dp"
-            android:gravity="center_vertical"
-            android:weightSum="2">
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="5dp"
                 android:text="Reorder Sections"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -36,18 +37,21 @@
                 android:id="@+id/save"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_gravity="end"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="5dp"
                 android:padding="5dp"
-                android:focusable="true" />
+                android:focusable="true"
+                android:focusableInTouchMode="true" />
         </LinearLayout>
 
         <!-- Divider -->
-        <View
+        <ImageView
+            android:src="@android:drawable/divider_horizontal_dark"
             android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_height="wrap_content"
+            android:scaleType="fitXY"
             android:layout_marginVertical="10dp"
-            android:background="?android:attr/listDivider" />
+            android:paddingHorizontal="2dp" />
 
         <!-- Section List -->
         <LinearLayout
@@ -68,5 +72,6 @@
             android:textSize="15sp"
             android:gravity="center"
             android:visibility="gone" />
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
