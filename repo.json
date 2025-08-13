@@ -1,0 +1,9 @@
+{
+    "name": "Phisher Repo",
+    "iconUrl": "https://avatars.githubusercontent.com/u/153359846?v=4&size=64",
+    "description": "Phisher Repository",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/builds/plugins.json"
+    ]
+}
