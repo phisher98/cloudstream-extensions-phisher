@@ -88,6 +88,7 @@ jobs:
           PROXYAPI: ${{ secrets.PROXYAPI }}
           KAISVA: ${{ secrets.KAISVA }}
           MAL_API: ${{ secrets.MAL_API }}
+          DaddyLive: ${{ secrets.DaddyLive }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -132,6 +133,7 @@ jobs:
           echo PROXYAPI=$PROXYAPI >> local.properties
           echo KAISVA=$KAISVA >> local.properties
           echo MAL_API=$MAL_API >> local.properties
+          echo DaddyLive=$DaddyLive >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
