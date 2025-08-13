@@ -30,6 +30,8 @@ Want to sync your devices using **Ultima’s Cross Device Watch Sync**?
 
 📘 [View the full setup guide →](docs/ULTIMA_SYNC_SETUP.md)
 
+📘 [View YouTube guide →](https://cloudstream.miraheze.org/wiki/Ultima)
+
 This guide will show you how to use a **private GitHub project** and a **personal access token** to sync playback history across devices.
 
 ---
