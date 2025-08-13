@@ -1,24 +1,22 @@
-@file:Suppress("UnstableApiUsage")
-
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 2
+// use an integer for version numbers
+version = 6
+
 
 android {
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
         android.buildFeatures.buildConfig=true
-        buildConfigField("String", "FanCode_API", "\"${properties.getProperty("FanCode_API")}\"")
-
+        buildConfigField("String", "DaddyLive", "\"${properties.getProperty("DaddyLive")}\"")
     }
 }
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Sports Live Streams"
-    language    = "en"
+    description = "Indian TV"
     authors = listOf("Phisher98")
 
     /**
@@ -34,8 +32,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Live")
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/daddylive.png"
 
-    iconUrl="https://www.thestatesman.com/wp-content/uploads/2021/05/fancode.jpg"
-
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
