@@ -15,5 +15,6 @@ class HDhub4uPlugin: BasePlugin() {
         registerExtractorAPI(Hubstream())
         registerExtractorAPI(Hubcdn())
         registerExtractorAPI(Hubdrive())
+        registerExtractorAPI(Hubstreamdad())
     }
 }

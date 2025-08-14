@@ -2496,7 +2496,11 @@ class HUBCDN : ExtractorApi() {
     }
 }
 
-class Hblinks : ExtractorApi() {
+class Hubstreamdad : Hblinks() {
+    override var mainUrl = "https://hblinks.dad"
+}
+
+open class Hblinks : ExtractorApi() {
     override val name = "Hblinks"
     override val mainUrl = "https://hblinks.pro"
     override val requiresReferer = true
@@ -2509,7 +2513,7 @@ class Hblinks : ExtractorApi() {
     ) {
         val document = app.get(url).document
 
-        document.select("h3 a, div.entry-content p a").forEach {
+        document.select("h3 a,h5 a").forEach {
             val link = it.absUrl("href").ifBlank { it.attr("href") }
             val lower = link.lowercase()
 

@@ -25,7 +25,11 @@ class Hubstream : VidStack() {
     override var mainUrl = "https://hubstream.art"
 }
 
-class Hblinks : ExtractorApi() {
+class Hubstreamdad : Hblinks() {
+    override var mainUrl = "https://hblinks.dad"
+}
+
+open class Hblinks : ExtractorApi() {
     override val name = "Hblinks"
     override val mainUrl = "https://hblinks.pro"
     override val requiresReferer = true
@@ -36,11 +40,11 @@ class Hblinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.select("h3 a,div.entry-content p a").map {
+        app.get(url).document.select("h3 a,h5 a").map {
             val href=it.attr("href")
+            Log.d("Phisher",href)
             loadExtractor(href,"HDHUB4U",subtitleCallback, callback)
         }
-
     }
 }
 

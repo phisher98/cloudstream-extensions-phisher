@@ -183,6 +183,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(StreamWishExtractor())
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Vidguardto2())
+        registerExtractorAPI(Hubstreamdad())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = MainSettingsFragment(this, sharedPref)
