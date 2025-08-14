@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import org.json.JSONArray
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
@@ -286,19 +287,18 @@ class HDhub4uProvider : MainAPI() {
             return false
         }
 
-        coroutineScope {
-            links.map { link ->
-                async {
-                    val finalLink = if ("?id=" in link) getRedirectLinks(link) else link
-                    try {
-                        loadExtractor(finalLink, subtitleCallback, callback)
-                    } catch (e: Exception) {
-                        Log.e("Phisher", "Failed to extract $finalLink: ${e.message}")
-                    }
+        for (link in links) {
+            try {
+                val finalLink = if ("?id=" in link) {
+                    getRedirectLinks(link)
+                } else {
+                    link
                 }
-            }.awaitAll()
+                loadExtractor(finalLink, subtitleCallback, callback)
+            } catch (e: Exception) {
+                Log.e("Phisher", "Failed to process $link: ${e.message}")
+            }
         }
-
         return true
     }
 
