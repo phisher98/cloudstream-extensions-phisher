@@ -49,7 +49,6 @@ import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -595,12 +594,24 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback) }
                 add { invokeWatch32APIHQ(res.title, res.season, res.episode,res.year, subtitleCallback, callback) }
                 add { invokeVidSrcViP(res.id, res.season, res.episode, callback) }
-                add { invokePrimeWire(res.id, res.imdbId, res.title, res.season, res.episode, res.year, subtitleCallback, callback) }
-                add { invokeFilm1k(res.id, res.imdbId, res.title, res.season, res.episode, res.year, subtitleCallback, callback) }
+                add { invokePrimeWire(
+                    res.imdbId,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                ) }
+                add { invokeFilm1k(
+                    res.title,
+                    res.season,
+                    res.year,
+                    subtitleCallback,
+                    callback
+                ) }
                 add { invokeSuperstream(token, res.imdbId, res.season, res.episode, callback) }
                 add { invokePlayer4U(res.title, res.season, res.episode, res.year, callback) }
                 add { invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback) }
-                add { invokeXPrimeAPI(res.title, res.year, res.imdbId, res.season, res.episode, subtitleCallback, callback) }
+                add { invokeXPrimeAPI(res.title, res.year, res.imdbId,res.id, res.season, res.episode, subtitleCallback, callback) }
                 add { invokevidzeeUltra(res.id, res.season, res.episode, callback) }
                 add { invokevidzeeMulti(res.id, res.season, res.episode, callback) }
                 add { invoke4khdhub(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }

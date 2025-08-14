@@ -104,6 +104,9 @@ object UltimaMediaProvidersUtils {
                     AnimeKaiMediaProvider(),
                     VegaMoviesProvider(),
                     VidsrcccProvider(),
+                    Watch32Provider(),
+                    XPrimeProvider(),
+                    PrimeWireProvider()
             )
 
     suspend fun invokeExtractors(

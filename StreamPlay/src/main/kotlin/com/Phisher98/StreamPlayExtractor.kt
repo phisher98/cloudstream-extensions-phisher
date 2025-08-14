@@ -1415,7 +1415,8 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokeXPrimeAPI(
         title: String?,
         year: Int?,
-        id: String? = null,
+        imdbid: String? = null,
+        tmdbid: Int? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -1441,7 +1442,7 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                     else -> {
                         if (year != null) append("&year=$year")
-                        if (!id.isNullOrBlank()) append("&id=$id&imdb=$id")
+                        if (!imdbid.isNullOrBlank()) append("&id=$tmdbid&imdb=$imdbid")
                         if (season != null && episode != null) append("&season=$season&episode=$episode")
                     }
                 }
@@ -4155,44 +4156,43 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokePrimeWire(
-        id: Int? = null,
         imdbId: String? = null,
-        title: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        year: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url = if (season == null) {
-            "$Primewire/embed/movie?imdb=$imdbId"
+        val apiurl = if (season == null) {
+            "$Primewire/embed/movie?imdb=${imdbId}"
         } else {
-            "$Primewire/embed/tv?imdb=$imdbId&season=$season&episode=$episode"
+            "$Primewire/embed/tv?imdb=${imdbId}&season=${season}&episode=${episode}"
         }
-        val doc = app.get(url, timeout = 10).document
+
+        val doc = app.get(apiurl, timeout = 10).document
         val userData = doc.select("#user-data")
-        var decryptedLinks = decryptLinks(userData.attr("v"))
+        val decryptedLinks = decryptLinks(userData.attr("v"))
         for (link in decryptedLinks) {
-            val url = "$Primewire/links/go/$link"
-            val oUrl = app.get(url, timeout = 10)
-            loadSourceNameExtractor(
-                "Primewire",
-                oUrl.url,
-                "",
-                subtitleCallback,
-                callback
-            )
+            val href = "$Primewire/links/gos/$link"
+            val token= app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Primetoken.txt").text
+            val oUrl = app.get(href, timeout = 10)
+            val iframeurl= app.get("${oUrl.url.replace("/gos/","/go/")}?token=$token").parsedSafe<PrimewireClass>()?.link
+            if (iframeurl != null) {
+                loadSourceNameExtractor(
+                    "Primewire ",
+                    iframeurl,
+                    "",
+                    subtitleCallback,
+                    callback,
+                    quality = getQualityFromName("")
+                )
+            }
         }
     }
 
 
-    @Suppress("NAME_SHADOWING")
     suspend fun invokeFilm1k(
-        id: Int? = null,
-        imdbId: String? = null,
         title: String? = null,
         season: Int? = null,
-        episode: Int? = null,
         year: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit

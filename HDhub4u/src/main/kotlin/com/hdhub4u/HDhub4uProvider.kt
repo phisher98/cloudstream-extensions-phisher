@@ -32,7 +32,7 @@ import org.jsoup.select.Elements
 
 
 class HDhub4uProvider : MainAPI() {
-    override var mainUrl = "https://hdhub4u.build"
+    override var mainUrl = "https://hdhub4u.navy"
     override var name = "HDHub4U"
     override var lang = "hi"
     override val hasMainPage = true
@@ -146,7 +146,7 @@ class HDhub4uProvider : MainAPI() {
         val typeraw=doc.select("h1.page-title span").text()
         val tvtype=if (typeraw.contains("movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
         val tvtypeapi = if (typeraw.contains("movie", ignoreCase = true)) "movie" else "series"
-        val imdbUrl = doc.select("div.kp-header div span a[href*='imdb.com']").attr("href")
+        val imdbUrl = doc.select("div span a[href*='imdb.com']").attr("href")
         val responseData = if (imdbUrl.isNotEmpty()) {
             val imdbId = imdbUrl.substringAfter("title/").substringBefore("/")
             val jsonResponse = app.get("$cinemeta_url/$tvtypeapi/$imdbId.json").text

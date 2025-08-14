@@ -259,6 +259,7 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.title,
                     res.year,
                     res.imdbId,
+                    res.id,
                     res.season,
                     res.episode,
                     subtitleCallback,

@@ -2194,3 +2194,10 @@ data class Watch32(
     val link: String,
 )
 
+data class PrimewireClass(
+    val link: String,
+    @JsonProperty("host_id")
+    val hostId: Long,
+    val host: String,
+)
+

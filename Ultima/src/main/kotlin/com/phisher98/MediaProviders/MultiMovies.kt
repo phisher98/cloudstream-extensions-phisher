@@ -15,7 +15,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 
 class MultiMoviesProvider : MediaProvider() {
     override val name = "MultiMovies"
-    override val domain = "https://multimovies.asia"
+    override val domain = "https://multimovies.coupons"
     override val categories = listOf(Category.MEDIA)
     private val xmlHeader = mapOf("X-Requested-With" to "XMLHttpRequest")
 
