@@ -3,20 +3,10 @@ package com.hdhub4u
 import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.utils.newExtractorLink
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 import org.json.JSONObject
-import java.util.Base64
 
 
 suspend fun getRedirectLinks(url: String): String {
@@ -48,7 +38,7 @@ suspend fun getRedirectLinks(url: String): String {
 
 @SuppressLint("NewApi")
 fun encode(value: String): String {
-    return Base64.getEncoder().encodeToString(value.toByteArray())
+    return String(android.util.Base64.decode(value, android.util.Base64.DEFAULT))
 }
 
 fun pen(value: String): String {
@@ -59,38 +49,6 @@ fun pen(value: String): String {
             else -> it
         }
     }.joinToString("")
-}
-
-
-suspend fun loadCustomExtractor(
-    name: String? = null,
-    url: String,
-    referer: String? = null,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit,
-    quality: Int? = null,
-) {
-    loadExtractor(url, referer, subtitleCallback) { link ->
-        CoroutineScope(Dispatchers.IO).launch {
-            callback.invoke(
-                newExtractorLink(
-                    name ?: link.source,
-                    name ?: link.name,
-                    link.url,
-                ) {
-                    this.quality = when {
-                        link.name == "VidSrc" -> Qualities.P1080.value
-                        link.type == ExtractorLinkType.M3U8 -> link.quality
-                        else -> quality ?: link.quality
-                    }
-                    this.type = link.type
-                    this.referer = link.referer
-                    this.headers = link.headers
-                    this.extractorData = link.extractorData
-                }
-            )
-        }
-    }
 }
 
 
