@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -40,15 +41,20 @@ open class Hblinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.select("h3 a,h5 a").map {
-            val href=it.attr("href")
-            Log.d("Phisher",href)
-            loadExtractor(href,"HDHUB4U",subtitleCallback, callback)
+        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").map {
+            val lower = it.absUrl("href").ifBlank { it.attr("href") }
+            val href = lower.lowercase()
+            when {
+                "hubdrive" in lower -> Hubdrive().getUrl(href, name, subtitleCallback, callback)
+                "hubcloud" in lower -> HubCloud().getUrl(href, name, subtitleCallback, callback)
+                "hubcdn" in lower -> HUBCDN().getUrl(href, name, subtitleCallback, callback)
+                else -> loadSourceNameExtractor(name, href, "", subtitleCallback, callback)
+            }
         }
     }
 }
 
-class Hubcdn : ExtractorApi() {
+class Hubcdnn : ExtractorApi() {
     override val name = "Hubcdn"
     override val mainUrl = "https://hubcdn.cloud"
     override val requiresReferer = true
@@ -271,5 +277,42 @@ class HubCloud : ExtractorApi() {
     }
 }
 
+class HUBCDN : ExtractorApi() {
+    override val name = "HUBCDN"
+    override val mainUrl = "https://hubcdn.fans"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(url).document
+        val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
+
+        val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")
+            .find(scriptText ?: "")
+            ?.groupValues?.get(1)
+            ?.substringAfter("?r=")
+
+        val decodedUrl = encodedUrl?.let { base64Decode(it) }?.substringAfterLast("link=")
+
+
+        if (decodedUrl != null) {
+            callback(
+                newExtractorLink(
+                    this.name,
+                    this.name,
+                    decodedUrl,
+                    INFER_TYPE,
+                )
+                {
+                    this.quality=Qualities.Unknown.value
+                }
+            )
+        }
+    }
+}
 
 

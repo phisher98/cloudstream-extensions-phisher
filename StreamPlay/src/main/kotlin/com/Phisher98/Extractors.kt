@@ -2513,7 +2513,7 @@ open class Hblinks : ExtractorApi() {
     ) {
         val document = app.get(url).document
 
-        document.select("h3 a,h5 a").forEach {
+        document.select("h3 a,h5 a,div.entry-content p a").forEach {
             val link = it.absUrl("href").ifBlank { it.attr("href") }
             val lower = link.lowercase()
 
@@ -2678,7 +2678,7 @@ class FilemoonV2 : ExtractorApi() {
         }
 
         if (m3u8 != null) {
-            M3u8Helper.generateM3u8(
+            generateM3u8(
                 name,
                 m3u8,
                 mainUrl,
@@ -2699,7 +2699,7 @@ class FilemoonV2 : ExtractorApi() {
             ).url
 
             if (m3u82.isNotEmpty()) {
-                M3u8Helper.generateM3u8(
+                generateM3u8(
                     name,
                     m3u82,
                     mainUrl,
