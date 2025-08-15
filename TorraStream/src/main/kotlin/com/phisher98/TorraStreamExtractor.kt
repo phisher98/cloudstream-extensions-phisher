@@ -1,18 +1,15 @@
-package com.TorraStream
+package com.phisher98
 
-import android.annotation.SuppressLint
-import com.TorraStream.TorraStream.Companion.AnimetoshoAPI
-import com.TorraStream.TorraStream.Companion.SubtitlesAPI
-import com.TorraStream.TorraStream.Companion.TRACKER_LIST_URL
+import com.phisher98.TorraStream.Companion.AnimetoshoAPI
+import com.phisher98.TorraStream.Companion.SubtitlesAPI
+import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.util.Locale
@@ -428,6 +425,64 @@ suspend fun invokeTorrentioAnime(
             ) {
                 this.referer = ""
                 this.quality = getIndexQuality(stream.name)
+            }
+        )
+    }
+}
+
+suspend fun invokeAIOStreamsDebian(
+    mainUrl:String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val mainurl = if (season == null) {
+        "$mainUrl/stream/movie/$id.json"
+    } else {
+        "$mainUrl/stream/series/$id:$season:$episode.json"
+    }
+    app.get(mainurl).parsedSafe<AIO>()?.streams?.map {
+        val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
+        val qualityMatch = qualityRegex.find(it.name)?.value ?: "Unknown"
+        callback.invoke(
+            newExtractorLink(
+                "Torrentio AIO Debian ${it.name}",
+                it.name,
+                it.url,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getIndexQuality(qualityMatch)
+            }
+        )
+    }
+}
+
+suspend fun invokeAIOStreams(
+    mainUrl:String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val mainurl = if (season == null) {
+        "$mainUrl/stream/movie/$id.json"
+    } else {
+        "$mainUrl/stream/series/$id:$season:$episode.json"
+    }
+    val json= app.get(mainurl).toString()
+    val magnetLink = parseStreamsToMagnetLinks(json)
+    magnetLink.forEach {
+        callback.invoke(
+            newExtractorLink(
+                "Torrentio AIO ${it.title}",
+                it.title,
+                it.magnet,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getIndexQuality(it.quality)
             }
         )
     }

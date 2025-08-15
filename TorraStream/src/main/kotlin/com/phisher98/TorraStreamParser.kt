@@ -1,4 +1,4 @@
-package com.TorraStream
+package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -263,3 +263,25 @@ data class AnimeData(
     @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null
 )
 
+data class AIO(
+    val streams: List<AIOStream>,
+)
+
+data class AIOStream(
+    val url: String,
+    val name: String,
+    val description: String,
+    val behaviorHints: AIOBehaviorHints,
+)
+
+data class AIOBehaviorHints(
+    val videoSize: Long,
+    val filename: String,
+    val bingeGroup: String,
+)
+
+data class MagnetStream(
+    val title: String,
+    val quality: String,
+    val magnet: String
+)

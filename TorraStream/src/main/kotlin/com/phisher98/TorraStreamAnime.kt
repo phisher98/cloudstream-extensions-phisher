@@ -1,4 +1,4 @@
-package com.TorraStream
+package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log

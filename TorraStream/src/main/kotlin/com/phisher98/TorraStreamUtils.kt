@@ -1,4 +1,4 @@
-package com.TorraStream
+package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.json.JSONObject
+import java.net.URLEncoder
 
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "") ?. groupValues ?. getOrNull(1) ?. toIntOrNull()
@@ -115,3 +116,40 @@ fun parseAnimeData(jsonString: String): AnimeData {
     return objectMapper.readValue(jsonString, AnimeData::class.java)
 }
 
+fun parseStreamsToMagnetLinks(jsonString: String): List<MagnetStream> {
+    val json = JSONObject(jsonString)
+    val streams = json.getJSONArray("streams")
+
+    return (0 until streams.length()).mapNotNull { i ->
+        val item = streams.getJSONObject(i)
+
+        val infoHash = item.optString("infoHash")
+        if (infoHash.isBlank()) return@mapNotNull null
+
+        val originalName = item.optString("name", "Unnamed")
+        val sources = item.optJSONArray("sources") ?: return@mapNotNull null
+
+        val behaviorHints = item.optJSONObject("behaviorHints")
+        val bingeGroup = behaviorHints?.optString("bingeGroup").orEmpty()
+        bingeGroup.split("|").filter { it.isNotBlank() && it != "Unknown" }
+
+        // Extract quality (simple regex to match "720p", "1080p", "WEB-DL", etc.)
+        val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
+        val qualityMatch = qualityRegex.find(originalName)?.value ?: "Unknown"
+
+        // Build magnet link
+        val encodedName = URLEncoder.encode(originalName, "UTF-8")
+        val trackers = (0 until sources.length()).joinToString("&") {
+            val tracker = sources.optString(it)
+            "tr=${URLEncoder.encode(tracker, "UTF-8")}"
+        }
+
+        val magnet = "magnet:?xt=urn:btih:$infoHash&dn=$encodedName&$trackers"
+
+        MagnetStream(
+            title = originalName,
+            quality = qualityMatch,
+            magnet = magnet
+        )
+    }
+}

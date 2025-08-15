@@ -1,6 +1,19 @@
-// use an integer for version numbers
-version = 30
+import org.jetbrains.kotlin.konan.properties.Properties
 
+// use an integer for version numbers
+version = 31
+
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+    defaultConfig {
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
+    }
+}
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -24,11 +37,13 @@ cloudstream {
     tvTypes = listOf("Movie","Torrent","AsianDrama","TvSeries","Anime")
 
     iconUrl = "https://torrentio.strem.fun/images/logo_v1.png"
-
+    requiresResources = true
     isCrossPlatform = false
 }
 
 dependencies {
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.12.0")
     // FIXME remove this when crossplatform is fully supported
     val cloudstream by configurations
     cloudstream("com.lagradost:cloudstream3:pre-release")
