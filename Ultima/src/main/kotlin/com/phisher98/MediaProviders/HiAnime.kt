@@ -16,7 +16,7 @@ import org.jsoup.nodes.Document
 
 class HiAnimeMediaProvider : MediaProvider() {
     override val name = "HiAnime"
-    override val domain = "https://hianime.bz"
+    override val domain = "https://hianimez.is"
     override val categories = listOf(Category.ANIME)
 
     @RequiresApi(Build.VERSION_CODES.O)
