@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 31
+version = 32
 
 android {
     buildFeatures {
@@ -18,7 +18,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "#1 Best Extension – MultiAPI-Based with 4K Torrent Support (Debian) | Debian Users: Use Site Clone on Torrastream-Debian Example | Provider=Key OR TorBox=xxx-xxx-xxx-xxx"
+    description = "#1 Best Extension – MultiAPI-Based with 4K Torrent Support (Debian) Use Extension Settings"
     language    = "en"
     authors = listOf("Phisher98")
 
