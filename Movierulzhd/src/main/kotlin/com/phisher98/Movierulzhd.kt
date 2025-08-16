@@ -2,9 +2,11 @@ package com.phisher98
 
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.CoroutineScope
@@ -280,7 +282,6 @@ open class Movierulzhd : MainAPI() {
                                 referer = data,
                                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                             ).parsed<ResponseHash>().embed_url
-
                             if (!source.contains("youtube")) {
                                 loadExtractor(source, subtitleCallback, callback)
                             }

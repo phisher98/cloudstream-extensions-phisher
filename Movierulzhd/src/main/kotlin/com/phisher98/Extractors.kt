@@ -67,7 +67,7 @@ open class FilemoonV2 : ExtractorApi() {
 
 class Movierulzups : VidStack() {
     override var name = "Movierulz"
-    override var mainUrl = "https://movierulz2025.upns.pro"
+    override var mainUrl = "https://onion.uns.wtf"
 }
 
 

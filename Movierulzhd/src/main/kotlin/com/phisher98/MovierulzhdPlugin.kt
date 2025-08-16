@@ -3,6 +3,7 @@ package com.phisher98
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.VidSrcTo
+import com.lagradost.cloudstream3.extractors.VidStack
 
 @CloudstreamPlugin
 class MovierulzhdPlugin: BasePlugin() {
@@ -20,5 +21,6 @@ class MovierulzhdPlugin: BasePlugin() {
         registerExtractorAPI(GDFlix())
         registerExtractorAPI(Movierulzups())
         registerExtractorAPI(Movierulz())
+        registerExtractorAPI(VidStack())
     }
 }
