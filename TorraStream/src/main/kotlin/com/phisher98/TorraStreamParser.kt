@@ -96,28 +96,60 @@ data class TorBox(
 data class TorBoxStream(
     val name: String,
     val url: String,
+    val hash: String,
+    @JsonProperty("is_cached")
+    val isCached: Boolean,
+    val language: String,
+    val size: Long,
+    val description: String,
+    val year: Long?,
+    val behaviorHints: TorBoxBehaviorHints,
+    @JsonProperty("file_id")
+    val fileId: Long?,
     val magnet: String?,
     val nzb: String?,
     val seeders: Long?,
     val peers: Long?,
     val quality: String?,
     val resolution: String?,
-    val language: String?,
-    @JsonProperty("is_cached")
-    val isCached: Boolean,
-    val size: Long?,
-    val hash: String,
-    val adult: Boolean,
-    val description: String,
+    @JsonProperty("is_your_media")
+    val isYourMedia: Boolean?,
     val type: String?,
-    val behaviorHints: TorBoxBehaviorHints?,
+    val season: Any?,
+    val episode: Any?,
+    @JsonProperty("user_search")
+    val userSearch: Boolean?,
+    val adult: Boolean?,
+    val files: List<File>?,
+    val hdr: List<String>?,
 )
-
 data class TorBoxBehaviorHints(
     val notWebReady: Boolean,
-    val videoSize: Long,
     val filename: String,
+    val bingeGroup: String,
+    val videoHash: String?,
+    val videoSize: Long?,
 )
+
+data class File(
+    val id: Long,
+    val md5: String?,
+    val hash: String,
+    val name: String,
+    val size: Long,
+    val zipped: Boolean?,
+    @JsonProperty("s3_path")
+    val s3Path: String,
+    val infected: Boolean?,
+    val mimetype: String,
+    @JsonProperty("short_name")
+    val shortName: String,
+    @JsonProperty("absolute_path")
+    val absolutePath: String,
+    @JsonProperty("opensubtitles_hash")
+    val opensubtitlesHash: String?,
+)
+
 
 data class MediafusionResponse(
     val streams: List<MediafusionStream>,

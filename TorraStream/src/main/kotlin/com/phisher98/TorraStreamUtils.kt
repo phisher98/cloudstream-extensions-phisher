@@ -153,3 +153,9 @@ fun parseStreamsToMagnetLinks(jsonString: String): List<MagnetStream> {
         )
     }
 }
+
+fun extractResolutionFromDescription(description: String?): String? {
+    if (description.isNullOrBlank()) return null
+    val regex = Regex("""\b(2160p|1440p|1080p|720p|480p|360p)\b""", RegexOption.IGNORE_CASE)
+    return regex.find(description)?.value
+}

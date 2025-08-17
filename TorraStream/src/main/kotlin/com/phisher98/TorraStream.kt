@@ -37,6 +37,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val AnimetoshoAPI = "https://feed.animetosho.org"
         const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
+        const val TorboxAPI= "https://stremio.torbox.app"
         const val TRACKER_LIST_URL = "https://newtrackon.com/api/all"
     }
 
@@ -85,24 +86,32 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         }
         if (provider == "AIO Streams" && !key.isNullOrEmpty()) {
             runAllAsync(
-                { invokeAIOStreamsDebian(key, id, season, episode, callback) }
+                suspend { invokeAIOStreamsDebian(key, id, season, episode, callback) }
             )
-        } else if (apiUrl.contains("=")) {
+        }
+
+        if (provider == "TorBox" && !key.isNullOrEmpty()) {
             runAllAsync(
-                { invokeTorrentioDebian(apiUrl, id, season, episode, callback) }
+                suspend { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback) }
+            )
+        }
+
+        if (apiUrl.contains("=")) {
+            runAllAsync(
+                suspend { invokeTorrentioDebian(apiUrl, id, season, episode, callback) }
             )
         } else {
             runAllAsync(
-                { invokeTorrentio(TorrentioAPI, id, season, episode, callback) },
-                { invoke1337x(OnethreethreesevenxAPI, title, year, callback) },
-                { invokeMediaFusion(MediafusionApi, id, season, episode, callback) },
-                { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
-                { invokePeerFlix(PeerflixApi, id, season, episode, callback) },
-                { invokeComet(CometAPI, id, season, episode, callback) },
-                { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
-                { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
-                { invokeAIOStreams(AIOStreams, id, season, episode, callback) },
-                { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
+                suspend { invokeTorrentio(TorrentioAPI, id, season, episode, callback) },
+                suspend { invoke1337x(OnethreethreesevenxAPI, title, year, callback) },
+                suspend { invokeMediaFusion(MediafusionApi, id, season, episode, callback) },
+                suspend { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
+                suspend { invokePeerFlix(PeerflixApi, id, season, episode, callback) },
+                suspend { invokeComet(CometAPI, id, season, episode, callback) },
+                suspend { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
+                suspend { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
+                suspend { invokeAIOStreams(AIOStreams, id, season, episode, callback) },
+                suspend { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
             )
         }
 

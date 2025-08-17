@@ -4,12 +4,15 @@ import com.phisher98.TorraStream.Companion.AnimetoshoAPI
 import com.phisher98.TorraStream.Companion.SubtitlesAPI
 import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.util.Locale
@@ -110,7 +113,7 @@ suspend fun invokeTorrentioDebian(
 
         callback.invoke(
             newExtractorLink(
-                "Torrentio $finalTitle",
+                "Torrentio",
                 finalTitle,
                 url = fileurl,
                 INFER_TYPE
@@ -487,3 +490,48 @@ suspend fun invokeAIOStreams(
         )
     }
 }
+
+suspend fun invokeDebianTorbox(
+    torBoxAPI: String,
+    key: String,
+    id: String? =null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if (season == null) {
+        "$torBoxAPI/$key/stream/movie/$id.json"
+    } else {
+        "$torBoxAPI/$key/stream/series/$id:$season:$episode.json"
+    }
+
+    val response = app.get(url).parsedSafe<TorBox>() ?: return
+
+    response.streams.forEach { stream ->
+        val resolution = stream.resolution ?: extractResolutionFromDescription(stream.description)
+        val displayName = buildString {
+            if (stream.name.isNotBlank()) append(" ${stream.name}")
+            if (stream.behaviorHints.filename.isNotBlank()) append(" ${stream.behaviorHints.filename}")
+            if (!stream.quality.isNullOrBlank()) append(" ${stream.quality}")
+        }.trim()
+
+        val sourceName = stream.name
+            .substringBeforeLast("(")
+            .trim()
+            .ifBlank { "TorBox" }
+
+        callback(
+            newExtractorLink(
+                sourceName,
+                displayName,
+                url = stream.url,
+                INFER_TYPE
+            ).apply {
+                referer = ""
+                this.quality = getQualityFromName(resolution)
+            }
+        )
+    }
+}
+
+
