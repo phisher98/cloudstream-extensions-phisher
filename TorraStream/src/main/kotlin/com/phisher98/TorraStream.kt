@@ -1,7 +1,6 @@
 package com.phisher98
 
 import android.content.SharedPreferences
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -66,7 +65,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     ): Boolean {
         val provider = sharedPref.getString("provider", null)
         val key = sharedPref.getString("key", null)
-        Log.d("TorraStream", "Provider=$provider, Key=$key")
         val dataObj = AppUtils.parseJson<LinkData>(data)
         val title = dataObj.title
         val season = dataObj.season
