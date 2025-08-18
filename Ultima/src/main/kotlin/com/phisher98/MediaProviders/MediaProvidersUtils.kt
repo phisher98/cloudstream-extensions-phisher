@@ -120,7 +120,7 @@ object UltimaMediaProvidersUtils {
             if (provider.categories.contains(category) && it.enabled) {
                 try {
                     provider.loadContent(it.getDomain(), data, subtitleCallback, callback)
-                } catch (e: Exception) {}
+                } catch (_: Exception) {}
             }
         }
     }
@@ -1510,3 +1510,59 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
 
 
 // #endregion - Custom Extractors
+
+
+data class MetaData(
+    val meta: Meta
+) {
+    data class Meta(
+        val awards: String,
+        val background: String,
+        val behaviorHints: BehaviorHints,
+        val cast: List<String>,
+        val country: String,
+        val credits_cast: List<CreditsCast>,
+        val credits_crew: List<CreditsCrew>,
+        val description: String,
+        val director: List<String>,
+        val genres: List<String>,
+        val id: String,
+        val imdbRating: String,
+        val imdb_id: String,
+        val language: String,
+        val logo: String,
+        val moviedb_id: Int,
+        val name: String,
+        val poster: String,
+        val releaseInfo: String,
+        val runtime: String,
+        val slug: String,
+        val trailers: List<Trailer>,
+        val type: String
+    ) {
+        data class BehaviorHints(
+            val defaultVideoId: String,
+            val hasScheduledVideos: Boolean
+        )
+
+        data class CreditsCast(
+            val character: String,
+            val id: Int,
+            val name: String,
+            val profile_path: String
+        )
+
+        data class CreditsCrew(
+            val department: String,
+            val id: Int,
+            val job: String,
+            val name: String,
+            val profile_path: String
+        )
+
+        data class Trailer(
+            val source: String,
+            val type: String
+        )
+    }
+}

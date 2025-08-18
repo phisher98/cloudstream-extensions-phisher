@@ -3068,15 +3068,16 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }.ifEmpty { return }
 
-        fun decode(input: String): String = URLDecoder.decode(input, "utf-8")
         paths.map {
             val quality = getIndexQuality(it.first)
             val tags = getIndexQualityTags(it.first)
+            val href=if (it.second.contains(url)) it.second else (url + it.second)
+
             callback.invoke(
                 newExtractorLink(
                     "DahmerMovies",
                     "DahmerMovies $tags",
-                    url = decode((url + it.second).encodeUrl())
+                    url = href.encodeUrl()
                 ) {
                     this.referer = ""
                     this.quality = quality

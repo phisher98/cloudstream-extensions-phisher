@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.lagradost.api.Log
 import com.phisher98.UltimaMediaProvidersUtils.ServerName
 import com.phisher98.UltimaMediaProvidersUtils.encodeUrl
 import com.phisher98.UltimaMediaProvidersUtils.getEpisodeSlug
@@ -9,6 +10,7 @@ import com.phisher98.UltimaUtils.Category
 import com.phisher98.UltimaUtils.LinkData
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
 class DahmerMoviesMediaProvider : MediaProvider() {
@@ -22,13 +24,14 @@ class DahmerMoviesMediaProvider : MediaProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
+        val year= app.get("https://cinemeta-live.strem.io/meta/movie/${data.imdbId}.json").parsedSafe<MetaData>()?.meta?.releaseInfo
         val mediaUrl =
                 if (data.season == null) {
-                    "$url/movies/${data.title?.replace(":", "")} (${data.year})/"
+                    "$url/movies/${data.title?.replace(":", "")} (${year})/"
                 } else {
                     "$url/tvs/${data.title?.replace(":", " -")}/Season ${data.season}/"
                 }
-
+        Log.d("Phisher",data.toJson())
         val request = app.get(mediaUrl, timeout = 60L)
         if (!request.isSuccessful) return
         val paths =
@@ -51,10 +54,11 @@ class DahmerMoviesMediaProvider : MediaProvider() {
         paths.map {
             val quality = getIndexQuality(it.first)
             val tag = getIndexQualityTags(it.first)
+            val href=if (it.second.contains(mediaUrl)) it.second else (mediaUrl + it.second)
             UltimaMediaProvidersUtils.commonLinkLoader(
                 name,
                 ServerName.Custom,
-                (mediaUrl + it.second).encodeUrl(),
+                href.encodeUrl(),
                 null,
                 null,
                 subtitleCallback,

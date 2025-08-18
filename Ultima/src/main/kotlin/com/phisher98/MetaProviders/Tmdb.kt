@@ -38,7 +38,7 @@ class Tmdb(val plugin: UltimaPlugin) : TmdbProvider() {
                 tmdbId = tmdbID,
                 title = movieName,
                 season = season,
-                episode = episode
+                episode = episode,
         )
     }
 
