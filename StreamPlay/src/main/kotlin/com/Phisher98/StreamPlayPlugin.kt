@@ -83,7 +83,7 @@ class StreamPlayPlugin: Plugin() {
 
         //=====================MainAPI============================//
 
-        registerMainAPI(StreamPlayTest(sharedPref))
+        //registerMainAPI(StreamPlayTest(sharedPref))
 
         //=====================Extractors=========================//
 
