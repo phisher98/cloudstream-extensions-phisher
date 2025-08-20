@@ -65,10 +65,16 @@ class Furher : Filesim() {
     override var mainUrl = "https://furher.in"
 }
 
+class Cloudhownetwork : Hownetwork() {
+    override var mainUrl = "https://cloud.hownetwork.xyz"
+}
+
 class Furher2 : Filesim() {
     override val name = "Furher 2"
     override var mainUrl = "723qrh1p.fun"
 }
 
-
-
+class Turbovidhls : Filesim() {
+    override val name = "Turbovidhls"
+    override var mainUrl = "https://turbovidhls.com"
+}
