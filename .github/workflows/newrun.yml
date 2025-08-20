@@ -89,6 +89,8 @@ jobs:
           KAISVA: ${{ secrets.KAISVA }}
           MAL_API: ${{ secrets.MAL_API }}
           DaddyLive: ${{ secrets.DaddyLive }}
+          MOVIEBOX_SECRET_KEY_ALT: ${{ secrets.MOVIEBOX_SECRET_KEY_ALT }}
+          MOVIEBOX_SECRET_KEY_DEFAULT: ${{ secrets.MOVIEBOX_SECRET_KEY_DEFAULT }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -134,6 +136,8 @@ jobs:
           echo KAISVA=$KAISVA >> local.properties
           echo MAL_API=$MAL_API >> local.properties
           echo DaddyLive=$DaddyLive >> local.properties
+          echo MOVIEBOX_SECRET_KEY_DEFAULT=$MOVIEBOX_SECRET_KEY_DEFAULT >> local.properties
+          echo MOVIEBOX_SECRET_KEY_ALT=$MOVIEBOX_SECRET_KEY_ALT >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

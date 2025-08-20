@@ -1,5 +1,6 @@
 package com.layarKacaProvider
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -10,7 +11,7 @@ import org.jsoup.nodes.Element
 class LayarKacaProvider : MainAPI() {
 
     override var mainUrl = "https://lk21.de"
-    private var seriesUrl = "https://tv14.nontondrama.click"
+    private var seriesUrl = "https://tv1.nontondrama.my"
 
     override var name = "LayarKaca"
     override val hasMainPage = true
@@ -35,7 +36,7 @@ class LayarKacaProvider : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val document = app.get(request.data + page).document
-        val home = document.select("article.mega-item").mapNotNull {
+        val home = document.select("article figure").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
@@ -52,13 +53,13 @@ class LayarKacaProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("h1.grid-title > a")?.ownText()?.trim() ?: return null
+        val title = this.selectFirst("h3")?.ownText()?.trim() ?: return null
         val href = fixUrl(this.selectFirst("a")!!.attr("href"))
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         val type =
-            if (this.selectFirst("div.last-episode") == null) TvType.Movie else TvType.TvSeries
+            if (this.selectFirst("span.episode") == null) TvType.Movie else TvType.TvSeries
         return if (type == TvType.TvSeries) {
-            val episode = this.selectFirst("div.last-episode span")?.text()?.filter { it.isDigit() }
+            val episode = this.selectFirst("span.episode strong")?.text()?.filter { it.isDigit() }
                 ?.toIntOrNull()
             newAnimeSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
@@ -97,9 +98,11 @@ class LayarKacaProvider : MainAPI() {
         val year = Regex("\\d, (\\d+)").find(
             document.select("div.content > div:nth-child(7) > h3").text().trim()
         )?.groupValues?.get(1).toString().toIntOrNull()
-        val tvType = if (document.select("div.serial-wrapper")
-                .isNotEmpty()
+        val tvType = if (document.select("ul.episode-list")
+                .isEmpty()
         ) TvType.TvSeries else TvType.Movie
+        Log.d("Phisher", tvType.toString())
+
         val description = document.select("div.content > blockquote").text().trim()
         val trailer = document.selectFirst("div.action-player li > a.fancybox")?.attr("href")
         val rating =
@@ -123,7 +126,7 @@ class LayarKacaProvider : MainAPI() {
         }
 
         return if (tvType == TvType.TvSeries) {
-            val episodes = document.select("div.episode-list > a:matches(\\d+)").map {
+            val episodes = document.select("ul.episode-list > a:matches(\\d+)").map {
                 val href = fixUrl(it.attr("href"))
                 val episode = it.text().toIntOrNull()
                 val season =

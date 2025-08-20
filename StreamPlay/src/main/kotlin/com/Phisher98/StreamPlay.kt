@@ -231,6 +231,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Watch32 = "https://watch32.sx"
         const val Vidfast = "https://vidfast.pro"
         const val Embedlc = "https://embed.lc"
+        const val movieBox= "https://api.inmoviebox.com"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

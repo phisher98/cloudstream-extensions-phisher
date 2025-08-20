@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import app.cash.quickjs.QuickJs
@@ -46,11 +47,13 @@ import java.security.spec.X509EncodedKeySpec
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.crypto.Cipher
+import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
+import androidx.core.net.toUri
 
 
 var filmxyCookies: Map<String, String>? = null
@@ -2980,4 +2983,90 @@ fun customBase64EncodeVidfast(input: ByteArray): String {
     // Translate characters to custom charset
     val translationMap = sourceChars.zip(targetChars).toMap()
     return base64.map { translationMap[it] ?: it }.joinToString("")
+}
+
+private fun md5(input: ByteArray): String {
+    return MessageDigest.getInstance("MD5").digest(input)
+        .joinToString("") { "%02x".format(it) }
+}
+
+private fun reverseString(input: String): String = input.reversed()
+
+fun generateXClientToken(hardcodedTimestamp: Long? = null): String {
+    val timestamp = (hardcodedTimestamp ?: System.currentTimeMillis()).toString()
+    val reversed = reverseString(timestamp)
+    val hash = md5(reversed.toByteArray())
+    return "$timestamp,$hash"
+}
+
+fun generateXTrSignature(
+    method: String,
+    accept: String? = "application/json",
+    contentType: String? = "application/json",
+    url: String,
+    body: String? = null,
+    useAltKey: Boolean = false,
+    hardcodedTimestamp: Long? = null
+): String {
+    val timestamp = hardcodedTimestamp ?: System.currentTimeMillis()
+
+    val canonical = buildCanonicalString(
+        method = method,
+        accept = accept,
+        contentType = contentType,
+        url = url,
+        body = body,
+        timestamp = timestamp
+    )
+    val secretKey = if (useAltKey) {
+        BuildConfig.MOVIEBOX_SECRET_KEY_ALT
+    } else {
+        BuildConfig.MOVIEBOX_SECRET_KEY_DEFAULT
+    }
+    val secretBytes = android.util.Base64.decode(secretKey, android.util.Base64.DEFAULT)
+    val mac = Mac.getInstance("HmacMD5").apply {
+        init(SecretKeySpec(secretBytes, "HmacMD5"))
+    }
+    val rawSignature = mac.doFinal(canonical.toByteArray(Charsets.UTF_8))
+    val signatureBase64 = android.util.Base64.encodeToString(rawSignature, android.util.Base64.NO_WRAP)
+    return "$timestamp|2|$signatureBase64"
+}
+
+
+private fun buildCanonicalString(
+    method: String,
+    accept: String?,
+    contentType: String?,
+    url: String,
+    body: String?,
+    timestamp: Long
+): String {
+    val parsed = url.toUri()
+    val path = parsed.path ?: ""
+
+    // Build query string with sorted parameters (if any)
+    val query = if (parsed.queryParameterNames.isNotEmpty()) {
+        parsed.queryParameterNames.sorted().joinToString("&") { key ->
+            parsed.getQueryParameters(key).joinToString("&") { value ->
+                "$key=$value"  // Don't URL encode here - Python doesn't do it
+            }
+        }
+    } else ""
+
+    val canonicalUrl = if (query.isNotEmpty()) "$path?$query" else path
+
+    val bodyBytes = body?.toByteArray(Charsets.UTF_8)
+    val bodyHash = if (bodyBytes != null) {
+        val trimmed = if (bodyBytes.size > 102400) bodyBytes.copyOfRange(0, 102400) else bodyBytes
+        md5(trimmed)
+    } else ""
+
+    val bodyLength = bodyBytes?.size?.toString() ?: ""
+    return "${method.uppercase()}\n" +
+            "${accept ?: ""}\n" +
+            "${contentType ?: ""}\n" +
+            "$bodyLength\n" +
+            "$timestamp\n" +
+            "$bodyHash\n" +
+            canonicalUrl
 }

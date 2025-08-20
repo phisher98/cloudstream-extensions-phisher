@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeDotmovies
+import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 
@@ -23,7 +24,7 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
             {
-                invokeDotmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback)
+                invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback)
             },
         )
         return true
