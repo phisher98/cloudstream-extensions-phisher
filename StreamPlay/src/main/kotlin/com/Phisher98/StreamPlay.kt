@@ -88,6 +88,7 @@ import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeEmbedlc
+import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
@@ -627,6 +628,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeVidfast(res.imdbId, res.season, res.episode, callback) }
                 add { invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeRiveStream(res.id, res.season, res.episode, callback) }
+                add { invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {
@@ -815,6 +817,4 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         @JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
         @JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
     )
-
-
 }
