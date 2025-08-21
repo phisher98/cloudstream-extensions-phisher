@@ -7,6 +7,7 @@ import com.Anichi.AnichiParser.AniMedia
 import com.Anichi.AnichiParser.AniSearch
 import com.Anichi.AnichiParser.DataAni
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.fixTitle
@@ -15,7 +16,12 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.URI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -158,5 +164,34 @@ fun parseAnimeData(jsonString: String): AnimeData? {
         objectMapper.readValue(jsonString, AnimeData::class.java)
     } catch (e: Exception) {
         null // Return null for invalid JSON instead of crashing
+    }
+}
+
+suspend fun loadCustomExtractor(
+    name: String? = null,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+    quality: Int? = null,
+) {
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        CoroutineScope(Dispatchers.IO).launch {
+            callback.invoke(
+                newExtractorLink(
+                    name ?: link.source,
+                    name ?: link.name,
+                    link.url,
+                ) {
+                    this.quality = when {
+                        else -> quality ?: link.quality
+                    }
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+            )
+        }
     }
 }

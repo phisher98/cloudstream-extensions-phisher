@@ -11,13 +11,11 @@ import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.M3u8Helper
@@ -62,6 +60,13 @@ object AnichiExtractors : Anichi() {
 
                     if (URI(link).isAbsolute || link.startsWith("//")) {
                         val fixedLink = if (link.startsWith("//")) "https:$link" else link
+                        loadCustomExtractor(
+                            "Allanime",
+                            fixedLink,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
                         loadExtractor(fixedLink, subtitleCallback, callback)
                         /*
                         when {
