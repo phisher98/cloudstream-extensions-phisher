@@ -239,7 +239,6 @@ class StreamPlayAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data.toJson())
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val malId = mediaData.malId
         val episode = mediaData.episode

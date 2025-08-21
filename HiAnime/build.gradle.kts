@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 17
+version = 18
 
 android {
     buildFeatures {
@@ -14,7 +14,7 @@ android {
     }
 }
 dependencies {
-    implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.4")
+    implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.6")
 }
 
 

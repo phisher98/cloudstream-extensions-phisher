@@ -509,7 +509,7 @@ object StreamPlayExtractor : StreamPlay() {
                 .parsedSafe<KisskhKey>()?.key ?: ""
             app.get("$kissKhAPI/api/Sub/$epsId&kkey=$kkey1").text.let { resSub ->
                 tryParseJson<List<KisskhSubtitle>>(resSub)?.map { sub ->
-                    val lang = getLanguage(sub.label) ?: "UnKnown"
+                    val lang = getLanguage(sub.label ?: "UnKnown")
                     subtitleCallback.invoke(
                         SubtitleFile(
                             lang, sub.src
@@ -3951,14 +3951,13 @@ object StreamPlayExtractor : StreamPlay() {
             val episodeLinks = runCatching {
                 app.get("$Watch32/ajax/episode/list/$infoId").document.select("li.nav-item a")
             }.getOrNull() ?: return
-
-                episodeLinks.forEach { ep ->
-                    val dataId = ep.attr("data-id")
-                    val iframeUrl = runCatching {
+            episodeLinks.forEach { ep ->
+                 val dataId = ep.attr("data-id")
+                val iframeUrl = runCatching {
                         app.get("$Watch32/ajax/episode/sources/$dataId")
                         .parsedSafe<Watch32>()?.link
                         }.getOrNull() ?: return@forEach
-                    loadSourceNameExtractor("Watch32 ",iframeUrl,"",subtitleCallback,callback, Qualities.Unknown.value)
+                loadSourceNameExtractor("Watch32 ",iframeUrl,"",subtitleCallback,callback, Qualities.Unknown.value)
                 }
             }
     }

@@ -185,7 +185,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "https://hianime.bz",
             "https://hianime.pe"
         )
-        const val AnimeKai = "https://animekai.to"
+        const val AnimeKai = "https://animekai.bz"
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
         const val lingAPI = "https://ling-online.net"
@@ -211,7 +211,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val dahmerMoviesAPI = "https://a.111477.xyz"
         const val animepaheAPI = "https://animepahe.ru"
         const val Catflix = "https://catflix.su"
-        const val NyaaAPI = "https://nyaa.land"
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val EmbedSu = "https://embed.su"
         const val WyZIESUBAPI = "https://sub.wyzie.ru"
@@ -434,10 +433,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     gson.fromJson(cineJsonText, CinemetaRes::class.java)
                 }.getOrNull()
                 val animevideos = cinejson?.meta?.videos
+
                 val animeepisodes = animevideos
                     ?.filter { it.season!= 0 }
                     ?.map { video ->
-                        Log.d("Phisher Anime", "video: season=${video.season}, ep=${video.number}, released=${video.released}, name=${video.name}")
                         newEpisode(
                             LinkData(
                                 id = data.id,
