@@ -1,7 +1,7 @@
 package com.phisher98
 
+import android.content.SharedPreferences
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -35,12 +35,17 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import kotlin.math.roundToInt
 
-open class TorraStreamAnime : MainAPI() {
+open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI() {
     override var name = "TorraStream-Anime"
     override var mainUrl = "https://anilist.co"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
@@ -55,6 +60,7 @@ open class TorraStreamAnime : MainAPI() {
     private val isAdult = false
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
+    private val torrentioDebian= "https://torrentio.strem.fun/providers=kickasstorrents,nyaasi,magnetdl,torrentgalaxy,eztv,1337x,yts,tokyotosho,thepiratebay,rarbg,horriblesubs,anidex%7Cqualityfilter=720p,other,scr,480p,cam,unknown%7Csort=quality%7C"
 
     private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -228,41 +234,34 @@ open class TorraStreamAnime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val provider = sharedPref.getString("provider", null)
+        val key = sharedPref.getString("key", null)
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val episode =mediaData.episode
         val aniid =mediaData.aniId
-        val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+        val anijson = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+        val jsonObject = JSONObject(anijson)
+        val kitsuId = jsonObject.getJSONObject("mappings").getInt("kitsu_id")
+        val rawtype = jsonObject.getJSONObject("mappings").getString("type")
+        val type=if (rawtype.contains("MOVIE",ignoreCase = true)) TvType.Movie else TvType.TvSeries
         val anidbEid = getAnidbEid(anijson, episode)
-        runAllAsync(
-            {
-                invokeAnimetosho(
-                    anidbEid,
-                    callback
-                )
-            },
-            /*
-            {
-                invokeTorrentioAnime(
-                    TorrentioAnimeAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
-            },
-            {
-                invokeComet(
-                    CometAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
-            },
-             */
-        )
-
-
+        val debianapiUrl = if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
+            val encodedKey = withContext(Dispatchers.IO) {
+                URLEncoder.encode(key, StandardCharsets.UTF_8.toString())
+            }
+            "$torrentioDebian$provider=$encodedKey%7C"
+        } else {
+            ""
+        }
+        if (debianapiUrl.contains("$provider",ignoreCase = true)) {
+            runAllAsync(
+                { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) }
+            )
+        } else {
+            runAllAsync(
+                { invokeAnimetosho(anidbEid, callback) }
+            )
+        }
         return true
     }
 

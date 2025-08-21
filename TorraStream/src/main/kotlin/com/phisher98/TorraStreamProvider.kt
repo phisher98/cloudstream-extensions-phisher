@@ -11,7 +11,7 @@ class TorraStreamProvider: Plugin() {
     override fun load(context: Context) {
         val sharedPref = context.getSharedPreferences("TorraStream", Context.MODE_PRIVATE)
         registerMainAPI(TorraStream(sharedPref))
-        registerMainAPI(TorraStreamAnime())
+        registerMainAPI(TorraStreamAnime(sharedPref))
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = SettingsFragment(this, sharedPref)

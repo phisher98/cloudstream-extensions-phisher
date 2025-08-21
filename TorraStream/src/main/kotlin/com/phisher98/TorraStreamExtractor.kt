@@ -4,15 +4,13 @@ import com.phisher98.TorraStream.Companion.AnimetoshoAPI
 import com.phisher98.TorraStream.Companion.SubtitlesAPI
 import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.util.Locale
@@ -114,6 +112,61 @@ suspend fun invokeTorrentioDebian(
         callback.invoke(
             newExtractorLink(
                 "Torrentio",
+                finalTitle,
+                url = fileurl,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getIndexQuality(stream.name)
+            }
+        )
+    }
+}
+
+
+suspend fun invokeTorrentioAnimeDebian(
+    mainUrl: String,
+    type: TvType,
+    id: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if (type == TvType.Movie) {
+        "$mainUrl/stream/movie/kitsu:$id.json"
+    } else {
+        "$mainUrl/stream/series/kitsu:$id:$episode.json"
+    }
+    val res = app.get(url).parsedSafe<DebianRoot>()
+    res?.streams?.forEach { stream ->
+        val fileurl = stream.url
+        val size = Regex("""(\d+\.\d+)\s*GB""").find(stream.title)?.groupValues?.get(1)
+
+        val name = stream.behaviorHints.filename
+
+        val formattedName = name
+            ?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
+            ?.replace(Regex("\\.mkv$"), "")
+            ?.replace('.', ' ')
+            ?.trim()
+
+        val tbTag = when {
+            stream.name.contains("TB+", ignoreCase = true) -> "TB+"
+            stream.name.contains("TB download", ignoreCase = true) -> "TB download"
+            else -> null
+        }
+
+        val sizeTag = size?.let { "$it GB" }
+
+        val tagPrefix = listOfNotNull(tbTag, sizeTag).joinToString(" | ")
+        val finalTitle = if (tagPrefix.isNotEmpty()) {
+            "[$tagPrefix] ${formattedName ?: name}"
+        } else {
+            formattedName ?: name
+        } ?: "Unknown"
+
+        callback.invoke(
+            newExtractorLink(
+                "Torrentio Anime",
                 finalTitle,
                 url = fileurl,
                 INFER_TYPE
