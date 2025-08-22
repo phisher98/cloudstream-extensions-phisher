@@ -31,7 +31,7 @@ class Animeav1 : MainAPI() {
     override var mainUrl              = "https://animeav1.com"
     override var name                 = "Animeav1"
     override val hasMainPage          = true
-    override var lang                 = "es"
+    override var lang                 = "mx"
     override val hasDownloadSupport   = true
     override val hasQuickSearch       = true
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
