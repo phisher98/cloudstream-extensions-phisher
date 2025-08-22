@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -684,7 +685,8 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
                 null
             }
 
-            val encoded = response?.sources ?: throw Exception("No sources found")
+            val encoded = response?.sources?.firstOrNull()?.file
+                ?: throw Exception("No sources found")
             val key = try {
                 val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
                 gson.fromJson(keyJson, Megakey::class.java)?.mega
@@ -704,7 +706,7 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
             }
 
             val m3u8headers = mapOf("Referer" to "https://megacloud.club/", "Origin" to "https://megacloud.club/")
-            M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
+            generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
 
             response.tracks.forEach { track ->
                 if (track.kind == "captions" || track.kind == "subtitles") {
@@ -761,12 +763,17 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
     }
 
     data class MegacloudResponse(
-        val sources: String,
+        val sources: List<Source>,
         val tracks: List<Track>,
         val encrypted: Boolean,
         val intro: Intro,
         val outro: Outro,
         val server: Long
+    )
+
+    data class Source(
+        val file: String,
+        val type: String
     )
 
     data class Track(
