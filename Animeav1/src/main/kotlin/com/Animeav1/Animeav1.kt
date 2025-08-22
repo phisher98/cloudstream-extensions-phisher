@@ -29,7 +29,7 @@ import org.jsoup.nodes.Element
 
 class Animeav1 : MainAPI() {
     override var mainUrl              = "https://animeav1.com"
-    override var name                 = "Animeav1"
+    override var name                 = "AnimeAv1"
     override val hasMainPage          = true
     override var lang                 = "mx"
     override val hasDownloadSupport   = true
