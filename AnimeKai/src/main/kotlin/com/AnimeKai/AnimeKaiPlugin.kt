@@ -13,7 +13,6 @@ enum class ServerList(val link: Pair<String, Boolean>) {
     BZ("https://animekai.bz" to true),
     CC("https://animekai.cc" to true),
     AC("https://animekai.ac" to true),
-    TV("https://animekai.tv" to true)
 }
 
 @CloudstreamPlugin
