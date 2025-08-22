@@ -3,6 +3,7 @@ package com.AnimeKai
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -140,56 +141,64 @@ class AnimeKai : MainAPI() {
         val malid = document.select("div.watch-section").attr("data-mal-id")
         val aniid = document.select("div.watch-section").attr("data-al-id")
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").toString()
-        val animeData = parseAnimeData(syncData)
-        val title = document.selectFirst("h1.title")?.text().toString()
-        val jptitle = document.selectFirst("h1.title")?.attr("data-jp").toString()
-        val poster = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
-            ?: document.selectFirst("div.watch-section-bg")?.attr("style")?.substringAfter("(")
+        val animeData = JsonParser.parseString(syncData).asJsonObject
+        val title = document.selectFirst("h1.title")?.text().orEmpty()
+        val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
+        val poster = animeData.getAsJsonArray("images")?.firstOrNull {
+            it.asJsonObject.get("coverType")?.asString == "Fanart"
+        }?.asJsonObject?.get("url")?.asString
+            ?: document.selectFirst("div.watch-section-bg")?.attr("style")
+                ?.substringAfter("(")
                 ?.substringBefore(")")
+
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
-        val dubEpisodes = emptyList<Episode>().toMutableList()
-        val subEpisodes = emptyList<Episode>().toMutableList()
-        val decoded= app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
-        val epRes =
-            app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded").parsedSafe<Response>()?.getDocument()
+
+        val subEpisodes = mutableListOf<Episode>()
+        val dubEpisodes = mutableListOf<Episode>()
+
+        val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
+        val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded")
+            .parsedSafe<Response>()?.getDocument()
+
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
+            val episodeNum = index + 1
+
+            // Sub episodes
             subCount?.let {
+                val episodeData = animeData.getAsJsonObject("episodes")?.getAsJsonObject(episodeNum.toString())
                 subEpisodes += newEpisode("sub|" + ep.attr("token")) {
                     name = ep.selectFirst("span")?.text()
-                    episode = index + 1
-                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                        ?.toDoubleOrNull()
+                    episode = episodeNum
+                    rating = episodeData?.get("rating")?.asDouble
                         ?.times(10)
                         ?.roundToInt()
                         ?: 0
-                    this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
-                        ?: return@newEpisode
-                    this.description = animeData.episodes[episode?.toString()]?.overview
-                        ?: "No summary available"
-                }
-                index + 1
-            }
-            dubCount?.let {
-                if (index < it) {
-                    dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
-                        name = ep.selectFirst("span")?.text()
-                        episode = ep.attr("num").toIntOrNull()
-                        this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                            ?.toDoubleOrNull()
-                            ?.times(10)
-                            ?.roundToInt()
-                            ?: 0
-                        this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
-                            ?: return@newEpisode
-                        this.description = animeData.episodes[episode?.toString()]?.overview
-                            ?: "No summary available"
-                    }
+                    posterUrl = episodeData?.get("image")?.asString ?: return@newEpisode
+                    description = episodeData.get("overview")?.asString ?: "No summary available"
                 }
             }
 
+            // Dub episodes
+            dubCount?.let { dubTotal ->
+                if (index < dubTotal) {
+                    val dubEpisodeNum = ep.attr("num").toIntOrNull() ?: episodeNum
+                    val episodeData = animeData.getAsJsonObject("episodes")?.getAsJsonObject(dubEpisodeNum.toString())
+                    dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
+                        name = ep.selectFirst("span")?.text()
+                        episode = dubEpisodeNum
+                        rating = episodeData?.get("rating")?.asDouble
+                            ?.times(10)
+                            ?.roundToInt()
+                            ?: 0
+                        posterUrl = episodeData?.get("image")?.asString ?: return@newEpisode
+                        description = episodeData.get("overview")?.asString ?: "No summary available"
+                    }
+                }
+            }
         }
+
         val recommendations = document.select("div.aitem-col a").map { it.toRecommendResult() }
         val genres = document.select("div.detail a")
             .asSequence()
@@ -202,13 +211,13 @@ class AnimeKai : MainAPI() {
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
+            japName = jptitle
             posterUrl = poster
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
-            this.japName = jptitle
             this.tags = genres
-            this.showStatus = status?.let { getStatus(it) }
+            showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
             addAniListId(aniid.toIntOrNull())
         }
@@ -265,21 +274,4 @@ class AnimeKai : MainAPI() {
         val jsonObject = JSONObject(jsonData)
         return jsonObject.getString("url")
     }
-
-    data class M3U8(
-        val sources: List<Source>,
-        val tracks: List<Track>,
-        val download: String,
-    )
-
-    data class Source(
-        val file: String,
-    )
-
-    data class Track(
-        val file: String,
-        val label: String?,
-        val kind: String,
-        val default: Boolean?,
-    )
 }
