@@ -39,7 +39,7 @@ import kotlin.random.Random
 
 
 class AnimeKai : MainAPI() {
-    override var mainUrl = "https://animekai.bz"
+    override var mainUrl = AnimeKaiPlugin.currentAnimeKaiServer
     override var name = "Animekai"
     override val hasQuickSearch = false
     override val hasMainPage = true

@@ -185,7 +185,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "https://hianime.bz",
             "https://hianime.pe"
         )
-        const val AnimeKai = "https://animekai.bz"
+        val animekaiAPIs = listOf(
+            "https://animekai.to",
+            "https://animekai.bz",
+            "https://animekai.cc",
+            "https://animekai.ac",
+            "https://animekai.tv"
+        )
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
         const val lingAPI = "https://ling-online.net"

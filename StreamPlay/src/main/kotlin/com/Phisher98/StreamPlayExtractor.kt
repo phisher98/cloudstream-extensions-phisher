@@ -56,6 +56,7 @@ import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -910,7 +911,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     @SuppressLint("NewApi")
-    suspend fun invokeAnimeKai(
+    internal suspend fun invokeAnimeKai(
         jptitle: String? = null,
         title: String? = null,
         episode: Int? = null,
@@ -918,90 +919,82 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         if (jptitle.isNullOrBlank() || title.isNullOrBlank()) return
+        val shuffledApis = animekaiAPIs.shuffled().toMutableList()
 
-        try {
-            // Perform the search requests sequentially but avoid redundant requests
-            val searchEnglish = app.get("$AnimeKai/ajax/anime/search?keyword=$title").body.string()
-            val searchRomaji = app.get("$AnimeKai/ajax/anime/search?keyword=$jptitle").body.string()
+        while (shuffledApis.isNotEmpty()) {
+            val animeKaiUrl = shuffledApis.removeAt(0)
+            try {
+                val searchEnglish = app.get("$animeKaiUrl/ajax/anime/search?keyword=${URLEncoder.encode(title, "UTF-8")}").body.string()
+                val searchRomaji = app.get("$animeKaiUrl/ajax/anime/search?keyword=${URLEncoder.encode(jptitle, "UTF-8")}").body.string()
 
-            val resultsEng = parseAnimeKaiResults(searchEnglish)
-            val resultsRom = parseAnimeKaiResults(searchRomaji)
+                val resultsEng = parseAnimeKaiResults(searchEnglish)
+                val resultsRom = parseAnimeKaiResults(searchRomaji)
+                val combined = (resultsEng + resultsRom).distinctBy { it.id }
 
-            val combined = (resultsEng + resultsRom).distinctBy { it.id }
+                var bestMatch: AnimeKaiSearchResult? = null
+                var highestScore = 0.0
 
-            // Find the best match based on title similarity
-            var bestMatch: AnimeKaiSearchResult? = null
-            var highestScore = 0.0
-
-            for (result in combined) {
-                val engScore = similarity(title, result.title)
-                val romScore = similarity(jptitle, result.japaneseTitle ?: "")
-                val score = max(engScore, romScore)
-
-                if (score > highestScore) {
-                    highestScore = score
-                    bestMatch = result
+                for (result in combined) {
+                    val engScore = similarity(title, result.title)
+                    val romScore = similarity(jptitle, result.japaneseTitle ?: "")
+                    val score = max(engScore, romScore)
+                    if (score > highestScore) {
+                        highestScore = score
+                        bestMatch = result
+                    }
                 }
-            }
 
-            bestMatch?.let { match ->
-                val matchedId = match.id
-                val href = "$AnimeKai/watch/$matchedId"
+                bestMatch?.let { match ->
+                    val matchedId = match.id
+                    val href = "$animeKaiUrl/watch/$matchedId"
+                    val animeId = app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
+                    val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
+                    val epRes = app.get("$animeKaiUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded")
+                        .parsedSafe<AnimeKaiResponse>()?.getDocument()
 
-                // Fetch anime details and episode list
-                val animeId = app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
-                val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
-                val epRes = app.get("$AnimeKai/ajax/episodes/list?ani_id=$animeId&_=$decoded")
-                    .parsedSafe<AnimeKaiResponse>()?.getDocument()
-
-                epRes?.select("div.eplist a")?.forEach { ep ->
-                    val epNum = ep.attr("num").toIntOrNull()
-                    if (epNum == episode) {
-                        val token = ep.attr("token")
-
-                        // Fetch episode links for this episode
-                        val decodedtoken = app.get("${BuildConfig.KAISVA}/?f=e&d=$token")
-                        val document =
-                            app.get("$AnimeKai/ajax/links/list?token=$token&_=$decodedtoken")
+                    epRes?.select("div.eplist a")?.forEach { ep ->
+                        val epNum = ep.attr("num").toIntOrNull()
+                        if (epNum == episode) {
+                            val token = ep.attr("token")
+                            val decodedtoken = app.get("${BuildConfig.KAISVA}/?f=e&d=$token")
+                            val document = app.get("$animeKaiUrl/ajax/links/list?token=$token&_=$decodedtoken")
                                 .parsed<AnimeKaiResponse>()
                                 .getDocument()
 
-                        val types = listOf("sub", "softsub", "dub")
-                        val servers = types.flatMap { type ->
-                            document.select("div.server-items[data-id=$type] span.server[data-lid]")
-                                .map { server ->
-                                    val lid = server.attr("data-lid")
-                                    val serverName = server.text()
-                                    Triple(type, lid, serverName)
+                            val types = listOf("sub", "softsub", "dub")
+                            val servers = types.flatMap { type ->
+                                document.select("div.server-items[data-id=$type] span.server[data-lid]").map { server ->
+                                    Triple(type, server.attr("data-lid"), server.text())
                                 }
-                        }
-
-                        // Process each server sequentially
-                        for ((type, lid, serverName) in servers) {
-                            val decodelid = app.get("${BuildConfig.KAISVA}/?f=e&d=$lid")
-                            val result = app.get("$AnimeKai/ajax/links/view?id=$lid&_=$decodelid")
-                                .parsed<AnimeKaiResponse>().result
-                            val decodeiframe = app.get("${BuildConfig.KAISVA}/?f=d&d=$result").text
-                            val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
-
-                            val nameSuffix = when {
-                                type.contains("soft", ignoreCase = true) -> " [Soft Sub]"
-                                type.contains("sub", ignoreCase = true) -> " [Sub]"
-                                type.contains("dub", ignoreCase = true) -> " [Dub]"
-                                else -> ""
                             }
 
-                            val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
-                            loadExtractor(iframe, name, subtitleCallback, callback)
+                            for ((type, lid, serverName) in servers) {
+                                val decodelid = app.get("${BuildConfig.KAISVA}/?f=e&d=$lid")
+                                val result = app.get("$animeKaiUrl/ajax/links/view?id=$lid&_=$decodelid")
+                                    .parsed<AnimeKaiResponse>().result
+                                val decodeiframe = app.get("${BuildConfig.KAISVA}/?f=d&d=$result").text
+                                val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
+
+                                val nameSuffix = when {
+                                    type.contains("soft", ignoreCase = true) -> " [Soft Sub]"
+                                    type.contains("sub", ignoreCase = true) -> " [Sub]"
+                                    type.contains("dub", ignoreCase = true) -> " [Dub]"
+                                    else -> ""
+                                }
+
+                                val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
+                                loadExtractor(iframe, name, subtitleCallback, callback)
+                            }
                         }
                     }
                 }
+
+                return
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
-
 
     private fun parseAnimeKaiResults(jsonResponse: String): List<AnimeKaiSearchResult> {
         val results = mutableListOf<AnimeKaiSearchResult>()
@@ -1044,37 +1037,39 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        for (api in hianimeAPIs) {
+        val shuffledApis = hianimeAPIs.shuffled().toMutableList()
+
+        while (shuffledApis.isNotEmpty()) {
+            val api = shuffledApis.removeAt(0)
             try {
                 animeIds?.amap { id ->
                     val episodeId = app.get(
                         "$api/ajax/v2/episode/list/${id ?: return@amap}",
                         headers = headers
-                    ).parsedSafe<HianimeResponses>()?.html?.let {
-                        Jsoup.parse(it)
-                    }?.select("div.ss-list a")
+                    ).takeIf { it.isSuccessful }
+                        ?.parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
+                        ?.select("div.ss-list a")
                         ?.find { it.attr("data-number") == "${episode ?: 1}" }
-                        ?.attr("data-id")
+                        ?.attr("data-id") ?: return@amap
 
                     val servers = app.get(
-                        "$api/ajax/v2/episode/servers?episodeId=${episodeId ?: return@amap}",
+                        "$api/ajax/v2/episode/servers?episodeId=$episodeId",
                         headers = headers
-                    ).parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
-                        ?.select("div.item.server-item")?.map {
-                            Triple(
-                                it.text(),
-                                it.attr("data-id"),
-                                it.attr("data-type"),
-                            )
+                    ).takeIf { it.isSuccessful }
+                        ?.parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
+                        ?.select("div.item.server-item")
+                        ?.map {
+                            Triple(it.text(), it.attr("data-id"), it.attr("data-type"))
                         }
 
-                    servers?.map { (label, id, effectiveType) ->
-                        val sourceurl = app.get("$api/ajax/v2/episode/sources?id=$id")
-                            .parsedSafe<EpisodeServers>()?.link
-                        if (sourceurl != null) {
+                    servers?.forEach { (label, id, effectiveType) ->
+                        val sourceUrl = app.get("$api/ajax/v2/episode/sources?id=$id")
+                            .takeIf { it.isSuccessful }
+                            ?.parsedSafe<EpisodeServers>()?.link
+                        if (!sourceUrl.isNullOrBlank()) {
                             loadCustomExtractor(
                                 "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
-                                sourceurl,
+                                sourceUrl,
                                 "",
                                 subtitleCallback,
                                 callback,
@@ -1085,13 +1080,10 @@ object StreamPlayExtractor : StreamPlay() {
                 return
             } catch (e: Exception) {
                 println("Failed with domain $api: ${e.message}")
-                continue
             }
         }
         println("All hianimeAPI domains failed.")
     }
-
-
 
     suspend fun invokeKickAssAnime(
         slug: String?,
