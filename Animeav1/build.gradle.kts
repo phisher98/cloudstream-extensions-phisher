@@ -24,5 +24,5 @@ cloudstream {
     tvTypes = listOf("Movie","Anime","AnimeMovie")
     iconUrl = "https://animeav1.com/img/logo-dark.svg"
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
