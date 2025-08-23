@@ -146,24 +146,27 @@ class IStreamFlare  : MainAPI() {
             val seasons: List<SeasonRes> = gson.fromJson(seasonsJson, seasonListType) ?: emptyList()
 
             seasons.forEach { season ->
-                val seasonNumber = season.seasonOrder.toIntOrNull() ?: return@forEach
+                if (season.status.toIntOrNull() != 0) {
+                    val regex = Regex("""(\d+)""")
+                    val seasonNumber = regex.find(season.sessionName)?.value?.toIntOrNull() ?: 1
+                    val episodesJson =
+                        app.get("$mainUrl/android/getEpisodes/${season.id}/0", headers).text
+                    val episodeListType = object : TypeToken<List<EpisodesRes>>() {}.type
+                    val episodes: List<EpisodesRes> =
+                        gson.fromJson(episodesJson, episodeListType) ?: emptyList()
 
-                val episodesJson = app.get("$mainUrl/android/getEpisodes/${season.id}/0", headers).text
-                val episodeListType = object : TypeToken<List<EpisodesRes>>() {}.type
-                val episodes: List<EpisodesRes> = gson.fromJson(episodesJson, episodeListType) ?: emptyList()
-
-                episodes.forEach { episode ->
-                    val episodeNumber = episode.episoadeOrder.toIntOrNull() ?: return@forEach
-
-                    episodesList.add(
-                        newEpisode(episode.url) {
-                            name = episode.episoadeName.ifBlank { "Episode $episodeNumber" }
-                            this.season = seasonNumber
-                            this.episode = episodeNumber
-                            this.posterUrl = episode.episoadeImage
-                            this.description = episode.episoadeDescription
-                        }
-                    )
+                    episodes.forEach { episode ->
+                        val episodeNumber = episode.episoadeOrder.toIntOrNull() ?: return@forEach
+                        episodesList.add(
+                            newEpisode(episode.url) {
+                                name = episode.episoadeName.ifBlank { "Episode $episodeNumber" }
+                                this.season = seasonNumber
+                                this.episode = episodeNumber
+                                this.posterUrl = episode.episoadeImage
+                                this.description = episode.episoadeDescription
+                            }
+                        )
+                    }
                 }
             }
 
@@ -193,48 +196,61 @@ class IStreamFlare  : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.contains("getMoviePlayLinks"))
-        {
-            val responseText = app.get(data, headers).text
+        return when {
+            data.contains("getMoviePlayLinks", ignoreCase = true) -> {
+                val response = app.get(data, headers).text
+                val links: List<StreamLinks> =
+                    Gson().fromJson(response, object : TypeToken<List<StreamLinks>>() {}.type)
 
-            val streamLinks: List<StreamLinks> = Gson().fromJson(
-                responseText,
-                object : TypeToken<List<StreamLinks>>() {}.type
-            )
+                links.forEach { link ->
+                    if (link.url.contains(".php?id=", ignoreCase = true)) {
+                        loadExtractor(link.url, subtitleCallback, callback)
+                    } else {
+                        val type = if (link.url.contains(".m3u8", ignoreCase = true)) {
+                            ExtractorLinkType.M3U8
+                        } else {
+                            INFER_TYPE
+                        }
 
-            streamLinks.forEach { link ->
-                val type = when {
-                    link.type.contains("M3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
-                    else -> INFER_TYPE
-                }
-
-                callback.invoke(
-                    newExtractorLink(
-                        name = link.name,
-                        source = name,
-                        url = link.url,
-                        type = type
-                    ) {
-                        this.referer = ""
-                        this.quality = getQualityFromName(link.quality)
+                        callback.invoke(
+                            newExtractorLink(
+                                name = link.name,
+                                source = this.name,
+                                url = link.url,
+                                type = type
+                            ) {
+                                this.referer = ""
+                                this.quality = getQualityFromName(link.quality)
+                            }
+                        )
                     }
-                )
+                }
+                true
+            }
+            else -> {
+                if (data.contains(".php?id=", ignoreCase = true)) {
+                    loadExtractor(data, subtitleCallback, callback)
+                } else {
+                    val type = if (data.contains(".m3u8", ignoreCase = true)) {
+                        ExtractorLinkType.M3U8
+                    } else {
+                        INFER_TYPE
+                    }
+
+                    callback.invoke(
+                        newExtractorLink(
+                            name = name,
+                            source = this.name,
+                            url = data,
+                            type = type
+                        ) {
+                            this.referer = ""
+                            this.quality = getQualityFromName("")
+                        }
+                    )
+                }
+                true
             }
         }
-        else
-        {
-            callback.invoke(
-                newExtractorLink(
-                    name = name,
-                    source = name,
-                    url = data,
-                    type = ExtractorLinkType.M3U8
-                ) {
-                    this.referer = ""
-                    this.quality = getQualityFromName("")
-                }
-            )
-        }
-        return true
     }
 }
