@@ -494,9 +494,9 @@ suspend fun invokeAIOStreamsDebian(
     callback: (ExtractorLink) -> Unit
 ) {
     val mainurl = if (season == null) {
-        "$mainUrl/stream/movie/$id.json"
+        "${mainUrl.substringBeforeLast("/manifest.json")}/stream/movie/$id.json"
     } else {
-        "$mainUrl/stream/series/$id:$season:$episode.json"
+        "${mainUrl.substringBeforeLast("/manifest.json")}/stream/series/$id:$season:$episode.json"
     }
     app.get(mainurl).parsedSafe<AIO>()?.streams?.map {
         val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
@@ -504,7 +504,7 @@ suspend fun invokeAIOStreamsDebian(
         callback.invoke(
             newExtractorLink(
                 "Torrentio AIO Debian ${it.name}",
-                it.name,
+                it.description,
                 it.url,
                 INFER_TYPE
             ) {
