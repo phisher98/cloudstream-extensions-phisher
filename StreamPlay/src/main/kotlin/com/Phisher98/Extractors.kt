@@ -345,33 +345,26 @@ class VCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var finalUrl: String? = null
+                    var redirectUrl: String? = null
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
-                        val redirect = response.headers["location"]
-                        if (redirect == null) {
-                            Log.i("Error:", "No more redirects. Final URL: $currentLink")
-                            break
+                        redirectUrl = response.headers["location"]
+                        if (redirectUrl == null) {
+                            Log.e("HubCloud", "10Gbps: No redirect")
+                            return@amap
                         }
-
-                        if ("link=" in redirect) {
-                            finalUrl = redirect.substringAfter("link=")
-                            break
-                        }
-
-                        currentLink = redirect
+                        if ("link=" in redirectUrl) break
+                        currentLink = redirectUrl
                     }
-
-                    finalUrl?.let { finalLink ->
-                        callback.invoke(
-                            newExtractorLink(
-                                "[Download] $labelExtras",
-                                "[Download] $labelExtras",
-                                finalLink,
-                            ) { this.quality = quality }
-                        )
-                    }
+                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    callback.invoke(
+                        newExtractorLink(
+                            "[Download] $labelExtras",
+                            "[Download] $labelExtras",
+                            finalLink,
+                        ) { this.quality = quality }
+                    )
                 }
 
                 text.contains("S3 Server", ignoreCase = true) -> {
@@ -1011,33 +1004,26 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var finalUrl: String? = null
+                    var redirectUrl: String? = null
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
-                        val redirect = response.headers["location"]
-                        if (redirect == null) {
-                            Log.i("Error:", "No more redirects. Final URL: $currentLink")
-                            break
+                        redirectUrl = response.headers["location"]
+                        if (redirectUrl == null) {
+                            Log.e("HubCloud", "10Gbps: No redirect")
+                            return@amap
                         }
-
-                        if ("link=" in redirect) {
-                            finalUrl = redirect.substringAfter("link=")
-                            break
-                        }
-
-                        currentLink = redirect
+                        if ("link=" in redirectUrl) break
+                        currentLink = redirectUrl
                     }
-
-                    finalUrl?.let { finalLink ->
-                        callback.invoke(
-                            newExtractorLink(
-                                "[Download] $labelExtras",
-                                "[Download] $labelExtras",
-                                finalLink,
-                            ) { this.quality = quality }
-                        )
-                    }
+                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    callback.invoke(
+                        newExtractorLink(
+                            "[Download] $labelExtras",
+                            "[Download] $labelExtras",
+                            finalLink,
+                        ) { this.quality = quality }
+                    )
                 }
 
                 else -> {

@@ -1,10 +1,13 @@
 package com.Phisher98
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
 class FourKHDHub : MainAPI() {
@@ -86,7 +89,7 @@ class FourKHDHub : MainAPI() {
         return results
     }
 
-    @Suppress("NAME_SHADOWING")
+    @RequiresApi(Build.VERSION_CODES.N)
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title = document.selectFirst("h1.page-title")?.text()?.substringBefore("(")?.trim().toString()
@@ -109,36 +112,63 @@ class FourKHDHub : MainAPI() {
 
         return if (tvType == TvType.TvSeries) {
             val tvSeriesEpisodes = mutableListOf<Episode>()
-
-            val episodesMap = mutableMapOf<Pair<Int, Int>, MutableList<String>>() // key: (season, episode) -> list of hrefs
+            val episodesMap = mutableMapOf<Pair<Int, Int>, MutableList<String>>() // season, episode -> hrefs
+            val maxEpisodePerSeason = mutableMapOf<Int, Int>() // season -> highest episode
 
             document.select("div.episodes-list div.season-item").forEach { seasonElement ->
                 val seasonText = seasonElement.select("div.episode-number").text()
                 val season = Regex("""S?([1-9][0-9]*)""").find(seasonText)?.groupValues?.get(1)?.toIntOrNull()
+                    ?: return@forEach
 
                 seasonElement.select("div.episode-download-item").forEach { episodeItem ->
                     val episodeText = episodeItem.select("div.episode-file-info span.badge-psa").text()
                     val episode = Regex("""Episode-0*([1-9][0-9]*)""").find(episodeText)?.groupValues?.get(1)?.toIntOrNull()
+                        ?: return@forEach
 
-                    val hrefs = episodeItem.select("a")
-                        .mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
-
-                    if (season != null && episode != null && hrefs.isNotEmpty()) {
+                    val hrefs = episodeItem.select("a").mapNotNull { it -> it.attr("href").takeIf { it.isNotBlank() } }
+                    if (hrefs.isNotEmpty()) {
                         val key = season to episode
                         episodesMap.getOrPut(key) { mutableListOf() }.addAll(hrefs)
+                        maxEpisodePerSeason[season] = maxOf(maxEpisodePerSeason.getOrDefault(season, 0), episode)
                     }
                 }
             }
 
-            episodesMap.forEach { (seasonEpisode, hrefs) ->
+            episodesMap.toSortedMap(compareBy({ it.first }, { it.second })).forEach { (seasonEpisode, hrefs) ->
                 val (season, episode) = seasonEpisode
-                val distinctHrefs = hrefs.distinct()
-
-                tvSeriesEpisodes += newEpisode(distinctHrefs) {
+                tvSeriesEpisodes += newEpisode(hrefs.distinct()) {
                     this.season = season
                     this.episode = episode
                 }
             }
+
+            document.select("div.download-item").forEach { item ->
+                val headerText = item.select("div.flex-1.text-left.font-semibold").text()
+
+                val season = Regex("""S([0-9]+)""").find(headerText)?.groupValues?.get(1)?.toIntOrNull()
+                    ?: return@forEach
+
+                val size = Regex("""(\d+(?:\.\d+)?\s*GB)""").find(headerText)?.groupValues?.get(1) ?: "Unknown Size"
+                val quality = Regex("""(\d{3,4}p)""").find(headerText)?.groupValues?.get(1) ?: "Unknown Quality"
+
+                val href = item.select("a").mapNotNull { it -> it.attr("href").takeIf { it.isNotBlank() } }
+
+                val fileTitle = item.select("div.file-title").text()
+                    .replace(Regex("""\[[^\]]*]"""), "") // remove language/codec details
+                    .replace(Regex("""\(.+?\)"""), "")   // remove source/site tags
+
+                if (hrefs.isNotEmpty()) {
+                    var nextEpisode = maxEpisodePerSeason.getOrDefault(season, 0) + 1
+                        tvSeriesEpisodes += newEpisode(href.distinct()) {
+                            this.season = season
+                            this.episode = nextEpisode
+                            this.name = "S${season.toString().padStart(2,'0')} – $fileTitle [$quality, $size]".trim()
+                        }
+                        nextEpisode++
+                    maxEpisodePerSeason[season] = nextEpisode - 1
+                }
+            }
+
 
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, tvSeriesEpisodes) {
                 this.posterUrl = poster
@@ -167,8 +197,8 @@ class FourKHDHub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = Regex("""https?://[^\s'",\]\[]+""").findAll(data).map { it.value }
 
+        val links = Regex("""https?://[^\s'",\]\[]+""").findAll(data).map { it.value }
         val extractors = mapOf(
             "hubdrive" to Pair("HUB Drive", Hubdrive()),
             "hubcloud" to Pair("Hub Cloud", HubCloud())
@@ -186,6 +216,7 @@ class FourKHDHub : MainAPI() {
                     Log.e("Phisher", "Redirect failed for $link $e")
                     continue
                 }
+                Log.d("Phisher",resolvedLink.toJson())
 
                 val resolvedLower = resolvedLink.lowercase()
                 var matched = false

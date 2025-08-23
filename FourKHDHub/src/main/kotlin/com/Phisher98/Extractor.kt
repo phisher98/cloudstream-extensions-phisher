@@ -152,19 +152,18 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String?
+                    var redirectUrl: String? = null
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
                         redirectUrl = response.headers["location"]
                         if (redirectUrl == null) {
                             Log.e("HubCloud", "10Gbps: No redirect")
-                            break
+                            return@amap
                         }
-                        if ("id=" in redirectUrl) break
+                        if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-
                     val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
