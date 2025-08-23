@@ -26,10 +26,11 @@ class ToggleFragment(
     @SuppressLint("DiscouragedApi")
     private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
         val id = res.getIdentifier(name, "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
-        if (id == 0) throw Resources.NotFoundException("Layout $name not found.")
+        if (id == 0) throw Exception("Layout $name not found.")
         val layout = res.getLayout(id)
         return inflater.inflate(layout, container, false)
     }
+
 
     private fun getDrawable(name: String): Drawable {
         val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -65,25 +66,23 @@ class ToggleFragment(
         val savedSet = sharedPref.getStringSet(savedKey, null)
         val defaultEnabled = apis.map { it.name }.toSet()
         val currentSet = savedSet?.toSet() ?: defaultEnabled
+
         for (api in apis) {
             val toggleItem = getLayout("list_toggle_item", inflater, container)
-            val label = toggleItem.findView<TextView>("toggle_title")
-            val toggleSwitch = toggleItem.findView<Switch>("toggle_switch")
-
-            label.text = api.name
+            val toggleSwitch = toggleItem.findView<Switch>("toggle_item")
+            toggleItem.makeTvCompatible()
+            toggleSwitch.text = api.name
             toggleSwitch.isChecked = currentSet.contains(api.name)
 
+            toggleSwitch.makeTvCompatible()
 
-
-            toggleSwitch.isChecked
-            toggleItem.makeTvCompatible()
             toggleItem.setOnClickListener {
-                toggleSwitch.setOnCheckedChangeListener(null)
                 toggleSwitch.isChecked = !toggleSwitch.isChecked
             }
 
             extensionList.addView(toggleItem)
         }
+
 
         val saveBtn = root.findView<ImageView>("saveIcon")
         saveBtn.setImageDrawable(getDrawable("save_icon"))
@@ -94,15 +93,17 @@ class ToggleFragment(
 
             for (i in 0 until extensionList.childCount) {
                 val toggleItem = extensionList.getChildAt(i)
-                val label = toggleItem.findViewById<TextView>(
-                    res.getIdentifier("toggle_title", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-                )
                 val toggleSwitch = toggleItem.findViewById<Switch>(
-                    res.getIdentifier("toggle_switch", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+                    res.getIdentifier("toggle_item", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
                 )
                 if (toggleSwitch.isChecked) {
-                    enabledPluginNames.add(label.text.toString())
+                    enabledPluginNames.add(toggleSwitch.text.toString())
                 }
+            }
+
+            if (enabledPluginNames.isEmpty()) {
+                showToast("At least one extension must stay enabled")
+                return@setOnClickListener
             }
 
             sharedPref.edit {
@@ -113,7 +114,6 @@ class ToggleFragment(
             showToast("Settings saved")
             dismiss()
         }
-
         return root
     }
 }

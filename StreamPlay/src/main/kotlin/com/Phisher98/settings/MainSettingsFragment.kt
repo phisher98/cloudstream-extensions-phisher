@@ -42,7 +42,6 @@ class MainSettingsFragment(
 
     private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
         val id = res.getIdentifier(name, "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
-        if (id == 0) throw Exception("Layout $name not found.")
         val layout = res.getLayout(id)
         return inflater.inflate(layout, container, false)
     }
@@ -52,10 +51,16 @@ class MainSettingsFragment(
         savedInstanceState: Bundle?
     ): View {
         val view = getLayout("fragment_main_settings", inflater, container)
-        val loginCard: View = view.findView("loginCard")
-        val featureCard: View = view.findView("featureCard")
-        val saveIcon = view.findView<ImageView>("saveIcon")
+        val loginCard: ImageView = view.findView("loginCard")
+        val featureCard: ImageView = view.findView("featureCard")
+        val saveIcon: ImageView = view.findView("saveIcon")
+
+        loginCard.setImageDrawable(getDrawable("settings_icon"))
+        featureCard.setImageDrawable(getDrawable("settings_icon"))
         saveIcon.setImageDrawable(getDrawable("save_icon"))
+
+        loginCard.makeTvCompatible()
+        featureCard.makeTvCompatible()
         saveIcon.makeTvCompatible()
 
         loginCard.setOnClickListener {

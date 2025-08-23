@@ -834,14 +834,12 @@ class AnyVideostr(provider: String?, dubType: String?, domain: String = "") : Ra
         } ?: return
         Log.e("Megacloud", "Failed to parse Megakey: ${response}")
 
-        val encoded = response.sources
+        val encoded = response?.sources?.firstOrNull()?.file
+            ?: throw Exception("No sources found")
         val key = try {
             val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
-            gson.fromJson(keyJson, Megakey::class.java)?.vidstr
-        } catch (e: Exception) {
-            Log.e("Megacloud", "Failed to parse Megakey: ${e.message}")
-            null
-        }
+            gson.fromJson(keyJson, Megakey::class.java)?.mega
+        } catch (e: Exception) { null }
 
         val m3u8: String = if (".m3u8" in encoded) {
             encoded
@@ -887,19 +885,24 @@ class AnyVideostr(provider: String?, dubType: String?, domain: String = "") : Ra
     }
 
     data class MegacloudResponse(
-        val sources: String,
+        val sources: List<Source>,
         val tracks: List<Track>,
         val encrypted: Boolean,
         val intro: Intro,
         val outro: Outro,
-        val server: Long,
+        val server: Long
+    )
+
+    data class Source(
+        val file: String,
+        val type: String
     )
 
     data class Track(
         val file: String,
         val label: String,
         val kind: String,
-        val default: Boolean?,
+        val default: Boolean? = null
     )
 
     data class Intro(

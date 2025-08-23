@@ -6,21 +6,10 @@
     android:padding="16dp"
     tools:context=".settings.SettingsFragment">
 
-    <ImageView
-        android:id="@+id/settingsIcon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@android:drawable/ic_menu_preferences"
-        android:layout_alignParentEnd="true"
-        android:contentDescription="@string/settings"
-        android:padding="8dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:layout_marginBottom="8dp" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/settingsIcon"
         android:layout_marginTop="8dp">
 
         <LinearLayout

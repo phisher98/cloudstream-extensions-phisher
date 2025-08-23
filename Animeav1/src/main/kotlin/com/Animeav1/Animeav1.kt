@@ -65,9 +65,6 @@ class Animeav1 : MainAPI() {
         }
     }
 
-
-    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
-
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("${mainUrl}/catalogo?search=$query").document
         val results =document.select("article").mapNotNull { it.toSearchResult() }

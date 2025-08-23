@@ -22,9 +22,9 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Document
 
-class MyFlixer : MainAPI() {
+class Watch32 : MainAPI() {
     override var mainUrl = "https://watch32.sx"
-    override var name = "MyFlixer"
+    override var name = "Watch32"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override var lang = "en"
     override val hasMainPage = true

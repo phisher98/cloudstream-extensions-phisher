@@ -2,6 +2,7 @@ package com.phisher98
 
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
@@ -11,7 +12,7 @@ import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://multimovies.asia"
+    override var mainUrl = "https://multimovies.pro"
     override var name = "MultiMovies"
     override val hasMainPage = true
     override var lang = "hi"
@@ -86,7 +87,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("div.data > h3 > a")?.text()?.trim() ?: return null
         val href = fixUrl(this.selectFirst("div.data > h3 > a")?.attr("href").toString())
-        val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.getImageAttr())
         val quality = getQualityFromString(this.select("div.poster > div.mepo > span").text())
         return if (href.contains("Movie")) {
             newMovieSearchResponse(title, href, TvType.Movie) {
@@ -205,7 +206,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                         this.name = it.select("div.episodiotitle > a").text()
                         this.season = seasonNum + 1
                         this.episode = epNum + 1
-                        this.posterUrl = it.select("div.imagen > img").attr("src")
+                        this.posterUrl = it.selectFirst("div.imagen > img")?.getImageAttr()
                     }
                 )
             }
@@ -300,4 +301,10 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         @JsonProperty("MultiMovies")
         val multiMovies: String,
     )
+
+    private fun Element.getImageAttr(): String? {
+        return this.attr("data-src")
+            .takeIf { it.isNotBlank() && it.startsWith("http") }
+            ?: this.attr("src").takeIf { it.isNotBlank() && it.startsWith("http") }
+    }
 }

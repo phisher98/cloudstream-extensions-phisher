@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 6
+version = 7
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Watch movies and series from Flixerz"
+    description = "Watch movies and series from Watch32"
     authors = listOf("Phisher98")
 
     /**
@@ -21,10 +21,8 @@ cloudstream {
 
     language = "en"
 
-    // random cc logo i found
-    iconUrl = "https://myflixerz.to/images/group_1/theme_7/logo.png?v=0.1"
+    iconUrl = "https://img.watch32.sx/xxrz/400x400/100/a9/5e/a95e15a880a9df3c045f6a5224daf576/a95e15a880a9df3c045f6a5224daf576.png"
 
-    // Because we use android.graphics.BitmapFactory
     isCrossPlatform = true
 }
 
