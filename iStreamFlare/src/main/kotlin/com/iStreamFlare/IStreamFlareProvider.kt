@@ -7,5 +7,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 class IStreamFlareProvider: BasePlugin() {
     override fun load() {
         registerMainAPI(IStreamFlare())
+        registerExtractorAPI(Istreamcdn())
     }
 }
