@@ -1,6 +1,7 @@
-package com.Phisher98.settings
+package com.phisher98
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,14 +10,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.BuildConfig
-import com.phisher98.StreamPlayPlugin
-import com.phisher98.settings.SettingsFragment
-import com.phisher98.settings.ToggleFragment
 
-class MainSettingsFragment(
-    private val plugin: StreamPlayPlugin,
-    private val sharedPref: android.content.SharedPreferences
+class BottomSheet(
+    plugin: StremioXPlugin,
+    private val sharedPref: SharedPreferences
 ) : BottomSheetDialogFragment() {
 
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
@@ -47,33 +44,37 @@ class MainSettingsFragment(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = getLayout("fragment_main_settings", inflater, container)
-        val loginCard: ImageView = view.findView("loginCard")
-        val featureCard: ImageView = view.findView("featureCard")
+        val view = getLayout("bottom_sheet_layout", inflater, container)
+        val stremiox: ImageView = view.findView("stremiox")
+        val stremioc: ImageView = view.findView("stremioc")
         val saveIcon: ImageView = view.findView("saveIcon")
 
-        loginCard.setImageDrawable(getDrawable("settings_icon"))
-        featureCard.setImageDrawable(getDrawable("settings_icon"))
+        stremiox.setImageDrawable(getDrawable("settings_icon"))
+        stremioc.setImageDrawable(getDrawable("settings_icon"))
         saveIcon.setImageDrawable(getDrawable("save_icon"))
 
-        loginCard.makeTvCompatible()
-        featureCard.makeTvCompatible()
+        stremiox.makeTvCompatible()
+        stremioc.makeTvCompatible()
         saveIcon.makeTvCompatible()
 
-        loginCard.setOnClickListener {
+        stremiox.setOnClickListener {
+            /*
             val loginSettings = SettingsFragment(plugin, sharedPref)
             loginSettings.show(
                 activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
                 "settings_fragment"
             )
+             */
         }
 
-        featureCard.setOnClickListener {
+        stremioc.setOnClickListener {
+            /*
             val toggleFragment = ToggleFragment(plugin, sharedPref)
             toggleFragment.show(
                 activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
                 "fragment_toggle_extensions"
             )
+             */
         }
 
         saveIcon.setOnClickListener {
