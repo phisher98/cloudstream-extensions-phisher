@@ -140,13 +140,22 @@ class AnimeKai : MainAPI() {
         val document = app.get(url).document
         val malid = document.select("div.watch-section").attr("data-mal-id")
         val aniid = document.select("div.watch-section").attr("data-al-id")
-        val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").toString()
-        val animeData = JsonParser.parseString(syncData).asJsonObject
+
+        val animeData = try {
+            val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").text
+            JsonParser.parseString(syncData)?.asJsonObject
+        } catch (e: Exception) {
+            null
+        }
+
         val title = document.selectFirst("h1.title")?.text().orEmpty()
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
-        val poster = animeData.getAsJsonArray("images")?.firstOrNull {
-            it.asJsonObject.get("coverType")?.asString == "Fanart"
-        }?.asJsonObject?.get("url")?.asString
+
+        val poster = animeData
+            ?.getAsJsonArray("images")
+            ?.firstOrNull { it.asJsonObject.get("coverType")?.asString == "Fanart" }
+            ?.asJsonObject
+            ?.get("url")?.asString
             ?: document.selectFirst("div.watch-section-bg")?.attr("style")
                 ?.substringAfter("(")
                 ?.substringBefore(")")
@@ -167,7 +176,10 @@ class AnimeKai : MainAPI() {
 
             // Sub episodes
             subCount?.let {
-                val episodeData = animeData.getAsJsonObject("episodes")?.getAsJsonObject(episodeNum.toString())
+                val episodeData = animeData
+                    ?.getAsJsonObject("episodes")
+                    ?.getAsJsonObject(episodeNum.toString())
+
                 subEpisodes += newEpisode("sub|" + ep.attr("token")) {
                     name = ep.selectFirst("span")?.text()
                     episode = episodeNum
@@ -175,8 +187,8 @@ class AnimeKai : MainAPI() {
                         ?.times(10)
                         ?.roundToInt()
                         ?: 0
-                    posterUrl = episodeData?.get("image")?.asString ?: return@newEpisode
-                    description = episodeData.get("overview")?.asString ?: "No summary available"
+                    posterUrl = episodeData?.get("image")?.asString
+                    description = episodeData?.get("overview")?.asString ?: "No summary available"
                 }
             }
 
@@ -184,7 +196,10 @@ class AnimeKai : MainAPI() {
             dubCount?.let { dubTotal ->
                 if (index < dubTotal) {
                     val dubEpisodeNum = ep.attr("num").toIntOrNull() ?: episodeNum
-                    val episodeData = animeData.getAsJsonObject("episodes")?.getAsJsonObject(dubEpisodeNum.toString())
+                    val episodeData = animeData
+                        ?.getAsJsonObject("episodes")
+                        ?.getAsJsonObject(dubEpisodeNum.toString())
+
                     dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
                         name = ep.selectFirst("span")?.text()
                         episode = dubEpisodeNum
@@ -192,8 +207,8 @@ class AnimeKai : MainAPI() {
                             ?.times(10)
                             ?.roundToInt()
                             ?: 0
-                        posterUrl = episodeData?.get("image")?.asString ?: return@newEpisode
-                        description = episodeData.get("overview")?.asString ?: "No summary available"
+                        posterUrl = episodeData?.get("image")?.asString
+                        description = episodeData?.get("overview")?.asString ?: "No summary available"
                     }
                 }
             }
