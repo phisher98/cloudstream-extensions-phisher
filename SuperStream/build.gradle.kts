@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 21
+version = 22
 
 android {
     buildFeatures {
@@ -57,6 +57,5 @@ dependencies {
     val cloudstream by configurations
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.leanback:leanback:1.2.0")
-    implementation("org.testng:testng:6.9.6")
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }

@@ -1,17 +1,17 @@
 package com.phisher98
 
-import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
-import com.phisher98.BuildConfig.SUPERSTREAM_THIRD_API
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.amapIndexed
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
+import com.phisher98.BuildConfig.SUPERSTREAM_THIRD_API
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -51,6 +51,23 @@ object SuperStreamExtractor : SuperStream() {
         val fourthAPI = SUPERSTREAM_FOURTH_API
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val headers = mapOf("Accept-Language" to "en")
+        val videoheaders = mapOf(
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.8",
+            "Connection" to "keep-alive",
+            "Range" to "bytes=0-",
+            "Referer" to thirdAPI,
+            "Sec-Fetch-Dest" to "video",
+            "Sec-Fetch-Mode" to "no-cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Sec-Fetch-Storage-Access" to "none",
+            "Sec-GPC" to "1",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Brave\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Windows\""
+        )
+
         val shareKey =
             app.get("$fourthAPI/index/share_link?id=${mediaId}&type=$type", headers = headers)
                 .parsedSafe<ER>()?.data?.link?.substringAfterLast("/") ?: return
@@ -135,6 +152,7 @@ object SuperStreamExtractor : SuperStream() {
                             "",
                             getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
                             type = format,
+                            headers=videoheaders
                         )
                     )
                 }
