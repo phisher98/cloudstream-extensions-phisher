@@ -23,6 +23,19 @@ class Megacloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+
+        val mainheaders = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.5",
+            "Accept-Encoding" to "gzip, deflate, br, zstd",
+            "Origin" to "https://megacloud.blog",
+            "Referer" to "https://megacloud.blog/",
+            "Connection" to "keep-alive",
+            "Pragma" to "no-cache",
+            "Cache-Control" to "no-cache"
+        )
+
         try {
             // --- Primary API Method ---
             val headers = mapOf(
@@ -67,8 +80,7 @@ class Megacloud : ExtractorApi() {
                     ?: throw Exception("Video URL not found in decrypted response")
             }
 
-            val m3u8headers = mapOf("Referer" to "https://megacloud.club/", "Origin" to "https://megacloud.club/")
-            M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
+            M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = mainheaders).forEach(callback)
 
             response.tracks.forEach { track ->
                 if (track.kind == "captions" || track.kind == "subtitles") {
@@ -115,8 +127,7 @@ class Megacloud : ExtractorApi() {
                 }
 
                 val fallbackM3u8 = app.get(url = url, referer = mainUrl, interceptor = m3u8Resolver).url
-                val fallbackHeaders = mapOf("Referer" to "https://megacloud.club/", "Origin" to "https://megacloud.club/")
-                M3u8Helper.generateM3u8(name, fallbackM3u8, mainUrl, headers = fallbackHeaders).forEach(callback)
+                M3u8Helper.generateM3u8(name, fallbackM3u8, mainUrl, headers = mainheaders).forEach(callback)
 
             } catch (ex: Exception) {
                 Log.e("Megacloud", "Fallback also failed: ${ex.message}")

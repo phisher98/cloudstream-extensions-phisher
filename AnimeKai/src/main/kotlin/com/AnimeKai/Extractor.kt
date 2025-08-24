@@ -23,13 +23,12 @@ class MegaUp : ExtractorApi() {
 
         private val HEADERS = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-            "Accept" to "text/html, */*; q=0.01",
+            "Accept" to "*/*",
             "Accept-Language" to "en-US,en;q=0.5",
             "Sec-GPC" to "1",
             "Sec-Fetch-Dest" to "empty",
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "same-origin",
-            "Priority" to "u=0",
             "Pragma" to "no-cache",
             "Cache-Control" to "no-cache",
             "referer" to "https://animekai.to/"
