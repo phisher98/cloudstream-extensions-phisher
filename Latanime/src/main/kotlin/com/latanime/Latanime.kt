@@ -1,5 +1,6 @@
 package com.latanime
 
+import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
@@ -9,16 +10,17 @@ import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
-import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -30,7 +32,7 @@ class Latanime : MainAPI() {
     override var lang                 = "mx"
     override val hasDownloadSupport   = true
     override val hasQuickSearch       = true
-    override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
+    override val supportedTypes       = setOf(TvType.Anime)
 
     override val mainPage = mainPageOf(
         "animes?fecha=false&genero=false&letra=false&categoria=anime" to "Anime",
@@ -97,7 +99,8 @@ class Latanime : MainAPI() {
                     })
 
             }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newAnimeLoadResponse(title, url, TvType.Anime) {
+                addEpisodes(DubStatus.Subbed,episodes)
                 this.posterUrl = poster
                 this.plot = description
                 this.tags = tags

@@ -1,5 +1,6 @@
 package com.Animeav1
 
+import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
@@ -9,10 +10,12 @@ import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -74,9 +77,9 @@ class Animeav1 : MainAPI() {
 
     private fun getTvType(text: String): TvType {
         return when {
-            text.contains("TV Anime", ignoreCase = true) -> TvType.TvSeries
+            text.contains("TV Anime", ignoreCase = true) -> TvType.Anime
             text.contains("Película", ignoreCase = true) -> TvType.Movie
-            text.contains("OVA", ignoreCase = true) -> TvType.TvSeries
+            text.contains("OVA", ignoreCase = true) -> TvType.Anime
             else -> TvType.Movie
         }
     }
@@ -91,7 +94,7 @@ class Animeav1 : MainAPI() {
         val type = getTvType(rawtype)
         val tags=document.select("header > div:nth-child(3) a").map { it.text() }
         val href=fixUrl(document.select("div.grid > article a").attr("href"))
-        return if (type==TvType.TvSeries)
+        return if (type==TvType.Anime)
         {
             val episodes = mutableListOf<Episode>()
             document.select("div.grid > article").map {
@@ -107,7 +110,8 @@ class Animeav1 : MainAPI() {
                     })
 
             }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newAnimeLoadResponse(title, url, TvType.Anime) {
+                addEpisodes(DubStatus.Subbed,episodes)
                 this.posterUrl = poster
                 this.plot = description
                 this.tags = tags
