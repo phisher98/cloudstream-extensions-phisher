@@ -20,7 +20,6 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
-import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -94,30 +93,38 @@ class Animeav1 : MainAPI() {
         val type = getTvType(rawtype)
         val tags=document.select("header > div:nth-child(3) a").map { it.text() }
         val href=fixUrl(document.select("div.grid > article a").attr("href"))
-        return if (type==TvType.Anime)
-        {
+        return if (type == TvType.Anime) {
             val episodes = mutableListOf<Episode>()
-            document.select("div.grid > article").map {
-                val epposter=it.select("img").attr("src")
-                val epno=it.select("span.text-lead > font > font").text()
-                val ephref=it.select("a").attr("href")
-                episodes.add(
-                    newEpisode(ephref)
-                    {
-                        this.name="Episode $epno"
-                        this.episode=epno.toIntOrNull()
-                        this.posterUrl=epposter
-                    })
+            val mediaId = Regex("/(\\d+)\\.jpg$").find(poster)?.groupValues?.get(1) ?: "0"
+            val scriptContent = document.select("script").html()
+            val regex = Regex("media:\\{.*?episodesCount:(\\d+).*?slug:\"(.*?)\"", RegexOption.DOT_MATCHES_ALL)
 
+            val match = regex.find(scriptContent)
+            if (match != null) {
+                val totalEpisodes = match.groupValues[1].toIntOrNull() ?: 0
+                val slug = match.groupValues[2]
+
+                for (i in 1..totalEpisodes) {
+                    val epUrl = "https://animeav1.com/media/$slug/$i"
+                    val epposter = "https://cdn.animeav1.com/screenshots/$mediaId/$i.jpg"
+
+                    episodes.add(
+                        newEpisode(epUrl) {
+                            this.name = "Episode $i"
+                            this.episode = i
+                            this.posterUrl = epposter
+                        }
+                    )
+                }
             }
+
             newAnimeLoadResponse(title, url, TvType.Anime) {
-                addEpisodes(DubStatus.Subbed,episodes)
+                addEpisodes(DubStatus.Subbed, episodes)
                 this.posterUrl = poster
                 this.plot = description
                 this.tags = tags
             }
-        }
-        else newMovieLoadResponse(title, url, TvType.Movie, href) {
+        } else newMovieLoadResponse(title, url, TvType.Movie, href) {
             this.posterUrl = poster
             this.plot = description
             this.tags = tags
