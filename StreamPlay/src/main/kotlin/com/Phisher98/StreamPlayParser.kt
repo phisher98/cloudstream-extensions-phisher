@@ -2200,3 +2200,14 @@ data class PrimewireClass(
     val host: String,
 )
 
+data class Morph(
+    @JsonProperty("error_code")
+    val errorCode: Long,
+    val message: String,
+    val data: List<MorphDaum>,
+)
+
+data class MorphDaum(
+    val title: String,
+    val link: String,
+)

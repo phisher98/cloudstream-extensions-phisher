@@ -92,6 +92,7 @@ import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
+import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import kotlinx.coroutines.delay
@@ -634,6 +635,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeRiveStream(res.id, res.season, res.episode, callback) }
                 add { invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback) }
+                add { invokemorph(res.title,res.year, res.season, res.episode, subtitleCallback, callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {

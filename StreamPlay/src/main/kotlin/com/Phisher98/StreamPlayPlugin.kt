@@ -33,7 +33,6 @@ class StreamPlayPlugin: Plugin() {
 
     override fun load(context: Context) {
 
-        Log.d("StreamPlay", "Plugin loading with context: $context")
         val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
         val mainApis = listOf(
             StreamPlay(sharedPref), StreamPlayLite(),
@@ -184,6 +183,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Vidguardto2())
         registerExtractorAPI(Hubstreamdad())
+        registerExtractorAPI(StreamwishHG())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = MainSettingsFragment(this, sharedPref)

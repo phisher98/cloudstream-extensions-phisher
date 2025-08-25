@@ -57,6 +57,7 @@ import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.security.MessageDigest
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -5148,6 +5149,70 @@ object StreamPlayExtractor : StreamPlay() {
             return false
         }
     }
+
+    suspend fun invokemorph(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val rawTitle = title ?: return
+
+        fun md5(input: String): String {
+            val md = MessageDigest.getInstance("MD5")
+            val digest = md.digest(input.toByteArray(Charsets.UTF_8))
+            return digest.joinToString("") { "%02x".format(it) }
+        }
+
+        fun generateABC(
+            title: String,
+            year: Int,
+            season: Int,
+            episode: Int,
+            mType: Int,
+            ts: String
+        ): String {
+            val salt = base64Decode("JkxDYnUzaVlDN2xuMjRLN1A=")
+            val signatureString = if (mType == 1) {
+                "$title&&$season&$episode&$ts$salt"
+            } else {
+                "$title&$year&$season&$episode&$ts$salt"
+            }
+            return md5(signatureString)
+        }
+
+        fun generateUrl(
+            title: String,
+            year: Int,
+            season: Int,
+            episode: Int,
+            mType: Int
+        ): String {
+            val ts = (System.currentTimeMillis() / 1000).toString()
+            val abc = generateABC(title, year, season, episode, mType, ts)
+
+            val encodedTitle = URLEncoder.encode(title, "UTF-8").replace("+", "%20")
+
+            return base64Decode("aHR0cHM6Ly90ZWxlLm1vcnBodHYuY2x1Yi9hcGkvc2VhcmNoPw==") +
+                    "abc=$abc&year=$year&season=$season&episode=$episode" +
+                    "&title=$encodedTitle&ts=$ts&mType=$mType"
+        }
+
+        val finalYear = year ?: 0
+        val finalSeason = season ?: 0
+        val finalEpisode = episode ?: 0
+
+        val url = generateUrl(rawTitle, finalYear, finalSeason, finalEpisode, 0)
+
+        Log.d("Phisher", "Morph Request URL: $url")
+
+        app.get(url).parsedSafe<Morph>()?.data?.amap {
+            loadSourceNameExtractor("Morph", it.link, "", subtitleCallback, callback)
+        }
+    }
+
 }
 
 

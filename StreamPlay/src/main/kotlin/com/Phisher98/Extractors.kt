@@ -2719,3 +2719,7 @@ class FilemoonV2 : ExtractorApi() {
         }
     }
 }
+
+class StreamwishHG : StreamWishExtractor() {
+    override val mainUrl = "https://hglink.to"
+}
