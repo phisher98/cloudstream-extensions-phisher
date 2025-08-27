@@ -317,3 +317,62 @@ data class MagnetStream(
     val quality: String,
     val magnet: String
 )
+
+
+
+data class AIODebian(
+    val streams: List<AIODebianStream>,
+)
+
+data class AIODebianStream(
+    val name: String,
+    val description: String,
+    val url: String,
+    val behaviorHints: AIODebianBehaviorHints,
+    val streamData: AIODebianStreamData,
+)
+
+data class AIODebianBehaviorHints(
+    val videoSize: Long,
+    val filename: String,
+)
+
+data class AIODebianStreamData(
+    val type: String,
+    val proxied: Boolean,
+    val indexer: String,
+    val duration: Long,
+    val library: Boolean,
+    val size: Long,
+    val torrent: AIODebianTorrent,
+    val addon: String,
+    val filename: String,
+    val service: Service,
+    val parsedFile: ParsedFile,
+    val id: String,
+    val folderName: String?,
+)
+
+data class AIODebianTorrent(
+    val infoHash: String,
+    val seeders: Long,
+)
+
+data class Service(
+    val id: String,
+    val cached: Boolean,
+)
+
+data class ParsedFile(
+    val title: String,
+    val year: String,
+    val resolution: String,
+    val quality: String,
+    val encode: String?,
+    val releaseGroup: String?,
+    val seasonEpisode: List<Any?>,
+    val visualTags: List<String>,
+    val audioTags: List<String>,
+    val audioChannels: List<String>,
+    val languages: List<String>,
+)

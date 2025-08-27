@@ -498,13 +498,13 @@ suspend fun invokeAIOStreamsDebian(
     } else {
         "${mainUrl.substringBeforeLast("/manifest.json")}/stream/series/$id:$season:$episode.json"
     }
-    app.get(mainurl).parsedSafe<AIO>()?.streams?.map {
+    app.get(mainurl).parsedSafe<AIODebian>()?.streams?.map {
         val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
         val qualityMatch = qualityRegex.find(it.name)?.value ?: "Unknown"
         callback.invoke(
             newExtractorLink(
-                "Torrentio AIO Debian ${it.name}",
-                it.description,
+                "Torrentio AIO Debian ${getIndexQuality(qualityMatch)}",
+                it.behaviorHints.filename,
                 it.url,
                 INFER_TYPE
             ) {
