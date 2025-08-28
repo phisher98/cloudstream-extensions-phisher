@@ -333,6 +333,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
+                        Log.d("Phisher",eps.toJson())
                         newEpisode(
                             LinkData(
                                 data.id,
@@ -506,6 +507,8 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data.toJson())
+
         if (data.startsWith(febbox))
         {
             val fid=data.substringAfterLast("|")
@@ -549,13 +552,16 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                     )
                 },
                 {
-                    invokeSuperstream(
-                        token,
-                        res.imdbId,
-                        res.season,
-                        res.episode,
-                        callback
-                    )
+                    if (res.imdbId!==null)
+                    {
+                        invokeSuperstream(
+                            token,
+                            res.imdbId,
+                            res.season,
+                            res.episode,
+                            callback
+                        )
+                    }
                 },
             )
         }

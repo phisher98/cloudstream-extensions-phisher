@@ -622,7 +622,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     subtitleCallback,
                     callback
                 ) }
-                add { invokeSuperstream(token, res.imdbId, res.season, res.episode, callback) }
+                add { if (res.imdbId!==null)invokeSuperstream(token, res.imdbId, res.season, res.episode, callback) }
                 add { invokePlayer4U(res.title, res.season, res.episode, res.year, callback) }
                 add { invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback) }
                 add { invokeXPrimeAPI(res.title, res.year, res.imdbId,res.id, res.season, res.episode, subtitleCallback, callback) }
