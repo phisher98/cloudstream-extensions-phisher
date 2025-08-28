@@ -1,16 +1,27 @@
 package com.tamilblasters
 
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class TamilblastersProvider : MainAPI() {
-    override var mainUrl = "https://www.tamilblasters.qpon/"
+    override var mainUrl = "https://www.tamilblasters.website"
     private val streamhg = "https://tryzendm.com"
     override var name = "Tamilblasters"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
@@ -59,7 +70,7 @@ class TamilblastersProvider : MainAPI() {
                 newEpisode(ep.toJson()) {
                     this.name = ep.title
                 }
-            }
+            }.reversed()
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
                 this.year = year
@@ -81,7 +92,7 @@ class TamilblastersProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data.startsWith("{")) {
-            val loadData = AppUtils.tryParseJson<VideoEntry>(data)
+            val loadData = tryParseJson<VideoEntry>(data)
             if (loadData != null) {
                 var streamurl = loadData.url
                 if (streamurl.contains("hg")) {
@@ -106,7 +117,7 @@ class TamilblastersProvider : MainAPI() {
         return false
     }
 
-    fun extractVideos(document: Document): List<VideoEntry> {
+    private fun extractVideos(document: Document): List<VideoEntry> {
         return document.select("iframe").mapNotNull { iframe ->
             val label = iframe.previousElementSiblings()
                 .firstOrNull { it.tagName() == "p" }
