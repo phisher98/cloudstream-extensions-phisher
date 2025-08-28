@@ -2,51 +2,6 @@ package com.phisher98
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
-import com.phisher98.StreamPlayExtractor.invoke2embed
-import com.phisher98.StreamPlayExtractor.invokeAllMovieland
-import com.phisher98.StreamPlayExtractor.invokeAnimes
-import com.phisher98.StreamPlayExtractor.invokeBollyflix
-import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
-import com.phisher98.StreamPlayExtractor.invokeDotmovies
-import com.phisher98.StreamPlayExtractor.invokeEmbedsu
-import com.phisher98.StreamPlayExtractor.invokeEmovies
-import com.phisher98.StreamPlayExtractor.invokeExtramovies
-import com.phisher98.StreamPlayExtractor.invokeFilm1k
-import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
-import com.phisher98.StreamPlayExtractor.invokeFlixon
-import com.phisher98.StreamPlayExtractor.invokeKisskh
-import com.phisher98.StreamPlayExtractor.invokeLing
-import com.phisher98.StreamPlayExtractor.invokeMoflix
-import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
-import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
-import com.phisher98.StreamPlayExtractor.invokeMoviesmod
-import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
-import com.phisher98.StreamPlayExtractor.invokeMultimovies
-import com.phisher98.StreamPlayExtractor.invokeNepu
-import com.phisher98.StreamPlayExtractor.invokeNinetv
-import com.phisher98.StreamPlayExtractor.invokePlaydesi
-import com.phisher98.StreamPlayExtractor.invokePlayer4U
-import com.phisher98.StreamPlayExtractor.invokePrimeWire
-import com.phisher98.StreamPlayExtractor.invokeRidomovies
-import com.phisher98.StreamPlayExtractor.invokeRiveStream
-import com.phisher98.StreamPlayExtractor.invokeRogmovies
-import com.phisher98.StreamPlayExtractor.invokeShowflix
-import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
-import com.phisher98.StreamPlayExtractor.invokeSuperstream
-import com.phisher98.StreamPlayExtractor.invokeTom
-import com.phisher98.StreamPlayExtractor.invokeTopMovies
-import com.phisher98.StreamPlayExtractor.invokeUhdmovies
-import com.phisher98.StreamPlayExtractor.invokeVegamovies
-import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
-import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
-import com.phisher98.StreamPlayExtractor.invokeVidsrccc
-import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
-import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
-import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.phisher98.StreamPlayExtractor.invokeZoechip
-import com.phisher98.StreamPlayExtractor.invokeZshow
-import com.phisher98.StreamPlayExtractor.invokeazseries
-import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.lagradost.api.Log
@@ -82,21 +37,66 @@ import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
+import com.phisher98.StreamPlayExtractor.invokeAllMovieland
+import com.phisher98.StreamPlayExtractor.invokeAnimes
+import com.phisher98.StreamPlayExtractor.invokeBollyflix
+import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
+import com.phisher98.StreamPlayExtractor.invokeDotmovies
 import com.phisher98.StreamPlayExtractor.invokeDramacool
-import com.phisher98.StreamPlayExtractor.invokeElevenmovies
-import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
+import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeEmbedlc
+import com.phisher98.StreamPlayExtractor.invokeEmbedsu
+import com.phisher98.StreamPlayExtractor.invokeEmovies
+import com.phisher98.StreamPlayExtractor.invokeExtramovies
+import com.phisher98.StreamPlayExtractor.invokeFilm1k
+import com.phisher98.StreamPlayExtractor.invokeFlixon
+import com.phisher98.StreamPlayExtractor.invokeHdmovie2
+import com.phisher98.StreamPlayExtractor.invokeKisskh
+import com.phisher98.StreamPlayExtractor.invokeLing
+import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
+import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
+import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
+import com.phisher98.StreamPlayExtractor.invokeMoviesmod
+import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
+import com.phisher98.StreamPlayExtractor.invokeMultimovies
+import com.phisher98.StreamPlayExtractor.invokeNepu
+import com.phisher98.StreamPlayExtractor.invokeNinetv
+import com.phisher98.StreamPlayExtractor.invokePlaydesi
+import com.phisher98.StreamPlayExtractor.invokePlayer4U
+import com.phisher98.StreamPlayExtractor.invokePrimeWire
+import com.phisher98.StreamPlayExtractor.invokeRidomovies
+import com.phisher98.StreamPlayExtractor.invokeRiveStream
+import com.phisher98.StreamPlayExtractor.invokeRogmovies
+import com.phisher98.StreamPlayExtractor.invokeShowflix
+import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
+import com.phisher98.StreamPlayExtractor.invokeSuperstream
+import com.phisher98.StreamPlayExtractor.invokeTom
+import com.phisher98.StreamPlayExtractor.invokeTopMovies
+import com.phisher98.StreamPlayExtractor.invokeUhdmovies
+import com.phisher98.StreamPlayExtractor.invokeVegamovies
+import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
+import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidfast
+import com.phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
+import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
+import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
+import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
+import com.phisher98.StreamPlayExtractor.invokeZoechip
+import com.phisher98.StreamPlayExtractor.invokeZshow
+import com.phisher98.StreamPlayExtractor.invokeazseries
+import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
-import kotlinx.coroutines.delay
-import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONObject
 import kotlin.math.roundToInt
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
@@ -118,53 +118,59 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     /** AUTHOR : hexated & Phisher & Code */
     companion object {
         /** TOOLS */
-        private const val remoteURLList =
-            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
+        private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
+        private const val Cinemeta = "https://v3-cinemeta.strem.io"
+        private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
+        private const val apiKey = BuildConfig.TMDB_API
 
-        private suspend fun fetchTmdbApiList(): List<String> {
-            val officialTmdbUrl = "https://api.themoviedb.org/3"
-            val sampleMovieTestUrl = "$officialTmdbUrl/movie/550?api_key=$apiKey"
-
-            return try {
-                val response = app.get(sampleMovieTestUrl, timeout = 5000)
-                if (response.code == 200) {
-                    Log.d("TMDB Check", "✅ Official TMDB API is working.")
-                    listOf(officialTmdbUrl)
+        suspend fun getApiBase(): String {
+            return if (isOfficialAvailable()) {
+                OFFICIAL_TMDB_URL
+            } else {
+                val proxy = fetchProxyList().randomOrNull()
+                if (proxy != null) {
+                    Log.d("Error:", "Official unavailable, using proxy: $proxy")
+                    proxy
                 } else {
-                    Log.d("TMDB Check", "⚠️ Official TMDB API returned ${response.code}, falling back.")
-                    fetchFromRemoteList()
+                    OFFICIAL_TMDB_URL
                 }
-            } catch (e: Exception) {
-                Log.e("TMDB Check", "❌ Official TMDB API check failed: ${e.message}")
-                fetchFromRemoteList()
             }
         }
 
-        private suspend fun fetchFromRemoteList(): List<String> {
-            repeat(3) { attempt ->
-                try {
-                    val response = app.get(remoteURLList, timeout = 5000)
-                    val text = response.text
-                    val proxyList = text.split("\n")
-                        .mapNotNull { it.trim().takeIf { url -> url.isNotEmpty() } }
-
-                    if (proxyList.isNotEmpty()) {
-                        Log.d("Proxy Fetch", "✅ Fetched ${proxyList.size} proxy URLs.")
-                        return proxyList
-                    } else {
-                        Log.w("Proxy Fetch", "⚠️ Remote proxy list is empty.")
-                    }
-                } catch (e: CancellationException) {
-                    Log.e("Proxy Fetch", "❌ Coroutine cancelled.")
-                    throw e // rethrow so coroutine cancellation is respected
-                } catch (e: Exception) {
-                    Log.e("Proxy Fetch", "Attempt ${attempt + 1}: Failed to fetch: ${e.message}")
-                    delay(1000L * (attempt + 1))
-                }
+        private suspend fun isOfficialAvailable(): Boolean = withTimeoutOrNull(5000) {
+            try {
+                val testUrl = "$OFFICIAL_TMDB_URL/configuration?api_key=$apiKey"
+                val response = app.get(
+                    testUrl,
+                    timeout = 1000,
+                    headers = mapOf(
+                        "Cache-Control" to "no-cache",
+                        "Pragma" to "no-cache"
+                    )
+                )
+                response.okhttpResponse.code in listOf(200,304)
+            } catch (e: Exception) {
+                Log.d("Error", "Official TMDB unavailable: ${e.message}")
+                false
             }
+        } ?: false
 
-            Log.w("Proxy Fetch", "❌ All attempts failed. Using default TMDB URL.")
-            return listOf("https://api.themoviedb.org/3")
+
+        private suspend fun fetchProxyList(): List<String> = try {
+            val response = app.get(REMOTE_PROXY_LIST).text
+            val json = JSONObject(response)
+            val arr = json.getJSONArray("proxies")
+
+            val proxies = List(arr.length()) { arr.getString(it).trim() }
+                .filter { it.isNotEmpty() }
+                .map { proxyUrl ->
+                    val clean = proxyUrl.removeSuffix("/")
+                    clean
+                }
+            proxies
+        } catch (e: Exception) {
+            Log.e("Error:", "Error fetching proxy list")
+            emptyList()
         }
 
 
@@ -172,8 +178,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
-        private const val apiKey = BuildConfig.TMDB_API
-        private const val Cinemeta = "https://v3-cinemeta.strem.io"
 
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
@@ -200,7 +204,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.net"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
-        const val cinemaTvAPI = BuildConfig.CINEMATV_API
         const val Whvx_API = BuildConfig.Whvx_API
         const val nineTvAPI = "https://moviesapi.club"
         const val nowTvAPI = "https://myfilestorage.xyz"
@@ -306,8 +309,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val tmdbAPI = fetchTmdbApiList().random()
-
+        val tmdbAPI =getApiBase()
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
@@ -332,7 +334,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        val tmdbAPI = fetchTmdbApiList().random()
+        val tmdbAPI = getApiBase()
         return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
@@ -340,7 +342,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val tmdbAPI = fetchTmdbApiList().random()
+        val tmdbAPI = getApiBase()
         val data = parseJson<Data>(url)
         val type = getType(data.type)
         val append = "alternative_titles,credits,external_ids,videos,recommendations"
@@ -351,7 +353,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=$append"
         }
 
-        val res = app.get(resUrl, timeout = 10000).parsedSafe<MediaDetail>()
+        val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
         val title = res.title ?: res.name ?: return null
         val poster = getOriImageUrl(res.posterPath)
@@ -456,7 +458,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                                 aniId = null,
                                 animeId = null,
                                 title = title,
-                                year = video.released?.split("-")?.firstOrNull()?.toIntOrNull(),
+                                year = video.released.split("-").firstOrNull()?.toIntOrNull(),
                                 orgTitle = orgTitle,
                                 isAnime = true,
                                 airedYear = year,

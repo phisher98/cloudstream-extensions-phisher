@@ -81,25 +81,6 @@ data class WyZIESUB(
     val isHearingImpaired: Boolean,
 )
 
-
-//Catflix Juicey
-
-data class CatflixJuicy(
-    val action: String,
-    val success: Boolean,
-    val msg: String,
-    val juice: String,
-    val juicePost: String,
-)
-
-data class CatflixJuicydata(
-    val action: String,
-    val success: Boolean,
-    val msg: String,
-    val data: String,
-    val juice: String,
-)
-
 data class PersonalComments(
     val code: Int,
     val file: FileData?,
@@ -199,3 +180,91 @@ data class HTML(
     val starttime2: Double,
     val endtime: Double,
 )
+
+
+//CinemetaRes
+
+data class CinemetaRes(
+    val meta: Meta
+) {
+    data class Meta(
+        val awards: String,
+        val background: String,
+        val behaviorHints: BehaviorHints,
+        val cast: List<String>,
+        val country: String,
+        val description: String,
+        val director: Any,
+        val dvdRelease: Any,
+        val genre: List<String>,
+        val genres: List<String>,
+        val id: String,
+        val imdbRating: String,
+        val imdb_id: String,
+        val links: List<Link>,
+        val logo: String,
+        val moviedb_id: Int,
+        val name: String,
+        val popularities: Popularities,
+        val popularity: Double,
+        val poster: String,
+        val releaseInfo: String,
+        val released: String,
+        val runtime: String,
+        val slug: String,
+        val status: String,
+        val trailerStreams: List<TrailerStream>,
+        val trailers: List<Trailer>,
+        val tvdb_id: String,
+        val type: String,
+        val videos: List<Video>,
+        val writer: Any,
+        val year: String
+    ) {
+        data class BehaviorHints(
+            val defaultVideoId: Any,
+            val hasScheduledVideos: Boolean
+        )
+
+        data class Link(
+            val category: String,
+            val name: String,
+            val url: String
+        )
+
+        data class Popularities(
+            val ALLIANCE: Int,
+            val EJD: Int,
+            val EXMD: Int,
+            val PXS_TEST: Int,
+            val moviedb: Double,
+            val stremio: Double,
+            val stremio_lib: Int,
+            val trakt: Int
+        )
+
+        data class TrailerStream(
+            val title: String,
+            val ytId: String
+        )
+
+        data class Trailer(
+            val source: String,
+            val type: String
+        )
+
+        data class Video(
+            val episode: Int,
+            val firstAired: String,
+            val id: String,
+            val name: String,
+            val number: Int,
+            val rating: String,
+            val released: String,
+            val season: Int,
+            val thumbnail: String,
+            val tvdb_id: Int,
+            val description: String
+        )
+    }
+}
