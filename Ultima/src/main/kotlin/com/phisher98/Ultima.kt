@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.phisher98.UltimaUtils.SectionInfo
 
 class Ultima(val plugin: UltimaPlugin) : MainAPI() {
@@ -99,7 +100,7 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                 }
 
                 val homeSections = ArrayList<HomePageList>(filteredDevices.size)
-                val allResumeWatching = getResumeWatching()?.toMutableList()
+                val allResumeWatching = getResumeWatching()?.toMutableList() ?: mutableListOf()
 
                 for (device in filteredDevices) {
                     val currentDevice = sm.deviceSyncCreds?.deviceId == device.deviceId
@@ -124,17 +125,29 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                         // collect resumeWatching
                         val syncedContent = payload.resumeWatching
                         if (!syncedContent.isNullOrEmpty()) {
-                            allResumeWatching?.addAll(syncedContent)
+                            allResumeWatching.addAll(syncedContent)
                         }
                     } else {
                         Log.w("getMainPage", "No payload found for ${device.name}")
                     }
                 }
 
-                val uniqueResumeWatching = allResumeWatching?.distinctBy { it.url }
-                if (!uniqueResumeWatching.isNullOrEmpty()) {
-                    homeSections += HomePageList("Continue Watching", uniqueResumeWatching)
+                if (allResumeWatching.isNotEmpty()) {
+                    for (item in allResumeWatching) {
+                        DataStoreHelper.setLastWatched(
+                            item.parentId,
+                            item.id,
+                            item.episode,
+                            item.season,
+                            isFromDownload = item.isFromDownload
+                        )
+                        Log.d("getMainPage", "setLastWatched -> ${item.name} (id=${item.id})")
+                    }
+
+                    Log.i("getMainPage", "Synced ${allResumeWatching.size} resume items (no parentId grouping)")
                 }
+
+
 
                 newHomePageResponse(homeSections, false)
             } else {
