@@ -5,6 +5,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,6 +25,7 @@ import com.lagradost.cloudstream3.plugins.PluginManager.loadSinglePlugin
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.phisher98.BuildConfig
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -163,6 +165,16 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
             dismiss()
         }
         // #endregion - building reorder button and its click listener
+
+        val guideIcon = settings.findView<ImageView>("guide_icon")
+        guideIcon.setImageDrawable(getDrawable("ic_eye"))
+        guideIcon.makeTvCompatible()
+        guideIcon.setOnClickListener {
+            val url = "https://github.com/phisher98/cloudstream-extensions-phisher/blob/master/docs/ULTIMA_SYNC_SETUP.md"
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            activity?.startActivity(intent)
+        }
 
         // #region - building delete button with its click listener
         val deleteBtn = settings.findView<TextView>("delete_img")

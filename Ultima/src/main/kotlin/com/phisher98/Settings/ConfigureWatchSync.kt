@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -15,7 +16,6 @@ import androidx.lifecycle.coroutineScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
-import com.phisher98.BuildConfig
 import com.phisher98.WatchSyncUtils.WatchSyncCreds
 import kotlinx.coroutines.launch
 
@@ -39,12 +39,14 @@ class UltimaConfigureWatchSync(private val plugin: UltimaPlugin) : BottomSheetDi
     }
 
     // #region - necessary functions
+    @SuppressLint("DiscouragedApi")
     private fun getLayout(name: String, inflater: LayoutInflater, container: ViewGroup?): View {
         val id = res.getIdentifier(name, "layout", packageName)
         val layout = res.getLayout(id)
         return inflater.inflate(layout, container, false)
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private fun getDrawable(name: String): Drawable {
         val id = res.getIdentifier(name, "drawable", packageName)
         return res.getDrawable(id, null) ?: throw Exception("Unable to find drawable $name")
@@ -60,12 +62,14 @@ class UltimaConfigureWatchSync(private val plugin: UltimaPlugin) : BottomSheetDi
         return this.findViewById(id)
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private fun View.makeTvCompatible() {
         val outlineId = res.getIdentifier("outline", "drawable", packageName)
         this.background = res.getDrawable(outlineId, null)
     }
     // #endregion
 
+    @SuppressLint("UseSwitchCompatOrMaterialCode", "SetTextI18n")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -165,13 +169,36 @@ class UltimaConfigureWatchSync(private val plugin: UltimaPlugin) : BottomSheetDi
                     isChecked = sm.deviceSyncCreds?.enabledDevices?.contains(device.deviceId) ?: false
                     setOnClickListener {
                         if (isChecked) {
-                            if (currentDevice) isChecked = false
-                            else activeDevices.add(device.deviceId)
+                            if (currentDevice) {
+                                // Don’t allow restoring from current device
+                                isChecked = false
+                                showToast("Cannot restore from current device")
+                            } else {
+                                activeDevices.add(device.deviceId)
+                                activity?.lifecycle?.coroutineScope?.launch {
+                                    val payload = device.payload
+                                    if (payload != null) {
+                                        runCatching {
+                                            payload.extensions?.let { sm.currentExtensions = it }
+                                            payload.metaProviders?.let { sm.currentMetaProviders = it }
+                                            payload.mediaProviders?.let { sm.currentMediaProviders = it }
+                                        }.onSuccess {
+                                            showToast("Restored from ${device.name}")
+                                        }.onFailure {
+                                            showToast("Restore failed: ${it.message}")
+                                        }
+                                    } else {
+                                        showToast("No payload found for ${device.name}")
+                                    }
+                                }
+
+                            }
                         } else {
                             activeDevices.remove(device.deviceId)
                         }
                         deviceData?.enabledDevices = activeDevices
                     }
+
                 }
 
                 devicesListLayout.addView(syncDeviceView)

@@ -12,37 +12,38 @@ import com.phisher98.UltimaStorageManager as sm
 
 object WatchSyncUtils {
     data class WatchSyncCreds(
-            @JsonProperty("token") var token: String? = null,
-            @JsonProperty("projectNum") var projectNum: Int? = null,
-            @JsonProperty("deviceName") var deviceName: String? = null,
-            @JsonProperty("deviceId") var deviceId: String? = null, // draftIssueID
-            @JsonProperty("itemId") var itemId: String? = null, // projectItemID
-            @JsonProperty("projectId") var projectId: String? = null,
-            @JsonProperty("isThisDeviceSync") var isThisDeviceSync: Boolean = false,
-            @JsonProperty("enabledDevices") var enabledDevices: MutableList<String>? = null
+        @JsonProperty("token") var token: String? = null,
+        @JsonProperty("projectNum") var projectNum: Int? = null,
+        @JsonProperty("deviceName") var deviceName: String? = null,
+        @JsonProperty("deviceId") var deviceId: String? = null, // draftIssueID
+        @JsonProperty("itemId") var itemId: String? = null,     // projectItemID
+        @JsonProperty("projectId") var projectId: String? = null,
+        @JsonProperty("isThisDeviceSync") var isThisDeviceSync: Boolean = false,
+        @JsonProperty("enabledDevices") var enabledDevices: MutableList<String>? = null
     ) {
+        // --- API Response Models ---
         data class APIRes(@JsonProperty("data") var data: Data) {
             data class Data(
-                    @JsonProperty("viewer") var viewer: Viewer?,
-                    @JsonProperty("addProjectV2DraftIssue") var issue: Issue?,
-                    @JsonProperty("deleteProjectV2Item") var delItem: DelItem?
+                @JsonProperty("viewer") var viewer: Viewer?,
+                @JsonProperty("addProjectV2DraftIssue") var issue: Issue?,
+                @JsonProperty("deleteProjectV2Item") var delItem: DelItem?
             ) {
                 data class Viewer(@JsonProperty("projectV2") var projectV2: ProjectV2) {
                     data class ProjectV2(
-                            @JsonProperty("id") var id: String,
-                            @JsonProperty("items") var items: Items?
+                        @JsonProperty("id") var id: String,
+                        @JsonProperty("items") var items: Items?
                     ) {
                         data class Items(
-                                @JsonProperty("nodes") var nodes: Array<Node>?,
+                            @JsonProperty("nodes") var nodes: Array<Node>?,
                         ) {
                             data class Node(
-                                    @JsonProperty("id") var id: String,
-                                    @JsonProperty("content") var content: Content
+                                @JsonProperty("id") var id: String,
+                                @JsonProperty("content") var content: Content
                             ) {
                                 data class Content(
-                                        @JsonProperty("id") var id: String,
-                                        @JsonProperty("title") var title: String,
-                                        @JsonProperty("bodyText") var bodyText: String,
+                                    @JsonProperty("id") var id: String,
+                                    @JsonProperty("title") var title: String,
+                                    @JsonProperty("bodyText") var bodyText: String,
                                 )
                             }
                         }
@@ -50,8 +51,8 @@ object WatchSyncUtils {
                 }
                 data class Issue(@JsonProperty("projectItem") var projectItem: ProjectItem) {
                     data class ProjectItem(
-                            @JsonProperty("id") var id: String,
-                            @JsonProperty("content") var content: Content
+                        @JsonProperty("id") var id: String,
+                        @JsonProperty("content") var content: Content
                     ) {
                         data class Content(@JsonProperty("id") var id: String)
                     }
@@ -61,17 +62,24 @@ object WatchSyncUtils {
         }
 
         data class SyncDevice(
-                @JsonProperty("name") var name: String,
-                @JsonProperty("deviceId") var deviceId: String, // draftIssueID // for add update
-                @JsonProperty("itemId") var itemId: String, // projectItemID // for delete
-                @JsonProperty("syncedData") var syncedData: List<ResumeWatchingResult>? = null
+            @JsonProperty("name") var name: String,
+            @JsonProperty("deviceId") var deviceId: String,
+            @JsonProperty("itemId") var itemId: String,
+            @JsonProperty("payload") var payload: SyncPayload? = null
         )
+
+        data class SyncPayload(
+            @JsonProperty("resumeWatching") val resumeWatching: List<ResumeWatchingResult>? = null,
+            @JsonProperty("extensions") val extensions: Array<UltimaUtils.ExtensionInfo>? = null,
+            @JsonProperty("metaProviders") val metaProviders: Array<Pair<String, Boolean>>? = null,
+            @JsonProperty("mediaProviders") val mediaProviders: Array<UltimaUtils.MediaProviderState>? = null,
+            val extNameOnHome: Boolean? = null,
+            )
+
 
         private val apiUrl = "https://api.github.com/graphql"
 
-        private fun Any.toStringData(): String {
-            return mapper.writeValueAsString(this)
-        }
+        private fun Any.toStringData(): String = mapper.writeValueAsString(this)
 
         fun isLoggedIn(): Boolean {
             return !(token.isNullOrEmpty() ||
@@ -81,22 +89,34 @@ object WatchSyncUtils {
         }
 
         private suspend fun apiCall(query: String): APIRes? {
-            val apiUrl = "https://api.github.com/graphql"
             val header =
-                    mapOf(
-                            "Content-Type" to "application/json",
-                            "Authorization" to "Bearer " + (token ?: return null)
-                    )
-            val data = """ { "query": ${query} } """
+                mapOf(
+                    "Content-Type" to "application/json",
+                    "Authorization" to "Bearer " + (token ?: return null)
+                )
+            val data = """ { "query": $query } """
             val test = app.post(apiUrl, headers = header, json = data)
-            val res = test.parsedSafe<APIRes>()
-            return res
+            return test.parsedSafe<APIRes>()
         }
+
+        /** Build JSON with all fields we want to sync */
+        private suspend fun buildSyncJson(): String {
+            val map = mapOf(
+                "resumeWatching" to getResumeWatching(),
+                "extNameOnHome" to sm.extNameOnHome,
+                "extensions" to sm.currentExtensions,
+                "metaProviders" to sm.currentMetaProviders,
+                "mediaProviders" to sm.currentMediaProviders
+            )
+            return mapper.writeValueAsString(map)
+        }
+
+        // --- API Methods ---
 
         suspend fun syncProjectDetails(): Pair<Boolean, String?> {
             val failure = false to "something went wrong"
             val query =
-                    """ query Viewer { viewer { projectV2(number: ${projectNum ?: return failure}) { id } } } """
+                """ query Viewer { viewer { projectV2(number: ${projectNum ?: return failure}) { id } } } """
             val res = apiCall(query.toStringData()) ?: return failure
             projectId = res.data.viewer?.projectV2?.id ?: return failure
             sm.deviceSyncCreds = this
@@ -106,10 +126,16 @@ object WatchSyncUtils {
         suspend fun registerThisDevice(): Pair<Boolean, String?> {
             val failure = false to "something went wrong"
             if (!isLoggedIn()) return failure
-            val syncData = getResumeWatching()?.toStringData() ?: "[]"
-            val data = base64Encode(syncData.toByteArray())
+
+            val data = base64Encode(buildSyncJson().toByteArray())
+
             val query =
-                    """ mutation AddProjectV2DraftIssue { addProjectV2DraftIssue( input: { projectId: "$projectId", title: "$deviceName", body: "$data" } ) { projectItem { id content { ... on DraftIssue { id } } } } } """
+                """ mutation AddProjectV2DraftIssue {
+                    addProjectV2DraftIssue(
+                        input: { projectId: "$projectId", title: "$deviceName", body: "$data" }
+                    ) { projectItem { id content { ... on DraftIssue { id } } } }
+                } """
+
             val res = apiCall(query.toStringData()) ?: return failure
             itemId = res.data.issue?.projectItem?.id ?: return failure
             deviceId = res.data.issue?.projectItem?.content?.id ?: return failure
@@ -122,25 +148,34 @@ object WatchSyncUtils {
             val failure = false to "something went wrong"
             if (!isLoggedIn()) return failure
             val query =
-                    """ mutation DeleteIssue { deleteProjectV2Item( input: { projectId: "$projectId" itemId: "$itemId" } ) { deletedItemId } } """
+                """ mutation DeleteIssue {
+                    deleteProjectV2Item( input: { projectId: "$projectId" itemId: "$itemId" } ) {
+                        deletedItemId
+                    }
+                } """
             val res = apiCall(query.toStringData()) ?: return failure
-            if (res.data.delItem?.deletedItemId.equals(itemId)) {
+            return if (res.data.delItem?.deletedItemId.equals(itemId)) {
                 itemId = null
                 deviceId = null
                 isThisDeviceSync = false
                 sm.deviceSyncCreds = this
-                return true to "Device de-registered"
-            } else return failure
+                true to "Device de-registered"
+            } else failure
         }
 
         suspend fun syncThisDevice(): Pair<Boolean, String?> {
             val failure = false to "something went wrong"
-            if (!isLoggedIn()) return failure
-            if (!isThisDeviceSync) return failure
-            val syncData = getResumeWatching()?.toStringData() ?: "[]"
-            val data = base64Encode(syncData.toByteArray())
+            if (!isLoggedIn() || !isThisDeviceSync) return failure
+
+            val data = base64Encode(buildSyncJson().toByteArray())
+
             val query =
-                    """ mutation UpdateProjectV2DraftIssue { updateProjectV2DraftIssue( input: { draftIssueId: "$deviceId", title: "$deviceName", body: "$data" } ) { draftIssue { id } } } """
+                """ mutation UpdateProjectV2DraftIssue {
+                    updateProjectV2DraftIssue(
+                        input: { draftIssueId: "$deviceId", title: "$deviceName", body: "$data" }
+                    ) { draftIssue { id } }
+                } """
+
             apiCall(query.toStringData()) ?: return failure
             return true to "sync complete"
         }
@@ -148,17 +183,35 @@ object WatchSyncUtils {
         suspend fun fetchDevices(): List<SyncDevice>? {
             if (!isLoggedIn()) return null
             val query =
-                    """ query User { viewer { projectV2(number: ${projectNum ?: return null}) { id items(first: 50) { nodes { id content { ... on DraftIssue { id title bodyText } } } totalCount } } } } """
-            val res = apiCall(query.toStringData()) ?: return null
-            val data =
-                    res.data.viewer?.projectV2?.items?.nodes?.map {
-                        val data = base64Decode(it.content.bodyText)
-                        val syncData =
-                                parseJson<Array<ResumeWatchingResult>?>(data)?.toList()
-                                        ?: return null
-                        SyncDevice(it.content.title, it.content.id, it.id, syncData)
+                """ query User {
+            viewer {
+                projectV2(number: ${projectNum ?: return null}) {
+                    id
+                    items(first: 50) {
+                        nodes { id content { ... on DraftIssue { id title bodyText } } }
+                        totalCount
                     }
-            return data
+                }
+            }
+        } """
+
+            val res = apiCall(query.toStringData()) ?: return null
+
+            return res.data.viewer?.projectV2?.items?.nodes?.map {
+                val raw = base64Decode(it.content.bodyText)
+
+                val payload = parseJson<SyncPayload?>(raw) ?: run {
+                    val oldResume = parseJson<List<ResumeWatchingResult>?>(raw)
+                    SyncPayload(resumeWatching = oldResume)
+                }
+
+                SyncDevice(
+                    name = it.content.title,
+                    deviceId = it.content.id,
+                    itemId = it.id,
+                    payload = payload
+                )
+            }
         }
     }
 }
