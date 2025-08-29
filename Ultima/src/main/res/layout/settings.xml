@@ -213,7 +213,7 @@
                     android:padding="5dp"
                     android:focusable="true"
                     android:nextFocusDown="@id/delete_img"
-                    android:nextFocusUp="@id/reorder_img" />
+                    android:nextFocusUp="@id/watch_sync_img" />
 
             </LinearLayout>
 
