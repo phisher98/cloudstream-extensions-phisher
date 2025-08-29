@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
@@ -160,47 +161,19 @@ class UltimaConfigureWatchSync(private val plugin: UltimaPlugin) : BottomSheetDi
         activity?.lifecycle?.coroutineScope?.launch {
             val devices = deviceData?.fetchDevices()
             devices?.forEach { device ->
-                val currentDevice = sm.deviceSyncCreds?.deviceId == device.deviceId
+                val currentDevice = sm.deviceSyncCreds?.deviceId.equals(device.deviceId)
                 val syncDeviceView = getLayout("watch_sync_device", inflater, container)
                 val deviceName = syncDeviceView.findView<Switch>("watch_sync_device_name")
-
-                deviceName.apply {
-                    text = device.name + if (currentDevice) " (current device)" else ""
-                    isChecked = sm.deviceSyncCreds?.enabledDevices?.contains(device.deviceId) ?: false
-                    setOnClickListener {
-                        if (isChecked) {
-                            if (currentDevice) {
-                                // Don’t allow restoring from current device
-                                isChecked = false
-                                showToast("Cannot restore from current device")
-                            } else {
-                                activeDevices.add(device.deviceId)
-                                activity?.lifecycle?.coroutineScope?.launch {
-                                    val payload = device.payload
-                                    if (payload != null) {
-                                        runCatching {
-                                            payload.extensions?.let { sm.currentExtensions = it }
-                                            payload.metaProviders?.let { sm.currentMetaProviders = it }
-                                            payload.mediaProviders?.let { sm.currentMediaProviders = it }
-                                        }.onSuccess {
-                                            showToast("Restored from ${device.name}")
-                                        }.onFailure {
-                                            showToast("Restore failed: ${it.message}")
-                                        }
-                                    } else {
-                                        showToast("No payload found for ${device.name}")
-                                    }
-                                }
-
-                            }
-                        } else {
-                            activeDevices.remove(device.deviceId)
-                        }
-                        deviceData?.enabledDevices = activeDevices
-                    }
-
+                deviceName.text = device.name + if (currentDevice) " (current device)" else ""
+                deviceName.isChecked =
+                    sm.deviceSyncCreds?.enabledDevices?.contains(device.deviceId) ?: false
+                deviceName.setOnClickListener {
+                    if (deviceName.isChecked) {
+                        if (currentDevice) deviceName.isChecked = false
+                        else activeDevices.add(device.deviceId)
+                    } else activeDevices.remove(device.deviceId)
+                    deviceData?.enabledDevices = activeDevices
                 }
-
                 devicesListLayout.addView(syncDeviceView)
             }
         }
