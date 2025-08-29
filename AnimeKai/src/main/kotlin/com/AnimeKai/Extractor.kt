@@ -31,7 +31,7 @@ class MegaUp : ExtractorApi() {
             "Sec-Fetch-Site" to "same-origin",
             "Pragma" to "no-cache",
             "Cache-Control" to "no-cache",
-            "referer" to "https://animekai.to/"
+            "referer" to "https://megaup.cc"
         )
 
         private fun extractLabelFromUrl(url: String): String {

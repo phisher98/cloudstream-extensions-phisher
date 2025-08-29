@@ -1279,7 +1279,7 @@ class AnyMegacc(provider: String?, dubType: String?, domain: String = "") : Extr
             "Priority" to "u=0",
             "Pragma" to "no-cache",
             "Cache-Control" to "no-cache",
-            "referer" to "https://animekai.to/"
+            "referer" to "https://megaup.cc"
         )
 
         private fun extractLabelFromUrl(url: String): String {
