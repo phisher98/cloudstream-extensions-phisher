@@ -18,9 +18,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
-import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
 import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.phisher98.UltimaUtils.SectionInfo
 
 class Ultima(val plugin: UltimaPlugin) : MainAPI() {
@@ -100,54 +98,11 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                 }
 
                 val homeSections = ArrayList<HomePageList>(filteredDevices.size)
-                val allResumeWatching = getResumeWatching()?.toMutableList() ?: mutableListOf()
 
                 for (device in filteredDevices) {
-                    val currentDevice = sm.deviceSyncCreds?.deviceId == device.deviceId
-                    val payload = device.payload
-
-                    if (payload != null) {
-                        if (!currentDevice) {
-                            runCatching {
-                                payload.extensions?.let { sm.currentExtensions = it }
-                                payload.metaProviders?.let { sm.currentMetaProviders = it }
-                                payload.mediaProviders?.let { sm.currentMediaProviders = it }
-                                payload.extNameOnHome?.let { sm.extNameOnHome = it }
-                            }.onSuccess {
-                                Log.i("getMainPage", "Restored providers from ${device.name}")
-                            }.onFailure {
-                                Log.e("getMainPage", "Restore failed from ${device.name}: ${it.message}")
-                            }
-                        } else {
-                            Log.w("getMainPage", "Skipping restore from current device ${device.name}")
-                        }
-
-                        // collect resumeWatching
-                        val syncedContent = payload.resumeWatching
-                        if (!syncedContent.isNullOrEmpty()) {
-                            allResumeWatching.addAll(syncedContent)
-                        }
-                    } else {
-                        Log.w("getMainPage", "No payload found for ${device.name}")
-                    }
+                    val syncedContent = device.syncedData ?: continue
+                    homeSections += HomePageList("Continue from: ${device.name}", syncedContent)
                 }
-
-                if (allResumeWatching.isNotEmpty()) {
-                    for (item in allResumeWatching) {
-                        DataStoreHelper.setLastWatched(
-                            item.parentId,
-                            item.id,
-                            item.episode,
-                            item.season,
-                            isFromDownload = item.isFromDownload
-                        )
-                        Log.d("getMainPage", "setLastWatched -> ${item.name} (id=${item.id})")
-                    }
-
-                    Log.i("getMainPage", "Synced ${allResumeWatching.size} resume items (no parentId grouping)")
-                }
-
-
 
                 newHomePageResponse(homeSections, false)
             } else {
@@ -172,7 +127,7 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     }
 
 
-    override suspend fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse>? {
         val enabledSections = mainPage
             .filter { !it.name.equals("watch_sync", ignoreCase = true) }
             .mapNotNull {
