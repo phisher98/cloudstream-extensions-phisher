@@ -12,12 +12,12 @@ dependencies {
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
 // use an integer for version numbers
-version = 1
+version = 2
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "The ultimate All-in-One home screen to access all of your extensions at one place (You need to select/deselect sections in Ultima's settings to load other extensions on home screen)"
+    description = "(Beta)The ultimate All-in-One home screen to access all of your extensions at one place (You need to select/deselect sections in Ultima's settings to load other extensions on home screen)"
     authors = listOf("RowdyRushya,Phisher98")
 
     /**

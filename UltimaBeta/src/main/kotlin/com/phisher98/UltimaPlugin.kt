@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.AcraApplication.Companion.context
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -11,6 +12,11 @@ import com.lagradost.cloudstream3.plugins.PluginManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
+import com.lagradost.cloudstream3.AcraApplication
+import com.lagradost.cloudstream3.AcraApplication.Companion
+import com.lagradost.cloudstream3.utils.DataStore.getDefaultSharedPrefs
+import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
 
 @CloudstreamPlugin
 class UltimaBetaPlugin : Plugin() {
@@ -84,9 +90,7 @@ class UltimaBetaPlugin : Plugin() {
     private fun triggerSync() {
         UltimaStorageManager.deviceSyncCreds?.let { creds ->
             CoroutineScope(Dispatchers.IO).launch {
-                Log.d("Phisher", "Triggering immediate sync...")
                 val result = creds.syncThisDevice()
-                Log.d("Phisher", "Immediate sync result: $result")
             }
         }
     }

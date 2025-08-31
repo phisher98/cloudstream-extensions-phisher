@@ -1,15 +1,15 @@
 package com.phisher98
 
-import android.content.Context
-import android.content.SharedPreferences
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
 import com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult
 import com.phisher98.UltimaStorageManager as sm
 
@@ -77,6 +77,7 @@ object WatchSyncUtils {
 
         data class SyncPayload(
             @JsonProperty("resumeWatching") val resumeWatching: List<ResumeWatchingResult>? = null,
+            @JsonProperty("data") val data: Map<String, String>? = null,
             @JsonProperty("extensions") val extensions: Array<UltimaUtils.ExtensionInfo>? = null,
             @JsonProperty("metaProviders") val metaProviders: Array<Pair<String, Boolean>>? = null,
             @JsonProperty("mediaProviders") val mediaProviders: Array<UltimaUtils.MediaProviderState>? = null,
@@ -87,7 +88,7 @@ object WatchSyncUtils {
 
         private fun Any.toStringData(): String = mapper.writeValueAsString(this)
 
-        fun isLoggedIn(): Boolean {
+        private fun isLoggedIn(): Boolean {
             return !(token.isNullOrEmpty() ||
                     projectNum == null ||
                     deviceName.isNullOrEmpty() ||
@@ -106,15 +107,25 @@ object WatchSyncUtils {
 
         /** Build JSON with all fields we want to sync */
         private suspend fun buildSyncJson(): String {
+            val context = AcraApplication.context
+            val sharedPrefs = context?.getSharedPrefs()
+
+            val filteredPrefs = sharedPrefs?.all?.filter { (key, _) -> key.contains("resume") || key.contains("download") }
+            Log.d("Phisher shared",filteredPrefs.toString())
             val map = mapOf(
                 "resumeWatching" to getResumeWatching(),
+                "data" to filteredPrefs,
                 "extNameOnHome" to sm.extNameOnHome,
                 "extensions" to sm.currentExtensions,
                 "metaProviders" to sm.currentMetaProviders,
                 "mediaProviders" to sm.currentMediaProviders
             )
+
             return mapper.writeValueAsString(map)
         }
+        private val nonTransferableKeys = listOf(
+            "result_resume_watching_migrated",
+        )
 
         // --- API Methods ---
         suspend fun syncProjectDetails(): Pair<Boolean, String?> {
@@ -224,10 +235,5 @@ object WatchSyncUtils {
                 }
             }?.also { Log.i("fetchDevices", "Fetched ${it.size} devices") }
         }
-    }
-
-    fun getDefaultPrefs(context: Context): SharedPreferences {
-        val prefsName = context.packageName + "_preferences"
-        return context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     }
 }

@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.BackupUtils
 import com.lagradost.cloudstream3.utils.DataStore.getDefaultSharedPrefs
 import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
-import com.lagradost.cloudstream3.utils.DataStoreHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -181,87 +180,5 @@ fun cleanTitle(title: String): String {
         parts.subList(startIndex, parts.size).joinToString(".")
     } else {
         parts.takeLast(3).joinToString(".")
-    }
-}
-
-object BackupUtils {
-
-    private val nonTransferableKeys = listOf(
-        "anilist_token",
-    )
-
-    // Checks if a SharedPreferences key is a resume-watching key
-    private fun String.isResume(): Boolean = !nonTransferableKeys.any { this.contains(it) }
-
-    // Creates a BackupFile object containing only relevant data for syncing
-    fun getBackup(context: Context?, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>? = null): BackupUtils.BackupFile? {
-        if (context == null) return null
-
-        val allData = context.getSharedPrefs().all.filter { it.key.isResume() }
-        val allSettings = context.getDefaultSharedPrefs().all.filter { it.key.isResume() }
-
-        val dataStore = BackupUtils.BackupVars(
-            allData.filterValues { it is Boolean } as? Map<String, Boolean>,
-            allData.filterValues { it is Int } as? Map<String, Int>,
-            allData.filterValues { it is String } as? Map<String, String>,
-            allData.filterValues { it is Float } as? Map<String, Float>,
-            allData.filterValues { it is Long } as? Map<String, Long>,
-            allData.filterValues { it is Set<*> } as? Map<String, Set<String>>
-        )
-
-        val settings = BackupUtils.BackupVars(
-            allSettings.filterValues { it is Boolean } as? Map<String, Boolean>,
-            allSettings.filterValues { it is Int } as? Map<String, Int>,
-            allSettings.filterValues { it is String } as? Map<String, String>,
-            allSettings.filterValues { it is Float } as? Map<String, Float>,
-            allSettings.filterValues { it is Long } as? Map<String, Long>,
-            allSettings.filterValues { it is Set<*> } as? Map<String, Set<String>>
-        )
-
-        return BackupUtils.BackupFile(
-            datastore = dataStore,
-            settings = settings
-        )
-    }
-
-    // Apply a map of data to SharedPreferences
-    private fun <T> Context.restoreMap(map: Map<String, T>?, isSettings: Boolean = false) {
-        val editor = if (isSettings) getDefaultSharedPrefs().edit() else getSharedPrefs().edit()
-        map?.forEach { (key, value) ->
-            if (key.isResume()) {
-                when (value) {
-                    is Boolean -> editor.putBoolean(key, value)
-                    is Int -> editor.putInt(key, value)
-                    is String -> editor.putString(key, value)
-                    is Float -> editor.putFloat(key, value)
-                    is Long -> editor.putLong(key, value)
-                    is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
-                }
-            }
-        }
-        editor.apply()
-    }
-
-    // Restore a BackupFile into SharedPreferences
-    fun restore(context: Context?, backupFile: BackupUtils.BackupFile, restoreSettings: Boolean = true, restoreDataStore: Boolean = true) {
-        if (context == null) return
-
-        if (restoreSettings) {
-            context.restoreMap(backupFile.settings.bool, true)
-            context.restoreMap(backupFile.settings.int, true)
-            context.restoreMap(backupFile.settings.string, true)
-            context.restoreMap(backupFile.settings.float, true)
-            context.restoreMap(backupFile.settings.long, true)
-            context.restoreMap(backupFile.settings.stringSet, true)
-        }
-
-        if (restoreDataStore) {
-            context.restoreMap(backupFile.datastore.bool)
-            context.restoreMap(backupFile.datastore.int)
-            context.restoreMap(backupFile.datastore.string)
-            context.restoreMap(backupFile.datastore.float)
-            context.restoreMap(backupFile.datastore.long)
-            context.restoreMap(backupFile.datastore.stringSet)
-        }
     }
 }

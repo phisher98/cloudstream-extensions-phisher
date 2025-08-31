@@ -1,11 +1,13 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.AcraApplication.Companion.context
+import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
@@ -19,13 +21,21 @@ import com.lagradost.cloudstream3.MovieSearchResponse
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvSeriesSearchResponse
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
+
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
 import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
 import com.lagradost.cloudstream3.utils.DataStoreHelper
+import com.lagradost.cloudstream3.utils.DataStoreHelper.deleteAllResumeStateIds
+import com.lagradost.cloudstream3.utils.DataStoreHelper.getAccounts
+import com.lagradost.cloudstream3.utils.RESULT_RESUME_WATCHING
+import com.lagradost.cloudstream3.utils.VideoDownloadHelper
 import com.phisher98.UltimaUtils.SectionInfo
+import androidx.core.content.edit
 
 class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
     override var name = "Ultima Beta"
@@ -83,6 +93,7 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
 
     override val mainPage = loadSections()
 
+    @SuppressLint("CommitPrefEdits")
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         val creds = sm.deviceSyncCreds
         creds?.syncThisDevice()
@@ -104,8 +115,6 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                 }
 
                 val homeSections = ArrayList<HomePageList>(filteredDevices.size)
-                val allResumeWatching = getResumeWatching()?.toMutableList() ?: mutableListOf()
-                val allResumeItems = mutableListOf<DataStoreHelper.ResumeWatchingResult>()
 
                 for (device in filteredDevices) {
                     val currentDevice = sm.deviceSyncCreds?.deviceId == device.deviceId
@@ -114,6 +123,8 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                         Log.w("restoreResumeWatching", "No payload found for ${device.name}")
                         continue
                     }
+
+                    Log.d("restoreResumeWatching", "Restoring device: ${device.name}, currentDevice=$currentDevice")
 
                     // Restore providers if not current device
                     if (!currentDevice) {
@@ -128,37 +139,69 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                             Log.e("getMainPage", "Restore failed from ${device.name}: ${it.message}")
                         }
 
-                        payload.resumeWatching?.forEach { item ->
-                            allResumeItems.add(item)
+                        // Restore resumeWatching items
+                        val allResumeItems = filteredDevices
+                            .filter { it.deviceId != sm.deviceSyncCreds?.deviceId }
+                            .flatMap { it.payload?.resumeWatching.orEmpty() }
+                            .distinctBy { it.id }
+
+                        context?.let { ctx ->
+                            val accounts = getAccounts(ctx)
+                            val sharedPrefs = ctx.getSharedPrefs()
+                            sharedPrefs.edit {
+                                allResumeItems.forEach { item ->
+                                    val parentId = item.parentId
+                                    val episodeId = item.id
+                                    val safeEpisode = item.episode
+                                    val safeSeason = item.season
+                                    val safePos = item.watchPos?.position ?: 0L
+                                    val safeDur = maxOf(item.watchPos?.duration ?: 0L, 30_000L)
+                                    accounts.forEach { account ->
+                                        val prevAccount = DataStoreHelper.selectedKeyIndex
+                                        DataStoreHelper.selectedKeyIndex = account.keyIndex
+
+                                        DataStoreHelper.setLastWatched(
+                                            parentId = parentId,
+                                            episodeId = episodeId,
+                                            episode = safeEpisode,
+                                            season = safeSeason,
+                                            isFromDownload = item.isFromDownload,
+                                            updateTime = System.currentTimeMillis()
+                                        )
+
+                                        DataStoreHelper.setViewPos(
+                                            id = episodeId,
+                                            pos = safePos,
+                                            dur = safeDur
+                                        )
+
+                                        DataStoreHelper.selectedKeyIndex = prevAccount
+                                    }
+                                }
+
+
+
+                                payload.data?.forEach { (key, value) ->
+                                    val idPart = key.split("/").lastOrNull()
+                                    val id = idPart?.toLongOrNull() ?: idPart?.toIntOrNull()?.toLong()
+
+                                    val shouldRestore = when {
+                                        key.contains("download_header_cache") -> id != null && allResumeItems.any { it.parentId?.toLong() == id }
+                                        key.contains("result_resume_watching") -> id != null && allResumeItems.any { it.id?.toLong() == id }
+                                        key.contains("video_pos") -> id != null && allResumeItems.any { it.id?.toLong() == id }
+                                        else -> false
+                                    }
+                                    if (shouldRestore) {
+                                        Log.d("RestoreAlldata", "Restoring key=$key, value=$value")
+                                    } else {
+                                        Log.d("RestoreAlldata", "Skipping key=$key")
+                                    }
+                                    sharedPrefs.edit {
+                                        putString(key, value).apply()
+                                    }
+                                }
+                            }
                         }
-                        if (allResumeItems.isNotEmpty()) {
-                            val uniqueResumeItems = allResumeItems.distinctBy { it.id }
-                            Log.d("getMainPage", "Adding ${uniqueResumeItems.size} resume items to homepage")
-                            homeSections += HomePageList("Continue Watching", uniqueResumeItems)
-                        }
-                    }
-
-
-                }
-
-                val uniqueResume = allResumeWatching.distinctBy { it.id }
-
-                if (uniqueResume.isNotEmpty()) {
-                    Log.d("Ultima", "Restoring ${uniqueResume.size} resume items...")
-
-                    val backupFile = BackupUtils.getBackup(context, uniqueResume)
-                    if (backupFile != null) {
-                        BackupUtils.restore(context, backupFile, restoreSettings = true, restoreDataStore = true)
-                        context?.getSharedPrefs()?.all?.forEach { (key, value) ->
-                            Log.d("UltimaPrefs", "$key -> $value")
-                        }
-                        Handler(Looper.getMainLooper()).post {
-                            MainActivity.bookmarksUpdatedEvent(true)
-                        }
-
-                        Log.i("getMainPage", "Synced ${uniqueResume.size} resume items via BackupUtils")
-                    } else {
-                        Log.w("Ultima", "BackupFile creation failed")
                     }
                 }
                 newHomePageResponse(homeSections, false)
