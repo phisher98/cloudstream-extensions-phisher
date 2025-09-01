@@ -153,6 +153,7 @@ object WatchSyncUtils {
                             key.isBackup(getResumeWatching())
                 }
                 ?.toMap()
+            Log.d("Phisher shared", filteredPrefs.toString())
 
             val map = mapOf(
                 "resumeWatching" to getResumeWatching(),

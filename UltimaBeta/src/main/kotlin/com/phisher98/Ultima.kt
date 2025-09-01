@@ -112,7 +112,6 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                         continue
                     }
 
-                    Log.d("restoreResumeWatching", "Restoring device: ${device.name}, currentDevice=$currentDevice")
 
                     // Restore providers if not current device
                     if (!currentDevice) {
