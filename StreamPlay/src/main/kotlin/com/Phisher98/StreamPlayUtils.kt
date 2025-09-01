@@ -2557,6 +2557,41 @@ fun generateVidsrcVrf(movieId: String, userId: String): String {
     return urlSafe
 }
 
+fun generateVrfRC4(movieId: String, userId: String): String {
+    fun rc4(text: String, key: String): ByteArray {
+        val s = IntArray(256) { it }
+        var j = 0
+
+        // KSA (Key Scheduling Algorithm)
+        for (i in 0 until 256) {
+            j = (j + s[i] + key[i % key.length].code) % 256
+            val tmp = s[i]
+            s[i] = s[j]
+            s[j] = tmp
+        }
+
+        // PRGA (Pseudo-Random Generation Algorithm)
+        val out = ByteArray(text.length)
+        var i = 0
+        j = 0
+        for ((index, ch) in text.toByteArray(Charsets.ISO_8859_1).withIndex()) {
+            i = (i + 1) % 256
+            j = (j + s[i]) % 256
+            val tmp = s[i]
+            s[i] = s[j]
+            s[j] = tmp
+            val k = s[(s[i] + s[j]) % 256]
+            out[index] = (ch.toInt() xor k).toByte()
+        }
+        return out
+    }
+
+    val cipher = rc4(movieId, userId)
+    val token = Base64.getUrlEncoder().withoutPadding().encodeToString(cipher)
+    return token
+}
+
+
 
 internal class AnimekaiDecoder {
     @SuppressLint("NewApi")

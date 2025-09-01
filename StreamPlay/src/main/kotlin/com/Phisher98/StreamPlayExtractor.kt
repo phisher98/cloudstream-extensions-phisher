@@ -2331,7 +2331,7 @@ object StreamPlayExtractor : StreamPlay() {
         val movieId = variables["movieId"] ?: ""
         val movieType = variables["movieType"] ?: ""
 
-        val vrf = generateVidsrcVrf(movieId,userId)
+        val vrf = generateVrfRC4(movieId,userId)
         val apiurl = if (season == null) {
             "${vidsrctoAPI}/api/$id/servers?id=$id&type=$movieType&v=$vvalue=&vrf=$vrf&imdbId=$imdbId"
         } else {
@@ -2339,22 +2339,17 @@ object StreamPlayExtractor : StreamPlay() {
         }
         app.get(apiurl).parsedSafe<Vidsrcccservers>()?.data?.forEach {
             val servername = it.name
-            val iframe = app.get("$vidsrctoAPI/api/source/${it.hash}")
-                .parsedSafe<Vidsrcccm3u8>()?.data?.source
-            val sourceUrl = iframe?.let { iframeUrl ->
-                val response = app.get(iframeUrl, referer = vidsrctoAPI).text
-                val urlregex = Regex("""var\s+source\s*=\s*"([^"]+)"""")
-                val match = urlregex.find(response)
-                match?.groups?.get(1)?.value?.replace("""\\/""".toRegex(), "/")
-            }
-
-            sourceUrl?.let { url->
-                loadCustomExtractor(
-                    "⌜ Vidsrc ⌟ | [$servername]",
-                    url,
-                    vidsrctoAPI,
-                    subtitleCallback,
-                    callback
+            val iframe = app.get("$vidsrctoAPI/api/source/${it.hash}").parsedSafe<Vidsrcccm3u8>()?.data?.source
+            if (iframe != null && !iframe.contains(".vidbox")) {
+                callback(
+                    newExtractorLink(
+                        "Vidsrc",
+                        "⌜ Vidsrc ⌟ | [$servername]",
+                        iframe,
+                    ) {
+                        this.quality = Qualities.P1080.value
+                        this.referer= vidsrctoAPI
+                    }
                 )
             }
         }
