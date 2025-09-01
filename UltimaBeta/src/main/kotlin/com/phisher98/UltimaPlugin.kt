@@ -16,6 +16,7 @@ class UltimaBetaPlugin : Plugin() {
 
     override fun load(context: Context) {
         activity = context as AppCompatActivity
+        triggerSync()
         // All providers should be added in this manner
         registerMainAPI(UltimaBeta(this))
         UltimaStorageManager.currentMetaProviders.forEach { metaProvider ->
@@ -35,11 +36,10 @@ class UltimaBetaPlugin : Plugin() {
                 ""
             )
         }
-        triggerSync()
     }
 
     fun reload(context: Context?) {
-        val pluginData = PluginManager.getPluginsOnline().find { it.internalName.contains("Ultima") }
+        val pluginData = PluginManager.getPluginsOnline().find { it.internalName.contains("Ultima Beta") }
         if (pluginData == null) {
             afterPluginsLoadedEvent.invoke(true)
         }

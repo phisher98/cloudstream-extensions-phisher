@@ -147,10 +147,12 @@ object WatchSyncUtils {
 
             // Only keep keys that are not non-transferable
             val filteredPrefs = sharedPrefs?.all
-                ?.filter { (key, _) -> key.isResume() || key.isBackup(getResumeWatching()) }
+                ?.filter { (key, _) ->
+                    (key.contains("resume") || key.contains("download")) &&
+                            key.isResume() &&
+                            key.isBackup(getResumeWatching())
+                }
                 ?.toMap()
-
-            Log.d("Phisher shared", filteredPrefs.toString())
 
             val map = mapOf(
                 "resumeWatching" to getResumeWatching(),
