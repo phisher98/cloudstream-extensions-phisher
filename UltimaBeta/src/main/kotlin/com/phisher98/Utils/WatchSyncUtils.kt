@@ -105,13 +105,53 @@ object WatchSyncUtils {
             return test.parsedSafe<APIRes>()
         }
 
+        private val nonTransferableKeys = listOf(
+            "result_resume_watching_migrated",
+        )
+
+        private fun String.isResume(): Boolean {
+            return !nonTransferableKeys.any { this.contains(it) }
+        }
+
+        private fun String.isBackup(resumeWatching: List<ResumeWatchingResult>? = null): Boolean {
+            var check = !nonTransferableKeys.any { this.contains(it) }
+            if (check) {
+                when {
+                    this.contains("download_header_cache") -> {
+                        val id = this.split("/").getOrNull(1)?.toIntOrNull()
+                        check = id?.let { intId ->
+                            resumeWatching?.any { if (it.parentId != null) it.parentId == intId else it.id == intId } == true
+                        } ?: false
+                    }
+                    this.contains("video_pos_dur") -> {
+                        val id = this.split("/").getOrNull(2)?.toIntOrNull()
+                        check = id?.let { intId ->
+                            resumeWatching?.any { it.id == intId } == true
+                        } ?: false
+                    }
+                    this.contains("result_season") || this.contains("result_dub") || this.contains("result_episode") -> {
+                        val id = this.split("/").getOrNull(2)?.toIntOrNull()
+                        check = id?.let { intId ->
+                            resumeWatching?.any { it.parentId == intId } == true
+                        } ?: false
+                    }
+                }
+            }
+            return check
+        }
+
         /** Build JSON with all fields we want to sync */
         private suspend fun buildSyncJson(): String {
             val context = AcraApplication.context
             val sharedPrefs = context?.getSharedPrefs()
 
-            val filteredPrefs = sharedPrefs?.all?.filter { (key, _) -> key.contains("resume") || key.contains("download") }
-            Log.d("Phisher shared",filteredPrefs.toString())
+            // Only keep keys that are not non-transferable
+            val filteredPrefs = sharedPrefs?.all
+                ?.filter { (key, _) -> key.isResume() || key.isBackup(getResumeWatching()) }
+                ?.toMap()
+
+            Log.d("Phisher shared", filteredPrefs.toString())
+
             val map = mapOf(
                 "resumeWatching" to getResumeWatching(),
                 "data" to filteredPrefs,
@@ -123,9 +163,7 @@ object WatchSyncUtils {
 
             return mapper.writeValueAsString(map)
         }
-        private val nonTransferableKeys = listOf(
-            "result_resume_watching_migrated",
-        )
+
 
         // --- API Methods ---
         suspend fun syncProjectDetails(): Pair<Boolean, String?> {

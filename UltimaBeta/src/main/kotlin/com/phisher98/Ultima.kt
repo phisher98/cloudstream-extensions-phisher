@@ -1,41 +1,30 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
-import android.os.Handler
-import android.os.Looper
+import androidx.core.content.edit
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.AcraApplication.Companion.context
-import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.MovieSearchResponse
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvSeriesSearchResponse
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
-import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
-
 import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
 import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
 import com.lagradost.cloudstream3.utils.DataStoreHelper
-import com.lagradost.cloudstream3.utils.DataStoreHelper.deleteAllResumeStateIds
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getAccounts
-import com.lagradost.cloudstream3.utils.RESULT_RESUME_WATCHING
-import com.lagradost.cloudstream3.utils.VideoDownloadHelper
 import com.phisher98.UltimaUtils.SectionInfo
-import androidx.core.content.edit
 
 class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
     override var name = "Ultima Beta"
@@ -74,7 +63,7 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
 
         sectionNamesList = tempSectionNames
 
-        return if (result.size <= 1) mainPageOf("" to "") else result
+        return if (result.size <= 1) mainPageOf("" to "watch_sync") else result
     }
 
 
@@ -93,7 +82,6 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
 
     override val mainPage = loadSections()
 
-    @SuppressLint("CommitPrefEdits")
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         val creds = sm.deviceSyncCreds
         creds?.syncThisDevice()
