@@ -1,6 +1,5 @@
 package com.phisher98
 
-import android.annotation.SuppressLint
 import androidx.core.content.edit
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.api.Log
@@ -22,8 +21,6 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
-import com.lagradost.cloudstream3.utils.DataStoreHelper
-import com.lagradost.cloudstream3.utils.DataStoreHelper.getAccounts
 import com.phisher98.UltimaUtils.SectionInfo
 
 class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
@@ -112,14 +109,40 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                         continue
                     }
 
-
-                    // Restore providers if not current device
                     if (!currentDevice) {
                         runCatching {
-                            payload.extensions?.let { sm.currentExtensions = it }
-                            payload.metaProviders?.let { sm.currentMetaProviders = it }
-                            payload.mediaProviders?.let { sm.currentMediaProviders = it }
-                            payload.extNameOnHome?.let { sm.extNameOnHome = it }
+                            if (payload.extensions != null) {
+                                if (!payload.extensions.contentEquals(sm.currentExtensions)) {
+                                    sm.currentExtensions = payload.extensions
+                                }
+                            } else {
+                                sm.currentExtensions = emptyArray()
+                            }
+
+                            if (payload.metaProviders != null) {
+                                if (!payload.metaProviders.contentEquals(sm.currentMetaProviders)) {
+                                    sm.currentMetaProviders = payload.metaProviders
+                                }
+                            } else {
+                                sm.currentMetaProviders = emptyArray()
+                            }
+
+                            if (payload.mediaProviders != null) {
+                                if (!payload.mediaProviders.contentEquals(sm.currentMediaProviders)) {
+                                    sm.currentMediaProviders = payload.mediaProviders
+                                }
+                            } else {
+                                sm.currentMediaProviders = emptyArray()
+                            }
+
+                            if (payload.extNameOnHome != null) {
+                                if (payload.extNameOnHome != sm.extNameOnHome) {
+                                    sm.extNameOnHome = payload.extNameOnHome
+                                }
+                            } else {
+                                sm.extNameOnHome = true
+                            }
+
                         }.onSuccess {
                             Log.i("getMainPage", "Restored providers from ${device.name}")
                         }.onFailure {
@@ -133,41 +156,8 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                             .distinctBy { it.id }
 
                         context?.let { ctx ->
-                            val accounts = getAccounts(ctx)
                             val sharedPrefs = ctx.getSharedPrefs()
                             sharedPrefs.edit {
-                                allResumeItems.forEach { item ->
-                                    val parentId = item.parentId
-                                    val episodeId = item.id
-                                    val safeEpisode = item.episode
-                                    val safeSeason = item.season
-                                    val safePos = item.watchPos?.position ?: 0L
-                                    val safeDur = maxOf(item.watchPos?.duration ?: 0L, 30_000L)
-                                    accounts.forEach { account ->
-                                        val prevAccount = DataStoreHelper.selectedKeyIndex
-                                        DataStoreHelper.selectedKeyIndex = account.keyIndex
-
-                                        DataStoreHelper.setLastWatched(
-                                            parentId = parentId,
-                                            episodeId = episodeId,
-                                            episode = safeEpisode,
-                                            season = safeSeason,
-                                            isFromDownload = item.isFromDownload,
-                                            updateTime = System.currentTimeMillis()
-                                        )
-
-                                        DataStoreHelper.setViewPos(
-                                            id = episodeId,
-                                            pos = safePos,
-                                            dur = safeDur
-                                        )
-
-                                        DataStoreHelper.selectedKeyIndex = prevAccount
-                                    }
-                                }
-
-
-
                                 payload.data?.forEach { (key, value) ->
                                     val idPart = key.split("/").lastOrNull()
                                     val id = idPart?.toLongOrNull() ?: idPart?.toIntOrNull()?.toLong()

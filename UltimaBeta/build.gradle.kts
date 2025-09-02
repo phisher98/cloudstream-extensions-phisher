@@ -1,8 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
 import org.jetbrains.kotlin.konan.properties.Properties
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 dependencies {
     implementation("com.google.android.material:material:1.12.0")
@@ -12,7 +10,7 @@ dependencies {
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
 // use an integer for version numbers
-version = 5
+version = 6
 
 cloudstream {
     // All of these properties are optional, you can safely remove them

@@ -2,6 +2,7 @@ package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -48,9 +49,15 @@ class UltimaBetaPlugin : Plugin() {
     private fun triggerSync() {
         UltimaStorageManager.deviceSyncCreds?.let { creds ->
             CoroutineScope(Dispatchers.IO).launch {
-                creds.syncThisDevice()
-                creds.fetchDevices()
+                runCatching {
+                    creds.syncThisDevice()
+                    val devices = creds.fetchDevices()
+                    Log.i("Sync", "Fetched ${devices?.size ?: 0} devices")
+                }.onFailure {
+                    Log.e("Sync", "Sync failed: ${it.message}")
+                }
             }
         }
     }
+
 }
