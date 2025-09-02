@@ -111,38 +111,10 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
 
                     if (!currentDevice) {
                         runCatching {
-                            if (payload.extensions != null) {
-                                if (!payload.extensions.contentEquals(sm.currentExtensions)) {
-                                    sm.currentExtensions = payload.extensions
-                                }
-                            } else {
-                                sm.currentExtensions = emptyArray()
-                            }
-
-                            if (payload.metaProviders != null) {
-                                if (!payload.metaProviders.contentEquals(sm.currentMetaProviders)) {
-                                    sm.currentMetaProviders = payload.metaProviders
-                                }
-                            } else {
-                                sm.currentMetaProviders = emptyArray()
-                            }
-
-                            if (payload.mediaProviders != null) {
-                                if (!payload.mediaProviders.contentEquals(sm.currentMediaProviders)) {
-                                    sm.currentMediaProviders = payload.mediaProviders
-                                }
-                            } else {
-                                sm.currentMediaProviders = emptyArray()
-                            }
-
-                            if (payload.extNameOnHome != null) {
-                                if (payload.extNameOnHome != sm.extNameOnHome) {
-                                    sm.extNameOnHome = payload.extNameOnHome
-                                }
-                            } else {
-                                sm.extNameOnHome = true
-                            }
-
+                            payload.extensions?.let { sm.currentExtensions = it }
+                            payload.metaProviders?.let { sm.currentMetaProviders = it }
+                            payload.mediaProviders?.let { sm.currentMediaProviders = it }
+                            payload.extNameOnHome?.let { sm.extNameOnHome = it }
                         }.onSuccess {
                             Log.i("getMainPage", "Restored providers from ${device.name}")
                         }.onFailure {

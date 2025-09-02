@@ -2587,7 +2587,7 @@ fun generateVrfRC4(movieId: String, userId: String): String {
     }
 
     val cipher = rc4(movieId, userId)
-    val token = Base64.getUrlEncoder().withoutPadding().encodeToString(cipher)
+    val token = base64Encode(cipher)
     return token
 }
 

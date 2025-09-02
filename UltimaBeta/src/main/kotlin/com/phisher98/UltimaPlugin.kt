@@ -51,8 +51,6 @@ class UltimaBetaPlugin : Plugin() {
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching {
                     creds.syncThisDevice()
-                    val devices = creds.fetchDevices()
-                    Log.i("Sync", "Fetched ${devices?.size ?: 0} devices")
                 }.onFailure {
                     Log.e("Sync", "Sync failed: ${it.message}")
                 }

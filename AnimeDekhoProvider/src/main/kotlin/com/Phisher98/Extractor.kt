@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import org.jsoup.nodes.Document
 
 class FilemoonV2 : ExtractorApi() {
     override var name = "Filemoon"
@@ -82,6 +83,51 @@ class Animezia : VidhideExtractor() {
 
 data class Media(val url: String, val poster: String? = null, val mediaType: Int? = null)
 
+
+class Animedekhoco : ExtractorApi() {
+    override val name = "Animedekhoco"
+    override val mainUrl = "https://animedekho.co"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc: Document? = if (url.contains("url=")) app.get(url).document else null
+        val text: String? = if (!url.contains("url=")) app.get(url).text else null
+
+        val links = mutableListOf<Pair<String, String>>()
+
+        doc?.select("select#serverSelector option")?.forEach { option ->
+            val link = option.attr("value")
+            val name = option.text().ifBlank { "Unknown" }
+            if (link.isNotBlank()) links.add(name to link)
+        }
+
+        text?.let {
+            val regex = Regex("""file\s*:\s*"([^"]+)"""")
+            regex.find(it)?.groupValues?.get(1)?.let { link ->
+                links.add("Player File" to link)
+            }
+        }
+
+        links.forEach { (serverName, serverUrl) ->
+            callback.invoke(
+                newExtractorLink(
+                    serverName,
+                    serverName,
+                    url = serverUrl,
+                    INFER_TYPE
+                ) {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
+            )
+        }
+    }
+}
 
 class StreamRuby : ExtractorApi() {
     override val name = "StreamRuby"

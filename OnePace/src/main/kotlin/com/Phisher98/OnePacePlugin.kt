@@ -14,5 +14,6 @@ class OnePacePlugin : BasePlugin() {
         registerExtractorAPI(Cdnwish())
         registerExtractorAPI(Dhcplay())
         registerExtractorAPI(vidcloudupns())
+        registerExtractorAPI(Animedekhoco())
     }
 }
