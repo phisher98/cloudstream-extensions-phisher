@@ -270,7 +270,7 @@ class GDFlix : ExtractorApi() {
                     }
                 }
 
-                text.contains("PixelDrain",ignoreCase = true) -> {
+                text.contains("PixelDrain",ignoreCase = true) || text.contains("Pixel",ignoreCase = true)-> {
                     callback.invoke(
                         newExtractorLink(
                             "$source GDFlix[Pixeldrain]",

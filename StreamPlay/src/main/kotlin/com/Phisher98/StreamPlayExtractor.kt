@@ -1870,13 +1870,28 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val vegaMoviesAPI = getDomains()?.vegamovies ?: return
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "cookie" to "xla=s4t",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "sec-ch-ua" to "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Linux\"",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Sec-Fetch-User" to "?1",
+            "Upgrade-Insecure-Requests" to "1",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        )
+
         val cfInterceptor = CloudflareKiller()
         val fixtitle = title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")?.trim().orEmpty()
         val query = if (season == null) "$fixtitle $year" else "$fixtitle season $season $year"
         val url = "$vegaMoviesAPI/?s=$query"
         val excludedButtonTexts = setOf("Filepress", "GDToT", "DropGalaxy")
 
-        val searchDoc = retry { app.get(url, interceptor = cfInterceptor).document } ?: return
+        val searchDoc = retry { app.get(url, interceptor = cfInterceptor, headers = headers).document } ?: return
         val articles = searchDoc.select("article h2")
         if (articles.isEmpty()) return
 
@@ -1886,7 +1901,7 @@ object StreamPlayExtractor : StreamPlay() {
             val hrefpattern = article.selectFirst("a")?.attr("href").orEmpty()
             if (hrefpattern.isBlank()) continue
 
-            val doc = retry { app.get(hrefpattern).document } ?: continue
+            val doc = retry { app.get(hrefpattern, headers = headers).document } ?: continue
 
             val imdbAnchor = doc.selectFirst("div.entry-inner p strong a[href*=\"imdb.com/title/tt\"]")
             val imdbHref = imdbAnchor?.attr("href")?.lowercase()
@@ -1988,6 +2003,20 @@ object StreamPlayExtractor : StreamPlay() {
         api: String
     ) {
         val cfInterceptor = CloudflareKiller()
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "cookie" to "xla=s4t",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "sec-ch-ua" to "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Linux\"",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Sec-Fetch-User" to "?1",
+            "Upgrade-Insecure-Requests" to "1",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        )
 
         suspend fun retry(times: Int = 3, delayMillis: Long = 1000, block: suspend () -> Document): Document? {
             repeat(times - 1) {
@@ -1998,7 +2027,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         suspend fun searchAndFilter(query: String, fallbackTitle: String? = null): Boolean {
             val url = "$api/$query"
-            val doc = retry { app.get(url, interceptor = cfInterceptor).document } ?: return false
+            val doc = retry { app.get(url, interceptor = cfInterceptor, headers = headers).document } ?: return false
             val articles = doc.select("article h3")
 
             for (article in articles) {
@@ -2006,7 +2035,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val href = article.selectFirst("a")?.absUrl("href").orEmpty()
                 if (href.isBlank()) continue
 
-                val detailDoc = retry { app.get(href, interceptor = cfInterceptor).document } ?: continue
+                val detailDoc = retry { app.get(href, interceptor = cfInterceptor, headers = headers).document } ?: continue
 
                 val matchedHref = detailDoc.select("a[href*=\"imdb.com/title/\"]")
                     .firstOrNull { anchor ->

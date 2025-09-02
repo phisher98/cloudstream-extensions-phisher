@@ -205,7 +205,7 @@ class HubCloud : ExtractorApi() {
                     }
                 }
 
-                "pixeldra" in link -> {
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
                             "Pixeldrain $labelExtras",

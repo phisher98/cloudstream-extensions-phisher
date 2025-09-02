@@ -28,6 +28,21 @@ class VegaMoviesProvider : MediaProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "cookie" to "xla=s4t",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "sec-ch-ua" to "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Linux\"",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Sec-Fetch-User" to "?1",
+            "Upgrade-Insecure-Requests" to "1",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        )
+
         val vegaMoviesAPI = getDomains()?.vegamovies ?: return
         val title=data.title
         val season=data.season
@@ -41,8 +56,8 @@ class VegaMoviesProvider : MediaProvider() {
         val secondaryUrl = "$vegaMoviesAPI/?search=$query"
         val excludedButtonTexts = setOf("Filepress", "GDToT", "DropGalaxy")
 
-        val searchDoc = retry { app.get(primaryUrl, interceptor = cfInterceptor).document }
-            ?: retry { app.get(secondaryUrl, interceptor = cfInterceptor).document }
+        val searchDoc = retry { app.get(primaryUrl, interceptor = cfInterceptor, headers = headers).document }
+            ?: retry { app.get(secondaryUrl, interceptor = cfInterceptor, headers = headers).document }
             ?: return
         val articles = searchDoc.select("article h2")
         if (articles.isEmpty()) return

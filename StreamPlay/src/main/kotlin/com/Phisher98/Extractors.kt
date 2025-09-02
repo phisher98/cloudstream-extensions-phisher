@@ -333,7 +333,7 @@ class VCloud : ExtractorApi() {
                     }
                 }
 
-                text.contains("pixeldra", ignoreCase = true) -> {
+                text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
                             "Pixeldrain $labelExtras",
@@ -857,6 +857,10 @@ class GDFlix2 : GDFlix() {
     override val mainUrl: String = "https://new2.gdflix.cfd"
 }
 
+class PixelServer : PixelDrain() {
+    override val mainUrl: String = "https://pixeldrain.dev"
+}
+
 open class PixelDrain : ExtractorApi() {
     override val name            = "PixelDrain"
     override val mainUrl         = "https://pixeldrain.com"
@@ -981,8 +985,7 @@ class HubCloud : ExtractorApi() {
                         Log.w("HubCloud", "BuzzServer: No redirect")
                     }
                 }
-
-                "pixeldra" in link -> {
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
                             "$source Pixeldrain $labelExtras",
@@ -1911,7 +1914,7 @@ open class GDFlix : ExtractorApi() {
                     }
                 }
 
-                text.contains("PixelDrain",ignoreCase = true) -> {
+                text.contains("PixelDrain",ignoreCase = true) || text.contains("Pixel",ignoreCase = true)-> {
                     callback.invoke(
                         newExtractorLink(
                             "$source GDFlix[Pixeldrain]",

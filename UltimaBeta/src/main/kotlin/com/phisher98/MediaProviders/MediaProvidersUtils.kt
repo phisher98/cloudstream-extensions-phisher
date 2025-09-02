@@ -538,7 +538,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                         }
                     }
 
-                    "pixeldra" in link -> {
+                    text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
                         callback.invoke(
                             newExtractorLink(
                                 "$name Pixeldrain $labelExtras",
@@ -1151,7 +1151,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
                     }
                 }
 
-                text.contains("PixelDrain",ignoreCase = true) -> {
+                text.contains("PixelDrain",ignoreCase = true) || text.contains("Pixel",ignoreCase = true)-> {
                     callback.invoke(
                         newExtractorLink(
                             "Pixeldrain",

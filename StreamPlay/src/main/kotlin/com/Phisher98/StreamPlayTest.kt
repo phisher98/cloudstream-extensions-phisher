@@ -27,7 +27,7 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
             {
-                invokeVidsrccc(res.id, res.season, res.episode, subtitleCallback, callback)
+                invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback)
             },
         )
         return true

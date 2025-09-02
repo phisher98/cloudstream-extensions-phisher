@@ -184,6 +184,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Vidguardto2())
         registerExtractorAPI(Hubstreamdad())
         registerExtractorAPI(StreamwishHG())
+        registerExtractorAPI(PixelServer())
         val activity = context as AppCompatActivity
         openSettings = {
             val frag = MainSettingsFragment(this, sharedPref)
