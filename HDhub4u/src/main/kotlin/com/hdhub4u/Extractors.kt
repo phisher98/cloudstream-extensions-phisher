@@ -112,7 +112,6 @@ class Hubdrive : ExtractorApi() {
 }
 
 
-@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
@@ -172,7 +171,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source [FSL Server] $labelExtras",
+                            "$source [FSL Server]",
                             "$source [FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -182,7 +181,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("Download File", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source $labelExtras",
+                            "$source",
                             "$source $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -195,7 +194,7 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                "$source [BuzzServer] $labelExtras",
+                                "$source [BuzzServer]",
                                 "$source [BuzzServer] $labelExtras",
                                 dlink,
                             ) { this.quality = quality }
@@ -208,7 +207,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "Pixeldrain $labelExtras",
+                            "Pixeldrain",
                             "Pixeldrain $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -218,7 +217,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source S3 Server $labelExtras",
+                            "$source S3 Server",
                             "$source S3 Server $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -242,8 +241,8 @@ class HubCloud : ExtractorApi() {
                     val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                         callback.invoke(
                             newExtractorLink(
-                                "[Download] $labelExtras",
-                                "[Download] $labelExtras",
+                                "10Gbps [Download]",
+                                "10Gbps [Download] $labelExtras",
                                 finalLink,
                             ) { this.quality = quality }
                         )

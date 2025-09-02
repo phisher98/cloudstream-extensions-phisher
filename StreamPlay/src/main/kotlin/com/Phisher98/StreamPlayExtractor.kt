@@ -2243,7 +2243,7 @@ object StreamPlayExtractor : StreamPlay() {
                     processMovieLinks("Extramovies", detailDoc, url, subtitleCallback, callback)
                 } else {
                     processSeasonLinks(
-                        "Extramovies",
+                        "Extramovies ",
                         detailDoc,
                         season,
                         episode,
@@ -2253,7 +2253,7 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
                 loadSourceNameExtractor(
-                    "ExtraMovies",
+                    "ExtraMovies ",
                     href,
                     "",
                     subtitleCallback,
@@ -4029,37 +4029,68 @@ object StreamPlayExtractor : StreamPlay() {
                     "$RiveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$source&secretKey=$secretKey"
                 }
 
-                val sourceJson = retry {
-                    app.get(streamUrl, headers, timeout = 10).parsedSafe<RiveStreamResponse>()
+                val responseString = retry {
+                    app.get(streamUrl, headers, timeout = 10).text
                 } ?: return@forEach
 
-                sourceJson.data.sources.forEach { src ->
-                    try {
-                        val label = "RiveStream ${src.source} ${src.quality}"
+                try {
+                    val json = JSONObject(responseString)
+                    val sourcesArray = json.optJSONObject("data")?.optJSONArray("sources") ?: return@forEach
+
+                    for (i in 0 until sourcesArray.length()) {
+                        val src = sourcesArray.getJSONObject(i)
+                        val label = "RiveStream ${src.optString("source")}"
                         val quality = Qualities.P1080.value
+                        val url = src.optString("url")
 
-                        if (src.url.contains("m3u8-proxy?url")) {
-                            val decodedUrl = URLDecoder.decode(
-                                src.url.substringAfter("m3u8-proxy?url=").substringBefore("&headers="),
-                                "UTF-8"
-                            )
+                        try {
+                            if (url.contains("proxy?url=")) {
+                                try {
+                                    val fullyDecoded = URLDecoder.decode(url, "UTF-8")
 
-                            callback(newExtractorLink(label, label, decodedUrl, ExtractorLinkType.M3U8) {
-                                this.referer = "https://megacloud.store/"
-                                this.quality = quality
-                            })
-                        } else {
-                            val type = if (src.url.contains(".m3u8", ignoreCase = true))
-                                ExtractorLinkType.M3U8 else INFER_TYPE
+                                    val encodedUrl = fullyDecoded.substringAfter("proxy?url=").substringBefore("&headers=")
+                                    val decodedUrl = URLDecoder.decode(encodedUrl, "UTF-8") // decode again if needed
 
-                            callback(newExtractorLink("$label (VLC)", "$label (VLC)", src.url, type) {
-                                this.referer = ""
-                                this.quality = quality
-                            })
+                                    val encodedHeaders = fullyDecoded.substringAfter("&headers=")
+                                    val headersMap = try {
+                                        val jsonStr = URLDecoder.decode(encodedHeaders, "UTF-8")
+                                        JSONObject(jsonStr).let { json ->
+                                            json.keys().asSequence().associateWith { json.getString(it) }
+                                        }
+                                    } catch (e: Exception) {
+                                        emptyMap()
+                                    }
+
+                                    val referer = headersMap["Referer"] ?: ""
+                                    val origin = headersMap["Origin"] ?: ""
+                                    val videoHeaders = mapOf("Referer" to referer, "Origin" to origin)
+
+                                    val type = if (decodedUrl.contains(".m3u8", ignoreCase = true))
+                                        ExtractorLinkType.M3U8 else INFER_TYPE
+
+                                    callback(newExtractorLink(label, label, decodedUrl, type) {
+                                        this.quality = quality
+                                        this.referer = referer
+                                        this.headers = videoHeaders
+                                    })
+                                } catch (e: Exception) {
+                                    Log.e("RiveStreamSourceError", "Failed to decode proxy URL: $url")
+                                }
+                            } else {
+                                val type = if (url.contains(".m3u8", ignoreCase = true))
+                                    ExtractorLinkType.M3U8 else INFER_TYPE
+
+                                callback(newExtractorLink("$label (VLC)", "$label (VLC)", url, type) {
+                                    this.referer = ""
+                                    this.quality = quality
+                                })
+                            }
+                        } catch (e: Exception) {
+                            Log.e("RiveStreamSourceError", "Source parse failed: $url $e")
                         }
-                    } catch (e: Exception) {
-                        Log.e("RiveStreamSourceError", "Source parse failed: ${src.url} $e")
                     }
+                } catch (e: Exception) {
+                    Log.e("RiveStreamParseError", "Failed to parse JSON for service $source: $e")
                 }
             } catch (e: Exception) {
                 Log.e("RiveStreamError", "Failed service: $source $e")

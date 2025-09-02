@@ -300,8 +300,8 @@ class VCloud : ExtractorApi() {
                 text.contains("Download [FSL Server]") -> {
                     callback.invoke(
                         newExtractorLink(
-                            "[FSL Server] $labelExtras",
-                            "[FSL Server] $labelExtras",
+                            "[FSL Server]",
+                            "[FSL Server]",
                             link,
                         ) { this.quality = quality }
                     )
@@ -310,7 +310,7 @@ class VCloud : ExtractorApi() {
                 text.contains("Download [Server : 1]") -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source $labelExtras",
+                            "$source [Server]",
                             "$source $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -323,7 +323,7 @@ class VCloud : ExtractorApi() {
                     if (dlink.isNotEmpty()) {
                         callback.invoke(
                             newExtractorLink(
-                                "[BuzzServer] $labelExtras",
+                                "[BuzzServer]",
                                 "[BuzzServer] $labelExtras",
                                 baseUrl + dlink,
                             ) { this.quality = quality }
@@ -336,7 +336,7 @@ class VCloud : ExtractorApi() {
                 text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "Pixeldrain $labelExtras",
+                            "Pixeldrain",
                             "Pixeldrain $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -345,7 +345,7 @@ class VCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String? = null
+                    var redirectUrl: String?
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
@@ -360,8 +360,8 @@ class VCloud : ExtractorApi() {
                     val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
-                            "[Download] $labelExtras",
-                            "[Download] $labelExtras",
+                            "10Gbps [Download]",
+                            "10Gbps [Download] $labelExtras",
                             finalLink,
                         ) { this.quality = quality }
                     )
@@ -370,7 +370,7 @@ class VCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "S3 Server $labelExtras",
+                            "S3 Server",
                             "S3 Server $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -895,7 +895,6 @@ open class PixelDrain : ExtractorApi() {
     }
 }
 
-@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.ink"
@@ -953,7 +952,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source [FSL Server] $labelExtras",
+                            "$source [FSL Server]",
                             "$source [FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -963,7 +962,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("Download File", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source $labelExtras",
+                            "$source",
                             "$source $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -976,7 +975,7 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                "$source [BuzzServer] $labelExtras",
+                                "$source [BuzzServer]",
                                 "$source [BuzzServer] $labelExtras",
                                 dlink,
                             ) { this.quality = quality }
@@ -988,7 +987,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source Pixeldrain $labelExtras",
+                            "$source Pixeldrain",
                             "$source Pixeldrain $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -998,7 +997,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source S3 Server $labelExtras",
+                            "$source S3 Server",
                             "$source S3 Server $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -1022,8 +1021,8 @@ class HubCloud : ExtractorApi() {
                     val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
-                            "[Download] $labelExtras",
-                            "[Download] $labelExtras",
+                            "$source 10Gbps [Download]",
+                            "$source 10Gbps [Download] $labelExtras",
                             finalLink,
                         ) { this.quality = quality }
                     )
@@ -1228,7 +1227,7 @@ open class Driveseed : ExtractorApi() {
                         instantLink(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name Instant(Download) $labelExtras",
+                                    "$name Instant(Download)",
                                     "$name Instant(Download) $labelExtras",
                                     url = link
                                 ) {
@@ -1242,7 +1241,7 @@ open class Driveseed : ExtractorApi() {
                         resumeBot(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name ResumeBot(VLC) $labelExtras",
+                                    "$name ResumeBot(VLC)",
                                     "$name ResumeBot(VLC) $labelExtras",
                                     url = link
                                 ) {
@@ -1256,7 +1255,7 @@ open class Driveseed : ExtractorApi() {
                         CFType1(Basedomain + href).forEach { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name CF Type1 $labelExtras",
+                                    "$name CF Type1",
                                     "$name CF Type1 $labelExtras",
                                     url = link
                                 ) {
@@ -1270,7 +1269,7 @@ open class Driveseed : ExtractorApi() {
                         resumeCloudLink(Basedomain, href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name ResumeCloud $labelExtras",
+                                    "$name ResumeCloud",
                                     "$name ResumeCloud $labelExtras",
                                     url = link
                                 ) {
@@ -1283,7 +1282,7 @@ open class Driveseed : ExtractorApi() {
                     text.contains("Cloud Download", ignoreCase = true) -> {
                         callback(
                             newExtractorLink(
-                                "$name Cloud Download $labelExtras",
+                                "$name Cloud Download",
                                 "$name Cloud Download $labelExtras",
                                 url = href
                             ) {
@@ -1522,130 +1521,6 @@ class GDMirrorbot : ExtractorApi() {
     private fun getBaseUrl(url: String): String {
         return URI(url).let { "${it.scheme}://${it.host}" }
     }
-}
-
-
-class OwlExtractor : ExtractorApi() {
-    override var name = "OwlExtractor"
-    override var mainUrl = "https://whguides.com"
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val response = retryIO { app.get(url).document }
-        val datasrc = response.select("button#hot-anime-tab").attr("data-source")
-        val id = datasrc.substringAfterLast("/")
-
-        val epJS = retryIO {
-            app.get("$referer/players/$id.v2.js").text.let {
-                Deobfuscator.deobfuscateScript(it)
-            }
-        }
-
-        val jwt = findFirstJwt(epJS ?: throw Exception("Unable to get jwt")) ?: return
-
-        val jsonString = retryIO { app.get("$referer$datasrc").text }
-        val mapper = jacksonObjectMapper()
-        val root = mapper.readTree(jsonString)
-
-        val servers = mutableMapOf<String, List<VideoData>>()
-        listOf("luffy", "kaido", "zoro").forEach { key ->
-            val node = root[key]
-            if (node != null && node.isArray) {
-                val videos: List<VideoData> = mapper.readValue(node.toString())
-                servers[key] = videos
-            }
-        }
-
-        val subtitlesNode = root["subtitles"]
-        subtitlesNode?.forEach {
-            val language = it["language"]?.asText()
-            val subUrl = it["url"]?.asText()
-            if (!language.isNullOrEmpty() && !subUrl.isNullOrEmpty()) {
-                subtitleCallback.invoke(SubtitleFile(language, subUrl))
-            }
-        }
-
-        val sources = mutableListOf<Pair<String, String>>()
-
-        servers["kaido"]?.firstOrNull()?.url?.let {
-            val finalUrl = "$it$jwt"
-            sources += "Kaido" to finalUrl
-        }
-
-        servers["luffy"]?.forEach { video ->
-            val finalUrl = "${video.url}$jwt"
-            val m3u8 = retryIO { getRedirectedUrl(finalUrl) }
-            sources += "Luffy-${video.resolution}" to m3u8
-        }
-
-        servers["zoro"]?.firstOrNull()?.url?.let {
-            val finalUrl = "$it$jwt"
-            val jsonResponse = retryIO { getZoroJson(finalUrl) }
-            val (m3u8, vtt) = fetchZoroUrl(jsonResponse) ?: return
-            sources += "Zoro" to m3u8
-            sources += "Zoro" to vtt
-        }
-
-        sources.amap { (key, finalUrl) ->
-            if (finalUrl.endsWith(".vtt") || finalUrl.endsWith(".ass")) {
-                subtitleCallback.invoke(SubtitleFile("English", finalUrl))
-            } else {
-                callback(
-                    newExtractorLink(
-                        "AnimeOwl",
-                        "AnimeOwl $key",
-                        url = finalUrl,
-                        type = INFER_TYPE
-                    ) {
-                        this.referer = mainUrl
-                        this.quality = when {
-                            key.contains("480") -> Qualities.P480.value
-                            key.contains("720") -> Qualities.P720.value
-                            key.contains("1080") -> Qualities.P1080.value
-                            key.contains("1440") -> Qualities.P1440.value
-                            key.contains("2160") -> Qualities.P2160.value
-                            key.contains("default") -> Qualities.P1080.value
-                            key.contains("2K") -> Qualities.P1440.value
-                            else -> Qualities.P720.value
-                        }
-                    }
-                )
-            }
-        }
-    }
-
-    private fun findFirstJwt(text: String): String? {
-        val jwtPattern = Regex("['\"]([A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+)['\"]")
-        return jwtPattern.find(text)?.groupValues?.get(1)
-    }
-
-    private fun getRedirectedUrl(url: String): String {
-        return url // Can wrap with retryIO if logic is added
-    }
-
-    private suspend fun getZoroJson(url: String): String {
-        return app.get(url).text
-    }
-
-    private fun fetchZoroUrl(jsonResponse: String): Pair<String, String>? {
-        return try {
-            val response = jacksonObjectMapper().readValue<ZoroResponse>(jsonResponse)
-            response.url to response.subtitle
-        } catch (e: Exception) {
-            Log.e("Error:", "Error parsing Zoro JSON: ${e.message}")
-            null
-        }
-    }
-
-    data class VideoData(val resolution: String, val url: String)
-
-    data class ZoroResponse(val url: String, val subtitle: String)
-
 }
 
 

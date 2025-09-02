@@ -149,7 +149,7 @@ open class Driveseed : ExtractorApi() {
                         instantLink(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name Instant(Download) $labelExtras",
+                                    "$name Instant(Download)",
                                     "$name Instant(Download) $labelExtras",
                                     url = link
                                 ) {
@@ -163,7 +163,7 @@ open class Driveseed : ExtractorApi() {
                         resumeBot(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name ResumeBot(VLC) $labelExtras",
+                                    "$name ResumeBot(VLC)",
                                     "$name ResumeBot(VLC) $labelExtras",
                                     url = link
                                 ) {
@@ -177,7 +177,7 @@ open class Driveseed : ExtractorApi() {
                         CFType1(Basedomain + href).forEach { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name CF Type1 $labelExtras",
+                                    "$name CF Type1",
                                     "$name CF Type1 $labelExtras",
                                     url = link
                                 ) {
@@ -191,7 +191,7 @@ open class Driveseed : ExtractorApi() {
                         resumeCloudLink(Basedomain, href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name ResumeCloud $labelExtras",
+                                    "$name ResumeCloud",
                                     "$name ResumeCloud $labelExtras",
                                     url = link
                                 ) {
@@ -204,7 +204,7 @@ open class Driveseed : ExtractorApi() {
                     text.contains("Cloud Download", ignoreCase = true) -> {
                         callback(
                             newExtractorLink(
-                                "$name Cloud Download $labelExtras",
+                                "$name Cloud Download",
                                 "$name Cloud Download $labelExtras",
                                 url = href
                             ) {

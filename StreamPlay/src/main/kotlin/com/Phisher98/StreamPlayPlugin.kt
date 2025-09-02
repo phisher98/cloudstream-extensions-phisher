@@ -161,7 +161,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Megacloud())
         registerExtractorAPI(Cdnstreame())
-        registerExtractorAPI(OwlExtractor())
         registerExtractorAPI(Rapidplayers())
         registerExtractorAPI(Maxfinishseveral())
         registerExtractorAPI(Pahe())

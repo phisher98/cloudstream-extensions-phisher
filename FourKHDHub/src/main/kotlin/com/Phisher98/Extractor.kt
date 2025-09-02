@@ -97,7 +97,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$referer [FSL Server] $labelExtras",
+                            "$referer [FSL Server]",
                             "$referer [FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -107,7 +107,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("Download File", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$referer $labelExtras",
+                            "$referer",
                             "$referer $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -120,7 +120,7 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                "$referer [BuzzServer] $labelExtras",
+                                "$referer [BuzzServer]",
                                 "$referer [BuzzServer] $labelExtras",
                                 baseUrl + dlink,
                             ) { this.quality = quality }
@@ -133,7 +133,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "Pixeldrain $labelExtras",
+                            "Pixeldrain",
                             "Pixeldrain $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -143,7 +143,7 @@ class HubCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$referer S3 Server $labelExtras",
+                            "$referer S3 Server",
                             "$referer S3 Server $labelExtras",
                             link,
                         ) { this.quality = quality }
@@ -167,8 +167,8 @@ class HubCloud : ExtractorApi() {
                     val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
-                            "$referer [Download] $labelExtras",
-                            "$referer [Download] $labelExtras",
+                            "$referer 10Gbps [Download]",
+                            "$referer 10Gbps [Download] $labelExtras",
                             finalLink,
                         ) { this.quality = quality }
                     )
