@@ -151,12 +151,11 @@ open class AnimeDekhoProvider : MainAPI() {
         }
 
         var success = false
-        for (i in 0..4) {
+        for (i in 0..10) {
             val iframeUrl = runCatching {
                 app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
                     .document.selectFirst("iframe")?.attr("src")
             }.getOrNull()
-
             if (!iframeUrl.isNullOrEmpty()) {
                 Log.d("Error:", "Found iframe: $iframeUrl")
                 runCatching {

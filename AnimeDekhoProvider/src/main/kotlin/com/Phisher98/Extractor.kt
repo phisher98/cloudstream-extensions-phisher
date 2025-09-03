@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 
 class FilemoonV2 : ExtractorApi() {
@@ -73,7 +74,6 @@ class Cdnwish : StreamWishExtractor() {
 class Cloudy : VidStack() {
     override var mainUrl = "https://cloudy.upns.one"
 }
-
 
 class Animezia : VidhideExtractor() {
     override var name = "Animezia"
@@ -171,6 +171,57 @@ class StreamRuby : ExtractorApi() {
                     this.headers = headers
                 }
             )
+        }
+    }
+}
+
+
+class Blakiteapi : ExtractorApi() {
+    override val name = "Blakiteapi"
+    override val mainUrl = "https://blakiteapi.xyz"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val apiurl = "$mainUrl/api/get.php?id=${url.substringAfterLast("/")}&tmdbId=${url.substringAfter("embed/").substringBefore("/")}"
+
+        val responseText = app.get(apiurl).text
+
+        val json = JSONObject(responseText)
+        val success = json.optBoolean("success", false)
+
+        if (success) {
+            val data = json.getJSONObject("data")
+
+            val quality = data.optString("quality", "480p")
+            val format = data.optString("format", "MP4")
+            val dataId = data.optString("dataId", "")
+            val streamUrl = "$mainUrl/stream/$dataId.$format"
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    streamUrl,
+                    INFER_TYPE
+                )
+                {
+                    this.quality=getQualityFromString(quality)
+                }
+            )
+        }
+    }
+
+    private fun getQualityFromString(q: String): Int {
+        return when {
+            q.contains("1080", true) -> Qualities.P1080.value
+            q.contains("720", true) -> Qualities.P720.value
+            q.contains("480", true) -> Qualities.P480.value
+            q.contains("360", true) -> Qualities.P360.value
+            else -> Qualities.Unknown.value
         }
     }
 }
