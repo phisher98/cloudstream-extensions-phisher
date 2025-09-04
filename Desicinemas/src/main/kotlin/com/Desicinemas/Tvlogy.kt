@@ -1,5 +1,6 @@
 package com.Desicinemas
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -46,11 +47,12 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
             val unpacked = JsUnpacker(script).unpack().toString()
 
             val matches = Regex("file\":\\s*\"(.*?)\"").findAll(unpacked)
-
             matches.forEach { match ->
                 val matched = match.groupValues[1]
+                Log.d("Phisher",matched.toString())
+
                 when {
-                    matched.contains(".m3u8") -> {
+                    !matched.contains(".vtt") -> {
                         generateM3u8(
                             name,
                             url,
