@@ -57,7 +57,7 @@ class SettingsFragment(
         val root = getLayout("settings", inflater, container)
 
         val providerSpinner = root.findView<Spinner>("provider_spinner")
-        val providers = listOf("Select Service", "TorBox", "Realdebrid","AIO Streams")
+        val providers = listOf("Select Service", "TorBox","Realdebrid","Alldebrid","AIO Streams")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, providers)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         providerSpinner.adapter = adapter
