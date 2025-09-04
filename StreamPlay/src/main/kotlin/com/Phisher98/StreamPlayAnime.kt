@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
@@ -55,7 +56,7 @@ class StreamPlayAnime : MainAPI() {
     override var mainUrl = "https://anilist.co"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
     override var lang = "en"
-    override val supportedSyncNames = setOf(SyncIdName.Anilist)
+    override val supportedSyncNames = setOf(SyncIdName.Anilist,SyncIdName.MyAnimeList)
     override val hasMainPage = true
     override val hasQuickSearch = false
     private val api = AccountManager.aniListApi
@@ -199,6 +200,7 @@ class StreamPlayAnime : MainAPI() {
         return if (data.format.contains("Movie",ignoreCase = true)) {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
+                addMalId(ids.idMal)
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
@@ -208,6 +210,7 @@ class StreamPlayAnime : MainAPI() {
         } else {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
                 addAniListId(id.toInt())
+                addMalId(ids.idMal)
                 addEpisodes(DubStatus.Subbed, episodes)
                 this.year = data.startDate.year
                 this.plot = data.description
