@@ -2,13 +2,14 @@ package com.Funmovieslix
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
+import org.json.JSONObject
 
 
 class Ryderjet : VidhideExtractor() {
@@ -24,10 +25,14 @@ class Vidhideplus : VidhideExtractor() {
     override var mainUrl = "https://vidhideplus.com"
 }
 
-class FilemoonV2 : ExtractorApi() {
-    override var name = "Filemoon"
-    override var mainUrl = "https://filemoon.to"
-    override val requiresReferer = true
+
+//Thanks to https://github.com/VVytai/jdownloader_mirror/blob/main/svn_trunk/src/jd/plugins/hoster/LixstreamCom.java
+class VideyV2 : ExtractorApi() {
+    override var name = "Videy"
+    override var mainUrl = "https://videy.tv"
+    override val requiresReferer = false
+
+    private val apiBase = "https://api.lixstreamingcaio.com/v2"
 
     override suspend fun getUrl(
         url: String,
@@ -35,22 +40,48 @@ class FilemoonV2 : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher","I'm here")
-        val href=app.get(url).document.selectFirst("iframe")?.attr("src") ?:""
-        Log.d("Phisher",href)
-        val res= app.get(href, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
-        val m3u8= JsUnpacker(res).unpack()?.let { unPacked ->
-            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+        val sid = url.substringAfterLast("/")
+        Log.d("Phisher", "sid=$sid")
+
+        val infoRes = app.post(
+            "$apiBase/s/home/resources/$sid",
+            data = mapOf(),
+            headers = mapOf("Content-Type" to "application/json")
+        ).text
+
+        val info = runCatching { JSONObject(infoRes) }.getOrNull() ?: return
+        val suid = info.optString("suid") ?: return
+        val files = info.optJSONArray("files") ?: return
+        if (files.length() == 0) return
+        val file = files.optJSONObject(0) ?: return
+        val fid = file.optString("id") ?: return
+        val assetRes = app.get("$apiBase/s/assets/f?id=$fid&uid=$suid").text
+        val asset = runCatching { JSONObject(assetRes) }.getOrNull() ?: return
+        val encryptedUrl = asset.optString("url")
+        if (encryptedUrl.isNullOrEmpty()) {
+            Log.e("Error:", "No encrypted url found")
+            return
         }
-        Log.d("Phisher",m3u8.toString())
+        val key = "GNgN1lHXIFCQd8hSEZIeqozKInQTFNXj".toByteArray(Charsets.UTF_8)
+        val iv = "2Xk4dLo38c9Z2Q2a".toByteArray(Charsets.UTF_8)
+        val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(
+            javax.crypto.Cipher.DECRYPT_MODE,
+            javax.crypto.spec.SecretKeySpec(key, "AES"),
+            javax.crypto.spec.IvParameterSpec(iv)
+        )
+        val decrypted = runCatching {
+            val decoded = base64DecodeArray(encryptedUrl)
+            String(cipher.doFinal(decoded), Charsets.UTF_8)
+        }.getOrNull() ?: return
         callback.invoke(
             ExtractorLink(
                 this.name,
                 this.name,
-                m3u8 ?:"",
+                decrypted,
                 url,
                 Qualities.P1080.value,
-                type = ExtractorLinkType.M3U8,
+                type = if (decrypted.endsWith(".mp4")) ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8,
             )
         )
     }
