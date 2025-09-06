@@ -50,7 +50,7 @@ import java.net.URI
 import kotlin.math.roundToInt
 
 class HiAnime : MainAPI() {
-    override var mainUrl = "https://hianimez.is"
+    override var mainUrl = HiAnimeProviderPlugin.currentHiAnimeServer
     override var name = "HiAnime"
     override val hasQuickSearch = false
     override val hasMainPage = true

@@ -25,7 +25,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Animekai Settings"
+                android:text="HiAnime Settings"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -76,7 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="10dp"
-                android:text="AnimeKai Servers"
+                android:text="HiAnime Servers"
                 android:textSize="17sp"
                 android:textStyle="bold" />
 

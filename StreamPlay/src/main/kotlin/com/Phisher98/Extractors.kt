@@ -34,6 +34,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.nicehttp.requestCreator
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.FormBody
@@ -1549,10 +1550,26 @@ class MegaUp : ExtractorApi() {
             val file = url.substringAfterLast("/")
             return when (val code = file.substringBefore("_").lowercase()) {
                 "eng" -> "English"
-                "ger" -> "German"
+                "ger", "deu" -> "German"
                 "spa" -> "Spanish"
-                "fre" -> "French"
+                "fre", "fra" -> "French"
                 "ita" -> "Italian"
+                "jpn" -> "Japanese"
+                "chi", "zho" -> "Chinese"
+                "kor" -> "Korean"
+                "rus" -> "Russian"
+                "ara" -> "Arabic"
+                "hin" -> "Hindi"
+                "por" -> "Portuguese"
+                "vie" -> "Vietnamese"
+                "pol" -> "Polish"
+                "ukr" -> "Ukrainian"
+                "swe" -> "Swedish"
+                "ron", "rum" -> "Romanian"
+                "ell", "gre" -> "Greek"
+                "hun" -> "Hungarian"
+                "fas", "per" -> "Persian"
+                "tha" -> "Thai"
                 else -> code.uppercase()
             }
         }
@@ -1595,43 +1612,43 @@ class MegaUp : ExtractorApi() {
         val m3u8Url = m3u8Response.url
 
         if (m3u8Url.contains(".m3u8")) {
-            Log.d("MegaUp", "Found m3u8: $m3u8Url")
             val displayName = referer ?: this.name
-            generateM3u8(displayName, m3u8Url, mainUrl, headers = HEADERS)
+            M3u8Helper.generateM3u8(displayName, m3u8Url, mainUrl, headers = HEADERS)
                 .forEach(callback)
         } else {
             Log.e("MegaUp", "Failed to find .m3u8 for $url")
         }
 
         // Second: Get .vtt subtitles
-        val vttResolver = WebViewResolver(
-            interceptUrl = Regex("""eng_\d+\.vtt"""),
-            additionalUrls = listOf(Regex("""eng_\d+\.vtt""")),
-            script = jsToClickPlay,
-            scriptCallback = { result -> Log.d("MegaUp", "JS Result: $result") },
-            useOkhttp = false,
-            timeout = 15_000L
-        )
+        val subtitleUrls = mutableListOf<String>()
 
-        val vttResponse = webViewMutex.withLock {
-            app.get(
-                url = url,
-                referer = mainUrl,
-                headers = HEADERS,
-                interceptor = vttResolver
-            )
-        }
-
-        val subtitleUrls = buildList {
-            if (vttResponse.url.endsWith(".vtt") && !vttResponse.url.contains("thumbnails", ignoreCase = true)) {
-                add(vttResponse.url)
+        webViewMutex.withLock {
+            WebViewResolver(
+                interceptUrl = Regex("""^$"""),
+                additionalUrls = listOf(Regex(""".*\.vtt""")), // catch all .vtt files
+                script = jsToClickPlay,
+                scriptCallback = { result -> Log.d("MegaUp", "JS Result: $result") },
+                useOkhttp = false,
+                timeout = 15_000L,
+                userAgent = null
+            ).resolveUsingWebView(
+                requestCreator("GET", url, headers = HEADERS)
+            ) { request ->
+                val interceptedUrl = request.url.toString()
+                if (interceptedUrl.endsWith(".vtt") &&
+                    !interceptedUrl.contains("thumbnails", ignoreCase = true)
+                ) {
+                    subtitleUrls.add(interceptedUrl)
+                }
+                false
             }
-        }.distinct()
+        }
 
         subtitleUrls.forEach { subUrl ->
             val label = extractLabelFromUrl(subUrl)
             subtitleCallback(SubtitleFile(label, subUrl))
         }
+
     }
 }
 
@@ -1899,6 +1916,7 @@ class UqloadsXyz : ExtractorApi() {
     override val mainUrl = "https://uqloads.xyz"
     override val requiresReferer = true
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getUrl(
         url: String,
         referer: String?,

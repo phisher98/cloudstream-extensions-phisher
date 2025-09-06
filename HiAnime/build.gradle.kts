@@ -15,6 +15,8 @@ android {
 }
 dependencies {
     implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.6")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.13.0")
 }
 
 
@@ -38,6 +40,6 @@ cloudstream {
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=hianime.to&sz=%size%"
-
+    requiresResources = true
     isCrossPlatform = false
 }
