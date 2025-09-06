@@ -59,34 +59,21 @@ class SettingsFragment(
         // ===== PROVIDERS =====
         val providerTextView = root.findView<TextView>("providers_spinner")
         val providers = listOf(
-            "YTS",
-            "EZTV",
-            "RARBG",
-            "1337x",
-            "ThePirateBay",
-            "KickassTorrents",
-            "TorrentGalaxy",
-            "MagnetDL",
-            "HorribleSubs",
-            "NyaaSi",
-            "TokyoTosho",
-            "AniDex",
-            "Rutor",
-            "RuTracker",
-            "Comando",
-            "BluDV",
-            "Torrent9",
-            "ilCorSaRoNeRo",
-            "MejorTorrent",
-            "Wolfmax4k",
-            "Cinecalidad",
-            "BestTorrents"
+            "YTS", "EZTV", "RARBG", "1337x", "ThePirateBay", "KickassTorrents",
+            "TorrentGalaxy", "MagnetDL", "HorribleSubs", "NyaaSi", "TokyoTosho",
+            "AniDex", "Rutor", "RuTracker", "Comando", "BluDV", "Torrent9",
+            "ilCorSaRoNeRo", "MejorTorrent", "Wolfmax4k", "Cinecalidad", "BestTorrents"
         )
         val selectedProviders = BooleanArray(providers.size)
+        sharedPref.getString("provider", "")?.split(",")?.forEach { saved ->
+            val index = providers.indexOf(saved)
+            if (index >= 0) selectedProviders[index] = true
+        }
 
         val updateProviderText = {
             val selected = providers.filterIndexed { index, _ -> selectedProviders[index] }
-            providerTextView.text = if (selected.isEmpty()) "Select Providers" else selected.joinToString(", ")
+            providerTextView.text =
+                if (selected.isEmpty()) "Select Providers" else selected.joinToString(", ")
         }
         updateProviderText()
 
@@ -98,7 +85,12 @@ class SettingsFragment(
                 }
                 .setPositiveButton("OK") { _, _ ->
                     updateProviderText()
-                    sharedPref.edit { putString("provider", providers.filterIndexed { i,_ -> selectedProviders[i] }.joinToString(",")) }
+                    sharedPref.edit {
+                        putString(
+                            "provider",
+                            providers.filterIndexed { i, _ -> selectedProviders[i] }.joinToString(",")
+                        )
+                    }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -107,68 +99,40 @@ class SettingsFragment(
 
         // ===== SORT SPINNER =====
         val sortSpinner = root.findView<Spinner>("sort_spinner")
-        val sortOptions = listOf(
-            "Quality",
-            "Qualitysize",
-            "Seeders",
-            "Size"
-        )
-        sortSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortOptions).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        val sortOptions = listOf("Quality", "Qualitysize", "Seeders", "Size")
+        sortSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortOptions).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        val savedSort = sharedPref.getString("sort", null)
+        if (savedSort != null) {
+            val pos = sortOptions.indexOf(savedSort)
+            if (pos >= 0) sortSpinner.setSelection(pos)
         }
         sortSpinner.makeTvCompatible()
 
-        // ===== LANGUAGES (Multi-select) =====
+        // ===== LANGUAGES =====
         val languageTextView = root.findView<TextView>("language_spinner")
         val languages = listOf(
-            "Japanese",   // 🇯🇵 Japanese
-            "Russian",    // 🇷🇺 Russian
-            "Italian",    // 🇮🇹 Italian
-            "Portuguese", // 🇵🇹 Portuguese
-            "Spanish",    // 🇪🇸 Spanish
-            "Latino",     // 🇲🇽 Latino
-            "Korean",     // 🇰🇷 Korean
-            "Chinese",    // 🇨🇳 Chinese
-            "Taiwanese",  // 🇹🇼 Taiwanese
-            "French",     // 🇫🇷 French
-            "German",     // 🇩🇪 German
-            "Dutch",      // 🇳🇱 Dutch
-            "Hindi",      // 🇮🇳 Hindi
-            "Telugu",     // 🇮🇳 Telugu
-            "Tamil",      // 🇮🇳 Tamil
-            "Polish",     // 🇵🇱 Polish
-            "Lithuanian", // 🇱🇹 Lithuanian
-            "Latvian",    // 🇱🇻 Latvian
-            "Estonian",   // 🇪🇪 Estonian
-            "Czech",      // 🇨🇿 Czech
-            "Slovakian",  // 🇸🇰 Slovakian
-            "Slovenian",  // 🇸🇮 Slovenian
-            "Hungarian",  // 🇭🇺 Hungarian
-            "Romanian",   // 🇷🇴 Romanian
-            "Bulgarian",  // 🇧🇬 Bulgarian
-            "Serbian",    // 🇷🇸 Serbian
-            "Croatian",   // 🇭🇷 Croatian
-            "Ukrainian",  // 🇺🇦 Ukrainian
-            "Greek",      // 🇬🇷 Greek
-            "Danish",     // 🇩🇰 Danish
-            "Finnish",    // 🇫🇮 Finnish
-            "Swedish",    // 🇸🇪 Swedish
-            "Norwegian",  // 🇳🇴 Norwegian
-            "Turkish",    // 🇹🇷 Turkish
-            "Arabic",     // 🇸🇦 Arabic
-            "Persian",    // 🇮🇷 Persian
-            "Hebrew",     // 🇮🇱 Hebrew
-            "Vietnamese", // 🇻🇳 Vietnamese
-            "Indonesian", // 🇮🇩 Indonesian
-            "Malay",      // 🇲🇾 Malay
-            "Thai"        // 🇹🇭 Thai
+            "Japanese", "Russian", "Italian", "Portuguese", "Spanish", "Latino",
+            "Korean", "Chinese", "Taiwanese", "French", "German", "Dutch", "Hindi",
+            "Telugu", "Tamil", "Polish", "Lithuanian", "Latvian", "Estonian", "Czech",
+            "Slovakian", "Slovenian", "Hungarian", "Romanian", "Bulgarian", "Serbian",
+            "Croatian", "Ukrainian", "Greek", "Danish", "Finnish", "Swedish",
+            "Norwegian", "Turkish", "Arabic", "Persian", "Hebrew", "Vietnamese",
+            "Indonesian", "Malay", "Thai"
         )
-        val selectedLanguages = BooleanArray(languages.size) { false }
+        val selectedLanguages = BooleanArray(languages.size)
+        sharedPref.getString("language", "")?.split(",")?.forEach { saved ->
+            val index = languages.indexOf(saved)
+            if (index >= 0) selectedLanguages[index] = true
+        }
 
         val updateLanguageText = {
             val selected = languages.filterIndexed { index, _ -> selectedLanguages[index] }
-            languageTextView.text = if (selected.isEmpty()) "Select Languages"
-            else selected.joinToString(", ") { it.replaceFirstChar { c -> c.uppercase() } }
+            languageTextView.text =
+                if (selected.isEmpty()) "Select Languages"
+                else selected.joinToString(", ") { it.replaceFirstChar { c -> c.uppercase() } }
         }
         updateLanguageText()
 
@@ -180,42 +144,39 @@ class SettingsFragment(
                 }
                 .setPositiveButton("OK") { _, _ ->
                     updateLanguageText()
-                    // Save selected languages in shared preferences
                     sharedPref.edit {
-                        putString("language", languages.filterIndexed { index, _ -> selectedLanguages[index] }.joinToString(","))
+                        putString(
+                            "language",
+                            languages.filterIndexed { index, _ -> selectedLanguages[index] }
+                                .joinToString(",")
+                        )
                     }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
         }
-
         languageTextView.makeTvCompatible()
 
         // ===== QUALITY FILTER =====
         val qualityTextView = root.findView<TextView>("quality_spinner")
         val qualities = listOf(
-            "Brremux",             // BluRay REMUX
-            "Hdrall",              // HDR/HDR10+/Dolby Vision
-            "Dolbyvision",         // Dolby Vision
-            "Dolbyvisionwithhdr",  // Dolby Vision + HDR
-            "Threed",              // 3D
-            "Nonthreed",           // Non 3D (DO NOT SELECT IF NOT SURE)
-            "4k",                  // 4k
-            "1080p",               // 1080p
-            "720p",                // 720p
-            "480p",                // 480p
-            "Other",               // Other (DVDRip/HDRip/BDRip...)
-            "Scr",                 // Screener
-            "Cam",                 // Cam
-            "Unknown"              // Unknown
+            "Brremux", "Hdrall", "Dolbyvision", "Dolbyvisionwithhdr",
+            "Threed", "Nonthreed", "4k", "1080p", "720p", "480p",
+            "Other", "Scr", "Cam", "Unknown"
         )
-
         val selectedQualities = BooleanArray(qualities.size)
+        sharedPref.getString("qualityfilter", "")?.split(",")?.forEach { saved ->
+            val index = qualities.indexOf(saved)
+            if (index >= 0) selectedQualities[index] = true
+        }
+
         val updateQualityText = {
-            val selected = qualities.filterIndexed { i,_ -> selectedQualities[i] }
-            qualityTextView.text = if (selected.isEmpty()) "Select Qualities" else selected.joinToString(", ")
+            val selected = qualities.filterIndexed { i, _ -> selectedQualities[i] }
+            qualityTextView.text =
+                if (selected.isEmpty()) "Select Qualities" else selected.joinToString(", ")
         }
         updateQualityText()
+
         qualityTextView.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle("Select Qualities")
@@ -224,7 +185,12 @@ class SettingsFragment(
                 }
                 .setPositiveButton("OK") { _, _ ->
                     updateQualityText()
-                    sharedPref.edit { putString("qualityfilter", qualities.filterIndexed { i,_ -> selectedQualities[i] }.joinToString(",")) }
+                    sharedPref.edit {
+                        putString(
+                            "qualityfilter",
+                            qualities.filterIndexed { i, _ -> selectedQualities[i] }.joinToString(",")
+                        )
+                    }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -233,32 +199,33 @@ class SettingsFragment(
 
         // ===== LIMIT =====
         val limitInput = root.findView<EditText>("limit_input")
+        limitInput.setText(sharedPref.getString("limit", ""))
         limitInput.makeTvCompatible()
 
         // ===== SIZE =====
         val sizeInput = root.findView<EditText>("size_filter_input")
+        sizeInput.setText(sharedPref.getString("sizefilter", ""))
         sizeInput.makeTvCompatible()
 
         // ===== DEBRID PROVIDERS =====
         val debridSpinner = root.findView<Spinner>("debrid_provider_spinner")
         val debridProviders = listOf(
-            "None",
-            "RealDebrid",
-            "Premiumize",
-            "AllDebrid",
-            "DebridLink",
-            "EasyDebrid",
-            "Offcloud",
-            "TorBox",
-            "Put.io",
-            "AIO Streams"
+            "None", "RealDebrid", "Premiumize", "AllDebrid", "DebridLink",
+            "EasyDebrid", "Offcloud", "TorBox", "Put.io", "AIO Streams"
         )
-        debridSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, debridProviders).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        debridSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, debridProviders).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        val savedDebrid = sharedPref.getString("debrid_provider", null)
+        if (savedDebrid != null) {
+            val pos = debridProviders.indexOf(savedDebrid)
+            if (pos >= 0) debridSpinner.setSelection(pos)
         }
         debridSpinner.makeTvCompatible()
 
         val debridKeyInput = root.findView<EditText>("debrid_key_input")
+        debridKeyInput.setText(sharedPref.getString("debrid_key", ""))
         debridKeyInput.makeTvCompatible()
 
         // ===== SAVE =====
@@ -267,9 +234,9 @@ class SettingsFragment(
         saveBtn.makeTvCompatible()
         saveBtn.setOnClickListener {
             sharedPref.edit {
-                putString("provider", providers.filterIndexed { i,_ -> selectedProviders[i] }.joinToString(","))
-                putString("language", languages.filterIndexed { i,_ -> selectedLanguages[i] }.joinToString(","))
-                putString("qualityfilter", qualities.filterIndexed { i,_ -> selectedQualities[i] }.joinToString(","))
+                putString("provider", providers.filterIndexed { i, _ -> selectedProviders[i] }.joinToString(","))
+                putString("language", languages.filterIndexed { i, _ -> selectedLanguages[i] }.joinToString(","))
+                putString("qualityfilter", qualities.filterIndexed { i, _ -> selectedQualities[i] }.joinToString(","))
                 putString("sort", sortSpinner.selectedItem?.toString() ?: "")
                 putString("limit", limitInput.text.toString())
                 putString("sizefilter", sizeInput.text.toString())
