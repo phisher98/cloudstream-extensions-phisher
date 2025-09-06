@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 class MPlayer : MainAPI() {
     override val supportedTypes = setOf(
@@ -128,30 +129,99 @@ class MPlayer : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val gson = Gson()
         val response = app.post(
             "$webApi/search/resultv2?query=$query$endParam",
             referer = "$mainUrl/",
             requestBody = "{}".toRequestBody("application/json".toMediaType())
         ).body.string()
-        val searchResult = gson.fromJson(response, SearchResult::class.java)
+
         val result = mutableListOf<SearchResponse>()
-        searchResult.sections.forEach { section ->
-            section.items.forEach { item ->
-                if (item.type.contains("movie", ignoreCase = true)) {
-                    val portraitLargeImageUrl = getBigPic(item)
-                    val streamUrl: String = item.stream?.hls?.high?.let { endpointurl + it }
-                        ?: item.stream?.thirdParty?.hlsUrl
-                        ?: item.stream?.thirdParty?.dashUrl
-                        ?: ""
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo,null, item.type, null, item.description, item.shareUrl,streamUrl,portraitLargeImageUrl).toJson()) {
-                        posterUrl = portraitLargeImageUrl
-                    })
+        val root = JSONObject(response)
+
+        val sections = root.optJSONArray("sections") ?: return result
+
+        for (i in 0 until sections.length()) {
+            val section = sections.getJSONObject(i)
+            val items = section.optJSONArray("items") ?: continue
+
+            for (j in 0 until items.length()) {
+                val item = items.getJSONObject(j)
+
+                val title = item.optString("title")
+                val description = item.optString("description")
+                val type = item.optString("type")
+                val shareUrl = item.optString("shareUrl")
+
+                // --- Image handling ---
+                val imageInfo = item.optJSONArray("imageInfo")
+                var portraitLargeImageUrl: String? = null
+                if (imageInfo != null) {
+                    for (k in 0 until imageInfo.length()) {
+                        val img = imageInfo.getJSONObject(k)
+                        if (img.optString("type") == "portrait_large") {
+                            portraitLargeImageUrl = endpointurl + img.optString("url")
+                            break
+                        }
+                    }
+                }
+
+                // --- Stream URL handling ---
+                var streamUrl: String? = null
+                val stream = item.optJSONObject("stream")
+                if (stream != null) {
+                    val hls = stream.optJSONObject("hls")
+                    val thirdParty = stream.optJSONObject("thirdParty")
+                    streamUrl = hls?.optString("high")
+                        ?.let { endpointurl + it }
+                        ?: thirdParty?.optString("hlsUrl")
+                                ?: thirdParty?.optString("dashUrl")
+                }
+
+                // --- Build response ---
+                if (type.contains("movie", ignoreCase = true)) {
+                    val titleContentImageInfo = item.optJSONArray("titleContentImageInfo")?.let { arr ->
+                        (0 until arr.length()).map { arr.get(it) }
+                    }
+                    result.add(
+                        newMovieSearchResponse(
+                            title,
+                            LoadUrl(
+                                title,
+                                titleContentImageInfo,
+                                null,
+                                type,
+                                null,
+                                description,
+                                shareUrl,
+                                streamUrl,
+                                portraitLargeImageUrl
+                            ).toJson()
+                        ) {
+                            posterUrl = portraitLargeImageUrl
+                        }
+                    )
                 } else {
-                    val portraitLargeImageUrl = getBigPic(item)
-                    result.add(newMovieSearchResponse(item.title, LoadUrl(item.title, item.titleContentImageInfo,null, item.type, null, item.description, item.shareUrl,null,portraitLargeImageUrl).toJson()) {
-                        posterUrl = portraitLargeImageUrl
-                    })
+                    val titleContentImageInfo = item.optJSONArray("titleContentImageInfo")?.let { arr ->
+                        (0 until arr.length()).map { arr.get(it) }
+                    }
+                    result.add(
+                        newMovieSearchResponse(
+                            title,
+                            LoadUrl(
+                                title,
+                                titleContentImageInfo,
+                                null,
+                                type,
+                                null,
+                                description,
+                                shareUrl,
+                                null,
+                                portraitLargeImageUrl
+                            ).toJson()
+                        ) {
+                            posterUrl = portraitLargeImageUrl
+                        }
+                    )
                 }
             }
         }

@@ -14,26 +14,6 @@ data class MXPlayer(
 )
 
 
-data class SearchResult(
-    val sections: List<Section>,
-    val next: Any?,
-)
-
-
-data class Section(
-    val id: String,
-    val style: String,
-    val items: List<Item>,
-    val next: String?,
-    val previous: Any?,
-    val name: String,
-    val webUrl: Any?,
-    val channelDetails: Any?,
-    val features: Any?,
-    val tournament: Any?,
-    val ascend: Boolean,
-)
-
 data class Item(
     val description: String,
     val title: String,
