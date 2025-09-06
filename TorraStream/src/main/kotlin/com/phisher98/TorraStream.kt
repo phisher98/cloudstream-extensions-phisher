@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -64,26 +65,20 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val provider = sharedPref.getString("provider", null)
-        val key = sharedPref.getString("key", null)
+        val provider = sharedPref.getString("debrid_provider", null)
+        val key = sharedPref.getString("debrid_key", null)
         val dataObj = AppUtils.parseJson<LinkData>(data)
         val title = dataObj.title
         val season = dataObj.season
         val episode = dataObj.episode
         val id = dataObj.imdbId
         val year = dataObj.year
+        Log.d("Phisher API 1","$provider $key")
 
         val anijson = app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
 
-        val apiUrl = if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
-            val encodedKey = withContext(Dispatchers.IO) {
-                URLEncoder.encode(key, StandardCharsets.UTF_8.toString())
-            }
-            "$mainUrl/$provider=$encodedKey"
-        } else {
-            mainUrl
-        }
+        val apiUrl = buildApiUrl(sharedPref, mainUrl)
         if (provider == "AIO Streams" && !key.isNullOrEmpty()) {
             runAllAsync(
                 suspend { invokeAIOStreamsDebian(key, id, season, episode, callback) }
@@ -95,14 +90,15 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
                 suspend { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback) }
             )
         }
+        Log.d("Phisher API",apiUrl)
 
-        if (apiUrl.contains("=")) {
+        if (!key.isNullOrEmpty()) {
             runAllAsync(
                 suspend { invokeTorrentioDebian(apiUrl, id, season, episode, callback) }
             )
         } else {
             runAllAsync(
-                suspend { invokeTorrentio(TorrentioAPI, id, season, episode, callback) },
+                suspend { invokeTorrentio(apiUrl, id, season, episode, callback) },
                 suspend { invoke1337x(OnethreethreesevenxAPI, title, year, callback) },
                 suspend { invokeMediaFusion(MediafusionApi, id, season, episode, callback) },
                 suspend { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
@@ -139,6 +135,31 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
 
         return true
     }
+
+    private fun buildApiUrl(sharedPref: SharedPreferences, mainUrl: String): String {
+        val sort = sharedPref.getString("sort", "qualitysize")
+        val languageOption = sharedPref.getString("language", "")
+        val qualityFilter = sharedPref.getString("qualityfilter", "")
+        val limit = sharedPref.getString("limit", "")
+        val sizeFilter = sharedPref.getString("sizefilter", "")
+        val debridProvider = sharedPref.getString("debrid_provider", "") // e.g., "easydebrid"
+        val debridKey = sharedPref.getString("debrid_key", "") // e.g., "12345abc"
+
+        val params = mutableListOf<String>()
+        if (!sort.isNullOrEmpty()) params += "sort=$sort"
+        if (!languageOption.isNullOrEmpty()) params += "language=${languageOption.lowercase()}"
+        if (!qualityFilter.isNullOrEmpty()) params += "qualityfilter=$qualityFilter"
+        if (!limit.isNullOrEmpty()) params += "limit=$limit"
+        if (!sizeFilter.isNullOrEmpty()) params += "sizefilter=$sizeFilter"
+
+        if (!debridProvider.isNullOrEmpty() && !debridKey.isNullOrEmpty()) {
+            params += "$debridProvider=$debridKey"
+        }
+
+        val query = params.joinToString("%7C")
+        return "$mainUrl/$query"
+    }
+
 }
 
 suspend fun generateMagnetLink(url: String, hash: String?): String {

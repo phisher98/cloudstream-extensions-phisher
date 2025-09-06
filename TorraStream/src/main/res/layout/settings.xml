@@ -1,22 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layoutDirection="ltr"
-    android:focusable="true"
-    android:focusableInTouchMode="true">
+    android:padding="16dp"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="?android:attr/listPreferredItemPaddingStart"
-        android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
-        android:paddingBottom="20dp"
-        tools:background="@color/cardview_dark_background"
-        android:focusable="true"
-        android:focusableInTouchMode="true">
+        android:orientation="vertical">
 
         <!-- Title Row -->
         <LinearLayout
@@ -28,69 +21,179 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="5dp"
                 android:text="TorraStream Settings"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
 
             <ImageView
                 android:id="@+id/save"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="5dp"
-                android:padding="5dp"
                 android:contentDescription="Save Settings"
-                android:nextFocusDown="@id/provider_spinner"
-                android:nextFocusUp="@id/delete_img" />
+                android:padding="5dp" />
         </LinearLayout>
 
-        <!-- Section Title -->
+        <!-- Providers -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginVertical="10dp"
-            android:text="Configure Debian Key"
-            android:textSize="18sp"
+            android:text="Select Providers"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:layout_marginTop="0dp" />
+            android:layout_marginTop="10dp" />
 
-        <!-- Spinner -->
-        <Spinner
-            android:id="@+id/provider_spinner"
+        <TextView
+            android:id="@+id/providers_spinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:background="@android:drawable/btn_dropdown"
-            android:nextFocusDown="@id/key_input"
-            android:nextFocusUp="@id/save" />
+            android:padding="8dp"
+            android:focusable="true"
+            android:nextFocusDown="@id/sort_spinner"
+            android:text="Select Providers"
+            android:ellipsize="end"
+            android:scrollHorizontally="true"
+            android:singleLine="true" />
 
-        <!-- Key Input -->
-        <EditText
-            android:id="@+id/key_input"
+        <!-- Sorting -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sorting"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <Spinner
+            android:id="@+id/sort_spinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter Key/Link"
+            android:background="@android:drawable/btn_dropdown"
+            android:focusable="true"
+            android:nextFocusUp="@id/providers_spinner"
+            android:nextFocusDown="@id/language_spinner" />
+
+        <!-- Priority Languages -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Priority Languages"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/language_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="8dp"
+            android:text="Select Languages"
+            android:focusable="true" />
+
+        <!-- Exclude Qualities -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Exclude Qualities"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/quality_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="8dp"
+            android:focusable="true"
+            android:nextFocusUp="@id/language_spinner"
+            android:nextFocusDown="@id/limit_input"
+            android:text="Select Qualities"
+            android:ellipsize="end"
+            android:scrollHorizontally="true"
+            android:singleLine="true" />
+
+        <!-- Max Results per Quality -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Max Results per Quality"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <EditText
+            android:id="@+id/limit_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="e.g., 10"
+            android:inputType="number"
+            android:padding="8dp"
+            android:focusable="true"
+            android:nextFocusUp="@id/quality_spinner"
+            android:nextFocusDown="@id/size_filter_input" />
+
+        <!-- Video Size Limit -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Video Size Limit (Movie,TV)"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <EditText
+            android:id="@+id/size_filter_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="e.g., 6GB,2GB"
             android:inputType="text"
-            android:cursorVisible="true"
-            android:nextFocusDown="@id/delete_img"
-            android:nextFocusUp="@id/provider_spinner"
-            android:layout_marginTop="8dp"
-            android:padding="10dp" />
+            android:padding="8dp"
+            android:focusable="true"
+            android:nextFocusUp="@id/limit_input"
+            android:nextFocusDown="@id/debrid_provider_spinner" />
+
+        <!-- Debrid Providers -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Debrid Providers"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp" />
+
+        <Spinner
+            android:id="@+id/debrid_provider_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/btn_dropdown"
+            android:focusable="true"
+            android:nextFocusUp="@id/size_filter_input"
+            android:nextFocusDown="@id/debrid_key_input" />
+
+        <EditText
+            android:id="@+id/debrid_key_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter API Key / URL"
+            android:inputType="text"
+            android:padding="8dp"
+            android:layout_marginTop="5dp"
+            android:focusable="true"
+            android:nextFocusUp="@id/debrid_provider_spinner"
+            android:nextFocusDown="@id/delete_img" />
 
         <!-- Reset Button -->
-        <TextView
+        <Button
             android:id="@+id/delete_img"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="10dp"
             android:text="Reset"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:nextFocusDown="@id/save"
-            android:nextFocusUp="@id/key_input" />
+            android:layout_marginTop="20dp"
+            android:focusable="true"
+            android:nextFocusUp="@id/debrid_key_input" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
