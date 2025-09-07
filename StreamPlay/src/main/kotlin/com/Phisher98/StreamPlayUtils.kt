@@ -1,7 +1,6 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
-import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import app.cash.quickjs.QuickJs
@@ -30,10 +29,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -48,7 +45,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.Mac
-import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -2791,17 +2787,6 @@ fun parseAnimeData(jsonString: String): AnimeData {
     return objectMapper.readValue(jsonString, AnimeData::class.java)
 }
 
-class UserAgentInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val originalRequest = chain.request()
-        val newRequest = originalRequest.newBuilder()
-            .removeHeader("User-Agent") // Remove existing User-Agent headers
-            .addHeader("User-Agent", "Go-http-client/2.0") // Add new User-Agent
-            .build()
-        return chain.proceed(newRequest)
-    }
-}
-
 fun cleanTitle(title: String): String {
     val parts = title.split(".", "-", "_")
 
@@ -2845,16 +2830,8 @@ fun cleanTitle(title: String): String {
 //Anichi
 
 fun String.fixUrlPath(): String {
-    return if (this.contains(".json?")) "https://allanime.day" + this
+    return if (this.contains(".json?")) "https://allanime.day$this"
     else "https://allanime.day" + URI(this).path + ".json?" + URI(this).query
-}
-
-fun fixSourceUrls(url: String, source: String?): String? {
-    return if (source == "Ak" || url.contains("/player/vitemb")) {
-        tryParseJson<AkIframe>(base64Decode(url.substringAfter("=")))?.idUrl
-    } else {
-        url.replace(" ", "%20")
-    }
 }
 
 

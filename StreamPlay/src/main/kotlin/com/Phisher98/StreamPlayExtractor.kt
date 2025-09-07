@@ -5486,6 +5486,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
     suspend fun invokevidrock(
         tmdbId: Int? = null,
         season: Int? = null,
