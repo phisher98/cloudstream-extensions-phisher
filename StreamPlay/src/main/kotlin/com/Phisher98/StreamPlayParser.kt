@@ -2212,6 +2212,28 @@ data class MorphDaum(
     val link: String,
 )
 
+data class CinemaOsSecretKeyRequest(
+    val tmdbId: String,
+    val seasonId: String,
+    val episodeId: String)
+
+
+data class CinemaOSReponse(
+    val data: CinemaOSReponseData,
+    val encrypted: Boolean,
+)
+
+data class CinemaOSReponseData(
+    val encrypted: String,
+    val cin: String,
+    val mao: String,
+)
+
+data class CinemaOsAuthResponse(
+    val token: String,
+    val expiresIn: Long,
+)
+
 
 data class Vidlink(
     val sourceId: String,

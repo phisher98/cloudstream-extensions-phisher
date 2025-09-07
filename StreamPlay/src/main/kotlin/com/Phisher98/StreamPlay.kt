@@ -42,6 +42,7 @@ import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
 import com.phisher98.StreamPlayExtractor.invokeBollyflix
+import com.phisher98.StreamPlayExtractor.invokeCinemaOS
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.phisher98.StreamPlayExtractor.invokeDotmovies
 import com.phisher98.StreamPlayExtractor.invokeDramacool
@@ -245,6 +246,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vidrock = "https://vidrock.net"
         const val soapy = "https://soapy.to"
         const val vidlink = "https://vidlink.pro"
+        const val cinemaOSApi = "https://cinemaos.live"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -656,7 +658,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             if (res.isAsian && res.season != null) {
                 add { invokeDramacool(res.title, "kdhd", res.season, res.episode, subtitleCallback, callback) }
             }
-
+            //Include all (Movies,Anime and series)
+            add { invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback, subtitleCallback) }
             add { invokeDahmerMovies(dahmerMoviesAPI, res.title, res.year, res.season, res.episode, callback) }
             add { invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
             add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }

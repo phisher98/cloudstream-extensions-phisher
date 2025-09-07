@@ -3104,3 +3104,109 @@ fun vidrockEncode(tmdb: String, type: String, season: Int? = null, episode: Int?
 
     return doubleEncode
 }
+
+fun cinemaOSGenerateHash(t: CinemaOsSecretKeyRequest, s: String): String {
+    val data = "tmdb:${t.tmdbId}|season:${t.seasonId}|episode:${t.episodeId}"
+    val secretKey = SecretKeySpec(s.toByteArray(Charsets.UTF_8), "HmacSHA256")
+    val mac = Mac.getInstance("HmacSHA256")
+    mac.init(secretKey)
+    val hashBytes = mac.doFinal(data.toByteArray(Charsets.UTF_8))
+    return bytesToHex(hashBytes)
+}
+
+// Helper function to convert byte array to hex string
+fun bytesToHex(bytes: ByteArray): String {
+    val hexChars = CharArray(bytes.size * 2)
+    for (i in bytes.indices) {
+        val v = bytes[i].toInt() and 0xFF
+        hexChars[i * 2] = "0123456789abcdef"[v ushr 4]
+        hexChars[i * 2 + 1] = "0123456789abcdef"[v and 0x0F]
+    }
+    return String(hexChars)
+}
+
+
+fun cinemaOSDecryptResponse(e: CinemaOSReponseData?): Any {
+    val encrypted = e?.encrypted
+    val cin = e?.cin
+    val mao = e?.mao
+
+    val keyBytes = hexStringToByteArray("a1b2c3d4e4f6589012345678901477567890abcdef1234567890abcdef123456")
+    val ivBytes = hexStringToByteArray(cin.toString())
+    val authTagBytes = hexStringToByteArray(mao.toString())
+    val encryptedBytes = hexStringToByteArray(encrypted.toString())
+
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    val keySpec = SecretKeySpec(keyBytes, "AES")
+    val gcmSpec = GCMParameterSpec(128, ivBytes)
+
+    cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec)
+
+    // Combine encrypted data with auth tag
+    val combinedData = encryptedBytes + authTagBytes
+    val decryptedBytes = cipher.doFinal(combinedData)
+    val decryptedText = String(decryptedBytes, Charsets.UTF_8)
+
+    return decryptedText // Use your JSON parser
+}
+
+
+// Helper function to convert hex string to byte array
+fun hexStringToByteArray(hex: String): ByteArray {
+    val len = hex.length
+    require(len % 2 == 0) { "Hex string must have even length" }
+
+    val data = ByteArray(len / 2)
+    var i = 0
+    while (i < len) {
+        data[i / 2] = ((Character.digit(hex[i], 16) shl 4) + Character.digit(hex[i + 1], 16)).toByte()
+        i += 2
+    }
+    return data
+}
+
+fun parseCinemaOSSources(jsonString: String): List<Map<String, String>> {
+    val json = JSONObject(jsonString)
+    val sourcesObject = json.getJSONObject("sources")
+    val sourcesList = mutableListOf<Map<String, String>>()
+
+    val keys = sourcesObject.keys()
+    while (keys.hasNext()) {
+        val key = keys.next()
+        val source = sourcesObject.getJSONObject(key)
+
+        // Check if source has "qualities" object
+        if (source.has("qualities")) {
+            val qualities = source.getJSONObject("qualities")
+            val qualityKeys = qualities.keys()
+
+            while (qualityKeys.hasNext()) {
+                val qualityKey = qualityKeys.next()
+                val qualityObj = qualities.getJSONObject(qualityKey)
+
+                val sourceMap = mutableMapOf<String, String>()
+                sourceMap["server"] = source.optString("server", key)
+                sourceMap["url"] = qualityObj.optString("url", "")
+                sourceMap["type"] = qualityObj.optString("type", "")
+                sourceMap["speed"] = source.optString("speed", "")
+                sourceMap["bitrate"] = source.optString("bitrate", "")
+                sourceMap["quality"] = qualityKey // Use the quality key (e.g., "480", "720")
+
+                sourcesList.add(sourceMap)
+            }
+        } else {
+            // Regular source with direct URL
+            val sourceMap = mutableMapOf<String, String>()
+            sourceMap["server"] = source.optString("server", key)
+            sourceMap["url"] = source.optString("url", "")
+            sourceMap["type"] = source.optString("type", "")
+            sourceMap["speed"] = source.optString("speed", "")
+            sourceMap["bitrate"] = source.optString("bitrate", "")
+            sourceMap["quality"] = source.optString("quality", "")
+
+            sourcesList.add(sourceMap)
+        }
+    }
+
+    return sourcesList
+}
