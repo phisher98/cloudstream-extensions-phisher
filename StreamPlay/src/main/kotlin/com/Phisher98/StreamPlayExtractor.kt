@@ -4387,10 +4387,12 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val proxyUrl = "https://corsproxy.io/?url="
+        val mainUrl = "$proxyUrl$Film1kApi"
         if (season == null) {
             try {
                 val fixTitle = title?.replace(":", "")?.replace(" ", "+")
-                val doc = app.get("$Film1kApi/?s=$fixTitle", cacheTime = 60, timeout = 30).document
+                val doc = app.get("$mainUrl/?s=$fixTitle", cacheTime = 60, timeout = 30).document
                 val posts = doc.select("header.entry-header").filter { element ->
                     element.selectFirst(".entry-title")?.text().toString().contains(
                         "${
@@ -4403,13 +4405,13 @@ object StreamPlayExtractor : StreamPlay() {
                         .contains(year.toString())
                 }.toList()
                 val url = posts.firstOrNull()?.select("a:nth-child(1)")?.attr("href")
-                val postDoc = url?.let { app.get(it, cacheTime = 60, timeout = 30).document }
+                val postDoc = url?.let { app.get("$proxyUrl$it", cacheTime = 60, timeout = 30).document }
                 val id = postDoc?.select("a.Button.B.on")?.attr("data-ide")
                 repeat(5) { i ->
                     val mediaType = "application/x-www-form-urlencoded".toMediaType()
                     val body =
                         "action=action_change_player_eroz&ide=$id&key=$i".toRequestBody(mediaType)
-                    val ajaxUrl = "$Film1kApi/wp-admin/admin-ajax.php"
+                    val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
                     val doc =
                         app.post(ajaxUrl, requestBody = body, cacheTime = 60, timeout = 30).document
                     var url = doc.select("iframe").attr("src").replace("\\", "").replace(
@@ -5575,6 +5577,95 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
             }
+        }
+    }
+
+    suspend fun invokeCinemaOS(
+        imdbId: String? = null,
+        tmdbId: Int? = null,
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        year: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit,
+    ) {
+        val authUrl = "${cinemaOSApi}/api/auth/secure"
+        val headersRequest = mapOf(
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "Connection" to "keep-alive",
+            "Referer" to cinemaOSApi,
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Windows\""
+        )
+
+        val headerAuth = mapOf(
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "Connection" to "keep-alive",
+            "Referer" to cinemaOSApi,
+            "Origin" to cinemaOSApi,
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Windows\"",
+            "Content-Type" to "application/json"
+        )
+
+        val authResponse = app.get(authUrl, headers = headersRequest, timeout = 60).text
+        val authVerifyResponse = app.post(authUrl, headers = headerAuth, json = authResponse,timeout = 60).parsedSafe<CinemaOsAuthResponse>()
+
+
+        val sourceHeaders = mapOf(
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "Authorization" to "Bearer ${authVerifyResponse?.token}",
+            "Connection" to "keep-alive",
+            "Referer" to cinemaOSApi,
+            "Host" to "cinemaos.live",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Windows\"",
+            "Content-Type" to "application/json"
+        )
+
+        val fixTitle = title?.replace(" ", "+")
+        val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(), seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
+        val s = "a1b2c3d4e4f6589012345678901477567890abcdef1234567890abcdef123456"
+        val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,s)
+        val type = if(season == null) {"movie"}  else {"tv"}
+        val sourceUrl = if(season == null) {"$cinemaOSApi/api/cinemaos?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/cinemaos?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
+        val sourceResponse = app.get(sourceUrl, headers = sourceHeaders,timeout = 60).parsedSafe<CinemaOSReponse>()
+        val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data)
+        val json = parseCinemaOSSources(decryptedJson.toString())
+        json.forEach {
+            val extractorLinkType = if(it["type"]?.contains("hls",true) ?: false) { ExtractorLinkType.M3U8} else if(it["type"]?.contains("dash",true) ?: false){ ExtractorLinkType.DASH} else { INFER_TYPE}
+            val quality = if(it["bitrate"]?.contains("fhd",true) ?: false) { Qualities.P1080 } else if(it["bitrate"]?.contains("hd",true) ?: false){ Qualities.P720} else { Qualities.P1080}
+            callback.invoke(
+                newExtractorLink(
+                    "CinemaOS [${it["server"]}] ${it["bitrate"]}  ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
+                    "CinemaOS [${it["server"]}] ${it["bitrate"]} ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
+                    url = it["url"].toString(),
+                    type = extractorLinkType
+                )
+                {
+                    this.headers = mapOf("Referer" to cinemaOSApi)
+                    this.quality = if(it["quality"]?.isNotEmpty() == true) getQualityFromName(it["quality"]) else Qualities.P1080.value
+                }
+            )
         }
     }
 
