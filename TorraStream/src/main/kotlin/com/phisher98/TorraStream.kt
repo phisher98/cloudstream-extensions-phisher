@@ -73,8 +73,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         val episode = dataObj.episode
         val id = dataObj.imdbId
         val year = dataObj.year
-        Log.d("Phisher API 1","$provider $key")
-
         val anijson = app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
 
@@ -159,7 +157,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
     }
-
 }
 
 suspend fun generateMagnetLink(url: String, hash: String?): String {

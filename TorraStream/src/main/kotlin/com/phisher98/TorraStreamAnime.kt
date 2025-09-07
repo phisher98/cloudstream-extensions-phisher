@@ -60,7 +60,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
     private val isAdult = false
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
-    private val torrentioDebian= "https://torrentio.strem.fun/providers=kickasstorrents,nyaasi,magnetdl,torrentgalaxy,eztv,1337x,yts,tokyotosho,thepiratebay,rarbg,horriblesubs,anidex%7Cqualityfilter=720p,other,scr,480p,cam,unknown%7Csort=quality%7C"
+    private val torrentioDebian= "https://torrentio.strem.fun"
 
     private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -234,8 +234,8 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val provider = sharedPref.getString("provider", null)
-        val key = sharedPref.getString("key", null)
+        val provider = sharedPref.getString("debrid_provider", null)
+        val key = sharedPref.getString("debrid_key", null)
         val mediaData = AppUtils.parseJson<LinkData>(data)
         val episode =mediaData.episode
         val aniid =mediaData.aniId
@@ -245,15 +245,9 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val rawtype = jsonObject.getJSONObject("mappings").getString("type")
         val type=if (rawtype.contains("MOVIE",ignoreCase = true)) TvType.Movie else TvType.TvSeries
         val anidbEid = getAnidbEid(anijson, episode)
-        val debianapiUrl = if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
-            val encodedKey = withContext(Dispatchers.IO) {
-                URLEncoder.encode(key, StandardCharsets.UTF_8.toString())
-            }
-            "$torrentioDebian$provider=$encodedKey%7C"
-        } else {
-            ""
-        }
-        if (debianapiUrl.contains("$provider",ignoreCase = true)) {
+        val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
+        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty())
+        {
             runAllAsync(
                 { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) }
             )
@@ -415,4 +409,27 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         @JsonProperty("data") var data: AniData? = null
     )
 
+    private fun buildApiUrl(sharedPref: SharedPreferences, mainUrl: String): String {
+        val sort = sharedPref.getString("sort", "qualitysize")
+        val languageOption = sharedPref.getString("language", "")
+        val qualityFilter = sharedPref.getString("qualityfilter", "")
+        val limit = sharedPref.getString("limit", "")
+        val sizeFilter = sharedPref.getString("sizefilter", "")
+        val debridProvider = sharedPref.getString("debrid_provider", "") // e.g., "easydebrid"
+        val debridKey = sharedPref.getString("debrid_key", "") // e.g., "12345abc"
+
+        val params = mutableListOf<String>()
+        if (!sort.isNullOrEmpty()) params += "sort=$sort"
+        if (!languageOption.isNullOrEmpty()) params += "language=${languageOption.lowercase()}"
+        if (!qualityFilter.isNullOrEmpty()) params += "qualityfilter=$qualityFilter"
+        if (!limit.isNullOrEmpty()) params += "limit=$limit"
+        if (!sizeFilter.isNullOrEmpty()) params += "sizefilter=$sizeFilter"
+
+        if (!debridProvider.isNullOrEmpty() && !debridKey.isNullOrEmpty()) {
+            params += "$debridProvider=$debridKey"
+        }
+
+        val query = params.joinToString("%7C")
+        return "$mainUrl/$query"
+    }
 }

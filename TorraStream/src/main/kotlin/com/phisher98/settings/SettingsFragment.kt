@@ -99,7 +99,7 @@ class SettingsFragment(
 
         // ===== SORT SPINNER =====
         val sortSpinner = root.findView<Spinner>("sort_spinner")
-        val sortOptions = listOf("Quality", "Qualitysize", "Seeders", "Size")
+        val sortOptions = listOf("Seeders", "Qualitysize", "Quality", "Size")
         sortSpinner.adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortOptions).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -268,7 +268,7 @@ class SettingsFragment(
                 .setTitle("Reset")
                 .setMessage("This will delete all saved settings.")
                 .setPositiveButton("Reset") { _, _ ->
-                    sharedPref.edit { clear() }
+                    sharedPref.edit().clear().commit()
                     selectedProviders.fill(false)
                     updateProviderText()
                     selectedLanguages.fill(false)
