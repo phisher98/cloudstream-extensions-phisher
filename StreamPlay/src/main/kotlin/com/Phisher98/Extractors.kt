@@ -1961,7 +1961,7 @@ class UqloadsXyz : ExtractorApi() {
     }
 }
 
-class Megacloud : ExtractorApi() {
+open class Megacloud : ExtractorApi() {
     override val name = "Megacloud"
     override val mainUrl = "https://megacloud.blog"
     override val requiresReferer = false
@@ -1978,8 +1978,8 @@ class Megacloud : ExtractorApi() {
             "Accept" to "*/*",
             "Accept-Language" to "en-US,en;q=0.5",
             "Accept-Encoding" to "gzip, deflate, br, zstd",
-            "Origin" to "https://megacloud.blog",
-            "Referer" to "https://megacloud.blog/",
+            "Origin" to "$mainUrl/",
+            "Referer" to "$mainUrl/",
             "Connection" to "keep-alive",
             "Pragma" to "no-cache",
             "Cache-Control" to "no-cache"
@@ -2206,6 +2206,12 @@ class Cdnstreame : ExtractorApi() {
             ""
         }
     }
+}
+
+class Streameeeeee : Megacloud() {
+    override var mainUrl = "https://streameeeeee.site"
+    override val requiresReferer = true
+
 }
 
 class Videostr : ExtractorApi() {
@@ -2618,4 +2624,78 @@ class FilemoonV2 : ExtractorApi() {
 
 class StreamwishHG : StreamWishExtractor() {
     override val mainUrl = "https://hglink.to"
+}
+
+
+
+class Vidora : ExtractorApi() {
+    override val name = "Vidora"
+    override val mainUrl = "https://vidora.stream"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val embedUrl = url.replace("/download/", "/e/")
+        var pageResponse = app.get(embedUrl, referer = referer)
+
+        val iframeElement = pageResponse.document.selectFirst("iframe")
+        if (iframeElement != null) {
+            val iframeUrl = iframeElement.attr("src")
+            pageResponse = app.get(
+                iframeUrl,
+                headers = mapOf(
+                    "Accept-Language" to "en-US,en;q=0.5",
+                    "Sec-Fetch-Dest" to "iframe"
+                ),
+                referer = pageResponse.url
+            )
+        }
+        val headers= mapOf("origin" to mainUrl)
+        val scriptData = if (!getPacked(pageResponse.text).isNullOrEmpty()) {
+            getAndUnpack(pageResponse.text)
+        } else {
+            pageResponse.document.selectFirst("script:containsData(sources:)")?.data()
+        }
+
+        val m3u8Url = scriptData?.let {
+            Regex("""file:\s*"(.*?m3u8.*?)"""").find(it)?.groupValues?.getOrNull(1)
+        }
+
+        if (!m3u8Url.isNullOrEmpty()) {
+            generateM3u8(
+                name,
+                m3u8Url,
+                mainUrl,
+                headers=headers
+            ).forEach(callback)
+        } else {
+            // Fallback using WebViewResolver
+            val resolver = WebViewResolver(
+                interceptUrl = Regex("""(m3u8|master\.txt)"""),
+                additionalUrls = listOf(Regex("""(m3u8|master\.txt)""")),
+                useOkhttp = false,
+                timeout = 15_000L
+            )
+
+            val interceptedUrl = app.get(
+                url = pageResponse.url,
+                referer = referer,
+                interceptor = resolver
+            ).url
+
+            if (interceptedUrl.isNotEmpty()) {
+                generateM3u8(
+                    name,
+                    interceptedUrl,
+                    mainUrl
+                ).forEach(callback)
+            } else {
+                Log.d("Filesim", "No m3u8 found via script or WebView fallback.")
+            }
+        }
+    }
 }

@@ -1,44 +1,44 @@
 package com.phisher98
 
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.runAllAsync
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
+import com.phisher98.StreamPlayExtractor.invokeDramadrip
+import com.phisher98.StreamPlayExtractor.invokeElevenmovies
+import com.phisher98.StreamPlayExtractor.invokeEmbedlc
+import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeLing
-import com.phisher98.StreamPlayExtractor.invokeNinetv
-import com.phisher98.StreamPlayExtractor.invokeRidomovies
-import com.phisher98.StreamPlayExtractor.invokeEmovies
-import com.phisher98.StreamPlayExtractor.invokeShowflix
-import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
-import com.phisher98.StreamPlayExtractor.invokeZoechip
-import com.phisher98.StreamPlayExtractor.invokeZshow
-import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
+import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeNepu
+import com.phisher98.StreamPlayExtractor.invokeNinetv
 import com.phisher98.StreamPlayExtractor.invokePlayer4U
+import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
+import com.phisher98.StreamPlayExtractor.invokeShowflix
+import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeStreamPlay
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
+import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
+import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.phisher98.StreamPlayExtractor.sharedPref
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.runAllAsync
-import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.StreamPlayExtractor.invokeDramadrip
-import com.phisher98.StreamPlayExtractor.invokeElevenmovies
-import com.phisher98.StreamPlayExtractor.invokeEmbedlc
-import com.phisher98.StreamPlayExtractor.invokeMovieBox
-import com.phisher98.StreamPlayExtractor.invokeTom
-import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
+import com.phisher98.StreamPlayExtractor.invokeZoechip
+import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokemorph
+import com.phisher98.StreamPlayExtractor.invokevidrock
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
+import com.phisher98.StreamPlayExtractor.sharedPref
 
 class StreamPlayLite() : StreamPlay(sharedPref) {
     override var name = "StreamPlay-Lite"
@@ -288,9 +288,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 if (!res.isAnime) invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
             },
             {
-                if (!res.isAnime) invokeVidfast(res.imdbId, res.season, res.episode, callback)
-            },
-            {
                 if (!res.isAnime)  invokeEmbedlc(res.imdbId, res.season, res.episode,subtitleCallback, callback)
             },
             {
@@ -298,6 +295,12 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             },
             {
                 if (!res.isAnime) invokemorph(res.title,res.year, res.season, res.episode, subtitleCallback, callback)
+            },
+            {
+                if (!res.isAnime) invokevidrock(res.id, res.season, res.episode, callback)
+            },
+            {
+                if (!res.isAnime) invokeSoapy(res.id, res.season, res.episode, subtitleCallback,callback)
             },
 
             //Subtitles Invokes

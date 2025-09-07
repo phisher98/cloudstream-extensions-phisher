@@ -72,6 +72,7 @@ import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
 import com.phisher98.StreamPlayExtractor.invokeShowflix
+import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeTom
@@ -80,7 +81,6 @@ import com.phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.phisher98.StreamPlayExtractor.invokeVegamovies
 import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
-import com.phisher98.StreamPlayExtractor.invokeVidfast
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
@@ -93,6 +93,7 @@ import com.phisher98.StreamPlayExtractor.invokeazseries
 import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokemorph
+import com.phisher98.StreamPlayExtractor.invokevidrock
 import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import kotlinx.coroutines.withTimeoutOrNull
@@ -239,9 +240,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Vidzee = "https://vidzee.wtf"
         const val Elevenmovies = "https://111movies.com"
         const val Watch32 = "https://watch32.sx"
-        const val Vidfast = "https://vidfast.pro"
         const val Embedlc = "https://embed.lc"
         const val movieBox= "https://api.inmoviebox.com"
+        const val vidrock = "https://vidrock.net"
+        const val soapy = "https://soapy.to"
+        const val vidlink = "https://vidlink.pro"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -633,11 +636,12 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokehdhub4u(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeHdmovie2(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-                add { invokeVidfast(res.imdbId, res.season, res.episode, callback) }
                 add { invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeRiveStream(res.id, res.season, res.episode, callback) }
                 add { invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback) }
                 add { invokemorph(res.title,res.year, res.season, res.episode, subtitleCallback, callback) }
+                add { invokevidrock(res.id, res.season, res.episode, callback) }
+                add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback,callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {

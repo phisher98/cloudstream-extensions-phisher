@@ -2904,47 +2904,29 @@ suspend fun <T> retryIO(
 
 @SuppressLint("NewApi")
 suspend fun elevenMoviesTokenV2(rawData: String): String {
-    val json= app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/output.json").parsedSafe<Elevenmoviesjson>() ?: return ""
-    val keyHex = json.key_hex
-    val ivHex = json.iv_hex
-    val aesKey = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-    val aesIv = ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    val json = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/output.json")
+        .parsedSafe<Elevenmoviesjson>() ?: return ""
 
+    val aesKey = json.key_hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    val aesIv = json.iv_hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    val secretKey = SecretKeySpec(aesKey, "AES")
-    val ivSpec = IvParameterSpec(aesIv)
-    cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+    cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(aesKey, "AES"), IvParameterSpec(aesIv))
 
-    val paddedInput = rawData.toByteArray(Charsets.UTF_8)
-    val encrypted = cipher.doFinal(paddedInput)
-    val hexString = encrypted.joinToString("") { "%02x".format(it) }
+    val encryptedHex = cipher.doFinal(rawData.toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }
 
-    // XOR key from hex string
-    val xorKeyHex = json.xor_key
-    val xorKey = xorKeyHex.chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-
+    val xorKey = json.xor_key.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     val xorResult = buildString {
-        for (i in hexString.indices) {
-            val c = hexString[i].code
-            val k = xorKey[i % xorKey.size].toInt() and 0xFF
-            append((c xor k).toChar())
+        encryptedHex.forEachIndexed { i, c ->
+            append((c.code xor (xorKey[i % xorKey.size].toInt() and 0xFF)).toChar())
         }
     }
 
-    val src = json.src
-    val dst = json.dst
-    val translationMap = src.zip(dst).toMap()
+    val translationMap = json.src.zip(json.dst).toMap()
+    val base64Encoded = Base64.getEncoder().encodeToString(xorResult.toByteArray(Charsets.UTF_8))
+        .replace("+", "-").replace("/", "_").replace("=", "")
 
-    val base64Encoded = Base64.getEncoder()
-        .encodeToString(xorResult.toByteArray(Charsets.UTF_8))
-        .replace("+", "-")
-        .replace("/", "_")
-        .replace("=", "")
-
-    val finalEncoded = base64Encoded.map { translationMap[it] ?: it }.joinToString("")
-    return finalEncoded
+    return base64Encoded.map { translationMap[it] ?: it }.joinToString("")
 }
 
 
@@ -3106,3 +3088,19 @@ private fun buildCanonicalString(
             canonicalUrl
 }
 
+fun vidrockEncode(tmdb: String, type: String, season: Int? = null, episode: Int? = null): String {
+    val base = if (type == "tv" && season != null && episode != null) {
+        "$tmdb-$season-$episode"
+    } else {
+        val map = mapOf(
+            '0' to 'a', '1' to 'b', '2' to 'c', '3' to 'd', '4' to 'e',
+            '5' to 'f', '6' to 'g', '7' to 'h', '8' to 'i', '9' to 'j'
+        )
+        tmdb.map { map[it] ?: it }.joinToString("")
+    }
+    val reversed = base.reversed()
+    val firstEncode = base64Encode(reversed.toByteArray())
+    val doubleEncode = base64Encode(firstEncode.toByteArray())
+
+    return doubleEncode
+}

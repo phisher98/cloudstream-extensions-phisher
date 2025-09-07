@@ -2211,3 +2211,27 @@ data class MorphDaum(
     val title: String,
     val link: String,
 )
+
+
+data class Vidlink(
+    val sourceId: String,
+    val stream: VidlinkStream,
+)
+
+data class VidlinkStream(
+    val id: String,
+    val type: String,
+    val playlist: String,
+    val flags: List<String>,
+    val captions: List<VidlinkCaption>,
+    @JsonProperty("TTL")
+    val ttl: Long,
+)
+
+data class VidlinkCaption(
+    val id: String,
+    val url: String,
+    val language: String,
+    val type: String,
+    val hasCorsRestrictions: Boolean,
+)
