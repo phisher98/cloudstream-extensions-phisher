@@ -6,8 +6,8 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.StreamPlayExtractor.invokeElevenmovies
-import com.phisher98.StreamPlayExtractor.invokeNinetv
+
+import com.phisher98.StreamPlayExtractor.invokeVegamovies
 
 class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sharedPreferences) {
     override var name = "StreamPlay-Test"
@@ -20,14 +20,8 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
             {
-                if (!res.isAnime) invokeElevenmovies(
-                    res.id,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
+                invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback) }
+
         )
         return true
     }

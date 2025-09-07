@@ -1,6 +1,8 @@
 package com.phisher98
 
-import android.annotation.SuppressLint
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import android.content.SharedPreferences
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
@@ -566,7 +568,26 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         }
     }
 
-    @SuppressLint("NewApi")
+    suspend fun runAllAsyncLimited(
+        maxConcurrent: Int,
+        vararg tasks: suspend () -> Unit
+    ) = coroutineScope {
+        val semaphore = Semaphore(maxConcurrent)
+        tasks.map { task ->
+            async {
+                semaphore.withPermit {
+                    try {
+                        task()
+                    } catch (e: CancellationException) {
+                        throw e // allow cancellation
+                    } catch (e: Exception) {
+                        println("Task failed: ${e.message}") // log safely
+                    }
+                }
+            }
+        }.awaitAll()
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -578,14 +599,34 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val tasks = buildList<suspend () -> Unit> {
             if (res.isAnime) {
                 add { invokeEmbedsu(res.imdbId, res.season, res.episode, callback) }
-                add { invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback) }
+                add {
+                    invokeAnimes(
+                        res.title,
+                        res.jpTitle,
+                        res.date,
+                        res.airedDate,
+                        res.season,
+                        res.episode,
+                        subtitleCallback,
+                        callback
+                    )
+                }
             }
 
             if (!res.isAnime) {
                 add { invokeVidsrccc(res.id, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeVidsrcsu(res.id, res.season, res.episode, callback) }
                 add { invokeazseries(res.title, res.season, res.episode, subtitleCallback, callback) }
-                add { invokeLing(res.title, res.airedYear ?: res.year, res.season, res.episode, subtitleCallback, callback) }
+                add {
+                    invokeLing(
+                        res.title,
+                        res.airedYear ?: res.year,
+                        res.season,
+                        res.episode,
+                        subtitleCallback,
+                        callback
+                    )
+                }
                 add { invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback) }
                 add { invokeTopMovies(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeMoviesmod(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback) }
@@ -599,7 +640,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeMultiEmbed(res.imdbId, res.season, res.episode, callback) }
                 add { invokecatflix(res.id, res.epid, res.title, res.episode, res.season, callback) }
                 add { invokeEmovies(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-                add { invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback) } // moved outside Bollywood check
+                add { invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback) }
                 add { invokeExtramovies(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback) }
                 add { invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
@@ -610,27 +651,38 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeZoechip(res.title, res.year, res.season, res.episode, callback) }
                 add { invokeNepu(res.title, res.airedYear ?: res.year, res.season, res.episode, callback) }
                 add { invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback) }
-                add { invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback) }
-                add { invokeWatch32APIHQ(res.title, res.season, res.episode,res.year, subtitleCallback, callback) }
+                add {
+                    invokeMoviesdrive(
+                        res.title,
+                        res.season,
+                        res.episode,
+                        res.year,
+                        res.imdbId,
+                        subtitleCallback,
+                        callback
+                    )
+                }
+                add { invokeWatch32APIHQ(res.title, res.season, res.episode, res.year, subtitleCallback, callback) }
                 add { invokeVidSrcViP(res.id, res.season, res.episode, callback) }
-                add { invokePrimeWire(
-                    res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                ) }
-                add { invokeFilm1k(
-                    res.title,
-                    res.season,
-                    res.year,
-                    subtitleCallback,
-                    callback
-                ) }
-                add { if (res.imdbId!==null)invokeSuperstream(token, res.imdbId, res.season, res.episode, callback) }
+                add { invokePrimeWire(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
+                add { invokeFilm1k(res.title, res.season, res.year, subtitleCallback, callback) }
+                add {
+                    if (res.imdbId != null) invokeSuperstream(token, res.imdbId, res.season, res.episode, callback)
+                }
                 add { invokePlayer4U(res.title, res.season, res.episode, res.year, callback) }
                 add { invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback) }
-                add { invokeXPrimeAPI(res.title, res.year, res.imdbId,res.id, res.season, res.episode, subtitleCallback, callback) }
+                add {
+                    invokeXPrimeAPI(
+                        res.title,
+                        res.year,
+                        res.imdbId,
+                        res.id,
+                        res.season,
+                        res.episode,
+                        subtitleCallback,
+                        callback
+                    )
+                }
                 add { invokevidzeeUltra(res.id, res.season, res.episode, callback) }
                 add { invokevidzeeMulti(res.id, res.season, res.episode, callback) }
                 add { invoke4khdhub(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
@@ -641,9 +693,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeRiveStream(res.id, res.season, res.episode, callback) }
                 add { invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback) }
-                add { invokemorph(res.title,res.year, res.season, res.episode, subtitleCallback, callback) }
+                add { invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokevidrock(res.id, res.season, res.episode, callback) }
-                add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback,callback) }
+                add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {
@@ -665,9 +717,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
         }
 
-        runAllAsync(*tasks.toTypedArray())
+        runAllAsyncLimited(15, *tasks.toTypedArray())
         return true
     }
+
 
 
 
