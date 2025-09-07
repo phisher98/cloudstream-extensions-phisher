@@ -1,13 +1,13 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
@@ -60,9 +60,6 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.Locale
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
 
 
@@ -1605,53 +1602,95 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    suspend fun invokevidzeeMulti(
-        id: Int? = null,
+
+    suspend fun invokeVidzeeApi(
+        id: Int?,
         season: Int? = null,
         episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val url = if (season == null) {
-            "$Vidzee/movie/multi.php?id=$id"
-        } else {
-            "$Vidzee/tv/multi.php?id=$id&season=$season&episode=$episode"
-        }
-        val response = app.get(url).document
-        val script =
-            response.select("script").map { it.data() }.firstOrNull { "qualityOptions" in it }
-                ?: return
-
-        val regex = Regex("""const\s+qualityOptions\s*=\s*(\[[\s\S]*?])""")
-        val match = regex.find(script)
-        val jsonArrayRaw = match?.groups?.get(1)?.value ?: return
-
-        try {
-            val jsonArray = JSONArray(jsonArrayRaw)
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.getJSONObject(i)
-                val label = obj.optString("html")
-                val file = obj.optString("url")
-
-                if (file.isNotBlank()) {
-                    callback(
-                        newExtractorLink(
-                            "Vidzee Multi",
-                            "Vidzee Multi",
-                            file,
-                            ExtractorLinkType.M3U8
-                        ) {
-                            this.referer = "$Vidzee/"
-                            this.quality = label.replace(Regex("""[^\d]"""), "").toIntOrNull()
-                                ?: Qualities.Unknown.value
-                        }
-                    )
+        val sections = listOf(1, 2)
+        for (sec in sections) {
+            try {
+                val url = if (season == null) {
+                    "https://player.vidzee.wtf/api/server?id=$id&sr=$sec"
+                } else {
+                    "https://player.vidzee.wtf/api/server?id=$id&sr=$sec&season=$season&episode=$episode"
                 }
-            }
-        } catch (e: Exception) {
-            Log.e("VidzeeParser", "Failed to parse qualityOptions $e")
-        }
 
+                val response = app.get(url).text
+                val json = JSONObject(response)
+
+                val defaultReferer = "https://core.vidzee.wtf/"
+                val urls = json.optJSONArray("url") ?: JSONArray()
+
+                for (i in 0 until urls.length()) {
+                    val obj = urls.getJSONObject(i)
+                    var link = obj.optString("link")
+                    val type = obj.optString("type", "hls")
+                    val name = obj.optString("name", "Vidzee")
+
+                    if (link.isNotBlank()) {
+                        val uri = URI(link)
+                        val queryParams = uri.query?.split("&") ?: emptyList()
+
+                        val headersMap = mutableMapOf<String, String>()
+                        var cleanLink = link
+
+                        // Extract headers from query param
+                        for (param in queryParams) {
+                            if (param.startsWith("headers=")) {
+                                val decoded = URLDecoder.decode(param.removePrefix("headers="), "UTF-8")
+                                val jsonObj = JSONObject(decoded)
+                                jsonObj.keys().forEach { key ->
+                                    headersMap[key] = jsonObj.getString(key)
+                                }
+                                // Remove headers param from URL
+                                cleanLink = cleanLink.replace("&$param", "").replace("?$param", "")
+                            }
+                        }
+
+                        // Fallback referer
+                        val referer = headersMap["referer"] ?: defaultReferer
+
+                        /*
+                        callback(
+                            newExtractorLink(
+                                name,
+                                name,
+                                cleanLink,
+                                ExtractorLinkType.M3U8
+                            ) {
+                                this.referer = referer
+                                this.headers = headersMap
+                                this.quality = Qualities.Unknown.value
+                            }
+                        )
+
+                         */
+                    }
+                }
+
+                val tracks = json.optJSONArray("tracks") ?: JSONArray()
+                for (i in 0 until tracks.length()) {
+                    val sub = tracks.getJSONObject(i)
+                    val lang = sub.optString("lang", "Unknown")
+                    val subUrl = sub.optString("url")
+
+                    if (subUrl.isNotBlank()) {
+                        subtitleCallback(
+                            SubtitleFile(lang, subUrl)
+                        )
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.e("VidzeeApi", "Failed to load Vidzee API sec=$sec: $e")
+            }
+        }
     }
+
 
 
     suspend fun invokeTopMovies(
@@ -5669,7 +5708,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    /*
+
     suspend fun invokeVidlink(
         tmdbId: Int? = null,
         season: Int? = null,
@@ -5703,7 +5742,19 @@ object StreamPlayExtractor : StreamPlay() {
         val mapper = jacksonObjectMapper()
         val root: Vidlink = mapper.readValue(jsonString)
         val playlistParts = root.stream.playlist.split("?")
-        val m3u8Url = playlistParts[0]
+        val rawM3u8Url = playlistParts[0]
+
+        val finalM3u8Url = run {
+            val uri = Uri.parse(root.stream.playlist)
+            val hostParam = uri.getQueryParameter("host")
+            if (hostParam != null) {
+                val decodedHost = URLDecoder.decode(hostParam, "UTF-8")
+                val path = rawM3u8Url.substringAfter("/proxy/")
+                "$decodedHost/$path"
+            } else {
+                rawM3u8Url
+            }
+        }
 
         val headersJson = playlistParts.getOrNull(1)
             ?.split("&")
@@ -5722,7 +5773,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         M3u8Helper.generateM3u8(
             "Vidlink",
-            m3u8Url,
+            finalM3u8Url,
             referer,
             headers = headers
         ).forEach(callback)
@@ -5735,10 +5786,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             )
         }
-
     }
-
-     */
 }
 
 

@@ -26,6 +26,7 @@ import com.phisher98.StreamPlayExtractor.invokeStreamPlay
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
+import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
@@ -36,7 +37,7 @@ import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokevidrock
-import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
+import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import com.phisher98.StreamPlayExtractor.sharedPref
 
@@ -277,10 +278,11 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                if (!res.isAnime) invokevidzeeMulti(
+                if (!res.isAnime) invokeVidzeeApi(
                     res.id,
                     res.season,
                     res.episode,
+                    subtitleCallback,
                     callback
                 )
             },
@@ -301,6 +303,9 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             },
             {
                 if (!res.isAnime) invokeSoapy(res.id, res.season, res.episode, subtitleCallback,callback)
+            },
+            {
+                if (!res.isAnime) invokeVidlink(res.id, res.season, res.episode, subtitleCallback,callback)
             },
 
             //Subtitles Invokes

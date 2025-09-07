@@ -84,6 +84,7 @@ import com.phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.phisher98.StreamPlayExtractor.invokeVegamovies
 import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
+import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
@@ -97,7 +98,7 @@ import com.phisher98.StreamPlayExtractor.invokecatflix
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokevidrock
-import com.phisher98.StreamPlayExtractor.invokevidzeeMulti
+import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
@@ -684,7 +685,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     )
                 }
                 add { invokevidzeeUltra(res.id, res.season, res.episode, callback) }
-                add { invokevidzeeMulti(res.id, res.season, res.episode, callback) }
+                add { invokeVidzeeApi(res.id, res.season, res.episode, subtitleCallback,callback) }
                 add { invoke4khdhub(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeElevenmovies(res.id, res.season, res.episode, subtitleCallback, callback) }
                 add { invokehdhub4u(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
@@ -696,6 +697,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
                 add { invokevidrock(res.id, res.season, res.episode, callback) }
                 add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback) }
+                add { invokeVidlink(res.id, res.season, res.episode, subtitleCallback,callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {

@@ -6,8 +6,8 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
-
-import com.phisher98.StreamPlayExtractor.invokeVegamovies
+import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
+import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 
 class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sharedPreferences) {
     override var name = "StreamPlay-Test"
@@ -20,8 +20,22 @@ class StreamPlayTest(sharedPreferences:SharedPreferences?=null) : StreamPlay(sha
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
             {
-                invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback) }
-
+                if (!res.isAnime) invokevidzeeUltra(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            },
+            {
+                if (!res.isAnime) invokeVidzeeApi(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
+            },
         )
         return true
     }
