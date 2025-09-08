@@ -4037,45 +4037,6 @@ object StreamPlayExtractor : StreamPlay() {
         )
     }
 
-
-    suspend fun invokeDramacool(
-        title: String?,
-        provider: String,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        val titleSlug = title?.replace(" ", "-")
-        val s = if (season != 1) "-season-$season" else ""
-        val url =
-            "$Dramacool/stream/series/$provider-${titleSlug}${s}::$titleSlug${s}-ep-$episode.json"
-        val json = app.get(url).text
-        val data = tryParseJson<Dramacool>(json) ?: return
-        data.streams.forEach {
-            callback.invoke(
-                newExtractorLink(
-                    it.title,
-                    it.title,
-                    url = it.url,
-                    INFER_TYPE
-                ) {
-                    this.referer = ""
-                    this.quality = Qualities.Unknown.value
-                }
-            )
-
-            it.subtitles.forEach {
-                subtitleCallback.invoke(
-                    SubtitleFile(
-                        it.lang,
-                        it.url
-                    )
-                )
-            }
-        }
-    }
-
     suspend fun invokeWatch32APIHQ(
         title: String?,
         season: Int? = null,
