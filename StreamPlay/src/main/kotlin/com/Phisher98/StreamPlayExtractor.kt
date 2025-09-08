@@ -2028,7 +2028,7 @@ object StreamPlayExtractor : StreamPlay() {
                 if (btnLinks.isEmpty()) continue
 
                 for (detailUrl in btnLinks) {
-                    val detailDoc = retry { app.get(detailUrl).document } ?: continue
+                    val detailDoc = retry { app.get(detailUrl,headers).document } ?: continue
 
                     val streamingLinks = detailDoc.select("button.btn.btn-sm.btn-outline")
                         .filterNot { btn ->
@@ -2073,7 +2073,7 @@ object StreamPlayExtractor : StreamPlay() {
                     if (episodeLinks.isEmpty()) continue
 
                     for (episodeUrl in episodeLinks) {
-                        val episodeDoc = retry { app.get(episodeUrl).document } ?: continue
+                        val episodeDoc = retry { app.get(episodeUrl,headers).document } ?: continue
 
                         val matchBlock =
                             episodeDoc.selectFirst("h4:contains(Episodes):contains($episode)")
@@ -2228,6 +2228,20 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "cookie" to "xla=s4t",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "sec-ch-ua" to "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Linux\"",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Sec-Fetch-User" to "?1",
+            "Upgrade-Insecure-Requests" to "1",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        )
         val excludedButtonTexts = listOf("Filepress", "GDToT", "DropGalaxy")
 
         val detailPageUrls = doc.select("button.dwd-button")
@@ -2240,7 +2254,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         for (detailPageUrl in detailPageUrls) {
             runCatching {
-                val detailDoc = app.get(detailPageUrl).document
+                val detailDoc = app.get(detailPageUrl,headers).document
                 val streamUrls = detailDoc.select("button.btn.btn-sm.btn-outline")
                     .filterNot { btn ->
                         excludedButtonTexts.any { btn.text().contains(it, ignoreCase = true) }
@@ -2274,6 +2288,20 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "cookie" to "xla=s4t",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "sec-ch-ua" to "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Linux\"",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Sec-Fetch-User" to "?1",
+            "Upgrade-Insecure-Requests" to "1",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        )
         val seasonPattern = "(?i)season\\s*$season\\b.*"
         val episodePattern = "(?i)(V-Cloud|Single|Episode|G-Direct|Download Now)"
 
@@ -2298,7 +2326,7 @@ object StreamPlayExtractor : StreamPlay() {
         for (episodeLink in episodeLinks) {
             val episodeUrl = episodeLink.attr("href")
             runCatching {
-                val res = app.get(episodeUrl).document
+                val res = app.get(episodeUrl,headers).document
 
                 val streamingUrls =
                     res.selectFirst("h4:contains(Episode):contains($episode), h4:contains(Episodes):contains($episode)")

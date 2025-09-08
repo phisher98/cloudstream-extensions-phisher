@@ -265,6 +265,7 @@ class VCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+
         var href = url
 
         if (href.contains("api/index.php")) {

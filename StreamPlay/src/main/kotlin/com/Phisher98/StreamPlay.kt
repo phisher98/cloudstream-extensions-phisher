@@ -239,7 +239,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val KickassAPI = "https://kaa.to"
         const val Player4uApi = "https://player4u.xyz"
         const val Vidsrcxyz = "https://vidsrc.xyz"
-        const val Dramacool = "https://stremio-dramacool-addon.xyz"
         const val Xprime = "https://xprime.tv"
         const val Vidzee = "https://vidzee.wtf"
         const val Elevenmovies = "https://111movies.com"
@@ -709,9 +708,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback) }
             }
 
-            if (res.isAsian && res.season != null) {
-                add { invokeDramacool(res.title, "kdhd", res.season, res.episode, subtitleCallback, callback) }
-            }
             //Include all (Movies,Anime and series)
             add { invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback, subtitleCallback) }
             add { invokeDahmerMovies(dahmerMoviesAPI, res.title, res.year, res.season, res.episode, callback) }
@@ -719,7 +715,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
         }
 
-        runAllAsyncLimited(15, *tasks.toTypedArray())
+        runAllAsyncLimited(10, *tasks.toTypedArray())
         return true
     }
 
