@@ -65,8 +65,9 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
 
 
     private fun buildSectionName(section: SectionInfo, names: MutableList<String>): String {
+        val lrm = "\u200E"
         val name = if (sm.extNameOnHome) {
-            "${section.pluginName}: ${section.name}"
+            "${section.pluginName}$lrm: $lrm${section.name}"
         } else if (names.contains(section.name)) {
             "${section.name} ${names.count { it.startsWith(section.name) } + 1}"
         } else {
@@ -75,6 +76,7 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
         names += name
         return name
     }
+
 
 
     override val mainPage = loadSections()

@@ -1,6 +1,8 @@
 package com.phisher98
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
@@ -17,7 +19,7 @@ class UltimaBetaPlugin : Plugin() {
 
     override fun load(context: Context) {
         activity = context as AppCompatActivity
-        triggerSync()
+        handler.post(syncRunnable)
         // All providers should be added in this manner
         registerMainAPI(UltimaBeta(this))
         UltimaStorageManager.currentMetaProviders.forEach { metaProvider ->
@@ -46,16 +48,32 @@ class UltimaBetaPlugin : Plugin() {
         }
     }
 
+    private val handler = Handler(Looper.getMainLooper())
+
+    private val syncRunnable = object : Runnable {
+        override fun run() {
+            triggerSync()
+            handler.postDelayed(this, 5000)
+        }
+    }
     private fun triggerSync() {
         UltimaStorageManager.deviceSyncCreds?.let { creds ->
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching {
                     creds.syncThisDevice()
+                    Log.i("Sync", "Local backup synced")
+                    val devices = creds.fetchDevices()
+                    devices?.forEach { device ->
+                        Log.i("Sync", "Device: ${device.name}, payload: ${device.payload}")
+                    }
                 }.onFailure {
-                    Log.e("Sync", "Sync failed: ${it.message}")
+                    Log.e("Sync", "Sync/Backup/Fetch failed: ${it.message}")
                 }
             }
         }
     }
+
+
+
 
 }
