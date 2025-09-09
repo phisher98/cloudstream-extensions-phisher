@@ -477,7 +477,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 newExtractorLink(
                                     "Kisskh",
                                     "Kisskh",
-                                    fixUrl(safeLink),
+                                    fixUrl(safeLink,kissKhAPI),
                                     INFER_TYPE
                                 ) {
                                     referer = kissKhAPI
@@ -492,7 +492,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 newExtractorLink(
                                     "Kisskh",
                                     "Kisskh",
-                                    fixUrl(safeLink),
+                                    fixUrl(safeLink,kissKhAPI),
                                     INFER_TYPE
                                 ) {
                                     referer = kissKhAPI
@@ -508,7 +508,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     ?: return@amap null
                             loadSourceNameExtractor(
                                 "Kisskh",
-                                fixUrl(cleanedLink),
+                                fixUrl(cleanedLink,kissKhAPI),
                                 "$kissKhAPI/",
                                 subtitleCallback,
                                 callback,
