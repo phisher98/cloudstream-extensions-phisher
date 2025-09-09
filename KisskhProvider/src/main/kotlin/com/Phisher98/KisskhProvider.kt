@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -143,7 +144,7 @@ class KisskhProvider : MainAPI() {
                     if (link?.contains(".m3u8") == true) {
                         M3u8Helper.generateM3u8(
                             this.name,
-                            link,
+                            fixUrl(link),
                             referer = "$mainUrl/",
                             headers = mapOf("Origin" to mainUrl)
                         ).forEach(callback)
@@ -214,7 +215,7 @@ class KisskhProvider : MainAPI() {
                     val decrypted = chunks.mapIndexed { index, chunk ->
                         val parts = chunk.split("\n")
                         val text = parts.slice(1 until parts.size)
-                        val d = text.map { decrypt(it) }.joinToString("\n")
+                        val d = text.joinToString("\n") { decrypt(it) }
                         arrayOf(index + 1, parts.first(), d).joinToString("\n")
                     }.joinToString("\n\n")
                     val newBody = decrypted.toResponseBody(response.body.contentType())
