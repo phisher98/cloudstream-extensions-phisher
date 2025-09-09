@@ -61,6 +61,8 @@ import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.Locale
 import kotlin.math.max
+import kotlin.text.isNotEmpty
+import kotlin.toString
 
 
 val session = Session(Requests().baseClient)
@@ -5775,6 +5777,49 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             )
         }
+    }
+
+    suspend fun invokeMappleTv(
+        tmdbId: Int? = null,
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val serverList = listOf("mapple","alfa","sakura","wiggles")
+        val fixtitle = "$tmdbId-${title?.replace(" ","-")}"
+        val url = if (season == null) "$mappleTvApi/watch/movie/$fixtitle" else "$mappleTvApi/watch/tv/$season-$episode/$fixtitle"
+        val headers = mapOf(
+            "next-action" to "4006332a0cdf5a4fabe21356fbb734d0726af11119",
+            "Referer" to mappleTvApi,
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+        )
+        serverList.forEach {
+            try {
+                val requestPayload = if(season == null) """[{"mediaId":$tmdbId,"mediaType":"movie","tv_slug":"","source":"$it"}]""" else """[{"mediaId":$tmdbId,"mediaType":"tv","tv_slug":"$season-$episode","source":"$it"}]"""
+                val response = app.post(url, timeout = 30, json = requestPayload, headers = headers).text
+                val rawJson = response.split("\n")[1].replace("1:","")
+                val jsonObj = JSONObject(rawJson)
+                val data = jsonObj.optJSONObject("data")
+                val streamUrl = data.getString("stream_url")
+                callback.invoke(
+                    newExtractorLink(
+                        "MappleTv [${it.capitalize()}]",
+                        "MappleTv [${it.capitalize()}]",
+                        url = streamUrl,
+                        type = ExtractorLinkType.M3U8
+                    )
+                    {
+                        this.headers = mapOf("Referer" to mappleTvApi)
+                        this.quality = Qualities.P1080.value
+                    }
+                )
+
+            } catch (e: Exception) {
+            }
+        }
+
     }
 }
 
