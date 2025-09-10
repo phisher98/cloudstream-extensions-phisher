@@ -58,6 +58,7 @@ import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeLing
+import com.phisher98.StreamPlayExtractor.invokeMappleTv
 import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
@@ -248,6 +249,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val soapy = "https://soapy.to"
         const val vidlink = "https://vidlink.pro"
         const val cinemaOSApi = "https://cinemaos.live"
+        const val mappleTvApi = "https://mapple.tv"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -683,6 +685,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokevidrock(res.id, res.season, res.episode, callback) }
                 add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeVidlink(res.id, res.season, res.episode, subtitleCallback,callback) }
+                add { invokeMappleTv(res.id,res.title,res.season, res.episode, subtitleCallback,callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {
