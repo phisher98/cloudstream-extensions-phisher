@@ -5809,8 +5809,8 @@ object StreamPlayExtractor : StreamPlay() {
                     mappleTvApi,
                     headers = mapOf("Referer" to mappleTvApi)
                 ).forEach(callback)
-
             } catch (e: Exception) {
+                Log.d("excetion",e.message.toString())
             }
         }
 
