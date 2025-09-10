@@ -85,6 +85,7 @@ import com.phisher98.StreamPlayExtractor.invokeVegamovies
 import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidlink
+import com.phisher98.StreamPlayExtractor.invokeVidnest
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
@@ -250,6 +251,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vidlink = "https://vidlink.pro"
         const val cinemaOSApi = "https://cinemaos.live"
         const val mappleTvApi = "https://mapple.tv"
+        const val vidnestApi = "https://backend.vidnest.fun"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -686,6 +688,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeVidlink(res.id, res.season, res.episode, subtitleCallback,callback) }
                 add { invokeMappleTv(res.id,res.title,res.season, res.episode, subtitleCallback,callback) }
+                add { invokeVidnest(res.id,res.season, res.episode, subtitleCallback,callback) }
             }
 
             if (!res.isAnime && res.isBollywood) {

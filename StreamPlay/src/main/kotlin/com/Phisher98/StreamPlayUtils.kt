@@ -50,6 +50,7 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
 import androidx.core.net.toUri
+import javax.crypto.SecretKey
 
 
 var filmxyCookies: Map<String, String>? = null
@@ -3186,4 +3187,36 @@ fun parseCinemaOSSources(jsonString: String): List<Map<String, String>> {
     }
 
     return sourcesList
+}
+
+private fun hexToBytes(hex: String): ByteArray {
+    val cleanHex = hex.replace("[^0-9a-fA-F]".toRegex(), "")
+    require(cleanHex.length % 2 == 0) { "Invalid hex" }
+    return ByteArray(cleanHex.length / 2) { i ->
+        cleanHex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+    }
+}
+
+fun importKey(aesKey: String): SecretKey {
+    val keyBytes = aesKey.toByteArray(StandardCharsets.UTF_8)
+    require(keyBytes.size == 16 || keyBytes.size == 32) { "AES_KEY must be 16 or 32 bytes" }
+    return SecretKeySpec(keyBytes, "AES")
+}
+
+fun decryptAES_CBC(
+    hexCipherText: String,
+    aesKey: String,
+    aesIv: String
+): String {
+    val ivBytes = aesIv.toByteArray(StandardCharsets.UTF_8)
+    require(ivBytes.size == 16) { "AES_IV must be 16 bytes" }
+
+    val secretKey = importKey(aesKey)
+    val cipherBytes = hexToBytes(hexCipherText)
+
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(ivBytes))
+
+    val plainBytes = cipher.doFinal(cipherBytes)
+    return String(plainBytes, StandardCharsets.UTF_8)
 }
