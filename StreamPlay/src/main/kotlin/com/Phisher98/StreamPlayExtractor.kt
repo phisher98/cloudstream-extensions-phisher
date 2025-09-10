@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
@@ -5803,20 +5804,124 @@ object StreamPlayExtractor : StreamPlay() {
                 val jsonObj = JSONObject(rawJson)
                 val data = jsonObj.optJSONObject("data")
                 val streamUrl = data.getString("stream_url")
-                callback.invoke(
-                    newExtractorLink(
-                        "MappleTv [${it.capitalize()}]",
-                        "MappleTv [${it.capitalize()}]",
-                        url = streamUrl,
-                        type = ExtractorLinkType.M3U8
-                    )
-                    {
-                        this.headers = mapOf("Referer" to mappleTvApi)
-                        this.quality = Qualities.P1080.value
+                M3u8Helper.generateM3u8(
+                    "MappleTv [${it.capitalize()}]",
+                    streamUrl,
+                    mappleTvApi,
+                    headers = mapOf("Referer" to mappleTvApi)
+                ).forEach(callback)
+            } catch (e: Exception) {
+                Log.d("excetion",e.message.toString())
+            }
+        }
+
+    }
+
+    suspend fun invokeVidnest(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val serverList = listOf("hollymoviehd","moviebox","flixhq","vidapi","allmovies")
+        serverList.forEach {
+            try {
+                val url = if (season == null) "$vidnestApi/$it/movie/$tmdbId" else "$vidnestApi/$it/tv/$tmdbId/$season/$episode"
+                val response = app.get(url, timeout = 30,).text
+                val jsonObj = JSONObject(response)
+                val cipherText = jsonObj.getString("cipher")
+                val decryptedText = decryptAES_CBC(cipherText,"0123456789abcdef","abcdef0123456789")
+                val jsonObject = JSONObject(decryptedText)
+                if(it == "hollymoviehd")
+                {
+                    val sources = jsonObject.getJSONArray("sources")
+                    for (i in 0 until sources.length()) {
+                        val source = sources.getJSONObject(i)
+                        val url = source.getString("file")
+                        val label = source.getString("label")
+                        M3u8Helper.generateM3u8(
+                            "Vidnest [${it.capitalize()} ($label)]",
+                            url,
+                            vidnestApi,
+                        ).forEach(callback)
                     }
-                )
+
+                }
+                else if (it == "allmovies") {
+
+                    val vidnest = parseJson<Vidnest>(decryptedText)
+                    vidnest.streams.forEach {
+                        M3u8Helper.generateM3u8(
+                            "Vidnest [AllMovies (${it.language})]",
+                            it.url,
+                            it.headers.referer,
+                            headers = it.headers.toMap()
+                        ).forEach(callback)
+                    }
+                }
+                else if(it == "moviebox")
+                {
+                    val headersJson = jsonObject.getJSONObject("headers")
+                    val headersMap: Map<String, String> = headersJson.keys().asSequence().associateWith { key ->
+                        headersJson.getString(key)
+                    }
+                    val urlArray: JSONArray = jsonObject.getJSONArray("url")
+                    for (i in 0 until urlArray.length()) {
+                        val item: JSONObject = urlArray.getJSONObject(i)
+                        val lang = item.getString("lang")
+                        val type = item.getString("type")
+                        val link = item.getString("link")
+                        val resolution = item.getString("resulation")
+                        callback.invoke(
+                            newExtractorLink(
+                                "Vidnest [${it.capitalize()} $lang]",
+                                "Vidnest [${it.capitalize()} $lang]",
+                                url = link,
+                                type = if(type.contains("mp4", ignoreCase = true)) ExtractorLinkType.VIDEO else INFER_TYPE
+                            )
+                            {
+                                this.headers = headersMap
+                                this.quality = getQualityFromName(resolution)
+                            }
+                        )
+                    }
+                }
+                else if(it == "flixhq")
+                {
+                    val url = jsonObject.getString("url")
+                    val headerObject = jsonObject.getJSONObject("headers")
+                    val headerValue = headerObject.getString("Referer")
+                    val headers = mapOf("Referer" to headerValue)
+                    M3u8Helper.generateM3u8(
+                        "Vidnest [${it.capitalize()}]",
+                        url,
+                        headerValue,
+                        headers = headers
+                    ).forEach(callback)
+                }
+                else if(it == "vidapi")
+                {
+                    val headersJson = jsonObject.getJSONObject("headers")
+                    val headersMap: Map<String, String> = headersJson.keys().asSequence().associateWith { key ->
+                        headersJson.getString(key)
+                    }
+                    val sources = jsonObject.getJSONArray("sources")
+                    for (i in 0 until sources.length()) {
+                        val source = sources.getJSONObject(i)
+                        val url = source.getString("file")
+                        val label = source.getString("label")
+                        M3u8Helper.generateM3u8(
+                            "Vidnest [${it.capitalize()} ($label)]",
+                            url,
+                            headersJson.getString("Referer"),
+                            headers = headersMap
+                        ).forEach(callback)
+                    }
+                }
 
             } catch (e: Exception) {
+                Log.d("excetion",e.message.toString())
             }
         }
 

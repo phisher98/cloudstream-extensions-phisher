@@ -2257,3 +2257,28 @@ data class VidlinkCaption(
     val type: String,
     val hasCorsRestrictions: Boolean,
 )
+
+
+data class Vidnest(
+    val streams: List<VidnestStream>,
+    val totalLanguages: Long,
+)
+
+data class VidnestStream(
+    val language: String,
+    val url: String,
+    val headers: VidnestHeaders,
+)
+
+data class VidnestHeaders(
+    @JsonProperty("Referer")
+    val referer: String,
+    @JsonProperty("User-Agent")
+    val userAgent: String,
+)
+{
+    fun toMap(): Map<String, String> = mapOf(
+        "Referer" to referer,
+        "User-Agent" to userAgent
+    )
+}
