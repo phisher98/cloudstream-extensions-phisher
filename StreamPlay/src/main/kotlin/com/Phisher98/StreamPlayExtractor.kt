@@ -5803,18 +5803,12 @@ object StreamPlayExtractor : StreamPlay() {
                 val jsonObj = JSONObject(rawJson)
                 val data = jsonObj.optJSONObject("data")
                 val streamUrl = data.getString("stream_url")
-                callback.invoke(
-                    newExtractorLink(
-                        "MappleTv [${it.capitalize()}]",
-                        "MappleTv [${it.capitalize()}]",
-                        url = streamUrl,
-                        type = ExtractorLinkType.M3U8
-                    )
-                    {
-                        this.headers = mapOf("Referer" to mappleTvApi)
-                        this.quality = Qualities.P1080.value
-                    }
-                )
+                M3u8Helper.generateM3u8(
+                    "MappleTv [${it.capitalize()}]",
+                    streamUrl,
+                    mappleTvApi,
+                    headers = mapOf("Referer" to mappleTvApi)
+                ).forEach(callback)
 
             } catch (e: Exception) {
             }
