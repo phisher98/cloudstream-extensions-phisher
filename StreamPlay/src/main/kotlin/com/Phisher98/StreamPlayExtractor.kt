@@ -5300,7 +5300,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                                     callback.invoke(
                                         newExtractorLink(
-                                            source = "MovieBox",
+                                            source = "MovieBox (${language.capitalize()})",
                                             name = "MovieBox (${language.capitalize()}) [$subjectTitle]",
                                             url = resUrl,
                                             type = when {
@@ -5344,7 +5344,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                                 callback.invoke(
                                     newExtractorLink(
-                                        source = "MovieBox",
+                                        source = "MovieBox (${language.capitalize()})",
                                         name = "MovieBox (${language.capitalize()}) [$subjectTitle]",
                                         url = singleUrl,
                                         type = when {
