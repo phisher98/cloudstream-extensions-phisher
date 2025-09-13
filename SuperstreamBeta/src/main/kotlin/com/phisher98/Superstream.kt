@@ -10,11 +10,6 @@ import javax.net.ssl.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.lagradost.api.Log
-import com.phisher98.Extractors.invokeExternalSource
-import com.phisher98.Extractors.invokeInternalSource
-import com.phisher98.Extractors.invokeOpenSubs
-import com.phisher98.Extractors.invokeWatchsomuch
 import com.phisher98.Superstream.CipherUtils.getVerify
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
@@ -27,6 +22,10 @@ import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.SuperStreamExtractor.invokeExternalSource
+import com.phisher98.SuperStreamExtractor.invokeInternalSource
+import com.phisher98.SuperStreamExtractor.invokeOpenSubs
+import com.phisher98.SuperStreamExtractor.invokeWatchsomuch
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -36,12 +35,11 @@ import java.security.NoSuchAlgorithmException
 import java.security.cert.CertificateFactory
 import java.security.spec.PKCS8EncodedKeySpec
 import javax.crypto.Cipher
-import javax.crypto.Cipher.DECRYPT_MODE
 import javax.crypto.Cipher.ENCRYPT_MODE
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-open class Superstream(sharedPref: SharedPreferences?) : TmdbProvider() {
+open class Superstream(sharedPref: SharedPreferences?=null) : TmdbProvider() {
     override var name = "SuperStream Beta"
     override val hasMainPage = true
     override val useMetaLoadResponse = true
@@ -53,6 +51,10 @@ open class Superstream(sharedPref: SharedPreferences?) : TmdbProvider() {
         TvType.Anime,
         TvType.AnimeMovie,
     )
+    companion object
+    {
+        private const val Supertoken = BuildConfig.SuperToken
+    }
     val uitoken = sharedPref?.getString("token", null)?.substringAfter("ui=")
     enum class ResponseTypes(val value: Int) {
         Series(2),
@@ -117,31 +119,6 @@ open class Superstream(sharedPref: SharedPreferences?) : TmdbProvider() {
                 )
 
                 String(Base64.encode(cipher.doFinal(str.toByteArray()), 2), StandardCharsets.UTF_8)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-
-        // Useful for deobfuscation
-        fun decrypt(str: String, key: String, iv: String): String? {
-            return try {
-                val cipher: Cipher = Cipher.getInstance(TRANSFORMATION)
-                val bArr = ByteArray(24)
-                val bytes: ByteArray = key.toByteArray()
-                var length = if (bytes.size <= 24) bytes.size else 24
-                System.arraycopy(bytes, 0, bArr, 0, length)
-                while (length < 24) {
-                    bArr[length] = 0
-                    length++
-                }
-                cipher.init(
-                    DECRYPT_MODE,
-                    SecretKeySpec(bArr, ALGORITHM),
-                    IvParameterSpec(iv.toByteArray())
-                )
-                val inputStr = Base64.decode(str.toByteArray(), Base64.DEFAULT)
-                cipher.doFinal(inputStr).decodeToString()
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -852,7 +829,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val parsed = parseJson<LinkData>(data)
-        Log.d("Phisher",uitoken.toString())
+
         runAllAsync(
             {
                 invokeExternalSource(
@@ -864,20 +841,17 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                     callback
                 )
             },
-            /*
             {
                 invokeInternalSource(
                     parsed.id,
                     parsed.type,
                     parsed.season,
                     parsed.episode,
-                    uitoken,
+                    Supertoken,
                     subtitleCallback,
                     callback
                 )
             },
-
-             */
             {
                 invokeOpenSubs(
                     parsed.imdbId,
@@ -915,14 +889,6 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
         }
     }
 
-
-    data class ExternalSources(
-        @JsonProperty("m3u8_url") val m3u8_url: String? = null,
-        @JsonProperty("file") val file: String? = null,
-        @JsonProperty("label") val label: String? = null,
-        @JsonProperty("type") val type: String? = null,
-    )
-
     data class WatchsomuchTorrents(
         @JsonProperty("id") val id: Int? = null,
         @JsonProperty("movieId") val movieId: Int? = null,
@@ -954,11 +920,6 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
 
     data class OsResult(
         @JsonProperty("subtitles") val subtitles: ArrayList<OsSubtitles>? = arrayListOf(),
-    )
-
-    data class VidsrcSubtitles(
-        @JsonProperty("label") val label: String? = null,
-        @JsonProperty("file") val file: String? = null,
     )
 
 }

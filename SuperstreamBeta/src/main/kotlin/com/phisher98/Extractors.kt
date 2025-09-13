@@ -3,38 +3,41 @@ package com.phisher98
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import org.json.JSONArray
+import org.json.JSONObject
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 
 
-object Extractors : Superstream(null) {
+object SuperStreamExtractor : Superstream() {
 
     suspend fun invokeInternalSource(
         id: Int? = null,
         type: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        uitoken: String?,
+        superToken: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
         suspend fun LinkList.toExtractorLink(): ExtractorLink? {
-            val quality=this.quality
+            val quality = this.quality
             if (this.path.isNullOrBlank()) return null
             return newExtractorLink(
-                "Internal",
-                "Internal [${this.size}]",
+                "⌜ SuperStream ⌟ Internal",
+                "⌜ SuperStream ⌟ Internal [${this.size}]",
                 this.path.replace("\\/", ""),
                 INFER_TYPE
             )
             {
-                this.quality=getQualityFromName(quality)
+                this.quality = getQualityFromName(quality)
             }
         }
-
         val query = if (type == ResponseTypes.Movies.value) {
-            """{"childmode":"0","uid":"","app_version":"11.5","appid":"$appId","module":"Movie_downloadurl_v3","channel":"Website","mid":"$id","lang":"","expired_date":"${getExpiryDate()}","platform":"android","oss":"1","uid":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9eyJpYXQiOjE3NTYzNzczMTIsIm5iZiI6MTc1NjM3NzMxMiwiZXhwIjoxNzg3NDgxMzMyLCJkYXRhIjp7InVpZCI6NjQyNDQ1LCJ0b2tlbiI6ImRhYzc1MWIwZmUyZjEzYmNjNmU5OTNhNjhlZjcxYzRjIiwicGxhdGZvcm0iOiJhbmRyb2lkIn19DL0wK6kr5HCw2oQz8xk95dMviHt2oFOafGNwKggrsys=","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","group":""}"""
+            """{"childmode":"0","uid":"","app_version":"11.5","appid":"$appId","module":"Movie_downloadurl_v3","channel":"Website","mid":"$id","lang":"","expired_date":"${getExpiryDate()}","platform":"android","oss":"1","uid":"$superToken","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","group":""}"""
         } else {
-            """{"childmode":"0","app_version":"11.5","module":"TV_downloadurl_v3","channel":"Website","episode":"$episode","expired_date":"${getExpiryDate()}","platform":"android","tid":"$id","oss":"1","uid":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9eyJpYXQiOjE3NTYzNzczMTIsIm5iZiI6MTc1NjM3NzMxMiwiZXhwIjoxNzg3NDgxMzMyLCJkYXRhIjp7InVpZCI6NjQyNDQ1LCJ0b2tlbiI6ImRhYzc1MWIwZmUyZjEzYmNjNmU5OTNhNjhlZjcxYzRjIiwicGxhdGZvcm0iOiJhbmRyb2lkIn19DL0wK6kr5HCw2oQz8xk95dMviHt2oFOafGNwKggrsys=","appid":"$appId","season":"$season","lang":"en","group":""}"""
+            """{"childmode":"0","app_version":"11.5","module":"TV_downloadurl_v3","channel":"Website","episode":"$episode","expired_date":"${getExpiryDate()}","platform":"android","tid":"$id","oss":"1","uid":"$superToken","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","appid":"$appId","season":"$season","lang":"en","group":""}"""
         }
         val linkData = queryApiParsed<LinkDataProp>(query, false)
         linkData.data?.list?.forEach { link ->
@@ -45,9 +48,9 @@ object Extractors : Superstream(null) {
         val fid = linkData.data?.list?.firstOrNull { it.fid != null }?.fid
 
         val subtitleQuery = if (type == ResponseTypes.Movies.value) {
-            """{"childmode":"0","fid":"$fid","uid":"","app_version":"11.5","appid":"$appId","module":"Movie_srt_list_v2","channel":"Website","mid":"$id","lang":"en","expired_date":"${getExpiryDate()}","platform":"android"}"""
+            """{"childmode":"0","fid":"$fid","uid":"","app_version":"11.5","appid":"$appId","module":"Movie_srt_list_v2","channel":"Website","mid":"$id","lang":"en","uid":"$superToken","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","expired_date":"${getExpiryDate()}","platform":"android"}"""
         } else {
-            """{"childmode":"0","fid":"$fid","app_version":"11.5","module":"TV_srt_list_v2","channel":"Website","episode":"$episode","expired_date":"${getExpiryDate()}","platform":"android","tid":"$id","uid":"","appid":"$appId","season":"$season","lang":"en"}"""
+            """{"childmode":"0","fid":"$fid","app_version":"11.5","module":"TV_srt_list_v2","channel":"Website","episode":"$episode","expired_date":"${getExpiryDate()}","platform":"android","tid":"$id","uid":"$superToken","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","appid":"$appId","season":"$season","lang":"en"}"""
         }
 
         val subtitles = queryApiParsed<SubtitleDataProp>(subtitleQuery).data
@@ -71,19 +74,16 @@ object Extractors : Superstream(null) {
         uitoken: String?,
         callback: (ExtractorLink) -> Unit,
     ) {
-        Log.d("Phisher","$season $episode")
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val shareKey = app.get("$thirdAPI/mbp/to_share_page?box_type=${type}&mid=$mediaId&json=1")
             .parsedSafe<ExternalResponse>()?.data?.link
             ?: app.get("$thirdAPI/mbp/to_share_page?box_type=${type}&mid=$mediaId&json=1")
                 .parsedSafe<ExternalResponse>()?.data?.shareLink
                 ?.substringAfterLast("/") ?: return
-        Log.d("Phisher",shareKey)
         val headers = mapOf("Accept-Language" to "en")
         val shareRes =
             app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
                 .parsedSafe<ExternalResponse>()?.data ?: return
-        Log.d("Phisher",shareRes.toString())
 
         val fids = if (season == null) {
             shareRes.file_list
@@ -100,29 +100,69 @@ object Extractors : Superstream(null) {
         } ?: return
 
         fids.amapIndexed { index, fileList ->
-            val cookieheaders =
-                mapOf("Cookie" to "ui=$uitoken")
+            val superToken = uitoken ?: ""
             val player = app.get(
-                "$thirdAPI/file/player?fid=${fileList.fid}&share_key=$shareKey",
-                headers = cookieheaders
+                "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey",
+                headers = mapOf("Cookie" to superToken)
             ).text
-            val sourcesJson = "sources\\s*=\\s*(\\[[\\s\\S]*?]);".toRegex(RegexOption.DOT_MATCHES_ALL)
-                .find(player)?.groupValues?.get(1)
+            val json = try {
+                JSONObject(player)
+            } catch (e: Exception) {
+                Log.e("Error:", "Invalid JSON response $e")
+                return@amapIndexed
+            }
+            val htmlContent = json.optString("html", "")
+            if (htmlContent.isEmpty()) return@amapIndexed
 
-            AppUtils.tryParseJson<ArrayList<ExternalSources>>(sourcesJson)?.forEachIndexed { index, source ->
-                val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
-                val label = source.label
+            val document: Document = Jsoup.parse(htmlContent)
+            val sourcesWithQualities =
+                mutableListOf<Triple<String, String, String>>() // url, quality, size
 
-                callback.invoke(
-                    ExtractorLink(
-                        "External",
-                        "External [Server ${index + 1}]",
-                        (source.m3u8_url ?: source.file)?.replace("\\/", "/") ?: return@forEachIndexed,
-                        "",
-                        getQualityFromName(label),
-                        type = format
+            document.select("div.file_quality").forEach { element ->
+                val url = element.attr("data-url").takeIf { it.isNotEmpty() } ?: return@forEach
+                val qualityAttr = element.attr("data-quality").takeIf { it.isNotEmpty() }
+                val size = element.selectFirst(".size")?.text()?.takeIf { it.isNotEmpty() }
+                    ?: return@forEach
+
+                val quality = if (qualityAttr.equals("ORG", ignoreCase = true)) {
+                    Regex("""(\d{3,4}p)""", RegexOption.IGNORE_CASE).find(url)?.groupValues?.get(1)
+                        ?: "2160p"
+                } else {
+                    qualityAttr ?: return@forEach
+                }
+
+                sourcesWithQualities.add(Triple(url, quality, size))
+            }
+
+            val sourcesJsonArray = JSONArray().apply {
+                sourcesWithQualities.forEach { (url, quality, size) ->
+                    put(JSONObject().apply {
+                        put("file", url)
+                        put("label", quality)
+                        put("type", "video/mp4")
+                        put("size", size)
+                    })
+                }
+            }
+            val jsonObject = JSONObject().put("sources", sourcesJsonArray)
+            listOf(jsonObject.toString()).forEach {
+                val parsedSources =
+                    tryParseJson<ExternalSourcesWrapper>(it)?.sources ?: return@forEach
+                parsedSources.forEach org@{ source ->
+                    val format =
+                        if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                    if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
+                    callback.invoke(
+                        ExtractorLink(
+                            "⌜ SuperStream ⌟ External",
+                            "⌜ SuperStream ⌟ External [Server ${index + 1}] ${source.size}",
+                            source.file?.replace("\\/", "/") ?: return@org,
+                            "",
+                            getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.file_name else source.label),
+                            type = format,
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -189,14 +229,14 @@ object Extractors : Superstream(null) {
         }
         app.get("${openSubAPI}/subtitles/$slug.json", timeout = 120L)
             .parsedSafe<OsResult>()?.subtitles?.map { sub ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
-                    ?: return@map,
-                    sub.url ?: return@map
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
+                        ?: return@map,
+                        sub.url ?: return@map
+                    )
                 )
-            )
-        }
+            }
     }
 
     private fun fixUrl(url: String, domain: String): String {

@@ -1,5 +1,7 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class Meta(
     val id: String?,
     val imdb_id: String?,
@@ -37,4 +39,17 @@ data class EpisodeDetails(
 
 data class ResponseData(
     val meta: Meta?
+)
+
+
+data class ExternalSourcesWrapper(
+    @JsonProperty("sources") val sources: List<ExternalSources>? = null
+)
+
+data class ExternalSources(
+    @JsonProperty("source") val source: String? = null,
+    @JsonProperty("file") val file: String? = null,
+    @JsonProperty("label") val label: String? = null,
+    @JsonProperty("type") val type: String? = null,
+    @JsonProperty("size") val size: String? = null,
 )
