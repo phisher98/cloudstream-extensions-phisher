@@ -21,6 +21,23 @@ object SuperStreamExtractor : Superstream() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
+
+        val videoheaders = mapOf(
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.8",
+            "Connection" to "keep-alive",
+            "Range" to "bytes=0-",
+            "Referer" to thirdAPI,
+            "Sec-Fetch-Dest" to "video",
+            "Sec-Fetch-Mode" to "no-cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Sec-Fetch-Storage-Access" to "none",
+            "Sec-GPC" to "1",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Brave\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Windows\""
+        )
         suspend fun LinkList.toExtractorLink(): ExtractorLink? {
             val quality = this.quality
             if (this.path.isNullOrBlank()) return null
@@ -28,10 +45,11 @@ object SuperStreamExtractor : Superstream() {
                 "⌜ SuperStream ⌟ Internal",
                 "⌜ SuperStream ⌟ Internal [${this.size}]",
                 this.path.replace("\\/", ""),
-                INFER_TYPE
+                INFER_TYPE,
             )
             {
                 this.quality = getQualityFromName(quality)
+                this.headers=videoheaders
             }
         }
         val query = if (type == ResponseTypes.Movies.value) {
@@ -74,6 +92,22 @@ object SuperStreamExtractor : Superstream() {
         uitoken: String?,
         callback: (ExtractorLink) -> Unit,
     ) {
+        val videoheaders = mapOf(
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.8",
+            "Connection" to "keep-alive",
+            "Range" to "bytes=0-",
+            "Referer" to thirdAPI,
+            "Sec-Fetch-Dest" to "video",
+            "Sec-Fetch-Mode" to "no-cors",
+            "Sec-Fetch-Site" to "cross-site",
+            "Sec-Fetch-Storage-Access" to "none",
+            "Sec-GPC" to "1",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Brave\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Windows\""
+        )
         val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
         val shareKey = app.get("$thirdAPI/mbp/to_share_page?box_type=${type}&mid=$mediaId&json=1")
             .parsedSafe<ExternalResponse>()?.data?.link
@@ -153,14 +187,16 @@ object SuperStreamExtractor : Superstream() {
                         if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
                     if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "⌜ SuperStream ⌟ External",
                             "⌜ SuperStream ⌟ External [Server ${index + 1}] ${source.size}",
                             source.file?.replace("\\/", "/") ?: return@org,
-                            "",
-                            getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.file_name else source.label),
-                            type = format,
+                            INFER_TYPE
                         )
+                        {
+                            this.headers=videoheaders
+                            this.quality=getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.file_name else source.label)
+                        }
                     )
                 }
             }
