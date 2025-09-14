@@ -134,7 +134,9 @@ object SuperStreamExtractor : Superstream() {
         } ?: return
 
         fids.amapIndexed { index, fileList ->
-            val superToken = uitoken ?: ""
+            val superToken = uitoken?.let {
+                if (it.startsWith("ui=")) it else "ui=$it"
+            } ?: ""
             val player = app.get(
                 "$thirdAPI/console/video_quality_list?fid=${fileList.fid}&share_key=$shareKey",
                 headers = mapOf("Cookie" to superToken)
