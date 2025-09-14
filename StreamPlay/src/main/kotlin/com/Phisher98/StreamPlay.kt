@@ -70,7 +70,7 @@ import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
 import com.phisher98.StreamPlayExtractor.invokePlaydesi
 import com.phisher98.StreamPlayExtractor.invokePlayer4U
-import com.phisher98.StreamPlayExtractor.invokePrimeWire
+import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
@@ -233,7 +233,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val TomAPI = "https://tom.autoembed.cc"
         const val RiveStreamAPI = "https://rivestream.org"
         const val VidSrcVip = "https://vidsrc.vip"
-        const val Primewire = "https://www.primewire.tf"
+        const val PrimeSrcApi = "https://primesrc.me"
         const val Film1kApi = "https://www.film1k.com"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
@@ -667,7 +667,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 }
                 add { invokeWatch32APIHQ(res.title, res.season, res.episode, res.year, subtitleCallback, callback) }
                 add { invokeVidSrcViP(res.id, res.season, res.episode, callback) }
-                add { invokePrimeWire(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
+                add { invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
                 add { invokeFilm1k(res.title, res.season, res.year, subtitleCallback, callback) }
                 add { if (res.imdbId!= null) invokeSuperstream(token, res.imdbId, res.season, res.episode, callback) }
                 add { if (settingsForProvider.enableAdult) invokePlayer4U(res.title, res.season, res.episode, res.year, callback) }

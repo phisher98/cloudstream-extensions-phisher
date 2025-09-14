@@ -2282,3 +2282,19 @@ data class VidnestHeaders(
         "User-Agent" to userAgent
     )
 }
+
+
+
+data class PrimeSrcServerList(
+    val servers: List<PrimeSrcServer>,
+)
+
+data class PrimeSrcServer(
+    val name: String,
+    val key: String,
+    @JsonProperty("file_size")
+    val fileSize: String?,
+    @JsonProperty("file_name")
+    val fileName: String?,
+)
+
