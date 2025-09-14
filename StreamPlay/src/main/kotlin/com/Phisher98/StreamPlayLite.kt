@@ -223,13 +223,15 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 )
             },
             {
-                if (!res.isAnime) invokePlayer4U(
-                    res.title,
-                    res.season,
-                    res.episode,
-                    res.year,
-                    callback
-                )
+                if (settingsForProvider.enableAdult) {
+                    if (!res.isAnime) invokePlayer4U(
+                        res.title,
+                        res.season,
+                        res.episode,
+                        res.year,
+                        callback
+                    )
+                }
             },
             {
                 invokeStreamPlay(
