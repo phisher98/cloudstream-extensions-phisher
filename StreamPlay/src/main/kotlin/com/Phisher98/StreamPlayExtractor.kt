@@ -1418,7 +1418,7 @@ object StreamPlayExtractor : StreamPlay() {
         )
         app.get(url, headers = headers, timeout = 100L)
             .parsedSafe<SubtitlesAPI>()?.subtitles?.amap { it ->
-                val lan = getLanguage(it.lang) ?: "Unknown"
+                val lan = getLanguage(it.lang)
                 val suburl = it.url
                 subtitleCallback.invoke(
                     SubtitleFile(
@@ -5298,7 +5298,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                                     callback.invoke(
                                         newExtractorLink(
-                                            source = "MovieBox",
+                                            source = "MovieBox (${language.capitalize()})",
                                             name = "MovieBox (${language.capitalize()}) [$subjectTitle]",
                                             url = resUrl,
                                             type = when {
@@ -5342,7 +5342,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                                 callback.invoke(
                                     newExtractorLink(
-                                        source = "MovieBox",
+                                        source = "MovieBox (${language.capitalize()})",
                                         name = "MovieBox (${language.capitalize()}) [$subjectTitle]",
                                         url = singleUrl,
                                         type = when {
