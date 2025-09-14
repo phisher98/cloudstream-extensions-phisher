@@ -48,8 +48,6 @@ jobs:
           TMDB_API: ${{ secrets.TMDB_API }}
           DUMP_API: ${{ secrets.DUMP_API }}
           DUMP_KEY: ${{ secrets.DUMP_KEY }}
-          CRUNCHYROLL_BASIC_TOKEN: ${{ secrets.CRUNCHYROLL_BASIC_TOKEN }}
-          CRUNCHYROLL_REFRESH_TOKEN: ${{ secrets.CRUNCHYROLL_REFRESH_TOKEN }}
           ANICHI_API: ${{ secrets.ANICHI_API }}
           ANICHI_SERVER: ${{ secrets.ANICHI_SERVER }}
           ANICHI_ENDPOINT: ${{ secrets.ANICHI_ENDPOINT }}
@@ -70,7 +68,6 @@ jobs:
           PirateIPTV: ${{ secrets.PirateIPTV }}
           Su_sports: ${{ secrets.Su_sports }}
           CatflixAPI: ${{ secrets.CatflixAPI }}
-          TooniboyCookie: ${{ secrets.TooniboyCookie }}
           ConsumetAPI: ${{ secrets.ConsumetAPI }}
           FlixHQAPI: ${{ secrets.FlixHQAPI }}
           WhvxAPI: ${{ secrets.WhvxAPI }}
@@ -78,7 +75,6 @@ jobs:
           SharmaflixApikey: ${{ secrets.SharmaflixApikey }}
           SharmaflixApi: ${{ secrets.SharmaflixApi }}
           Theyallsayflix: ${{ secrets.Theyallsayflix }}
-          GojoAPI: ${{ secrets.GojoAPI }}
           HianimeAPI: ${{ secrets.HianimeAPI }}
           Vidsrccc: ${{ secrets.Vidsrccc }}
           WASMAPI: ${{ secrets.WASMAPI }}
@@ -92,13 +88,12 @@ jobs:
           MOVIEBOX_SECRET_KEY_ALT: ${{ secrets.MOVIEBOX_SECRET_KEY_ALT }}
           MOVIEBOX_SECRET_KEY_DEFAULT: ${{ secrets.MOVIEBOX_SECRET_KEY_DEFAULT }}
           SuperToken: ${{ secrets.SuperToken }}
+          AKProxy: ${{ secrets.AKProxy }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
           echo DUMP_API=$DUMP_API >> local.properties
           echo DUMP_KEY=$DUMP_KEY >> local.properties
-          echo CRUNCHYROLL_BASIC_TOKEN=$CRUNCHYROLL_BASIC_TOKEN >> local.properties
-          echo CRUNCHYROLL_REFRESH_TOKEN=$CRUNCHYROLL_REFRESH_TOKEN >> local.properties
           echo ANICHI_API=$ANICHI_API >> local.properties
           echo ANICHI_SERVER=$ANICHI_SERVER >> local.properties
           echo ANICHI_ENDPOINT=$ANICHI_ENDPOINT >> local.properties
@@ -119,14 +114,12 @@ jobs:
           echo SonyIPTV=$SonyIPTV >> local.properties
           echo JapanIPTV=$JapanIPTV >> local.properties
           echo CatflixAPI=$CatflixAPI >> local.properties
-          echo TooniboyCookie=$TooniboyCookie >> local.properties
           echo ConsumetAPI=$ConsumetAPI >> local.properties
           echo FlixHQAPI=$FlixHQAPI >> local.properties
           echo WhvxAPI=$WhvxAPI >> local.properties
           echo WhvxT=$WhvxT >> local.properties
           echo SharmaflixApi=$SharmaflixApi >> local.properties
           echo SharmaflixApikey=$SharmaflixApikey >> local.properties
-          echo GojoAPI=$GojoAPI >> local.properties
           echo HianimeAPI=$HianimeAPI >> local.properties
           echo Vidsrccc=$Vidsrccc >> local.properties
           echo WASMAPI=$WASMAPI >> local.properties
@@ -140,6 +133,7 @@ jobs:
           echo MOVIEBOX_SECRET_KEY_DEFAULT=$MOVIEBOX_SECRET_KEY_DEFAULT >> local.properties
           echo MOVIEBOX_SECRET_KEY_ALT=$MOVIEBOX_SECRET_KEY_ALT >> local.properties
           echo SuperToken=$SuperToken >> local.properties
+          echo AKProxy=$AKProxy >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

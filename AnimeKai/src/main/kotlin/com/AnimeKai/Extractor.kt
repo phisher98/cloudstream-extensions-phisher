@@ -5,16 +5,21 @@ import androidx.annotation.RequiresApi
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.nicehttp.requestCreator
+import com.phisher98.BuildConfig
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+class embedwish : MegaUp() {
+    override var mainUrl = "https://megaup.live"
+}
 
-class MegaUp : ExtractorApi() {
+open class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.cc"
     override val requiresReferer = true
@@ -91,7 +96,7 @@ class MegaUp : ExtractorApi() {
 
         val m3u8Response = webViewMutex.withLock {
             app.get(
-                url = url,
+                url = "${BuildConfig.AKProxy}?url=$url?autostart=true",
                 referer = mainUrl,
                 headers = HEADERS,
                 interceptor = m3u8Resolver
@@ -121,7 +126,7 @@ class MegaUp : ExtractorApi() {
                 timeout = 15_000L,
                 userAgent = null
             ).resolveUsingWebView(
-                requestCreator("GET", url, headers = HEADERS)
+                requestCreator("GET", "${BuildConfig.AKProxy}?url=$url?autostart=true", headers = HEADERS)
             ) { request ->
                 val interceptedUrl = request.url.toString()
                 if (interceptedUrl.endsWith(".vtt") &&
