@@ -3,10 +3,7 @@ package com.phisher98
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.phisher98.StreamPlay.Companion.animepaheAPI
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -30,11 +27,9 @@ import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.ExtractorApi
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.nicehttp.requestCreator
+import com.phisher98.StreamPlay.Companion.animepaheAPI
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.FormBody
@@ -1008,7 +1003,7 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String? = null
+                    var redirectUrl: String?
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
@@ -1020,7 +1015,7 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
                             "$source 10Gbps [Download]",
@@ -1045,7 +1040,7 @@ class HubCloud : ExtractorApi() {
     private fun getBaseUrl(url: String): String {
         return try {
             URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -1512,7 +1507,7 @@ class GDMirrorbot : ExtractorApi() {
                         loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Log.e("Error:", "Failed to extract from $friendlyName at $fullUrl")
                 continue
             }
@@ -1603,7 +1598,7 @@ class MegaUp : ExtractorApi() {
 
         val m3u8Response = webViewMutex.withLock {
             app.get(
-                url = url,
+                url = "${BuildConfig.AKProxy}?url=$url?autostart=true",
                 referer = mainUrl,
                 headers = HEADERS,
                 interceptor = m3u8Resolver
@@ -1614,7 +1609,7 @@ class MegaUp : ExtractorApi() {
 
         if (m3u8Url.contains(".m3u8")) {
             val displayName = referer ?: this.name
-            M3u8Helper.generateM3u8(displayName, m3u8Url, mainUrl, headers = HEADERS)
+            generateM3u8(displayName, m3u8Url, mainUrl, headers = HEADERS)
                 .forEach(callback)
         } else {
             Log.e("MegaUp", "Failed to find .m3u8 for $url")
@@ -1633,7 +1628,7 @@ class MegaUp : ExtractorApi() {
                 timeout = 15_000L,
                 userAgent = null
             ).resolveUsingWebView(
-                requestCreator("GET", url, headers = HEADERS)
+                requestCreator("GET", "${BuildConfig.AKProxy}?url=$url?autostart=true", headers = HEADERS)
             ) { request ->
                 val interceptedUrl = request.url.toString()
                 if (interceptedUrl.endsWith(".vtt") &&
