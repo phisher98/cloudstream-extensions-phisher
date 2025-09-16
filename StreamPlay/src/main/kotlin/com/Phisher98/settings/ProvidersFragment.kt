@@ -73,7 +73,8 @@ class ProvidersFragment(
         // --- Build providers dynamically ---
         providers = buildProviders()
 
-        adapter = ProviderAdapter(providers, sharedPref.getStringSet(PREFS_KEY, emptySet()) ?: emptySet()) { selected ->
+        val initiallyEnabled = sharedPref.getStringSet(PREFS_KEY, null) ?: providers.map { it.id }.toSet()
+        adapter = ProviderAdapter(providers, initiallyEnabled) { selected ->
             sharedPref.edit { putStringSet(PREFS_KEY, selected) }
         }
 
