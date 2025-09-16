@@ -71,13 +71,15 @@ class ProvidersFragment(
         btnSelectAll = view.findView("btn_select_all")
         btnDeselectAll = view.findView("btn_deselect_all")
 
-        // --- Build providers dynamically ---
+        // --- Build providers dynamically and sort alphabetically ---
         providers = buildProviders().sortedBy { it.name.lowercase() }
 
-        // --- Initialize adapter with saved or default all-on ---
-        val savedSet = sharedPref.getStringSet(PREFS_KEY, null)
-        val initiallyEnabled = savedSet ?: providers.map { it.id }.toSet()
-        if (savedSet == null) {
+        val savedSet = sharedPref.getStringSet(PREFS_KEY, emptySet()) ?: emptySet()
+        val allProviderIds = providers.map { it.id }.toSet()
+
+        val initiallyEnabled = savedSet + (allProviderIds - savedSet)
+
+        if (initiallyEnabled != savedSet) {
             sharedPref.edit { putStringSet(PREFS_KEY, initiallyEnabled).apply() }
         }
 
@@ -121,6 +123,7 @@ class ProvidersFragment(
 
         btnSave.setOnClickListener { dismissFragment() }
     }
+
 
     private fun updateUI() {
         val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
