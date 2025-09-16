@@ -28,6 +28,7 @@ class ProvidersFragment(
     private lateinit var btnSelectAll: Button
     private lateinit var btnDeselectAll: Button
     private lateinit var adapter: ProviderAdapter
+    private lateinit var container: LinearLayout
     private var providers: List<Provider> = emptyList()
     private val PREFS_KEY = "enabled_providers"
 
@@ -71,48 +72,64 @@ class ProvidersFragment(
         btnDeselectAll = view.findView("btn_deselect_all")
 
         // --- Build providers dynamically ---
-        providers = buildProviders()
+        providers = buildProviders().sortedBy { it.name.lowercase() }
 
-        val initiallyEnabled = sharedPref.getStringSet(PREFS_KEY, null) ?: providers.map { it.id }.toSet()
+        // --- Initialize adapter with saved or default all-on ---
+        val savedSet = sharedPref.getStringSet(PREFS_KEY, null)
+        val initiallyEnabled = savedSet ?: providers.map { it.id }.toSet()
+        if (savedSet == null) {
+            sharedPref.edit { putStringSet(PREFS_KEY, initiallyEnabled).apply() }
+        }
+
         adapter = ProviderAdapter(providers, initiallyEnabled) { selected ->
-            sharedPref.edit { putStringSet(PREFS_KEY, selected) }
+            sharedPref.edit { putStringSet(PREFS_KEY, selected).apply() }
+            updateUI()
         }
 
         // --- Add items to container manually ---
-        val container = view.findView<LinearLayout>("list_container")
+        container = view.findView("list_container")
         container.makeTvCompatible()
-        providers.forEach { provider ->
+        val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+
+        providers.forEachIndexed { index, provider ->
             val item = getLayout("item_provider_checkbox", layoutInflater, container)
-            val chk = item.findView<CheckBox>("chk_provider")
+            val chk = item.findViewById<CheckBox>(chkId)
             chk.makeTvCompatible()
             chk.text = provider.name
             chk.isChecked = adapter.isEnabled(provider.id)
+
             item.setOnClickListener {
                 chk.isChecked = !chk.isChecked
                 adapter.setEnabled(provider.id, chk.isChecked)
             }
+
             chk.setOnCheckedChangeListener { _, isChecked ->
                 adapter.setEnabled(provider.id, isChecked)
             }
+
             container.addView(item)
         }
 
+        // --- Buttons ---
         btnSelectAll.setOnClickListener {
             adapter.setAll(true)
-            for (i in 0 until container.childCount) {
-                container.getChildAt(i).findViewById<CheckBox>(res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)).isChecked = true
-            }
         }
 
         btnDeselectAll.setOnClickListener {
             adapter.setAll(false)
-            for (i in 0 until container.childCount) {
-                container.getChildAt(i).findViewById<CheckBox>(res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)).isChecked = false
-            }
         }
+
         btnSave.setOnClickListener { dismissFragment() }
     }
 
+    private fun updateUI() {
+        val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+        for (i in 0 until container.childCount) {
+            val chk = container.getChildAt(i).findViewById<CheckBox>(chkId)
+            val providerId = providers[i].id
+            chk.isChecked = adapter.isEnabled(providerId)
+        }
+    }
 
     private fun dismissFragment() {
         parentFragmentManager.beginTransaction().remove(this).commitAllowingStateLoss()
@@ -126,10 +143,12 @@ class ProvidersFragment(
         private val enabled = initiallyEnabled.toMutableSet()
 
         fun isEnabled(id: String) = enabled.contains(id)
+
         fun setEnabled(id: String, value: Boolean) {
             if (value) enabled.add(id) else enabled.remove(id)
             onChange(enabled.toSet())
         }
+
         fun setAll(value: Boolean) {
             enabled.clear()
             if (value) enabled.addAll(items.map { it.id })

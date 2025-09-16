@@ -67,6 +67,7 @@ class ToggleFragment(
         val defaultEnabled = apis.map { it.name }.toSet()
         val currentSet = savedSet?.toSet() ?: defaultEnabled
 
+
         for (api in apis) {
             val toggleItem = getLayout("list_toggle_item", inflater, container)
             val toggleSwitch = toggleItem.findView<Switch>("toggle_item")
