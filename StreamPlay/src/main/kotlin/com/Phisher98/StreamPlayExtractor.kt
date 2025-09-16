@@ -4501,7 +4501,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val queryWithEpisode =
             season?.let { "$title S${"%02d".format(it)}E${"%02d".format(episode)}" }
-        val baseQuery = queryWithEpisode ?: "$title $year"
+        val baseQuery = queryWithEpisode ?: "$title"
         val encodedQuery = baseQuery.replace(" ", "+")
 
         val allLinks = linkedSetOf<Player4uLinkData>()
