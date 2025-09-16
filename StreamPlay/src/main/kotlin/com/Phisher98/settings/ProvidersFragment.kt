@@ -30,7 +30,7 @@ class ProvidersFragment(
     private lateinit var adapter: ProviderAdapter
     private lateinit var container: LinearLayout
     private var providers: List<Provider> = emptyList()
-    private val PREFS_KEY = "enabled_providers"
+    private val PREFS_DISABLED = "disabled_providers"
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -71,66 +71,51 @@ class ProvidersFragment(
         btnSelectAll = view.findView("btn_select_all")
         btnDeselectAll = view.findView("btn_deselect_all")
 
-        // --- Build providers dynamically and sort alphabetically ---
+        container = view.findView("list_container")
+        container.makeTvCompatible()
+
         providers = buildProviders().sortedBy { it.name.lowercase() }
 
-        val savedSet = sharedPref.getStringSet(PREFS_KEY, emptySet()) ?: emptySet()
-        val allProviderIds = providers.map { it.id }.toSet()
+        // --- Load disabled providers ---
+        val savedDisabled = sharedPref.getStringSet(PREFS_DISABLED, emptySet()) ?: emptySet()
 
-        val initiallyEnabled = savedSet + (allProviderIds - savedSet)
-
-        if (initiallyEnabled != savedSet) {
-            sharedPref.edit { putStringSet(PREFS_KEY, initiallyEnabled).apply() }
-        }
-
-        adapter = ProviderAdapter(providers, initiallyEnabled) { selected ->
-            sharedPref.edit { putStringSet(PREFS_KEY, selected).apply() }
+        adapter = ProviderAdapter(providers, savedDisabled) { disabled ->
+            sharedPref.edit { putStringSet(PREFS_DISABLED, disabled) }
             updateUI()
         }
 
-        // --- Add items to container manually ---
-        container = view.findView("list_container")
-        container.makeTvCompatible()
         val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
 
-        providers.forEachIndexed { index, provider ->
+        // --- Add provider items ---
+        providers.forEach { provider ->
             val item = getLayout("item_provider_checkbox", layoutInflater, container)
             val chk = item.findViewById<CheckBox>(chkId)
             chk.makeTvCompatible()
             chk.text = provider.name
-            chk.isChecked = adapter.isEnabled(provider.id)
+            // Enabled if NOT in disabled list
+            chk.isChecked = !adapter.isDisabled(provider.id)
 
-            item.setOnClickListener {
-                chk.isChecked = !chk.isChecked
-                adapter.setEnabled(provider.id, chk.isChecked)
-            }
+            item.setOnClickListener { chk.toggle() }
 
             chk.setOnCheckedChangeListener { _, isChecked ->
-                adapter.setEnabled(provider.id, isChecked)
+                // Checked → remove from disabled, Unchecked → add to disabled
+                adapter.setDisabled(provider.id, !isChecked)
             }
 
             container.addView(item)
         }
 
         // --- Buttons ---
-        btnSelectAll.setOnClickListener {
-            adapter.setAll(true)
-        }
-
-        btnDeselectAll.setOnClickListener {
-            adapter.setAll(false)
-        }
-
+        btnSelectAll.setOnClickListener { adapter.setAll(true) }
+        btnDeselectAll.setOnClickListener { adapter.setAll(false) }
         btnSave.setOnClickListener { dismissFragment() }
     }
-
 
     private fun updateUI() {
         val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
         for (i in 0 until container.childCount) {
             val chk = container.getChildAt(i).findViewById<CheckBox>(chkId)
-            val providerId = providers[i].id
-            chk.isChecked = adapter.isEnabled(providerId)
+            chk.isChecked = !adapter.isDisabled(providers[i].id)
         }
     }
 
@@ -140,22 +125,22 @@ class ProvidersFragment(
 
     inner class ProviderAdapter(
         private val items: List<Provider>,
-        initiallyEnabled: Set<String>,
+        initiallyDisabled: Set<String>,
         private val onChange: (Set<String>) -> Unit
     ) {
-        private val enabled = initiallyEnabled.toMutableSet()
+        private val disabled = initiallyDisabled.toMutableSet()
 
-        fun isEnabled(id: String) = enabled.contains(id)
+        fun isDisabled(id: String) = id in disabled
 
-        fun setEnabled(id: String, value: Boolean) {
-            if (value) enabled.add(id) else enabled.remove(id)
-            onChange(enabled.toSet())
+        fun setDisabled(id: String, value: Boolean) {
+            if (value) disabled.add(id) else disabled.remove(id)
+            onChange(disabled)
         }
 
         fun setAll(value: Boolean) {
-            enabled.clear()
-            if (value) enabled.addAll(items.map { it.id })
-            onChange(enabled.toSet())
+            disabled.clear()
+            if (!value) disabled.addAll(items.map { it.id })
+            onChange(disabled)
         }
     }
 }

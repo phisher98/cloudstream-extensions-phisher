@@ -4619,39 +4619,54 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         if (title.isNullOrBlank()) return
 
-        val baseUrl = runCatching { getDomains()?.n4khdhub }.getOrNull() ?: return
+        val baseUrl = runCatching { getDomains()?.n4khdhub }
+            .onFailure { Log.e("4Khdhub", "Failed to get domain: ${it.message}") }
+            .getOrNull() ?: return
+
         val searchUrl = "$baseUrl/?s=${title.trim().replace(" ", "+")}"
 
-        val searchDoc = runCatching { app.get(searchUrl).document }.getOrNull() ?: return
-        val normalizedTitle = title.lowercase().trim()
+        // Normalization helper
+        val normalize = { str: String ->
+            str.lowercase()
+                .replace(Regex("[^a-z0-9 ]"), "")
+                .trim()
+        }
+
+        val normalizedTitle = normalize(title)
+
+        val searchDoc = runCatching { app.get(searchUrl).document }
+            .onFailure { Log.e("4Khdhub", "Failed to fetch search page: ${it.message}") }
+            .getOrNull() ?: return
 
         val postLink = searchDoc.select("div.card-grid > a.movie-card")
             .firstOrNull { card ->
-                val titleText = card.selectFirst("div.movie-card-content > h3")
-                    ?.text()?.trim()?.lowercase() ?: return@firstOrNull false
+                val titleText = card.selectFirst("div.movie-card-content > h3.movie-card-title")
+                    ?.text()?.let(normalize) ?: return@firstOrNull false
 
                 val metaText = card.selectFirst("div.movie-card-content > p.movie-card-meta")
-                    ?.text()?.trim() ?: return@firstOrNull false
+                    ?.text()?.trim().orEmpty()
 
-                val titleMatch = titleText == normalizedTitle ||
-                        titleText.contains(" $normalizedTitle ") ||
-                        titleText.contains("$normalizedTitle:")
+                val titleMatch = titleText.contains(normalizedTitle)
 
                 val yearMatch = if (season == null) {
-                    year?.let { metaText.contains(it.toString()) } ?: true
+                    year?.let { metaText.contains(it.toString().trim()) } ?: true
                 } else true
 
                 titleMatch && yearMatch
             }?.attr("href") ?: return
 
-        val doc = runCatching { app.get("$baseUrl$postLink").document }.getOrNull() ?: return
+        val doc = runCatching { app.get("$baseUrl$postLink").document }
+            .onFailure { Log.e("4Khdhub", "Failed to fetch detail page: ${it.message}") }
+            .getOrNull() ?: return
 
         val links = if (season == null) {
             doc.select("div.download-item a")
         } else {
             val seasonText = "S${season.toString().padStart(2, '0')}"
             val episodeText = "E${episode.toString().padStart(2, '0')}"
-            doc.select("div.episode-download-item:has(div.episode-file-title:contains(${seasonText}${episodeText}))")
+
+            doc.select("div.episode-download-item")
+                .filter { it.text().contains(Regex("${seasonText}${episodeText}", RegexOption.IGNORE_CASE)) }
                 .flatMap { it.select("div.episode-links > a") }
         }
 
@@ -4659,7 +4674,10 @@ object StreamPlayExtractor : StreamPlay() {
             val rawHref = element.attr("href")
             if (rawHref.isBlank()) continue
 
-            val link = runCatching { hdhubgetRedirectLinks(rawHref) }.getOrNull() ?: continue
+            val link = runCatching { hdhubgetRedirectLinks(rawHref) }
+                .onFailure { Log.e("4Khdhub", "Failed to resolve redirect for $rawHref: ${it.message}") }
+                .getOrNull() ?: continue
+
             dispatchToExtractor(link, "4Khdhub", subtitleCallback, callback)
         }
     }

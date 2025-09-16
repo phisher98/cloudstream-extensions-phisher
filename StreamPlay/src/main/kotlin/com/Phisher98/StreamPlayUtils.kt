@@ -50,6 +50,11 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
 import androidx.core.net.toUri
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import javax.crypto.SecretKey
 
 
@@ -3221,4 +3226,30 @@ fun decryptAES_CBC(
 
     val plainBytes = cipher.doFinal(cipherBytes)
     return String(plainBytes, StandardCharsets.UTF_8)
+}
+
+/**
+ * Run multiple suspend functions concurrently with a limit on simultaneous executions.
+ *
+ * @param concurrency Limit of concurrent tasks.
+ * @param tasks Vararg of suspend functions to execute.
+ */
+suspend fun runLimitedAsync(
+    concurrency: Int = 5,
+    vararg tasks: suspend () -> Unit
+) = coroutineScope {
+    val semaphore = Semaphore(concurrency)
+
+    tasks.map { task ->
+        async(Dispatchers.IO) {
+            semaphore.withPermit {
+                try {
+                    task()
+                } catch (e: Exception) {
+                    // Log error but continue
+                    Log.e("runLimitedAsync", "Task failed: ${e.message}")
+                }
+            }
+        }
+    }.awaitAll()
 }

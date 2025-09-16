@@ -33,6 +33,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -518,149 +519,27 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LinkData>(data)
+        val disabledProviderIds = sharedPref
+            ?.getStringSet("disabled_providers", emptySet())
+            ?.toSet() ?: emptySet()
 
-        val enabledProviderIds = sharedPref
-            ?.getStringSet("enabled_providers", emptySet())
-            ?.toList() ?: emptyList()
+        val providersList = buildProviders().filter { it.id !in disabledProviderIds }
 
-        val tasks = mutableListOf<suspend () -> Unit>().apply {
-            add { invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
-            add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
-
-            buildProviders()
-                .filter { enabledProviderIds.contains(it.id) }
-                .forEach { provider ->
-                    Log.d("Phisher", "Queuing provider: ${provider.id}")
-                    add { provider.invoke(res, subtitleCallback, callback, token ?: "", dahmerMoviesAPI) }
+        runLimitedAsync(
+            concurrency = 5,
+            {
+                if (!res.isAnime) invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+            },
+            {
+                if (!res.isAnime) invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+            },
+            *providersList.map { provider ->
+                suspend {
+                    provider.invoke(res, subtitleCallback, callback, token ?: "", dahmerMoviesAPI)
                 }
-        }
+            }.toTypedArray()
+        )
 
-        val concurrencyLimit = 10
-        val semaphore = Semaphore(concurrencyLimit)
-
-        withContext(Dispatchers.IO) {
-            tasks.map { task ->
-                async {
-                    semaphore.withPermit {
-                        try {
-                            task()
-                        } catch (e: Exception) {
-                            Log.e("Phisher", "Error invoking provider")
-                        }
-                    }
-                }
-            }.awaitAll()
-        }
-
-    /*
-    val tasks = buildList<suspend () -> Unit> {
-        if (res.isAnime) {
-            add { invokeEmbedsu(res.imdbId, res.season, res.episode, callback) }
-            add {
-                invokeAnimes(
-                    res.title,
-                    res.jpTitle,
-                    res.date,
-                    res.airedDate,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            }
-        }
-
-        if (!res.isAnime) {
-            add { invokeVidsrccc(res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeVidsrcsu(res.id, res.season, res.episode, callback) }
-            add { invokeazseries(res.title, res.season, res.episode, subtitleCallback, callback) }
-            add {
-                invokeLing(
-                    res.title,
-                    res.airedYear ?: res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            }
-            add { invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback) }
-            add { invokeTopMovies(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeMoviesmod(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeBollyflix(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeFlixon(res.id, res.imdbId, res.season, res.episode, callback) }
-            add { invokeWatchsomuch(res.imdbId, res.season, res.episode, subtitleCallback) }
-            add { invokeNinetv(res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeRidomovies(res.id, res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeMoviehubAPI(res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeAllMovieland(res.imdbId, res.season, res.episode, callback) }
-            add { invokeMultiEmbed(res.imdbId, res.season, res.episode, callback) }
-            add { invokecatflix(res.id, res.epid, res.title, res.episode, res.season, callback) }
-            add { invokeEmovies(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback) }
-            add { invokeExtramovies(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback) }
-            add { invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeZshow(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeShowflix(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeMoflix(res.id, res.season, res.episode, callback) }
-            add { invokeTom(res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeZoechip(res.title, res.year, res.season, res.episode, callback) }
-            add { invokeNepu(res.title, res.airedYear ?: res.year, res.season, res.episode, callback) }
-            add { invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback) }
-            add {
-                invokeMoviesdrive(
-                    res.title,
-                    res.season,
-                    res.episode,
-                    res.year,
-                    res.imdbId,
-                    subtitleCallback,
-                    callback
-                )
-            }
-            add { invokeWatch32APIHQ(res.title, res.season, res.episode, res.year, subtitleCallback, callback) }
-            add { invokeVidSrcViP(res.id, res.season, res.episode, callback) }
-            add { invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeFilm1k(res.title, res.season, res.year, subtitleCallback, callback) }
-            add { if (res.imdbId!= null) invokeSuperstream(token, res.imdbId, res.season, res.episode, callback) }
-            add { if (settingsForProvider.enableAdult) invokePlayer4U(res.title, res.season, res.episode, res.year, callback) }
-            add { invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback) }
-            add { invokeXPrimeAPI(res.title, res.year, res.imdbId, res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokevidzeeUltra(res.id, res.season, res.episode, callback) }
-            add { invokeVidzeeApi(res.id, res.season, res.episode, subtitleCallback,callback) }
-            add { invoke4khdhub(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeElevenmovies(res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokehdhub4u(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeHdmovie2(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeRiveStream(res.id, res.season, res.episode, callback) }
-            add { invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback) }
-            add { invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokevidrock(res.id, res.season, res.episode, callback) }
-            add { invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeVidlink(res.id, res.season, res.episode, subtitleCallback,callback) }
-            add { invokeMappleTv(res.id,res.title,res.season, res.episode, subtitleCallback,callback) }
-            add { invokeVidnest(res.id,res.season, res.episode, subtitleCallback,callback) }
-        }
-
-        if (!res.isAnime && res.isBollywood) {
-            add { invokeDotmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-            add { invokeRogmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback) }
-        }
-
-        if (res.isAsian && !res.isAnime) {
-            add { invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback) }
-        }
-
-        //Include all (Movies,Anime and series)
-        add { invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback, subtitleCallback) }
-        add { invokeDahmerMovies(dahmerMoviesAPI, res.title, res.year, res.season, res.episode, callback) }
-        add { invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
-        add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
-    }
-     */
         return true
     }
 
