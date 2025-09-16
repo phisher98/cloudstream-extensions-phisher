@@ -62,6 +62,8 @@ import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.Locale
 import kotlin.math.max
+import kotlin.ranges.contains
+import kotlin.text.get
 import kotlin.text.isNotEmpty
 import kotlin.toString
 
@@ -4497,10 +4499,9 @@ object StreamPlayExtractor : StreamPlay() {
         year: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title?.createPlayerSlug().orEmpty()
         val queryWithEpisode =
-            season?.let { "$fixTitle S${"%02d".format(it)}E${"%02d".format(episode)}" }
-        val baseQuery = queryWithEpisode ?: "$fixTitle $year"
+            season?.let { "$title S${"%02d".format(it)}E${"%02d".format(episode)}" }
+        val baseQuery = queryWithEpisode ?: "$title $year"
         val encodedQuery = baseQuery.replace(" ", "+")
 
         val allLinks = linkedSetOf<Player4uLinkData>()
@@ -4512,14 +4513,14 @@ object StreamPlayExtractor : StreamPlay() {
 
             if (document == null) break
 
-            allLinks += extractPlayer4uLinks(document)
+            allLinks += extractPlayer4uLinks(document,season,episode,title.toString(),year)
 
             if (page == 0 && season == null && allLinks.isEmpty()) {
-                val fallbackUrl = "$Player4uApi/embed?key=${fixTitle.replace(" ", "+")}"
+                val fallbackUrl = "$Player4uApi/embed?key=${title?.replace(" ", "+")}"
                 val fallbackDoc =
                     runCatching { app.get(fallbackUrl, timeout = 20).document }.getOrNull()
                 if (fallbackDoc != null) {
-                    allLinks += extractPlayer4uLinks(fallbackDoc)
+                    allLinks += extractPlayer4uLinks(fallbackDoc,season,episode,title.toString(),year)
                 }
                 break
             }
@@ -4566,9 +4567,18 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    private fun extractPlayer4uLinks(document: Document): List<Player4uLinkData> {
-        return document.select(".playbtnx").map {
-            Player4uLinkData(name = it.text(), url = it.attr("onclick"))
+    private fun extractPlayer4uLinks(document: Document,season:Int?,episode:Int?,title:String,year:Int?): List<Player4uLinkData> {
+        return document.select(".playbtnx").mapNotNull { element ->
+            val titleText = element.text()?.split(" | ")?.lastOrNull() ?: return@mapNotNull null
+            if (season == null && episode == null) {
+                if (year != null && (titleText.contains(title, ignoreCase = true) && titleText.contains(year.toString(), ignoreCase = true))) {
+                    Player4uLinkData(name = titleText, url = element.attr("onclick"))
+                } else null
+            } else {
+                if (season != null && episode != null && titleText.contains(title, ignoreCase = true) && titleText.contains("S${"%02d".format(season)}E${"%02d".format(episode)}", ignoreCase = true)) {
+                    Player4uLinkData(name = titleText, url = element.attr("onclick"))
+                } else null
+            }
         }
     }
 
@@ -5681,8 +5691,9 @@ object StreamPlayExtractor : StreamPlay() {
         val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data)
         val json = parseCinemaOSSources(decryptedJson.toString())
         json.forEach {
-            val extractorLinkType = if(it["type"]?.contains("hls",true) ?: false) { ExtractorLinkType.M3U8} else if(it["type"]?.contains("dash",true) ?: false){ ExtractorLinkType.DASH} else { INFER_TYPE}
-            val quality = if(it["bitrate"]?.contains("fhd",true) ?: false) { Qualities.P1080 } else if(it["bitrate"]?.contains("hd",true) ?: false){ Qualities.P720} else { Qualities.P1080}
+            val extractorLinkType = if(it["type"]?.contains("hls",true) ?: false) { ExtractorLinkType.M3U8} else if(it["type"]?.contains("dash",true) ?: false){ ExtractorLinkType.DASH} else if(it["type"]?.contains("mp4",true) ?: false){ ExtractorLinkType.VIDEO} else { INFER_TYPE}
+            val bitrateQuality = if(it["bitrate"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["bitrate"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value}
+            val quality =  if(it["quality"]?.isNotEmpty() == true && it["quality"]?.toIntOrNull() !=null) getQualityFromName(it["quality"]) else if (it["quality"]?.isNotEmpty() == true)  if(it["quality"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["quality"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value} else bitrateQuality
             callback.invoke(
                 newExtractorLink(
                     "CinemaOS [${it["server"]}] ${it["bitrate"]}  ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
@@ -5692,7 +5703,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
                 {
                     this.headers = mapOf("Referer" to cinemaOSApi)
-                    this.quality = if(it["quality"]?.isNotEmpty() == true) getQualityFromName(it["quality"]) else Qualities.P1080.value
+                    this.quality = quality
                 }
             )
         }
