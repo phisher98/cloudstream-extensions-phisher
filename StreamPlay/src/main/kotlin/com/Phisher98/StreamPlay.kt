@@ -1,9 +1,8 @@
 package com.phisher98
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import android.content.SharedPreferences
+import com.Phisher98.buildProviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.lagradost.api.Log
@@ -34,73 +33,12 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.StreamPlayExtractor.invoke2embed
-import com.phisher98.StreamPlayExtractor.invoke4khdhub
-import com.phisher98.StreamPlayExtractor.invokeAllMovieland
-import com.phisher98.StreamPlayExtractor.invokeAnimes
-import com.phisher98.StreamPlayExtractor.invokeBollyflix
-import com.phisher98.StreamPlayExtractor.invokeCinemaOS
-import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
-import com.phisher98.StreamPlayExtractor.invokeDotmovies
-import com.phisher98.StreamPlayExtractor.invokeDramadrip
-import com.phisher98.StreamPlayExtractor.invokeElevenmovies
-import com.phisher98.StreamPlayExtractor.invokeEmbedlc
-import com.phisher98.StreamPlayExtractor.invokeEmbedsu
-import com.phisher98.StreamPlayExtractor.invokeEmovies
-import com.phisher98.StreamPlayExtractor.invokeExtramovies
-import com.phisher98.StreamPlayExtractor.invokeFilm1k
-import com.phisher98.StreamPlayExtractor.invokeFlixon
-import com.phisher98.StreamPlayExtractor.invokeHdmovie2
-import com.phisher98.StreamPlayExtractor.invokeKisskh
-import com.phisher98.StreamPlayExtractor.invokeLing
-import com.phisher98.StreamPlayExtractor.invokeMappleTv
-import com.phisher98.StreamPlayExtractor.invokeMoflix
-import com.phisher98.StreamPlayExtractor.invokeMovieBox
-import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
-import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
-import com.phisher98.StreamPlayExtractor.invokeMoviesmod
-import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
-import com.phisher98.StreamPlayExtractor.invokeMultimovies
-import com.phisher98.StreamPlayExtractor.invokeNepu
-import com.phisher98.StreamPlayExtractor.invokeNinetv
-import com.phisher98.StreamPlayExtractor.invokePlaydesi
-import com.phisher98.StreamPlayExtractor.invokePlayer4U
-import com.phisher98.StreamPlayExtractor.invokePrimeSrc
-import com.phisher98.StreamPlayExtractor.invokeRidomovies
-import com.phisher98.StreamPlayExtractor.invokeRiveStream
-import com.phisher98.StreamPlayExtractor.invokeRogmovies
-import com.phisher98.StreamPlayExtractor.invokeShowflix
-import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
-import com.phisher98.StreamPlayExtractor.invokeSuperstream
-import com.phisher98.StreamPlayExtractor.invokeTom
-import com.phisher98.StreamPlayExtractor.invokeTopMovies
-import com.phisher98.StreamPlayExtractor.invokeUhdmovies
-import com.phisher98.StreamPlayExtractor.invokeVegamovies
-import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
-import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
-import com.phisher98.StreamPlayExtractor.invokeVidlink
-import com.phisher98.StreamPlayExtractor.invokeVidnest
-import com.phisher98.StreamPlayExtractor.invokeVidsrccc
-import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
-import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
-import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
-import com.phisher98.StreamPlayExtractor.invokeZoechip
-import com.phisher98.StreamPlayExtractor.invokeZshow
-import com.phisher98.StreamPlayExtractor.invokeazseries
-import com.phisher98.StreamPlayExtractor.invokecatflix
-import com.phisher98.StreamPlayExtractor.invokehdhub4u
-import com.phisher98.StreamPlayExtractor.invokemorph
-import com.phisher98.StreamPlayExtractor.invokevidrock
-import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
-import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import kotlin.math.roundToInt
@@ -118,7 +56,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         TvType.Cartoon,
     )
 
-    val token = sharedPref?.getString("token", null)
+    val token: String? = sharedPref?.getString("token", null)
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
     /** AUTHOR : hexated & Phisher & Code */
@@ -452,7 +390,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     gson.fromJson(cineJsonText, CinemetaRes::class.java)
                 }.getOrNull()
                 val animevideos = cinejson?.meta?.videos
-
+                val jptitle = cinejson?.meta?.name
                 val animeepisodes = animevideos
                     ?.filter { it.season!= 0 }
                     ?.map { video ->
@@ -474,7 +412,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                                 airedYear = year,
                                 lastSeason = null,
                                 epsTitle = video.name,
-                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
+                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title ?: jptitle,
                                 date = video.released,
                                 airedDate = res.releaseDate ?: res.firstAirDate,
                                 isAsian = isAsian,
@@ -571,26 +509,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         }
     }
 
-    suspend fun runAllAsyncLimited(
-        maxConcurrent: Int,
-        vararg tasks: suspend () -> Unit
-    ) = coroutineScope {
-        val semaphore = Semaphore(maxConcurrent)
-        tasks.map { task ->
-            async {
-                semaphore.withPermit {
-                    try {
-                        task()
-                    } catch (e: CancellationException) {
-                        throw e // allow cancellation
-                    } catch (e: Exception) {
-                        println("Task failed: ${e.message}") // log safely
-                    }
-                }
-            }
-        }.awaitAll()
-    }
-
+    @DelicateCoroutinesApi
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -599,6 +518,33 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     ): Boolean {
         val res = parseJson<LinkData>(data)
 
+        val enabledProviderIds = sharedPref
+            ?.getStringSet("enabled_providers", emptySet())
+            ?.toList() ?: emptyList()
+
+        val tasks = mutableListOf<suspend () -> Unit>().apply {
+            add { invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
+            add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
+
+            buildProviders().filter { enabledProviderIds.contains(it.id) }.forEach { provider ->
+                Log.d("Phisher", "Invoking provider: ${provider.id}")
+                add { provider.invoke(res, subtitleCallback, callback, token ?: "", dahmerMoviesAPI) }
+            }
+        }
+
+        runBlocking {
+            tasks.map { task ->
+                async(Dispatchers.IO) {
+                    try {
+                        task()
+                    } catch (_: Exception) {
+                        Log.e("Phisher", "Error invoking provider")
+                    }
+                }
+            }.awaitAll()
+        }
+
+        /*
         val tasks = buildList<suspend () -> Unit> {
             if (res.isAnime) {
                 add { invokeEmbedsu(res.imdbId, res.season, res.episode, callback) }
@@ -706,8 +652,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             add { invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
             add { invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback) }
         }
-
-        runAllAsyncLimited(10, *tasks.toTypedArray())
+         */
         return true
     }
 

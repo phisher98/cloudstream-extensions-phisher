@@ -56,30 +56,6 @@ class StreamPlayPlugin: Plugin() {
         }
 
         sharedPref.edit { remove("enabled_plugins_set") }
-
-        //=====================Settings============================//
-/*
-        val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
-        val mainApis = listOf(
-            StreamPlay(sharedPref),
-            StreamPlayLite(),
-            StreamPlayTorrent(),
-            StreamPlayAnime(),
-            StreamplayTorrentAnime()
-        )
-        val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)
-        val defaultEnabled = mainApis.map { it.name }.toSet()
-        val enabledSet = savedSet ?: defaultEnabled
-
-        for (api in mainApis) {
-            if (enabledSet.contains(api.name)) {
-                registerMainAPI(api)
-                registeredMainApis.add(api)
-            }
-        }
-        sharedPref.edit { remove("enabled_plugins_set") }
- */
-
         //=====================MainAPI============================//
 
         //registerMainAPI(StreamPlayTest(sharedPref))

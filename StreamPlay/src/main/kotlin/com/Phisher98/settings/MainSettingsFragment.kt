@@ -6,11 +6,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
+import com.phisher98.settings.ProvidersFragment
 import com.phisher98.settings.SettingsFragment
 import com.phisher98.settings.ToggleFragment
 
@@ -48,16 +50,21 @@ class MainSettingsFragment(
         savedInstanceState: Bundle?
     ): View {
         val view = getLayout("fragment_main_settings", inflater, container)
+
         val loginCard: ImageView = view.findView("loginCard")
         val featureCard: ImageView = view.findView("featureCard")
+        val toggleproviders: ImageView = view.findView("toggleproviders")
         val saveIcon: ImageView = view.findView("saveIcon")
 
         loginCard.setImageDrawable(getDrawable("settings_icon"))
         featureCard.setImageDrawable(getDrawable("settings_icon"))
+        toggleproviders.setImageDrawable(getDrawable("settings_icon"))
         saveIcon.setImageDrawable(getDrawable("save_icon"))
 
         loginCard.makeTvCompatible()
         featureCard.makeTvCompatible()
+        toggleproviders.makeTvCompatible()
+
         saveIcon.makeTvCompatible()
 
         loginCard.setOnClickListener {
@@ -73,6 +80,14 @@ class MainSettingsFragment(
             toggleFragment.show(
                 activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
                 "fragment_toggle_extensions"
+            )
+        }
+
+        toggleproviders.setOnClickListener {
+            val providersFragment = ProvidersFragment(plugin, sharedPref)
+            providersFragment.show(
+                activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
+                "fragment_toggle_providers"
             )
         }
 
