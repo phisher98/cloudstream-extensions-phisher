@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/providers_container"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="#121212"
     android:padding="16dp">
 
-    <!-- Title with save + select controls -->
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingBottom="8dp">
+        android:layout_marginBottom="10dp">
 
         <TextView
             android:id="@+id/tv_title"
@@ -21,47 +20,72 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Select Providers"
-            android:textSize="18sp"
-            android:textStyle="bold"/>
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
 
-        <!-- Select All -->
         <Button
             android:id="@+id/btn_select_all"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="All"/>
+            android:text="Select All"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#1F6FEB" />
 
-        <!-- Deselect All -->
         <Button
             android:id="@+id/btn_deselect_all"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="None"
-            android:layout_marginStart="4dp"/>
+            android:text="Select None"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#BB2D3B"
+            android:layout_marginStart="6dp" />
 
-        <!-- Save -->
         <ImageButton
             android:id="@+id/btn_save"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center_vertical"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:focusable="true"
             android:padding="8dp"
-            android:contentDescription="Save"/>
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:nextFocusDown="@id/list_container"
+            android:nextFocusLeft="@id/btn_deselect_all"
+            android:scaleType="centerInside" />
     </LinearLayout>
 
-    <!-- Scrollable provider list -->
+    <!-- Subtext -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enable or Disable Source Providers"
+        android:textSize="14sp"
+        android:textColor="#CCCCCC"
+        android:layout_marginBottom="10dp" />
+
+    <!-- Divider -->
+    <ImageView
+        android:src="@android:drawable/divider_horizontal_dark"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scaleType="fitXY"
+        android:layout_marginBottom="10dp"
+        android:layout_marginTop="10dp" />
+
+    <!-- Scrollable list -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="300dp"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
         android:fillViewport="true">
 
-        <LinearLayout
-            android:id="@+id/list_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:divider="?android:attr/dividerVertical"
-            android:showDividers="middle"/>
-    </ScrollView>
-</LinearLayout>
+    <LinearLayout
+        android:id="@+id/list_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:nextFocusUp="@id/btn_save"
+        android:paddingBottom="10dp" />
+</ScrollView>
+
+    </LinearLayout>

@@ -124,7 +124,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Toggle Providers"
+                android:text="Enable/Disable Sources"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 

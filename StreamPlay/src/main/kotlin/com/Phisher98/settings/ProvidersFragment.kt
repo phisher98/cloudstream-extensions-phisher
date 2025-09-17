@@ -14,9 +14,11 @@ import android.widget.LinearLayout
 import androidx.core.content.edit
 import com.Phisher98.Provider
 import com.Phisher98.buildProviders
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
+import androidx.core.view.isNotEmpty
 
 class ProvidersFragment(
     private val plugin: StreamPlayPlugin,
@@ -60,6 +62,20 @@ class ProvidersFragment(
         return getLayout("fragment_providers", inflater, container)
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.let { dlg ->
+            val bottomSheet = dlg.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            bottomSheet?.let { sheet ->
+                val behavior = BottomSheetBehavior.from(sheet)
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                behavior.isDraggable = true
+                behavior.skipCollapsed = true
+                sheet.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            }
+        }
+    }
+
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -70,10 +86,10 @@ class ProvidersFragment(
 
         btnSelectAll = view.findView("btn_select_all")
         btnDeselectAll = view.findView("btn_deselect_all")
-
+        //btnSelectAll.makeTvCompatible()
+        //btnDeselectAll.makeTvCompatible()
         container = view.findView("list_container")
         container.makeTvCompatible()
-
         providers = buildProviders().sortedBy { it.name.lowercase() }
 
         // --- Load disabled providers ---
@@ -90,6 +106,7 @@ class ProvidersFragment(
         providers.forEach { provider ->
             val item = getLayout("item_provider_checkbox", layoutInflater, container)
             val chk = item.findViewById<CheckBox>(chkId)
+            item.makeTvCompatible()
             chk.makeTvCompatible()
             chk.text = provider.name
             // Enabled if NOT in disabled list
@@ -104,8 +121,15 @@ class ProvidersFragment(
 
             container.addView(item)
         }
+        container.post {
+            if (container.isNotEmpty()) {
+                val firstItem = container.getChildAt(0)
+                firstItem.isFocusable = true
+                firstItem.requestFocus()
+                firstItem.nextFocusUpId = btnSave.id
+            }
+        }
 
-        // --- Buttons ---
         btnSelectAll.setOnClickListener { adapter.setAll(true) }
         btnDeselectAll.setOnClickListener { adapter.setAll(false) }
         btnSave.setOnClickListener { dismissFragment() }
