@@ -3,8 +3,8 @@ package com.KdramaHoodProvider
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.extractors.helper.GogoHelper
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.httpsify
@@ -19,13 +19,12 @@ open class Embasic : ExtractorApi() {
             getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val iframe = app.get(httpsify(url))
         val iframeDoc = iframe.document
-        argamap({
+        runAllAsync({
             iframeDoc.select(".list-server-items > .linkserver")
                 .forEach { element ->
-                    //Log.d("Phisher",element.toString())
-                    val status = element.attr("data-status") ?: return@forEach
+                    val status = element.attr("data-status")
                     if (status != "1") return@forEach
-                    val extractorData = element.attr("data-video") ?: return@forEach
+                    val extractorData = element.attr("data-video")
                     if(extractorData.contains(mainUrl))
                     {
                         Log.d("Error","Not Found")
