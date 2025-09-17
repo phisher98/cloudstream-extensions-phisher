@@ -125,7 +125,7 @@ class ProvidersFragment(
             if (container.isNotEmpty()) {
                 val firstItem = container.getChildAt(0)
                 firstItem.isFocusable = true
-                firstItem.requestFocus()
+                firstItem.requestFocusFromTouch()
                 firstItem.nextFocusUpId = btnSave.id
             }
         }

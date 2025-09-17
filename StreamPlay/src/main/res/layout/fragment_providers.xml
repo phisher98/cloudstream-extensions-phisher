@@ -1,91 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_layout"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#121212"
+    android:nextFocusDown="@id/list_container"
     android:padding="16dp">
 
-    <!-- Header -->
+    <!-- Header Container -->
     <LinearLayout
+        android:id="@+id/header_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:orientation="vertical"
         android:layout_marginBottom="10dp">
 
+        <!-- Title -->
         <TextView
             android:id="@+id/tv_title"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Select Providers"
+            android:text="Select Sources"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF" />
 
-        <Button
-            android:id="@+id/btn_select_all"
-            android:layout_width="wrap_content"
+        <!-- Buttons Row -->
+        <LinearLayout
+            android:id="@+id/buttons_row"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Select All"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#1F6FEB" />
+            android:orientation="horizontal"
+            android:gravity="start|center_vertical"
+            android:layout_marginTop="8dp">
 
-        <Button
-            android:id="@+id/btn_deselect_all"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select None"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#BB2D3B"
-            android:layout_marginStart="6dp" />
+            <Button
+                android:id="@+id/btn_select_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select All"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1F6FEB" />
 
-        <ImageButton
-            android:id="@+id/btn_save"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:focusable="true"
-            android:padding="8dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:nextFocusDown="@id/list_container"
-            android:nextFocusLeft="@id/btn_deselect_all"
-            android:scaleType="centerInside" />
+            <Button
+                android:id="@+id/btn_deselect_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select None"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#BB2D3B"
+                android:layout_marginStart="6dp" />
+
+            <!-- Spacer pushes save button to the right -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/btn_save"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:scaleType="centerInside" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Subtext -->
     <TextView
+        android:id="@+id/tv_subtext"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enable or Disable Source Providers"
+        android:text="Enable or Disable Sources"
         android:textSize="14sp"
         android:textColor="#CCCCCC"
         android:layout_marginBottom="10dp" />
 
     <!-- Divider -->
-    <ImageView
-        android:src="@android:drawable/divider_horizontal_dark"
+    <View
+        android:id="@+id/divider"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scaleType="fitXY"
-        android:layout_marginBottom="10dp"
-        android:layout_marginTop="10dp" />
+        android:layout_height="1dp"
+        android:background="#444"
+        android:layout_marginVertical="10dp" />
 
-    <!-- Scrollable list -->
+    <!-- Scrollable List -->
     <ScrollView
+        android:id="@+id/scroll_view"
         android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
         android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:fillViewport="true">
+        android:focusableInTouchMode="false">
 
-    <LinearLayout
-        android:id="@+id/list_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:nextFocusUp="@id/btn_save"
-        android:paddingBottom="10dp" />
-</ScrollView>
+        <LinearLayout
+            android:id="@+id/list_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="10dp"
+            android:nextFocusUp="@id/btn_save" />
 
-    </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
