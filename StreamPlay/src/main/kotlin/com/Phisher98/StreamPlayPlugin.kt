@@ -35,7 +35,7 @@ class StreamPlayPlugin: Plugin() {
 
         val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
         val mainApis = listOf(
-            StreamPlay(sharedPref), //StreamPlayLite(),
+            StreamPlay(sharedPref), StreamPlayLite(),
             StreamPlayTorrent(), StreamPlayAnime(), StreamplayTorrentAnime()
         )
         val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)
@@ -58,7 +58,7 @@ class StreamPlayPlugin: Plugin() {
         sharedPref.edit { remove("enabled_plugins_set") }
         //=====================MainAPI============================//
 
-        //registerMainAPI(StreamPlayTest(sharedPref))
+        registerMainAPI(StreamPlayTest(sharedPref))
 
         //=====================Extractors=========================//
 

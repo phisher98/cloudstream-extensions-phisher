@@ -8,7 +8,6 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
@@ -62,8 +61,6 @@ import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.Locale
 import kotlin.math.max
-import kotlin.ranges.contains
-import kotlin.text.get
 import kotlin.text.isNotEmpty
 import kotlin.toString
 
@@ -5831,7 +5828,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val rawJson = response.split("\n")[1].replace("1:","")
                 val jsonObj = JSONObject(rawJson)
                 val data = jsonObj.optJSONObject("data")
-                val streamUrl = data.getString("stream_url")
+                val streamUrl = data!!.getString("stream_url")
                 M3u8Helper.generateM3u8(
                     "MappleTv [${it.capitalize()}]",
                     streamUrl,
@@ -5953,6 +5950,88 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
 
+    }
+
+    suspend fun invokeKisskhAsia(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val userAgent =
+            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+
+        val headers = mapOf(
+            "Referer" to "https://hlscdn.xyz/",
+            "User-Agent" to userAgent,
+            "X-Requested-With" to "XMLHttpRequest"
+        )
+
+        if (tmdbId == null) return
+
+        val url = when {
+            season != null && season > 1 -> {
+                val epStr = episode?.toString()?.padStart(2, '0') ?: ""
+                "https://hlscdn.xyz/e/$tmdbId-$season-$epStr"
+            }
+            else -> {
+                val epStr = episode?.toString()?.padStart(2, '0') ?: ""
+                "https://hlscdn.xyz/e/$tmdbId-$epStr"
+            }
+        }
+
+        val responseText = app.get(url, headers = headers).text
+
+        val token = Regex("window\\.kaken=\"(.*?)\"")
+            .find(responseText)
+            ?.groupValues?.getOrNull(1)
+
+        if (token.isNullOrBlank()) return
+
+        val mediaType = "text/plain".toMediaType()
+        val body = token.toRequestBody(mediaType)
+
+        val apiResponse = app.post(
+            "https://hlscdn.xyz/api",
+            headers = headers,
+            requestBody = body
+        ).text
+
+        val json = JSONObject(apiResponse)
+
+        val sources = json.optJSONArray("sources")
+        if (sources != null && sources.length() > 0) {
+            for (i in 0 until sources.length()) {
+                val srcObj = sources.getJSONObject(i)
+                val videoUrl = srcObj.optString("file") ?: continue
+                val label = srcObj.optString("label", "Source")
+
+                callback.invoke(
+                    newExtractorLink(
+                        source = "KisskhAsia",
+                        name = "KisskhAsia - $label",
+                        url = videoUrl
+                    ) {
+                        this.referer = "https://hlscdn.xyz/"
+                        this.quality = Qualities.P720.value
+                    }
+                )
+            }
+        }
+
+        val tracks = json.optJSONArray("tracks")
+        if (tracks != null && tracks.length() > 0) {
+            for (i in 0 until tracks.length()) {
+                val trackObj = tracks.getJSONObject(i)
+                val subUrl = trackObj.optString("file") ?: continue
+                val label = trackObj.optString("label", "Unknown")
+
+                subtitleCallback.invoke(
+                    SubtitleFile(label, subUrl)
+                )
+            }
+        }
     }
 }
 

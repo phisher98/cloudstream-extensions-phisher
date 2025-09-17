@@ -22,6 +22,7 @@ import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeKisskh
+import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
 import com.phisher98.StreamPlayExtractor.invokeLing
 import com.phisher98.StreamPlayExtractor.invokeMappleTv
 import com.phisher98.StreamPlayExtractor.invokeMoflix
@@ -259,6 +260,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("dahmermovies", "DahmerMovies") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeDahmerMovies(dahmerMoviesAPI, res.title, res.year, res.season, res.episode, callback)
+        },
+        Provider("KisskhAsia", "KissKhAsia") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+            if (!res.isAnime) invokeKisskhAsia(res.id, res.season, res.episode, subtitleCallback, callback)
         }
     )
 }
