@@ -58,7 +58,7 @@ class StreamPlayPlugin: Plugin() {
         sharedPref.edit { remove("enabled_plugins_set") }
         //=====================MainAPI============================//
 
-        registerMainAPI(StreamPlayTest(sharedPref))
+        //registerMainAPI(StreamPlayTest(sharedPref))
 
         //=====================Extractors=========================//
 
