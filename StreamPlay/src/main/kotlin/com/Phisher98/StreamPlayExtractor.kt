@@ -5952,6 +5952,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
+    //Thanks to https://github.com/yogesh-hacker/MediaVanced/blob/main/sites/hlscdn.py
     suspend fun invokeKisskhAsia(
         tmdbId: Int? = null,
         season: Int? = null,
