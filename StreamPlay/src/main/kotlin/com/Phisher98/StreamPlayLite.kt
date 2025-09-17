@@ -13,6 +13,7 @@ import com.phisher98.StreamPlayExtractor.invokeEmbedlc
 import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
+import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
 import com.phisher98.StreamPlayExtractor.invokeLing
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeNepu
@@ -308,6 +309,15 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             },
             {
                 if (!res.isAnime) invokeVidlink(res.id, res.season, res.episode, subtitleCallback,callback)
+            },
+            {
+                if (!res.isAnime) invokeKisskhAsia(
+                    res.id,
+                    res.season,
+                    res.episode,
+                    subtitleCallback,
+                    callback
+                )
             },
 
             //Subtitles Invokes
