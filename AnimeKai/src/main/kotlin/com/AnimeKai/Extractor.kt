@@ -82,7 +82,7 @@ class MegaUp : ExtractorApi() {
 
                     webView.webViewClient = object : WebViewClient() {
                         private var lastUrlTime = System.currentTimeMillis()
-                        private val finishDelay = 5000L
+                        private val finishDelay = 7000L
                         private var finished = false
 
                         override fun shouldInterceptRequest(
