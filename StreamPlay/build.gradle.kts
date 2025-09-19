@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 412
+version = 413
 
 android {
     buildFeatures {
@@ -46,7 +46,6 @@ android {
         buildConfigField("String", "KAISVA", "\"${properties.getProperty("KAISVA")}\"")
         buildConfigField("String", "MOVIEBOX_SECRET_KEY_ALT", "\"${properties.getProperty("MOVIEBOX_SECRET_KEY_ALT")}\"")
         buildConfigField("String", "MOVIEBOX_SECRET_KEY_DEFAULT", "\"${properties.getProperty("MOVIEBOX_SECRET_KEY_DEFAULT")}\"")
-        buildConfigField("String", "AKProxy", "\"${properties.getProperty("AKProxy")}\"")
     }
 }
 

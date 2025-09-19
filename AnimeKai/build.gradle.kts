@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 40
+version = 41
 
 
 android {
@@ -14,8 +14,6 @@ android {
         properties.load(project.rootProject.file("local.properties").inputStream())
         android.buildFeatures.buildConfig=true
         buildConfigField("String", "KAISVA", "\"${properties.getProperty("KAISVA")}\"")
-        buildConfigField("String", "AKProxy", "\"${properties.getProperty("AKProxy")}\"")
-
     }
 }
 dependencies {

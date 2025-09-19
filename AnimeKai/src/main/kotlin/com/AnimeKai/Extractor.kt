@@ -19,6 +19,22 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
+
+// Debug helper so logs are visible on TV
+object DebugLogger {
+    private const val TAG = "MegaUp"
+
+    fun d(message: String) {
+        Log.i(TAG, message) // use INFO so it shows on TV
+        println("[$TAG] $message") // also print to stdout
+    }
+
+    fun e(message: String, throwable: Throwable? = null) {
+        Log.e(TAG, message)
+        println("[$TAG][ERROR] $message ${throwable?.message ?: ""}")
+    }
+}
+
 class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"
@@ -69,6 +85,7 @@ class MegaUp : ExtractorApi() {
 
             withContext(Dispatchers.Main) {
                 suspendCancellableCoroutine { cont ->
+                    DebugLogger.d("Starting WebView for: $currentUrl")
 
                     val webView = WebView(ctx)
                     webView.apply {
@@ -89,29 +106,46 @@ class MegaUp : ExtractorApi() {
                             view: WebView?,
                             request: WebResourceRequest?
                         ): WebResourceResponse? {
-                            request?.url?.toString()?.let {
-                                handleRequest(it, subtitleCallback, foundM3u8)
+                            val reqUrl = request?.url?.toString()
+                            if (reqUrl != null) {
+                                handleRequest(reqUrl, subtitleCallback, foundM3u8)
                             }
                             return super.shouldInterceptRequest(view, request)
                         }
 
-                        private fun handleRequest(url: String, subtitleCallback: (SubtitleFile) -> Unit, foundM3u8: MutableList<String>) {
-                            Log.d("MegaUp", "Intercepted: $url")
+                        private fun handleRequest(
+                            url: String,
+                            subtitleCallback: (SubtitleFile) -> Unit,
+                            foundM3u8: MutableList<String>
+                        ) {
+                            DebugLogger.d("Intercepted: $url")
+
                             when {
                                 url.endsWith(".m3u8") && !foundM3u8.contains(url) -> {
                                     lastUrlTime = System.currentTimeMillis()
+                                    foundM3u8.add(url)
+                                    DebugLogger.d("M3U8 Found: $url")
                                     runBlocking {
-                                        M3u8Helper.generateM3u8(referer ?: name, url, mainUrl).forEach { callback(it) }
+                                        M3u8Helper.generateM3u8(referer ?: name, url, mainUrl)
+                                            .forEach { callback(it) }
                                     }
                                 }
                                 url.endsWith(".vtt") && !url.contains("thumbnails", true) -> {
                                     lastUrlTime = System.currentTimeMillis()
-                                    subtitleCallback(SubtitleFile(extractLabelFromUrl(url), url))
+                                    DebugLogger.d("Subtitle Found: $url")
+                                    subtitleCallback(
+                                        SubtitleFile(
+                                            extractLabelFromUrl(url),
+                                            url
+                                        )
+                                    )
                                 }
                             }
                         }
 
                         override fun onPageFinished(view: WebView?, url: String?) {
+                            DebugLogger.d("Page finished loading: $url")
+
                             view?.loadUrl(
                                 "javascript:(function(){" +
                                         "var btn=document.querySelector('button, .vjs-big-play-button');" +
@@ -128,7 +162,7 @@ class MegaUp : ExtractorApi() {
 
                                     if (foundM3u8.isNotEmpty() && idleTime > 1000) {
                                         finished = true
-                                        Log.d("MegaUp", "Links found, finishing early for $currentUrl")
+                                        DebugLogger.d("Links found, finishing early for $currentUrl")
                                         cont.resume(Unit)
                                         webView.destroy()
                                         return
@@ -136,7 +170,7 @@ class MegaUp : ExtractorApi() {
 
                                     if (idleTime > finishDelay) {
                                         finished = true
-                                        Log.d("MegaUp", "Timeout reached, finishing for $currentUrl")
+                                        DebugLogger.e("Timeout reached for $currentUrl")
                                         cont.resume(Unit)
                                         webView.destroy()
                                         return
@@ -146,7 +180,6 @@ class MegaUp : ExtractorApi() {
                                 }
                             })
                         }
-
                     }
 
                     val html = """
@@ -161,6 +194,7 @@ class MegaUp : ExtractorApi() {
                         </html>
                     """.trimIndent()
 
+                    DebugLogger.d("Loading HTML into WebView...")
                     webView.loadDataWithBaseURL(
                         AnimeKaiPlugin.currentAnimeKaiServer,
                         html,
@@ -170,6 +204,7 @@ class MegaUp : ExtractorApi() {
                     )
 
                     cont.invokeOnCancellation {
+                        DebugLogger.e("Coroutine cancelled for $currentUrl")
                         webView.destroy()
                     }
                 }
