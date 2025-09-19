@@ -1638,14 +1638,26 @@ class MegaUp : ExtractorApi() {
                             handler.post(object : Runnable {
                                 override fun run() {
                                     if (finished) return
-                                    if (System.currentTimeMillis() - lastUrlTime > finishDelay) {
+
+                                    val idleTime = System.currentTimeMillis() - lastUrlTime
+
+                                    if (foundM3u8.isNotEmpty() && idleTime > 1000) {
                                         finished = true
-                                        Log.d("MegaUp", "All links loaded for $currentUrl")
+                                        Log.d("MegaUp", "Links found, finishing early for $currentUrl")
                                         cont.resume(Unit)
                                         webView.destroy()
-                                    } else {
-                                        handler.postDelayed(this, 500)
+                                        return
                                     }
+
+                                    if (idleTime > finishDelay) {
+                                        finished = true
+                                        Log.d("MegaUp", "Timeout reached, finishing for $currentUrl")
+                                        cont.resume(Unit)
+                                        webView.destroy()
+                                        return
+                                    }
+
+                                    handler.postDelayed(this, 500)
                                 }
                             })
                         }
