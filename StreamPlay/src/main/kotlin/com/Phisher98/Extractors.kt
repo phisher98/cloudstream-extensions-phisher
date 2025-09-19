@@ -1576,14 +1576,12 @@ class MegaUp : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val foundM3u8 = mutableSetOf<String>()
+        val foundM3u8 = mutableListOf<String>()
         withContext(Dispatchers.Main) {
             val ctx = context ?: return@withContext
             suspendCancellableCoroutine { cont ->
-                var finished = false
 
                 val webView = WebView(ctx)
-
                 webView.apply {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
@@ -1592,6 +1590,7 @@ class MegaUp : ExtractorApi() {
                     webViewClient = object : WebViewClient() {
                         private var lastUrlTime = System.currentTimeMillis()
                         private val finishDelay = 2000L
+                        private var finished = false
 
                         override fun shouldInterceptRequest(
                             view: WebView?,
@@ -1601,7 +1600,8 @@ class MegaUp : ExtractorApi() {
                             Log.d("MegaUp", "Intercepted: $reqUrl")
                             when {
                                 reqUrl.endsWith(".m3u8") -> {
-                                    if (foundM3u8.add(reqUrl)) {
+                                    if (!foundM3u8.contains(reqUrl)) {
+                                        foundM3u8.add(reqUrl)
                                         lastUrlTime = System.currentTimeMillis()
                                     }
                                 }
@@ -1615,11 +1615,11 @@ class MegaUp : ExtractorApi() {
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             val jsToClickPlay = """
-                        (() => {
-                            const btn = document.querySelector('button, .vjs-big-play-button');
-                            if (btn) btn.click();
-                        })();
-                    """.trimIndent()
+                                (() => {
+                                    const btn = document.querySelector('button, .vjs-big-play-button');
+                                    if (btn) btn.click();
+                                })();
+                            """.trimIndent()
                             view?.evaluateJavascript(jsToClickPlay, null)
 
                             val handler = Handler(Looper.getMainLooper())
@@ -1641,18 +1641,18 @@ class MegaUp : ExtractorApi() {
                 }
 
                 val html = """
-            <html>
-                <head>
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                </head>
-                <body style="margin:0;padding:0;overflow:hidden;">
-                    <iframe src="$url?autostart=true"
-                        width="100%" height="100%" frameborder="0"
-                        allow="autoplay; fullscreen">
-                    </iframe>
-                </body>
-            </html>
-        """.trimIndent()
+                    <html>
+                        <head>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                        </head>
+                        <body style="margin:0;padding:0;overflow:hidden;">
+                            <iframe src="$url?autostart=true"
+                                width="100%" height="100%" frameborder="0"
+                                allow="autoplay; fullscreen">
+                            </iframe>
+                        </body>
+                    </html>
+                """.trimIndent()
 
                 webView.loadDataWithBaseURL(
                     "https://animekai.to",
@@ -1663,21 +1663,16 @@ class MegaUp : ExtractorApi() {
                 )
 
                 cont.invokeOnCancellation {
-                    finished = true
                     webView.destroy()
                 }
             }
         }
-        foundM3u8.forEach {
-            M3u8Helper.generateM3u8(
-                referer ?: name,
-                it,
-                mainUrl
-            ).forEach(callback)
+        for (m3u8Url in foundM3u8) {
+            M3u8Helper.generateM3u8(referer ?: name, m3u8Url, mainUrl).forEach { callback(it) }
         }
     }
-
 }
+
 
 
 @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
