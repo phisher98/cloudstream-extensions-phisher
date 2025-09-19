@@ -99,6 +99,7 @@ class DramaDrip : MainAPI() {
         return results
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
@@ -153,7 +154,8 @@ class DramaDrip : MainAPI() {
         val hrefs: List<String> = document.select("div.wp-block-button > a")
             .mapNotNull { linkElement ->
                 val link = linkElement.attr("href")
-                val page = app.get(link).document
+                val actual=cinematickitloadBypass(link) ?: return@mapNotNull null
+                val page = app.get(actual).document
                 page.select("div.wp-block-button.movie_btn a")
                     .eachAttr("href")
             }.flatten()
@@ -201,12 +203,9 @@ class DramaDrip : MainAPI() {
 
                         for (qualityPageLink in qualityLinks) {
                             try {
-                                val response = app.get(qualityPageLink)
+                                val rawqualityPageLink=if (qualityPageLink.contains("modpro")) qualityPageLink else cinematickitloadBypass(qualityPageLink) ?: ""
+                                val response = app.get(rawqualityPageLink)
                                 val episodeDoc = response.document
-                                if (episodeDoc == null) {
-                                    Log.e("EpisodeFetch", "Document is null for: $qualityPageLink")
-                                    continue
-                                }
 
                                 val episodeButtons =
                                     episodeDoc.select("a").filter { element: Element ->
@@ -307,6 +306,7 @@ class DramaDrip : MainAPI() {
                 val finalLink = when {
                     "safelink=" in link -> cinematickitBypass(link)
                     "unblockedgames" in link -> bypassHrefli(link)
+                    "examzculture" in link -> bypassHrefli(link)
                     else -> link
                 }
 

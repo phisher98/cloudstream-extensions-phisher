@@ -626,6 +626,24 @@ suspend fun cinematickitBypass(url: String): String? {
     }
 }
 
+
+@RequiresApi(Build.VERSION_CODES.O)
+suspend fun cinematickitloadBypass(url: String): String? {
+    return try {
+        val cleanedUrl = url.replace("&#038;", "&")
+        val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
+        if (encodedLink.isEmpty()) return null
+        val decodedUrl = base64Decode(encodedLink)
+        val doc = app.get(decodedUrl).document
+        val goValue = doc.select("form#landing input[name=go]").attr("value")
+        Log.d("Phisher",goValue)
+        return base64Decode(goValue)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
 suspend fun getSfServer() = sfServer ?: fetchSfServer().also { sfServer = it }
 
 suspend fun fetchSfServer(): String {

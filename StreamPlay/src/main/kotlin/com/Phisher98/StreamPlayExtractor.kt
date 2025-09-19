@@ -2,6 +2,8 @@ package com.phisher98
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -4970,6 +4972,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokeDramadrip(
         imdbId: String? = null,
         season: Int? = null,
@@ -4992,13 +4995,14 @@ object StreamPlayExtractor : StreamPlay() {
             }
 
             seasonLink.amap { seasonUrl ->
-                val episodeDoc = app.get(seasonUrl).document
+                val rawseasonUrl=if (seasonUrl.contains("modpro")) seasonUrl else cinematickitloadBypass(seasonUrl) ?: ""
+                val episodeDoc = app.get(rawseasonUrl).document
 
                 val episodeHref = episodeDoc.select("h3 > a,div.wp-block-button a")
                     .firstOrNull { it.text().contains("Episode $episode") }
                     ?.attr("href")
                     ?: return@amap
-                val finalUrl = if ("unblockedgames" in episodeHref) {
+                val finalUrl = if ("unblockedgames" in episodeHref || "examzculture" in episodeHref) {
                     bypassHrefli(episodeHref)
                 } else {
                     episodeHref
@@ -5015,6 +5019,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val finalUrl = when {
                         "safelink=" in rawHref -> cinematickitBypass(rawHref)
                         "unblockedgames" in rawHref -> bypassHrefli(rawHref)
+                        "examzculture" in link -> bypassHrefli(link)
                         else -> rawHref
                     }
                     if (finalUrl != null) {
