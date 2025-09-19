@@ -1576,10 +1576,10 @@ class MegaUp : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val foundM3u8 = mutableSetOf<String>()
         withContext(Dispatchers.Main) {
             val ctx = context ?: return@withContext
             suspendCancellableCoroutine { cont ->
-                val foundM3u8 = mutableSetOf<String>()
                 var finished = false
 
                 val webView = WebView(ctx)
@@ -1603,13 +1603,6 @@ class MegaUp : ExtractorApi() {
                                 reqUrl.endsWith(".m3u8") -> {
                                     if (foundM3u8.add(reqUrl)) {
                                         lastUrlTime = System.currentTimeMillis()
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            M3u8Helper.generateM3u8(
-                                                referer ?: name,
-                                                reqUrl,
-                                                mainUrl
-                                            ).forEach(callback)
-                                        }
                                     }
                                 }
                                 reqUrl.endsWith(".vtt") && !reqUrl.contains("thumbnails", true) -> {
@@ -1622,14 +1615,13 @@ class MegaUp : ExtractorApi() {
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             val jsToClickPlay = """
-                            (() => {
-                                const btn = document.querySelector('button, .vjs-big-play-button');
-                                if (btn) btn.click();
-                            })();
-                        """.trimIndent()
+                        (() => {
+                            const btn = document.querySelector('button, .vjs-big-play-button');
+                            if (btn) btn.click();
+                        })();
+                    """.trimIndent()
                             view?.evaluateJavascript(jsToClickPlay, null)
 
-                            // Check periodically if no new URLs arrived for finishDelay
                             val handler = Handler(Looper.getMainLooper())
                             handler.post(object : Runnable {
                                 override fun run() {
@@ -1648,20 +1640,19 @@ class MegaUp : ExtractorApi() {
                     }
                 }
 
-                // Load HTML with iframe
                 val html = """
-                <html>
-                    <head>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                    </head>
-                    <body style="margin:0;padding:0;overflow:hidden;">
-                        <iframe src="$url?autostart=true"
-                            width="100%" height="100%" frameborder="0"
-                            allow="autoplay; fullscreen">
-                        </iframe>
-                    </body>
-                </html>
-            """.trimIndent()
+            <html>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                </head>
+                <body style="margin:0;padding:0;overflow:hidden;">
+                    <iframe src="$url?autostart=true"
+                        width="100%" height="100%" frameborder="0"
+                        allow="autoplay; fullscreen">
+                    </iframe>
+                </body>
+            </html>
+        """.trimIndent()
 
                 webView.loadDataWithBaseURL(
                     "https://animekai.to",
@@ -1677,7 +1668,15 @@ class MegaUp : ExtractorApi() {
                 }
             }
         }
+        foundM3u8.forEach {
+            M3u8Helper.generateM3u8(
+                referer ?: name,
+                it,
+                mainUrl
+            ).forEach(callback)
+        }
     }
+
 }
 
 
