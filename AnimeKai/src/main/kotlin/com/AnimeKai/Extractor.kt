@@ -1,45 +1,31 @@
 package com.AnimeKai
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import android.annotation.SuppressLint
+import android.os.Handler
+import android.os.Looper
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.AcraApplication.Companion.context
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.nicehttp.requestCreator
-import com.phisher98.BuildConfig
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 
-class embedwish : MegaUp() {
-    override var mainUrl = "https://megaup.live"
-}
-
-open class MegaUp : ExtractorApi() {
+class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
-    override var mainUrl = "https://megaup.cc"
+    override var mainUrl = "https://megaup.live"
     override val requiresReferer = true
 
     companion object {
-        private val webViewMutex = Mutex()
-
-        private val HEADERS = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.5",
-            "Sec-GPC" to "1",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "Pragma" to "no-cache",
-            "Cache-Control" to "no-cache",
-            "referer" to "https://megaup.cc"
-        )
-
         private fun extractLabelFromUrl(url: String): String {
             val file = url.substringAfterLast("/")
             return when (val code = file.substringBefore("_").lowercase()) {
@@ -69,83 +55,113 @@ open class MegaUp : ExtractorApi() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("SetJavaScriptEnabled")
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val jsToClickPlay = """
-            (() => {
-                const btn = document.querySelector('button, .vjs-big-play-button');
-                if (btn) btn.click();
-                return "clicked";
-            })();
-        """.trimIndent()
+        withContext(Dispatchers.Main) {
+            val ctx = context ?: return@withContext
+            suspendCancellableCoroutine { cont ->
+                val foundM3u8 = mutableSetOf<String>()
+                var finished = false
 
-        // First: Get .m3u8
-        val m3u8Resolver = WebViewResolver(
-            interceptUrl = Regex("""\.m3u8"""),
-            additionalUrls = listOf(Regex("""\.m3u8""")),
-            script = jsToClickPlay,
-            scriptCallback = { result -> Log.d("MegaUp", "JS Result: $result") },
-            useOkhttp = false,
-            timeout = 15_000L
-        )
+                val webView = WebView(ctx)
 
-        val m3u8Response = webViewMutex.withLock {
-            app.get(
-                url = "${BuildConfig.AKProxy}?url=$url?autostart=true",
-                referer = mainUrl,
-                headers = HEADERS,
-                interceptor = m3u8Resolver
-            )
-        }
+                webView.apply {
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.mediaPlaybackRequiresUserGesture = true
 
-        val m3u8Url = m3u8Response.url
+                    webViewClient = object : WebViewClient() {
+                        private var lastUrlTime = System.currentTimeMillis()
+                        private val finishDelay = 2000L
 
-        if (m3u8Url.contains(".m3u8")) {
-            val displayName = referer ?: this.name
-            M3u8Helper.generateM3u8(displayName, m3u8Url, mainUrl, headers = HEADERS)
-                .forEach(callback)
-        } else {
-            Log.e("MegaUp", "Failed to find .m3u8 for $url")
-        }
+                        override fun shouldInterceptRequest(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): WebResourceResponse? {
+                            val reqUrl = request?.url.toString()
+                            Log.d("MegaUp", "Intercepted: $reqUrl")
+                            when {
+                                reqUrl.endsWith(".m3u8") -> {
+                                    if (foundM3u8.add(reqUrl)) {
+                                        lastUrlTime = System.currentTimeMillis()
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            M3u8Helper.generateM3u8(
+                                                referer ?: name,
+                                                reqUrl,
+                                                mainUrl
+                                            ).forEach(callback)
+                                        }
+                                    }
+                                }
+                                reqUrl.endsWith(".vtt") && !reqUrl.contains("thumbnails", true) -> {
+                                    lastUrlTime = System.currentTimeMillis()
+                                    subtitleCallback(SubtitleFile(extractLabelFromUrl(reqUrl), reqUrl))
+                                }
+                            }
+                            return super.shouldInterceptRequest(view, request)
+                        }
 
-        // Second: Get .vtt subtitles
-        val subtitleUrls = mutableListOf<String>()
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            val jsToClickPlay = """
+                            (() => {
+                                const btn = document.querySelector('button, .vjs-big-play-button');
+                                if (btn) btn.click();
+                            })();
+                        """.trimIndent()
+                            view?.evaluateJavascript(jsToClickPlay, null)
 
-        webViewMutex.withLock {
-            WebViewResolver(
-                interceptUrl = Regex("""^$"""),
-                additionalUrls = listOf(Regex(""".*\.vtt""")), // catch all .vtt files
-                script = jsToClickPlay,
-                scriptCallback = { result -> Log.d("MegaUp", "JS Result: $result") },
-                useOkhttp = false,
-                timeout = 15_000L,
-                userAgent = null
-            ).resolveUsingWebView(
-                requestCreator("GET", "${BuildConfig.AKProxy}?url=$url?autostart=true", headers = HEADERS)
-            ) { request ->
-                val interceptedUrl = request.url.toString()
-                if (interceptedUrl.endsWith(".vtt") &&
-                    !interceptedUrl.contains("thumbnails", ignoreCase = true)
-                ) {
-                    subtitleUrls.add(interceptedUrl)
+                            // Check periodically if no new URLs arrived for finishDelay
+                            val handler = Handler(Looper.getMainLooper())
+                            handler.post(object : Runnable {
+                                override fun run() {
+                                    if (finished) return
+                                    if (System.currentTimeMillis() - lastUrlTime > finishDelay) {
+                                        finished = true
+                                        Log.d("MegaUp", "All links loaded, finishing")
+                                        cont.resume(Unit)
+                                        webView.destroy()
+                                    } else {
+                                        handler.postDelayed(this, 500)
+                                    }
+                                }
+                            })
+                        }
+                    }
                 }
-                false
+
+                // Load HTML with iframe
+                val html = """
+                <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                    </head>
+                    <body style="margin:0;padding:0;overflow:hidden;">
+                        <iframe src="$url?autostart=true"
+                            width="100%" height="100%" frameborder="0"
+                            allow="autoplay; fullscreen">
+                        </iframe>
+                    </body>
+                </html>
+            """.trimIndent()
+
+                webView.loadDataWithBaseURL(
+                    AnimeKaiPlugin.currentAnimeKaiServer,
+                    html,
+                    "text/html",
+                    "UTF-8",
+                    null
+                )
+
+                cont.invokeOnCancellation {
+                    finished = true
+                    webView.destroy()
+                }
             }
         }
-
-        subtitleUrls.forEach { subUrl ->
-            val label = extractLabelFromUrl(subUrl)
-            subtitleCallback(SubtitleFile(label, subUrl))
-        }
-
     }
 }
-
-
-
-

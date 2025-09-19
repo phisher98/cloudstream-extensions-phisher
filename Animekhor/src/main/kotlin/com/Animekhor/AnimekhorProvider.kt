@@ -20,5 +20,6 @@ class AnimenosubProvider: BasePlugin() {
         registerExtractorAPI(Rumble())
         registerExtractorAPI(Mp4Upload())
         registerExtractorAPI(PlayerDonghuaworld())
+        registerExtractorAPI(P2pstream())
     }
 }

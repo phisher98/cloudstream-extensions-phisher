@@ -5,13 +5,24 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 
+class Server1uns : VidStack() {
+    override var name = "Vidstack"
+    override var mainUrl = "https://server1.uns.bio"
+    override var requiresReferer = true
+}
+
 class embedwish : StreamWishExtractor() {
     override var mainUrl = "https://embedwish.com"
+}
+
+class P2pstream : VidStack() {
+    override var mainUrl = "https://animekhor.p2pstream.vip"
 }
 
 class Filelions : VidhideExtractor() {
@@ -58,7 +69,10 @@ open class Rumble : ExtractorApi() {
         for (source in sources) {
             val fileUrl = source.groupValues[1].replace("\\/", "/")
             M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
+            val fallback="${mainUrl}/hls-vod/${url.substringAfter("/embed/v").substringBefore("/")}/playlist.m3u8?u=0&b=0"
+            M3u8Helper.generateM3u8(name, fallback, mainUrl).forEach(callback)
         }
+
 
         // Extract subtitle tracks
         val trackRegex = """"file"\s*:\s*"(https:[^"]+\.vtt[^"]*)"\s*,\s*"label"\s*:\s*"([^"]+)"""".toRegex()
