@@ -1199,7 +1199,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
 
                 decrypted.subtitles.forEach { subtitle ->
-                    subtitleCallback(SubtitleFile(subtitle.name, subtitle.src))
+                    subtitleCallback(SubtitleFile(subtitle.name, httpsify(subtitle.src)))
                 }
             } else if (server.name.contains("CatStream")) {
                 val headers = mapOf(
@@ -1241,7 +1241,7 @@ object StreamPlayExtractor : StreamPlay() {
                         subtitleCallback.invoke(
                             SubtitleFile(
                                 name,  // Use label for the name
-                                src    // Use extracted URL
+                                httpsify(src)    // Use extracted URL
                             )
                         )
                     }
