@@ -286,19 +286,6 @@ data class AniwaveResponse(
         return Jsoup.parse(result)
     }
 }
-
-data class AniwaveServer(
-    val result: Result
-) {
-    data class Result(
-        val url: String
-    ) {
-        fun decrypt(): String {
-            return AniwaveUtils.vrfDecrypt(url)
-        }
-    }
-}
-
 data class MoflixResponse(
     @JsonProperty("title") val title: Episode? = null,
     @JsonProperty("episode") val episode: Episode? = null,

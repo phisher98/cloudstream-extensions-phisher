@@ -120,8 +120,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             emptyList()
         }
 
-
-        const val gdbot = "https://gdtot.pro"
         const val anilistAPI = "https://graphql.anilist.co"
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
@@ -159,7 +157,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val emoviesAPI = "https://emovies.si"
         const val allmovielandAPI = "https://allmovieland.ac"
         const val vidsrctoAPI = "https://vidsrc.cc"
-        const val vidsrcsu = "https://vidsrc.su"
         const val animetoshoAPI = "https://animetosho.org"
         const val showflixAPI = "https://showflix.store"
         const val moflixAPI = "https://moflix-stream.xyz"
@@ -542,8 +539,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         return true
     }
-
-
 
 
     data class LinkData(

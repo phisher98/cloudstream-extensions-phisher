@@ -11,10 +11,8 @@ import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
 import com.phisher98.StreamPlayExtractor.invokeEmbedlc
 import com.phisher98.StreamPlayExtractor.invokeEmovies
-import com.phisher98.StreamPlayExtractor.invokeFlixon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
-import com.phisher98.StreamPlayExtractor.invokeLing
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
@@ -29,7 +27,6 @@ import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
-import com.phisher98.StreamPlayExtractor.invokeVidsrcsu
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
@@ -54,14 +51,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
         val token = sharedPref?.getString("token", null)
         val res = AppUtils.parseJson<LinkData>(data)
         runAllAsync(
-            {
-                if (!res.isAnime) invokeVidsrcsu(
-                    res.id,
-                    res.season,
-                    res.episode,
-                    callback
-                )
-            },
             {
                 if (!res.isAnime) invokeWatchsomuch(
                     res.imdbId,
@@ -98,21 +87,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.episode,
                     res.lastSeason,
                     subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeLing(
-                    res.title, res.airedYear
-                        ?: res.year, res.season, res.episode, subtitleCallback, callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeFlixon(
-                    res.id,
-                    res.imdbId,
-                    res.season,
-                    res.episode,
                     callback
                 )
             },
