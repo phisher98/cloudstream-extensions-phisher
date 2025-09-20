@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.JsonParser
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -144,12 +145,13 @@ class AnimeKai : MainAPI() {
         val animeData = try {
             val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").text
             JsonParser.parseString(syncData)?.asJsonObject
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 
         val title = document.selectFirst("h1.title")?.text().orEmpty()
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
+        val plot= document.selectFirst("div.desc")?.text()
 
         val poster = animeData
             ?.getAsJsonArray("images")
@@ -232,6 +234,7 @@ class AnimeKai : MainAPI() {
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
             this.tags = genres
+            this.plot = plot
             showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
             addAniListId(aniid.toIntOrNull())
