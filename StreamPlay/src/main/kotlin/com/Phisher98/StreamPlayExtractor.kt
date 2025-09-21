@@ -44,9 +44,12 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.*
+import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
@@ -5312,6 +5315,111 @@ object StreamPlayExtractor : StreamPlay() {
                 subtitleCallback.invoke(
                     SubtitleFile(label, subUrl)
                 )
+            }
+        }
+    }
+
+    suspend fun invokemp4hydra(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (title == null) return
+
+        val slug = title.createSlug()
+        val mediaType = if (season == null) "movie" else "tv"
+        val jsonPayload = if (season == null) {
+            "[{\"s\":\"$slug-$year\",\"t\":\"$mediaType\"}]"
+        } else {
+            "[{\"s\":\"$slug\",\"t\":\"$mediaType\",\"se\":\"${season}\",\"ep\":\"${episode ?: ""}\"}]"
+        }
+
+        val requestBody: RequestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("z", jsonPayload)
+            .build()
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+            "Accept" to "*/*",
+            "Accept-Language" to "en-GB,en-US;q=0.9,en;q=0.8",
+            "Origin" to mp4hydra,
+            "Referer" to "$mp4hydra/$mediaType/$slug",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin"
+        )
+
+        val responseBody = app.post(
+            url = "$mp4hydra/info2?v=8",
+            headers = headers,
+            requestBody = requestBody
+        ).body.string()
+
+        val json = JSONObject(responseBody)
+        val servers = json.optJSONObject("servers") ?: JSONObject()
+        val serverUrls = servers.keys().asSequence()
+            .mapNotNull { key -> servers.optString(key).takeIf { it.startsWith("http") }?.let { key to it } }
+            .toList()
+
+        val playlist = json.optJSONArray("playlist") ?: return
+
+        if (mediaType == "movie") {
+            for (i in 0 until playlist.length()) {
+                val video = playlist.getJSONObject(i)
+                val src = video.optString("src")
+                val label = video.optString("label", "")
+
+                serverUrls.forEach { (serverName, serverUrl) ->
+                    val fullUrl = if (src.startsWith("http")) src else serverUrl.trimEnd('/') + "/" + src.trimStart('/')
+
+                    M3u8Helper.generateM3u8(
+                        "MP4Hydra [$serverName]",
+                        fullUrl,
+                        ""
+                    ).forEach(callback)
+
+                    val subs = video.optJSONArray("subs")
+                    if (subs != null) {
+                        for (j in 0 until subs.length()) {
+                            val sub = subs.getJSONObject(j)
+                            val subLabel = getLanguage(sub.optString("label", ""))
+                            val subSrc = sub.optString("src", "")
+                            subtitleCallback(SubtitleFile(subLabel, subSrc))
+                        }
+                    }
+                }
+            }
+        } else {
+            val targetCode = "S%02dE%02d".format(season, episode)
+            val matchedVideo = (0 until playlist.length())
+                .map { playlist.getJSONObject(it) }
+                .firstOrNull { video ->
+                    val title = video.optString("title", "").uppercase()
+                    title.contains(targetCode)
+                } ?: return
+
+            val src = matchedVideo.optString("src")
+
+            serverUrls.forEach { (serverName, serverUrl) ->
+                val fullUrl = if (src.startsWith("http")) src else serverUrl.trimEnd('/') + "/" + src.trimStart('/')
+                M3u8Helper.generateM3u8(
+                    "MP4Hydra [$serverName]",
+                    fullUrl,
+                    ""
+                ).forEach(callback)
+
+                val subs = matchedVideo.optJSONArray("subs")
+                if (subs != null) {
+                    for (j in 0 until subs.length()) {
+                        val sub = subs.getJSONObject(j)
+                        val subLabel = getLanguage(sub.optString("label", ""))
+                        val subSrc = sub.optString("src", "")
+                        subtitleCallback(SubtitleFile(subLabel, "$serverUrl$subSrc"))
+                    }
+                }
             }
         }
     }

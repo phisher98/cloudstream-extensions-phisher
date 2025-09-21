@@ -182,6 +182,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val cinemaOSApi = "https://cinemaos.live"
         const val mappleTvApi = "https://mapple.tv"
         const val vidnestApi = "https://backend.vidnest.fun"
+        const val mp4hydra = "https://mp4hydra.org"
+
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

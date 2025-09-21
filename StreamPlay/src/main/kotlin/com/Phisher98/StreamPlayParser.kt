@@ -2285,3 +2285,46 @@ data class PrimeSrcServer(
     val fileName: String?,
 )
 
+//MP4Hydra
+
+
+data class MP4Hydra(
+    val playlist: List<Playlist>,
+    val servers: Servers,
+    val token: Boolean,
+    val index: Long,
+    val recommended: String,
+)
+
+data class Playlist(
+    @JsonProperty("show_title")
+    val showTitle: String,
+    val title: String,
+    val src: String,
+    val poster: String,
+    @JsonProperty("show_poster")
+    val showPoster: String,
+    val type: String,
+    val label: String,
+    val slug: String,
+    val link: String,
+    val aired: String,
+    val genres: String,
+    val network: String,
+    val subs: List<Sub>,
+    val views: String,
+)
+
+data class Sub(
+    val label: String,
+    val lang: String,
+    val src: String,
+)
+
+data class Servers(
+    @JsonProperty("Beta")
+    val beta: String,
+    @JsonProperty("Beta#3")
+    val beta3: String,
+    val auto: String,
+)

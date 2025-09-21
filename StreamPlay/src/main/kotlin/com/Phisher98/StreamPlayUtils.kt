@@ -533,7 +533,6 @@ fun String?.createSlug(): String? {
         ?.lowercase()
 }
 
-
 fun bytesToGigaBytes(number: Double): Double = number / 1024000000
 
 fun getKisskhTitle(str: String?): String? {
