@@ -1,10 +1,7 @@
 package com.Phisher98
 
 import android.os.Build
-import androidx.annotation.RequiresApi
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlay
 import com.phisher98.StreamPlayExtractor.invoke2embed
@@ -43,11 +40,9 @@ import com.phisher98.StreamPlayExtractor.invokeRogmovies
 import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
-import com.phisher98.StreamPlayExtractor.invokeTom
 import com.phisher98.StreamPlayExtractor.invokeTopMovies
 import com.phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.phisher98.StreamPlayExtractor.invokeVegamovies
-import com.phisher98.StreamPlayExtractor.invokeVidSrcViP
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidnest
@@ -89,7 +84,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokePlayer4U(res.title, res.season, res.episode, res.year, callback)
         },
         Provider("vidsrccc", "Vidsrccc") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
         },
         Provider("topmovies", "Top Movies") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeTopMovies(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
@@ -145,9 +140,6 @@ fun buildProviders(): List<Provider> {
         Provider("moflix", "Moflix") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
         },
-        Provider("tom", "Tom") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeTom(res.id, res.season, res.episode, subtitleCallback, callback)
-        },
         Provider("zoechip", "ZoeChip") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeZoechip(res.title, res.year, res.season, res.episode, callback)
         },
@@ -162,9 +154,6 @@ fun buildProviders(): List<Provider> {
         },
         Provider("watch32APIHQ", "Watch32 API HQ") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode, res.year, subtitleCallback, callback)
-        },
-        Provider("vidsrcvip", "VidSrc VIP") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeVidSrcViP(res.id, res.season, res.episode, callback)
         },
         Provider("primesrc", "PrimeSrc") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback)
@@ -200,7 +189,9 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeHdmovie2(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("dramadrip", "Dramadrip") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            }
         },
         Provider("embedlc", "EmbedLC") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeEmbedlc(res.imdbId, res.season, res.episode, subtitleCallback, callback)

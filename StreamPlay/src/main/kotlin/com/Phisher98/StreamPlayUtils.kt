@@ -1438,39 +1438,35 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     }
 }
 
-
-fun generateVrfRC4(movieId: String, userId: String): String {
-    fun rc4(text: String, key: String): ByteArray {
+fun generateVrfRC4(text: String, key: String): String {
+    fun rc4(input: ByteArray, key: ByteArray): ByteArray {
         val s = IntArray(256) { it }
         var j = 0
 
-        // KSA (Key Scheduling Algorithm)
+        // Key Scheduling Algorithm (KSA)
         for (i in 0 until 256) {
-            j = (j + s[i] + key[i % key.length].code) % 256
-            val tmp = s[i]
-            s[i] = s[j]
-            s[j] = tmp
+            j = (j + s[i] + key[i % key.size]) % 256
+            s[i] = s[j].also { s[j] = s[i] }
         }
 
-        // PRGA (Pseudo-Random Generation Algorithm)
-        val out = ByteArray(text.length)
+        // PRGA
+        val out = ByteArray(input.size)
         var i = 0
         j = 0
-        for ((index, ch) in text.toByteArray(Charsets.ISO_8859_1).withIndex()) {
+        for (n in input.indices) {
             i = (i + 1) % 256
             j = (j + s[i]) % 256
-            val tmp = s[i]
-            s[i] = s[j]
-            s[j] = tmp
+            s[i] = s[j].also { s[j] = s[i] }
             val k = s[(s[i] + s[j]) % 256]
-            out[index] = (ch.toInt() xor k).toByte()
+            out[n] = (input[n].toInt() xor k).toByte()
         }
         return out
     }
 
-    val cipher = rc4(movieId, userId)
-    val token = base64Encode(cipher)
-    return token
+    val cipher = rc4(text.toByteArray(Charsets.UTF_8), key.toByteArray(Charsets.UTF_8))
+
+    // URL-safe Base64 without padding
+    return base64Encode(cipher)
 }
 
 

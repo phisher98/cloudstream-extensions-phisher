@@ -1,6 +1,5 @@
 package com.phisher98
 
-import kotlinx.coroutines.*
 import android.content.SharedPreferences
 import com.Phisher98.buildProviders
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -33,15 +32,12 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import kotlin.math.roundToInt
@@ -126,7 +122,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
-        const val filmxyAPI = "https://www.filmxy.online"
         const val MOVIE_API = BuildConfig.MOVIE_API
         val hianimeAPIs = listOf(
             "https://hianimez.is",
@@ -147,11 +142,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val lingAPI = "https://ling-online.net"
         const val flixonAPI = "https://flixon.ovh"
         const val azseriesAPI = "https://azseries.org"
-        const val PlaydesiAPI = "https://playdesi.net"
+        const val PlaydesiAPI = "https://playdesi.info"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val Whvx_API = BuildConfig.Whvx_API
         const val nineTvAPI = "https://moviesapi.club"
-        const val nowTvAPI = "https://myfilestorage.xyz"
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
@@ -168,9 +162,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val EmbedSu = "https://embed.su"
         const val WyZIESUBAPI = "https://sub.wyzie.ru"
-        const val TomAPI = "https://tom.autoembed.cc"
         const val RiveStreamAPI = "https://rivestream.org"
-        const val VidSrcVip = "https://vidsrc.vip"
         const val PrimeSrcApi = "https://primesrc.me"
         const val Film1kApi = "https://www.film1k.com"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API

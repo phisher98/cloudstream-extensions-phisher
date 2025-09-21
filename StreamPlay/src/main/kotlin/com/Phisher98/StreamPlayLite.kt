@@ -175,7 +175,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.id,
                     res.season,
                     res.episode,
-                    subtitleCallback,
                     callback
                 )
             },

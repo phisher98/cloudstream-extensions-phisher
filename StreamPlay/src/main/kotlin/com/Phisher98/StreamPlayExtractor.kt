@@ -21,8 +21,6 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64Encode
-import com.lagradost.cloudstream3.extractors.FileMoonSx
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -2199,61 +2197,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
-    suspend fun invokeTom(
-        id: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = if (season == null) {
-            "$TomAPI/api/getVideoSource?type=movie&id=$id"
-        } else {
-            "$TomAPI/api/getVideoSource?type=tv&id=$id/$season/$episode"
-        }
-
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
-            "Referer" to "https://autoembed.cc"
-        )
-
-        val response = try {
-            app.get(url, headers = headers)
-        } catch (e: Exception) {
-            Log.e("invokeTom", "Error fetching data: ${e.localizedMessage}")
-            return
-        }
-
-        if (response.code != 200) {
-            Log.e("invokeTom", "Failed to fetch data. Status code: ${response.code}")
-            return
-        }
-
-        val data = tryParseJson<TomResponse>(response.text) ?: return
-        callback(
-            newExtractorLink(
-                "Tom Embeded",
-                "Tom Embeded",
-                url = data.videoSource,
-                ExtractorLinkType.M3U8
-            ) {
-                this.referer = ""
-                this.quality = Qualities.P1080.value
-            }
-        )
-
-        data.subtitles.forEach {
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    it.label,
-                    it.file
-                )
-            )
-        }
-    }
-
-
     suspend fun invokeExtramovies(
         imdbId: String? = null,
         season: Int?,
@@ -2363,12 +2306,10 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    @SuppressLint("NewApi")
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
@@ -2408,7 +2349,7 @@ object StreamPlayExtractor : StreamPlay() {
                         "⌜ Vidsrc ⌟ | [$servername]",
                         iframe,
                     ) {
-                        this.quality = Qualities.P1080.value
+                        this.quality = if (servername.contains("4K",ignoreCase = true)) Qualities.P2160.value else Qualities.P1080.value
                         this.referer = vidsrctoAPI
                     }
                 )
@@ -3768,41 +3709,6 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
-
-
-    suspend fun invokeVidSrcViP(
-        id: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = if (season == null) {
-            "$VidSrcVip/hnd.php?id=$id"
-        } else {
-            "$VidSrcVip/hnd.php?id=${id}&s=${season}&e=${episode}"
-        }
-        val json = app.get(url).text
-        try {
-            val objectMapper = jacksonObjectMapper()
-            val vidsrcsuList: List<VidSrcVipSource> = objectMapper.readValue(json)
-            for (source in vidsrcsuList) {
-                callback.invoke(
-                    newExtractorLink(
-                        "VidSrcVip ${source.language}",
-                        "VidSrcVip ${source.language}",
-                        url = source.m3u8Stream,
-                        ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = ""
-                        this.quality = Qualities.P1080.value
-                    }
-                )
-            }
-        } catch (_: Exception) {
-
-        }
-    }
-
 
     suspend fun invokeVidSrcXyz(
         id: String? = null,
