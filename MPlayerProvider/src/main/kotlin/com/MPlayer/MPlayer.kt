@@ -143,7 +143,6 @@ class MPlayer : MainAPI() {
         for (i in 0 until sections.length()) {
             val section = sections.getJSONObject(i)
             val items = section.optJSONArray("items") ?: continue
-
             for (j in 0 until items.length()) {
                 val item = items.getJSONObject(j)
 
@@ -155,16 +154,18 @@ class MPlayer : MainAPI() {
                 // --- Image handling ---
                 val imageInfo = item.optJSONArray("imageInfo")
                 var portraitLargeImageUrl: String? = null
+                var bigpic: String? = null
                 if (imageInfo != null) {
                     for (k in 0 until imageInfo.length()) {
                         val img = imageInfo.getJSONObject(k)
-                        if (img.optString("type") == "portrait_large") {
-                            portraitLargeImageUrl = endpointurl + img.optString("url")
-                            break
+                        when (img.optString("type")) {
+                            "portrait_large" -> portraitLargeImageUrl = endpointurl + img.optString("url")
+                            "bigpic" -> bigpic = endpointurl + img.optString("url")
                         }
+                        if (portraitLargeImageUrl != null && bigpic != null) break
                     }
                 }
-
+                println(bigpic)
                 // --- Stream URL handling ---
                 var streamUrl: String? = null
                 val stream = item.optJSONObject("stream")
@@ -253,7 +254,6 @@ class MPlayer : MainAPI() {
         val title = video.title
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo ?: video.alternativeposter
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        Log.d("Phisher Video",video.stream.toString())
         val hrefList = listOfNotNull(
             video.stream?.hls?.high,
             video.stream?.hls?.base,
@@ -283,6 +283,8 @@ class MPlayer : MainAPI() {
                 var episodeNumber = 1
                 var page = 1
                 var nextQuery: String? = null
+                var lastNextQuery: String? = null // Keep track of previous nextQuery
+                val seenEpisodes = mutableSetOf<String>() // Track added episode IDs
 
                 do {
                     val apiUrl = if (nextQuery == null) {
@@ -290,6 +292,7 @@ class MPlayer : MainAPI() {
                     } else {
                         "$webApi/detail/tab/tvshowepisodes?type=season&$nextQuery&id=$seasonId&sortOrder=0&device-density=2&userid=debug-user-id&platform=com.mxplay.desktop&content-languages=hi,en&kids-mode-enabled=false"
                     }
+
                     val jsonResponse = app.get(apiUrl).text
 
                     val episodesParser = try {
@@ -298,8 +301,14 @@ class MPlayer : MainAPI() {
                         Log.e("Error M Player:", "Failed to parse JSON on page $page: ${e.message}")
                         break
                     }
-                    episodesParser?.items?.forEach { it ->
 
+                    if (nextQuery != null && nextQuery == lastNextQuery) break
+                    lastNextQuery = nextQuery
+
+                    episodesParser?.items?.forEachIndexed { index, it ->
+                        if (page == 1 && index == 0) return@forEachIndexed
+                        val episodeId = it.id
+                        if (!seenEpisodes.add(episodeId)) return@forEachIndexed
                         val streamUrls = listOfNotNull(
                             it.stream.hls.high,
                             it.stream.hls.base,
@@ -314,14 +323,17 @@ class MPlayer : MainAPI() {
                             it.stream.mxplay.dash.base,
                             it.stream.mxplay.dash.main
                         ).distinct()
-                        if (streamUrls.isEmpty()) return@forEach
+                        if (streamUrls.isEmpty()) return@forEachIndexed
+
                         val name = it.title ?: "Unknown Title"
                         val image = imageUrl + it.imageInfo.firstOrNull()?.url
+                        val description= it.description
                         episodes += newEpisode(streamUrls) {
                             this.name = name
                             this.season = season
                             this.episode = episodeNumber
                             this.posterUrl = image
+                            this.description = description
                         }
                         episodeNumber++
                     }
@@ -330,7 +342,6 @@ class MPlayer : MainAPI() {
                     page++
                 } while (nextQuery != null)
             }
-
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 posterUrl = epposter ?: video.alternativeposter
                 backgroundPosterUrl = epposter
