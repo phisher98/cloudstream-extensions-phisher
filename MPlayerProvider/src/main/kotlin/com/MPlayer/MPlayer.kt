@@ -2,7 +2,21 @@ package com.MPlayer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -143,6 +157,7 @@ class MPlayer : MainAPI() {
         for (i in 0 until sections.length()) {
             val section = sections.getJSONObject(i)
             val items = section.optJSONArray("items") ?: continue
+
             for (j in 0 until items.length()) {
                 val item = items.getJSONObject(j)
 
@@ -154,18 +169,16 @@ class MPlayer : MainAPI() {
                 // --- Image handling ---
                 val imageInfo = item.optJSONArray("imageInfo")
                 var portraitLargeImageUrl: String? = null
-                var bigpic: String? = null
                 if (imageInfo != null) {
                     for (k in 0 until imageInfo.length()) {
                         val img = imageInfo.getJSONObject(k)
-                        when (img.optString("type")) {
-                            "portrait_large" -> portraitLargeImageUrl = endpointurl + img.optString("url")
-                            "bigpic" -> bigpic = endpointurl + img.optString("url")
+                        if (img.optString("type") == "portrait_large") {
+                            portraitLargeImageUrl = endpointurl + img.optString("url")
+                            break
                         }
-                        if (portraitLargeImageUrl != null && bigpic != null) break
                     }
                 }
-                println(bigpic)
+
                 // --- Stream URL handling ---
                 var streamUrl: String? = null
                 val stream = item.optJSONObject("stream")
@@ -283,16 +296,13 @@ class MPlayer : MainAPI() {
                 var episodeNumber = 1
                 var page = 1
                 var nextQuery: String? = null
-                var lastNextQuery: String? = null // Keep track of previous nextQuery
-                val seenEpisodes = mutableSetOf<String>() // Track added episode IDs
 
                 do {
                     val apiUrl = if (nextQuery == null) {
                         "$webApi/detail/tab/tvshowepisodes?type=season&id=$seasonId"
                     } else {
-                        "$webApi/detail/tab/tvshowepisodes?type=season&$nextQuery&id=$seasonId&sortOrder=0&device-density=2&userid=debug-user-id&platform=com.mxplay.desktop&content-languages=hi,en&kids-mode-enabled=false"
+                        "$webApi/detail/tab/tvshowepisodes?type=season&$nextQuery&id=$seasonId&sortOrder=1&device-density=2&userid=debug-user-id&platform=com.mxplay.desktop&content-languages=hi,en&kids-mode-enabled=false"
                     }
-
                     val jsonResponse = app.get(apiUrl).text
 
                     val episodesParser = try {
@@ -301,14 +311,7 @@ class MPlayer : MainAPI() {
                         Log.e("Error M Player:", "Failed to parse JSON on page $page: ${e.message}")
                         break
                     }
-
-                    if (nextQuery != null && nextQuery == lastNextQuery) break
-                    lastNextQuery = nextQuery
-
-                    episodesParser?.items?.forEachIndexed { index, it ->
-                        if (page == 1 && index == 0) return@forEachIndexed
-                        val episodeId = it.id
-                        if (!seenEpisodes.add(episodeId)) return@forEachIndexed
+                    episodesParser?.items?.forEach { it ->
                         val streamUrls = listOfNotNull(
                             it.stream.hls.high,
                             it.stream.hls.base,
@@ -323,17 +326,20 @@ class MPlayer : MainAPI() {
                             it.stream.mxplay.dash.base,
                             it.stream.mxplay.dash.main
                         ).distinct()
-                        if (streamUrls.isEmpty()) return@forEachIndexed
-
+                        if (streamUrls.isEmpty()) return@forEach
                         val name = it.title ?: "Unknown Title"
                         val image = imageUrl + it.imageInfo.firstOrNull()?.url
-                        val description= it.description
+                        val description = it.description
+
+                        val duration= it.duration.toInt() / 60
+                        val epno=it.sequence.toInt()
                         episodes += newEpisode(streamUrls) {
                             this.name = name
                             this.season = season
-                            this.episode = episodeNumber
+                            this.episode = epno
                             this.posterUrl = image
                             this.description = description
+                            this.runTime = duration
                         }
                         episodeNumber++
                     }
@@ -342,6 +348,7 @@ class MPlayer : MainAPI() {
                     page++
                 } while (nextQuery != null)
             }
+
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 posterUrl = epposter ?: video.alternativeposter
                 backgroundPosterUrl = epposter
@@ -411,9 +418,9 @@ private fun Headers.getCookies(cookieKey: String = "set-cookie"): Map<String, St
     // Get a list of cookie strings
     // set-cookie: name=value; -----> name=value
     val cookieList =
-        this.filter { it.first.equals(cookieKey, ignoreCase = true) }.map {
+        this.filter { it.first.equals(cookieKey, ignoreCase = true) }.mapNotNull {
             it.second.split(";").firstOrNull()
-        }.filterNotNull()
+        }
 
     // [name=value, name2=value2] -----> mapOf(name to value, name2 to value2)
     return cookieList.associate {
