@@ -2214,6 +2214,7 @@ data class CinemaOSReponseData(
     val encrypted: String,
     val cin: String,
     val mao: String,
+    val salt: String,
 )
 
 data class CinemaOsAuthResponse(

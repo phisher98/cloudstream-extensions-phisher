@@ -4929,45 +4929,9 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         subtitleCallback: (SubtitleFile) -> Unit,
     ) {
-        val authUrl = "${cinemaOSApi}/api/auth/player"
-        val headersRequest = mapOf(
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.9",
-            "Connection" to "keep-alive",
-            "Referer" to cinemaOSApi,
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
-            "sec-ch-ua-mobile" to "?0",
-            "sec-ch-ua-platform" to "\"Windows\""
-        )
-
-        val headerAuth = mapOf(
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.9",
-            "Connection" to "keep-alive",
-            "Referer" to cinemaOSApi,
-            "Origin" to cinemaOSApi,
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
-            "sec-ch-ua-mobile" to "?0",
-            "sec-ch-ua-platform" to "\"Windows\"",
-            "Content-Type" to "application/json"
-        )
-
-        val authResponse = app.get(authUrl, headers = headersRequest, timeout = 60).text
-        val authVerifyResponse = app.post(authUrl, headers = headerAuth, json = authResponse,timeout = 60).parsedSafe<CinemaOsAuthResponse>()
-
-
         val sourceHeaders = mapOf(
             "Accept" to "*/*",
             "Accept-Language" to "en-US,en;q=0.9",
-            "Authorization" to "Bearer ${authVerifyResponse?.token}",
             "Connection" to "keep-alive",
             "Referer" to cinemaOSApi,
             "Host" to "cinemaos.live",
