@@ -59,6 +59,10 @@ class KisskhProvider : MainAPI() {
     }
 
     private fun Media.toSearchResponse(): SearchResponse? {
+        if (!settingsForProvider.enableAdult && this.label!!.contains("RAW")) {
+            // Skip RAW entries when adult is disabled
+            return null
+        }
 
         return newAnimeSearchResponse(
             title ?: return null,
@@ -69,6 +73,7 @@ class KisskhProvider : MainAPI() {
             addSub(episodesCount)
         }
     }
+
 
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse =
@@ -253,6 +258,7 @@ class KisskhProvider : MainAPI() {
     data class Media(
         @JsonProperty("episodesCount") val episodesCount: Int?,
         @JsonProperty("thumbnail") val thumbnail: String?,
+        @JsonProperty("label") val label: String?,
         @JsonProperty("id") val id: Int?,
         @JsonProperty("title") val title: String?,
     )
