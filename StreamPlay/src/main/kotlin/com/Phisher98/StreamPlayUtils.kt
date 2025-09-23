@@ -45,6 +45,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 
 
 var sfServer: String? = null
@@ -1887,24 +1889,28 @@ fun cinemaOSDecryptResponse(e: CinemaOSReponseData?): Any {
     val encrypted = e?.encrypted
     val cin = e?.cin
     val mao = e?.mao
+    val salt = e?.salt
 
-    val keyBytes = hexStringToByteArray("a1b2c3d4e4f6589008115678901477567890abcdef1234567890abcdef123456")
+    val keyBytes =  "a1b2c3d4e4f6588658455678901477567890abcdef1234567890abcdef123456".toByteArray()
     val ivBytes = hexStringToByteArray(cin.toString())
     val authTagBytes = hexStringToByteArray(mao.toString())
     val encryptedBytes = hexStringToByteArray(encrypted.toString())
+    val saltBytes = hexStringToByteArray(salt.toString())
 
+    // Derive key with PBKDF2-HMAC-SHA256
+    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+    val spec = PBEKeySpec(keyBytes.map { it.toInt().toChar() }.toCharArray(), saltBytes, 100000, 256)
+    val tmp = factory.generateSecret(spec)
+    val key = SecretKeySpec(tmp.encoded, "AES")
+
+    // AES-256-GCM decrypt
     val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-    val keySpec = SecretKeySpec(keyBytes, "AES")
     val gcmSpec = GCMParameterSpec(128, ivBytes)
+    cipher.init(Cipher.DECRYPT_MODE, key, gcmSpec)
+    val decryptedBytes = cipher.doFinal(encryptedBytes + authTagBytes)
+    val decryptedData = String(decryptedBytes)
 
-    cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec)
-
-    // Combine encrypted data with auth tag
-    val combinedData = encryptedBytes + authTagBytes
-    val decryptedBytes = cipher.doFinal(combinedData)
-    val decryptedText = String(decryptedBytes, Charsets.UTF_8)
-
-    return decryptedText // Use your JSON parser
+    return decryptedData // Use your JSON parser
 }
 
 
