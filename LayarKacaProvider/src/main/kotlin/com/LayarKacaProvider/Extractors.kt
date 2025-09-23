@@ -1,14 +1,24 @@
 package com.layarKacaProvider
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import org.json.JSONObject
 
+
+class Co4nxtrl : Filesim() {
+    override val mainUrl = "https://co4nxtrl.com"
+    override val name = "Co4nxtrl"
+    override val requiresReferer = true
+}
 
 open class Hownetwork : ExtractorApi() {
     override val name = "Hownetwork"
@@ -22,41 +32,25 @@ open class Hownetwork : ExtractorApi() {
             callback: (ExtractorLink) -> Unit
     ) {
         val id = url.substringAfter("id=")
-        val res = app.post(
+        val response = app.post(
                 "$mainUrl/api.php?id=$id",
                 data = mapOf(
-                        "r" to "https://playeriframe.shop/",
-                        "d" to "stream.hownetwork.xyz",
+                        "r" to "",
+                        "d" to mainUrl,
                 ),
                 referer = url,
                 headers = mapOf(
                         "X-Requested-With" to "XMLHttpRequest"
                 )
-        ).parsedSafe<Sources>()
-
-        res?.data?.map {
-            callback.invoke(
-                newExtractorLink(
-                    this.name,
-                    this.name,
-                    url = it.file,
-                    INFER_TYPE
-                ) {
-                    this.referer = url
-                    this.quality = getQualityFromName(it.label)
-                }
-            )
-        }
-
-    }
-
-    data class Sources(
-            val data: ArrayList<Data>
-    ) {
-        data class Data(
-                val file: String,
-                val label: String?,
-        )
+        ).text
+        val json = JSONObject(response)
+        val file = json.optString("file")
+        Log.d("Phisher", file)
+            M3u8Helper.generateM3u8(
+                this.name,
+                file,
+                file
+            ).forEach(callback)
     }
 }
 

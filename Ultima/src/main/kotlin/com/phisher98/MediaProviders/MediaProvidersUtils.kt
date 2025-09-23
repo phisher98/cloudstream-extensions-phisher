@@ -101,7 +101,7 @@ object UltimaMediaProvidersUtils {
                     MoviesDriveProvider(),
                     HiAnimeMediaProvider(),
                     //VidFlastProvider(),
-                    //ElevenmoviesProvider(),
+                    ElevenmoviesProvider(),
                     AnimeKaiMediaProvider(),
                     VegaMoviesProvider(),
                     VidsrcccProvider(),
