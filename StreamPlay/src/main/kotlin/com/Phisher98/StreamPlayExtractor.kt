@@ -5097,14 +5097,20 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val serverList = listOf("hollymoviehd","moviebox","flixhq","vidapi","allmovies")
+        val serverList = listOf("hollymoviehd","moviebox","flixhq","","allmovies","layarkaca")
         serverList.forEach {
             try {
-                val url = if (season == null) "$vidnestApi/$it/movie/$tmdbId" else "$vidnestApi/$it/tv/$tmdbId/$season/$episode"
-                val response = app.get(url, timeout = 30,).text
+                val api = if(it == "allmovies") vidnestVercelApi else vidnestApi
+                val url = if (season == null) "$api/$it/movie/$tmdbId" else "$api/$it/tv/$tmdbId/$season/$episode"
+                val result = generateKeyIv()
+                val header = mapOf(
+                    "x-aes-key" to result.keyHex,
+                    "x-aes-iv" to result.ivHex
+                )
+                val response = app.get(url, timeout = 30, headers = header).text
                 val jsonObj = JSONObject(response)
                 val cipherText = jsonObj.getString("cipher")
-                val decryptedText = decryptAES_CBC(cipherText,"0123456789abcdef","abcdef0123456789")
+                val decryptedText = aesDecrypt(cipherText,result.keyBytes,result.ivBytes)
                 val jsonObject = JSONObject(decryptedText)
                 if(it == "hollymoviehd")
                 {
@@ -5119,6 +5125,22 @@ object StreamPlayExtractor : StreamPlay() {
                             vidnestApi,
                         ).forEach(callback)
                     }
+
+                }
+                else if (it == "rpmvid")
+                {
+                        val embedUrl = jsonObject.getString("embedUrl")
+                        val sources = jsonObject.getJSONArray("sources")
+                        for (i in 0 until sources.length()) {
+                            val source = sources.getJSONObject(i)
+                            val url = source.getString("url")
+                            M3u8Helper.generateM3u8(
+                                "Vidnest [${it.capitalize()}]",
+                                url,
+                                embedUrl,
+                            ).forEach(callback)
+                        }
+
 
                 }
                 else if (it == "allmovies") {
@@ -5172,25 +5194,6 @@ object StreamPlayExtractor : StreamPlay() {
                         headerValue,
                         headers = headers
                     ).forEach(callback)
-                }
-                else if(it == "vidapi")
-                {
-                    val headersJson = jsonObject.getJSONObject("headers")
-                    val headersMap: Map<String, String> = headersJson.keys().asSequence().associateWith { key ->
-                        headersJson.getString(key)
-                    }
-                    val sources = jsonObject.getJSONArray("sources")
-                    for (i in 0 until sources.length()) {
-                        val source = sources.getJSONObject(i)
-                        val url = source.getString("file")
-                        val label = source.getString("label")
-                        M3u8Helper.generateM3u8(
-                            "Vidnest [${it.capitalize()} ($label)]",
-                            url,
-                            headersJson.getString("Referer"),
-                            headers = headersMap
-                        ).forEach(callback)
-                    }
                 }
 
             } catch (e: Exception) {
