@@ -44,6 +44,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.security.spec.KeySpec
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
@@ -2006,6 +2007,96 @@ fun decryptAES_CBC(
     return String(plainBytes, StandardCharsets.UTF_8)
 }
 
+
+fun hexStringToByteArray2(hex: String): ByteArray {
+    val result = ByteArray(hex.length / 2)
+    for (i in hex.indices step 2) {
+        val value = hex.substring(i, i + 2).toInt(16)
+        result[i / 2] = value.toByte()
+    }
+    return result
+}
+
+/**
+ * PKCS7 padding implementation
+ */
+fun padData(data: ByteArray, blockSize: Int): ByteArray {
+    val padding = blockSize - (data.size % blockSize)
+    val result = ByteArray(data.size + padding)
+    System.arraycopy(data, 0, result, 0, data.size)
+    for (i in data.size until result.size) {
+        result[i] = padding.toByte()
+    }
+    return result
+}
+
+fun customEncode(input: ByteArray): String {
+    val sourceChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+    val targetChars = "SCHkQ7-ni29AJs3VKw4XxjZE5WNL6zTBbY0G1ReurtmDMyqgIl8cvoOUPfFdhap_"
+
+    val translationMap = sourceChars.zip(targetChars).toMap()
+    val encoded = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Base64.getUrlEncoder().withoutPadding().encodeToString(input)
+    } else {
+        TODO("VERSION.SDK_INT < O")
+    }
+
+    return encoded.map { char ->
+        translationMap[char] ?: char
+    }.joinToString("")
+}
+
+fun parseServers(jsonString: String): List<VidFastServer> {
+    val servers = mutableListOf<VidFastServer>()
+    try {
+        val jsonArray = JSONArray(jsonString)
+        for (i in 0 until jsonArray.length()) {
+            val jsonObject = jsonArray.getJSONObject(i)
+            val server = VidFastServer(
+                name = jsonObject.getString("name"),
+                description = jsonObject.getString("description"),
+                image = jsonObject.getString("image"),
+                data = jsonObject.getString("data")
+            )
+            servers.add(server)
+        }
+    } catch (e: Exception) {
+        Log.e("salman731", "Manual parsing failed: ${e.message}")
+    }
+    return servers
+}
+
+fun derivePbkdf2Key(
+    password: String,
+    salt: ByteArray,
+    iterations: Int,
+    keyLength: Int
+): ByteArray {
+    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+    val spec: KeySpec = PBEKeySpec(password.toCharArray(), salt, iterations, keyLength * 8)
+    return factory.generateSecret(spec).encoded
+}
+
+
+/**
+ * Remove PKCS7 padding
+ */
+fun unpadData(data: ByteArray): ByteArray {
+    val padding = data[data.size - 1].toInt() and 0xFF
+    if (padding < 1 || padding > data.size) {
+        return data
+    }
+    return data.copyOf(data.size - padding)
+}
+
+fun hasHost(url: String): Boolean {
+    return try {
+        val host = URL(url).host
+        !host.isNullOrEmpty()
+    } catch (e: Exception) {
+        false
+    }
+}
 /**
  * Run multiple suspend functions concurrently with a limit on simultaneous executions.
  *

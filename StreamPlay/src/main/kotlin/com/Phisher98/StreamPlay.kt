@@ -183,6 +183,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val mappleTvApi = "https://mapple.tv"
         const val vidnestApi = "https://backend.vidnest.fun"
         const val mp4hydra = "https://mp4hydra.org"
+        const val vidfastProApi = "https://vidfast.pro"
+        const val vidPlusApi = "https://player.vidplus.to"
 
         fun getType(t: String?): TvType {
             return when (t) {
