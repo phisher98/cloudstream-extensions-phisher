@@ -1989,36 +1989,45 @@ fun parseCinemaOSSources(jsonString: String): List<Map<String, String>> {
     return sourcesList
 }
 
-private fun hexToBytes(hex: String): ByteArray {
-    val cleanHex = hex.replace("[^0-9a-fA-F]".toRegex(), "")
+
+
+fun toHex(bytes: ByteArray): String {
+    return bytes.joinToString("") { "%02x".format(it) }
+}
+
+
+// Hex → ByteArray
+fun fromHex(hex: String): ByteArray {
+    val cleanHex = hex.replace(Regex("[^0-9a-fA-F]"), "")
     require(cleanHex.length % 2 == 0) { "Invalid hex" }
     return ByteArray(cleanHex.length / 2) { i ->
-        cleanHex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+        cleanHex.substring(2 * i, 2 * i + 2).toInt(16).toByte()
     }
 }
 
-fun importKey(aesKey: String): SecretKey {
-    val keyBytes = aesKey.toByteArray(StandardCharsets.UTF_8)
-    require(keyBytes.size == 16 || keyBytes.size == 32) { "AES_KEY must be 16 or 32 bytes" }
-    return SecretKeySpec(keyBytes, "AES")
+// AES key validator
+fun importKey(rawKey: ByteArray): SecretKeySpec {
+    require(rawKey.size == 16 || rawKey.size == 32) { "AES_KEY must be 16 or 32 bytes" }
+    return SecretKeySpec(rawKey, "AES")
 }
 
-fun decryptAES_CBC(
-    hexCipherText: String,
-    aesKey: String,
-    aesIv: String
-): String {
-    val ivBytes = aesIv.toByteArray(StandardCharsets.UTF_8)
-    require(ivBytes.size == 16) { "AES_IV must be 16 bytes" }
+// AES-CBC decryption
+fun aesDecrypt(cipherHex: String, keyBytes: ByteArray, ivBytes: ByteArray): String {
+    val decrypted = try {
+        require(ivBytes.size == 16) { "AES_IV must be 16 bytes" }
 
-    val secretKey = importKey(aesKey)
-    val cipherBytes = hexToBytes(hexCipherText)
+        val cipherBytes = fromHex(cipherHex)
+        val keySpec = importKey(keyBytes)
+        val ivSpec = IvParameterSpec(ivBytes)
 
-    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(ivBytes))
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
 
-    val plainBytes = cipher.doFinal(cipherBytes)
-    return String(plainBytes, StandardCharsets.UTF_8)
+        cipher.doFinal(cipherBytes)
+    } catch (e: Exception) {
+        TODO("Not yet implemented")
+    }
+    return decrypted.toString(Charsets.UTF_8)
 }
 
 
@@ -2110,6 +2119,24 @@ fun hasHost(url: String): Boolean {
     } catch (e: Exception) {
         false
     }
+}
+
+fun generateKeyIv(keySize: Int = 32): KeyIvResult {
+
+    val secureRandom = SecureRandom()
+
+    val keyBytes = ByteArray(keySize)
+    secureRandom.nextBytes(keyBytes)
+
+    val ivBytes = ByteArray(16) // 16 bytes for AES IV
+    secureRandom.nextBytes(ivBytes)
+
+    return KeyIvResult(
+        keyBytes = keyBytes,
+        ivBytes = ivBytes,
+        keyHex = toHex(keyBytes),
+        ivHex = toHex(ivBytes)
+    )
 }
 /**
  * Run multiple suspend functions concurrently with a limit on simultaneous executions.

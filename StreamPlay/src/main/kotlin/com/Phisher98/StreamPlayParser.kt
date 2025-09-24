@@ -2337,3 +2337,10 @@ data class VidFastServer(
     val data: String,
 )
 
+data class KeyIvResult(
+    val keyBytes: ByteArray,
+    val ivBytes: ByteArray,
+    val keyHex: String,
+    val ivHex: String
+)
+
