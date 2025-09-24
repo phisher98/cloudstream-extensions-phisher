@@ -43,6 +43,8 @@ import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeTopMovies
 import com.phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.phisher98.StreamPlayExtractor.invokeVegamovies
+import com.phisher98.StreamPlayExtractor.invokeVidFast
+import com.phisher98.StreamPlayExtractor.invokeVidPlus
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidnest
@@ -241,6 +243,12 @@ fun buildProviders(): List<Provider> {
         },
         Provider("mp4hydra", "MP4Hydra") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokemp4hydra(res.title, res.year,res.season, res.episode, subtitleCallback, callback)
+        },
+        Provider("vidfast", "VidFast") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+            if (!res.isAnime) invokeVidFast(res.id, res.season,res.episode, callback, subtitleCallback)
+        },
+        Provider("vidplus", "VidPlus") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+            if (!res.isAnime) invokeVidPlus(res.id, res.season,res.episode,  callback,subtitleCallback)
         }
     )
 }

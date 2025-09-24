@@ -2329,3 +2329,11 @@ data class Servers(
     val beta3: String,
     val auto: String,
 )
+
+data class VidFastServer(
+    val name: String,
+    val description: String,
+    val image: String,
+    val data: String,
+)
+

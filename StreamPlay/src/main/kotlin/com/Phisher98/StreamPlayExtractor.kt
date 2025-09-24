@@ -62,7 +62,11 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.security.MessageDigest
+import java.util.Base64
 import java.util.Locale
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
 import kotlin.text.isNotEmpty
 import kotlin.toString
@@ -5381,6 +5385,185 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             }
+        }
+    }
+
+
+    suspend fun invokeVidFast(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit,
+    ) {
+        val STATIC_PATH =
+            "hezushon/e7b3cf8497ae580e7a703f996cf17ce48587cbd5/ev/9fdf613a9204683a789e4bfe9fd06da405e6ef36c4338b5baf14d0f2ea18f7a4"
+        val url =
+            if (season == null) "$vidfastProApi/movie/$tmdbId" else "$vidfastProApi/tv/$tmdbId/$season/$episode"
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Referer" to vidfastProApi,
+            "X-Csrf-Token" to "JjcyiVDl4pPbnbSLUVDLiMFwJR8C2WNk",
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
+            "X-Requested-With" to "XMLHttpRequest"
+        )
+        val response = app.get(url, headers = headers, timeout = 20).text
+        val regex = Regex("""\\"en\\":\\"(.*?)\\"""")
+        val match = regex.find(response)
+        val rawData = match?.groupValues?.get(1)
+        if (rawData.isNullOrEmpty()) {
+            return;
+        }
+        // AES encryption setup
+        val keyHex = "8321a6aa7add8f2874b4b03f4f0fd9de8fa33bb91d9fa63534975ab49a584c8f"
+        val ivHex = "7d7a35a72b54d40c323d64d268e84382"
+        val aesKey = hexStringToByteArray2(keyHex)
+        val aesIv = hexStringToByteArray2(ivHex)
+
+        // Encrypt raw data
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(aesKey, "AES"), IvParameterSpec(aesIv))
+        val paddedData = padData(rawData.toByteArray(Charsets.UTF_8), 16)
+        val aesEncrypted = cipher.doFinal(paddedData)
+
+        // XOR operation
+        val xorKey = hexStringToByteArray2("7ce1477edc99e718b8")
+        val xorResult = aesEncrypted.mapIndexed { i, byte ->
+            (byte.toInt() xor xorKey[i % xorKey.size].toInt()).toByte()
+        }.toByteArray()
+
+        // Encode XORed data
+        val encodedFinal = customEncode(xorResult)
+
+        // Get servers
+        val apiServers = "$vidfastProApi/$STATIC_PATH/wpPdKYzdySpv/$encodedFinal"
+        val serversResponse = app.get(
+            apiServers,
+            timeout = 20,
+            interceptor = CloudflareKiller(),
+            headers = headers
+        ).text
+        if (serversResponse.isEmpty()) return
+        val servers = parseServers(serversResponse)
+        val urlList = mutableMapOf<String, String>()
+        servers.forEach {
+            try {
+                val apiStream = "$vidfastProApi/${STATIC_PATH}/6rbZBh6h9A/${it.data}"
+                val streamResponse = app.get(apiStream, timeout = 20, headers = headers).text
+                if (streamResponse.isNotEmpty()) {
+                    val jsonObject = JSONObject(streamResponse)
+                    val url = jsonObject.getString("url")
+
+                    urlList.put(it.name, url)
+                }
+            } catch (e: Exception) {
+                TODO("Not yet implemented")
+            }
+        }
+
+        urlList.forEach {
+            callback.invoke(
+                newExtractorLink(
+                    "VidFastPro [${it.key}]",
+                    "VidFastPro [${it.key}]",
+                    url = it.value,
+                )
+                {
+                    this.quality = Qualities.P1080.value
+                }
+            )
+        }
+
+
+
+
+    }
+
+    suspend fun invokeVidPlus(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit,
+    )
+    {
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "Referer" to vidPlusApi,
+            "Origin" to vidPlusApi,
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
+            "X-Requested-With" to "XMLHttpRequest"
+        )
+        val data = mapOf(
+            "id" to tmdbId,
+            "key" to "cGxheWVyLnZpZHNyYy5jb19zZWNyZXRLZXk="
+        )
+        val encoded = Base64.getEncoder().encodeToString(data.toJson().toByteArray())
+        val apiUrl = "$vidPlusApi/api/tmdb?params=cbc7.$encoded.9lu"
+        val response = app.get(apiUrl, headers = headers).text
+        val jsonObject = JSONObject(response)
+        val dataJson = jsonObject.getJSONObject("data")
+        // Get required data
+        val imdbId = dataJson.getString("imdb_id")
+        val title = dataJson.getString("title")
+        val releaseDate = dataJson.getString("release_date")
+        val releaseYear = releaseDate.split("-")[0]
+
+        // Build request parameters and fetch encrypted response
+        val requestArgs = listOf(title, releaseYear, imdbId).joinToString("*")
+        val urlListMap = mutableMapOf<String,String>()
+        val myMap = listOf("Orion","Minecloud","Viet","Crown","Joker","Soda","Beta","Gork","Monk","Fox","Leo","4K","Adam","Sun","Maxi","Indus","Tor","Hindi","Delta","Ben","Pearl","Tamil","Ruby","Tel","Mal","Kan","Lava")
+        for ((index, entry) in myMap.withIndex()) {
+            try {
+                val serverId = index+1;
+                val serverUrl = if(season == null) "$vidPlusApi/api/server?id=$tmdbId&sr=$serverId&args=$requestArgs" else  "$vidPlusApi/api/server?id=$tmdbId&sr=$serverId&ep=$episode&ss=$season&args=$requestArgs"
+
+                val apiResponse = app.get(serverUrl,headers=headers, timeout = 20,).text
+
+                if (apiResponse.contains("\"data\"",ignoreCase = true)) {
+                    val decodedPayload = String(Base64.getDecoder().decode(JSONObject(apiResponse).getString("data")))
+                    val payloadJson = JSONObject(decodedPayload)
+
+                    val ciphertext = Base64.getDecoder().decode(payloadJson.getString("encryptedData"))
+                    val password = payloadJson.getString("key")
+                    val salt = hexStringToByteArray2(payloadJson.getString("salt"))
+                    val iv = hexStringToByteArray2(payloadJson.getString("iv"))
+                    val derivedKey = derivePbkdf2Key(password, salt, 1000, 32)
+                    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+                    cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(derivedKey, "AES"), IvParameterSpec(iv))
+                    val decryptedText = unpadData(cipher.doFinal(ciphertext))
+                    val decryptedString = String(decryptedText)
+
+                    val regex = Regex("\"url\":\"(.*?)\",")
+                    val match = regex.find(decryptedString)
+                    val streamURl = match?.groupValues?.get(1)
+                    if (!streamURl.isNullOrEmpty()) {
+                        var finalStreamUrl = streamURl
+                        if (!hasHost(streamURl.toString())) {
+                            finalStreamUrl = app.head("$vidPlusApi$streamURl",headers= headers, allowRedirects = false).headers.get("Location")
+                        }
+
+
+                        urlListMap[entry] = finalStreamUrl.toString()
+                    }
+                }
+            } catch (e: Exception) {
+                TODO("Not yet implemented")
+            }
+        }
+
+        urlListMap.forEach {
+            callback.invoke(
+                newExtractorLink(
+                    "VidPlus [${it.key}]",
+                    "VidPlus [${it.key}]",
+                    url = it.value,
+                )
+                {
+                    this.quality = Qualities.P1080.value
+                    this.headers = mapOf("Origin" to vidPlusApi)
+                }
+            )
         }
     }
 }
