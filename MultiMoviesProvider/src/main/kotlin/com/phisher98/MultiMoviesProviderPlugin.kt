@@ -29,5 +29,6 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(Streamcasthub())
         registerExtractorAPI(Dhcplay())
         registerExtractorAPI(server1())
+        registerExtractorAPI(Techinmind())
         }
 }
