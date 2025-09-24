@@ -131,6 +131,8 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     }
 
     private suspend fun getEmbed(postid: String?, nume: String, referUrl: String?): NiceResponse {
+        val multiMoviesAPI = getDomains()?.multiMovies
+
         val body = FormBody.Builder()
             .addEncoded("action", "doo_player_ajax")
             .addEncoded("post", postid.toString())
@@ -139,7 +141,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             .build()
 
         return app.post(
-            "$mainUrl/wp-admin/admin-ajax.php",
+            "$multiMoviesAPI/wp-admin/admin-ajax.php",
             requestBody = body,
             referer = referUrl
         )
