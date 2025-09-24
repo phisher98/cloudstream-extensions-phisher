@@ -5108,11 +5108,9 @@ object StreamPlayExtractor : StreamPlay() {
                     "x-aes-iv" to result.ivHex
                 )
                 val response = app.get(url, timeout = 30, headers = header).text
-                Log.d("salman731 response",response)
                 val jsonObj = JSONObject(response)
                 val cipherText = jsonObj.getString("cipher")
                 val decryptedText = aesDecrypt(cipherText,result.keyBytes,result.ivBytes)
-                Log.d("salman731 decryptedText",decryptedText)
                 val jsonObject = JSONObject(decryptedText)
                 if(it == "hollymoviehd")
                 {
