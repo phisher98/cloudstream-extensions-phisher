@@ -66,18 +66,21 @@ class ElevenmoviesProvider : MediaProvider() {
             "Content-Type" to json.contentTypes,
             "X-Requested-With" to "XMLHttpRequest"
         )
-        val responseString = if (json.httpMethod == "GET") {
-            app.get(apiServerUrl, headers = headers).body.string()
-        } else {
-            val postHeaders = mapOf(
-                "Referer" to Elevenmovies,
-                "Content-Type" to json.contentTypes,
-                "X-CSRF-Token" to json.csrfToken,
-                "X-Requested-With" to "XMLHttpRequest"
-            )
-            val mediaType = json.contentTypes.toMediaType()
-            val requestBody = "".toRequestBody(mediaType)
-            app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
+
+
+        val responseString = try {
+            if (json.httpMethod.contains("GET")) {
+                val res = app.get(apiServerUrl, headers = headers).body.string()
+                res
+            } else {
+                val postHeaders = headers.toMutableMap()
+                postHeaders["X-Requested-With"] = "XMLHttpRequest"
+                postHeaders["User-Agent"] = USER_AGENT
+                val res = app.post(apiServerUrl, headers = postHeaders).body.string()
+                res
+            }
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to fetch server list: ${e.message}")
         }
 
         val listType = object : TypeToken<List<ElevenmoviesServerEntry>>() {}.type

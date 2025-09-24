@@ -130,6 +130,7 @@ class UltimaConfigureExtensions(val plugin: UltimaPlugin) : BottomSheetDialogFra
         ): View {
             val sectionView = getLayout("list_section_item", inflater, container)
             val checkBox = sectionView.findView<CheckBox>("section_checkbox")
+
             checkBox.text = section.name
             checkBox.makeTvCompatible()
 

@@ -1,6 +1,5 @@
 package com.phisher98
 
-import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -48,6 +47,7 @@ import java.security.spec.KeySpec
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
+import kotlin.experimental.xor
 
 
 var sfServer: String? = null
@@ -1661,32 +1661,46 @@ suspend fun <T> retryIO(
     return block() // last attempt, let it throw
 }
 
+suspend fun elevenMoviesToken(rawData: String): String {
+    // AES setup
+    val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json"
+    val jsonString = app.get(jsonUrl).text
+    val gson = Gson()
+    val json: Elevenmoviesjson = gson.fromJson(jsonString, Elevenmoviesjson::class.java)
+    val keyHex = json.key_hex
+    val ivHex = json.iv_hex
+    val aesKey = SecretKeySpec(keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray(), "AES")
+    val aesIv = IvParameterSpec(ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray())
 
-@SuppressLint("NewApi")
-suspend fun elevenMoviesTokenV2(rawData: String): String {
-    val json = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/output.json")
-        .parsedSafe<Elevenmoviesjson>() ?: return ""
-
-    val aesKey = json.key_hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-    val aesIv = json.iv_hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    // AES encrypt
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(aesKey, "AES"), IvParameterSpec(aesIv))
+    cipher.init(Cipher.ENCRYPT_MODE, aesKey, aesIv)
+    val aesEncrypted = cipher.doFinal(rawData.toByteArray())
+    val aesHex = aesEncrypted.joinToString("") { "%02x".format(it) }
 
-    val encryptedHex = cipher.doFinal(rawData.toByteArray(Charsets.UTF_8))
-        .joinToString("") { "%02x".format(it) }
+    // XOR operation
+    val xorKeyHex = json.xor_key
+    val xorKey = xorKeyHex.chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
 
-    val xorKey = json.xor_key.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-    val xorResult = buildString {
-        encryptedHex.forEachIndexed { i, c ->
-            append((c.code xor (xorKey[i % xorKey.size].toInt() and 0xFF)).toChar())
-        }
-    }
+    val xorResult = aesHex.mapIndexed { index, char ->
+        ((char.code.toByte() xor xorKey[index % xorKey.size]).toInt()).toChar()
+    }.joinToString("")
 
-    val translationMap = json.src.zip(json.dst).toMap()
-    val base64Encoded = Base64.getEncoder().encodeToString(xorResult.toByteArray(Charsets.UTF_8))
-        .replace("+", "-").replace("/", "_").replace("=", "")
 
-    return base64Encoded.map { translationMap[it] ?: it }.joinToString("")
+    val src = json.src
+    val dst = json.dst
+
+    val b64 = base64Encode(xorResult.toByteArray())
+        .replace("+", "-")
+        .replace("/", "_")
+        .replace("=", "")
+
+    return b64.map { char ->
+        val index = src.indexOf(char)
+        if (index != -1) dst[index] else char
+    }.joinToString("")
 }
 
 

@@ -11,6 +11,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
@@ -20,6 +21,7 @@ import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.experimental.xor
 
 
 class ElevenmoviesProvider : MediaProvider() {
@@ -66,18 +68,20 @@ class ElevenmoviesProvider : MediaProvider() {
             "Content-Type" to json.contentTypes,
             "X-Requested-With" to "XMLHttpRequest"
         )
-        val responseString = if (json.httpMethod == "GET") {
-            app.get(apiServerUrl, headers = headers).body.string()
-        } else {
-            val postHeaders = mapOf(
-                "Referer" to Elevenmovies,
-                "Content-Type" to json.contentTypes,
-                "X-CSRF-Token" to json.csrfToken,
-                "X-Requested-With" to "XMLHttpRequest"
-            )
-            val mediaType = json.contentTypes.toMediaType()
-            val requestBody = "".toRequestBody(mediaType)
-            app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
+
+        val responseString = try {
+            if (json.httpMethod.contains("GET")) {
+                val res = app.get(apiServerUrl, headers = headers).body.string()
+                res
+            } else {
+                val postHeaders = headers.toMutableMap()
+                postHeaders["X-Requested-With"] = "XMLHttpRequest"
+                postHeaders["User-Agent"] = USER_AGENT
+                val res = app.post(apiServerUrl, headers = postHeaders).body.string()
+                res
+            }
+        } catch (e: Exception) {
+            throw RuntimeException("Failed to fetch server list: ${e.message}")
         }
 
         val listType = object : TypeToken<List<ElevenmoviesServerEntry>>() {}.type
@@ -130,58 +134,46 @@ class ElevenmoviesProvider : MediaProvider() {
     // #region - Encryption and Decryption handlers
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun elevenMoviesTokenV2(rawData: String): String {
-        val jsonString = app.get("https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json").text
-
-        val json: Elevenmoviesjson? = try {
-            Gson().fromJson(jsonString, Elevenmoviesjson::class.java)
-        } catch (e: JsonSyntaxException) {
-            e.printStackTrace()
-            return ""
-        }
-
-        val keyHex = json?.keyHex ?: return ""
+        val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json"
+        val jsonString = app.get(jsonUrl).text
+        val gson = Gson()
+        val json: Elevenmoviesjson = gson.fromJson(jsonString, Elevenmoviesjson::class.java)
+        val keyHex = json.keyHex
         val ivHex = json.ivHex
+        val aesKey = SecretKeySpec(keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray(), "AES")
+        val aesIv = IvParameterSpec(ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray())
 
-        val aesKey = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        val aesIv = ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-
+        // AES encrypt
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        val secretKey = SecretKeySpec(aesKey, "AES")
-        val ivSpec = IvParameterSpec(aesIv)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+        cipher.init(Cipher.ENCRYPT_MODE, aesKey, aesIv)
+        val aesEncrypted = cipher.doFinal(rawData.toByteArray())
+        val aesHex = aesEncrypted.joinToString("") { "%02x".format(it) }
 
-        val paddedInput = rawData.toByteArray(Charsets.UTF_8)
-        val encrypted = cipher.doFinal(paddedInput)
-        val hexString = encrypted.joinToString("") { "%02x".format(it) }
-
-        // XOR key from hex string
+        // XOR operation
         val xorKeyHex = json.xorKey
         val xorKey = xorKeyHex.chunked(2)
             .map { it.toInt(16).toByte() }
             .toByteArray()
 
-        val xorResult = buildString {
-            for (i in hexString.indices) {
-                val c = hexString[i].code
-                val k = xorKey[i % xorKey.size].toInt() and 0xFF
-                append((c xor k).toChar())
-            }
-        }
+        val xorResult = aesHex.mapIndexed { index, char ->
+            ((char.code.toByte() xor xorKey[index % xorKey.size]).toInt()).toChar()
+        }.joinToString("")
+
 
         val src = json.src
         val dst = json.dst
-        val translationMap = src.zip(dst).toMap()
 
-        val base64Encoded = Base64.getEncoder()
-            .encodeToString(xorResult.toByteArray(Charsets.UTF_8))
+        val b64 = base64Encode(xorResult.toByteArray())
             .replace("+", "-")
             .replace("/", "_")
             .replace("=", "")
 
-        val finalEncoded = base64Encoded.map { translationMap[it] ?: it }.joinToString("")
-
-        return finalEncoded
+        return b64.map { char ->
+            val index = src.indexOf(char)
+            if (index != -1) dst[index] else char
+        }.joinToString("")
     }
+
     // #endregion - Encryption and Decryption handlers
 
     // #region - Data classes

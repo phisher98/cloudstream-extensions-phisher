@@ -4103,26 +4103,22 @@ object StreamPlayExtractor : StreamPlay() {
         val jsonString = app.get(jsonUrl).text
         val gson = Gson()
         val json: Elevenmoviesjson = gson.fromJson(jsonString, Elevenmoviesjson::class.java)
+        val token = elevenMoviesToken(encodedToken)
 
-        val token = elevenMoviesTokenV2(encodedToken)
         val staticPath = json.static_path
         val apiServerUrl = "$Elevenmovies/$staticPath/$token/sr"
-
         val headers = mutableMapOf("Referer" to Elevenmovies)
 
         val responseString = try {
-            if (json.http_method == "GET") {
+            if (json.http_method.contains("GET")) {
                 val res = app.get(apiServerUrl, headers = headers).body.string()
                 res
             } else {
                 val postHeaders = headers.toMutableMap()
                 postHeaders["X-Requested-With"] = "XMLHttpRequest"
                 postHeaders["User-Agent"] = USER_AGENT
-                json.content_types?.let { postHeaders["Content-Type"] = it }
-
-                val requestBody = "".toRequestBody(json.content_types?.toMediaType() ?: "application/json".toMediaType())
-
-                app.post(apiServerUrl, headers = postHeaders, requestBody = requestBody).body.string()
+                val res = app.post(apiServerUrl, headers = postHeaders).body.string()
+                res
             }
         } catch (e: Exception) {
             throw RuntimeException("Failed to fetch server list: ${e.message}")

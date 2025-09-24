@@ -17,5 +17,6 @@ class LayarKacaProviderPlugin: BasePlugin() {
         registerExtractorAPI(Furher2())
         registerExtractorAPI(Turbovidhls())
         registerExtractorAPI(Cloudhownetwork())
+        registerExtractorAPI(Co4nxtrl())
     }
 }
