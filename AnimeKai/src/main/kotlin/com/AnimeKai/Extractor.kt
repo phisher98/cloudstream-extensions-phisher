@@ -186,7 +186,7 @@ class MegaUp : ExtractorApi() {
                         <html>
                             <head><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
                             <body style="margin:0;padding:0;overflow:hidden;">
-                                <iframe src="$currentUrl?autostart=true"
+                                <iframe src="$currentUrl"
                                     width="100%" height="100%" frameborder="0"
                                     allow="autoplay; fullscreen">
                                 </iframe>
