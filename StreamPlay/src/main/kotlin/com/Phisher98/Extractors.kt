@@ -1548,6 +1548,7 @@ object DebugLogger {
         println("[$TAG][ERROR] $message ${throwable?.message ?: ""}")
     }
 }
+/*
 
 class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
@@ -1727,6 +1728,8 @@ class MegaUp : ExtractorApi() {
     }
 }
 
+
+ */
 @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 open class GDFlix : ExtractorApi() {
     override val name = "GDFlix"
