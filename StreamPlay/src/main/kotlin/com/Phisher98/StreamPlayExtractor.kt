@@ -1104,12 +1104,14 @@ object StreamPlayExtractor : StreamPlay() {
                     subtitleCallback(SubtitleFile(subtitle.name, httpsify(subtitle.src)))
                 }
             } else if (server.name.contains("CatStream")) {
+                val baseurl= getBaseUrl(server.src)
                 val headers = mapOf(
+                    "Origin" to baseurl,
                     "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
                 )
 
                 val res = app.get(
-                    "https://thingproxy.freeboard.io/fetch/${server.src}",
+                    server.src,
                     headers = headers
                 ).text
 
@@ -1130,6 +1132,7 @@ object StreamPlayExtractor : StreamPlay() {
                             "",
                             Qualities.P1080.value,
                             type = ExtractorLinkType.M3U8,
+                            headers = headers
                         )
                     )
 
@@ -3888,17 +3891,31 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
+        if (imdbId.isNullOrBlank()) return
+
         val searchUrl = "$fourthAPI/search?keyword=$imdbId"
-        val href = app.get(searchUrl).document.selectFirst("h2.film-name a")?.attr("href")
+
+        val href: String? = app.get(searchUrl)
+            .document
+            .selectFirst("h2.film-name a")
+            ?.attr("href")
             ?.let { fourthAPI + it }
-        val mediaId = href?.let {
-            app.get(it).document.selectFirst("h2.heading-name a")?.attr("href")
-                ?.substringAfterLast("/")?.toIntOrNull()
+
+        val mediaId: Int? = href?.let { url ->
+            app.get(url)
+                .document
+                .selectFirst("h2.heading-name a")
+                ?.attr("href")
+                ?.substringAfterLast("/")
+                ?.toIntOrNull()
         }
-        mediaId?.let {
-            invokeExternalSource(it, if (season == null) 1 else 2, season, episode, callback, token)
+
+        mediaId?.let { id ->
+            val seasonNumber = season ?: 1
+            invokeExternalSource(id, seasonNumber, season, episode, callback, token)
         }
     }
+
 
 
     suspend fun invokePlayer4U(

@@ -174,7 +174,7 @@ val json = """
                     mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
                 val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
                 val query = it.src.substringAfter("?id=").substringBefore("&")
-                val html = app.get("https://thingproxy.freeboard.io/fetch/${it.src}").toString()
+                val html = app.get(it.src).toString()
                 val (sig, timeStamp, route) = getSignature(html, it.name, query, key) ?: return@amap
                 val sourceurl = "$host$route?id=$query&e=$timeStamp&s=$sig"
                 val encjson = app.get(sourceurl, headers = headers).parsedSafe<Encrypted>()?.data
@@ -218,7 +218,10 @@ val json = """
             else
             if (it.name.contains("BirdStream"))
             {
+                val baseurl=getBaseUrl(it.src)
+
                 val headers = mapOf(
+                    "Origin" to baseurl,
                     "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
                 )
 
@@ -238,9 +241,10 @@ val json = """
                             "CatStream",
                             "CatStream DASH",
                             videoUrl,
-                            "",
+                            baseurl,
                             Qualities.P1080.value,
                             type = ExtractorLinkType.M3U8,
+                            headers = headers
                         )
                     )
 
@@ -265,11 +269,13 @@ val json = """
             }
             else
                 if (it.name.contains("CatStream")) {
+
+                    val baseurl=getBaseUrl(it.src)
                     val headers = mapOf(
+                        "Origin" to baseurl,
                         "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
                     )
-
-                    val res = app.get("https://thingproxy.freeboard.io/fetch/${it.src}", headers = headers).text
+                    val res = app.get(it.src, headers = headers).text
 
                     val regex = Regex("""props="(.*?)"""")
                     val match = regex.find(res)
@@ -285,9 +291,10 @@ val json = """
                                 "CatStream",
                                 "CatStream HLS",
                                 videoUrl,
-                                "",
+                                baseurl,
                                 Qualities.P1080.value,
                                 type = ExtractorLinkType.M3U8,
+                                headers = headers
                             )
                         )
 
