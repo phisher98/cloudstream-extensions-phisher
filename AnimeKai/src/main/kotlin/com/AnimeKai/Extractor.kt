@@ -1,216 +1,105 @@
 package com.AnimeKai
 
-import android.annotation.SuppressLint
-import android.os.Handler
-import android.os.Looper
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.AcraApplication.Companion.context
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
+import com.phisher98.BuildConfig
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 
-// Debug helper so logs are visible on TV
-object DebugLogger {
-    private const val TAG = "MegaUp"
-
-    fun d(message: String) {
-        Log.i(TAG, message) // use INFO so it shows on TV
-        println("[$TAG] $message") // also print to stdout
-    }
-
-    fun e(message: String, throwable: Throwable? = null) {
-        Log.e(TAG, message)
-        println("[$TAG][ERROR] $message ${throwable?.message ?: ""}")
-    }
-}
-
+//Thanks to https://github.com/AzartX47/EncDecEndpoints
 class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"
     override val requiresReferer = true
 
     companion object {
-        private fun extractLabelFromUrl(url: String): String {
-            val file = url.substringAfterLast("/")
-            return when (val code = file.substringBefore("_").lowercase()) {
-                "eng" -> "English"
-                "ger", "deu" -> "German"
-                "spa" -> "Spanish"
-                "fre", "fra" -> "French"
-                "ita" -> "Italian"
-                "jpn" -> "Japanese"
-                "chi", "zho" -> "Chinese"
-                "kor" -> "Korean"
-                "rus" -> "Russian"
-                "ara" -> "Arabic"
-                "hin" -> "Hindi"
-                "por" -> "Portuguese"
-                "vie" -> "Vietnamese"
-                "pol" -> "Polish"
-                "ukr" -> "Ukrainian"
-                "swe" -> "Swedish"
-                "ron", "rum" -> "Romanian"
-                "ell", "gre" -> "Greek"
-                "hun" -> "Hungarian"
-                "fas", "per" -> "Persian"
-                "tha" -> "Thai"
-                else -> code.uppercase()
-            }
-        }
+        private val HEADERS = mapOf(
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
+                "Accept" to "text/html, *//*; q=0.01",
+                "Accept-Language" to "en-US,en;q=0.5",
+                "Sec-GPC" to "1",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "same-origin",
+                "Priority" to "u=0",
+                "Pragma" to "no-cache",
+                "Cache-Control" to "no-cache",
+                "referer" to "https://animekai.to/",
+        )
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val urlsToProcess = listOf(url)
-        val ctx = context ?: return
 
-        for (currentUrl in urlsToProcess) {
-            val foundM3u8 = mutableListOf<String>()
+        val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
+        val displayName = referer ?: this.name
+        val encodedResult = runCatching {
+            app.get(mediaUrl, headers = HEADERS)
+                .parsedSafe<AnimeKaiResponse>()?.result
+        }.getOrNull()
+        val body = """
+        {
+        "text": "$encodedResult",
+        "agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0"
+        }
+        """.trimIndent()
+            .trim()
+            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+        val m3u8Data=app.post(BuildConfig.KAIDEC, requestBody = body).parsedSafe<AnimeKaiM3U8>()
+        if (m3u8Data == null) {
+            Log.d("Phisher", "Encoded result is null")
+            return
+        }
 
-            withContext(Dispatchers.Main) {
-                suspendCancellableCoroutine { cont ->
-                    DebugLogger.d("Starting WebView for: $currentUrl")
 
-                    val webView = WebView(ctx)
-                    webView.apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.mediaPlaybackRequiresUserGesture = true
-                        settings.loadWithOverviewMode = true
-                        settings.useWideViewPort = true
-                        settings.allowFileAccess = true
-                    }
+        m3u8Data.result.sources.firstOrNull()?.file?.let { m3u8 ->
+            M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
+        } ?: Log.d("Error:", "No sources found in M3U8 data")
 
-                    webView.webViewClient = object : WebViewClient() {
-                        private var lastUrlTime = System.currentTimeMillis()
-                        private val finishDelay = 10000L
-                        private var finished = false
-
-                        override fun shouldInterceptRequest(
-                            view: WebView?,
-                            request: WebResourceRequest?
-                        ): WebResourceResponse? {
-                            val reqUrl = request?.url?.toString()
-                            if (reqUrl != null) {
-                                handleRequest(reqUrl, subtitleCallback, foundM3u8)
-                            }
-                            return super.shouldInterceptRequest(view, request)
-                        }
-
-                        private fun handleRequest(
-                            url: String,
-                            subtitleCallback: (SubtitleFile) -> Unit,
-                            foundM3u8: MutableList<String>
-                        ) {
-                            DebugLogger.d("Intercepted: $url")
-
-                            when {
-                                url.endsWith(".m3u8") && !foundM3u8.contains(url) -> {
-                                    lastUrlTime = System.currentTimeMillis()
-                                    foundM3u8.add(url)
-                                    DebugLogger.d("M3U8 Found: $url")
-                                    runBlocking {
-                                        M3u8Helper.generateM3u8(referer ?: name, url, mainUrl)
-                                            .forEach { callback(it) }
-                                    }
-                                }
-                                url.endsWith(".vtt") && !url.contains("thumbnails", true) -> {
-                                    lastUrlTime = System.currentTimeMillis()
-                                    DebugLogger.d("Subtitle Found: $url")
-                                    subtitleCallback(
-                                        SubtitleFile(
-                                            extractLabelFromUrl(url),
-                                            url
-                                        )
-                                    )
-                                }
-                            }
-                        }
-
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            DebugLogger.d("Page finished loading: $url")
-
-                            view?.loadUrl(
-                                "javascript:(function(){" +
-                                        "var btn=document.querySelector('button, .vjs-big-play-button');" +
-                                        "if(btn)btn.click();" +
-                                        "})()"
-                            )
-
-                            val handler = Handler(Looper.getMainLooper())
-                            handler.post(object : Runnable {
-                                override fun run() {
-                                    if (finished) return
-
-                                    val idleTime = System.currentTimeMillis() - lastUrlTime
-
-                                    if (foundM3u8.isNotEmpty() && idleTime > 1000) {
-                                        finished = true
-                                        DebugLogger.d("Links found, finishing early for $currentUrl")
-                                        cont.resume(Unit)
-                                        webView.destroy()
-                                        return
-                                    }
-
-                                    if (idleTime > finishDelay) {
-                                        finished = true
-                                        DebugLogger.e("Timeout reached for $currentUrl")
-                                        cont.resume(Unit)
-                                        webView.destroy()
-                                        return
-                                    }
-
-                                    handler.postDelayed(this, 500)
-                                }
-                            })
-                        }
-                    }
-
-                    val html = """
-                        <html>
-                            <head><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
-                            <body style="margin:0;padding:0;overflow:hidden;">
-                                <iframe src="$currentUrl"
-                                    width="100%" height="100%" frameborder="0"
-                                    allow="autoplay; fullscreen">
-                                </iframe>
-                            </body>
-                        </html>
-                    """.trimIndent()
-
-                    DebugLogger.d("Loading HTML into WebView...")
-                    webView.loadDataWithBaseURL(
-                        AnimeKaiPlugin.currentAnimeKaiServer,
-                        html,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
-
-                    cont.invokeOnCancellation {
-                        DebugLogger.e("Coroutine cancelled for $currentUrl")
-                        webView.destroy()
-                    }
-                }
+        m3u8Data.result.tracks.forEach { track ->
+            track.label?.let {
+                subtitleCallback(SubtitleFile(it.trim(), track.file))
             }
         }
-    }
+      }
+
+    data class AnimeKaiResponse(
+        @JsonProperty("status") val status: Boolean,
+        @JsonProperty("result") val result: String
+    )
+
+
+
+    data class AnimeKaiM3U8(
+        val status: Long,
+        val result: AnimekaiResult,
+    )
+
+    data class AnimekaiResult(
+        val sources: List<AnimekaiSource>,
+        val tracks: List<AnimekaiTrack>,
+        val download: String,
+    )
+
+    data class AnimekaiSource(
+        val file: String,
+    )
+
+    data class AnimekaiTrack(
+        val file: String,
+        val kind: String,
+        val label: String? = null,
+        val default: Boolean? = null
+    )
+
 }
-
-

@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.JsonParser
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -13,6 +12,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -36,7 +36,6 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 
@@ -185,10 +184,7 @@ class AnimeKai : MainAPI() {
                 subEpisodes += newEpisode("sub|" + ep.attr("token")) {
                     name = ep.selectFirst("span")?.text()
                     episode = episodeNum
-                    rating = episodeData?.get("rating")?.asDouble
-                        ?.times(10)
-                        ?.roundToInt()
-                        ?: 0
+                    score = Score.from10(episodeData?.get("rating")?.asDouble)
                     posterUrl = episodeData?.get("image")?.asString
                     description = episodeData?.get("overview")?.asString ?: "No summary available"
                 }
@@ -205,10 +201,7 @@ class AnimeKai : MainAPI() {
                     dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
                         name = ep.selectFirst("span")?.text()
                         episode = dubEpisodeNum
-                        rating = episodeData?.get("rating")?.asDouble
-                            ?.times(10)
-                            ?.roundToInt()
-                            ?: 0
+                        score = Score.from10(episodeData?.get("rating")?.asDouble)
                         posterUrl = episodeData?.get("image")?.asString
                         description = episodeData?.get("overview")?.asString ?: "No summary available"
                     }
