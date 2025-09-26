@@ -1206,6 +1206,7 @@ object StreamPlayExtractor : StreamPlay() {
             Log.e("UHDMovies", "Main page load failed: ${e.localizedMessage}")
             return
         }
+        Log.d("UHDMovies","I'm here".toString())
 
         val seasonPattern = season?.let { "(?i)(S0?$it|Season 0?$it)" }
         val episodePattern = episode?.let { "(?i)(Episode $it)" }
@@ -1225,36 +1226,36 @@ object StreamPlayExtractor : StreamPlay() {
         val links = doc.select(selector).mapNotNull {
             it.nextElementSibling()?.select(epSelector)?.attr("href")
         }
+        try {
+            for (link in links) {
+                if (link.isBlank()) {
+                    continue
+                }
+                val finalLink = if (link.contains("unblockedgames")) {
+                    bypassHrefli(link)
+                } else {
+                    link
+                }
 
-        for (link in links) {
-            try {
-                if (link.isNotEmpty()) {
-                    val finalLink = if (link.contains("unblockedgames")) {
-                        bypassHrefli(link)
+                if (!finalLink.isNullOrBlank()) {
+                    val response = app.get(finalLink)
+                    if (response.code == 200) {
+                        loadSourceNameExtractor(
+                            "UHDMovies",
+                            finalLink,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
                     } else {
-                        link
+                        Log.e("UHDMovies", "Link returned ${response.code}: $finalLink")
+                        continue
                     }
-
-                    if (!finalLink.isNullOrBlank()) {
-                        val response = app.get(finalLink)
-                        if (response.code == 200) {
-                            loadSourceNameExtractor(
-                                "UHDMovies",
-                                finalLink,
-                                "",
-                                subtitleCallback,
-                                callback
-                            )
-                        } else {
-                            Log.e("UHDMovies", "Link returned ${response.code}: $finalLink")
-                            return
-                        }
-                    } else return
-                } else return
-            } catch (e: Exception) {
-                Log.e("UHDMovies", "Link processing error: ${e.localizedMessage}")
-                return
+                }
             }
+        } catch (e: Exception) {
+            Log.e("UHDMovies", "Link processing error: ${e.localizedMessage}")
+            return
         }
     }
 
