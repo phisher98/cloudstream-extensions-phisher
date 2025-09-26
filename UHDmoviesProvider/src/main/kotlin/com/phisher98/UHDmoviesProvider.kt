@@ -7,17 +7,18 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import okhttp3.FormBody
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Document
 import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://uhdmovies.tube"
+    override var mainUrl: String = runBlocking {
+        UHDmoviesProviderPlugin.getDomains()?.UHDMovies ?: "https://uhdmovies.rip"
+    }
     override var name = "UHDmovies"
     override val hasMainPage = true
     override var lang = "en"
@@ -26,23 +27,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         TvType.Movie,
         TvType.TvSeries
     )
-
-    companion object {
-        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
-        private var cachedDomains: DomainsParser? = null
-
-        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
-            if (cachedDomains == null || forceRefresh) {
-                try {
-                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return null
-                }
-            }
-            return cachedDomains
-        }
-    }
 
     override val mainPage = mainPageOf(
         "" to "Home",
@@ -68,11 +52,10 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val uhdmoviesAPI = getDomains()?.uhdmovies
         val document = if (page == 1) {
-            cfKiller("$uhdmoviesAPI/${request.data}").document
+            cfKiller("$mainUrl/${request.data}").document
         } else {
-            cfKiller("$uhdmoviesAPI/${request.data}" + "/page/$page/").document
+            cfKiller("$mainUrl/${request.data}" + "/page/$page/").document
         }
 
         //Log.d("Document", document.toString())
@@ -103,8 +86,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val uhdmoviesAPI = getDomains()?.uhdmovies
-        val document = cfKiller("$uhdmoviesAPI?s=$query ").document
+        val document = cfKiller("$mainUrl?s=$query ").document
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
@@ -228,54 +210,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         return this.select("div.text-center a:contains(Server $server)").attr("href")
     }
 
-    suspend fun extractMirrorUHD(url: String, ref: String): String? {
-        var baseDoc = app.get(fixUrl(url, ref)).document
-        var downLink = baseDoc.getMirrorLink()
-        run lit@{
-            (1..2).forEach {
-                if (downLink != null) return@lit
-                val server = baseDoc.getMirrorServer(it.plus(1))
-                baseDoc = app.get(fixUrl(server, ref)).document
-                downLink = baseDoc.getMirrorLink()
-            }
-        }
-        return if (downLink?.contains("workers.dev") == true) downLink else base64Decode(
-            downLink?.substringAfter(
-                "download?url="
-            ) ?: return null
-        )
-    }
-
-
-    suspend fun extractBackupUHD(url: String): String? {
-        val resumeDoc = app.get(url)
-
-        val script = resumeDoc.document.selectFirst("script:containsData(FormData.)")?.data()
-
-        val ssid = resumeDoc.cookies["PHPSESSID"]
-        val baseIframe = getBaseUrl(url)
-        val fetchLink =
-            script?.substringAfter("fetch('")?.substringBefore("',")?.let { fixUrl(it, baseIframe) }
-        val token = script?.substringAfter("'token', '")?.substringBefore("');")
-
-        val body = FormBody.Builder()
-            .addEncoded("token", "$token")
-            .build()
-        val cookies = mapOf("PHPSESSID" to "$ssid")
-
-        val result = app.post(
-            fetchLink ?: return null,
-            requestBody = body,
-            headers = mapOf(
-                "Accept" to "*/*",
-                "Origin" to baseIframe,
-                "Sec-Fetch-Site" to "same-origin"
-            ),
-            cookies = cookies,
-            referer = url
-        ).text
-        return tryParseJson<UHDBackupUrl>(result)?.url
-    }
 
     data class UHDBackupUrl(
         @JsonProperty("url") val url: String? = null,

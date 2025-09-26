@@ -23,13 +23,16 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
 
 class HDhub4uProvider : MainAPI() {
-    override var mainUrl = "https://hdhub4u.menu"
+    override var mainUrl: String = runBlocking {
+        HDhub4uPlugin.getDomains()?.HDHUB4u ?: "https://hdhub4u.menu"
+    }
     override var name = "HDHub4U"
     override var lang = "hi"
     override val hasMainPage = true
@@ -51,30 +54,11 @@ class HDhub4uProvider : MainAPI() {
     private val headers =
         mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0","Cookie" to "xla=s4t")
 
-    companion object {
-        private const val DOMAINS_URL =
-            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
-        private var cachedDomains: Domains? = null
-
-        suspend fun getDomains(forceRefresh: Boolean = false): Domains? {
-            if (cachedDomains == null || forceRefresh) {
-                try {
-                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<Domains>()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return null
-                }
-            }
-            return cachedDomains
-        }
-    }
-
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        val newMainUrl = getDomains()?.hdhub4u
         val doc = app.get(
-            "$newMainUrl/${request.data}page/$page/",
+            "$mainUrl/${request.data}page/$page/",
             cacheTime = 60,
             headers = headers,
             allowRedirects = true
@@ -93,9 +77,8 @@ class HDhub4uProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val newMainUrl = getDomains()?.hdhub4u
         val doc = app.get(
-            "$newMainUrl/?s=$query",
+            "$mainUrl/?s=$query",
             cacheTime = 60,
             headers = headers
         ).document
@@ -215,7 +198,7 @@ class HDhub4uProvider : MainAPI() {
                                     Log.w(TAG, "Could not parse episode number from: $text")
                                 }
                             }
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             Log.e(TAG, "Error resolving direct link for URL: $url")
                         }
                     }

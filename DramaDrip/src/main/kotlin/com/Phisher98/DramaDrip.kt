@@ -12,10 +12,13 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 
 class DramaDrip : MainAPI() {
-    override var mainUrl = "https://dramadrip.com"
+    override var mainUrl: String = runBlocking {
+        DramaDripProvider.getDomains()?.dramadrip ?: "https://dramadrip.com"
+    }
     override var name = "DramaDrip"
     override val hasMainPage = true
     override var lang = "en"
@@ -23,24 +26,6 @@ class DramaDrip : MainAPI() {
     override val hasQuickSearch = true
     override val supportedTypes = setOf(TvType.Movie, TvType.AsianDrama, TvType.TvSeries)
     private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
-
-    companion object {
-        private const val DOMAINS_URL =
-            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
-        private var cachedDomains: DomainsParser? = null
-
-        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
-            if (cachedDomains == null || forceRefresh) {
-                try {
-                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return null
-                }
-            }
-            return cachedDomains
-        }
-    }
 
     override val mainPage = mainPageOf(
         "drama/ongoing" to "Ongoing Dramas",
@@ -91,8 +76,7 @@ class DramaDrip : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val dramadripAPI = getDomains()?.dramadrip
-        val document = app.get("$dramadripAPI/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").document
         val results = document.select("article").mapNotNull {
             it.toSearchResult()
         }
@@ -241,7 +225,7 @@ class DramaDrip : MainAPI() {
                                         )
                                     }
                                 }
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 Log.e("EpisodeFetch", "Failed to load or parse $qualityPageLink")
                             }
                         }
@@ -315,7 +299,7 @@ class DramaDrip : MainAPI() {
                 } else {
                     Log.w("LoadLinks", "Bypass returned null for link: $link")
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Log.e("LoadLinks", "Failed to load link: $link")
             }
         }
