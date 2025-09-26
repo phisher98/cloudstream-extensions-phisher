@@ -299,9 +299,9 @@ class MPlayer : MainAPI() {
 
                 do {
                     val apiUrl = if (nextQuery == null) {
-                        "$webApi/detail/tab/tvshowepisodes?type=season&id=$seasonId&sortOrder=0&device-density=2&userid=6808add7-715f-4c34-8025-5e668afd31da&platform=com.mxplay.desktop&content-languages=hi,en&kids-mode-enabled=false"
+                        "$webApi/detail/tab/tvshowepisodes?type=season&id=$seasonId&sortOrder=0$endParam"
                     } else {
-                        "$webApi/detail/tab/tvshowepisodes?type=season&$nextQuery&id=$seasonId&sortOrder=0&device-density=2&userid=6808add7-715f-4c34-8025-5e668afd31da&platform=com.mxplay.desktop&content-languages=hi,en&kids-mode-enabled=false"
+                        "$webApi/detail/tab/tvshowepisodes?type=season&$nextQuery&id=$seasonId&sortOrder=0&$endParam"
                     }
                     val jsonResponse = app.get(apiUrl).text
 
