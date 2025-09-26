@@ -9,15 +9,17 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import java.util.Calendar
 
 open class Hdmovie2 : Movierulzhd() {
 
-    override var mainUrl = "https://hdmovie2.partners"
+    override var mainUrl: String = runBlocking {
+        MovierulzhdPlugin.getDomains()?.hdmovie2 ?: "https://hdmovie2.cooking"
+    }
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
-        "trending" to "Trending",
         "release/${Calendar.getInstance().get(Calendar.YEAR)}" to "Latest",
         "movies" to "Movies",
         "genre/hindi-webseries" to "Hindi Web Series",
@@ -77,8 +79,6 @@ open class Hdmovie2 : Movierulzhd() {
                 .map { it.attr("data-nume") }
                 .amap { nume ->
                     val source = fetchSource(id, nume, type)
-                    Log.d("Phisher source 2",source)
-
                     when {
                         source.contains("ok.ru") -> {
                             loadExtractor("https:$source", "$directUrl/", subtitleCallback, callback)
