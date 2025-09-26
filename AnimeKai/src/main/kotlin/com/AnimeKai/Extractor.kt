@@ -43,10 +43,13 @@ class MegaUp : ExtractorApi() {
 
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val displayName = referer ?: this.name
-        val encodedResult = runCatching {
-            app.get(mediaUrl, headers = HEADERS)
-                .parsedSafe<AnimeKaiResponse>()?.result
-        }.getOrNull()
+        
+        val encodedResult = app.get(mediaUrl, headers = HEADERS)
+        .parsedSafe<AnimeKaiResponse>()
+        ?.result
+
+        if (encodedResult == null) return
+
         val body = """
         {
         "text": "$encodedResult",
@@ -74,11 +77,9 @@ class MegaUp : ExtractorApi() {
       }
 
     data class AnimeKaiResponse(
-        @JsonProperty("status") val status: Boolean,
+        @JsonProperty("status") val status: Int,
         @JsonProperty("result") val result: String
     )
-
-
 
     data class AnimeKaiM3U8(
         val status: Long,
