@@ -2053,86 +2053,86 @@ data class BeamupMeta(
 // CinemetaRes
 
 data class CinemetaRes(
-    val meta: Meta
+    val meta: Meta? = null
 ) {
     data class Meta(
-        val awards: String,
-        val background: String,
-        val behaviorHints: BehaviorHints,
-        val cast: List<String>,
-        val country: String,
-        val description: String,
-        val director: Any,
-        val dvdRelease: Any,
-        val genre: List<String>,
-        val genres: List<String>,
-        val id: String,
-        val imdbRating: String,
-        val imdb_id: String,
-        val links: List<Link>,
-        val logo: String,
-        val moviedb_id: Int,
-        val name: String,
-        val popularities: Popularities,
-        val popularity: Double,
-        val poster: String,
-        val releaseInfo: String,
-        val released: String,
-        val runtime: String,
-        val slug: String,
-        val status: String,
-        val trailerStreams: List<TrailerStream>,
-        val trailers: List<Trailer>,
-        val tvdb_id: String,
-        val type: String,
-        val videos: List<Video>,
-        val writer: Any,
-        val year: String
+        val awards: String? = null,
+        val background: String? = null,
+        val behaviorHints: BehaviorHints? = null,
+        val cast: List<String>? = null,
+        val country: String? = null,
+        val description: String? = null,
+        val director: Any? = null,
+        val dvdRelease: Any? = null,
+        val genre: List<String>? = null,
+        val genres: List<String>? = null,
+        val id: String? = null,
+        val imdbRating: String? = null,
+        val imdb_id: String? = null,
+        val links: List<Link>? = null,
+        val logo: String? = null,
+        val moviedb_id: Int? = null,
+        val name: String? = null,
+        val popularities: Popularities? = null,
+        val popularity: Double? = null,
+        val poster: String? = null,
+        val releaseInfo: String? = null,
+        val released: String? = null,
+        val runtime: String? = null,
+        val slug: String? = null,
+        val status: String? = null,
+        val trailerStreams: List<TrailerStream>? = null,
+        val trailers: List<Trailer>? = null,
+        val tvdb_id: String? = null,
+        val type: String? = null,
+        val videos: List<Video>? = null,
+        val writer: Any? = null,
+        val year: String? = null
     ) {
         data class BehaviorHints(
-            val defaultVideoId: Any,
-            val hasScheduledVideos: Boolean
+            val defaultVideoId: Any? = null,
+            val hasScheduledVideos: Boolean? = null
         )
 
         data class Link(
-            val category: String,
-            val name: String,
-            val url: String
+            val category: String? = null,
+            val name: String? = null,
+            val url: String? = null
         )
 
         data class Popularities(
-            val ALLIANCE: Int,
-            val EJD: Int,
-            val EXMD: Int,
-            val PXS_TEST: Int,
-            val moviedb: Double,
-            val stremio: Double,
-            val stremio_lib: Int,
-            val trakt: Int
+            val ALLIANCE: Int? = null,
+            val EJD: Int? = null,
+            val EXMD: Int? = null,
+            val PXS_TEST: Int? = null,
+            val moviedb: Double? = null,
+            val stremio: Double? = null,
+            val stremio_lib: Int? = null,
+            val trakt: Int? = null
         )
 
         data class TrailerStream(
-            val title: String,
-            val ytId: String
+            val title: String? = null,
+            val ytId: String? = null
         )
 
         data class Trailer(
-            val source: String,
-            val type: String
+            val source: String? = null,
+            val type: String? = null
         )
 
         data class Video(
-            val episode: Int,
-            val firstAired: String,
-            val id: String,
-            val name: String,
-            val number: Int,
-            val rating: String,
-            val released: String,
-            val season: Int,
-            val thumbnail: String,
-            val tvdb_id: Int,
-            val description: String
+            val episode: Int? = null,
+            val firstAired: String? = null,
+            val id: String? = null,
+            val name: String? = null,
+            val number: Int? = null,
+            val rating: String? = null,
+            val released: String? = null,
+            val season: Int? = null,
+            val thumbnail: String? = null,
+            val tvdb_id: Int? = null,
+            val description: String? = null
         )
     }
 }

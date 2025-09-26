@@ -403,7 +403,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                                 aniId = null,
                                 animeId = null,
                                 title = title,
-                                year = video.released.split("-").firstOrNull()?.toIntOrNull(),
+                                year = video.released?.split("-")?.firstOrNull()?.toIntOrNull() ?: cinejson.meta.year?.toIntOrNull() ?: 0,
                                 orgTitle = orgTitle,
                                 isAnime = true,
                                 airedYear = year,
@@ -423,7 +423,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             this.season = video.season
                             this.episode = video.number
                             this.posterUrl = video.thumbnail
-                            this.rating = video.rating.toIntOrNull()
+                            this.rating = video.rating?.toIntOrNull()
                             this.description = video.description
                         }.apply {
                             this.addDate(video.released)
