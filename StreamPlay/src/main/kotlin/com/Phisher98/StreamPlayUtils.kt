@@ -48,6 +48,7 @@ import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import kotlin.experimental.xor
+import kotlin.math.max
 
 
 var sfServer: String? = null
@@ -1879,13 +1880,41 @@ fun vidrockEncode(tmdb: String, type: String, season: Int? = null, episode: Int?
     return doubleEncode
 }
 
-fun cinemaOSGenerateHash(t: CinemaOsSecretKeyRequest, s: String): String {
-    val data = "media|episodeId:${t.episodeId}|seasonId:${t.seasonId}|tmdbId:${t.tmdbId}"
-    val secretKey = SecretKeySpec(s.toByteArray(Charsets.UTF_8), "HmacSHA256")
-    val mac = Mac.getInstance("HmacSHA256")
-    mac.init(secretKey)
-    val hashBytes = mac.doFinal(data.toByteArray(Charsets.UTF_8))
-    return bytesToHex(hashBytes)
+fun generateHashedString(): String {
+    val s = "a8f7e9c2d4b6a1f3e8c9d2b4a7f6e9c2d4b6a1f3e8c9d2b4a7f6e9c2d4b6a1f3"
+    val a = "2"
+    val algorithm = "HmacSHA512"
+    val keySpec = SecretKeySpec(s.toByteArray(StandardCharsets.UTF_8), algorithm)
+    val mac = Mac.getInstance(algorithm)
+    mac.init(keySpec)
+
+    val input = "crypto_rotation_v${a}_seed_2025"
+    val hmacBytes = mac.doFinal(input.toByteArray(StandardCharsets.UTF_8))
+    val hex = hmacBytes.joinToString("") { "%02x".format(it) }
+
+    val repeated = hex.repeat(3)
+    val result = repeated.substring(0, max(s.length, 128))
+
+    return result
+}
+
+fun cinemaOSGenerateHash(t: CinemaOsSecretKeyRequest,isSeries: Boolean): String {
+    val c = generateHashedString()
+
+    val m: String = if (isSeries) "content_v3::contentId=${t.tmdbId}::partId=${t.episodeId}::seriesId=${t.seasonId}::environment=production" else "content_v3::contentId=${t.tmdbId}::environment=production"
+
+
+    val hmac384 = Mac.getInstance("HmacSHA384")
+    hmac384.init(SecretKeySpec(c.toByteArray(Charsets.UTF_8), "HmacSHA384"))
+    hmac384.update(m.toByteArray(Charsets.UTF_8))
+    val x = hmac384.doFinal().joinToString("") { "%02x".format(it) }
+
+    val hmac512 = Mac.getInstance("HmacSHA512")
+    hmac512.init(SecretKeySpec(x.toByteArray(Charsets.UTF_8), "HmacSHA512"))
+    hmac512.update(c.takeLast(64).toByteArray(Charsets.UTF_8))
+    val finalDigest = hmac512.doFinal().joinToString("") { "%02x".format(it) }
+
+    return finalDigest
 }
 
 // Helper function to convert byte array to hex string
