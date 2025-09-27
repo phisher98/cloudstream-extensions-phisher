@@ -1,22 +1,30 @@
 package com.phisher98
 
 import android.util.Base64
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newLiveSearchResponse
+import com.lagradost.cloudstream3.newLiveStreamLoadResponse
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.CLEARKEY_UUID
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newDrmExtractorLink
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import okhttp3.Interceptor
 import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.util.UUID
 
 class IndianTVPlugin : MainAPI() {
     override var lang = "hi"
@@ -29,10 +37,11 @@ class IndianTVPlugin : MainAPI() {
     )
 
     private val mainUrls = listOf(
-        "https://raw.githubusercontent.com/alex4528/m3u/refs/heads/main/artl.m3u",
-        "https://raw.githubusercontent.com/alex4528/m3u/refs/heads/main/z5.m3u",
-        "https://raw.githubusercontent.com/alex4528/m3u/main/jstar.m3u",
-        "https://raw.githubusercontent.com/bugsfreeweb/LiveTVCollector/refs/heads/main/LiveTV/India/LiveTV.m3u"
+        base64Decode("aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2t1bndhcnhzaGFzaGFuay9yb2dwbGF5X2FkZG9ucy9yZWZzL2hlYWRzL21haW4vbGl2ZXR2L2RhdGEvbXhwbGF5Lm0zdQ=="),
+        base64Decode("aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2t1bndhcnhzaGFzaGFuay9yb2dwbGF5X2FkZG9ucy9yZWZzL2hlYWRzL21haW4vbGl2ZXR2L2RhdGEveXVwcHR2Lm0zdQ=="),
+        base64Decode("aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2RybWxpdmUvZmFuY29kZS1saXZlLWV2ZW50cy9yZWZzL2hlYWRzL21haW4vZmFuY29kZS5tM3U="),
+        base64Decode("aHR0cHM6Ly9saXZlLmRpbmVzaDI5LmNvbS5ucC9qaW90dnBsdXMubTN1"),
+        base64Decode("aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL2t1bndhcnhzaGFzaGFuay9yb2dwbGF5X2FkZG9ucy9yZWZzL2hlYWRzL21haW4vbGl2ZXR2L2RhdGEvc29ueWxpdi5tM3U=")
     )
 
     // ✅ Fetch and combine all playlists
@@ -214,16 +223,31 @@ class IptvPlaylistParser {
             if (trimmedLine.isEmpty()) return@forEachLine
 
             when {
+                // --- LICENSE KEY ---
                 trimmedLine.startsWith("#KODIPROP:inputstream.adaptive.license_key=") -> {
                     val license = trimmedLine.substringAfter("=")
-                    val parts = license.split(":")
-                    if (parts.size == 2) {
-                        currentKeyId = parts[0]
-                        currentKey = parts[1]
+
+                    if (license.startsWith("http")) {
+                        // handle URL license_key with keyid & key in query
+                        val query = license.substringAfter("?", "")
+                        val params = query.split("&").mapNotNull {
+                            val parts = it.split("=")
+                            if (parts.size == 2) parts[0] to URLDecoder.decode(parts[1], "UTF-8") else null
+                        }.toMap()
+
+                        currentKeyId = params["keyid"]
+                        currentKey = params["key"]
+                    } else {
+                        // fallback: keyid:key
+                        val parts = license.split(":")
+                        if (parts.size == 2) {
+                            currentKeyId = parts[0]
+                            currentKey = parts[1]
+                        }
                     }
                 }
 
-
+                // --- CHANNEL INFO ---
                 trimmedLine.startsWith(EXT_INF) -> {
                     currentTitle = trimmedLine.getTitle()
                     currentAttributes = trimmedLine.getAttributes()
@@ -232,7 +256,7 @@ class IptvPlaylistParser {
                     currentHeaders = emptyMap()
                 }
 
-
+                // --- VLC OPTS (UA / REFERRER) ---
                 trimmedLine.startsWith(EXT_VLC_OPT) -> {
                     val userAgent = trimmedLine.getTagValue("http-user-agent")
                     val referrer = trimmedLine.getTagValue("http-referrer")
@@ -243,19 +267,37 @@ class IptvPlaylistParser {
                     }
                 }
 
+                // --- EXTHTTP (JSON COOKIES etc.) ---
+                trimmedLine.startsWith("#EXTHTTP:") -> {
+                    val json = trimmedLine.substringAfter("#EXTHTTP:")
+                    try {
+                        val map = parseJson<Map<String, String>>(json)
+                        currentHeaders = currentHeaders + map
+                    } catch (_: Exception) {
+                        // ignore bad JSON
+                    }
+                }
+
+                // --- URL LINE ---
                 !trimmedLine.startsWith("#") -> {
                     val url = trimmedLine.getUrl()
                     val uaParam = trimmedLine.getUrlParameter("user-agent")
                     val refParam = trimmedLine.getUrlParameter("referer")
+
                     val key = trimmedLine.getUrlParameter("key") ?: currentKey
                     val keyid = trimmedLine.getUrlParameter("keyid") ?: currentKeyId
+
+                    // parse inline ||cookie=
+                    val cookie = trimmedLine.substringAfter("||cookie=", "")
 
                     val combinedUserAgent = uaParam ?: currentUserAgent
                     val ref = refParam ?: currentReferrer
 
-                    val urlHeaders = if (ref != null) {
-                        currentHeaders + mapOf("referrer" to ref)
-                    } else currentHeaders
+                    val urlHeaders = buildMap {
+                        putAll(currentHeaders)
+                        if (cookie.isNotEmpty()) put("cookie", cookie)
+                        if (!ref.isNullOrEmpty()) put("referrer", ref)
+                    }
 
                     if (currentTitle != null) {
                         val finalAttributes = currentAttributes.toMutableMap().apply {
@@ -276,11 +318,14 @@ class IptvPlaylistParser {
                         )
                     }
 
+                    // reset state
                     currentTitle = null
                     currentAttributes = emptyMap()
                     currentUserAgent = null
                     currentReferrer = null
                     currentHeaders = emptyMap()
+                    currentKey = null
+                    currentKeyId = null
                 }
             }
         }
