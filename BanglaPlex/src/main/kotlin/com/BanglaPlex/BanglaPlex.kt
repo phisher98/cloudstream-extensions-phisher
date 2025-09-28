@@ -4,9 +4,12 @@ import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.runBlocking
 
 class Banglaplex : MainAPI() {
-    override var mainUrl              = "https://banglaplex.cfd"
+    override var mainUrl: String = runBlocking {
+        BanglaPlexProvider.getDomains()?.banglaplex ?: "https://banglaplex.top"
+    }
     override var name                 = "Banglaplex"
     override val hasMainPage          = true
     override var lang                 = "bn"
@@ -104,13 +107,13 @@ class Banglaplex : MainAPI() {
         val document = app.get(data).document
         document.select("div.video-embed-container > iframe").attr("src").let {
             loadExtractor(it,mainUrl,subtitleCallback, callback) }
-        val DownloadURLs=document.select("#download a ").attr("href")
-         if (DownloadURLs.isNotEmpty())
+        val downloadURLs=document.select("#download a ").attr("href")
+         if (downloadURLs.isNotEmpty())
          {
-            val tokenres= app.get(DownloadURLs).document
-            val csrf_token=tokenres.selectFirst("form input")?.attr("name")
-            val csrf_token_vakue=tokenres.selectFirst("form input")?.attr("name")
-            app.post(DownloadURLs, data = mapOf("$csrf_token" to "$csrf_token_vakue")).document.select("div.row > div.col-sm-8 > a").amap {
+            val tokenres= app.get(downloadURLs).document
+            val csrftoken=tokenres.selectFirst("form input")?.attr("name")
+            val csrftokenvakue=tokenres.selectFirst("form input")?.attr("name")
+            app.post(downloadURLs, data = mapOf("$csrftoken" to "$csrftokenvakue")).document.select("div.row > div.col-sm-8 > a").amap {
                 val href=it.attr("href")
                 if (href.contains("xcloud",ignoreCase = true))
                 {
