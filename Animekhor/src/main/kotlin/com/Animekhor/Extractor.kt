@@ -9,13 +9,10 @@ import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
-
-class Server1uns : VidStack() {
-    override var name = "Vidstack"
-    override var mainUrl = "https://server1.uns.bio"
-    override var requiresReferer = true
-}
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class embedwish : StreamWishExtractor() {
     override var mainUrl = "https://embedwish.com"
@@ -66,9 +63,23 @@ open class Rumble : ExtractorApi() {
         val sourceRegex = """"file"\s*:\s*"(https:[^"]+\.(?:mp4|m3u8)[^"]*)"""".toRegex()
         val sources = sourceRegex.findAll(playerScript)
 
-        for (source in sources) {
+        for ((index, source) in sources.withIndex()) {
+            val index = index + 1
             val fileUrl = source.groupValues[1].replace("\\/", "/")
-            M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
+            if (fileUrl.contains(".mp4"))
+            {
+                callback.invoke(
+                    newExtractorLink(
+                        name,
+                        "$name Video Server $index",
+                        url = fileUrl,
+                        INFER_TYPE
+                    ) {
+                        this.referer = ""
+                        this.quality = getQualityFromName("")
+                    }
+                )
+            } else M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
             val fallback="${mainUrl}/hls-vod/${url.substringAfter("/embed/v").substringBefore("/")}/playlist.m3u8?u=0&b=0"
             M3u8Helper.generateM3u8(name, fallback, mainUrl).forEach(callback)
         }

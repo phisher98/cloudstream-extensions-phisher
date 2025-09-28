@@ -145,14 +145,13 @@ open class Donghuastream : MainAPI() {
             val label = option.text().trim()
             val decodedHtml = try {
                 base64Decode(base64)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Log.w("Error", "Base64 decode failed: $base64")
                 continue
             }
 
             val iframeUrl = Jsoup.parse(decodedHtml).selectFirst("iframe")?.attr("src")?.let(::httpsify)
             if (iframeUrl.isNullOrEmpty()) continue
-
             when {
                 "vidmoly" in iframeUrl -> {
                     val cleanedUrl = "http:" + iframeUrl.substringAfter("=\"").substringBefore("\"")

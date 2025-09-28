@@ -134,9 +134,23 @@ class Rumble : ExtractorApi() {
         val sourceRegex = """"file"\s*:\s*"(https:[^"]+\.(?:mp4|m3u8)[^"]*)"""".toRegex()
         val sources = sourceRegex.findAll(playerScript)
 
-        for (source in sources) {
+        for ((index, source) in sources.withIndex()) {
+            val index = index + 1
             val fileUrl = source.groupValues[1].replace("\\/", "/")
-            M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
+            if (fileUrl.contains(".mp4"))
+            {
+                callback.invoke(
+                    newExtractorLink(
+                        name,
+                        "$name Video Server $index",
+                        url = fileUrl,
+                        INFER_TYPE
+                    ) {
+                        this.referer = ""
+                        this.quality = getQualityFromName("")
+                    }
+                )
+            } else M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
         }
 
         // Extract subtitle tracks
