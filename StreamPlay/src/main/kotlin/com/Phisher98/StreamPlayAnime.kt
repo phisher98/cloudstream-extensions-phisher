@@ -1,15 +1,6 @@
 package com.phisher98
 
-import com.phisher98.StreamPlay.Companion.anilistAPI
-import com.phisher98.StreamPlay.Companion.malsyncAPI
-import com.phisher98.StreamPlayExtractor.invokeAnimeKai
-import com.phisher98.StreamPlayExtractor.invokeAnimepahe
-import com.phisher98.StreamPlayExtractor.invokeAnizone
-import com.phisher98.StreamPlayExtractor.invokeAnimetosho
-import com.phisher98.StreamPlayExtractor.invokeHianime
-import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -21,6 +12,7 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addEpisodes
@@ -37,7 +29,6 @@ import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
-import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.RecommendationConnection
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.SeasonNextAiringEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Title
@@ -45,12 +36,19 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlay.Companion.anilistAPI
+import com.phisher98.StreamPlay.Companion.malsyncAPI
 import com.phisher98.StreamPlayExtractor.invokeAniXL
 import com.phisher98.StreamPlayExtractor.invokeAnichi
+import com.phisher98.StreamPlayExtractor.invokeAnimeKai
+import com.phisher98.StreamPlayExtractor.invokeAnimepahe
+import com.phisher98.StreamPlayExtractor.invokeAnimetosho
+import com.phisher98.StreamPlayExtractor.invokeAnizone
+import com.phisher98.StreamPlayExtractor.invokeHianime
+import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
-import kotlin.math.roundToInt
 
 class StreamPlayAnime : MainAPI() {
     override var name = "StreamPlay-Anime"
@@ -153,14 +151,13 @@ class StreamPlayAnime : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data = anilistAPICall(
-            "query (\$id: Int = $id) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+            "query (\$id: Int = $id) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
         ).data.media ?: throw Exception("Unable to fetch media details")
 
         val anititle = data.getTitle()
         val aniyear = data.startDate.year
         val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
-
         val jpTitle = data.title.romaji
         val animeData = if (ids.id != null) {
             val syncData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
@@ -192,13 +189,11 @@ class StreamPlayAnime : MainAPI() {
             newEpisode(linkData) {
                 this.season = 1
                 this.episode = i
+                this.name = animeData?.episodes?.get(episode?.toString() ?: return@newEpisode)?.title?.get("en")
                 this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
                 this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                this.rating = animeData.episodes[episode?.toString()]?.rating
-                    ?.toDoubleOrNull()
-                    ?.times(10)
-                    ?.roundToInt()
-                    ?: 0
+                this.score = Score.from10(animeData.episodes[episode?.toString()]?.rating)
+                this.runTime = animeData.episodes.get(episode?.toString() ?: return@newEpisode)?.runtime
             }
         }
 
@@ -211,6 +206,7 @@ class StreamPlayAnime : MainAPI() {
                 this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
                 this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
                 this.tags = data.genres
+                this.score = Score.from100(data.averageScore)
             }
         } else {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
@@ -219,12 +215,11 @@ class StreamPlayAnime : MainAPI() {
                 addEpisodes(DubStatus.Subbed, episodes)
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl =
-                    animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
-                        ?: data.bannerImage
-                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
-                    ?: data.getCoverImage()
+                this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
                 this.tags = data.genres
+                this.score = Score.from100(data.averageScore)
+                this.showStatus = getStatus(data.status)
                 this.recommendations = data.recommendations?.edges
                     ?.mapNotNull { edge ->
                         val recommendation = edge.node.mediaRecommendation ?: return@mapNotNull null
@@ -284,6 +279,12 @@ class StreamPlayAnime : MainAPI() {
         return true
     }
 
+    fun getStatus(t: String?): ShowStatus {
+        return when (t) {
+            "Returning Series" -> ShowStatus.Ongoing
+            else -> ShowStatus.Completed
+        }
+    }
 
     data class AnilistAPIResponse(
         @JsonProperty("data") val data: AnilistData,
@@ -305,6 +306,8 @@ class StreamPlayAnime : MainAPI() {
             @JsonProperty("title") val title: Title,
             @JsonProperty("season") val season: String?,
             @JsonProperty("genres") val genres: List<String>,
+            @JsonProperty("averageScore") val averageScore: Int,
+            @JsonProperty("status") val status: String,
             @JsonProperty("description") val description: String?,
             @JsonProperty("coverImage") val coverImage: CoverImage,
             @JsonProperty("bannerImage") val bannerImage: String?,
