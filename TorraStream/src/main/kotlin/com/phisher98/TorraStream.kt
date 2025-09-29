@@ -6,17 +6,12 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     override var name = "TorraStream"
@@ -28,7 +23,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     override val hasQuickSearch = false
 
     companion object {
-        const val TorrentioAPI = "https://torrentio.strem.fun/sort=seeders%7Climit=60"
         const val OnethreethreesevenxAPI = "https://proxy.phisher2.workers.dev/?url=https://1337x.to"
         const val MediafusionApi = "https://mediafusion.elfhosted.com/D-_ru4-xVDOkpYNgdQZ-gA6whxWtMNeLLsnAyhb82mkks4eJf4QTlrAksSeBnwFAbIGWQLaokCGFxxsHupxSVxZO8xhhB2UYnyc5nnLeDnIqiLajtkmaGJMB_ZHqMqSYIU2wcGhrw0s4hlXeRAfnnbDywHCW8DLF_ZZfOXYUGPzWS-91cvu7kA2xPs0lJtcqZO"
         const val ThePirateBayApi = "https://thepiratebay-plus.strem.fun"
@@ -42,8 +36,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         const val TRACKER_LIST_URL = "https://newtrackon.com/api/all"
     }
 
-    private val traktApiUrl = base64Decode("aHR0cHM6Ly9hcGl6LnRyYWt0LnR2")
-
+    private val traktApiUrl = "https://api.trakt.tv"
     override val mainPage =
         mainPageOf(
             "$traktApiUrl/movies/trending?extended=cloud9,full&limit=25" to "Trending Movies",

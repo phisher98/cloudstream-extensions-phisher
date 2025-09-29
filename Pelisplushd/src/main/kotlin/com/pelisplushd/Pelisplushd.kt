@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
@@ -25,7 +24,7 @@ class Pelisplushd : TraktProvider() {
     override val hasMainPage = true
     override val hasQuickSearch = false
 
-    private val traktApiUrl = base64Decode("aHR0cHM6Ly9hcGl6LnRyYWt0LnR2")
+    private val traktApiUrl = "https://api.trakt.tv"
 
     override val mainPage =
         mainPageOf(
