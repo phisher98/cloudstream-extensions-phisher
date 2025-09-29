@@ -4,6 +4,7 @@ import com.phisher98.TorraStream.Companion.AnimetoshoAPI
 import com.phisher98.TorraStream.Companion.SubtitlesAPI
 import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -175,6 +176,59 @@ suspend fun invokeTorrentioAnimeDebian(
                 this.quality = getIndexQuality(stream.name)
             }
         )
+    }
+}
+
+
+suspend fun invokeTorrentioAnime(
+    mainUrl: String,
+    type: TvType,
+    id: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if (type == TvType.Movie) {
+        "$mainUrl/stream/movie/kitsu:$id.json"
+    } else {
+        "$mainUrl/stream/series/kitsu:$id:$episode.json"
+    }
+    Log.d("Phisher",url)
+    val headers = mapOf(
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+    val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
+    res?.streams?.forEach { stream ->
+        val formattedTitleName = stream.title
+            ?.let { title ->
+                val qualityTermsRegex = "(2160p|1080p|720p|WEBRip|WEB-DL|x265|x264|10bit|HEVC|H264)".toRegex(RegexOption.IGNORE_CASE)
+                val tagsList = qualityTermsRegex.findAll(title).map { it.value.uppercase() }.toList()
+                val tags = tagsList.distinct().joinToString(" | ")
+
+                val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.get(1) ?: "0"
+                val provider = "⚙️\\s*([^\\n]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+
+                "Torrentio | $tags | Seeder: $seeder | Provider: $provider".trim()
+            }
+
+        val qualityMatch = "(2160p|1080p|720p)".toRegex(RegexOption.IGNORE_CASE)
+            .find(stream.title ?: "")
+            ?.value
+            ?.lowercase()
+
+        val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
+        callback.invoke(
+            newExtractorLink(
+                "Torrentio",
+                formattedTitleName ?: stream.name ?: "",
+                url = magnet,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName(qualityMatch)
+            }
+        )
+
     }
 }
 
