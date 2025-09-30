@@ -5417,7 +5417,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
     ) {
         val STATIC_PATH =
-            "hezushon/e7b3cf8497ae580e7a703f996cf17ce48587cbd5/ev/9fdf613a9204683a789e4bfe9fd06da405e6ef36c4338b5baf14d0f2ea18f7a4"
+            "hezushon/27ab40fd/d0a57fe8f6ba9c7e046abcc4ef9a08d15536a8d8ad8fe17c0faa7a34503da817/18ab89de-c5a4-5437-946c-73f6b898b398/APA91JCEPBg5XKuSK-wS2txBKb3fSWg9lxgt7KTZF7xmvgJTPpzKJk6050CuLPFCVqnGZZyNlsFsav2B9_MeUSsv4jFBY6yEiLT37oS-GTcDfc-ByeaVmI5aniYVE4t3kgXBVUI6k7O5kxq2xks7kZtk5QKwSC9VJFtypz_Lzvwy8eIbH-nm2XR/1581f7a914bd966d0ea37928466d5fdc845bfd10/1000074385023437"
         val url =
             if (season == null) "$vidfastProApi/movie/$tmdbId" else "$vidfastProApi/tv/$tmdbId/$season/$episode"
         val headers = mapOf(
@@ -5435,8 +5435,8 @@ object StreamPlayExtractor : StreamPlay() {
             return;
         }
         // AES encryption setup
-        val keyHex = "8321a6aa7add8f2874b4b03f4f0fd9de8fa33bb91d9fa63534975ab49a584c8f"
-        val ivHex = "7d7a35a72b54d40c323d64d268e84382"
+        val keyHex = "fdbe2af666bea76ff4e3e1e255b94fe495a30b3ed39ba2b419192dbbba175671"
+        val ivHex = "5babfdd10fc5bb82b202638a3ae40100"
         val aesKey = hexStringToByteArray2(keyHex)
         val aesIv = hexStringToByteArray2(ivHex)
 
@@ -5447,7 +5447,7 @@ object StreamPlayExtractor : StreamPlay() {
         val aesEncrypted = cipher.doFinal(paddedData)
 
         // XOR operation
-        val xorKey = hexStringToByteArray2("7ce1477edc99e718b8")
+        val xorKey = hexStringToByteArray2("dc494e349891fe435c")
         val xorResult = aesEncrypted.mapIndexed { i, byte ->
             (byte.toInt() xor xorKey[i % xorKey.size].toInt()).toByte()
         }.toByteArray()
@@ -5456,7 +5456,7 @@ object StreamPlayExtractor : StreamPlay() {
         val encodedFinal = customEncode(xorResult)
 
         // Get servers
-        val apiServers = "$vidfastProApi/$STATIC_PATH/wpPdKYzdySpv/$encodedFinal"
+        val apiServers = "$vidfastProApi/$STATIC_PATH/tqIFUs8/$encodedFinal"
         val serversResponse = app.get(
             apiServers,
             timeout = 20,
@@ -5468,7 +5468,7 @@ object StreamPlayExtractor : StreamPlay() {
         val urlList = mutableMapOf<String, String>()
         servers.forEach {
             try {
-                val apiStream = "$vidfastProApi/${STATIC_PATH}/6rbZBh6h9A/${it.data}"
+                val apiStream = "$vidfastProApi/${STATIC_PATH}/Ljvb2Gk/${it.data}"
                 val streamResponse = app.get(apiStream, timeout = 20, headers = headers).text
                 if (streamResponse.isNotEmpty()) {
                     val jsonObject = JSONObject(streamResponse)
