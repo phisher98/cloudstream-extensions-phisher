@@ -200,8 +200,8 @@ class HiAnime : MainAPI() {
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
             this.actors = actors
-            addMalId(malId.toInt())
-            addAniListId(anilistId.toInt())
+            addMalId(malId.toIntOrNull())
+            addAniListId(anilistId.toIntOrNull())
             // adding info
             document.select(".anisc-info > .item").forEach { info ->
                 val infoType = info.select("span.item-head").text().removeSuffix(":")
