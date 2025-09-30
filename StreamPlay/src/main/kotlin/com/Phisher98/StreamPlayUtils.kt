@@ -2084,7 +2084,7 @@ fun padData(data: ByteArray, blockSize: Int): ByteArray {
 
 fun customEncode(input: ByteArray): String {
     val sourceChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-    val targetChars = "SCHkQ7-ni29AJs3VKw4XxjZE5WNL6zTBbY0G1ReurtmDMyqgIl8cvoOUPfFdhap_"
+    val targetChars = "E2kdP-yKbuMQFIV917Stvf8nsU3NicYG6OgmCxzAe5wHLZR0rTa_DhWolBjJ4qXp"
 
     val translationMap = sourceChars.zip(targetChars).toMap()
     val encoded = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
