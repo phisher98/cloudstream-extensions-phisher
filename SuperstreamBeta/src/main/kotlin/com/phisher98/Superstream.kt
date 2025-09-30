@@ -675,7 +675,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 addActors(cast)
                 this.plot = data.description
                 this.tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
-                this.rating = data.imdbRating?.split("/")?.get(0)?.toIntOrNull()
+                this.score = Score.from100(data.imdbRating?.split("/")?.get(0)?.toIntOrNull())
                 addTrailer(data.trailerUrl)
                 this.addImdbId(data.imdbId)
             }
@@ -735,8 +735,9 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 year = data.year
                 plot = data.description
                 addActors(cast)
-                posterUrl = background ?: data.posterOrg ?: data.poster
-                rating = data.imdbRating?.split("/")?.get(0)?.toIntOrNull()
+                backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
+                posterUrl = data.posterOrg ?: data.poster
+                score = Score.from100(data.imdbRating?.split("/")?.get(0)?.toIntOrNull())
                 tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
                 addImdbId(data.imdbId)
                 addImdbUrl(data.imdbLink)
