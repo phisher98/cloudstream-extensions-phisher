@@ -120,6 +120,7 @@ class HDhub4uProvider : MainAPI() {
         val image = doc.select("meta[property=og:image]").attr("content")
         val plot = doc.selectFirst(".kno-rdesc .kno-rdesc")?.text()
         val tags = doc.select(".page-meta em").eachText()
+        val poster = doc.select("main.page-body img.aligncenter").attr("src")
         val trailer = doc.selectFirst(".responsive-embed-container > iframe:nth-child(1)")?.attr("src")
                 ?.replace("/embed/", "/watch?v=")
         extractLinksATags(doc.select(".page-body > div a"))
@@ -156,7 +157,7 @@ class HDhub4uProvider : MainAPI() {
 
             return newMovieLoadResponse(title, url, TvType.Movie, movieList) {
                 this.backgroundPosterUrl = background
-                this.posterUrl= background
+                this.posterUrl= poster
                 this.year = year.toIntOrNull()
                 this.plot = description ?: plot
                 this.tags = genre ?: tags
@@ -240,7 +241,7 @@ class HDhub4uProvider : MainAPI() {
 
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesData) {
                 this.backgroundPosterUrl = background
-                this.posterUrl= background
+                this.posterUrl= poster
                 this.year = year.toIntOrNull()
                 this.plot = description ?: plot
                 this.tags = genre ?: tags

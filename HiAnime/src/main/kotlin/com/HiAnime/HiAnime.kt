@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
 import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
@@ -15,8 +14,11 @@ import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
@@ -31,23 +33,19 @@ import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
-import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
-import kotlin.math.roundToInt
 
 class HiAnime : MainAPI() {
     override var mainUrl = HiAnimeProviderPlugin.currentHiAnimeServer
@@ -144,7 +142,8 @@ class HiAnime : MainAPI() {
         val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
-        val poster = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
+        val poster = document.select("#ani_detail div.film-poster img").attr("src")
+        val backgroundposter = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
@@ -154,53 +153,32 @@ class HiAnime : MainAPI() {
         val subEpisodes = emptyList<Episode>().toMutableList()
         val responseBody = app.get("$mainUrl/ajax/v2/episode/list/$animeId").body.string()
         val epRes = responseBody.stringParse<Response>()?.getDocument()
-
+        val malId = syncData?.malId ?: "0"
+        val anilistId = syncData?.aniListId ?: "0"
         epRes?.select(".ss-list > a[href].ssl-item.ep-item")?.forEachIndexed { index, ep ->
             subCount?.let {
                 if (index < it) {
                     val href = ep.attr("href").removePrefix("/")
-                    val episodeData = "sub|$href"
-
+                    val episodeData = "sub|$malId|$href"
                     subEpisodes += newEpisode(episodeData) {
                         name = ep.attr("title")
                         episode = ep.selectFirst(".ssli-order")?.text()?.toIntOrNull()
-
                         val episodeKey = episode?.toString()
-
-                        this.rating = animeMetaData?.episodes?.get(episodeKey)?.rating
-                            ?.toDoubleOrNull()
-                            ?.times(10)
-                            ?.roundToInt()
-                            ?: 0
-
-                        this.posterUrl = animeMetaData?.episodes?.get(episodeKey)?.image
-                            ?: return@newEpisode
-
-                        this.description = animeMetaData.episodes[episodeKey]?.overview
-                            ?: "No summary available"
+                        this.score = Score.from10(animeMetaData?.episodes?.get(episodeKey)?.rating)
+                        this.posterUrl = animeMetaData?.episodes?.get(episodeKey)?.image ?: return@newEpisode
+                        this.description = animeMetaData.episodes[episodeKey]?.overview ?: "No summary available"
                     }
                 }
             }
             dubCount?.let {
                 if (index < it) {
-                    dubEpisodes += newEpisode("dub|" + ep.attr("href")) {
+                    dubEpisodes += newEpisode("dub|" + "$malId|" + ep.attr("href").removePrefix("/")) {
                         name = ep.attr("title")
-
                         episode = ep.selectFirst(".ssli-order")?.text()?.toIntOrNull()
-
                         val episodeKey = episode?.toString()
-
-                        this.rating = animeMetaData?.episodes?.get(episodeKey)?.rating
-                            ?.toDoubleOrNull()
-                            ?.times(10)
-                            ?.roundToInt()
-                            ?: 0
-
-                        this.posterUrl = animeMetaData?.episodes?.get(episodeKey)?.image
-                            ?: return@newEpisode
-
-                        this.description = animeMetaData.episodes[episodeKey]?.overview
-                            ?: "No summary available"
+                        this.score = Score.from10(animeMetaData?.episodes?.get(episodeKey)?.rating)
+                        this.posterUrl = animeMetaData?.episodes?.get(episodeKey)?.image ?: return@newEpisode
+                        this.description = animeMetaData.episodes[episodeKey]?.overview ?: "No summary available"
                     }
                 }
             }
@@ -217,28 +195,24 @@ class HiAnime : MainAPI() {
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
             posterUrl = poster
+            backgroundPosterUrl = backgroundposter
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
             this.actors = actors
-
+            addMalId(malId.toInt())
+            addAniListId(anilistId.toInt())
             // adding info
             document.select(".anisc-info > .item").forEach { info ->
                 val infoType = info.select("span.item-head").text().removeSuffix(":")
                 when (infoType) {
                     "Overview" -> plot = info.selectFirst(".text")?.text()
                     "Japanese" -> japName = info.selectFirst(".name")?.text()
-                    "Premiered" ->
-                            year =
-                                    info.selectFirst(".name")
-                                            ?.text()
-                                            ?.substringAfter(" ")
-                                            ?.toIntOrNull()
-                    "Duration" ->
-                            duration = getDurationFromString(info.selectFirst(".name")?.text())
+                    "Premiered" -> year = info.selectFirst(".name")?.text()?.substringAfter(" ")?.toIntOrNull()
+                    "Duration" -> duration = getDurationFromString(info.selectFirst(".name")?.text())
                     "Status" -> showStatus = getStatus(info.selectFirst(".name")?.text().toString())
                     "Genres" -> tags = info.select("a").map { it.text() }
-                    "MAL Score" -> rating = info.selectFirst(".name")?.text().toRatingInt()
+                    "MAL Score" -> score = Score.from10(info.selectFirst(".name")?.text())
                     else -> {}
                 }
             }
@@ -254,18 +228,10 @@ class HiAnime : MainAPI() {
         try {
             val dubType = data.removePrefix("$mainUrl/").substringBefore("|").ifEmpty { "raw" }
             val hrefPart = data.substringAfterLast("|")
-            //val animeEpisodeId = hrefPart.substringAfterLast("/").substringBefore("?")
             val epId = hrefPart.substringAfter("ep=")
-
             val doc = app.get("$mainUrl/ajax/v2/episode/servers?episodeId=$epId")
                 .parsed<Response>()
                 .getDocument()
-
-            val selectedTypes = doc.select(".server-item[data-type]")
-                .map { it.attr("data-type") }
-
-            val effectiveType = if (selectedTypes.contains("raw")) "sub" else dubType
-
             val servers = doc.select(".server-item[data-type=$dubType][data-id], .server-item[data-type=raw][data-id]")
                 .mapNotNull {
                     val id = it.attr("data-id")
@@ -405,7 +371,7 @@ class HiAnime : MainAPI() {
         return try {
             val objectMapper = ObjectMapper()
             objectMapper.readValue(jsonString, MetaAnimeData::class.java)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null // Return null for invalid JSON instead of crashing
         }
     }

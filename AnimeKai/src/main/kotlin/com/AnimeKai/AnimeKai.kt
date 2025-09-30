@@ -140,7 +140,7 @@ class AnimeKai : MainAPI() {
         val document = app.get(url).document
         val malid = document.select("div.watch-section").attr("data-mal-id")
         val aniid = document.select("div.watch-section").attr("data-al-id")
-
+        val poster = document.select("div.poster img").attr("src")
         val animeData = try {
             val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").text
             JsonParser.parseString(syncData)?.asJsonObject
@@ -152,7 +152,7 @@ class AnimeKai : MainAPI() {
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
         val plot= document.selectFirst("div.desc")?.text()
 
-        val poster = animeData
+        val backgroundposter = animeData
             ?.getAsJsonArray("images")
             ?.firstOrNull { it.asJsonObject.get("coverType")?.asString == "Fanart" }
             ?.asJsonObject
@@ -223,6 +223,7 @@ class AnimeKai : MainAPI() {
             engName = title
             japName = jptitle
             posterUrl = poster
+            backgroundPosterUrl = backgroundposter
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
