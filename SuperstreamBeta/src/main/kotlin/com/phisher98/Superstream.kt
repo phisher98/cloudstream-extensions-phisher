@@ -10,6 +10,7 @@ import javax.net.ssl.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import com.lagradost.api.Log
 import com.phisher98.Superstream.CipherUtils.getVerify
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
@@ -675,7 +676,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 addActors(cast)
                 this.plot = data.description
                 this.tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
-                this.score = Score.from100(data.imdbRating?.split("/")?.get(0)?.toIntOrNull())
+                this.score = Score.from10(data.imdbRating)
                 addTrailer(data.trailerUrl)
                 this.addImdbId(data.imdbId)
             }
@@ -720,12 +721,11 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                             description = ep.synopsis
                             date = ep.releasedTimestamp
                             runTime = ep.runtime
-                            score=Score.from100(ep.imdbRating)
+                            score=Score.from10(ep.imdbRating)
                         }
                     )
                 }
             }
-
             return newTvSeriesLoadResponse(
                 data.title ?: "",
                 url,
@@ -737,7 +737,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 addActors(cast)
                 backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
                 posterUrl = data.posterOrg ?: data.poster
-                score = Score.from100(data.imdbRating?.split("/")?.get(0)?.toIntOrNull())
+                score = Score.from10(data.imdbRating)
                 tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
                 addImdbId(data.imdbId)
                 addImdbUrl(data.imdbLink)
