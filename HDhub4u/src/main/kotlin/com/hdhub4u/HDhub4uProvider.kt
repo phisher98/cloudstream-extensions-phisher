@@ -70,7 +70,7 @@ class HDhub4uProvider : MainAPI() {
     private fun toResult(post: Element): SearchResponse {
         val title = post.select("figcaption:nth-child(2) > a:nth-child(1) > p:nth-child(1)").text()
         val url = post.select("figure:nth-child(1) > a:nth-child(2)").attr("href")
-        return newAnimeSearchResponse(title, url, TvType.Movie) {
+            return newAnimeSearchResponse(title, url, TvType.Movie) {
             this.posterUrl = post.select("figure:nth-child(1) > img:nth-child(1)").attr("src")
             this.quality = getSearchQuality(title)
         }
@@ -294,19 +294,18 @@ class HDhub4uProvider : MainAPI() {
         val lowercaseCheck = check?.lowercase()
         if (lowercaseCheck != null) {
             return when {
+                lowercaseCheck.contains("4k") || lowercaseCheck.contains("uhd") || lowercaseCheck.contains("2160p") -> SearchQuality.UHD
+                lowercaseCheck.contains("1440p") || lowercaseCheck.contains("qhd") -> SearchQuality.BlueRay
+                lowercaseCheck.contains("1080p") || lowercaseCheck.contains("fullhd") -> SearchQuality.HD
+                lowercaseCheck.contains("720p") -> SearchQuality.SD
                 lowercaseCheck.contains("webrip") || lowercaseCheck.contains("web-dl") -> SearchQuality.WebRip
                 lowercaseCheck.contains("bluray") -> SearchQuality.BlueRay
-                lowercaseCheck.contains("hdts") || lowercaseCheck.contains("hdcam") || lowercaseCheck.contains(
-                    "hdtc"
-                ) -> SearchQuality.HdCam
-
+                lowercaseCheck.contains("hdts") || lowercaseCheck.contains("hdcam") || lowercaseCheck.contains("hdtc") -> SearchQuality.HdCam
                 lowercaseCheck.contains("dvd") -> SearchQuality.DVD
-                lowercaseCheck.contains("cam") -> SearchQuality.Cam
                 lowercaseCheck.contains("camrip") || lowercaseCheck.contains("rip") -> SearchQuality.CamRip
-                lowercaseCheck.contains("hdrip") || lowercaseCheck.contains("hd") || lowercaseCheck.contains(
-                    "hdtv"
-                ) -> SearchQuality.HD
-
+                lowercaseCheck.contains("cam") -> SearchQuality.Cam
+                lowercaseCheck.contains("hdrip") || lowercaseCheck.contains("hdtv") -> SearchQuality.HD
+                lowercaseCheck.contains("hq") -> SearchQuality.HQ
                 else -> null
             }
         }
