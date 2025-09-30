@@ -2,23 +2,38 @@ package com.phisher98
 
 import android.content.SharedPreferences
 import android.util.Base64
-import okhttp3.*
-import java.security.KeyFactory
-import java.security.KeyStore
-import java.security.SecureRandom
-import javax.net.ssl.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.phisher98.Superstream.CipherUtils.getVerify
-import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTime
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbUrl
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.MovieSearchResponse
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
+import com.lagradost.cloudstream3.base64Encode
+import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -26,18 +41,29 @@ import com.phisher98.SuperStreamExtractor.invokeExternalSource
 import com.phisher98.SuperStreamExtractor.invokeInternalSource
 import com.phisher98.SuperStreamExtractor.invokeOpenSubs
 import com.phisher98.SuperStreamExtractor.invokeWatchsomuch
+import com.phisher98.Superstream.CipherUtils.getVerify
+import okhttp3.FormBody
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import java.nio.charset.StandardCharsets
+import java.security.KeyFactory
+import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.security.SecureRandom
 import java.security.cert.CertificateFactory
 import java.security.spec.PKCS8EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.Cipher.ENCRYPT_MODE
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 open class Superstream(sharedPref: SharedPreferences?=null) : TmdbProvider() {
     override var name = "SuperStream Beta"
@@ -675,7 +701,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 addActors(cast)
                 this.plot = data.description
                 this.tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
-                this.rating = data.imdbRating?.split("/")?.get(0)?.toIntOrNull()
+                this.score = Score.from10(data.imdbRating)
                 addTrailer(data.trailerUrl)
                 this.addImdbId(data.imdbId)
             }
@@ -720,12 +746,11 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                             description = ep.synopsis
                             date = ep.releasedTimestamp
                             runTime = ep.runtime
-                            score=Score.from100(ep.imdbRating)
+                            score=Score.from10(ep.imdbRating)
                         }
                     )
                 }
             }
-
             return newTvSeriesLoadResponse(
                 data.title ?: "",
                 url,
@@ -735,8 +760,9 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 year = data.year
                 plot = data.description
                 addActors(cast)
-                posterUrl = background ?: data.posterOrg ?: data.poster
-                rating = data.imdbRating?.split("/")?.get(0)?.toIntOrNull()
+                backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
+                posterUrl = data.posterOrg ?: data.poster
+                score = Score.from10(data.imdbRating)
                 tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
                 addImdbId(data.imdbId)
                 addImdbUrl(data.imdbLink)
