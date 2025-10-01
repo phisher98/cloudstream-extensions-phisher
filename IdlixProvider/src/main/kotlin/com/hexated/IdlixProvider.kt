@@ -146,7 +146,7 @@ class IdlixProvider : MainAPI() {
 
         val recommendations = document.select("div.owl-item").map {
             val recName =
-                it.selectFirst("a")!!.attr("href").toString().removeSuffix("/").split("/").last()
+                it.selectFirst("a")!!.attr("href").removeSuffix("/").split("/").last()
             val recHref = it.selectFirst("a")!!.attr("href")
             val recPosterUrl = it.selectFirst("img")?.attr("src").toString()
             newTvSeriesSearchResponse(recName, recHref, TvType.TvSeries) {
@@ -176,7 +176,7 @@ class IdlixProvider : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from100(rating)
                 addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
@@ -187,7 +187,7 @@ class IdlixProvider : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from100(rating)
                 addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
@@ -203,6 +203,12 @@ class IdlixProvider : MainAPI() {
     ): Boolean {
 
         val document = app.get(data).document
+        val scriptRegex = """window\.idlixNonce=['"]([a-f0-9]+)['"].*?window\.idlixTime=(\d+).*?""".toRegex(RegexOption.DOT_MATCHES_ALL)
+        val script = document.select("script:containsData(window.idlix)").toString()
+        val match = scriptRegex.find(script)
+        val idlixNonce = match?.groups?.get(1)?.value ?: ""
+        val idlixTime = match?.groups?.get(2)?.value ?: ""
+
         document.select("ul#playeroptionsul > li").map {
                 Triple(
                     it.attr("data-post"),
@@ -213,7 +219,7 @@ class IdlixProvider : MainAPI() {
             val json = app.post(
                 url = "$directUrl/wp-admin/admin-ajax.php",
                 data = mapOf(
-                    "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
+                    "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type, "_n" to idlixNonce, "_p" to id, "_t" to idlixTime
                 ),
                 referer = data,
                 headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest")
