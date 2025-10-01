@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 2
+version = 1
 
 
 cloudstream {
@@ -21,7 +21,7 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("Movie","Anime","AnimeMovie")
+    tvTypes = listOf("Movie","TvSeries")
     iconUrl = "https://www.google.com/s2/favicons?domain=pelisplushd.bz&sz=%size%"
 
     isCrossPlatform = false

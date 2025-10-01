@@ -11,9 +11,11 @@ import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
-import org.json.JSONObject
 
 class Pelisplushd : TraktProvider() {
     override var name = "Pelisplushd"
@@ -54,45 +56,46 @@ class Pelisplushd : TraktProvider() {
         val iframe=if(season==null) { "$mainUrl/f/$id" } else { "$mainUrl/f/$id-${season}x0$episode" }
         val res= app.get(iframe).document
         val jsonString = res.selectFirst("script:containsData(dataLink)")?.data()?.substringAfter("dataLink = ")?.substringBefore(";")
-        Log.d("Phisher",jsonString.toString())
+
+        val allLinksByLanguage = mutableMapOf<String, MutableList<String>>()
         if (jsonString != null) {
             val jsonArray = JSONArray(jsonString)
-            val resultsByLanguage = mutableMapOf<String, MutableList<JSONObject>>()
+
             for (i in 0 until jsonArray.length()) {
                 val fileObject = jsonArray.getJSONObject(i)
                 val language = fileObject.getString("video_language")
                 val embeds = fileObject.getJSONArray("sortedEmbeds")
 
-                val listForLang = resultsByLanguage.getOrPut(language) { mutableListOf() }
+                val serverLinks = mutableListOf<String>()
                 for (j in 0 until embeds.length()) {
                     val embedObj = embeds.getJSONObject(j)
-
-                    val result = JSONObject()
-                    result.put("servername", embedObj.getString("servername"))
-                    result.put("link", embedObj.getString("link"))
-                    listForLang.add(result)
-                }
-            }
-
-            resultsByLanguage.forEach { (lang, servers) ->
-                println("Language: $lang")
-                servers.forEach { serverObj ->
-                    val servername=serverObj.getString("servername")
-                    val encryptedLink = serverObj.getString("link")
-                    try {
-                        val decrypted = decryptLink(encryptedLink)
-                        loadCustomExtractor("$servername $lang".capitalize(),decrypted,"",subtitleCallback,callback)
-                        println("${serverObj.getString("servername")} -> $decrypted")
-                    } catch (e: Exception) {
-                        println("[ERROR] ${serverObj.getString("servername")} -> ${e.message}")
+                    embedObj.optString("link").let { link ->
+                        if (link.isNotBlank()) serverLinks.add("\"$link\"")
                     }
                 }
+
+                val json = """ {"links":$serverLinks} """.trimIndent()
+                    .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+                val decrypted = app.post("$mainUrl/api/decrypt", requestBody = json).parsedSafe<Loadlinks>()
+
+                if (decrypted?.success == true) {
+                    val links = decrypted.links.map { it.link }
+                    val listForLang = allLinksByLanguage.getOrPut(language) { mutableListOf() }
+                    listForLang.addAll(links)
+                }
             }
-
-
         } else {
             println("dataLink not found in response")
         }
+
+        for ((language, links) in allLinksByLanguage) {
+            links.forEach { link ->
+                loadSourceNameExtractor(language.capitalize(),link,"",subtitleCallback,callback)
+            }
+        }
+
+        Log.d("Phisher",allLinksByLanguage.toJson())
         // Subtitles
         val subApiUrl = "https://opensubtitles-v3.strem.io"
         val url = if (season == null) "$subApiUrl/subtitles/movie/$id.json"
@@ -132,3 +135,15 @@ data class Subtitle(
     val m: String,
     val g: String,
 )
+
+
+data class Loadlinks(
+    val success: Boolean,
+    val links: List<Link>,
+)
+
+data class Link(
+    val index: Long,
+    val link: String,
+)
+
