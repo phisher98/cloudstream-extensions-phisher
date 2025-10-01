@@ -111,7 +111,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     clean
                 }
             proxies
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Log.e("Error:", "Error fetching proxy list")
             emptyList()
         }
@@ -132,16 +132,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         )
         val animekaiAPIs = listOf(
             "https://animekai.to",
-            "https://animekai.bz",
             "https://animekai.cc",
             "https://animekai.ac",
-            "https://animekai.tv"
         )
         const val MultiEmbedAPI = "https://multiembed.mov"
         const val kissKhAPI = "https://kisskh.ovh"
-        const val lingAPI = "https://ling-online.net"
-        const val flixonAPI = "https://flixon.ovh"
-        const val azseriesAPI = "https://azseries.org"
         const val PlaydesiAPI = "https://playdesi.info"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
         const val Whvx_API = BuildConfig.Whvx_API
