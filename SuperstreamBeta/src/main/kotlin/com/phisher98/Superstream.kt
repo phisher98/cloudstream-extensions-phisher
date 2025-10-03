@@ -358,14 +358,16 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
     }
 
 
-    inline fun <reified T : Any> queryApiParsed(
-        query: String,
-        useAlternativeApi: Boolean = true
-    ): T {
-        val json = queryApi(query, useAlternativeApi)
-        val test=Gson().fromJson(json, T::class.java)
-        return test
+    inline fun <reified T : Any> queryApiParsed(query: String): T {
+        return try {
+            val json = queryApi(query, false)
+            Gson().fromJson(json, T::class.java)
+        } catch (_: Exception) {
+            val jsonAlt = queryApi(query, true)
+            Gson().fromJson(jsonAlt, T::class.java)
+        }
     }
+
 
     fun getExpiryDate(): Long {
         // Current time + 12 hours
@@ -501,7 +503,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
         val apiQuery =
             // Originally 8 pagelimit
             """{"childmode":"$hideNsfw","app_version":"$appVersion","module":"Search3","channel":"Website","page":"1","lang":"en","type":"all","keyword":"$query","pagelimit":"15","expired_date":"${getExpiryDate()}","platform":"android","appid":"$appId"}"""
-        val searchResponse = queryApiParsed<MainData>(apiQuery, true).data.mapNotNull {
+        val searchResponse = queryApiParsed<MainData>(apiQuery).data.mapNotNull {
             it.toSearchResponse(this)
         }
         return searchResponse

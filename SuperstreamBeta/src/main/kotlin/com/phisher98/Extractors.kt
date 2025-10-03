@@ -57,7 +57,7 @@ object SuperStreamExtractor : Superstream() {
         } else {
             """{"childmode":"0","app_version":"11.5","module":"TV_downloadurl_v3","channel":"Website","episode":"$episode","expired_date":"${getExpiryDate()}","platform":"android","tid":"$id","oss":"1","uid":"$superToken","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","appid":"$appId","season":"$season","lang":"en","group":""}"""
         }
-        val linkData = queryApiParsed<LinkDataProp>(query, false)
+        val linkData = queryApiParsed<LinkDataProp>(query)
         linkData.data?.list?.forEach { link ->
             val extractorLink = link.toExtractorLink() ?: return@forEach
             callback.invoke(extractorLink)
