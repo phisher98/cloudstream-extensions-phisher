@@ -56,7 +56,7 @@ class IStreamFlare  : MainAPI() {
         val type = object : TypeToken<List<HomeRes>>() {}.type
         val homeList = try {
             gson.fromJson<List<HomeRes>>(response, type)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
 
@@ -96,7 +96,7 @@ class IStreamFlare  : MainAPI() {
         val type = object : TypeToken<List<HomeRes>>() {}.type
         val homeList = try {
             gson.fromJson<List<HomeRes>>(response, type)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
         val results = homeList.map { it.toSearchResult() }
@@ -122,7 +122,7 @@ class IStreamFlare  : MainAPI() {
             ?: throw ErrorLoadingException("Failed to parse HomeRes")
 
         val imdbId = app.get(
-            "https://thingproxy.freeboard.io/fetch/https://api.themoviedb.org/3/movie/${res.tmdbId}/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+            "https://api.themoviedb.org/3/movie/${res.tmdbId}/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
         ).parsedSafe<IMDB>()?.imdbId
 
         val responseData = imdbId
