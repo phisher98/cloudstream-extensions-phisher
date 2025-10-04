@@ -209,7 +209,7 @@ class StremioX : TmdbProvider() {
     ): Boolean {
         val res = parseJson<LoadData>(data)
 
-        argamap(
+        runAllAsync(
             {
                 invokeMainSource(res.imdbId, res.season, res.episode, subtitleCallback, callback)
             },

@@ -133,7 +133,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "https://hianime.pe"
         )
         val animekaiAPIs = listOf(
-            "https://animekai.to",
+            "https://anikai.to",
             "https://animekai.cc",
             "https://animekai.ac",
         )

@@ -9,9 +9,10 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 enum class ServerList(val link: Pair<String, Boolean>) {
-    BEST("https://animekai.to" to true),
+    BEST("https://anikai.to" to true),
     CC("https://animekai.cc" to true),
     AC("https://animekai.ac" to true),
+    TO("https://animekai.to" to true)
 }
 
 @CloudstreamPlugin
