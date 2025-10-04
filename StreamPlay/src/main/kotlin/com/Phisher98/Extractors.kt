@@ -37,6 +37,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.math.BigInteger
 import java.net.URI
@@ -47,6 +48,7 @@ import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.text.isBlank
 
 
 open class Playm4u : ExtractorApi() {
@@ -354,7 +356,7 @@ class VCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=") ?: return@amap
                     callback.invoke(
                         newExtractorLink(
                             "10Gbps [Download]",
@@ -1564,21 +1566,51 @@ class MegaUp : ExtractorApi() {
         """.trimIndent()
             .trim()
             .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val m3u8Data=app.post(BuildConfig.KAIDEC, requestBody = body).parsedSafe<AnimeKaiM3U8>()
-        if (m3u8Data == null) {
-            Log.d("Phisher", "Encoded result is null")
+        val m3u8Data=app.post(BuildConfig.KAIDEC, requestBody = body).text
+
+        if (m3u8Data.isBlank()) {
+            Log.d("Phisher", "Encoded result is null or empty")
             return
         }
 
-
-        m3u8Data.result.sources.firstOrNull()?.file?.let { m3u8 ->
-            M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
-        } ?: Log.d("Error:", "No sources found in M3U8 data")
-
-        m3u8Data.result.tracks.forEach { track ->
-            track.label?.let {
-                subtitleCallback(SubtitleFile(it.trim(), track.file))
+        try {
+            val root = JSONObject(m3u8Data)
+            val result = root.optJSONObject("result")
+            if (result == null) {
+                Log.d("Error:", "No 'result' object in M3U8 JSON")
+                return
             }
+
+            val sources = result.optJSONArray("sources") ?: JSONArray()
+            if (sources.length() > 0) {
+                val firstSourceObj = sources.optJSONObject(0)
+                val m3u8File = when {
+                    firstSourceObj != null -> firstSourceObj.optString("file").takeIf { it.isNotBlank() }
+                    else -> {
+                        val maybeString = sources.optString(0)
+                        maybeString.takeIf { it.isNotBlank() }
+                    }
+                }
+                if (m3u8File != null) {
+                    generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
+                } else {
+                    Log.d("Error:", "No 'file' found in first source")
+                }
+            } else {
+                Log.d("Error:", "No sources found in M3U8 data")
+            }
+
+            val tracks = result.optJSONArray("tracks") ?: JSONArray()
+            for (i in 0 until tracks.length()) {
+                val trackObj = tracks.optJSONObject(i) ?: continue
+                val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
+                val file = trackObj.optString("file").takeIf { it.isNotBlank() }
+                if (label != null && file != null) {
+                    subtitleCallback(SubtitleFile(label, file))
+                }
+            }
+        } catch (_: JSONException) {
+            Log.e("Error", "Failed to parse M3U8 JSON")
         }
       }
 
@@ -1586,29 +1618,6 @@ class MegaUp : ExtractorApi() {
         @JsonProperty("status") val status: Int,
         @JsonProperty("result") val result: String
     )
-
-    data class AnimeKaiM3U8(
-        val status: Long,
-        val result: AnimekaiResult,
-    )
-
-    data class AnimekaiResult(
-        val sources: List<AnimekaiSource>,
-        val tracks: List<AnimekaiTrack>,
-        val download: String,
-    )
-
-    data class AnimekaiSource(
-        val file: String,
-    )
-
-    data class AnimekaiTrack(
-        val file: String,
-        val kind: String,
-        val label: String? = null,
-        val default: Boolean? = null
-    )
-
 }
 
 @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
@@ -1961,7 +1970,7 @@ open class Megacloud : ExtractorApi() {
             val response = try {
                 val json = app.get(apiUrl, headers).text
                 gson.fromJson(json, MegacloudResponse::class.java)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
 
@@ -1970,7 +1979,7 @@ open class Megacloud : ExtractorApi() {
             val key = try {
                 val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
                 gson.fromJson(keyJson, Megakey::class.java)?.mega
-            } catch (e: Exception) { null }
+            } catch (_: Exception) { null }
 
             val m3u8: String = if (".m3u8" in encoded) {
                 encoded

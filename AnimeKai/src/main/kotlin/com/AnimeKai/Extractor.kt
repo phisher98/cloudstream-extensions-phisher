@@ -10,6 +10,9 @@ import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.phisher98.BuildConfig
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 
 
 //Thanks to https://github.com/AzartX47/EncDecEndpoints
@@ -58,49 +61,56 @@ class MegaUp : ExtractorApi() {
         """.trimIndent()
             .trim()
             .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val m3u8Data=app.post(BuildConfig.KAIDEC, requestBody = body).parsedSafe<AnimeKaiM3U8>()
-        if (m3u8Data == null) {
-            Log.d("Phisher", "Encoded result is null")
+        val m3u8Data=app.post(BuildConfig.KAIDEC, requestBody = body).text
+        if (m3u8Data.isBlank()) {
+            Log.d("Phisher", "Encoded result is null or empty")
             return
         }
 
-
-        m3u8Data.result.sources.firstOrNull()?.file?.let { m3u8 ->
-            M3u8Helper.generateM3u8(displayName, m3u8, mainUrl).forEach(callback)
-        } ?: Log.d("Error:", "No sources found in M3U8 data")
-
-        m3u8Data.result.tracks.forEach { track ->
-            track.label?.let {
-                subtitleCallback(SubtitleFile(it.trim(), track.file))
+        try {
+            val root = JSONObject(m3u8Data)
+            val result = root.optJSONObject("result")
+            if (result == null) {
+                Log.d("Error:", "No 'result' object in M3U8 JSON")
+                return
             }
+
+            val sources = result.optJSONArray("sources") ?: JSONArray()
+            if (sources.length() > 0) {
+                val firstSourceObj = sources.optJSONObject(0)
+                val m3u8File = when {
+                    firstSourceObj != null -> firstSourceObj.optString("file").takeIf { it.isNotBlank() }
+                    else -> {
+                        val maybeString = sources.optString(0)
+                        maybeString.takeIf { it.isNotBlank() }
+                    }
+                }
+                if (m3u8File != null) {
+                    M3u8Helper.generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
+                } else {
+                    Log.d("Error:", "No 'file' found in first source")
+                }
+            } else {
+                Log.d("Error:", "No sources found in M3U8 data")
+            }
+
+            val tracks = result.optJSONArray("tracks") ?: JSONArray()
+            for (i in 0 until tracks.length()) {
+                val trackObj = tracks.optJSONObject(i) ?: continue
+                val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
+                val file = trackObj.optString("file").takeIf { it.isNotBlank() }
+                if (label != null && file != null) {
+                    subtitleCallback(SubtitleFile(label, file))
+                }
+            }
+        } catch (_: JSONException) {
+            Log.e("Error", "Failed to parse M3U8 JSON")
         }
       }
 
     data class AnimeKaiResponse(
         @JsonProperty("status") val status: Int,
         @JsonProperty("result") val result: String
-    )
-
-    data class AnimeKaiM3U8(
-        val status: Long,
-        val result: AnimekaiResult,
-    )
-
-    data class AnimekaiResult(
-        val sources: List<AnimekaiSource>,
-        val tracks: List<AnimekaiTrack>,
-        val download: String,
-    )
-
-    data class AnimekaiSource(
-        val file: String,
-    )
-
-    data class AnimekaiTrack(
-        val file: String,
-        val kind: String,
-        val label: String? = null,
-        val default: Boolean? = null
     )
 
 }
