@@ -3,10 +3,9 @@ package com.phisher98
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.phisher98.UltimaUtils.Category
-import com.phisher98.UltimaUtils.LinkData
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
@@ -35,18 +34,15 @@ import com.phisher98.UltimaMediaProvidersUtils.ServerName.Vcloud
 import com.phisher98.UltimaMediaProvidersUtils.commonLinkLoader
 import com.phisher98.UltimaMediaProvidersUtils.getBaseUrl
 import com.phisher98.UltimaMediaProvidersUtils.getIndexQuality
+import com.phisher98.UltimaUtils.Category
+import com.phisher98.UltimaUtils.LinkData
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.FormBody
-import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 import java.net.URL
 import java.net.URLEncoder
-import java.security.MessageDigest
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 import kotlin.io.encoding.Base64
 
 abstract class MediaProvider {
@@ -807,47 +803,48 @@ class AnyVideostr(provider: String?, dubType: String?, domain: String = "") : Ra
             "Referer" to mainUrl
         )
 
-
         val id = url.substringAfterLast("/").substringBefore("?")
-        val responsenonce= app.get(url, headers = headers).text
+        val responsenonce = app.get(url, headers = headers).text
         val match1 = Regex("""\b[a-zA-Z0-9]{48}\b""").find(responsenonce)
-        val match2 = Regex("""\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b""").find(responsenonce)
+        val match2 = Regex("""\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b""")
+            .find(responsenonce)
 
         val nonce = match1?.value ?: match2?.let {
             it.groupValues[1] + it.groupValues[2] + it.groupValues[3]
-        }
+        } ?: throw Exception("Nonce not found")
 
-        Log.e("Megacloud", "MegacloudResponse nonce: $nonce")
         val apiUrl = "$mainUrl/embed-1/v3/e-1/getSources?id=$id&_k=$nonce"
-        Log.e("Megacloud", apiUrl)
-
         val gson = Gson()
-
-
         val response = try {
             val json = app.get(apiUrl, headers).text
-            gson.fromJson(json, MegacloudResponse::class.java)
+            gson.fromJson(json, VideostrResponse::class.java)
         } catch (e: Exception) {
-            Log.e("Megacloud", "Failed to parse MegacloudResponse: ${e.message}")
-            null
-        } ?: return
-        Log.e("Megacloud", "Failed to parse Megakey: ${response}")
+            throw Exception("Failed to parse VideostrResponse: ${e.message}")
+        }
 
-        val encoded = response?.sources?.firstOrNull()?.file
-            ?: throw Exception("No sources found")
+        Log.d("Videostr", "Parsed VideostrResponse: $response")
+
         val key = try {
-            val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
-            gson.fromJson(keyJson, Megakey::class.java)?.mega
-        } catch (e: Exception) { null }
+            val keyJson = app.get(
+                "https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json"
+            ).text
+            gson.fromJson(keyJson, Megakey::class.java)?.vidstr
+        } catch (e: Exception) {
+            throw Exception("Failed to parse Megakey: ${e.message}")
+        } ?: throw Exception("Decryption key not found")
 
-        val m3u8: String = if (".m3u8" in encoded) {
-            encoded
+        val encodedSource = response.sources.firstOrNull()?.file
+            ?: throw Exception("No sources found in response")
+
+        val m3u8: String = if (".m3u8" in encodedSource) {
+            encodedSource
         } else {
-            val decodeUrl = "https://script.google.com/macros/s/AKfycbxHbYHbrGMXYD2-bC-C43D3njIbU-wGiYQuJL61H4vyy6YVXkybMNNEPJNPPuZrD1gRVA/exec"
+            val decodeUrl =
+                "https://script.google.com/macros/s/AKfycbxHbYHbrGMXYD2-bC-C43D3njIbU-wGiYQuJL61H4vyy6YVXkybMNNEPJNPPuZrD1gRVA/exec"
 
             val fullUrl = buildString {
                 append(decodeUrl)
-                append("?encrypted_data=").append(URLEncoder.encode(encoded, "UTF-8"))
+                append("?encrypted_data=").append(URLEncoder.encode(encodedSource, "UTF-8"))
                 append("&nonce=").append(URLEncoder.encode(nonce, "UTF-8"))
                 append("&secret=").append(URLEncoder.encode(key, "UTF-8"))
             }
@@ -859,16 +856,15 @@ class AnyVideostr(provider: String?, dubType: String?, domain: String = "") : Ra
                 ?: throw Exception("Video URL not found in decrypted response")
         }
 
-
         val m3u8headers = mapOf(
-            "Referer" to "https://videostr.net/",
-            "Origin" to "https://videostr.net/"
+            "Referer" to "$mainUrl/",
+            "Origin" to mainUrl
         )
 
         try {
-            M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
+            generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
         } catch (e: Exception) {
-            Log.e("Megacloud", "Error generating M3U8: ${e.message}")
+            Log.e("Videostr", "Error generating M3U8: ${e.message}")
         }
 
         response.tracks.forEach { track ->
@@ -883,37 +879,26 @@ class AnyVideostr(provider: String?, dubType: String?, domain: String = "") : Ra
         }
     }
 
-    data class MegacloudResponse(
-        val sources: List<Source>,
+    data class VideostrResponse(
+        val sources: List<VideostrSource>,
         val tracks: List<Track>,
         val encrypted: Boolean,
-        val intro: Intro,
-        val outro: Outro,
-        val server: Long
+        @SerializedName("_f") val f: String,
+        val server: Long,
     )
 
-    data class Source(
+    data class VideostrSource(
         val file: String,
-        val type: String
+        val type: String,
     )
 
     data class Track(
         val file: String,
         val label: String,
         val kind: String,
-        val default: Boolean? = null
+        val s: String,
+        val default: Boolean?,
     )
-
-    data class Intro(
-        val start: Long,
-        val end: Long,
-    )
-
-    data class Outro(
-        val start: Long,
-        val end: Long,
-    )
-
 
     data class Megakey(
         val rabbit: String,

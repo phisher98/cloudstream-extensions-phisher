@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -12,6 +13,7 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -32,6 +34,7 @@ import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInf
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.RecommendationConnection
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.SeasonNextAiringEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Title
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -115,12 +118,12 @@ class StreamPlayAnime : MainAPI() {
             "Personal" to "Personal"
         )
 
-    override suspend fun search(query: String): List<SearchResponse>? {
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
         val res =
             anilistAPICall(
-                "query (\$search: String = \"$query\") { Page(page: 1, perPage: $mediaLimit) { pageInfo { total perPage currentPage lastPage hasNextPage } media(search: \$search, isAdult: $isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }"
+                "query (\$search: String = \"$query\") { Page(page: $page, perPage: $mediaLimit) { pageInfo { total perPage currentPage lastPage hasNextPage } media(search: \$search, isAdult: $isAdult, type: ANIME) { id idMal season seasonYear format episodes chapters title { english romaji } coverImage { extraLarge large medium } synonyms nextAiringEpisode { timeUntilAiring episode } } } }"
             )
-        return res.data.page?.media?.map { it.toSearchResponse() }
+        return res.data.page?.media?.map { it.toSearchResponse() }?.toNewSearchResponseList()
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -189,13 +192,15 @@ class StreamPlayAnime : MainAPI() {
             newEpisode(linkData) {
                 this.season = 1
                 this.episode = i
-                this.name = animeData?.episodes?.get(episode?.toString() ?: return@newEpisode)?.title?.get("en")
-                this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
-                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                this.score = Score.from10(animeData.episodes[episode?.toString()]?.rating)
-                this.runTime = animeData.episodes.get(episode?.toString() ?: return@newEpisode)?.runtime
+                val epData = animeData?.episodes?.get(i.toString())
+                this.name = epData?.title?.get("en")
+                this.posterUrl = epData?.image
+                this.description = epData?.overview ?: "No summary available"
+                this.score = Score.from10(epData?.rating?.toIntOrNull())
+                this.runTime = epData?.runtime
             }
         }
+
 
         return if (data.format.contains("Movie",ignoreCase = true)) {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
@@ -439,3 +444,33 @@ class StreamPlayAnime : MainAPI() {
         return seasonStr?.toIntOrNull()
     }
 }
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class ImageData(
+    @JsonProperty("coverType") val coverType: String?,
+    @JsonProperty("url") val url: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class EpisodeData(
+    @JsonProperty("episode") val episode: String?,
+    @JsonProperty("airdate") val airdate: String?,
+    @JsonProperty("airDate") val airDate: String?,
+    @JsonProperty("airDateUtc") val airDateUtc: String?,
+    @JsonProperty("length") val length: Int?,
+    @JsonProperty("runtime") val runtime: Int?,
+    @JsonProperty("image") val image: String?,
+    @JsonProperty("title") val title: Map<String, String>?,
+    @JsonProperty("overview") val overview: String?,
+    @JsonProperty("rating") val rating: String?,
+    @JsonProperty("finaleType") val finaleType: String?
+)
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class AnimeData(
+    @JsonProperty("titles") val titles: Map<String, String>? = null,
+    @JsonProperty("images") val images: List<ImageData>? = null,
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
+)
