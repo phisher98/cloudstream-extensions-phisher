@@ -264,37 +264,6 @@ data class AnimetoshoItem(
     @SerializedName("website_url")
     val websiteUrl: String?
 )
-
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class ImageData(
-    @JsonProperty("coverType") val coverType: String?,
-    @JsonProperty("url") val url: String?
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class EpisodeData(
-    @JsonProperty("episode") val episode: String?,
-    @JsonProperty("airdate") val airdate: String?,
-    @JsonProperty("airDate") val airDate: String?,
-    @JsonProperty("airDateUtc") val airDateUtc: String?,
-    @JsonProperty("length") val length: Int?,
-    @JsonProperty("runtime") val runtime: Int?,
-    @JsonProperty("image") val image: String?,
-    @JsonProperty("title") val title: Map<String, String>?,
-    @JsonProperty("overview") val overview: String?,
-    @JsonProperty("rating") val rating: String?,
-    @JsonProperty("finaleType") val finaleType: String?
-)
-
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class AnimeData(
-    @JsonProperty("titles") val titles: Map<String, String>? = null,
-    @JsonProperty("images") val images: List<ImageData>? = null,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null
-)
-
 data class AIO(
     val streams: List<AIOStream>,
 )
