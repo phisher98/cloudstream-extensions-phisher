@@ -1,5 +1,6 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.annotations.SerializedName
@@ -79,20 +80,6 @@ data class Subtitle(
     val g: String,
 )
 
-fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
-    // Fetch the content of the file from the provided URL
-
-    // Build the magnet link
-    return buildString {
-        append("magnet:?xt=urn:btih:$hash")
-        for (index in 0 until trackersList.size - 1) {
-            if (trackersList[index].isNotBlank()) {
-                append("&tr=").append(trackersList[index].trim())
-            }
-        }
-    }
-}
-
 
 fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     if (episodeNumber == null) return null
@@ -115,6 +102,36 @@ fun parseAnimeData(jsonString: String): AnimeData {
     val objectMapper = ObjectMapper()
     return objectMapper.readValue(jsonString, AnimeData::class.java)
 }
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class ImageData(
+    @JsonProperty("coverType") val coverType: String?,
+    @JsonProperty("url") val url: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class EpisodeData(
+    @JsonProperty("episode") val episode: String?,
+    @JsonProperty("airdate") val airdate: String?,
+    @JsonProperty("airDate") val airDate: String?,
+    @JsonProperty("airDateUtc") val airDateUtc: String?,
+    @JsonProperty("length") val length: Int?,
+    @JsonProperty("runtime") val runtime: Int?,
+    @JsonProperty("image") val image: String?,
+    @JsonProperty("title") val title: Map<String, String>?,
+    @JsonProperty("overview") val overview: String?,
+    @JsonProperty("rating") val rating: String?,
+    @JsonProperty("finaleType") val finaleType: String?
+)
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class AnimeData(
+    @JsonProperty("titles") val titles: Map<String, String>? = null,
+    @JsonProperty("images") val images: List<ImageData>? = null,
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
+)
 
 fun parseStreamsToMagnetLinks(jsonString: String): List<MagnetStream> {
     val json = JSONObject(jsonString)

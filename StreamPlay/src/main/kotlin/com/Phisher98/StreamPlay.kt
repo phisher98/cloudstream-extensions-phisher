@@ -495,11 +495,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.plot = res.overview
                     this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
-
                     this.rating = rating
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
+                    this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
