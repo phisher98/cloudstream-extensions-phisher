@@ -413,7 +413,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                                 isBollywood = isBollywood,
                                 isCartoon = isCartoon,
                                 alttitle = res.title,
-                                nametitle = res.name
+                                nametitle = res.name,
+                                isDub = false
                             ).toJson()
                         ) {
                             this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
@@ -427,8 +428,51 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                         }
                     } ?: emptyList()
 
+                val animeepisodesDub = animevideos
+                    ?.filter { it.season!= 0 }
+                    ?.map { video ->
+                        newEpisode(
+                            LinkData(
+                                id = data.id,
+                                imdbId = res.external_ids?.imdb_id,
+                                tvdbId = res.external_ids?.tvdb_id,
+                                type = data.type,
+                                season = video.season,
+                                episode = video.number,
+                                epid = null,
+                                aniId = null,
+                                animeId = null,
+                                title = title,
+                                year = video.released?.split("-")?.firstOrNull()?.toIntOrNull() ?: cinejson.meta.year?.toIntOrNull() ?: 0,
+                                orgTitle = orgTitle,
+                                isAnime = true,
+                                airedYear = year,
+                                lastSeason = null,
+                                epsTitle = video.name,
+                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title ?: jptitle,
+                                date = video.released,
+                                airedDate = res.releaseDate ?: res.firstAirDate,
+                                isAsian = isAsian,
+                                isBollywood = isBollywood,
+                                isCartoon = isCartoon,
+                                alttitle = res.title,
+                                nametitle = res.name,
+                                isDub = true
+                            ).toJson()
+                        ) {
+                            this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
+                            this.season = video.season
+                            this.episode = video.number
+                            this.posterUrl = video.thumbnail
+                            this.rating = video.rating?.toIntOrNull()
+                            this.description = video.description
+                        }.apply {
+                            this.addDate(video.released)
+                        }
+                    } ?: emptyList()
                 return newAnimeLoadResponse(title, url, TvType.Anime) {
                     addEpisodes(DubStatus.Subbed, animeepisodes)
+                    addEpisodes(DubStatus.Dubbed, animeepisodesDub)
                     this.posterUrl = poster
                     this.backgroundPosterUrl = bgPoster
                     this.year = year
@@ -495,7 +539,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 this.rating = rating
                 this.recommendations = recommendations
                 this.actors = actors
-                //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
@@ -559,7 +603,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val isBollywood: Boolean = false,
         val isCartoon: Boolean = false,
         val alttitle: String? = null,
-        val nametitle: String? = null
+        val nametitle: String? = null,
+        val isDub: Boolean = false,
     )
 
     data class Data(

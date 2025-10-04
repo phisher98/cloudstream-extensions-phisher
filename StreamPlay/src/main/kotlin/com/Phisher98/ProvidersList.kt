@@ -81,7 +81,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
         Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback)
+            if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub)
         },
         Provider("player4u", "Player4U") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokePlayer4U(res.title, res.season, res.episode, res.year, callback)

@@ -2,53 +2,74 @@ package com.phisher98
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.Gson
+import com.lagradost.api.Log
+import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
+import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.amapIndexed
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
+import com.lagradost.cloudstream3.base64Encode
+import com.lagradost.cloudstream3.fixTitle
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.fourthAPI
 import com.phisher98.StreamPlay.Companion.thrirdAPI
-import com.google.gson.Gson
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
-import com.lagradost.cloudstream3.APIHolder.unixTimeMS
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
-import com.lagradost.nicehttp.RequestBodyTypes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import java.net.*
+import java.net.URI
+import java.net.URL
 import java.nio.charset.StandardCharsets
-import java.security.*
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.security.spec.KeySpec
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Arrays
+import java.util.Base64
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.Mac
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
-import kotlin.math.min
-import androidx.core.net.toUri
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
-import java.security.spec.KeySpec
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
 import kotlin.math.max
+import kotlin.math.min
 
 
 var sfServer: String? = null
@@ -1570,6 +1591,35 @@ fun parseAnimeData(jsonString: String): AnimeData {
     val objectMapper = ObjectMapper()
     return objectMapper.readValue(jsonString, AnimeData::class.java)
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class ImageData(
+    @JsonProperty("coverType") val coverType: String?,
+    @JsonProperty("url") val url: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class EpisodeData(
+    @JsonProperty("episode") val episode: String?,
+    @JsonProperty("airdate") val airdate: String?,
+    @JsonProperty("airDate") val airDate: String?,
+    @JsonProperty("airDateUtc") val airDateUtc: String?,
+    @JsonProperty("length") val length: Int?,
+    @JsonProperty("runtime") val runtime: Int?,
+    @JsonProperty("image") val image: String?,
+    @JsonProperty("title") val title: Map<String, String>?,
+    @JsonProperty("overview") val overview: String?,
+    @JsonProperty("rating") val rating: String?,
+    @JsonProperty("finaleType") val finaleType: String?
+)
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class AnimeData(
+    @JsonProperty("titles") val titles: Map<String, String>? = null,
+    @JsonProperty("images") val images: List<ImageData>? = null,
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
+)
 
 fun cleanTitle(title: String): String {
     val parts = title.split(".", "-", "_")

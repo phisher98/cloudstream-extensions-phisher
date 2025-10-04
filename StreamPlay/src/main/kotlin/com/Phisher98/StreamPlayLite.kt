@@ -27,6 +27,7 @@ import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
+import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
@@ -35,7 +36,6 @@ import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokevidrock
-import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
 import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 import com.phisher98.StreamPlayExtractor.sharedPref
 
@@ -77,7 +77,8 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.season,
                     res.episode,
                     subtitleCallback,
-                    callback
+                    callback,
+                    res.isDub
                 )
             },
             {

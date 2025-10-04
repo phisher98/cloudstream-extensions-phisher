@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -186,7 +185,33 @@ class StreamPlayAnime : MainAPI() {
                 year = data.startDate.year,
                 season = 1,
                 episode = i,
-                isAnime = true
+                isAnime = true,
+                isDub = false
+            ).toStringData()
+
+            newEpisode(linkData) {
+                this.season = 1
+                this.episode = i
+                val epData = animeData?.episodes?.get(i.toString())
+                this.name = epData?.title?.get("en")
+                this.posterUrl = epData?.image
+                this.description = epData?.overview ?: "No summary available"
+                this.score = Score.from10(epData?.rating?.toIntOrNull())
+                this.runTime = epData?.runtime
+            }
+        }
+
+        val episodesdub = (1..data.totalEpisodes()).map { i ->
+            val linkData = LinkData(
+                malId = ids.idMal,
+                aniId = ids.id,
+                title = data.getTitle(),
+                jpTitle = jpTitle,
+                year = data.startDate.year,
+                season = 1,
+                episode = i,
+                isAnime = true,
+                isDub = true
             ).toStringData()
 
             newEpisode(linkData) {
@@ -218,6 +243,8 @@ class StreamPlayAnime : MainAPI() {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
                 addEpisodes(DubStatus.Subbed, episodes)
+                addEpisodes(DubStatus.Dubbed, episodesdub)
+
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
@@ -259,28 +286,37 @@ class StreamPlayAnime : MainAPI() {
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
+        val dubStatus = if (mediaData.isDub) "DUB" else "SUB"
 
         runAllAsync(
-            { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback) },
-            { malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let { invokeAnimepahe(it, episode, subtitleCallback, callback) } },
-            { invokeAnizone(jpTitle, episode, callback) },
-            { invokeAnichi(jpTitle,anititle,year,episode, subtitleCallback, callback) },
-            { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback) },
-            { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback) },
-            { malId?.let {
-                invokeAnimetosho(
-                    it,
-                    season,
-                    episode,
-                    subtitleCallback,
-                    callback
-                )
-            } },
+            { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback, dubStatus) },
+            {
+                malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let {
+                    invokeAnimepahe(it, episode, subtitleCallback, callback, dubStatus)
+                }
+            },
+            { invokeAnizone(jpTitle, episode, callback, dubStatus) },
+            { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
+            { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback, dubStatus) },
+            { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback, dubStatus) },
+            {
+                malId?.let {
+                    invokeAnimetosho(
+                        it,
+                        season,
+                        episode,
+                        subtitleCallback,
+                        callback,
+                        dubStatus
+                    )
+                }
+            },
             {
                 if (aniXL != null) {
-                    invokeAniXL(aniXL, episode, callback)
+                    invokeAniXL(aniXL, episode, callback, dubStatus)
                 }
-            })
+            }
+        )
         return true
     }
 
@@ -368,7 +404,8 @@ class StreamPlayAnime : MainAPI() {
         @JsonProperty("isAsian") val isAsian: Boolean = false,
         @JsonProperty("isBollywood") val isBollywood: Boolean = false,
         @JsonProperty("isCartoon") val isCartoon: Boolean = false,
-    )
+        @JsonProperty("isDub") val isDub: Boolean = false,
+        )
 
     data class Media(
         @JsonProperty("id") val id: Int,
@@ -444,33 +481,3 @@ class StreamPlayAnime : MainAPI() {
         return seasonStr?.toIntOrNull()
     }
 }
-
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class ImageData(
-    @JsonProperty("coverType") val coverType: String?,
-    @JsonProperty("url") val url: String?
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class EpisodeData(
-    @JsonProperty("episode") val episode: String?,
-    @JsonProperty("airdate") val airdate: String?,
-    @JsonProperty("airDate") val airDate: String?,
-    @JsonProperty("airDateUtc") val airDateUtc: String?,
-    @JsonProperty("length") val length: Int?,
-    @JsonProperty("runtime") val runtime: Int?,
-    @JsonProperty("image") val image: String?,
-    @JsonProperty("title") val title: Map<String, String>?,
-    @JsonProperty("overview") val overview: String?,
-    @JsonProperty("rating") val rating: String?,
-    @JsonProperty("finaleType") val finaleType: String?
-)
-
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class AnimeData(
-    @JsonProperty("titles") val titles: Map<String, String>? = null,
-    @JsonProperty("images") val images: List<ImageData>? = null,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
-)

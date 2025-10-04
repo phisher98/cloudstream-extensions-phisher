@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -10,6 +9,7 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -35,11 +35,9 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
-import com.phisher98.StreamPlay.Companion
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
-import kotlin.math.roundToInt
 
 class StreamplayTorrentAnime : MainAPI() {
     override var name = "StremplayTorrent-Anime"
@@ -164,7 +162,7 @@ class StreamplayTorrentAnime : MainAPI() {
         ).toStringData()
 
         val episodes = (1..data.totalEpisodes()).map { i ->
-            val linkData = StreamPlayAnime.LinkData(
+            val linkData = LinkData(
                 malId = ids.idMal,
                 aniId = ids.id,
                 title = data.getTitle(),
@@ -178,13 +176,14 @@ class StreamplayTorrentAnime : MainAPI() {
             newEpisode(linkData) {
                 this.season = 1
                 this.episode = i
-                this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
-                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                this.rating = animeData.episodes[episode?.toString()]?.rating
-                    ?.toDoubleOrNull()
-                    ?.times(10)
-                    ?.roundToInt()
-                    ?: 0
+
+                val epData = animeData?.episodes?.get(i.toString())
+
+                this.name = epData?.title?.get("en")
+                this.posterUrl = epData?.image
+                this.description = epData?.overview ?: "No summary available"
+                this.score = Score.from10(epData?.rating?.toIntOrNull())
+                this.runTime = epData?.runtime
             }
         }
 
