@@ -1,6 +1,8 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.Phisher98.buildProviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
@@ -155,7 +157,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val nepuAPI = "https://nepu.to"
         const val dahmerMoviesAPI = "https://a.111477.xyz"
         const val animepaheAPI = "https://animepahe.si"
-        const val Catflix = "https://catflix.su"
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val EmbedSu = "https://embed.su"
         const val WyZIESUBAPI = "https://sub.wyzie.ru"
@@ -421,7 +422,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             this.season = video.season
                             this.episode = video.number
                             this.posterUrl = video.thumbnail
-                            this.rating = video.rating?.toIntOrNull()
+                            this.rating = video.rating?.toIntOrNull()?.takeIf { it != 0 } ?: this.rating
                             this.description = video.description
                         }.apply {
                             this.addDate(video.released)
@@ -547,6 +548,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,

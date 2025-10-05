@@ -8,12 +8,6 @@ import org.jsoup.nodes.Document
 
 //Vidsrccc
 
-data class Vidsrccc(
-    val id: String,
-    val vrf: String,
-    val timestamp: String,
-)
-
 data class Vidsrcccservers(
     val data: List<VidsrcccDaum>,
     val success: Boolean,
@@ -1952,7 +1946,8 @@ data class DomainsParser(
     val luxmovies: String,
     val xprime: String,
     val extramovies:String,
-    val dramadrip:String
+    val dramadrip:String,
+    val toonstream: String,
 )
 
 
