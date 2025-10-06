@@ -2242,3 +2242,20 @@ suspend fun runLimitedAsync(
         }
     }.awaitAll()
 }
+
+
+fun decryptVidzeeUrl(encrypted: String, key: ByteArray): String {
+    val decoded = base64Decode(encrypted)
+    val parts = decoded.split(":")
+    if (parts.size != 2) throw IllegalArgumentException("Invalid encrypted format")
+
+    val iv = base64DecodeArray(parts[0])
+    val cipherData = base64DecodeArray(parts[1])
+
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    val secretKey = SecretKeySpec(key, "AES")
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(iv))
+
+    val decryptedBytes = cipher.doFinal(cipherData)
+    return decryptedBytes.toString(Charsets.UTF_8)
+}

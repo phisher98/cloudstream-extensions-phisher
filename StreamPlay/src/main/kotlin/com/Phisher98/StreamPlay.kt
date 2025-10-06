@@ -169,7 +169,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Player4uApi = "https://player4u.xyz"
         const val Vidsrcxyz = "https://vidsrc.xyz"
         const val Xprime = "https://xprime.tv"
-        const val Vidzee = "https://vidzee.wtf"
         const val Elevenmovies = "https://111movies.com"
         const val Watch32 = "https://watch32.sx"
         const val Embedlc = "https://embed.lc"

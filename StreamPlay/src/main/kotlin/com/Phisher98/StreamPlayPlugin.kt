@@ -2,7 +2,6 @@ package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
-import com.Phisher98.settings.MainSettingsFragment
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.extractors.DoodYtExtractor

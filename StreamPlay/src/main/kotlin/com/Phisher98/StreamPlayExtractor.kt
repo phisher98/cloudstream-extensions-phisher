@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -1432,140 +1433,84 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
-    suspend fun invokevidzeeUltra(
-        id: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        val url = if (season == null) {
-            "$Vidzee/movie/movie.php?id=$id"
-        } else {
-            "$Vidzee/tv/$id/$season/$episode"
-        }
-        val response = app.get(url).document
-        val script =
-            response.select("script").map { it.data() }.firstOrNull { "qualityOptions" in it }
-                ?: return
-
-        val regex = Regex("""const\s+qualityOptions\s*=\s*(\[[\s\S]*?])""")
-        val match = regex.find(script)
-        val jsonArrayRaw = match?.groups?.get(1)?.value ?: return
-
-        try {
-            val jsonArray = JSONArray(jsonArrayRaw)
-            for (i in 0 until jsonArray.length()) {
-                val obj = jsonArray.getJSONObject(i)
-                val label = obj.optString("html")
-                val file = obj.optString("url")
-
-                if (file.isNotBlank()) {
-                    callback(
-                        newExtractorLink(
-                            "Vidzee",
-                            "Vidzee",
-                            file,
-                            ExtractorLinkType.M3U8
-                        ) {
-                            this.referer = "$Vidzee/"
-                            this.quality = label.replace(Regex("""[^\d]"""), "").toIntOrNull()
-                                ?: Qualities.Unknown.value
-                        }
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("VidzeeParser", "Failed to parse qualityOptions $e")
-        }
-    }
-
-
-
-    suspend fun invokeVidzeeApi(
+    suspend fun invokeVidzee(
         id: Int?,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ) {
-        val sections = listOf(1, 2)
-        for (sec in sections) {
+        val keyHex = "6966796f75736372617065796f75617265676179000000000000000000000000"
+        val keyBytes = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val defaultReferer = "https://core.vidzee.wtf/"
+
+        for (sr in 1..8) {
             try {
-                val url = if (season == null) {
-                    "https://player.vidzee.wtf/api/server?id=$id&sr=$sec"
+                val apiUrl = if (season == null) {
+                    "https://player.vidzee.wtf/api/server?id=$id&sr=$sr"
                 } else {
-                    "https://player.vidzee.wtf/api/server?id=$id&sr=$sec&season=$season&episode=$episode"
+                    "https://player.vidzee.wtf/api/server?id=$id&sr=$sr&ss=$season&ep=$episode"
                 }
 
-                val response = app.get(url).text
+                val response = app.get(apiUrl).text
                 val json = JSONObject(response)
 
-                val defaultReferer = "https://core.vidzee.wtf/"
-                val urls = json.optJSONArray("url") ?: JSONArray()
+                val globalHeaders = mutableMapOf<String, String>()
+                json.optJSONObject("headers")?.let { headersObj ->
+                    headersObj.keys().forEach { key ->
+                        globalHeaders[key] = headersObj.getString(key)
+                    }
+                }
 
+                val urls = json.optJSONArray("url") ?: JSONArray()
                 for (i in 0 until urls.length()) {
                     val obj = urls.getJSONObject(i)
-                    var link = obj.optString("link")
-                    val type = obj.optString("type", "hls")
+                    val encryptedLink = obj.optString("link")
                     val name = obj.optString("name", "Vidzee")
+                    val type = obj.optString("type", "hls")
+                    val lang = obj.optString("lang", "Unknown")
+                    val flag = obj.optString("flag", "")
 
-                    if (link.isNotBlank()) {
-                        val uri = URI(link)
-                        val queryParams = uri.query?.split("&") ?: emptyList()
-
-                        val headersMap = mutableMapOf<String, String>()
-                        var cleanLink = link
-
-                        // Extract headers from query param
-                        for (param in queryParams) {
-                            if (param.startsWith("headers=")) {
-                                val decoded = URLDecoder.decode(param.removePrefix("headers="), "UTF-8")
-                                val jsonObj = JSONObject(decoded)
-                                jsonObj.keys().forEach { key ->
-                                    headersMap[key] = jsonObj.getString(key)
-                                }
-                                // Remove headers param from URL
-                                cleanLink = cleanLink.replace("&$param", "").replace("?$param", "")
-                            }
+                    if (encryptedLink.isNotBlank()) {
+                        val finalUrl = try {
+                            decryptVidzeeUrl(encryptedLink, keyBytes)
+                        } catch (e: Exception) {
+                            Log.e("VidzeeDecrypt", "Failed to decrypt link: $e")
+                            encryptedLink
                         }
 
-                        // Fallback referer
+                        val uri = URI(finalUrl)
+                        val headersMap = mutableMapOf<String, String>()
+                        headersMap.putAll(globalHeaders)
                         val referer = headersMap["referer"] ?: defaultReferer
+                        val displayName = if (flag.isNotBlank()) "VidZee $name ($lang - $flag)" else " VidZee$name ($lang)"
 
-                        /*
                         callback(
                             newExtractorLink(
-                                name,
-                                name,
-                                cleanLink,
-                                ExtractorLinkType.M3U8
+                                "VidZee",
+                                displayName,
+                                finalUrl,
+                                if (type.equals("hls", ignoreCase = true)) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                             ) {
                                 this.referer = referer
                                 this.headers = headersMap
-                                this.quality = Qualities.Unknown.value
+                                this.quality = Qualities.P1080.value
                             }
                         )
-
-                         */
                     }
                 }
 
-                val tracks = json.optJSONArray("tracks") ?: JSONArray()
-                for (i in 0 until tracks.length()) {
-                    val sub = tracks.getJSONObject(i)
-                    val lang = sub.optString("lang", "Unknown")
+                // Handle subtitles
+                val subs = json.optJSONArray("tracks") ?: JSONArray()
+                for (i in 0 until subs.length()) {
+                    val sub = subs.getJSONObject(i)
+                    val subLang = sub.optString("lang", "Unknown")
                     val subUrl = sub.optString("url")
-
-                    if (subUrl.isNotBlank()) {
-                        subtitleCallback(
-                            SubtitleFile(lang, subUrl)
-                        )
-                    }
+                    if (subUrl.isNotBlank()) subtitleCallback(SubtitleFile(subLang, subUrl))
                 }
 
             } catch (e: Exception) {
-                Log.e("VidzeeApi", "Failed to load Vidzee API sec=$sec: $e")
+                Log.e("VidzeeApi", "Failed sr=$sr: $e")
             }
         }
     }
@@ -5560,7 +5505,6 @@ object StreamPlayExtractor : StreamPlay() {
             Log.e("ToonStream", "Error loading ToonStream: ${it.message}")
         }
     }
-
 }
 
 

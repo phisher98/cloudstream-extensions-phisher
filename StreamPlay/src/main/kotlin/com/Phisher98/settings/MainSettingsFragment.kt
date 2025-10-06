@@ -1,4 +1,4 @@
-package com.Phisher98.settings
+package com.phisher98
 
 import android.content.Intent
 import android.graphics.drawable.Drawable
@@ -6,12 +6,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CheckBox
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.BuildConfig
-import com.phisher98.StreamPlayPlugin
 import com.phisher98.settings.ProvidersFragment
 import com.phisher98.settings.SettingsFragment
 import com.phisher98.settings.ToggleFragment

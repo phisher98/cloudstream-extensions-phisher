@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
@@ -18,6 +19,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -67,9 +69,9 @@ class AnimeWorld : MainAPI() {
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search?q=$query").document
-        return document.select("#movies-a ul li").mapNotNull { it.toSearchResult() }
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
+        val document = app.get("$mainUrl/search?q=$query&page=$page").document
+        return document.select("#movies-a ul li").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -133,6 +135,10 @@ class AnimeWorld : MainAPI() {
         urls.forEach { url ->
             Log.d("Phisher",url)
             loadExtractor(url, mainUrl, subtitleCallback, callback)
+        }
+        document.select("tr > td a").forEach {
+            val link=it.attr("href").replace("files","embed")
+            loadExtractor(link, mainUrl, subtitleCallback, callback)
         }
 
         return true

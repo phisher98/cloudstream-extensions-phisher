@@ -51,7 +51,7 @@ import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidnest
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
-import com.phisher98.StreamPlayExtractor.invokeVidzeeApi
+import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
@@ -61,7 +61,6 @@ import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokemp4hydra
 import com.phisher98.StreamPlayExtractor.invokevidrock
-import com.phisher98.StreamPlayExtractor.invokevidzeeUltra
 
 data class Provider(
     val id: String,
@@ -172,11 +171,8 @@ fun buildProviders(): List<Provider> {
         Provider("xprimeapi", "XPrime API") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeXPrimeAPI(res.title, res.year, res.imdbId, res.id, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("vidzeeultra", "Vidzee Ultra (English)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokevidzeeUltra(res.id, res.season, res.episode, callback)
-        },
         Provider("vidzeeapi", "Vidzee API") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeVidzeeApi(res.id, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeVidzee(res.id, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("4khdhub", "4kHdhub (Multi)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             invoke4khdhub(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
