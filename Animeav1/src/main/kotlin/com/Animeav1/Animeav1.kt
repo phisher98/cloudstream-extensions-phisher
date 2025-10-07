@@ -97,14 +97,17 @@ class Animeav1 : MainAPI() {
             val episodes = mutableListOf<Episode>()
             val mediaId = Regex("/(\\d+)\\.jpg$").find(poster)?.groupValues?.get(1) ?: "0"
             val scriptContent = document.select("script").html()
+            val episodeZeroRegex = Regex("number:\\s*0")
             val regex = Regex("media:\\{.*?episodesCount:(\\d+).*?slug:\"(.*?)\"", RegexOption.DOT_MATCHES_ALL)
 
             val match = regex.find(scriptContent)
             if (match != null) {
                 val totalEpisodes = match.groupValues[1].toIntOrNull() ?: 0
                 val slug = match.groupValues[2]
+                val hasEpisodeZero = episodeZeroRegex.containsMatchIn(scriptContent)
+                val startEp = if (hasEpisodeZero) 0 else 1
 
-                for (i in 1..totalEpisodes) {
+                for (i in startEp..totalEpisodes) {
                     val epUrl = "https://animeav1.com/media/$slug/$i"
                     val epposter = "https://cdn.animeav1.com/screenshots/$mediaId/$i.jpg"
 
@@ -117,7 +120,6 @@ class Animeav1 : MainAPI() {
                     )
                 }
             }
-
             newAnimeLoadResponse(title, url, TvType.Anime) {
                 addEpisodes(DubStatus.Subbed, episodes)
                 this.posterUrl = poster

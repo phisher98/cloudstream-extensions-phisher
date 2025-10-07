@@ -1,8 +1,9 @@
-package com.phisher98.settings
+package com.phisher98
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,13 +12,10 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import androidx.annotation.RequiresApi
 import androidx.core.content.edit
-import com.Phisher98.Provider
-import com.Phisher98.buildProviders
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.BuildConfig
-import com.phisher98.StreamPlayPlugin
 import androidx.core.view.isNotEmpty
 
 class ProvidersFragment(
@@ -76,6 +74,7 @@ class ProvidersFragment(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

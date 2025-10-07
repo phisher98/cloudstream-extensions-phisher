@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.settings.ProvidersFragment
 import com.phisher98.settings.SettingsFragment
 import com.phisher98.settings.ToggleFragment
 
