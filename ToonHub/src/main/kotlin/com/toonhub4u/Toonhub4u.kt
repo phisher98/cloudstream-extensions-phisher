@@ -58,29 +58,19 @@ class Toonhub4u : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..3) {
-            val document = app.get("${mainUrl}/?s=$query").document
-            val results = document.select("li.post-item").mapNotNull { it.toSearchResult() }
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-        return searchResponse
+        val document = app.get("${mainUrl}/?s=$query").document
+        val results = document.select("li.post-item").mapNotNull { it.toSearchResult() }
+        return results
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("[")?.substringBefore("1080")?.trim().toString()
-        val poster = document.select("meta[property=og:image]").attr("content")
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("[")?.substringBefore("1080")?.trim().toString()
+        val backgroundposter = document.select("meta[property=og:image]").attr("content")
+        val poster= document.select("img.shrinkToFit").attr("src")
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val tvtag=if (document.select("div.entry-content p strong").text().contains("TV Series")) TvType.TvSeries else TvType.Movie
-        val hrefs = document.select("div.mks_toggle_content a").map { it.attr("href") }.toJson()
+        val hrefs = document.select("div.mks_toggle_content a").map { it.attr("href").replace("/file/","/embed/") }.toJson()
         return if (tvtag == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
             document.select(".entry-content.entry.clearfix").forEach { content ->
@@ -93,7 +83,7 @@ class Toonhub4u : MainAPI() {
                         while (nextSibling != null && nextSibling.tagName() != "hr") {
                             if (nextSibling.tagName() == "p") {
                                 nextSibling.select("a[href]").forEach { aTag ->
-                                    episodeLinks.add(aTag.attr("href"))
+                                    episodeLinks.add(aTag.attr("href").replace("/file/","/embed/"))
                                 }
                             }
                             nextSibling = nextSibling.nextElementSibling()
@@ -107,12 +97,14 @@ class Toonhub4u : MainAPI() {
             }
             newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
                 this.plot = description
             }
         }
         else {
             newMovieLoadResponse(title, url, TvType.Movie, hrefs) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
                 this.plot = description
             }
         }
@@ -126,14 +118,13 @@ class Toonhub4u : MainAPI() {
     ): Boolean {
         val jsonArray = JSONArray(data)
         val links = List(jsonArray.length()) { jsonArray.getString(it) }
-
         coroutineScope {
             links.map { link ->
                 launch {
                     try {
                         loadExtractor(link, subtitleCallback, callback)
                     } catch (e: Exception) {
-                        Log.e("Phisher", "Error loading $link: ${e.message}")
+                        Log.e("ToonHub", "Error loading $link: ${e.message}")
                     }
                 }
             }.joinAll()

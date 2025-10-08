@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 6
+version = 7
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "ToonHub Multi Language"
+    description = "ToonHub4u Multi Language"
     language    = "hi"
     authors = listOf("Phisher98")
 
