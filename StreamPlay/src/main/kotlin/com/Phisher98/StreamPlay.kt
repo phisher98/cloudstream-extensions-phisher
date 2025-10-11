@@ -66,54 +66,87 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val Cinemeta = "https://v3-cinemeta.strem.io"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
+        private var currentBaseUrl: String? = null
 
         suspend fun getApiBase(): String {
-            return if (isOfficialAvailable()) {
-                OFFICIAL_TMDB_URL
-            } else {
-                val proxy = fetchProxyList().randomOrNull()
-                if (proxy != null) {
-                    Log.d("Error:", "Official unavailable, using proxy: $proxy")
-                    proxy
-                } else {
-                    OFFICIAL_TMDB_URL
+            // If already found a working base, reuse it
+            currentBaseUrl?.let { return it }
+
+            // Try official first
+            if (isOfficialAvailable()) {
+                currentBaseUrl = OFFICIAL_TMDB_URL
+                Log.d("TMDB", "✅ Using official TMDB API")
+                return OFFICIAL_TMDB_URL
+            }
+
+            // If official fails, try proxies from the remote list
+            val proxies = fetchProxyList()
+            for (proxy in proxies) {
+                if (isProxyWorking(proxy)) {
+                    currentBaseUrl = proxy
+                    Log.d("TMDB", "✅ Switched to proxy: $proxy")
+                    return proxy
                 }
             }
+
+            // Fallback to official if nothing worked
+            Log.e("TMDB", "❌ No proxy worked, fallback to official")
+            return OFFICIAL_TMDB_URL
         }
 
-        private suspend fun isOfficialAvailable(): Boolean = withTimeoutOrNull(5000) {
-            try {
-                val testUrl = "$OFFICIAL_TMDB_URL/configuration?api_key=$apiKey"
-                val response = app.get(
-                    testUrl,
-                    timeout = 1000,
-                    headers = mapOf(
-                        "Cache-Control" to "no-cache",
-                        "Pragma" to "no-cache"
-                    )
-                )
-                response.okhttpResponse.code in listOf(200,304)
-            } catch (e: Exception) {
-                Log.d("Error", "Official TMDB unavailable: ${e.message}")
-                false
-            }
-        } ?: false
+        private suspend fun isOfficialAvailable(): Boolean {
+            val testUrl =
+                "$OFFICIAL_TMDB_URL/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
 
+            return withTimeoutOrNull(3000) {
+                try {
+                    val response = app.get(
+                        testUrl,
+                        timeout = 2000,
+                        headers = mapOf(
+                            "Cache-Control" to "no-cache",
+                            "Pragma" to "no-cache"
+                        )
+                    )
+                    response.okhttpResponse.code in listOf(200, 304)
+                } catch (e: Exception) {
+                    Log.d("TMDB", "Official TMDB unavailable: ${e.message}")
+                    false
+                }
+            } ?: false
+        }
+
+        private suspend fun isProxyWorking(proxyUrl: String): Boolean {
+            val testUrl =
+                "$proxyUrl/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
+
+            return withTimeoutOrNull(3000) {
+                try {
+                    val response = app.get(
+                        testUrl,
+                        timeout = 2000,
+                        headers = mapOf(
+                            "Cache-Control" to "no-cache",
+                            "Pragma" to "no-cache"
+                        )
+                    )
+                    response.okhttpResponse.code in listOf(200, 304)
+                } catch (e: Exception) {
+                    Log.d("TMDB", "Proxy failed: $proxyUrl -> ${e.message}")
+                    false
+                }
+            } ?: false
+        }
 
         private suspend fun fetchProxyList(): List<String> = try {
             val response = app.get(REMOTE_PROXY_LIST).text
             val json = JSONObject(response)
             val arr = json.getJSONArray("proxies")
 
-            val proxies = List(arr.length()) { arr.getString(it).trim() }
+            List(arr.length()) { arr.getString(it).trim().removeSuffix("/") }
                 .filter { it.isNotEmpty() }
-                .map { proxyUrl ->
-                    val clean = proxyUrl.removeSuffix("/")
-                    clean
-                }
-            proxies
-        } catch (_: Exception) {
-            Log.e("Error:", "Error fetching proxy list")
+        } catch (e: Exception) {
+            Log.e("TMDB", "Error fetching proxy list: ${e.message}")
             emptyList()
         }
 
@@ -226,7 +259,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         "/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
         "/discover/tv?api_key=$apiKey&with_networks=3353" to "Peacock",
         "/discover/movie?api_key=$apiKey&language=en-US&page=1&sort_by=popularity.desc&with_origin_country=IN&release_date.gte=${getDate().lastWeekStart}&release_date.lte=${getDate().today}" to "Trending Indian Movies",
-        "/discover/tv?api_key=$apiKey&with_networks=5920" to "Amazon MiniTV",
         "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}" to "Airing Today Anime",
         "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}" to "On The Air Anime",
         "/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
@@ -234,7 +266,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         "/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows",
         "/discover/tv?api_key=$apiKey&with_original_language=ko" to "Korean Shows",
         "/discover/tv?api_key=$apiKey&with_genres=99" to "Documentary",
-        "/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
     )
 
     private fun getImageUrl(link: String?): String? {
@@ -495,7 +526,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -535,7 +566,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 this.score = Score.from10(res.vote_average.toString())
                 this.recommendations = recommendations
                 this.actors = actors
-                this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
