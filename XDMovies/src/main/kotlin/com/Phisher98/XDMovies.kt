@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
@@ -152,6 +153,8 @@ class XDMovies : MainAPI() {
         val totalEpisodes = json.optInt("total_episodes", -1)
         val tvType = if (totalEpisodes > 0) TvType.TvSeries else TvType.Movie
         val tvTypeslug = if (totalEpisodes > 0) "series" else "movie"
+        val tmdbid = url.substringAfterLast("=")
+
 
         val downloadLinks = mutableListOf<String>()
         val downloadsArray = json.optJSONArray("download_links")
@@ -164,7 +167,7 @@ class XDMovies : MainAPI() {
 
         val downloadLinksJson = JSONArray(downloadLinks).toString()
         val imdbId = app.get(
-            "https://api.themoviedb.org/3/movie/${url.substringAfterLast("=")}/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+            "https://api.themoviedb.org/3/movie/$tmdbid/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
         ).parsedSafe<IMDB>()?.imdbId
         val gson = Gson()
         val responseData = imdbId
@@ -184,6 +187,11 @@ class XDMovies : MainAPI() {
                     val seasonObj = seasonsArray.optJSONObject(s) ?: continue
                     val seasonNum = seasonObj.optInt("season_num", 1)
                     val episodesArray = seasonObj.optJSONArray("episodes") ?: continue
+
+                    // Fetch TMDb season metadata using Root class
+                    val tmdbRes = app.get(
+                        "https://api.themoviedb.org/3/tv/$tmdbid/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
+                    ).parsedSafe<TMDBRes>()
 
                     for (e in 0 until episodesArray.length()) {
                         val episodeObj = episodesArray.optJSONObject(e) ?: continue
@@ -207,15 +215,18 @@ class XDMovies : MainAPI() {
                         }
 
                         if (allLinks.isEmpty()) continue
-
+                        val tmdbEpisode = tmdbRes?.episodes?.find { it.episodeNumber.toInt() == epNum }
                         val epName = "S${seasonNum}E${epNum} (${versionNames.joinToString(" / ")})"
                         val info = responseData?.meta?.videos?.find { it.season == seasonNum && it.episode == epNum }
+
                         episodes += newEpisode(allLinks.toJson()) {
-                            this.name = info?.name ?: epName
+                            this.name = tmdbEpisode?.name ?: info?.name ?: epName
                             this.season = seasonNum
                             this.episode = epNum
-                            this.posterUrl = info?.thumbnail
-                            this.description = info?.overview
+                            this.posterUrl = (tmdbImageBaseUrl + tmdbEpisode?.stillPath)
+                            this.description = tmdbEpisode?.overview ?: info?.overview
+                            this.score = Score.from10(tmdbEpisode?.voteAverage)
+                            this.addDate(tmdbEpisode?.airDate)
                         }
                     }
                 }

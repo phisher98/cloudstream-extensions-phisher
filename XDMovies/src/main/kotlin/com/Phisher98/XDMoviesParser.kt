@@ -144,3 +144,48 @@ data class EpisodeDetails(
 data class ResponseData(
     val meta: Meta?
 )
+
+
+data class TMDBRes(
+    @JsonProperty("_id")
+    val id: String,
+    @JsonProperty("air_date")
+    val airDate: String,
+    val episodes: List<TMDBResEpisode>,
+    val name: String,
+    val overview: String,
+    @JsonProperty("id")
+    val id2: Long,
+    @JsonProperty("poster_path")
+    val posterPath: String,
+    @JsonProperty("season_number")
+    val seasonNumber: Long,
+    @JsonProperty("vote_average")
+    val voteAverage: Long,
+)
+
+data class TMDBResEpisode(
+    @JsonProperty("air_date")
+    val airDate: String,
+    @JsonProperty("episode_number")
+    val episodeNumber: Long,
+    @JsonProperty("episode_type")
+    val episodeType: String,
+    val id: Long,
+    val name: String,
+    val overview: String,
+    @JsonProperty("production_code")
+    val productionCode: String,
+    val runtime: Long,
+    @JsonProperty("season_number")
+    val seasonNumber: Long,
+    @JsonProperty("show_id")
+    val showId: Long,
+    @JsonProperty("still_path")
+    val stillPath: String,
+    @JsonProperty("vote_average")
+    val voteAverage: Double,
+    @JsonProperty("vote_count")
+    val voteCount: Long,
+    val crew: List<Any?>,
+)
