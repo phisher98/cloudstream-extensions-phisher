@@ -188,7 +188,6 @@ class XDMovies : MainAPI() {
                     val seasonNum = seasonObj.optInt("season_num", 1)
                     val episodesArray = seasonObj.optJSONArray("episodes") ?: continue
 
-                    // Fetch TMDb season metadata using Root class
                     val tmdbRes = app.get(
                         "https://api.themoviedb.org/3/tv/$tmdbid/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
                     ).parsedSafe<TMDBRes>()
