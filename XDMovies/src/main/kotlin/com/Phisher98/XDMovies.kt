@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.json.JSONArray
@@ -51,29 +52,45 @@ class XDMovies : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "/php/fs.php?ott=Netflix" to "Netflix",
-        "/php/fs.php?ott=Amazon" to "Amazon Prime Video",
-        "/php/fs.php?ott=DisneyPlus" to "Disney+",
-        "/php/fs.php?ott=AppleTVPlus" to "Apple TV+",
-        "/php/fs.php?ott=HBOMax" to "HBO Max",
-        "/php/fs.php?ott=Hulu" to "Hulu",
-        "/php/fs.php?ott=ParamountPlus" to "Paramount+",
-        "/php/fs.php?ott=Peacock" to "Peacock",
-        "/php/fs.php?ott=SonyLiv" to "SonyLIV",
-        "/php/fs.php?ott=Zee5" to "Zee5",
-        "/php/fs.php?ott=JioHotstar" to "Hotstar",
-        "/php/fs.php?ott=Crunchyroll" to "Crunchyroll",
-        "/php/fs.php?ott=Viki" to "Viki",
-        "/php/fs.php?ott=YouTube" to "YouTube",
-        "/php/fs.php?ott=Mubi" to "Mubi"
+        "php/fetch_media.php?sort=timestamp" to "Latest Movies/Series",
+        "php/fs.php?ott=Netflix" to "Netflix",
+        "php/fs.php?ott=Amazon" to "Amazon Prime Video",
+        "php/fs.php?ott=DisneyPlus" to "Disney+",
+        "php/fs.php?ott=AppleTVPlus" to "Apple TV+",
+        "php/fs.php?ott=HBOMax" to "HBO Max",
+        "php/fs.php?ott=Hulu" to "Hulu",
+        "php/fs.php?ott=ParamountPlus" to "Paramount+",
+        "php/fs.php?ott=Peacock" to "Peacock",
+        "php/fs.php?ott=SonyLiv" to "SonyLIV",
+        "php/fs.php?ott=Zee5" to "Zee5",
+        "php/fs.php?ott=JioHotstar" to "Hotstar",
+        "php/fs.php?ott=Crunchyroll" to "Crunchyroll",
+        "php/fs.php?ott=Viki" to "Viki",
+        "php/fs.php?ott=YouTube" to "YouTube",
+        "php/fs.php?ott=Mubi" to "Mubi"
     )
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse? {
-        val res = app.get("$mainUrl/${request.data}",headers).parsedSafe<Home>()
-        val home = res?.data?.mapNotNull { it.toSearchResult() } ?: emptyList()
+        val url = "$mainUrl/${request.data}"
+
+        val res: List<Any>? = if (request.data.contains("fetch_media.php")) {
+            val json = app.get(url, headers).text
+            Gson().fromJson(json, Array<HomePageHome>::class.java).toList()
+        } else {
+            app.get(url, headers).parsedSafe<Home>()?.data
+        }
+
+        val home = res?.mapNotNull {
+            when (it) {
+                is Home.Data -> it.toSearchResult()
+                is HomePageHome -> it.toSearchResult()
+                else -> null
+            }
+        } ?: emptyList()
+
         if (home.isEmpty()) return null
         return newHomePageResponse(request.name, home)
     }
@@ -90,7 +107,18 @@ class XDMovies : MainAPI() {
                 this.year = year
         }
     }
-
+    private fun HomePageHome.toSearchResult(): SearchResponse? {
+        val title = this.title
+        val poster = tmdbImageBaseUrl+this.posterPath
+        val apiSlug = if (this.type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
+        val url = "$mainUrl/api/$apiSlug?tmdb_id=${this.tmdbId}"
+        val year= this.releaseDate.substringBefore("-").toIntOrNull()
+        val tvType = if (this.type.equals("tv", ignoreCase = true)) TvType.TvSeries else TvType.Movie
+        return newMovieSearchResponse(title, url, tvType) {
+            this.posterUrl = poster
+            this.year = year
+        }
+    }
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val searchData = app.get("$mainUrl/php/search_api.php?query=$query&fuzzy=true", headers).parsedSafe<SearchData>() ?: return null // returns null if parsing fails
@@ -224,21 +252,26 @@ class XDMovies : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        try {
-            val jsonArray = JSONArray(data)
-            for (i in 0 until jsonArray.length()) {
-                val link = jsonArray.optString(i).takeIf { it.isNotBlank() } ?: continue
-                if (link.contains("hubcloud")) {
-                    HubCloud().getUrl(link, "HubDrive", subtitleCallback, callback)
-                } else loadExtractor(link,name,subtitleCallback,callback)
-                Log.d("Phisher", link)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return false
-        }
+        if (data.isBlank()) return false
+        val parsedList: List<String>? = tryParseJson<List<String>>(data)
+        val fallbackList: List<String> = data
+            .trim()
+            .removePrefix("[")
+            .removeSuffix("]")
+            .split(',')
+            .map { it.trim().removeSurrounding("\"").removeSurrounding("'") }
+            .filter { it.isNotBlank() }
+        val links = (parsedList?.map { it.trim() }?.filter { it.isNotBlank() } ?: fallbackList).distinct()
+        if (links.isEmpty()) return false
 
+        for (link in links) {
+            if (link.contains("hubcloud", ignoreCase = true)) {
+                HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
+            } else {
+                loadExtractor(link, name, subtitleCallback, callback)
+            }
+            Log.d("Phisher", link)
+        }
         return true
     }
-
 }
