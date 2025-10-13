@@ -228,7 +228,9 @@ class XDMovies : MainAPI() {
             val jsonArray = JSONArray(data)
             for (i in 0 until jsonArray.length()) {
                 val link = jsonArray.optString(i).takeIf { it.isNotBlank() } ?: continue
-                loadExtractor(link,name,subtitleCallback,callback)
+                if (link.contains("hubcloud")) {
+                    HubCloud().getUrl(link, "HubDrive", subtitleCallback, callback)
+                } else loadExtractor(link,name,subtitleCallback,callback)
                 Log.d("Phisher", link)
             }
         } catch (e: Exception) {
