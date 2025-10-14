@@ -1,18 +1,42 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.phisher98.SubsExtractors.invokeOpenSubs
-import com.phisher98.SubsExtractors.invokeWatchsomuch
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.Actor
+import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
+import com.lagradost.cloudstream3.ShowStatus
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.metaproviders.TmdbProvider
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import java.util.ArrayList
-import kotlin.math.roundToInt
-import com.lagradost.cloudstream3.metaproviders.TmdbProvider
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.SubtitleHelper
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.phisher98.SubsExtractors.invokeOpenSubs
+import com.phisher98.SubsExtractors.invokeWatchsomuch
 
 class StremioX : TmdbProvider() {
     override var mainUrl = "https://torrentio.strem.fun"
@@ -94,13 +118,14 @@ class StremioX : TmdbProvider() {
 
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
-    override suspend fun search(query: String): List<SearchResponse>? {
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
         return app.get(
-            "$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}"
+            "$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=$page&include_adult=${settingsForProvider.enableAdult}"
         ).parsedSafe<Results>()?.results?.mapNotNull { media ->
             media.toSearchResponse()
-        }
+        }?.toNewSearchResponseList()
     }
+
 
     override suspend fun load(url: String): LoadResponse? {
         val data = parseJson<Data>(url)
@@ -118,7 +143,6 @@ class StremioX : TmdbProvider() {
         val bgPoster = getOriImageUrl(res.backdropPath)
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
-        val rating = res.vote_average.toString().toRatingInt()
         val genres = res.genres?.mapNotNull { it.name }
         val isAnime =
             genres?.contains("Animation") == true && (res.original_language == "zh" || res.original_language == "ja")
@@ -153,7 +177,7 @@ class StremioX : TmdbProvider() {
                             this.season = eps.seasonNumber
                             this.episode = eps.episodeNumber
                             this.posterUrl = getImageUrl(eps.stillPath)
-                            this.rating = eps.voteAverage?.times(10)?.roundToInt()
+                            this.score = Score.from10(eps.voteAverage)
                             this.description = eps.overview
                             this.addDate(eps.airDate)
                         }
@@ -167,11 +191,11 @@ class StremioX : TmdbProvider() {
                 this.year = year
                 this.plot = res.overview
                 this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
-                this.rating = rating
+                this.score = Score.from10(res.vote_average.toString())
                 this.showStatus = getStatus(res.status)
                 this.recommendations = recommendations
                 this.actors = actors
-                this.contentRating = fetchContentRating(data.id, "US")
+                //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
@@ -190,10 +214,10 @@ class StremioX : TmdbProvider() {
                 this.plot = res.overview
                 this.duration = res.runtime
                 this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
-                this.rating = rating
+                this.score = Score.from10(res.vote_average.toString())
                 this.recommendations = recommendations
                 this.actors = actors
-                this.contentRating = fetchContentRating(data.id, "US")
+                //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
