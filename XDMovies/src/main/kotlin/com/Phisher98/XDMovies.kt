@@ -157,6 +157,7 @@ class XDMovies : MainAPI() {
 
         val tmdbid = url.substringAfterLast("=")
 
+        val href= "$mainUrl/details.html?id=$tmdbid&type=$tmdbtvTypeslug"
 
         val downloadLinks = mutableListOf<String>()
         val downloadsArray = json.optJSONArray("download_links")
@@ -233,7 +234,7 @@ class XDMovies : MainAPI() {
                 }
             }
 
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newTvSeriesLoadResponse(title, href, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
@@ -244,7 +245,7 @@ class XDMovies : MainAPI() {
                 addActors(actors)
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie, downloadLinksJson) {
+            newMovieLoadResponse(title, href, TvType.Movie, downloadLinksJson) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
