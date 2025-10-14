@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newAnimeSearchResponse
@@ -70,7 +71,7 @@ class HDhub4uProvider : MainAPI() {
     private fun toResult(post: Element): SearchResponse {
         val title = post.select("figcaption:nth-child(2) > a:nth-child(1) > p:nth-child(1)").text()
         val url = post.select("figure:nth-child(1) > a:nth-child(2)").attr("href")
-            return newAnimeSearchResponse(title, url, TvType.Movie) {
+        return newAnimeSearchResponse(title, url, TvType.Movie) {
             this.posterUrl = post.select("figure:nth-child(1) > img:nth-child(1)").attr("src")
             this.quality = getSearchQuality(title)
         }
@@ -127,7 +128,20 @@ class HDhub4uProvider : MainAPI() {
         val typeraw=doc.select("h1.page-title span").text()
         val tvtype=if (typeraw.contains("movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
         val tvtypeapi = if (typeraw.contains("movie", ignoreCase = true)) "movie" else "series"
-        val imdbUrl = doc.select("div span a[href*='imdb.com']").attr("href")
+        val imdbUrl = doc.select("div span a[href*='imdb.com']")
+            .attr("href")
+            .ifEmpty {
+                // fallback to TMDb → fetch IMDb ID via TMDb API
+                val tmdbHref = doc.select("div span a[href*='themoviedb.org']").attr("href")
+                val isTv = tmdbHref.contains("/tv/")
+                val tmdbId = tmdbHref.substringAfterLast("/").substringBefore("-").substringBefore("?")
+
+                if (tmdbId.isNotEmpty()) {
+                    val type = if (isTv) "tv" else "movie"
+                    val imdbId = app.get(
+                        "https://api.themoviedb.org/3/$type/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                    ).parsedSafe<IMDB>()?.imdbId
+                imdbId ?: "" } else { "" } }
         val responseData = if (imdbUrl.isNotEmpty()) {
             val imdbId = imdbUrl.substringAfter("title/").substringBefore("/")
             val jsonResponse = app.get("$cinemeta_url/$tvtypeapi/$imdbId.json").text
@@ -230,11 +244,12 @@ class HDhub4uProvider : MainAPI() {
 
                 episodesData.add(
                     newEpisode(links) {
-                        this.name = info?.name ?: "Episode $epNum"
+                        this.name = info?.title ?: "Episode $epNum"
                         this.season = seasonNumber
                         this.episode = epNum
                         this.posterUrl = info?.thumbnail
                         this.description = info?.overview
+                        addDate(info?.released)
                     }
                 )
             }

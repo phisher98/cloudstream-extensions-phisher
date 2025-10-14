@@ -234,7 +234,10 @@ class StreamPlayAnime : MainAPI() {
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
+                this.posterUrl = animeData?.images
+                    ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
+                    ?.url
+                    ?: data.getCoverImage()
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
             }
@@ -248,7 +251,10 @@ class StreamPlayAnime : MainAPI() {
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
+                this.posterUrl = animeData?.images
+                    ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
+                    ?.url
+                    ?: data.getCoverImage()
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
                 this.showStatus = getStatus(data.status)

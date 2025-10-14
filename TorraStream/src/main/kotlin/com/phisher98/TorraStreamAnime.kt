@@ -29,7 +29,6 @@ import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
-import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.RecommendationConnection
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.SeasonNextAiringEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Title
@@ -37,13 +36,9 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import kotlin.math.roundToInt
 
@@ -204,7 +199,10 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.getCoverImage()
+                this.posterUrl = animeData?.images
+                    ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
+                    ?.url
+                    ?: data.getCoverImage()
                 this.tags = data.genres
             }
         } else {
@@ -216,7 +214,9 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                 this.backgroundPosterUrl =
                     animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
                         ?: data.bannerImage
-                this.posterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+                this.posterUrl = animeData?.images
+                    ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
+                    ?.url
                     ?: data.getCoverImage()
                 this.tags = data.genres
                 this.showStatus = getStatus(data.status)

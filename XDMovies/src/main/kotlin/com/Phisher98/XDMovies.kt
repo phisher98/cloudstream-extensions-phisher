@@ -47,7 +47,7 @@ class XDMovies : MainAPI() {
             "x-requested-with" to "XMLHttpRequest"
         )
 
-        private const val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
+        private const val cinemeta_url = "https://cinemeta-live.strem.io"
         val tmdbImageBaseUrl = "https://image.tmdb.org/t/p/w500"
         val backgroundPoster = "https://image.tmdb.org/t/p/original"
     }
@@ -153,6 +153,8 @@ class XDMovies : MainAPI() {
         val totalEpisodes = json.optInt("total_episodes", -1)
         val tvType = if (totalEpisodes > 0) TvType.TvSeries else TvType.Movie
         val tvTypeslug = if (totalEpisodes > 0) "series" else "movie"
+        val tmdbtvTypeslug = if (totalEpisodes > 0) "tv" else "movie"
+
         val tmdbid = url.substringAfterLast("=")
 
 
@@ -167,13 +169,13 @@ class XDMovies : MainAPI() {
 
         val downloadLinksJson = JSONArray(downloadLinks).toString()
         val imdbId = app.get(
-            "https://api.themoviedb.org/3/movie/$tmdbid/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+            "https://api.themoviedb.org/3/$tmdbtvTypeslug/$tmdbid/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
         ).parsedSafe<IMDB>()?.imdbId
         val gson = Gson()
         val responseData = imdbId
             ?.takeIf { it.isNotBlank() && it != "0" }
             ?.let {
-                val jsonResponse = app.get("$cinemeta_url/$tvTypeslug/$it.json").text
+                val jsonResponse = app.get("$cinemeta_url/meta/$tvTypeslug/$it.json").text
                 if (jsonResponse.startsWith("{")) gson.fromJson(jsonResponse, ResponseData::class.java) else null }
 
         return if (tvType == TvType.TvSeries) {

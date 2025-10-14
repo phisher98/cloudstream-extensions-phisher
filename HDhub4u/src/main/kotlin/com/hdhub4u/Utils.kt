@@ -99,14 +99,6 @@ fun cleanTitle(title: String): String {
     }
 }
 
-
-data class Domains(
-    @JsonProperty("HDHUB4u")
-    val hdhub4u: String,
-    @JsonProperty("4khdhub")
-    val n4khdhub: String,
-)
-
 suspend fun loadSourceNameExtractor(
     source: String,
     url: String,
@@ -132,3 +124,8 @@ suspend fun loadSourceNameExtractor(
         }
     }
 }
+
+data class IMDB(
+    @JsonProperty("imdb_id")
+    val imdbId: String,
+)
