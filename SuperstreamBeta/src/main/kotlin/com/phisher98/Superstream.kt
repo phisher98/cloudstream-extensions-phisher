@@ -65,10 +65,9 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
-open class Superstream(sharedPref: SharedPreferences?=null) : TmdbProvider() {
+open class Superstream(sharedPref: SharedPreferences?=null) : MainAPI() {
     override var name = "SuperStream Beta"
     override val hasMainPage = true
-    override val useMetaLoadResponse = true
     override val hasChromecastSupport = true
     override val instantLinkLoading = true
     override val supportedTypes = setOf(
