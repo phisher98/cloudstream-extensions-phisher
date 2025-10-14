@@ -48,6 +48,7 @@ class XDMovies : MainAPI() {
         )
 
         private const val cinemeta_url = "https://cinemeta-live.strem.io"
+        private val tmdbAPI = "https://94c8cb9f702d-tmdb-addon.baby-beamup.club"
         val tmdbImageBaseUrl = "https://image.tmdb.org/t/p/w500"
         val backgroundPoster = "https://image.tmdb.org/t/p/original"
     }
@@ -153,11 +154,8 @@ class XDMovies : MainAPI() {
         val totalEpisodes = json.optInt("total_episodes", -1)
         val tvType = if (totalEpisodes > 0) TvType.TvSeries else TvType.Movie
         val tvTypeslug = if (totalEpisodes > 0) "series" else "movie"
-        val tmdbtvTypeslug = if (totalEpisodes > 0) "tv" else "movie"
 
         val tmdbid = url.substringAfterLast("=")
-
-        val href= "$mainUrl/details.html?id=$tmdbid&type=$tmdbtvTypeslug"
 
         val downloadLinks = mutableListOf<String>()
         val downloadsArray = json.optJSONArray("download_links")
@@ -169,9 +167,12 @@ class XDMovies : MainAPI() {
         }
 
         val downloadLinksJson = JSONArray(downloadLinks).toString()
-        val imdbId = app.get(
-            "https://api.themoviedb.org/3/$tmdbtvTypeslug/$tmdbid/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
-        ).parsedSafe<IMDB>()?.imdbId
+        val tmdbres = app.get(
+            "$tmdbAPI/meta/$tvTypeslug/tmdb:$tmdbid.json"
+        ).parsedSafe<IMDB>()
+
+        val imdbId = tmdbres?.imdbId
+
         val gson = Gson()
         val responseData = imdbId
             ?.takeIf { it.isNotBlank() && it != "0" }
@@ -234,7 +235,7 @@ class XDMovies : MainAPI() {
                 }
             }
 
-            newTvSeriesLoadResponse(title, href, TvType.TvSeries, episodes) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
@@ -245,7 +246,7 @@ class XDMovies : MainAPI() {
                 addActors(actors)
             }
         } else {
-            newMovieLoadResponse(title, href, TvType.Movie, downloadLinksJson) {
+            newMovieLoadResponse(title, url, TvType.Movie, downloadLinksJson) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
