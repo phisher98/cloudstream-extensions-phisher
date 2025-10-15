@@ -271,7 +271,6 @@ suspend fun cinematickitloadBypass(url: String): String? {
         val decodedUrl = base64Decode(encodedLink)
         val doc = app.get(decodedUrl).document
         val goValue = doc.select("form#landing input[name=go]").attr("value")
-        Log.d("Phisher",goValue)
         return base64Decode(goValue)
     } catch (e: Exception) {
         e.printStackTrace()
@@ -317,7 +316,6 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
           ${'$'}search: String
           ${'$'}sort: [MediaSort] = [POPULARITY_DESC, SCORE_DESC]
           ${'$'}type: MediaType
-          ${'$'}season: MediaSeason
           ${'$'}seasonYear: Int
           ${'$'}format: [MediaFormat]
         ) {
@@ -326,7 +324,6 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
               search: ${'$'}search
               sort: ${'$'}sort
               type: ${'$'}type
-              season: ${'$'}season
               seasonYear: ${'$'}seasonYear
               format_in: ${'$'}format
             ) {
@@ -341,7 +338,7 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
         "search" to title,
         "sort" to "SEARCH_MATCH",
         "type" to "ANIME",
-        "season" to season?.uppercase(),
+        //"season" to season?.uppercase(),
         "seasonYear" to year,
         "format" to listOf(if (type == TvType.AnimeMovie) "MOVIE" else "TV", "ONA")
     ).filterValues { value -> value != null && value.toString().isNotEmpty() }
@@ -351,7 +348,6 @@ suspend fun tmdbToAnimeId(title: String?, year: Int?, season: String?, type: TvT
     ).toJson().toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
     val res = app.post(anilistAPI, requestBody = data)
         .parsedSafe<AniSearch>()?.data?.Page?.media?.firstOrNull()
-    Log.d("Phisher", res?.idMal.toString())
     return AniIds(res?.id, res?.idMal)
 
 }

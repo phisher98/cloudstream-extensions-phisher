@@ -482,6 +482,9 @@ object StreamPlayExtractor : StreamPlay() {
 
         val zoro = malsync?.zoro
         val zoroIds = zoro?.keys?.toList().orEmpty()
+        println("Zoro entries: ${malsync?.zoro}")
+        println("Zoro IDs: $zoroIds")
+
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val anititle = title
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
@@ -1062,8 +1065,8 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
         ) {
-        if (dubtype?.equals("DUB", ignoreCase = true) != true) return
-        val json = app.get("$KickassAPI/api/show/$slug/episodes?ep=1&lang=ja-JP").toString()
+        val locale = if (dubtype?.equals("DUB", ignoreCase = true) == true) { "en-US" } else { "ja-JP" }
+        val json = app.get("$KickassAPI/api/show/$slug/episodes?ep=1&lang=$locale").toString()
         val jsonresponse = parseJsonToEpisodes(json)
 
         val matchedSlug = jsonresponse.firstOrNull {
