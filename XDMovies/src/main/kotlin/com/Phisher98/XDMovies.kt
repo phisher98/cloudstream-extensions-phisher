@@ -61,15 +61,8 @@ class XDMovies : MainAPI() {
         "php/fs.php?ott=AppleTVPlus" to "Apple TV+",
         "php/fs.php?ott=HBOMax" to "HBO Max",
         "php/fs.php?ott=Hulu" to "Hulu",
-        "php/fs.php?ott=ParamountPlus" to "Paramount+",
-        "php/fs.php?ott=Peacock" to "Peacock",
-        "php/fs.php?ott=SonyLiv" to "SonyLIV",
         "php/fs.php?ott=Zee5" to "Zee5",
         "php/fs.php?ott=JioHotstar" to "Hotstar",
-        "php/fs.php?ott=Crunchyroll" to "Crunchyroll",
-        "php/fs.php?ott=Viki" to "Viki",
-        "php/fs.php?ott=YouTube" to "YouTube",
-        "php/fs.php?ott=Mubi" to "Mubi"
     )
 
     override suspend fun getMainPage(
@@ -202,6 +195,10 @@ class XDMovies : MainAPI() {
                         "https://api.themoviedb.org/3/tv/$tmdbid/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
                     ).parsedSafe<TMDBRes>()
 
+                    Log.d(
+                        "Phisher",
+                        "Fetched TMDb season=$seasonNum → episodes=${tmdbRes?.episodes?.size ?: 0}"
+                    )
                     for (e in 0 until episodesArray.length()) {
                         val episodeObj = episodesArray.optJSONObject(e) ?: continue
                         val epNum = episodeObj.optInt("episode_number", e + 1)
@@ -224,7 +221,9 @@ class XDMovies : MainAPI() {
                         }
 
                         if (allLinks.isEmpty()) continue
-                        val tmdbEpisode = tmdbRes?.episodes?.find { it.episodeNumber.toInt() == epNum }
+                        val tmdbEpisode = tmdbRes?.episodes?.find { it.episodeNumber == epNum }
+                        Log.d("Phisher", "Fetching TMDB season $seasonNum for tmdbId=$tmdbid")
+
                         val epName = "S${seasonNum}E${epNum} (${versionNames.joinToString(" / ")})"
                         val info = responseData?.meta?.videos?.find { it.season == seasonNum && it.episode == epNum }
 

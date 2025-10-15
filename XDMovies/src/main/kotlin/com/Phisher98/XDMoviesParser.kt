@@ -42,65 +42,6 @@ class SearchData : ArrayList<SearchData.SearchDataItem>(){
     )
 }
 
-data class Media(
-    val id: Int,
-    val tmdb_id: Int?,
-    val title: String,
-    val name: String,
-    val overview: String?,
-    val poster_path: String?,
-    val backdrop_path: String?,
-    val genres: String?,
-    val language: String?,
-    val rating: Double?,
-    val popularity: Double?,
-    val cast: String?,
-    val firstAirDate: String,
-
-    // Movie-specific fields
-    val release_date: String? = null,
-    val runtime: Int? = null,
-    val movie_source: String? = null,
-    val download_links: List<Download>? = null,
-
-    // Series-specific fields
-    val first_air_date: String? = null,
-    val total_seasons: Int? = null,
-    val total_episodes: Int? = null,
-    val download_data: SeriesDownloadData? = null
-)
-
-data class Download(
-    val version_id: Int? = null,
-    val resolution: String? = null,
-    val custom_title: String? = null,
-    val size: String? = null,
-    val download_link: String? = null,
-    val title: String? = null,
-    val audio_languages: String? = null,
-    val source: String? = null
-)
-
-data class SeriesDownloadData(
-    val id: Int? = null,
-    val title: String? = null,
-    val audio_languages: String? = null,
-    val source: String? = null,
-    val seasons: List<Season>? = null
-)
-
-data class Season(
-    val id: Int? = null,
-    val season_num: Int? = null,
-    val episodes: List<Episode>? = null
-)
-
-data class Episode(
-    val episode_number: Int? = null,
-    val versions: List<Download>? = null
-)
-
-
 data class IMDB(
     @JsonProperty("imdb_id")
     val imdbId: String,
@@ -153,6 +94,7 @@ data class TMDBRes(
     val airDate: String,
     val episodes: List<TMDBResEpisode>,
     val name: String,
+    val networks: List<Network>,
     val overview: String,
     @JsonProperty("id")
     val id2: Long,
@@ -168,7 +110,7 @@ data class TMDBResEpisode(
     @JsonProperty("air_date")
     val airDate: String,
     @JsonProperty("episode_number")
-    val episodeNumber: Long,
+    val episodeNumber: Int,
     @JsonProperty("episode_type")
     val episodeType: String,
     val id: Long,
@@ -176,16 +118,63 @@ data class TMDBResEpisode(
     val overview: String,
     @JsonProperty("production_code")
     val productionCode: String,
-    val runtime: Long,
+    val runtime: Long?,
     @JsonProperty("season_number")
     val seasonNumber: Long,
     @JsonProperty("show_id")
     val showId: Long,
     @JsonProperty("still_path")
-    val stillPath: String,
+    val stillPath: String?,
     @JsonProperty("vote_average")
     val voteAverage: Double,
     @JsonProperty("vote_count")
     val voteCount: Long,
-    val crew: List<Any?>,
+    val crew: List<Crew>,
+    @JsonProperty("guest_stars")
+    val guestStars: List<GuestStar>,
+)
+
+data class Crew(
+    val job: String,
+    val department: String,
+    @JsonProperty("credit_id")
+    val creditId: String,
+    val adult: Boolean,
+    val gender: Long,
+    val id: Long,
+    @JsonProperty("known_for_department")
+    val knownForDepartment: String,
+    val name: String,
+    @JsonProperty("original_name")
+    val originalName: String,
+    val popularity: Double,
+    @JsonProperty("profile_path")
+    val profilePath: String?,
+)
+
+data class GuestStar(
+    val character: String,
+    @JsonProperty("credit_id")
+    val creditId: String,
+    val order: Long,
+    val adult: Boolean,
+    val gender: Long,
+    val id: Long,
+    @JsonProperty("known_for_department")
+    val knownForDepartment: String,
+    val name: String,
+    @JsonProperty("original_name")
+    val originalName: String,
+    val popularity: Double,
+    @JsonProperty("profile_path")
+    val profilePath: String?,
+)
+
+data class Network(
+    val id: Long,
+    @JsonProperty("logo_path")
+    val logoPath: String,
+    val name: String,
+    @JsonProperty("origin_country")
+    val originCountry: String,
 )
