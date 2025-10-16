@@ -27,7 +27,6 @@ import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
-import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.phisher98.BuildConfig
@@ -48,11 +47,6 @@ class AnimeKai : MainAPI() {
     override val hasDownloadSupport = true
     override val usesWebView = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
-
-    override val supportedSyncNames = setOf(
-        SyncIdName.MyAnimeList,
-        SyncIdName.Anilist
-    )
 
     private fun Element.toSearchResult(): SearchResponse {
         val href = fixUrl(this.select("a.poster").attr("href"))
@@ -142,7 +136,7 @@ class AnimeKai : MainAPI() {
         val aniid = document.select("div.watch-section").attr("data-al-id")
         val poster = document.select("div.poster img").attr("src")
         val animeData = try {
-            val syncData = app.get("https://api.ani.zip/mappings?mal_id=$malid").text
+            val syncData = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").text
             JsonParser.parseString(syncData)?.asJsonObject
         } catch (_: Exception) {
             null
