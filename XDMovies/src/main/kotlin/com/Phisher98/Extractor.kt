@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.phisher98
 
 import android.annotation.SuppressLint
 import com.lagradost.api.Log
@@ -199,7 +199,7 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=")
                     callback.invoke(
                         newExtractorLink(
                             "$referer 10Gbps [Download]",

@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.phisher98
 
 import com.google.gson.Gson
 import com.lagradost.api.Log
@@ -47,10 +47,11 @@ class XDMovies : MainAPI() {
             "x-requested-with" to "XMLHttpRequest"
         )
 
-        private const val cinemeta_url = "https://cinemeta-live.strem.io"
-        private val tmdbAPI = "https://94c8cb9f702d-tmdb-addon.baby-beamup.club"
-        val tmdbImageBaseUrl = "https://image.tmdb.org/t/p/w500"
-        val backgroundPoster = "https://image.tmdb.org/t/p/original"
+
+        private const val CINEMETAURL = "https://cinemeta-live.strem.io"
+        private const val TMDBAPI = "https://94c8cb9f702d-tmdb-addon.baby-beamup.club"
+        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
+        const val BGPOSTER = "https://image.tmdb.org/t/p/original"
     }
 
     override val mainPage = mainPageOf(
@@ -92,7 +93,7 @@ class XDMovies : MainAPI() {
 
     private fun Home.Data.toSearchResult(): SearchResponse? {
         val title = this.title
-        val poster = tmdbImageBaseUrl+this.poster_path
+        val poster = TMDBIMAGEBASEURL+this.poster_path
         val apiSlug = if (this.type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
         val url = "$mainUrl/api/$apiSlug?tmdb_id=${this.tmdb_id}"
         val year= this.release_date.substringBefore("-").toIntOrNull()
@@ -104,7 +105,7 @@ class XDMovies : MainAPI() {
     }
     private fun HomePageHome.toSearchResult(): SearchResponse? {
         val title = this.title
-        val poster = tmdbImageBaseUrl+this.posterPath
+        val poster = TMDBIMAGEBASEURL+this.posterPath
         val apiSlug = if (this.type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
         val url = "$mainUrl/api/$apiSlug?tmdb_id=${this.tmdbId}"
         val year= this.releaseDate.substringBefore("-").toIntOrNull()
@@ -126,16 +127,25 @@ class XDMovies : MainAPI() {
         val apiSlug = if (this.type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
         val url = "$mainUrl/api/$apiSlug?tmdb_id=${this.tmdb_id}"
         return newMovieSearchResponse(title, url, TvType.Movie) {
-            this.posterUrl = tmdbImageBaseUrl+poster
+            this.posterUrl = TMDBIMAGEBASEURL+poster
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val resString = app.get(url, headers).text
+        val resString = if (url.contains("details.html")) {
+            val type = url.substringAfterLast("&type=")
+            val apiSlug = if (type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
+            val id = url.substringAfterLast("id=").substringBefore("&")
+            val apiUrl = "$mainUrl/api/$apiSlug?tmdb_id=$id"
+            app.get(apiUrl, headers).text
+        } else {
+            app.get(url, headers).text
+        }
+
         val json = JSONObject(resString)
         val title = json.optString("title").takeIf { it.isNotBlank() } ?: json.optString("name").orEmpty()
-        val poster = json.optString("poster_path").takeIf { it.isNotBlank() }?.let { tmdbImageBaseUrl + it } ?: ""
-        val backgroundposter = json.optString("backdrop_path").takeIf { it.isNotBlank() }?.let { backgroundPoster + it } ?: ""
+        val poster = json.optString("poster_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it } ?: ""
+        val backgroundposter = json.optString("backdrop_path").takeIf { it.isNotBlank() }?.let { BGPOSTER + it } ?: ""
         val tags = json.optString("genres").takeIf { it.isNotBlank() }?.split(",")?.map { it.trim() } ?: emptyList()
         val actors = json.optString("cast").takeIf { it.isNotBlank() }?.split(",")?.map { it.trim() } ?: emptyList()
         val releaseDate = json.optString("release_date")
@@ -147,9 +157,9 @@ class XDMovies : MainAPI() {
         val totalEpisodes = json.optInt("total_episodes", -1)
         val tvType = if (totalEpisodes > 0) TvType.TvSeries else TvType.Movie
         val tvTypeslug = if (totalEpisodes > 0) "series" else "movie"
-        //val tmdbtvTypeslug = if (totalEpisodes > 0) "tv" else "movie"
+        val tmdbtvTypeslug = if (totalEpisodes > 0) "tv" else "movie"
         val tmdbid = url.substringAfterLast("=")
-        //val href= "$mainUrl/details.html?id=$tmdbid&type=$tmdbtvTypeslug"
+        val href= "$mainUrl/details.html?id=$tmdbid&type=$tmdbtvTypeslug"
 
 
         val downloadLinks = mutableListOf<String>()
@@ -163,7 +173,7 @@ class XDMovies : MainAPI() {
 
         val downloadLinksJson = JSONArray(downloadLinks).toString()
         val tmdbres = app.get(
-            "$tmdbAPI/meta/$tvTypeslug/tmdb:$tmdbid.json"
+            "$TMDBAPI/meta/$tvTypeslug/tmdb:$tmdbid.json"
         ).parsedSafe<IMDB>()
 
         val imdbId = tmdbres?.imdbId
@@ -172,7 +182,7 @@ class XDMovies : MainAPI() {
         val responseData = imdbId
             ?.takeIf { it.isNotBlank() && it != "0" }
             ?.let {
-                val jsonResponse = app.get("$cinemeta_url/meta/$tvTypeslug/$it.json").text
+                val jsonResponse = app.get("$CINEMETAURL/meta/$tvTypeslug/$it.json").text
                 if (jsonResponse.startsWith("{")) gson.fromJson(jsonResponse, ResponseData::class.java) else null }
 
         return if (tvType == TvType.TvSeries) {
@@ -227,7 +237,7 @@ class XDMovies : MainAPI() {
                             this.name = tmdbEpisode?.name ?: info?.name ?: epName
                             this.season = seasonNum
                             this.episode = epNum
-                            this.posterUrl = (tmdbImageBaseUrl + tmdbEpisode?.stillPath)
+                            this.posterUrl = (TMDBIMAGEBASEURL + tmdbEpisode?.stillPath)
                             this.description = tmdbEpisode?.overview ?: info?.overview
                             this.score = Score.from10(tmdbEpisode?.voteAverage)
                             this.addDate(tmdbEpisode?.airDate)
@@ -236,7 +246,7 @@ class XDMovies : MainAPI() {
                 }
             }
 
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newTvSeriesLoadResponse(title, href, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
@@ -247,7 +257,7 @@ class XDMovies : MainAPI() {
                 addActors(actors)
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie, downloadLinksJson) {
+            newMovieLoadResponse(title, href, TvType.Movie, downloadLinksJson) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
@@ -268,15 +278,16 @@ class XDMovies : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data.isBlank()) return false
-        val parsedList: List<String>? = tryParseJson<List<String>>(data)
-        val fallbackList: List<String> = data
-            .trim()
-            .removePrefix("[")
-            .removeSuffix("]")
-            .split(',')
-            .map { it.trim().removeSurrounding("\"").removeSurrounding("'") }
-            .filter { it.isNotBlank() }
-        val links = (parsedList?.map { it.trim() }?.filter { it.isNotBlank() } ?: fallbackList).distinct()
+
+        val links = (tryParseJson<List<String>>(data)
+            ?.mapNotNull { it -> it.trim().takeIf { it.isNotBlank() } }
+            ?: data.trim()
+                .removePrefix("[")
+                .removeSuffix("]")
+                .split(',')
+                .mapNotNull { it -> it.trim().removeSurrounding("\"").removeSurrounding("'").takeIf { it.isNotBlank() } })
+            .distinct()
+
         if (links.isEmpty()) return false
 
         for (link in links) {
@@ -285,8 +296,9 @@ class XDMovies : MainAPI() {
             } else {
                 loadExtractor(link, name, subtitleCallback, callback)
             }
-            Log.d("Phisher", link)
+            Log.d("XDMovies", link)
         }
+
         return true
     }
 }
