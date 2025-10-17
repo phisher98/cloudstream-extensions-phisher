@@ -16,6 +16,7 @@ import com.lagradost.nicehttp.ResponseParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.net.URI
 import kotlin.reflect.KClass
 
 val JSONParser = object : ResponseParser {
@@ -32,7 +33,7 @@ val JSONParser = object : ResponseParser {
     override fun <T : Any> parseSafe(text: String, kClass: KClass<T>): T? {
         return try {
             mapper.readValue(text, kClass.java)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -87,6 +88,43 @@ suspend fun loadCustomExtractor(
     }
 }
 
+
+suspend fun resolveIframeSrc(initialUrl: String): String? {
+    return try {
+        val initialResponse = app.get(initialUrl, allowRedirects = false)
+
+        val refreshUrl = initialResponse.document
+            .selectFirst("meta[http-equiv=refresh]")
+            ?.attr("content")
+            ?.substringAfter("url=")
+            ?.removeSurrounding("'", "'")
+            ?.trim()
+            .takeIf { !it.isNullOrEmpty() }
+            ?: run {
+                println("⚠️ No refresh meta tag found")
+                return null
+            }
+
+        val refreshResponse = app.get(refreshUrl, allowRedirects = false)
+        val cookieHeader = refreshResponse.headers["set-cookie"].orEmpty()
+        val redirectBaseUrl = getBaseUrl(refreshUrl)
+        val finalResponse = app.get(redirectBaseUrl, headers = mapOf("cookie" to cookieHeader))
+        val iframeSrc = finalResponse.document.selectFirst("iframe")?.attr("src")
+        println("✅ Found iframe src: $iframeSrc")
+        iframeSrc
+    } catch (e: Exception) {
+        println("❌ Error resolving iframe: ${e.message}")
+        e.printStackTrace()
+        null
+    }
+}
+private fun getBaseUrl(url: String): String {
+    return try {
+        URI(url).let { "${it.scheme}://${it.host}" }
+    } catch (_: Exception) {
+        ""
+    }
+}
 
 
 
