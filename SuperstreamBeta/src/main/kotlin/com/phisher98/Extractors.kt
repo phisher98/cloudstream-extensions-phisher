@@ -75,7 +75,7 @@ object SuperStreamExtractor : Superstream() {
         subtitles?.list?.forEach { subs ->
             val sub = subs.subtitles.maxByOrNull { it.support_total ?: 0 }
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     sub?.language ?: sub?.lang ?: return@forEach,
                     sub?.filePath ?: return@forEach
                 )
@@ -244,7 +244,7 @@ object SuperStreamExtractor : Superstream() {
             .parsedSafe<WatchsomuchSubResponses>()?.subtitles
             ?.map { sub ->
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         sub.label ?: "",
                         fixUrl(sub.url ?: return@map null, watchSomuchAPI)
                     )
@@ -268,7 +268,7 @@ object SuperStreamExtractor : Superstream() {
         app.get("${openSubAPI}/subtitles/$slug.json", timeout = 120L)
             .parsedSafe<OsResult>()?.subtitles?.map { sub ->
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
                         ?: return@map,
                         sub.url ?: return@map

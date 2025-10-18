@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
@@ -100,7 +101,7 @@ class MegaUp : ExtractorApi() {
                 val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
                 val file = trackObj.optString("file").takeIf { it.isNotBlank() }
                 if (label != null && file != null) {
-                    subtitleCallback(SubtitleFile(label, file))
+                    subtitleCallback(newSubtitleFile(label, file))
                 }
             }
         } catch (_: JSONException) {

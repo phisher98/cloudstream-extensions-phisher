@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
@@ -70,7 +71,7 @@ open class AWSStream : ExtractorApi() {
                     ?.get(1)
                     ?.let { subtitleUrl ->
                         subtitleCallback.invoke(
-                            SubtitleFile(
+                            newSubtitleFile(
                                 "English",
                                 subtitleUrl
                             )

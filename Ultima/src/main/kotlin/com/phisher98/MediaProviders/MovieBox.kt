@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -209,7 +210,7 @@ class MovieBoxMediaProvider : MediaProvider() {
                                             ?: caption["lan"]?.asText()
                                             ?: "Unknown"
                                         subtitleCallback.invoke(
-                                            SubtitleFile(
+                                            newSubtitleFile(
                                                 url = captionUrl,
                                                 lang = "$lang (${language.capitalize()})"
                                             )

@@ -175,7 +175,7 @@ open class AWSStream : ExtractorApi() {
                     ?.get(1)
                     ?.let { subtitleUrl ->
                         subtitleCallback.invoke(
-                            SubtitleFile(
+                            newSubtitleFile(
                                 "English",
                                 subtitleUrl
                             )

@@ -327,7 +327,7 @@ class StremioC : MainAPI() {
                 )
                 subtitles.map { sub ->
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
                             ?: "",
                             sub.url ?: return@map

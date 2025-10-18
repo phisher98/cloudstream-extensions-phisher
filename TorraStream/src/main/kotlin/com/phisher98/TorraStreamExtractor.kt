@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -454,7 +455,7 @@ suspend fun invokeSubtitleAPI(
             val lan = getLanguage(it.lang) ?:"Unknown"
             val suburl = it.url
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
                     suburl     // Use extracted URL
                 )

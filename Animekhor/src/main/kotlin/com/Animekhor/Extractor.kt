@@ -94,7 +94,7 @@ open class Rumble : ExtractorApi() {
             val label = track.groupValues[2]
 
             subtitleCallback.invoke(
-                SubtitleFile(label, fileUrl)
+                newSubtitleFile(label, fileUrl)
             )
         }
     }

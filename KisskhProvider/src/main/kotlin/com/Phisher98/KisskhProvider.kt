@@ -29,14 +29,18 @@ class KisskhProvider : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
+        "&type=0&sub=0&country=0&status=0&order=2" to "Latest",
+        "&type=0&sub=0&country=2&status=0&order=1" to "Top K-Drama",
+        "&type=0&sub=0&country=1&status=0&order=1" to "Top C-Drama",
         "&type=2&sub=0&country=2&status=0&order=1" to "Movie Popular",
         "&type=2&sub=0&country=2&status=0&order=2" to "Movie Last Update",
         "&type=1&sub=0&country=2&status=0&order=1" to "TVSeries Popular",
         "&type=1&sub=0&country=2&status=0&order=2" to "TVSeries Last Update",
         "&type=3&sub=0&country=0&status=0&order=1" to "Anime Popular",
-        "&type=3&sub=0&country=0&status=0&order=2" to "Anime Last Update",
+        "&type=3&sub=0&country=0&status=0&order=2" to "Anime Latest Update",
         "&type=4&sub=0&country=0&status=0&order=1" to "Hollywood Popular",
         "&type=4&sub=0&country=0&status=0&order=2" to "Hollywood Last Update",
+        "&type=0&sub=0&country=0&status=3&order=2" to "Upcoming"
     )
 
     override suspend fun getMainPage(
@@ -183,7 +187,7 @@ class KisskhProvider : MainAPI() {
             tryParseJson<List<Subtitle>>(res)?.map { sub ->
                 if (sub.src!!.contains(".txt")) {
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             getLanguage(sub.label ?: return@map),
                             sub.src
                         )
@@ -191,7 +195,7 @@ class KisskhProvider : MainAPI() {
                 }
                 else
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         getLanguage(sub.label ?: return@map),
                         sub.src
                     )

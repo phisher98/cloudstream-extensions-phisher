@@ -15,6 +15,7 @@ import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import java.util.Locale
 
 
@@ -77,7 +78,7 @@ class Tmdb(val plugin: UltimaBetaPlugin) : TmdbProvider() {
                 val lan = getLanguage(it.lang) ?: "Unknown"
                 val suburl = it.url
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },  // Use label for the name
                         suburl     // Use extracted URL
                     )

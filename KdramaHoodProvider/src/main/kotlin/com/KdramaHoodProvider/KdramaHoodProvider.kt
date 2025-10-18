@@ -187,7 +187,7 @@ class KdramaHoodProvider : MainAPI() {
         parseJson<List<String>>(data).amap { item ->
             if (item.contains(".srt")) {
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         "Subtitle",  // Use label for the name
                         item     // Use extracted URL
                     )

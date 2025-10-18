@@ -146,7 +146,7 @@ open class AWSStream : ExtractorApi() {
                 )
 
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         "English",
                         "$API/subs/m3u8/$extractedHash/subtitles-eng.vtt"
                     )

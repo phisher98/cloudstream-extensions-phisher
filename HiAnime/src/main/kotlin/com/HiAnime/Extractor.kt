@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import java.net.URLEncoder
 
@@ -84,7 +85,7 @@ class Megacloud : ExtractorApi() {
 
             response.tracks.forEach { track ->
                 if (track.kind == "captions" || track.kind == "subtitles") {
-                    subtitleCallback(SubtitleFile(track.label, track.file))
+                    subtitleCallback(newSubtitleFile(track.label, track.file))
                 }
             }
 
@@ -123,7 +124,7 @@ class Megacloud : ExtractorApi() {
                 val subtitleUrls = listOf(vttResponse.url)
                     .filter { it.endsWith(".vtt") && !it.contains("thumbnails", ignoreCase = true) }
                 subtitleUrls.forEachIndexed { _, subUrl ->
-                    subtitleCallback(SubtitleFile("English", subUrl))
+                    subtitleCallback(newSubtitleFile("English", subUrl))
                 }
 
                 val fallbackM3u8 = app.get(url = url, referer = mainUrl, interceptor = m3u8Resolver).url

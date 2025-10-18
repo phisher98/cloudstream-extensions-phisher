@@ -3,6 +3,7 @@ package com.Desicinemas
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
@@ -61,7 +62,7 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
                     }
 
                     matched.contains(".vtt") -> {
-                        subtitleCallback(SubtitleFile("Subtitles", url))
+                        subtitleCallback(newSubtitleFile("Subtitles", url))
                     }
                 }
             }

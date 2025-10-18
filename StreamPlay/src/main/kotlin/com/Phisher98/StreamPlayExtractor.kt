@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -454,7 +455,7 @@ object StreamPlayExtractor : StreamPlay() {
         if (subResponse.code != 200) return
         tryParseJson<List<KisskhSubtitle>>(subResponse.text)?.forEach { sub ->
             val lang = getLanguage(sub.label ?: "UnKnown")
-            subtitleCallback.invoke(SubtitleFile(lang, sub.src ?: return@forEach))
+            subtitleCallback.invoke(newSubtitleFile(lang, sub.src ?: return@forEach))
         }
     }
 
@@ -713,7 +714,7 @@ object StreamPlayExtractor : StreamPlay() {
                                             SubtitleHelper.fromTwoLettersToLanguage(sub.lang ?: "")
                                                 ?: sub.lang.orEmpty()
                                         val src = sub.src ?: return@forEach
-                                        subtitleCallback(SubtitleFile(langName, httpsify(src)))
+                                        subtitleCallback(newSubtitleFile(langName, httpsify(src)))
                                     }
                                 }
                             }
@@ -1120,7 +1121,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
 
                 decrypted.subtitles.forEach { subtitle ->
-                    subtitleCallback(SubtitleFile(subtitle.name, httpsify(subtitle.src)))
+                    subtitleCallback(newSubtitleFile(subtitle.name, httpsify(subtitle.src)))
                 }
             } else if (server.name.contains("CatStream")) {
                 val baseurl= getBaseUrl(server.src)
@@ -1163,7 +1164,7 @@ object StreamPlayExtractor : StreamPlay() {
                         val src = sub.getJSONArray("src").getString(1)
                         val name = sub.getJSONArray("name").getString(1)
                         subtitleCallback.invoke(
-                            SubtitleFile(
+                            newSubtitleFile(
                                 name,  // Use label for the name
                                 httpsify(src)    // Use extracted URL
                             )
@@ -1299,7 +1300,7 @@ object StreamPlayExtractor : StreamPlay() {
             val lan = getLanguage(it.lang)
             val suburl = it.url
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     lan.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
                     suburl
                 )
@@ -1330,7 +1331,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         subtitles.forEach {
             val language = it.display.replaceFirstChar { ch -> ch.titlecase(Locale.getDefault()) }
-            subtitleCallback(SubtitleFile(language, it.url))
+            subtitleCallback(newSubtitleFile(language, it.url))
         }
     }
 
@@ -1405,7 +1406,7 @@ object StreamPlayExtractor : StreamPlay() {
                             val subUrl = subtitle.file.orEmpty()
                             if (subUrl.isNotBlank()) {
                                 subtitleCallback(
-                                    SubtitleFile(
+                                    newSubtitleFile(
                                         lang = subtitle.label ?: "Unknown",
                                         url = subUrl
                                     )
@@ -1509,7 +1510,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val sub = subs.getJSONObject(i)
                     val subLang = sub.optString("lang", "Unknown")
                     val subUrl = sub.optString("url")
-                    if (subUrl.isNotBlank()) subtitleCallback(SubtitleFile(subLang, subUrl))
+                    if (subUrl.isNotBlank()) subtitleCallback(newSubtitleFile(subLang, subUrl))
                 }
 
             } catch (e: Exception) {
@@ -2497,7 +2498,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         app.get(subUrl).parsedSafe<WatchsomuchSubResponses>()?.subtitles?.map { sub ->
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     sub.label?.substringBefore("&nbsp") ?: "", fixUrl(
                         sub.url
                             ?: return@map null, watchSomuchAPI
@@ -2526,7 +2527,7 @@ object StreamPlayExtractor : StreamPlay() {
         val data = parseJson<ArrayList<WHVXSubtitle>>(json)
         data.forEach {
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     it.languageName,
                     it.url
                 )
@@ -3065,7 +3066,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         tracks?.map { track ->
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     track.label ?: "",
                     track.file ?: return@map,
                 )
@@ -4053,7 +4054,7 @@ object StreamPlayExtractor : StreamPlay() {
             streamRes.tracks?.forEach { sub ->
                 val label = sub.label ?: return@forEach
                 val file = sub.file ?: return@forEach
-                subtitleCallback(SubtitleFile(label, file))
+                subtitleCallback(newSubtitleFile(label, file))
             }
         }
     }
@@ -4372,7 +4373,7 @@ object StreamPlayExtractor : StreamPlay() {
         tracks.forEach { (label, file) ->
             val subtitlefile = Embedlc + file
             subtitleCallback(
-                SubtitleFile(
+                newSubtitleFile(
                     label,
                     subtitlefile
                 )
@@ -4624,7 +4625,7 @@ object StreamPlayExtractor : StreamPlay() {
                                             ?: caption["lan"]?.asText()
                                             ?: "Unknown"
                                         subtitleCallback.invoke(
-                                            SubtitleFile(
+                                            newSubtitleFile(
                                                 url = captionUrl,
                                                 lang = "$lang (${language.capitalize()})"
                                             )
@@ -4945,7 +4946,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         root.stream.captions.forEach { caption ->
             subtitleCallback(
-                SubtitleFile(
+                newSubtitleFile(
                     caption.language,
                     caption.url
                 )
@@ -5180,7 +5181,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val label = trackObj.optString("label", "Unknown")
 
                 subtitleCallback.invoke(
-                    SubtitleFile(label, subUrl)
+                    newSubtitleFile(label, subUrl)
                 )
             }
         }
@@ -5254,7 +5255,7 @@ object StreamPlayExtractor : StreamPlay() {
                             val sub = subs.getJSONObject(j)
                             val subLabel = getLanguage(sub.optString("label", ""))
                             val subSrc = sub.optString("src", "")
-                            subtitleCallback(SubtitleFile(subLabel, subSrc))
+                            subtitleCallback(newSubtitleFile(subLabel, subSrc))
                         }
                     }
                 }
@@ -5284,7 +5285,7 @@ object StreamPlayExtractor : StreamPlay() {
                         val sub = subs.getJSONObject(j)
                         val subLabel = getLanguage(sub.optString("label", ""))
                         val subSrc = sub.optString("src", "")
-                        subtitleCallback(SubtitleFile(subLabel, "$serverUrl$subSrc"))
+                        subtitleCallback(newSubtitleFile(subLabel, "$serverUrl$subSrc"))
                     }
                 }
             }

@@ -208,7 +208,7 @@ val json = """
                 )
                 decrypted.subtitles.amap {
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             it.name,  // Use label for the name
                             it.src     // Use extracted URL
                         )
@@ -256,7 +256,7 @@ val json = """
                         val src = sub.getJSONArray("src").getString(1)
                         val name = sub.getJSONArray("name").getString(1)
                         subtitleCallback.invoke(
-                            SubtitleFile(
+                            newSubtitleFile(
                                 name,  // Use label for the name
                                 src    // Use extracted URL
                             )
@@ -306,7 +306,7 @@ val json = """
                             val src = sub.getJSONArray("src").getString(1)
                             val name = sub.getJSONArray("name").getString(1)
                             subtitleCallback.invoke(
-                                SubtitleFile(
+                                newSubtitleFile(
                                     name,  // Use label for the name
                                     src    // Use extracted URL
                                 )
