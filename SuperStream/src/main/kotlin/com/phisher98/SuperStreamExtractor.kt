@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
 import com.phisher98.BuildConfig.SUPERSTREAM_THIRD_API
 import org.json.JSONArray
@@ -148,15 +149,16 @@ object SuperStreamExtractor : SuperStream() {
                         if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
                     if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "⌜ SuperStream ⌟",
                             "⌜ SuperStream ⌟ [Server ${index + 1}] ${source.size}",
                             source.file?.replace("\\/", "/") ?: return@org,
-                            "",
-                            getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
-                            type = format,
-                            headers=videoheaders
+                            format
                         )
+                        {
+                            this.quality = getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label)
+                            this.headers = videoheaders
+                        }
                     )
                 }
             }

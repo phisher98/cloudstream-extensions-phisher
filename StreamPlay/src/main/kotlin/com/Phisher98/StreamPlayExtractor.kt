@@ -1114,10 +1114,15 @@ object StreamPlayExtractor : StreamPlay() {
                 )
 
                 callback(
-                    ExtractorLink(
-                        server.name, server.name, m3u8, "", Qualities.P1080.value,
-                        type = ExtractorLinkType.M3U8, headers = videoHeaders
-                    )
+                    newExtractorLink(
+                        server.name,
+                        server.name,
+                        m3u8,
+                        ExtractorLinkType.M3U8)
+                    {
+                        this.quality = Qualities.P1080.value
+                        this.headers = videoHeaders
+                    }
                 )
 
                 decrypted.subtitles.forEach { subtitle ->
@@ -1145,15 +1150,16 @@ object StreamPlayExtractor : StreamPlay() {
 
                     val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
                     callback.invoke(
-                        ExtractorLink(
-                            "CatStream",
-                            "CatStream HLS",
-                            videoUrl,
-                            "",
-                            Qualities.P1080.value,
-                            type = ExtractorLinkType.M3U8,
-                            headers = headers
-                        )
+                        newExtractorLink(
+                        "CatStream",
+                        "CatStream HLS",
+                        videoUrl,
+                        ExtractorLinkType.M3U8
+                    )
+                    {
+                        this.quality = Qualities.P1080.value
+                        this.headers = headers
+                    }
                     )
 
                     val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
