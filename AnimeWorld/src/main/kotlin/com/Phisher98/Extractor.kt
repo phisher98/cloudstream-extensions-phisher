@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
 
@@ -99,7 +100,7 @@ open class GDMirrorbot : ExtractorApi() {
                         loadExtractor(fullUrl, referer ?: mainUrl, subtitleCallback, callback)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Log.e("Error:", "Failed to extract from $friendlyName at $fullUrl")
                 continue
             }
