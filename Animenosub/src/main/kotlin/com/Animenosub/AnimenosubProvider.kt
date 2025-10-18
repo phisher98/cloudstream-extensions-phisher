@@ -11,7 +11,6 @@ class AnimenosubProvider: BasePlugin() {
         registerExtractorAPI(waaw())
         registerExtractorAPI(wishfast())
         registerExtractorAPI(FileMoonSx())
-        registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(AnimenosubExtractor())
     }
 }

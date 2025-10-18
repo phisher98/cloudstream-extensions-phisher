@@ -18,8 +18,7 @@ class DoraBash : MainAPI() {
         "tag/hindi-dubbed-episodes/page" to "Seasons",
         "tag/movies/page" to "Movies",
         "anime/?status=&type=tv&sub=sub&page=" to "Special",
-
-        )
+    )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/$page").document
