@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -222,11 +221,13 @@ class KisskhProvider : MainAPI() {
                         .filter(String::isNotBlank)
                         .map(String::trim)
                     val decrypted = chunks.mapIndexed { index, chunk ->
-                        val parts = chunk.split("\n")
-                        val text = parts.slice(1 until parts.size)
+                        if (chunk.isBlank()) return@mapIndexed ""
+                        val parts = chunk.lines()
+                        val text = parts.drop(1)
                         val d = text.joinToString("\n") { decrypt(it) }
-                        arrayOf(index + 1, parts.first(), d).joinToString("\n")
-                    }.joinToString("\n\n")
+                        listOf(index + 1, parts.firstOrNull().orEmpty(), d).joinToString("\n")
+                    }.filter { it.isNotEmpty() }
+                        .joinToString("\n\n")
                     val newBody = decrypted.toResponseBody(response.body.contentType())
                     return response.newBuilder()
                         .body(newBody)
