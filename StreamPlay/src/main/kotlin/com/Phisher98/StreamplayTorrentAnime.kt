@@ -3,6 +3,7 @@ package com.phisher98
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
+import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -13,6 +14,7 @@ import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
@@ -35,6 +37,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.StreamPlayAnime.LinkData
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
@@ -146,13 +149,10 @@ class StreamplayTorrentAnime : MainAPI() {
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
 
         val jpTitle = data.title.romaji
-        val animeData = if (ids.id != null) {
-            val syncData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
-            parseAnimeData(syncData)
-        } else {
-            null
-        }
-        val href= StreamPlayAnime.LinkData(
+        val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
+        val animeMetaData = parseAnimeData(syncMetaData)
+
+        val href = LinkData(
             malId = ids.idMal,
             aniId = ids.id,
             title = data.getTitle(),
@@ -161,7 +161,20 @@ class StreamplayTorrentAnime : MainAPI() {
             isAnime = true
         ).toStringData()
 
-        val episodes = (1..data.totalEpisodes()).map { i ->
+        // --- Helper to get best episode title ---
+        fun resolveTitle(epData: MetaEpisode?): String {
+            val jsonTitle = epData?.title?.get("en")
+                ?: epData?.title?.get("ja")
+                ?: epData?.title?.get("x-jat")
+                ?: animeMetaData?.titles?.get("en")
+                ?: animeMetaData?.titles?.get("ja")
+                ?: animeMetaData?.titles?.get("x-jat")
+                ?: ""
+            return jsonTitle.ifBlank { "Episode ${epData?.episode ?: ""}" }
+        }
+
+        fun createEpisode(i: Int, isDub: Boolean): Episode {
+            val epData = animeMetaData?.episodes?.get(i.toString())
             val linkData = LinkData(
                 malId = ids.idMal,
                 aniId = ids.id,
@@ -170,30 +183,31 @@ class StreamplayTorrentAnime : MainAPI() {
                 year = data.startDate.year,
                 season = 1,
                 episode = i,
-                isAnime = true
+                isAnime = true,
+                isDub = isDub
             ).toStringData()
 
-            newEpisode(linkData) {
+            return newEpisode(linkData) {
                 this.season = 1
                 this.episode = i
-
-                val epData = animeData?.episodes?.get(i.toString())
-
-                this.name = epData?.title?.get("en")
-                this.posterUrl = epData?.image
+                this.name = resolveTitle(epData)
+                this.posterUrl = epData?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
                 this.description = epData?.overview ?: "No summary available"
-                this.score = Score.from10(epData?.rating?.toIntOrNull())
+                this.score = Score.from10(epData?.rating)
                 this.runTime = epData?.runtime
+                this.addDate(epData?.airDate)
             }
         }
+
+        val episodes = (1..data.totalEpisodes()).map { createEpisode(it, false) }
 
         return if (data.format.contains("Movie",ignoreCase = true)) {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeData?.images
+                this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl = animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
@@ -206,9 +220,9 @@ class StreamplayTorrentAnime : MainAPI() {
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl =
-                    animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+                    animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
                         ?: data.bannerImage
-                this.posterUrl = animeData?.images
+                this.posterUrl = animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()

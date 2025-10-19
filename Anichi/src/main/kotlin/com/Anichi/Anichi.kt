@@ -11,7 +11,6 @@ import com.Anichi.AnichiParser.Edges
 import com.Anichi.AnichiParser.JikanResponse
 import com.Anichi.AnichiUtils.aniToMal
 import com.Anichi.AnichiUtils.getTracker
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorRole
 import com.lagradost.cloudstream3.AnimeSearchResponse
@@ -25,10 +24,12 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addDub
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.addSub
@@ -51,7 +52,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
-import kotlin.math.roundToInt
 
 open class Anichi : MainAPI() {
     override var name = "Anichi"
@@ -224,50 +224,53 @@ open class Anichi : MainAPI() {
                         showData.type
                 )
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=${trackers?.idMal}").toString()
-        val animeData = parseAnimeData(syncData)
-        val poster = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: showData.thumbnail
+        val animeMetadata = parseAnimeData(syncData)
+
+        val poster = animeMetadata?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: showData.thumbnail
         val episodes = showData.availableEpisodesDetail?.let { detail ->
             val id = showData.Id ?: return@let null
 
+            // 🔹 Helper to safely get episode metadata
+            fun getEpMeta(epNum: Int?): EpisodeInfo? =
+                epNum?.let { animeMetadata?.episodes?.get(it.toString()) }
+
             val sub = detail.sub.map { eps ->
+                val epNum = eps.toIntOrNull()
+                val meta = getEpMeta(epNum)
+
                 newEpisode(
                     AnichiLoadData(id, "sub", eps, trackers?.idMal).toJson()
                 ) {
-                    episode = eps.toIntOrNull()
-                    this.name = animeData?.episodes?.get(episode?.toString())?.title?.get("en")
-                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                        ?.toDoubleOrNull()
-                        ?.times(10)
-                        ?.roundToInt()
-                        ?: 0
-                    this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
-                        ?: return@newEpisode
-                    this.description = animeData.episodes[episode?.toString()]?.overview
-                        ?: "No summary available"
+                    this.episode = epNum
+                    this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
+                    this.score = Score.from10(meta?.rating)
+                    this.posterUrl = meta?.image ?: showData.thumbnail
+                    this.description = meta?.overview ?: "No summary available"
+                    this.addDate(meta?.airDate)
+                    this.runTime = meta?.runtime
                 }
             }
 
             val dub = detail.dub.map { eps ->
+                val epNum = eps.toIntOrNull()
+                val meta = getEpMeta(epNum)
                 newEpisode(
                     AnichiLoadData(id, "dub", eps, trackers?.idMal).toJson()
                 ) {
-                    episode = eps.toIntOrNull()
-                    this.name = animeData?.episodes?.get(episode?.toString())?.title?.get("en")
-                    this.rating = animeData?.episodes?.get(episode?.toString())?.rating
-                        ?.toDoubleOrNull()
-                        ?.times(10)
-                        ?.roundToInt()
-                        ?: 0
-                    this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image
-                        ?: return@newEpisode
-                    this.description = animeData.episodes[episode?.toString()]?.overview
-                        ?: "No summary available"
+                    this.episode = epNum
+                    this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
+                    this.score = Score.from10(meta?.rating)
+                    this.posterUrl = meta?.image ?: showData.thumbnail
+                    this.description = meta?.overview ?: "No summary available"
+                    this.addDate(meta?.airDate)
+                    this.runTime = meta?.runtime
                 }
             }
+
             Pair(sub.reversed(), dub.reversed())
         }
-        val (subEpisodes, dubEpisodes) = episodes ?: Pair(emptyList(), emptyList())
 
+        val (subEpisodes, dubEpisodes) = episodes ?: Pair(emptyList(), emptyList())
         val characters =
                 showData.characters?.map {
                     val role =
@@ -285,7 +288,7 @@ open class Anichi : MainAPI() {
         return newAnimeLoadResponse(title ?: "", url, TvType.Anime) {
             engName = showData.altNames?.firstOrNull()
             posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
-            rating = showData.averageScore?.times(100)
+            score = Score.from100(showData.averageScore)
             tags = showData.genres
             year = showData.airedStart?.year
             duration = showData.episodeDuration?.div(60_000)

@@ -20,7 +20,6 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -45,7 +44,10 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -69,8 +71,6 @@ import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
-import kotlin.text.isNotEmpty
-import kotlin.toString
 
 
 val session = Session(Requests().baseClient)
@@ -711,7 +711,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 else -> {
                                     server.subtitles?.forEach { sub ->
                                         val langName =
-                                            SubtitleHelper.fromTwoLettersToLanguage(sub.lang ?: "")
+                                            SubtitleHelper.fromTagToLanguageName(sub.lang ?: "")
                                                 ?: sub.lang.orEmpty()
                                         val src = sub.src ?: return@forEach
                                         subtitleCallback(newSubtitleFile(langName, httpsify(src)))

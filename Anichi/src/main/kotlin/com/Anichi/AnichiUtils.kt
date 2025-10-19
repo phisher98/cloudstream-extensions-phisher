@@ -158,14 +158,15 @@ object AnichiUtils {
 }
 
 
-fun parseAnimeData(jsonString: String): AnimeData? {
+fun parseAnimeData(jsonString: String): MetaAnimeData? {
     return try {
         val objectMapper = ObjectMapper()
-        objectMapper.readValue(jsonString, AnimeData::class.java)
-    } catch (e: Exception) {
+        objectMapper.readValue(jsonString, MetaAnimeData::class.java)
+    } catch (_: Exception) {
         null // Return null for invalid JSON instead of crashing
     }
 }
+
 
 suspend fun loadCustomExtractor(
     name: String? = null,

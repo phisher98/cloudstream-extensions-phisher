@@ -1,9 +1,6 @@
 package com.AnimeKai
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -17,6 +14,7 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
@@ -115,7 +113,7 @@ class AnimeKai : MainAPI() {
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language" to "en-US,en;q=0.9",
-            "Referer" to "https://animekai.bz/",
+            "Referer" to "$mainUrl/",
             "Connection" to "keep-alive",
             "Upgrade-Insecure-Requests" to "1",
             "Cookie" to "usertype=guest; session=Mv2Y6x1b2I8SEw3fj0eNDfQYJM3CTpH9KjJc3ACK; cf_clearance=z9kEgtOSx3us4aluy5_5MfYEL6Ei8RJ3jCbcFTD2R1E-1745122952-1.2.1.1-UYjW2QUhPKUmojZE3XUE.gqHf3g5O6lvdl0qDCNPb5IjjavrpZIOpbE64osKxLbcblCAWynfNLv6bKSO75WzURG.FqDtfcu_si3MrCHECNtbMJC.k9cuhqDRcsz8hHPgpQE2fY8rR1z5Z4HfGmCw2MWMT6GelsZW_RQrTMHUYtIqjaEiAtxfcg.O4v_RGPwio_2J2V3rP16JbWO8wRh_dObNvWSMwMW.t44PhOZml_xWuh7DH.EIxLu3AzI91wggYU9rw6JJkaWY.UBbvWB0ThZRPTAJZy_9wlx2QFyh80AXU2c5BPHwEZPQhTQHBGQZZ0BGZkzoAB8pYI3f3eEEpBUW9fEbEJ9uoDKs7WOow8g"
@@ -129,32 +127,19 @@ class AnimeKai : MainAPI() {
 
 
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val malid = document.select("div.watch-section").attr("data-mal-id")
         val aniid = document.select("div.watch-section").attr("data-al-id")
         val poster = document.select("div.poster img").attr("src")
-        val animeData = try {
-            val syncData = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").text
-            JsonParser.parseString(syncData)?.asJsonObject
-        } catch (_: Exception) {
-            null
-        }
+        val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+        val animeMetaData = parseAnimeData(syncMetaData)
 
         val title = document.selectFirst("h1.title")?.text().orEmpty()
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
         val plot= document.selectFirst("div.desc")?.text()
-
-        val backgroundposter = animeData
-            ?.getAsJsonArray("images")
-            ?.firstOrNull { it.asJsonObject.get("coverType")?.asString == "Fanart" }
-            ?.asJsonObject
-            ?.get("url")?.asString
-            ?: document.selectFirst("div.watch-section-bg")?.attr("style")
-                ?.substringAfter("(")
-                ?.substringBefore(")")
-
+        val backgroundposter = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
+            ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
@@ -167,20 +152,38 @@ class AnimeKai : MainAPI() {
             .parsedSafe<Response>()?.getDocument()
 
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
+            // --- Helper to get best episode title ---
+            fun resolveTitle(ep: Element, episodeKey: String): String {
+                val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
+                val jsonTitle = titleMap?.get("en")
+                    ?: titleMap?.get("ja")
+                    ?: titleMap?.get("x-jat")
+                    ?: animeMetaData?.titles?.get("en")
+                    ?: animeMetaData?.titles?.get("ja")
+                    ?: animeMetaData?.titles?.get("x-jat")
+                    ?: ""
+                val attrTitle = ep.selectFirst("span")?.text() ?: ep.attr("title")
+                return jsonTitle.ifBlank { attrTitle }
+            }
+
             val episodeNum = index + 1
-
+            fun createEpisode(source: String, ep: Element, episodeNum: Int): Episode {
+                val episodeKey = episodeNum.toString()
+                val metaEp = animeMetaData?.episodes?.get(episodeKey)
+                return newEpisode("$source|${ep.attr("token")}") {
+                    this.name = resolveTitle(ep, episodeKey)
+                    this.episode = episodeNum
+                    this.score = Score.from10(metaEp?.rating)
+                    this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
+                    this.description = metaEp?.overview ?: "No summary available"
+                    this.addDate(metaEp?.airDate)
+                    this.runTime = metaEp?.runtime
+                }
+            }
             // Sub episodes
-            subCount?.let {
-                val episodeData = animeData
-                    ?.getAsJsonObject("episodes")
-                    ?.getAsJsonObject(episodeNum.toString())
-
-                subEpisodes += newEpisode("sub|" + ep.attr("token")) {
-                    name = ep.selectFirst("span")?.text()
-                    episode = episodeNum
-                    score = Score.from10(episodeData?.get("rating")?.asDouble)
-                    posterUrl = episodeData?.get("image")?.asString
-                    description = episodeData?.get("overview")?.asString ?: "No summary available"
+            subCount?.let { subTotal ->
+                if (index < subTotal) {
+                    subEpisodes += createEpisode("sub", ep, episodeNum)
                 }
             }
 
@@ -188,17 +191,7 @@ class AnimeKai : MainAPI() {
             dubCount?.let { dubTotal ->
                 if (index < dubTotal) {
                     val dubEpisodeNum = ep.attr("num").toIntOrNull() ?: episodeNum
-                    val episodeData = animeData
-                        ?.getAsJsonObject("episodes")
-                        ?.getAsJsonObject(dubEpisodeNum.toString())
-
-                    dubEpisodes += newEpisode("dub|" + ep.attr("token")) {
-                        name = ep.selectFirst("span")?.text()
-                        episode = dubEpisodeNum
-                        score = Score.from10(episodeData?.get("rating")?.asDouble)
-                        posterUrl = episodeData?.get("image")?.asString
-                        description = episodeData?.get("overview")?.asString ?: "No summary available"
-                    }
+                    dubEpisodes += createEpisode("dub", ep, dubEpisodeNum)
                 }
             }
         }
@@ -229,7 +222,6 @@ class AnimeKai : MainAPI() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,

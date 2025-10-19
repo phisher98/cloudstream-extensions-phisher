@@ -212,7 +212,7 @@ data class Image(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Episode(
+data class EpisodeInfo(
     @JsonProperty("episode") val episode: String?,
     @JsonProperty("airDate") val airDate: String?,  // Keeping only one field
     @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
@@ -224,10 +224,10 @@ data class Episode(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class AnimeData(
+data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>?,
     @JsonProperty("images") val images: List<Image>?,
-    @JsonProperty("episodes") val episodes: Map<String, Episode>?
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeInfo>?
 )
 
 data class AnichiDownload(

@@ -22,6 +22,7 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
@@ -155,35 +156,43 @@ class HiAnime : MainAPI() {
         val epRes = responseBody.stringParse<Response>()?.getDocument()
         val malId = syncData?.malId ?: "0"
         val anilistId = syncData?.aniListId ?: "0"
-        epRes?.select(".ss-list > a[href].ssl-item.ep-item")?.forEachIndexed { index, ep ->
-            subCount?.let {
-                if (index < it) {
-                    val href = ep.attr("href").removePrefix("/")
-                    val episodeData = "sub|$malId|$href"
-                    subEpisodes += newEpisode(episodeData) {
-                        name = ep.attr("title")
-                        episode = ep.selectFirst(".ssli-order")?.text()?.toIntOrNull()
-                        val episodeKey = episode?.toString()
-                        this.score = Score.from10(animeMetaData?.episodes?.get(episodeKey)?.rating)
-                        this.posterUrl = animeMetaData?.episodes?.get(episodeKey)?.image ?: return@newEpisode
-                        this.description = animeMetaData.episodes[episodeKey]?.overview ?: "No summary available"
-                    }
-                }
-            }
-            dubCount?.let {
-                if (index < it) {
-                    dubEpisodes += newEpisode("dub|" + "$malId|" + ep.attr("href").removePrefix("/")) {
-                        name = ep.attr("title")
-                        episode = ep.selectFirst(".ssli-order")?.text()?.toIntOrNull()
-                        val episodeKey = episode?.toString()
-                        this.score = Score.from10(animeMetaData?.episodes?.get(episodeKey)?.rating)
-                        this.posterUrl = animeMetaData?.episodes?.get(episodeKey)?.image ?: return@newEpisode
-                        this.description = animeMetaData.episodes[episodeKey]?.overview ?: "No summary available"
-                    }
-                }
-            }
-        }
 
+
+        epRes?.select(".ss-list > a[href].ssl-item.ep-item")?.forEachIndexed { index, ep ->
+            val href = ep.attr("href").removePrefix("/")
+            val episodeNum = ep.selectFirst(".ssli-order")?.text()?.toIntOrNull() ?: return@forEachIndexed
+            val episodeKey = episodeNum.toString()
+
+            // --- Helper to get best episode title ---
+            fun resolveTitle(ep: Element, episodeKey: String): String {
+                val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
+                val jsonTitle = titleMap?.get("en")
+                    ?: titleMap?.get("ja")
+                    ?: titleMap?.get("x-jat")
+                    ?: animeMetaData?.titles?.get("en")
+                    ?: animeMetaData?.titles?.get("ja")
+                    ?: animeMetaData?.titles?.get("x-jat")
+                    ?: ""
+                val attrTitle = ep.attr("title")
+                return jsonTitle.ifBlank { attrTitle }
+            }
+
+            fun createEpisode(source: String): Episode {
+                val metaEp = animeMetaData?.episodes?.get(episodeKey)
+                return newEpisode("$source|$malId|$href") {
+                    this.name = resolveTitle(ep, episodeKey)
+                    this.episode = episodeNum
+                    this.score = Score.from10(metaEp?.rating)
+                    this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
+                    this.description = metaEp?.overview ?: "No summary available"
+                    this.addDate(metaEp?.airDate)
+                    this.runTime = metaEp?.runtime
+                }
+            }
+
+            subCount?.let { if (index < it) subEpisodes += createEpisode("sub") }
+            dubCount?.let { if (index < it) dubEpisodes += createEpisode("dub") }
+        }
         val actors =
                 document.select("div.block-actors-content div.bac-item").mapNotNull {
                     it.getActorData()

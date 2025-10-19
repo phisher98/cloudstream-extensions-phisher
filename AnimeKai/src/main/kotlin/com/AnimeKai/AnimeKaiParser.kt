@@ -23,17 +23,17 @@ data class Episode(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class AnimeData(
+data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>?,
     @JsonProperty("images") val images: List<Image>?,
     @JsonProperty("episodes") val episodes: Map<String, Episode>?
 )
 
-fun parseAnimeData(jsonString: String): AnimeData? {
+fun parseAnimeData(jsonString: String): MetaAnimeData? {
     return try {
         val objectMapper = ObjectMapper()
-        objectMapper.readValue(jsonString, AnimeData::class.java)
-    } catch (e: Exception) {
+        objectMapper.readValue(jsonString, MetaAnimeData::class.java)
+    } catch (_: Exception) {
         null // Return null for invalid JSON instead of crashing
     }
 }

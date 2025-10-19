@@ -47,8 +47,8 @@ fun getBaseUrl(url: String): String {
 
 
 fun getLanguage(language: String?): String? {
-    return SubtitleHelper.fromTwoLettersToLanguage(language ?: return null)
-        ?: SubtitleHelper.fromTwoLettersToLanguage(language.substringBefore("-"))
+    return SubtitleHelper.fromTagToLanguageName(language ?: return null)
+        ?: SubtitleHelper.fromTagToLanguageName(language.substringBefore("-"))
 }
 
 fun fixUrl(url: String, domain: String): String {
