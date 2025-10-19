@@ -100,7 +100,7 @@ class StremioC : MainAPI() {
         return true
     }
 
-    private fun invokeStremioX(
+    private suspend fun invokeStremioX(
         type: String?,
         id: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -108,7 +108,7 @@ class StremioC : MainAPI() {
     ) {
         val sites = AcraApplication.getKey<Array<CustomSite>>(USER_PROVIDER_API)?.toMutableList()
             ?: mutableListOf()
-        sites.filter { it.parentJavaClass == "StremioX" }.apmap { site ->
+        sites.filter { it.parentJavaClass == "StremioX" }.amap { site ->
             val res = app.get(
                 "${site.url.fixSourceUrl()}/stream/${type}/${id}.json",
                 timeout = 120L
