@@ -3,7 +3,6 @@ package com.kickassanime
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.kickassanime.CryptoAES.decodeHex
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -22,6 +21,7 @@ class Kickassanime : MainAPI() {
     override var name = "Kickassanime"
     override val hasMainPage = true
     override var lang = "en"
+    override val hasQuickSearch =  true
     override val hasDownloadSupport = true
 
     override val supportedSyncNames = setOf(
@@ -86,21 +86,24 @@ class Kickassanime : MainAPI() {
         }
     }
 
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+
     override suspend fun search(query: String): List<SearchResponse> {
 val json = """
 {   "page": "1",
     "query": "$query"
 }
 """.trimIndent()
-
+        val host = app.get(mainUrl, allowRedirects = false).headers["location"]
         val mediaType = "application/json".toMediaType()
         val requestBody = json.toRequestBody(mediaType)
         val headers= mapOf(
             "Accept" to "*/*",
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Content-Type" to "application/json"
+            "Content-Type" to "application/json",
+            "x-origin" to "kickass-anime.ru"
         )
-        val res=app.post("$mainUrl/api/fsearch", requestBody = requestBody, headers = headers).toString()
+        val res=app.post("${host}api/fsearch", requestBody = requestBody, headers = headers).toString()
         return tryParseJson<Search>(res)?.result?.map {
             it.toSearchResponse()
         } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -378,7 +381,7 @@ val json = """
             val md = MessageDigest.getInstance("SHA-1")
             val bytes = md.digest(value.toByteArray())
             bytes.joinToString("") { "%02x".format(it) }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             throw Exception("Attempt to create the signature failed miserably.")
         }
     }

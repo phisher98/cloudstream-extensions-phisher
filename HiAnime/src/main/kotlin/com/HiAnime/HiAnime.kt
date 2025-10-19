@@ -1,6 +1,5 @@
 package com.HiAnime
 
-import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -135,20 +134,21 @@ class HiAnime : MainAPI() {
         return newHomePageResponse(request.name, items)
     }
 
-    @SuppressLint("DefaultLocale")
     override suspend fun load(url: String): LoadResponse {
+        val doc = app.get(url.replace("watch/","")).document
         val document = app.get(url).document
         val syncData = tryParseJson<ZoroSyncData>(document.selectFirst("#syncData")?.data())
         val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
+        val description = document.select("div.film-description > div").text().ifEmpty { doc.select("div.film-description div").text() }
         val poster = document.select("#ani_detail div.film-poster img").attr("src")
+        val genres = doc.select("div.item.item-list:has(> span.item-head:contains(Genres)) a").map { it.text() }
         val backgroundposter = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
-
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
         val responseBody = app.get("$mainUrl/ajax/v2/episode/list/$animeId").body.string()
@@ -196,6 +196,7 @@ class HiAnime : MainAPI() {
             engName = title
             posterUrl = poster
             backgroundPosterUrl = backgroundposter
+            this.tags = genres
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
@@ -206,7 +207,7 @@ class HiAnime : MainAPI() {
             document.select(".anisc-info > .item").forEach { info ->
                 val infoType = info.select("span.item-head").text().removeSuffix(":")
                 when (infoType) {
-                    "Overview" -> plot = info.selectFirst(".text")?.text()
+                    "Overview" -> plot = info.selectFirst(".text")?.text() ?: description
                     "Japanese" -> japName = info.selectFirst(".name")?.text()
                     "Premiered" -> year = info.selectFirst(".name")?.text()?.substringAfter(" ")?.toIntOrNull()
                     "Duration" -> duration = getDurationFromString(info.selectFirst(".name")?.text())
