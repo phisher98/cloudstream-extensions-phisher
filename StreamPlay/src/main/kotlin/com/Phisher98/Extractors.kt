@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.phisher98.StreamPlay.Companion.animepaheAPI
@@ -112,7 +113,7 @@ open class Playm4u : ExtractorApi() {
         )
 
         subtitleCallback.invoke(
-            SubtitleFile(
+            newSubtitleFile(
                 source.sub?.substringBefore("|")?.toLanguage() ?: return,
                 source.sub.substringAfter("|"),
             )
@@ -1606,7 +1607,7 @@ class MegaUp : ExtractorApi() {
                 val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
                 val file = trackObj.optString("file").takeIf { it.isNotBlank() }
                 if (label != null && file != null) {
-                    subtitleCallback(SubtitleFile(label, file))
+                    subtitleCallback(newSubtitleFile(label, file))
                 }
             }
         } catch (_: JSONException) {
@@ -1998,7 +1999,7 @@ open class Megacloud : ExtractorApi() {
 
             response.tracks.forEach { track ->
                 if (track.kind == "captions" || track.kind == "subtitles") {
-                    subtitleCallback(SubtitleFile(track.label, track.file))
+                    subtitleCallback(newSubtitleFile(track.label, track.file))
                 }
             }
 
@@ -2037,7 +2038,7 @@ open class Megacloud : ExtractorApi() {
                 val subtitleUrls = listOf(vttResponse.url)
                     .filter { it.endsWith(".vtt") && !it.contains("thumbnails", ignoreCase = true) }
                 subtitleUrls.forEachIndexed { _, subUrl ->
-                    subtitleCallback(SubtitleFile("English", subUrl))
+                    subtitleCallback(newSubtitleFile("English", subUrl))
                 }
 
                 val fallbackM3u8 = app.get(url = url, referer = mainUrl, interceptor = m3u8Resolver).url
@@ -2114,7 +2115,7 @@ class Cdnstreame : ExtractorApi() {
         response.tracks
             .filter { it.kind in listOf("captions", "subtitles") }
             .forEach { track ->
-                subtitleCallback(SubtitleFile(track.label, track.file))
+                subtitleCallback(newSubtitleFile(track.label, track.file))
             }
     }
 
@@ -2264,7 +2265,7 @@ class Videostr : ExtractorApi() {
         response.tracks.forEach { track ->
             if (track.kind == "captions" || track.kind == "subtitles") {
                 subtitleCallback(
-                    SubtitleFile(
+                    newSubtitleFile(
                         track.label,
                         track.file
                     )

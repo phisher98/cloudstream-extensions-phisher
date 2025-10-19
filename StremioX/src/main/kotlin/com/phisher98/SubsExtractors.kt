@@ -3,6 +3,7 @@ package com.phisher98
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 
 const val openSubAPI = "https://opensubtitles-v3.strem.io"
@@ -22,7 +23,7 @@ object SubsExtractors {
         }
         app.get("${openSubAPI}/subtitles/$slug.json", timeout = 120L).parsedSafe<OsResult>()?.subtitles?.map { sub ->
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
                     ?: return@map,
                     sub.url ?: return@map
@@ -64,7 +65,7 @@ object SubsExtractors {
 
         app.get(subUrl).parsedSafe<WatchsomuchSubResponses>()?.subtitles?.map { sub ->
             subtitleCallback.invoke(
-                SubtitleFile(
+                newSubtitleFile(
                     sub.label ?: "", fixUrl(sub.url ?: return@map null, watchSomuchAPI)
                 )
             )

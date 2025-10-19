@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -29,14 +28,18 @@ class KisskhProvider : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
+        "&type=0&sub=0&country=0&status=0&order=2" to "Latest",
+        "&type=0&sub=0&country=2&status=0&order=1" to "Top K-Drama",
+        "&type=0&sub=0&country=1&status=0&order=1" to "Top C-Drama",
         "&type=2&sub=0&country=2&status=0&order=1" to "Movie Popular",
         "&type=2&sub=0&country=2&status=0&order=2" to "Movie Last Update",
         "&type=1&sub=0&country=2&status=0&order=1" to "TVSeries Popular",
         "&type=1&sub=0&country=2&status=0&order=2" to "TVSeries Last Update",
         "&type=3&sub=0&country=0&status=0&order=1" to "Anime Popular",
-        "&type=3&sub=0&country=0&status=0&order=2" to "Anime Last Update",
+        "&type=3&sub=0&country=0&status=0&order=2" to "Anime Latest Update",
         "&type=4&sub=0&country=0&status=0&order=1" to "Hollywood Popular",
         "&type=4&sub=0&country=0&status=0&order=2" to "Hollywood Last Update",
+        "&type=0&sub=0&country=0&status=3&order=2" to "Upcoming"
     )
 
     override suspend fun getMainPage(
@@ -183,7 +186,7 @@ class KisskhProvider : MainAPI() {
             tryParseJson<List<Subtitle>>(res)?.map { sub ->
                 if (sub.src!!.contains(".txt")) {
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             getLanguage(sub.label ?: return@map),
                             sub.src
                         )
@@ -191,7 +194,7 @@ class KisskhProvider : MainAPI() {
                 }
                 else
                 subtitleCallback.invoke(
-                    SubtitleFile(
+                    newSubtitleFile(
                         getLanguage(sub.label ?: return@map),
                         sub.src
                     )
@@ -218,11 +221,13 @@ class KisskhProvider : MainAPI() {
                         .filter(String::isNotBlank)
                         .map(String::trim)
                     val decrypted = chunks.mapIndexed { index, chunk ->
-                        val parts = chunk.split("\n")
-                        val text = parts.slice(1 until parts.size)
+                        if (chunk.isBlank()) return@mapIndexed ""
+                        val parts = chunk.lines()
+                        val text = parts.drop(1)
                         val d = text.joinToString("\n") { decrypt(it) }
-                        arrayOf(index + 1, parts.first(), d).joinToString("\n")
-                    }.joinToString("\n\n")
+                        listOf(index + 1, parts.firstOrNull().orEmpty(), d).joinToString("\n")
+                    }.filter { it.isNotEmpty() }
+                        .joinToString("\n\n")
                     val newBody = decrypted.toResponseBody(response.body.contentType())
                     return response.newBuilder()
                         .body(newBody)

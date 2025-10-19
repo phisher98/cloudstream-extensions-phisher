@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -187,13 +186,10 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
             it.select("iframe").attr("src")
         }.filter { it.contains("youtube") }.joinToString()
         val trailer = fixUrlNull(trailerLink)
-        //Log.d("mygodtrailer", trailerLink)
-        val rating = doc.select("b.imdb__value").text().replace(",", ".").toRatingInt()
-        //Log.d("rating", rating.toString())
+        val rating = doc.select("b.imdb__value").text().replace(",", ".")
         val duration =
             doc.select("li.xfs__item_op:nth-child(3) > b").text().removeSuffix(" min.").trim()
                 .toIntOrNull()
-        //Log.d("dur", duration.toString())
         val actors =
             doc.select("div.xfs__item_op > b[itemprop=actors]").text().split(", ").map {
                 ActorData(
@@ -253,7 +249,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     this.year = year
                     this.plot = description
                     this.tags = tags
-                    this.rating = rating
+                    this.score = Score.from100(rating)
                     this.duration = duration
                     this.actors = actors
                     this.recommendations = recommendations
@@ -266,7 +262,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     this.year = year
                     this.plot = description
                     this.tags = tags
-                    this.rating = rating
+                    this.score = Score.from100(rating)
                     this.duration = duration
                     this.actors = actors
                     this.recommendations = recommendations
@@ -279,8 +275,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     this.year = year
                     this.plot = description
                     this.tags = tags
-                    this.rating = rating
-                    this.duration = duration
+                    this.score = Score.from100(rating)
                     this.actors = actors
                     this.recommendations = recommendations
                     addTrailer(trailer)

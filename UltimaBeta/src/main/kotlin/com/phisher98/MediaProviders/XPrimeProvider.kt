@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
@@ -85,7 +86,7 @@ class XPrimeProvider : MediaProvider() {
                             val subUrl = subtitle.file.orEmpty()
                             if (subUrl.isNotBlank()) {
                                 subtitleCallback(
-                                    SubtitleFile(
+                                    newSubtitleFile(
                                         lang = subtitle.label ?: "Unknown",
                                         url = subUrl
                                     )

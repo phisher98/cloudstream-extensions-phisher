@@ -195,20 +195,20 @@ val json = """
                     "Sec-Fetch-Mode" to "cors",
                     "Sec-Fetch-Site" to "cross-site"
                 )
-                callback.invoke(
-                    ExtractorLink(
-                        "VidStreaming",
-                        "VidStreaming",
-                        m3u8,
-                        "",
-                        Qualities.P1080.value,
-                        type = ExtractorLinkType.M3U8,
-                        headers = videoheaders
-                    )
+                newExtractorLink(
+                    "VidStreaming",
+                    "VidStreaming",
+                    m3u8,
+                    ExtractorLinkType.M3U8
                 )
+                {
+                    this.quality = Qualities.P1080.value
+                    this.headers = videoheaders
+                }
+
                 decrypted.subtitles.amap {
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             it.name,  // Use label for the name
                             it.src     // Use extracted URL
                         )
@@ -237,15 +237,17 @@ val json = """
 
                     val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
                     callback.invoke(
-                        ExtractorLink(
+                        newExtractorLink(
                             "CatStream",
                             "CatStream DASH",
                             videoUrl,
-                            baseurl,
-                            Qualities.P1080.value,
-                            type = ExtractorLinkType.M3U8,
-                            headers = headers
+                            ExtractorLinkType.M3U8
                         )
+                        {
+                            this.referer = baseurl
+                            this.quality = Qualities.P1080.value
+                            this.headers = headers
+                        }
                     )
 
                     val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
@@ -256,7 +258,7 @@ val json = """
                         val src = sub.getJSONArray("src").getString(1)
                         val name = sub.getJSONArray("name").getString(1)
                         subtitleCallback.invoke(
-                            SubtitleFile(
+                            newSubtitleFile(
                                 name,  // Use label for the name
                                 src    // Use extracted URL
                             )
@@ -287,15 +289,17 @@ val json = """
 
                         val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
                         callback.invoke(
-                            ExtractorLink(
+                            newExtractorLink(
                                 "CatStream",
                                 "CatStream HLS",
                                 videoUrl,
-                                baseurl,
-                                Qualities.P1080.value,
-                                type = ExtractorLinkType.M3U8,
-                                headers = headers
+                                ExtractorLinkType.M3U8
                             )
+                            {
+                                this.referer = baseurl
+                                this.quality = Qualities.P1080.value
+                                this.headers = headers
+                            }
                         )
 
                         val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
@@ -306,7 +310,7 @@ val json = """
                             val src = sub.getJSONArray("src").getString(1)
                             val name = sub.getJSONArray("name").getString(1)
                             subtitleCallback.invoke(
-                                SubtitleFile(
+                                newSubtitleFile(
                                     name,  // Use label for the name
                                     src    // Use extracted URL
                                 )

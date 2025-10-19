@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
+import com.lagradost.cloudstream3.mvvm.safeAsync
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -19,7 +19,7 @@ class AnimePahe : MainAPI() {
     companion object {
         const val MAIN_URL = "https://animepahe.si"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
-        private val Proxy="https://animepaheproxy.phisheranimepahe.workers.dev/?url="
+        private const val Proxy="https://animepaheproxy.phisheranimepahe.workers.dev/?url="
         //var cookies: Map<String, String> = mapOf()
         private fun getType(t: String): TvType {
             return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
@@ -250,7 +250,7 @@ class AnimePahe : MainAPI() {
     data class LoadData(val session: String, val sessionDate: Long, val name: String)
 
     override suspend fun load(url: String): LoadResponse? {
-        return suspendSafeApiCall {
+        return safeAsync {
             val session = parseJson<LoadData>(url).let { data ->
                 // Outdated
                 if (data.sessionDate + 60 * 10 < unixTime) {
@@ -260,7 +260,7 @@ class AnimePahe : MainAPI() {
                 } else {
                     data.session
                 }
-            } ?: return@suspendSafeApiCall null
+            } ?: return@safeAsync null
             val html = app.get("$Proxy$mainUrl/anime/$session",headers=headers).text
             val doc = Jsoup.parse(html)
             val japTitle = doc.selectFirst("h2.japanese")?.text()

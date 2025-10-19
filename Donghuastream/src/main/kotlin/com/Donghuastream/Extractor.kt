@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
@@ -103,7 +104,7 @@ open class Ultrahd : ExtractorApi() {
                     val langurl=it.file
                     val lang=it.label
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             lang,  // Use label for the name
                             langurl     // Use extracted URL
                         )
@@ -162,7 +163,7 @@ class Rumble : ExtractorApi() {
             val label = track.groupValues[2]
 
             subtitleCallback.invoke(
-                SubtitleFile(label, fileUrl)
+                newSubtitleFile(label, fileUrl)
             )
         }
     }
@@ -208,7 +209,7 @@ open class PlayStreamplay : ExtractorApi() {
 
         response.tracks.forEach { subtitle ->
             subtitleCallback(
-                SubtitleFile(
+                newSubtitleFile(
                     lang = subtitle.label,
                     url = subtitle.file
                 )

@@ -21,6 +21,7 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -710,7 +711,7 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
 
             response.tracks.forEach { track ->
                 if (track.kind == "captions" || track.kind == "subtitles") {
-                    subtitleCallback(SubtitleFile(track.label, track.file))
+                    subtitleCallback(newSubtitleFile(track.label, track.file))
                 }
             }
 
@@ -749,7 +750,7 @@ class AnyMegacloud(provider: String?, dubType: String?, domain: String = "") : R
                 val subtitleUrls = listOf(vttResponse.url)
                     .filter { it.endsWith(".vtt") && !it.contains("thumbnails", ignoreCase = true) }
                 subtitleUrls.forEachIndexed { _, subUrl ->
-                    subtitleCallback(SubtitleFile("English", subUrl))
+                    subtitleCallback(newSubtitleFile("English", subUrl))
                 }
 
                 val fallbackM3u8 = app.get(url = url, referer = mainUrl, interceptor = m3u8Resolver).url
@@ -875,7 +876,7 @@ class AnyVideostr(provider: String?, dubType: String?, domain: String = "") : Ra
         response.tracks.forEach { track ->
             if (track.kind == "captions" || track.kind == "subtitles") {
                 subtitleCallback(
-                    SubtitleFile(
+                    newSubtitleFile(
                         track.label,
                         track.file
                     )
@@ -961,7 +962,7 @@ class ZoroExtractor(provider: String?, dubType: String?, domain: String = "") : 
                         ?: return
         val jsonData = AppUtils.parseJson<ZoroJson>(jsData)
         jsonData.subtitles.amap { sub ->
-            sub.lang?.let { subtitleCallback.invoke(SubtitleFile(it, sub.file)) }
+            sub.lang?.let { subtitleCallback.invoke(newSubtitleFile(it, sub.file)) }
         }
         jsonData.sources.amap { source ->
             callback.invoke(
@@ -1356,7 +1357,7 @@ class AnyMegacc(provider: String?, dubType: String?, domain: String = "") : Extr
 
         subtitleUrls.forEach { subUrl ->
             val label = extractLabelFromUrl(subUrl)
-            subtitleCallback(SubtitleFile(label, subUrl))
+            subtitleCallback(newSubtitleFile(label, subUrl))
         }
     }
 }

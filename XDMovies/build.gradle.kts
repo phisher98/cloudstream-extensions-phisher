@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 4
+version = 6
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Watch Latest Movies (Series Don't Work Fully yet)"
+    description = "Watch Latest Movies"
     language    = "hi"
     authors = listOf("Phisher98")
 
@@ -21,7 +21,14 @@ cloudstream {
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
-    tvTypes = listOf("Movie")
+    tvTypes = listOf(
+        "AsianDrama",
+        "TvSeries",
+        "Anime",
+        "Movie",
+        "Cartoon",
+        "AnimeMovie"
+    )
     iconUrl = "https://xdmovies.site/assets/logo1.png"
     isCrossPlatform = true
 }

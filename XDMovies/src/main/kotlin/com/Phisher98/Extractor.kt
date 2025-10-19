@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.phisher98
 
 import android.annotation.SuppressLint
 import com.lagradost.api.Log
@@ -151,13 +151,28 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                    callback.invoke(
-                        newExtractorLink(
-                            "Pixeldrain",
-                            "Pixeldrain $labelExtras",
-                            link,
-                        ) { this.quality = quality }
-                    )
+                    if (link.contains("download",true))
+                    {
+                        callback.invoke(
+                            newExtractorLink(
+                                "Pixeldrain",
+                                "Pixeldrain $labelExtras",
+                                link,
+                            ) { this.quality = quality }
+                        )
+                    }
+                    else
+                    {
+                        val baseurl= getBaseUrl(link)
+                        val finalURL = "$baseurl/api/file/${link.substringAfterLast("/")}?download"
+                        callback.invoke(
+                            newExtractorLink(
+                                "Pixeldrain",
+                                "Pixeldrain $labelExtras",
+                                finalURL,
+                            ) { this.quality = quality }
+                        )
+                    }
                 }
 
                 text.contains("S3 Server", ignoreCase = true) -> {
@@ -184,7 +199,7 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=")
                     callback.invoke(
                         newExtractorLink(
                             "$referer 10Gbps [Download]",

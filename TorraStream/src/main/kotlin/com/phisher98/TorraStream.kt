@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -117,7 +118,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
             .parsedSafe<Subtitles>()?.subtitles?.amap {
                 val lan = getLanguage(it.lang) ?: it.lang
                 subtitleCallback(
-                    SubtitleFile(
+                    newSubtitleFile(
                         lan,
                         it.url
                     )

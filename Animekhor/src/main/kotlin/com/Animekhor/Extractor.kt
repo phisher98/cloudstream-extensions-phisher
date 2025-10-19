@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -94,7 +95,7 @@ open class Rumble : ExtractorApi() {
             val label = track.groupValues[2]
 
             subtitleCallback.invoke(
-                SubtitleFile(label, fileUrl)
+                newSubtitleFile(label, fileUrl)
             )
         }
     }

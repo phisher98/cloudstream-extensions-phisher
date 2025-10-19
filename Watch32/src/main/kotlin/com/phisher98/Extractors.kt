@@ -10,6 +10,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -101,7 +102,7 @@ class Videostr : ExtractorApi() {
         response.tracks.forEach { track ->
             if (track.kind == "captions" || track.kind == "subtitles") {
                 subtitleCallback(
-                    SubtitleFile(
+                    newSubtitleFile(
                         track.label,
                         track.file
                     )

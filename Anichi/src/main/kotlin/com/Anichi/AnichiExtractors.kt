@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -130,7 +131,7 @@ object AnichiExtractors : Anichi() {
                                     server.subtitles?.forEach { sub ->
                                         val lang = SubtitleHelper.fromTwoLettersToLanguage(sub.lang ?: "") ?: sub.lang.orEmpty()
                                         val src = sub.src ?: return@forEach
-                                        subtitleCallback(SubtitleFile(lang, httpsify(src)))
+                                        subtitleCallback(newSubtitleFile(lang, httpsify(src)))
                                     }
                                 }
                             }
