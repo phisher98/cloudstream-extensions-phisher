@@ -197,6 +197,7 @@ class HiAnime : MainAPI() {
             posterUrl = poster
             backgroundPosterUrl = backgroundposter
             this.tags = genres
+            this.plot = description
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
