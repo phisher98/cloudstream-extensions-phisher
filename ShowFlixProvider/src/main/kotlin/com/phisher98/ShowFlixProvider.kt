@@ -318,7 +318,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val poster = TVit.posterURL
             val backdrop = TVit.backdropURL
             val plot = TVit.storyline
-            val rating = TVit.rating.toRatingInt()
+            val rating = TVit.rating
             val recQuery = when(TVit.seriesCategory != null) {
                 TVit.seriesCategory.toString().contains("Dubbed")    -> """Tamil Dubbed"""
                 TVit.seriesCategory.toString().contains("Tamil")     -> """Tamil"""
