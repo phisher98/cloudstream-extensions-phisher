@@ -2339,3 +2339,19 @@ data class KeyIvResult(
     val ivHex: String
 )
 
+data class NuvioStreams(
+    val streams: List<NuvioStreamsStream>,
+)
+
+data class NuvioStreamsStream(
+    val name: String,
+    val title: String,
+    val url: String,
+    val type: String,
+    val availability: Long,
+    val behaviorHints: NuvioStreamsBehaviorHints,
+)
+
+data class NuvioStreamsBehaviorHints(
+    val notWebReady: Boolean,
+)

@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 447
+version = 448
 
 android {
     buildFeatures {
@@ -47,6 +47,7 @@ android {
         buildConfigField("String", "MOVIEBOX_SECRET_KEY_ALT", "\"${properties.getProperty("MOVIEBOX_SECRET_KEY_ALT")}\"")
         buildConfigField("String", "MOVIEBOX_SECRET_KEY_DEFAULT", "\"${properties.getProperty("MOVIEBOX_SECRET_KEY_DEFAULT")}\"")
         buildConfigField("String", "KAIDEC", "\"${properties.getProperty("KAIDEC")}\"")
+        buildConfigField("String", "Nuviostreams", "\"${properties.getProperty("Nuviostreams")}\"")
     }
 }
 

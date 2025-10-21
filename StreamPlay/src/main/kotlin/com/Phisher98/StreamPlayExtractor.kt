@@ -5515,6 +5515,39 @@ object StreamPlayExtractor : StreamPlay() {
             Log.e("ToonStream", "Error loading ToonStream: ${it.message}")
         }
     }
+
+    suspend fun invokeNuvioStreams(
+        imdbId: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (imdbId.isNullOrBlank()) return
+
+        val api = buildString {
+            append(BuildConfig.Nuviostreams)
+            append("/stream/")
+            if (season == null) {
+                append("movie/$imdbId.json")
+            } else {
+                append("series/$imdbId:$season:$episode.json")
+            }
+        }
+
+        val response = app.get(api).parsedSafe<NuvioStreams>() ?: return
+
+        response.streams.forEach { stream ->
+            callback(
+                newExtractorLink(
+                    name = "NuvioStreams ${stream.name}",
+                    source = "NuvioStreams",
+                    url = stream.url,
+                    type = INFER_TYPE
+                )
+            )
+        }
+    }
+
 }
 
 

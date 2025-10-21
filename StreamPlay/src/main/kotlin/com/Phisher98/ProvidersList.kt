@@ -31,8 +31,8 @@ import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
 import com.phisher98.StreamPlayExtractor.invokeMultimovies
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
+import com.phisher98.StreamPlayExtractor.invokeNuvioStreams
 import com.phisher98.StreamPlayExtractor.invokePlaydesi
-import com.phisher98.StreamPlayExtractor.invokePlayer4U
 import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
@@ -247,6 +247,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (res.isAnime || res.isCartoon) invokeToonstream(res.title, res.season, res.episode, subtitleCallback, callback)
-        }
+        },
+        Provider("NuvioStreams", "NuvioStreams") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+            invokeNuvioStreams(res.imdbId, res.season,res.episode,  callback)
+        },
     )
 }
