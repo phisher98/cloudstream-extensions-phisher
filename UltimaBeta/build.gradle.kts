@@ -3,14 +3,14 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 dependencies {
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // FIXME remove this when crossplatform is fully supported
     val cloudstream by configurations
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
 // use an integer for version numbers
-version = 9
+version = 10
 
 cloudstream {
     // All of these properties are optional, you can safely remove them

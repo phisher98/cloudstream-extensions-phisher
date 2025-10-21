@@ -27,10 +27,8 @@ import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.MediaObject
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.getPosterUrl
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.BuildConfig
 
 class Simkl(val plugin: UltimaBetaPlugin) : MainAPI() {
     override var name = "Simkl"
@@ -73,8 +71,8 @@ class Simkl(val plugin: UltimaBetaPlugin) : MainAPI() {
                 simklId = ids?.simkl,
                 imdbId = ids?.imdb,
                 tmdbId = ids?.tmdb,
-                aniId = ids?.anilist,
-                malId = ids?.mal,
+                aniId = ids?.anilist?.toIntOrNull(),
+                malId = ids?.mal?.toIntOrNull(),
                 title = title,
                 year = year,
                 type = type,
@@ -92,8 +90,8 @@ class Simkl(val plugin: UltimaBetaPlugin) : MainAPI() {
                 simklId = ids?.simkl,
                 imdbId = ids?.imdb,
                 tmdbId = ids?.tmdb,
-                aniId = ids?.anilist,
-                malId = ids?.mal,
+                aniId = ids?.anilist?.toIntOrNull(),
+                malId = ids?.mal?.toIntOrNull(),
                 title = showName,
                 year = year,
                 season = season,

@@ -7,11 +7,14 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.NiceResponse
+import kotlinx.coroutines.runBlocking
 import okhttp3.FormBody
 import org.jsoup.nodes.Element
 
 class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://telugumv.fun"
+    override var mainUrl: String = runBlocking {
+        TelugumvPlugin.getDomains()?.telugumv ?: "https://telugumv.fun"
+    }
     override var name = "Telugumv"
     override val hasMainPage = true
     override var lang = "te"
@@ -59,8 +62,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         val title = this.selectFirst("div.data > h3 > a")?.text()?.trim() ?: return null
         val href = fixUrl(this.selectFirst("div.data > h3 > a")?.attr("href").toString())
         val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("src"))
-        val quality =
-            getQualityFromString(this.select("div.poster > div.mepo > span").text())
+        val quality = getQualityFromString(this.select("div.poster > div.mepo > span").text())
         return if (href.contains("Movie")) {
             newMovieSearchResponse(title, href, TvType.Movie) {
                 this.posterUrl = posterUrl
@@ -153,7 +155,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
             )
         else fixUrlNull(doc.select("iframe.rptss").attr("src"))
         trailer = trailerRegex.find(trailer.toString())?.value.toString()
-        val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
+        val rating = doc.select("span.dt_rating_vgs").text()
         val duration =
             doc.selectFirst("span.runtime")?.text()?.removeSuffix(" Min.")?.trim()
                 ?.toIntOrNull()
@@ -197,7 +199,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
@@ -209,7 +211,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations

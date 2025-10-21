@@ -5,13 +5,16 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -32,8 +35,8 @@ class Watch32 : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/${query.replace(" ", "-")}"
         val response = app.get(url)
-        if (response.code == 200) return searchResponseBuilder(response.document)
-        else return listOf<SearchResponse>()
+        return if (response.code == 200) searchResponseBuilder(response.document)
+        else listOf()
     }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
@@ -66,16 +69,25 @@ class Watch32 : MainAPI() {
         val contentId = res.document.select("div.detail_page-watch").attr("data-id")
         val details = res.document.select("div.detail_page-infor")
         val name = details.select("h2.heading-name > a").text()
+        val year = res.document.select("div.row-line:has(> span.type > strong:contains(Released))").text().replace("Released:", "").trim().substringBefore("-").toIntOrNull()
+        val actors = res.document
+            .select("div.row-line:has(> span.type > strong:contains(Casts)) a")
+            .map { it.text().trim() }
+        val genres = res.document
+            .select("div.row-line:has(> span.type > strong:contains(Genre)) a")
+            .map { it.text().trim() }
+
         if (type.contains("movie")) {
             return newMovieLoadResponse(name, url, TvType.Movie, "list/$contentId") {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
-                this.rating =
+                this.year = year
+                this.score = Score.from10(
                         details.select("button.btn-imdb")
                                 .text()
-                                .replace("N/A", "")
-                                .replace("IMDB: ", "")
-                                .toIntOrNull()
+                                .replace("N/A", "").substringAfter(":").trim())
+                this.tags = genres
+                addActors(actors)
                 addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
             }
         } else {
@@ -108,12 +120,13 @@ class Watch32 : MainAPI() {
             return newTvSeriesLoadResponse(name, url, TvType.TvSeries, episodes) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.plot = details.select("div.description").text()
-                this.rating =
+                this.year = year
+                this.score = Score.from10(
                         details.select("button.btn-imdb")
                                 .text()
-                                .replace("N/A", "")
-                                .replace("IMDB: ", "")
-                                .toIntOrNull()
+                                .replace("N/A", "").substringAfter(":").trim())
+                this.tags = genres
+                addActors(actors)
                 addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
             }
         }
@@ -152,8 +165,11 @@ class Watch32 : MainAPI() {
                     val poster =
                             element.selectFirst("img.film-poster-img")?.attr("data-src")
                                     ?: return@mapNotNull null
-
-                    newMovieSearchResponse(title, link) { this.posterUrl = poster }
+                    val quality = element.select("div.pick.film-poster-quality").text()
+                    newMovieSearchResponse(title, link) {
+                        this.posterUrl = poster
+                        this.quality = getQualityFromString(quality)
+                    }
                 }
         return searchCollection
     }

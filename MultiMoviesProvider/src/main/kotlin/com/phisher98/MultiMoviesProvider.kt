@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -26,7 +27,6 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
-import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
@@ -36,7 +36,7 @@ import org.jsoup.nodes.Element
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl: String = runBlocking {
-        MultiMoviesProviderPlugin.getDomains()?.MultiMovies ?: "https://multimovies.pro"
+        MultiMoviesProviderPlugin.getDomains()?.MultiMovies ?: "https://multimovies.cheap"
     }
     override var name = "MultiMovies"
     override val hasMainPage = true
@@ -185,7 +185,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
             fixUrlNull(iframeSrc)
         }
         trailer = trailer?.let { trailerRegex.find(it)?.value?.trim('"') }
-        val rating = doc.select("span.dt_rating_vgs").text().toRatingInt()
+        val rating = doc.select("span.dt_rating_vgs").text()
         val duration =
             doc.selectFirst("span.runtime")?.text()?.removeSuffix(" Min.")?.trim()
                 ?.toInt()
@@ -229,7 +229,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
@@ -241,7 +241,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 this.year = year
                 this.plot = description
                 this.tags = tags
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.duration = duration
                 this.actors = actors
                 this.recommendations = recommendations
@@ -301,11 +301,6 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         @JsonProperty("type") val type: String? = null,
     )
 
-
-    data class DomainsParser(
-        @JsonProperty("MultiMovies")
-        val multiMovies: String,
-    )
 
     private fun Element.getImageAttr(): String? {
         return this.attr("data-src")

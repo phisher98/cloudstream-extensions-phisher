@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
@@ -89,10 +88,11 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val href = fixUrl(this.attr("href").toString())
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("data-src"))
         val quality = SearchQuality.HD
-
+        val rating = this.select("div.flex.items-center > span").text()
         return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
             this.posterUrl = posterUrl
             this.quality = quality
+            this.score = Score.from10(rating)
         }
     }
 
@@ -117,9 +117,9 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val doc = app.get(url, interceptor = ddosGuardKiller).document
         val title = doc.selectFirst("h1.px-5")?.text()?.toString()?.trim() ?: return null
         val poster = fixUrlNull(doc.selectFirst("img.relative")?.attr("src"))
-        val tags = doc.select("div.relative a[class*=\"py-0.5\"]").map { it.text() }
+        val tags = doc.select("div.relative a[class*=\"py-0.5\"]").map { it.text().replace("\"","").replace("[","").replace("]","") }
         val description = doc.selectFirst("p.leading-tight")?.text()?.trim()
-        val rating = doc.select("span.text-xl").text().toRatingInt()
+        val rating = doc.select("span.text-xl").text()
         val actors = doc.select("div.font-semibold span.text-blue-300").map { it.text() }
         val recommendations = doc.select("a.block").mapNotNull {
             it.toSearchResult()
@@ -133,7 +133,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
                 episodes.add(
                     newEpisode(mainUrl + it.attr("href"))
                     {
-                        this.name=it.ownText().toString().removePrefix("Episode ").substring(2)
+                        this.name= it.ownText().removePrefix("Episode ").substring(2)
                         this.season=titRegex.find(seasonNum)?.value?.toInt()
                         this.episode=titRegex.find(it.select("span.flex").text().toString())?.value?.toInt()
                     }
@@ -144,7 +144,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
             this.posterUrl = poster
             this.plot = description
             this.tags = tags
-            this.rating = rating
+            this.score = Score.from10(rating)
             addActors(actors)
             this.recommendations = recommendations
         }

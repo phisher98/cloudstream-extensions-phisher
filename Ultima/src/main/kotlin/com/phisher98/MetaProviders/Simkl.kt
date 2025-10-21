@@ -1,8 +1,5 @@
 package com.phisher98
 
-import com.phisher98.UltimaMediaProvidersUtils.invokeExtractors
-import com.phisher98.UltimaUtils.Category
-import com.phisher98.UltimaUtils.LinkData
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -18,6 +15,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
+import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
@@ -25,12 +23,12 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.MediaObject
-import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.getPosterUrl
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.BuildConfig
+import com.phisher98.UltimaMediaProvidersUtils.invokeExtractors
+import com.phisher98.UltimaUtils.Category
+import com.phisher98.UltimaUtils.LinkData
 
 class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     override var name = "Simkl"
@@ -56,11 +54,11 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     }
 
     private suspend fun MainPageRequest.toSearchResponseList(
-            page: Int
+        page: Int
     ): Pair<List<SearchResponse>, Boolean> {
         val emptyData = emptyList<SearchResponse>() to false
         val res =
-                app.get(this.data + page).parsedSafe<Array<SimklMediaObject>>() ?: return emptyData
+            app.get(this.data + page).parsedSafe<Array<SimklMediaObject>>() ?: return emptyData
         return res.map {
             newMovieSearchResponse("${it.title}", "$mainUrl/shows/${it.ids?.simkl2}") {
                 this.posterUrl = getPosterUrl(it.poster.toString())
@@ -70,44 +68,44 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
 
     private fun SimklMediaObject.toLinkData(): LinkData {
         return LinkData(
-                simklId = ids?.simkl,
-                imdbId = ids?.imdb,
-                tmdbId = ids?.tmdb,
-                aniId = ids?.anilist,
-                malId = ids?.mal,
-                title = title,
-                year = year,
-                type = type,
-                isAnime = type.equals("anime")
+            simklId = ids?.simkl,
+            imdbId = ids?.imdb,
+            tmdbId = ids?.tmdb,
+            aniId = ids?.anilist?.toIntOrNull(),
+            malId = ids?.mal?.toIntOrNull(),
+            title = title,
+            year = year,
+            type = type,
+            isAnime = type.equals("anime")
         )
     }
 
     private fun SimklEpisodeObject.toLinkData(
-            showName: String,
-            ids: SimklIds?,
-            year: Int?,
-            isAnime: Boolean
+        showName: String,
+        ids: SimklIds?,
+        year: Int?,
+        isAnime: Boolean
     ): LinkData {
         return LinkData(
-                simklId = ids?.simkl,
-                imdbId = ids?.imdb,
-                tmdbId = ids?.tmdb,
-                aniId = ids?.anilist,
-                malId = ids?.mal,
-                title = showName,
-                year = year,
-                season = season,
-                episode = episode,
-                type = type,
-                isAnime = isAnime
+            simklId = ids?.simkl,
+            imdbId = ids?.imdb,
+            tmdbId = ids?.tmdb,
+            aniId = ids?.anilist?.toIntOrNull(),
+            malId = ids?.mal?.toIntOrNull(),
+            title = showName,
+            year = year,
+            season = season,
+            episode = episode,
+            type = type,
+            isAnime = isAnime
         )
     }
 
     private fun SimklEpisodeObject.toEpisode(
-            showName: String,
-            ids: SimklIds?,
-            year: Int?,
-            isAnime: Boolean
+        showName: String,
+        ids: SimklIds?,
+        year: Int?,
+        isAnime: Boolean
     ): Episode {
         val poster = "https://simkl.in/episodes/${img}_c.webp"
         val linkData = this.toLinkData(showName, ids, year, isAnime).toStringData()
@@ -135,17 +133,17 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     }
 
     override val mainPage =
-            mainPageOf(
-                    "$apiUrl/tv/trending/month?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
-                            "Trending TV Shows",
-                    "$apiUrl/movies/trending/month?client_id=&extended=overview&limit=$mediaLimit&page=" to
-                            "Trending Movies",
-                    "$apiUrl/tv/best/all?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
-                            "Best TV Shows",
-                    //"$apiUrl/movies/best/all?client_id=&extended=overview&limit=$mediaLimit&page=" to
-                    //       "Best Movies",
-                    "Personal" to "Personal"
-            )
+        mainPageOf(
+            "$apiUrl/tv/trending/month?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
+                    "Trending TV Shows",
+            "$apiUrl/movies/trending/month?client_id=&extended=overview&limit=$mediaLimit&page=" to
+                    "Trending Movies",
+            "$apiUrl/tv/best/all?type=series&client_id=&extended=overview&limit=$mediaLimit&page=" to
+                    "Best TV Shows",
+            //"$apiUrl/movies/best/all?client_id=&extended=overview&limit=$mediaLimit&page=" to
+            //       "Best Movies",
+            "Personal" to "Personal"
+        )
 
     override suspend fun search(query: String): List<SearchResponse>? {
         //return api.search(query)
@@ -156,19 +154,19 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
         if (request.name.contains("Personal")) {
             // Reading and manipulating personal library
             api.loginInfo()
-                    ?: return newHomePageResponse(
-                            "Login required for personal content.",
-                            emptyList<SearchResponse>(),
-                            false
-                    )
+                ?: return newHomePageResponse(
+                    "Login required for personal content.",
+                    emptyList<SearchResponse>(),
+                    false
+                )
             val homePageList =
-                    api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
-                        if (it.items.isEmpty()) return@mapNotNull null
-                        val libraryName =
-                                it.name.asString(plugin.activity ?: return@mapNotNull null)
-                        HomePageList("${request.name}: $libraryName", it.items)
-                    }
-                            ?: return null
+                api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
+                    if (it.items.isEmpty()) return@mapNotNull null
+                    val libraryName =
+                        it.name.asString(plugin.activity ?: return@mapNotNull null)
+                    HomePageList("${request.name}: $libraryName", it.items)
+                }
+                    ?: return null
             return newHomePageResponse(homePageList, false)
         } else {
             // Other new sections will be generated if toSearchResponseList() is overridden
@@ -180,9 +178,9 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val id = url.removeSuffix("/").substringAfterLast("/")
         val data =
-                app.get("$apiUrl/tv/$id?client_id=&extended=full")
-                        .parsedSafe<SimklMediaObject>()
-                        ?: throw ErrorLoadingException("Unable to load data")
+            app.get("$apiUrl/tv/$id?client_id=&extended=full")
+                .parsedSafe<SimklMediaObject>()
+                ?: throw ErrorLoadingException("Unable to load data")
         val year = data.year
         val posterUrl = getPosterUrl(data.poster ?: "")
         return if (data.type.equals("movie")) {
@@ -196,14 +194,14 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
             }
         } else {
             val eps =
-                    app.get("$apiUrl/tv/episodes/$id?client_id=&extended=full")
-                            .parsedSafe<Array<SimklEpisodeObject>>()
-                            ?: buildSimklEpisodes(data.total_episodes)
-                                    ?: throw Exception("Unable to fetch episodes")
+                app.get("$apiUrl/tv/episodes/$id?client_id=&extended=full")
+                    .parsedSafe<Array<SimklEpisodeObject>>()
+                    ?: buildSimklEpisodes(data.total_episodes)
+                    ?: throw Exception("Unable to fetch episodes")
             val episodes =
-                    eps.filter { it.type.equals("episode") }.map {
-                        it.toEpisode(data.title, data.ids, year, data.type.equals("anime"))
-                    }
+                eps.filter { it.type.equals("episode") }.map {
+                    it.toEpisode(data.title, data.ids, year, data.type.equals("anime"))
+                }
             newTvSeriesLoadResponse(data.title, url, TvType.TvSeries, episodes) {
                 this.addSimklId(id.toInt())
                 this.year = year
@@ -215,49 +213,49 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
     }
 
     override suspend fun loadLinks(
-            data: String,
-            isCasting: Boolean,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ): Boolean {
         val mediaData = parseJson<LinkData>(data)
         if (mediaData.isAnime)
-                invokeExtractors(Category.ANIME, mediaData, subtitleCallback, callback)
+            invokeExtractors(Category.ANIME, mediaData, subtitleCallback, callback)
         else invokeExtractors(Category.MEDIA, mediaData, subtitleCallback, callback)
         return true
     }
 
     open class SimklMediaObject(
-            @JsonProperty("title") val title: String,
-            @JsonProperty("year") val year: Int? = null,
-            @JsonProperty("ids") val ids: SimklIds?,
-            @JsonProperty("total_episodes") val total_episodes: Int? = null,
-            @JsonProperty("status") val status: String? = null,
-            @JsonProperty("poster") val poster: String? = null,
-            @JsonProperty("type") val type: String? = null,
-            @JsonProperty("overview") val overview: String? = null,
-            @JsonProperty("genres") val genres: List<String>? = null,
-            @JsonProperty("users_recommendations")
-            val recommendations: List<SimklMediaObject>? = null,
+        @JsonProperty("title") val title: String,
+        @JsonProperty("year") val year: Int? = null,
+        @JsonProperty("ids") val ids: SimklIds?,
+        @JsonProperty("total_episodes") val total_episodes: Int? = null,
+        @JsonProperty("status") val status: String? = null,
+        @JsonProperty("poster") val poster: String? = null,
+        @JsonProperty("type") val type: String? = null,
+        @JsonProperty("overview") val overview: String? = null,
+        @JsonProperty("genres") val genres: List<String>? = null,
+        @JsonProperty("users_recommendations")
+        val recommendations: List<SimklMediaObject>? = null,
     )
 
     open class SimklEpisodeObject(
-            @JsonProperty("title") val title: String? = null,
-            @JsonProperty("description") val desc: String? = null,
-            @JsonProperty("season") val season: Int? = null,
-            @JsonProperty("episode") val episode: Int? = null,
-            @JsonProperty("type") val type: String? = null,
-            @JsonProperty("aired") val aired: Boolean? = null,
-            @JsonProperty("img") val img: String? = null,
-            @JsonProperty("ids") val ids: SimklIds?,
+        @JsonProperty("title") val title: String? = null,
+        @JsonProperty("description") val desc: String? = null,
+        @JsonProperty("season") val season: Int? = null,
+        @JsonProperty("episode") val episode: Int? = null,
+        @JsonProperty("type") val type: String? = null,
+        @JsonProperty("aired") val aired: Boolean? = null,
+        @JsonProperty("img") val img: String? = null,
+        @JsonProperty("ids") val ids: SimklIds?,
     )
 
     data class SimklIds(
-            @JsonProperty("simkl") val simkl: Int? = null,
-            @JsonProperty("simkl_id") val simkl2: Int? = null,
-            @JsonProperty("imdb") val imdb: String? = null,
-            @JsonProperty("tmdb") val tmdb: Int? = null,
-            @JsonProperty("mal") val mal: String? = null,
-            @JsonProperty("anilist") val anilist: String? = null,
+        @JsonProperty("simkl") val simkl: Int? = null,
+        @JsonProperty("simkl_id") val simkl2: Int? = null,
+        @JsonProperty("imdb") val imdb: String? = null,
+        @JsonProperty("tmdb") val tmdb: Int? = null,
+        @JsonProperty("mal") val mal: String? = null,
+        @JsonProperty("anilist") val anilist: String? = null,
     )
 }

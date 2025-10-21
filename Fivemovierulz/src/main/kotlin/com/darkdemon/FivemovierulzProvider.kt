@@ -1,5 +1,6 @@
 package com.darkdemon
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -7,10 +8,9 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class FivemovierulzProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://5movierulz.mom"
+    override var mainUrl = "https://5movierulz.gripe"
     override var name = "5movierulz"
     override val hasMainPage = true
-    override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -18,9 +18,9 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
 
     override val mainPage = mainPageOf(
         "$mainUrl/category/featured/page/" to "Latest",
-        //"$mainUrl/category/bollywood-featured" to "Bollywood",
-        //"$mainUrl/language/hindi-dubbed" to "Hindi Dubbed",
-        //"$mainUrl/category/hollywood-featured" to "Hollywood"
+        "$mainUrl/category/bollywood-featured/page/" to "Bollywood",
+        "$mainUrl/language/hindi-dubbed/page/" to "Hindi Dubbed",
+        "$mainUrl/category/hollywood-featured/page/" to "Hollywood"
     )
 
     override suspend fun getMainPage(
@@ -87,16 +87,23 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val fl = app.get(data).document.select("a[href*='https://filelions.to']").first()?.attr("href")
-            .toString()
-        loadExtractor(
-                fl,
+        val document = app.get(data).document
+
+        val links = document.select("p a")
+            .filter { it.text().contains("watch online", ignoreCase = true) }
+            .mapNotNull { it.attr("href") }
+            .filter { it.isNotBlank() }
+
+        for (link in links) {
+            Log.d("Phisher",link)
+            loadExtractor(
+                link,
                 "$mainUrl/",
                 subtitleCallback,
                 callback
             )
-        return true
+        }
+
+        return links.isNotEmpty()
     }
-
-
 }

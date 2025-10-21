@@ -317,8 +317,9 @@ class StreamPlayAnime : MainAPI() {
     }
 
     fun getStatus(t: String?): ShowStatus {
-        return when (t) {
-            "Returning Series" -> ShowStatus.Ongoing
+        return when {
+            t?.contains("Returning", ignoreCase = true) == true -> ShowStatus.Ongoing
+            t?.contains("RELEASING", ignoreCase = true) == true -> ShowStatus.Ongoing
             else -> ShowStatus.Completed
         }
     }

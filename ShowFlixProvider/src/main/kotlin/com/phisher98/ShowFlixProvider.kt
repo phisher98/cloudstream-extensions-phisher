@@ -23,7 +23,6 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
     override var mainUrl = "https://showflix.store"
     override var name = "ShowFlix"
     override val hasMainPage = true
-    override var lang = "hi"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -256,7 +255,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
             val poster = Movieit.posterURL
             val backdrop = Movieit.backdropURL
             val plot = Movieit.storyline
-            val rating = Movieit.rating.toRatingInt()
+            val rating = Movieit.rating
 
             val recQuery = when {
                 Movieit.category?.contains("Dubbed", ignoreCase = true) == true    -> "Tamil Dubbed"
@@ -298,7 +297,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 this.posterUrl = poster
                 this.year = year
                 this.plot = plot
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.backgroundPosterUrl = backdrop
                 this.recommendations = recommendations
             }
@@ -369,7 +368,7 @@ class ShowFlixProvider : MainAPI() { // all providers must be an instance of Mai
                 this.posterUrl = poster
                 this.year = year
                 this.plot = plot
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.backgroundPosterUrl = backdrop
                 this.recommendations = recommendations
             }

@@ -98,9 +98,13 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
 }
 
 
-fun parseAnimeData(jsonString: String): AnimeData {
-    val objectMapper = ObjectMapper()
-    return objectMapper.readValue(jsonString, AnimeData::class.java)
+fun parseAnimeData(jsonString: String): MetaAnimeData? {
+    return try {
+        val objectMapper = ObjectMapper()
+        objectMapper.readValue(jsonString, MetaAnimeData::class.java)
+    } catch (_: Exception) {
+        null // Return null for invalid JSON instead of crashing
+    }
 }
 
 
@@ -111,7 +115,7 @@ data class ImageData(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class EpisodeData(
+data class MetaEpisode(
     @JsonProperty("episode") val episode: String?,
     @JsonProperty("airdate") val airdate: String?,
     @JsonProperty("airDate") val airDate: String?,
@@ -127,10 +131,10 @@ data class EpisodeData(
 
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class AnimeData(
+data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>? = null,
     @JsonProperty("images") val images: List<ImageData>? = null,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeData>? = null,
+    @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>? = null,
 )
 
 fun parseStreamsToMagnetLinks(jsonString: String): List<MagnetStream> {

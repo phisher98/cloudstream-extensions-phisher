@@ -205,7 +205,19 @@ class KisskhProvider : MainAPI() {
         return true
 
     }
-// SubDecryptor Code from Thanks to https://github.com/Kohi-den/extensions-source/blob/515590ecfec6af2b915d23508266536f7f5a3ab8/src/en/kisskh/src/eu/kanade/tachiyomi/animeextension/en/kisskh/SubDecryptor.kt
+    // SubDecryptor Code from Thanks to https://github.com/Kohi-den/extensions-source/blob/515590ecfec6af2b915d23508266536f7f5a3ab8/src/en/kisskh/src/eu/kanade/tachiyomi/animeextension/en/kisskh/SubDecryptor.kt
+
+
+    //OLD Method
+    /*
+    val decrypted = chunks.mapIndexed { index, chunk ->
+    val parts = chunk.split("\n")
+    val text = parts.slice(1 until parts.size)
+    val d = text.map { decrypt(it) }.joinToString("\n")
+    arrayOf(index + 1, parts.first(), d).joinToString("\n")
+    }.joinToString("\n\n")
+     */
+
 
     private val CHUNK_REGEX1 by lazy { Regex("^\\d+$", RegexOption.MULTILINE) }
     override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
@@ -222,10 +234,19 @@ class KisskhProvider : MainAPI() {
                         .map(String::trim)
                     val decrypted = chunks.mapIndexed { index, chunk ->
                         if (chunk.isBlank()) return@mapIndexed ""
-                        val parts = chunk.lines()
+                        val parts = chunk.split("\n")
+                        if (parts.isEmpty()) return@mapIndexed ""
+
+                        val header = parts.first()
                         val text = parts.drop(1)
-                        val d = text.joinToString("\n") { decrypt(it) }
-                        listOf(index + 1, parts.firstOrNull().orEmpty(), d).joinToString("\n")
+                        val d = text.joinToString("\n") { line ->
+                            try {
+                                decrypt(line)
+                            } catch (e: Exception) {
+                                "DECRYPT_ERROR:${e.message}"
+                            }
+                        }
+                        listOf(index + 1, header, d).joinToString("\n")
                     }.filter { it.isNotEmpty() }
                         .joinToString("\n\n")
                     val newBody = decrypted.toResponseBody(response.body.contentType())

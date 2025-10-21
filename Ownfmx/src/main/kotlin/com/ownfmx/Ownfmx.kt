@@ -18,8 +18,8 @@ class Ownfmx : MainAPI() { // all providers must be an instance of MainAPI
     
     private fun toResult(post: Element): SearchResponse {
         val url = post.select("a").attr("href")
-        val title = post.select("img").attr("alt").toString()
-        var imageUrl = post.select("img").attr("src")
+        val title = post.select("img").attr("alt")
+        val imageUrl = post.select("img").attr("src")
        // Log.d("post",post.toString())
         //val quality = post.select(".video-label").text()
         return newMovieSearchResponse(title, url, TvType.Movie) {
@@ -71,7 +71,7 @@ class Ownfmx : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        var src = app.get(data).document.select("a[href^=https://streamtape]").attr("href")
+        val src = app.get(data).document.select("a[href^=https://streamtape]").attr("href")
         //Log.d("link",src)
         loadExtractor(
                 src,

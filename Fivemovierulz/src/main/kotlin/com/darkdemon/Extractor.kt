@@ -1,10 +1,17 @@
 package com.darkdemon
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getQualityFromName
 
 class Filelion : VidhideExtractor() {
     override var mainUrl = "https://vidhidepro.com"
+}
+
+
+class mivalyo : VidhideExtractor() {
+    override var name = "Mivalyo"
+    override var mainUrl = "https://mivalyo.com"
+}
+
+class StreamwishHG : StreamWishExtractor() {
+    override val mainUrl = "https://hglink.to"
 }

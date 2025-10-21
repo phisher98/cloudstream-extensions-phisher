@@ -1,14 +1,13 @@
 package com.phisher98
 
-import android.content.Context
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import kotlinx.coroutines.delay
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.BackupUtils
-import com.lagradost.cloudstream3.utils.DataStore.getDefaultSharedPrefs
-import com.lagradost.cloudstream3.utils.DataStore.getSharedPrefs
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
@@ -48,29 +47,30 @@ object UltimaUtils {
     }
 
     data class LinkData(
-            @JsonProperty("simklId") val simklId: Int? = null,
-            @JsonProperty("traktId") val traktId: Int? = null,
-            @JsonProperty("imdbId") val imdbId: String? = null,
-            @JsonProperty("tmdbId") val tmdbId: Int? = null,
-            @JsonProperty("tvdbId") val tvdbId: Int? = null,
-            @JsonProperty("type") val type: String? = null,
-            @JsonProperty("season") val season: Int? = null,
-            @JsonProperty("episode") val episode: Int? = null,
-            @JsonProperty("aniId") val aniId: String? = null,
-            @JsonProperty("malId") val malId: String? = null,
-            @JsonProperty("title") val title: String? = null,
-            @JsonProperty("year") val year: Int? = null,
-            @JsonProperty("orgTitle") val orgTitle: String? = null,
-            @JsonProperty("isAnime") val isAnime: Boolean = false,
-            @JsonProperty("airedYear") val airedYear: Int? = null,
-            @JsonProperty("lastSeason") val lastSeason: Int? = null,
-            @JsonProperty("epsTitle") val epsTitle: String? = null,
-            @JsonProperty("jpTitle") val jpTitle: String? = null,
-            @JsonProperty("date") val date: String? = null,
-            @JsonProperty("airedDate") val airedDate: String? = null,
-            @JsonProperty("isAsian") val isAsian: Boolean = false,
-            @JsonProperty("isBollywood") val isBollywood: Boolean = false,
-            @JsonProperty("isCartoon") val isCartoon: Boolean = false,
+        @JsonProperty("simklId") val simklId: Int? = null,
+        @JsonProperty("traktId") val traktId: Int? = null,
+        @JsonProperty("imdbId") val imdbId: String? = null,
+        @JsonProperty("tmdbId") val tmdbId: Int? = null,
+        @JsonProperty("tvdbId") val tvdbId: Int? = null,
+        @JsonProperty("type") val type: String? = null,
+        @JsonProperty("season") val season: Int? = null,
+        @JsonProperty("episode") val episode: Int? = null,
+        @JsonProperty("aniId") val aniId: Int? = null,
+        @JsonProperty("malId") val malId: Int? = null,
+        @JsonProperty("title") val title: String? = null,
+        @JsonProperty("year") val year: Int? = null,
+        @JsonProperty("orgTitle") val orgTitle: String? = null,
+        @JsonProperty("isAnime") val isAnime: Boolean = false,
+        @JsonProperty("airedYear") val airedYear: Int? = null,
+        @JsonProperty("lastSeason") val lastSeason: Int? = null,
+        @JsonProperty("epsTitle") val epsTitle: String? = null,
+        @JsonProperty("jpTitle") val jpTitle: String? = null,
+        @JsonProperty("date") val date: String? = null,
+        @JsonProperty("airedDate") val airedDate: String? = null,
+        @JsonProperty("isAsian") val isAsian: Boolean = false,
+        @JsonProperty("isBollywood") val isBollywood: Boolean = false,
+        @JsonProperty("isCartoon") val isCartoon: Boolean = false,
+        @JsonProperty("isDub") val isDub: Boolean = false,
     )
 }
 

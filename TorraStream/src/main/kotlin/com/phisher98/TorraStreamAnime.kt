@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
+import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -15,6 +16,7 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
@@ -40,7 +42,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.Calendar
-import kotlin.math.roundToInt
 
 open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI() {
     override var name = "TorraStream-Anime"
@@ -153,13 +154,10 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
 
         val jpTitle = data.title.romaji
-        val animeData = if (ids.id != null) {
-            val syncData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
-            parseAnimeData(syncData)
-        } else {
-            null
-        }
-        val href=LinkData(
+        val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
+        val animeMetaData = parseAnimeData(syncMetaData)
+
+        val href = LinkData(
             malId = ids.idMal,
             aniId = ids.id,
             title = data.getTitle(),
@@ -168,7 +166,20 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             isAnime = true
         ).toStringData()
 
-        val episodes = (1..data.totalEpisodes()).map { i ->
+        // --- Helper to get best episode title ---
+        fun resolveTitle(epData: MetaEpisode?): String {
+            val jsonTitle = epData?.title?.get("en")
+                ?: epData?.title?.get("ja")
+                ?: epData?.title?.get("x-jat")
+                ?: animeMetaData?.titles?.get("en")
+                ?: animeMetaData?.titles?.get("ja")
+                ?: animeMetaData?.titles?.get("x-jat")
+                ?: ""
+            return jsonTitle.ifBlank { "Episode ${epData?.episode ?: ""}" }
+        }
+
+        fun createEpisode(i: Int): Episode {
+            val epData = animeMetaData?.episodes?.get(i.toString())
             val linkData = LinkData(
                 malId = ids.idMal,
                 aniId = ids.id,
@@ -177,29 +188,30 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                 year = data.startDate.year,
                 season = 1,
                 episode = i,
-                isAnime = true
+                isAnime = true,
             ).toStringData()
 
-            newEpisode(linkData) {
+            return newEpisode(linkData) {
                 this.season = 1
                 this.episode = i
-                this.posterUrl = animeData?.episodes?.get(episode?.toString())?.image ?: return@newEpisode
-                this.description = animeData.episodes[episode?.toString()]?.overview ?: "No summary available"
-                this.rating = animeData.episodes[episode?.toString()]?.rating
-                    ?.toDoubleOrNull()
-                    ?.times(10)
-                    ?.roundToInt()
-                    ?: 0
+                this.name = resolveTitle(epData)
+                this.posterUrl = epData?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
+                this.description = epData?.overview ?: "No summary available"
+                this.score = Score.from10(epData?.rating)
+                this.runTime = epData?.runtime
+                this.addDate(epData?.airDate)
             }
         }
+
+        val episodes = (1..data.totalEpisodes()).map { createEpisode(it) }
 
         return if (data.format.contains("Movie",ignoreCase = true)) {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl = animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeData?.images
+                this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl = animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
@@ -212,9 +224,9 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl =
-                    animeData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
+                    animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url
                         ?: data.bannerImage
-                this.posterUrl = animeData?.images
+                this.posterUrl = animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
@@ -344,6 +356,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         @JsonProperty("isAsian") val isAsian: Boolean = false,
         @JsonProperty("isBollywood") val isBollywood: Boolean = false,
         @JsonProperty("isCartoon") val isCartoon: Boolean = false,
+        @JsonProperty("isDub") val isDub: Boolean = false,
     )
 
 
@@ -460,8 +473,9 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
     }
 
     fun getStatus(t: String?): ShowStatus {
-        return when (t) {
-            "Returning Series" -> ShowStatus.Ongoing
+        return when {
+            t?.contains("Returning", ignoreCase = true) == true -> ShowStatus.Ongoing
+            t?.contains("RELEASING", ignoreCase = true) == true -> ShowStatus.Ongoing
             else -> ShowStatus.Completed
         }
     }

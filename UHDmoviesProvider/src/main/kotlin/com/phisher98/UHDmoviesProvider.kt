@@ -58,7 +58,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             cfKiller("$mainUrl/${request.data}" + "/page/$page/").document
         }
 
-        //Log.d("Document", document.toString())
         val home = document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
         }
@@ -71,7 +70,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
         val href = fixUrl(this.select("div.entry-image > a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div.entry-image > a > img").attr("src"))
-        val quality = getQualityFromString(title)
+        val quality = getSearchQuality(titleRaw)
         return if (titleRaw.contains("season|S0", true) || titleRaw.contains("episode", true) || titleRaw.contains("S0", true)) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl

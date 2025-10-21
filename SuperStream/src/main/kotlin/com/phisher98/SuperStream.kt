@@ -37,7 +37,6 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toNewSearchResponseList
-import com.lagradost.cloudstream3.toRatingInt
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -54,8 +53,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
-import kotlin.math.roundToInt
-
 open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "SuperStream"
     override val hasMainPage = true
@@ -124,7 +121,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                     clean
                 }
             proxies
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Log.e("Error:", "Error fetching proxy list")
             emptyList()
         }
@@ -301,7 +298,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
         val orgTitle = res.originalTitle ?: res.originalName ?: return null
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
-        val rating = res.vote_average.toString().toRatingInt()
+        val rating = res.vote_average.toString()
         val genres = res.genres?.mapNotNull { it.name }
 
         val isCartoon = genres?.contains("Animation") ?: false
@@ -367,7 +364,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                             this.season = eps.seasonNumber
                             this.episode = eps.episodeNumber
                             this.posterUrl = getImageUrl(eps.stillPath)
-                            this.rating = eps.voteAverage?.times(10)?.roundToInt()
+                            this.score = Score.from10(eps.voteAverage)
                             this.description = eps.overview
                         }.apply {
                             this.addDate(eps.airDate)
@@ -419,7 +416,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                             this.season = video.season
                             this.episode = video.number
                             this.posterUrl = video.thumbnail
-                            this.rating = video.rating.toIntOrNull()
+                            this.score = Score.from10(video.rating)
                             this.description = video.description
                         }.apply {
                             this.addDate(video.released)
@@ -434,7 +431,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                     this.plot = res.overview
                     this.tags = keywords?.map { it.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
-                    this.rating = rating
+                    this.score = Score.from10(rating)
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
@@ -450,8 +447,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                     this.plot = res.overview
                     this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
-
-                    this.rating = rating
+                    this.score = Score.from10(rating)
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
@@ -490,8 +486,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                 this.duration = res.runtime
                 this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
                     ?.takeIf { it.isNotEmpty() } ?: genres
-
-                this.rating = rating
+                this.score = Score.from10(rating)
                 this.recommendations = recommendations
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"

@@ -224,7 +224,7 @@ class StremioC : MainAPI() {
                 ) {
                     posterUrl = poster
                     backgroundPosterUrl = background
-                    rating = imdbRating.toRatingInt()
+                    score = Score.from10(imdbRating)
                     plot = description
                     year = yearNum?.toIntOrNull()
                     tags = genre ?: genres
@@ -243,7 +243,7 @@ class StremioC : MainAPI() {
                 ) {
                     posterUrl = poster
                     backgroundPosterUrl = background
-                    rating = imdbRating.toRatingInt()
+                    score = Score.from10(imdbRating)
                     plot = description
                     year = yearNum?.toIntOrNull()
                     tags = genre ?: genres

@@ -16,7 +16,7 @@ import java.util.Calendar
 open class Hdmovie2 : Movierulzhd() {
 
     override var mainUrl: String = runBlocking {
-        MovierulzhdPlugin.getDomains()?.hdmovie2 ?: "https://hdmovie2.cooking"
+        MovierulzhdPlugin.getDomains()?.hdmovie2 ?: "https://hdmovie2.qpon"
     }
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
