@@ -28,8 +28,8 @@ fun getQuality(str: String): Int {
 }
 
 fun getLanguage(language: String?): String? {
-    return SubtitleHelper.fromTagToLanguageName(language ?: return null)
-        ?: SubtitleHelper.fromTagToLanguageName(language.substringBefore("-"))
+    return SubtitleHelper.fromTagToEnglishLanguageName(language ?: return null)
+        ?: SubtitleHelper.fromTagToEnglishLanguageName(language.substringBefore("-"))
 }
 
 

@@ -129,7 +129,7 @@ object AnichiExtractors : Anichi() {
 
                                 else -> {
                                     server.subtitles?.forEach { sub ->
-                                        val lang = SubtitleHelper.fromTagToLanguageName(sub.lang ?: "") ?: sub.lang.orEmpty()
+                                        val lang = SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "") ?: sub.lang.orEmpty()
                                         val src = sub.src ?: return@forEach
                                         subtitleCallback(newSubtitleFile(lang, httpsify(src)))
                                     }

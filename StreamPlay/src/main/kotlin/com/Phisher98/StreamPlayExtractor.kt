@@ -711,7 +711,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 else -> {
                                     server.subtitles?.forEach { sub ->
                                         val langName =
-                                            SubtitleHelper.fromTagToLanguageName(sub.lang ?: "")
+                                            SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "")
                                                 ?: sub.lang.orEmpty()
                                         val src = sub.src ?: return@forEach
                                         subtitleCallback(newSubtitleFile(langName, httpsify(src)))
