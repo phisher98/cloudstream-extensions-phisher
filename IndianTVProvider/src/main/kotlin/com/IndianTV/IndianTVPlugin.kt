@@ -1,4 +1,4 @@
-package com.phisher98
+package com.IndianTV
 
 import android.util.Base64
 import com.lagradost.cloudstream3.HomePageList
@@ -96,13 +96,21 @@ class IndianTVPlugin : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val data = parseJson<LoadData>(url)
-        return newLiveStreamLoadResponse(data.title,data.url,url)
-        {
-            this.posterUrl=data.poster
-            this.plot=data.nation
+        val data = try {
+            parseJson<LoadData>(url)
+        } catch (_: Exception) {
+            // fallback: treat url as direct stream URL
+            return newLiveStreamLoadResponse("Unknown Title", url, url) {
+                this.posterUrl = ""
+                this.plot = ""
+            }
+        }
+        return newLiveStreamLoadResponse(data.title, data.url, url) {
+            this.posterUrl = data.poster
+            this.plot = data.nation
         }
     }
+
     data class LoadData(
         val url: String,
         val title: String,

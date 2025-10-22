@@ -52,7 +52,6 @@ class StreamplayTorrentAnime : MainAPI() {
     override val hasQuickSearch = false
     private val api = AccountManager.aniListApi
     private val apiUrl = "https://graphql.anilist.co"
-    private val anilistAPI = "https://graphql.anilist.co"
     private val mediaLimit = 20
     private val isAdult = false
     private val headerJSON =
@@ -195,7 +194,7 @@ class StreamplayTorrentAnime : MainAPI() {
                 this.description = epData?.overview ?: "No summary available"
                 this.score = Score.from10(epData?.rating)
                 this.runTime = epData?.runtime
-                this.addDate(epData?.airDate)
+                this.addDate(epData?.airdate)
             }
         }
 
