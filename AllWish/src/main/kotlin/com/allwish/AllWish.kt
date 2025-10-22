@@ -15,6 +15,7 @@ import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
@@ -52,8 +53,11 @@ class AllWish : MainAPI() {
         res.select("div.item").forEach { item ->
             val name = item.selectFirst("div.name > a")?.text() ?: ""
             val url = item.selectFirst("div.name > a")?.attr("href")?.substringBeforeLast("/") ?: ""
+            val subCount = item.selectFirst("div.dub-sub-total > span.sub")?.text()?.toIntOrNull()
+            val dubCount = item.selectFirst("div.dub-sub-total > span.dub")?.text()?.toIntOrNull()
             results += newAnimeSearchResponse(name, url) {
                 this.posterUrl = item.selectFirst("a.poster img")?.attr("data-src")
+                addDubStatus(dubCount != null, subCount != null, dubCount, subCount)
             }
         }
         return results
