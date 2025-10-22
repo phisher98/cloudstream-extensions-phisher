@@ -17,6 +17,10 @@ import androidx.core.content.edit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import androidx.core.view.isNotEmpty
+import com.lagradost.cloudstream3.CommonActivity.showToast
+
+
+private val PREFS_PROFILES = "provider_profiles"
 
 class ProvidersFragment(
     private val plugin: StreamPlayPlugin,
@@ -132,6 +136,83 @@ class ProvidersFragment(
         btnSelectAll.setOnClickListener { adapter.setAll(true) }
         btnDeselectAll.setOnClickListener { adapter.setAll(false) }
         btnSave.setOnClickListener { dismissFragment() }
+
+
+        //Profile
+
+        val btnSaveProfile = view.findView<Button>("btn_save_profile")
+        val btnLoadProfile = view.findView<Button>("btn_load_profile")
+        val btnDeleteProfile = view.findView<Button>("btn_delete_profile")
+
+        btnSaveProfile.setOnClickListener {
+            val input = android.widget.EditText(requireContext())
+
+            val dialog = android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Save Profile")
+                .setMessage("Enter a name for your profile:")
+                .setView(input)
+                .setPositiveButton("Save") { _, _ ->
+                    val name = input.text.toString().trim()
+                    if (name.isNotEmpty()) {
+                        saveProfile(name)
+                        showMessage("Profile \"$name\" saved.")
+                    } else {
+                        showMessage("Profile name cannot be empty.")
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .create()
+
+            dialog.setOnShowListener {
+                input.isFocusableInTouchMode = true
+                input.requestFocus()
+            }
+
+            dialog.show()
+        }
+
+
+        btnLoadProfile.setOnClickListener {
+            val profiles = getAllProfiles().keys.toTypedArray()
+            if (profiles.isEmpty()) {
+                showToast("No profiles saved.")
+                return@setOnClickListener
+            }
+
+            android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Select Profile")
+                .setItems(profiles) { _, which ->
+                    loadProfile(profiles[which])
+                }
+                .show()
+        }
+
+
+        btnDeleteProfile.setOnClickListener {
+            val profiles = getAllProfiles().keys.toTypedArray()
+            if (profiles.isEmpty()) {
+                showToast("No profiles to delete.")
+                return@setOnClickListener
+            }
+            val dialog = android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Delete Profile")
+                .setItems(profiles) { _, which ->
+                    deleteProfile(profiles[which])
+                }
+                .setNegativeButton("Cancel", null)
+                .create()
+            dialog.setOnShowListener {
+                dialog.listView?.let { list ->
+                    if (list.isNotEmpty()) {
+                        list.getChildAt(0)?.requestFocus()
+                    }
+                }
+            }
+            dialog.show()
+        }
+
+
+        //
     }
 
     private fun updateUI() {
@@ -166,4 +247,61 @@ class ProvidersFragment(
             onChange(disabled)
         }
     }
+
+    private fun saveProfile(name: String) {
+        val disabled = sharedPref.getStringSet(PREFS_DISABLED, emptySet()) ?: emptySet()
+        val allProfiles = getAllProfiles().toMutableMap()
+        allProfiles[name] = disabled
+
+        // Convert to a JSON-like string for compact storage
+        val encoded = allProfiles.entries.joinToString("|") { (key, value) ->
+            "$key:${value.joinToString(",")}"
+        }
+        sharedPref.edit { putString(PREFS_PROFILES, encoded) }
+    }
+
+    private fun getAllProfiles(): Map<String, Set<String>> {
+        val encoded = sharedPref.getString(PREFS_PROFILES, "") ?: return emptyMap()
+        if (encoded.isEmpty()) return emptyMap()
+
+        return encoded.split("|").mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size < 2) return@mapNotNull null
+            val name = parts[0]
+            val ids = if (parts[1].isEmpty()) emptySet() else parts[1].split(",").toSet()
+            name to ids
+        }.toMap()
+    }
+
+    private fun loadProfile(name: String) {
+        val profiles = getAllProfiles()
+        val disabled = profiles[name] ?: return
+        sharedPref.edit { putStringSet(PREFS_DISABLED, disabled) }
+        adapter = ProviderAdapter(providers, disabled) { updated ->
+            sharedPref.edit { putStringSet(PREFS_DISABLED, updated) }
+            updateUI()
+        }
+        updateUI()
+        showMessage("Profile \"$name\" loaded.")
+    }
+
+    private fun deleteProfile(name: String) {
+        val allProfiles = getAllProfiles().toMutableMap()
+        if (allProfiles.remove(name) != null) {
+            val encoded = allProfiles.entries.joinToString("|") { (key, value) ->
+                "$key:${value.joinToString(",")}"
+            }
+            sharedPref.edit { putString(PREFS_PROFILES, encoded) }
+            showMessage("Profile \"$name\" deleted.")
+        } else {
+            showMessage("Profile not found.")
+        }
+    }
+
+
+    private fun showMessage(msg: String) {
+        android.widget.Toast.makeText(requireContext(), msg, android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+
 }

@@ -1,63 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root_layout"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/scroll_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:fillViewport="true"
     android:background="#121212"
-    android:nextFocusDown="@id/list_container"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
-    <!-- Header Container -->
     <LinearLayout
-        android:id="@+id/header_container"
+        android:id="@+id/root_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginBottom="10dp">
+        android:descendantFocusability="afterDescendants">
 
-        <!-- Title -->
+        <!-- Header Title -->
         <TextView
             android:id="@+id/tv_title"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Select Sources"
+            android:textColor="#FFFFFF"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF" />
+            android:focusable="false"
+            android:layout_marginBottom="10dp" />
 
-        <!-- Buttons Row -->
+        <!-- Top Buttons Row -->
         <LinearLayout
             android:id="@+id/buttons_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="start|center_vertical"
-            android:layout_marginTop="8dp">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="10dp">
 
             <Button
                 android:id="@+id/btn_select_all"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Select All"
+                android:layout_weight="1"
+                android:text="SELECT ALL"
+                android:textAllCaps="true"
+                android:backgroundTint="#1F6FEB"
                 android:textColor="#FFFFFF"
-                android:backgroundTint="#1F6FEB" />
+                android:focusable="true"
+                android:nextFocusRight="@id/btn_deselect_all" />
 
             <Button
                 android:id="@+id/btn_deselect_all"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Select None"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#BB2D3B"
-                android:layout_marginStart="6dp" />
-
-            <!-- Spacer pushes save button to the right -->
-            <View
                 android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="SELECT NONE"
+                android:textAllCaps="true"
+                android:backgroundTint="#BB2D3B"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="8dp"
+                android:focusable="true"
+                android:nextFocusLeft="@id/btn_select_all" />
 
             <ImageButton
                 android:id="@+id/btn_save"
@@ -66,45 +70,87 @@
                 android:padding="8dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:scaleType="centerInside" />
+
         </LinearLayout>
-    </LinearLayout>
 
-    <!-- Subtext -->
-    <TextView
-        android:id="@+id/tv_subtext"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Enable or Disable Sources"
-        android:textSize="14sp"
-        android:textColor="#CCCCCC"
-        android:layout_marginBottom="10dp" />
+        <!-- Subtext -->
+        <TextView
+            android:id="@+id/tv_subtext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enable or Disable Sources"
+            android:textSize="14sp"
+            android:textColor="#CCCCCC"
+            android:layout_marginBottom="10dp" />
 
-    <!-- Divider -->
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#444"
-        android:layout_marginVertical="10dp" />
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333333"
+            android:layout_marginBottom="12dp" />
 
-    <!-- Scrollable List -->
-    <ScrollView
-        android:id="@+id/scroll_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true"
-        android:focusable="false"
-        android:focusableInTouchMode="false">
+        <!-- Profile Buttons Row -->
+        <LinearLayout
+            android:id="@+id/profile_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
 
+            <Button
+                android:id="@+id/btn_save_profile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="SAVE PROFILE"
+                android:textAllCaps="true"
+                android:backgroundTint="#1E88E5"
+                android:textColor="#FFFFFF"
+                android:focusable="true"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_load_profile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="LOAD PROFILE"
+                android:textAllCaps="true"
+                android:backgroundTint="#2E7D32"
+                android:textColor="#FFFFFF"
+                android:focusable="true"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_delete_profile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="DELETE PROFILE"
+                android:textAllCaps="true"
+                android:backgroundTint="#C62828"
+                android:textColor="#FFFFFF"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333333"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Providers List -->
         <LinearLayout
             android:id="@+id/list_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="10dp"
-            android:nextFocusUp="@id/btn_save" />
+            android:dividerPadding="4dp"
+            android:showDividers="none"
+            android:focusable="false" />
+    </LinearLayout>
 
-    </ScrollView>
-
-</LinearLayout>
+</ScrollView>
