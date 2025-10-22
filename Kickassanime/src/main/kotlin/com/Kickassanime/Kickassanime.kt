@@ -3,7 +3,6 @@ package com.kickassanime
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.kickassanime.CryptoAES.decodeHex
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -124,46 +123,35 @@ val json = """
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val showname=url.substringAfter(mainUrl)
-        val loadapi="${mainUrl}/api/show/$showname"
-        val loadjson= app.get(loadapi).parsedSafe<loadres>()
-        var title= loadjson?.titleEn
-        if (title.isNullOrEmpty())
-        {
-            title= loadjson?.title ?: "Unknown"
-        }
-        val poster = getBannerUrl( loadjson?.banner?.hq) ?: getImageUrl(loadjson?.poster?.hq)
-        val description= loadjson?.synopsis
-        val tags= loadjson?.genres?.map { it }
-        val status=getStatus(loadjson?.status ?: "")
-        val json=app.get("$mainUrl/api/show$showname/episodes?ep=1&lang=ja-JP").toString()
-        val episodes = mutableListOf<Episode>()
-        val jsonresponse = parseJsonToEpisodes(json)
-        jsonresponse.amap {
-            val name=it.title
-            val ep=it.episode_number.toString().substringBefore(".").toIntOrNull()
-            val href="$mainUrl/api/show$showname/episode/ep-$ep-${it.slug}"
-            val epposter= getThumbnailUrl(it.thumbnail.hq)
-            episodes.add(
-                newEpisode(href)
-                {
-                    this.name=name
-                    this.episode=ep
-                    this.posterUrl=epposter
-                }
-            )
+        val showName = url.substringAfter(mainUrl)
+        val loadJson = app.get("$mainUrl/api/show/$showName").parsedSafe<loadres>()
+
+        val title = loadJson?.titleEn.takeUnless { it.isNullOrEmpty() } ?: loadJson?.title ?: "Unknown"
+        val poster = loadJson?.banner?.hq?.let(::getBannerUrl) ?: loadJson?.poster?.hq?.let(::getImageUrl)
+        val description = loadJson?.synopsis
+        val tags = loadJson?.genres
+        val status = getStatus(loadJson?.status ?: "")
+
+        val episodesJson = app.get("$mainUrl/api/show$showName/episodes?ep=1&lang=ja-JP").toString()
+        val episodes = parseJsonToEpisodes(episodesJson).mapNotNull { epJson ->
+            val epNumber = epJson.episode_number.toString().substringBefore(".").toIntOrNull() ?: return@mapNotNull null
+            newEpisode("$mainUrl/api/show$showName/episode/ep-$epNumber-${epJson.slug}") {
+                name = epJson.title
+                episode = epNumber
+                posterUrl = getThumbnailUrl(epJson.thumbnail.hq)
+            }
         }
 
-        return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
+        return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes).apply {
             name = title
             posterUrl = poster
             backgroundPosterUrl = poster
-            plot=description
-            this.tags=tags
-            this.showStatus= status
+            plot = description
+            this.tags = tags
+            showStatus = status
         }
-
     }
+
 
     override suspend fun loadLinks(
         data: String,
@@ -551,17 +539,13 @@ private fun generateFilterWithCurrentYear(): String {
 data class Encrypted(
     val data: String,
 )
-
+    private val gson = Gson()
     private fun parseJsonToEpisodes(json: String): List<Episoderesponse> {
-    val gson = Gson()
-
-    // First, create a class that represents the structure containing the result field
-    data class Response(val result: List<Episoderesponse>)
-
-    // Deserialize the entire JSON into the Response class
-    val response = gson.fromJson(json, Response::class.java)
-
-    // Return the result field which contains the list of episodes
-    return response.result
-}
+        data class Response(val result: List<Episoderesponse>)
+        return try {
+            gson.fromJson(json, Response::class.java).result
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
 }
