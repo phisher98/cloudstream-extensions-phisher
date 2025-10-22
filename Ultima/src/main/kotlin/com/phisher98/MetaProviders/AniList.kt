@@ -197,7 +197,7 @@ class AniList(val plugin: UltimaPlugin) : MainAPI() {
                 this.description = epData?.overview ?: "No summary available"
                 this.score = Score.from10(epData?.rating)
                 this.runTime = epData?.runtime
-                this.addDate(epData?.airDate)
+                this.addDate(epData?.airdate)
             }
         }
 
@@ -371,7 +371,6 @@ data class ImageData(
 data class MetaEpisode(
     @JsonProperty("episode") val episode: String?,
     @JsonProperty("airdate") val airdate: String?,
-    @JsonProperty("airDate") val airDate: String?,
     @JsonProperty("airDateUtc") val airDateUtc: String?,
     @JsonProperty("length") val length: Int?,
     @JsonProperty("runtime") val runtime: Int?,

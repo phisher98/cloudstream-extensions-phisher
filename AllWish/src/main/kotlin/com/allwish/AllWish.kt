@@ -196,7 +196,7 @@ class AllWish : MainAPI() {
             this.description = epData?.overview ?: "No summary available"
             this.score = Score.from10(epData?.rating)
             this.runTime = epData?.runtime
-            this.addDate(epData?.airDate)
+            this.addDate(epData?.airdate)
         }
     }
 
