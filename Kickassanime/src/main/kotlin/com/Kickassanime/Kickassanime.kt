@@ -3,6 +3,7 @@ package com.kickassanime
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.kickassanime.CryptoAES.decodeHex
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.*
@@ -198,16 +199,19 @@ val json = """
                     "Sec-Fetch-Mode" to "cors",
                     "Sec-Fetch-Site" to "cross-site"
                 )
-                newExtractorLink(
-                    "VidStreaming",
-                    "VidStreaming",
-                    m3u8,
-                    ExtractorLinkType.M3U8
+
+                callback.invoke(
+                    newExtractorLink(
+                        "VidStreaming",
+                        "VidStreaming",
+                        m3u8,
+                        ExtractorLinkType.M3U8
+                        )
+                        {
+                            this.quality = Qualities.P1080.value
+                            this.headers = videoheaders
+                        }
                 )
-                {
-                    this.quality = Qualities.P1080.value
-                    this.headers = videoheaders
-                }
 
                 decrypted.subtitles.amap {
                     subtitleCallback.invoke(

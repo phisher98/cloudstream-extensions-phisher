@@ -108,7 +108,7 @@ object StreamPlayExtractor : StreamPlay() {
             val file =
                 (scope.get("globalArgument", scope).toJson()).substringAfter("file\":\"")
                     .substringBefore("\",")
-            callback(
+            callback.invoke(
                 newExtractorLink(
                     "MultiEmbeded API",
                     "MultiEmbeded API",
@@ -325,7 +325,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val href = doc.select("div.c_h2 > div:nth-child(1) > a").attr("href")
         if (href.isNotBlank()) {
-            callback(
+            callback.invoke(
                 newExtractorLink(
                     "TokyoInsider",
                     "TokyoInsider",
@@ -358,7 +358,7 @@ object StreamPlayExtractor : StreamPlay() {
         if (episodeResponse.code != 200) return
         val m3u8 = episodeResponse.document.select("media-player").attr("src")
         if (m3u8.isBlank()) return
-        callback(
+        callback.invoke(
             newExtractorLink(
                 "Anizone",
                 "Anizone",
@@ -421,7 +421,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val safeLink = link ?: return@amap null
                 when {
                     safeLink.contains(".m3u8") || safeLink.contains(".mp4") -> {
-                        callback(
+                        callback.invoke(
                             newExtractorLink(
                                 "Kisskh",
                                 "Kisskh",
@@ -558,7 +558,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         if (dubtype == null || dubtype.equals("DUB", ignoreCase = true)) {
             dubUrl?.let {
-                callback(
+                callback.invoke(
                     newExtractorLink(
                         "AniXL DUB",
                         "AniXL DUB",
@@ -573,7 +573,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         if (dubtype == null || dubtype.equals("SUB", ignoreCase = true)) {
             rawUrl?.let {
-                callback(
+                callback.invoke(
                     newExtractorLink(
                         "AniXL SUB",
                         "AniXL SUB",
@@ -684,7 +684,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 }
 
                                 server.hls == null -> {
-                                    callback(
+                                    callback.invoke(
                                         newExtractorLink(
                                             "Allanime [${lang.uppercase()}] ${host.capitalize()}",
                                             "Allanime [${lang.uppercase()}] ${host.capitalize()}",
@@ -1113,7 +1113,7 @@ object StreamPlayExtractor : StreamPlay() {
                     "Sec-Fetch-Site" to "cross-site"
                 )
 
-                callback(
+                callback.invoke(
                     newExtractorLink(
                         server.name,
                         server.name,
@@ -1392,7 +1392,7 @@ object StreamPlayExtractor : StreamPlay() {
                     stream.qualities.forEach { quality ->
                         val url = streamsJson?.get(quality)?.textValue()
                         if (!url.isNullOrBlank()) {
-                            callback(
+                            callback.invoke(
                                 newExtractorLink(
                                     source = serverLabel,
                                     name = serverLabel,
@@ -1423,7 +1423,7 @@ object StreamPlayExtractor : StreamPlay() {
                 } else {
                     val url = objectMapper.readTree(json).get("url")?.textValue().orEmpty()
                     if (url.isNotBlank()) {
-                        callback(
+                        callback.invoke(
                             newExtractorLink(
                                 source = serverLabel,
                                 name = serverLabel,
@@ -1495,7 +1495,7 @@ object StreamPlayExtractor : StreamPlay() {
                         val referer = headersMap["referer"] ?: defaultReferer
                         val displayName = if (flag.isNotBlank()) "VidZee $name ($lang - $flag)" else " VidZee$name ($lang)"
 
-                        callback(
+                        callback.invoke(
                             newExtractorLink(
                                 "VidZee",
                                 displayName,
@@ -2261,7 +2261,7 @@ object StreamPlayExtractor : StreamPlay() {
                         .parsedSafe<Embedsuhref>()
                         ?.source ?: return@runCatching
 
-                    callback(
+                    callback.invoke(
                         newExtractorLink(
                             "Embedsu Viper",
                             "Embedsu Viper",
@@ -2324,7 +2324,7 @@ object StreamPlayExtractor : StreamPlay() {
             val iframe = app.get("$vidsrctoAPI/api/source/${it.hash}")
                 .parsedSafe<Vidsrcccm3u8>()?.data?.source
             if (iframe != null && !iframe.contains(".vidbox")) {
-                callback(
+                callback.invoke(
                     newExtractorLink(
                         "Vidsrc",
                         "⌜ Vidsrc ⌟ | [$servername]",
@@ -3572,7 +3572,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     val type = if (decodedUrl.contains(".m3u8", ignoreCase = true))
                                         ExtractorLinkType.M3U8 else INFER_TYPE
 
-                                    callback(newExtractorLink(label, label, decodedUrl, type) {
+                                    callback.invoke(newExtractorLink(label, label, decodedUrl, type) {
                                         this.quality = quality
                                         this.referer = referer
                                         this.headers = videoHeaders
@@ -3587,7 +3587,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 val type = if (url.contains(".m3u8", ignoreCase = true))
                                     ExtractorLinkType.M3U8 else INFER_TYPE
 
-                                callback(
+                                callback.invoke(
                                     newExtractorLink(
                                         "$label (VLC)",
                                         "$label (VLC)",
@@ -5537,7 +5537,7 @@ object StreamPlayExtractor : StreamPlay() {
         val response = app.get(api).parsedSafe<NuvioStreams>() ?: return
 
         response.streams.forEach { stream ->
-            callback(
+            callback.invoke(
                 newExtractorLink(
                     name = "NuvioStreams ${stream.name}",
                     source = "NuvioStreams",
