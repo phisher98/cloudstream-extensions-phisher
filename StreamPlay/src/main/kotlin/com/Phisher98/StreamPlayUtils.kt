@@ -995,14 +995,15 @@ suspend fun invokeExternalSource(
                 if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
 
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         "⌜ SuperStream ⌟",
                         "⌜ SuperStream ⌟ [Server ${index + 1}] ${source.size}",
                         source.file?.replace("\\/", "/") ?: return@org,
-                        "",
-                        getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label),
-                        type = format,
+                        format
                     )
+                    {
+                        this.quality = getIndexQuality(if (format == ExtractorLinkType.M3U8) fileList.fileName else source.label)
+                    }
                 )
             }
         }

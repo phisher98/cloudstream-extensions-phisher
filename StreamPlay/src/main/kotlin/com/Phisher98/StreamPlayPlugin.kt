@@ -161,10 +161,15 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(PixelServer())
         registerExtractorAPI(Streameeeeee())
         registerExtractorAPI(Vidora())
-        val activity = context as AppCompatActivity
+        val activity = context as? AppCompatActivity
         openSettings = {
-            val frag = MainSettingsFragment(this, sharedPref)
-            frag.show(activity.supportFragmentManager, "Frag")
+            val act = activity
+            if (act != null && !act.isFinishing && !act.isDestroyed) {
+                val frag = MainSettingsFragment(this, sharedPref)
+                frag.show(act.supportFragmentManager, "Frag")
+            } else {
+                Log.e("Plugin", "Activity is not valid anymore, cannot show settings dialog")
+            }
         }
     }
 }
