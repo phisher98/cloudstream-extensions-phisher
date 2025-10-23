@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
         with:
           path: "src"
 
       - name: Checkout builds
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
         with:
           ref: "builds"
           path: "builds"
@@ -35,10 +35,11 @@ jobs:
           rm $GITHUB_WORKSPACE/builds/*.jar || true
 
       - name: Setup JDK 17
-        uses: actions/setup-java@v4.6.0
+        uses: actions/setup-java@v5
         with:
-          distribution: "adopt"
           java-version: 17
+          distribution: adopt
+          cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.2
