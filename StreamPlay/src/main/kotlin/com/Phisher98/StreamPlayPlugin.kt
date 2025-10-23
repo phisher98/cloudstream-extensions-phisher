@@ -161,10 +161,10 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(PixelServer())
         registerExtractorAPI(Streameeeeee())
         registerExtractorAPI(Vidora())
-        val activity = context as? AppCompatActivity
-        openSettings = {
-            val act = activity
-            if (act != null && !act.isFinishing && !act.isDestroyed) {
+
+        openSettings = { ctx ->
+            val act = ctx as AppCompatActivity
+            if (!act.isFinishing && !act.isDestroyed) {
                 val frag = MainSettingsFragment(this, sharedPref)
                 frag.show(act.supportFragmentManager, "Frag")
             } else {

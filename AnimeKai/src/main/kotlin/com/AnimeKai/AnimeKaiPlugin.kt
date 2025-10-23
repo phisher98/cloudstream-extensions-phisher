@@ -2,7 +2,6 @@ package com.AnimeKai
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
-import com.lagradost.cloudstream3.AcraApplication.Companion.getActivity
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -22,13 +21,13 @@ class AnimeKaiPlugin : Plugin() {
         registerMainAPI(AnimeKai())
         registerExtractorAPI(MegaUp())
 
-        this.openSettings = openSettings@{
-            val manager =
-                (context.getActivity() as? AppCompatActivity)?.supportFragmentManager
-                    ?: return@openSettings
-            BottomFragment(this).show(manager, "")
+        this.openSettings = { ctx ->
+            val activity = ctx as AppCompatActivity
+            val frag = BottomFragment(this)
+            frag.show(activity.supportFragmentManager, "")
         }
     }
+
 
     companion object {
         var currentAnimeKaiServer: String
