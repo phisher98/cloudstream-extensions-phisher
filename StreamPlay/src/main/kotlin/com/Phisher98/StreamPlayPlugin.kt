@@ -161,6 +161,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(PixelServer())
         registerExtractorAPI(Streameeeeee())
         registerExtractorAPI(Vidora())
+        registerExtractorAPI(Fourspromax())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
