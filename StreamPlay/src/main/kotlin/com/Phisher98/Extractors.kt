@@ -1523,7 +1523,7 @@ class GDMirrorbot : ExtractorApi() {
     }
 }
 
-class MegaUp : ExtractorApi() {
+open class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"
     override val requiresReferer = true
@@ -2654,4 +2654,9 @@ class Vidora : ExtractorApi() {
             }
         }
     }
+}
+
+class Fourspromax : MegaUp() {
+    override var mainUrl = "https://4spromax.site"
+    override val requiresReferer = true
 }

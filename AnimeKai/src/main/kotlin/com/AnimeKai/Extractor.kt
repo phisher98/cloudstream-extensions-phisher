@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -16,8 +17,13 @@ import org.json.JSONException
 import org.json.JSONObject
 
 
+class Fourspromax : MegaUp() {
+    override var mainUrl = "https://4spromax.site"
+    override val requiresReferer = true
+}
+
 //Thanks to https://github.com/AzartX47/EncDecEndpoints
-class MegaUp : ExtractorApi() {
+open class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"
     override val requiresReferer = true

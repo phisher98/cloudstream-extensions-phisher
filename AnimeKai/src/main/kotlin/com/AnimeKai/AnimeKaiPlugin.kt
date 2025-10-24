@@ -20,6 +20,7 @@ class AnimeKaiPlugin : Plugin() {
     override fun load(context: Context) {
         registerMainAPI(AnimeKai())
         registerExtractorAPI(MegaUp())
+        registerExtractorAPI(Fourspromax())
 
         this.openSettings = { ctx ->
             val activity = ctx as AppCompatActivity
