@@ -16,9 +16,6 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.net.URI
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class MultimoviesAIO: StreamWishExtractor() {
     override var name = "Multimovies Cloud AIO"
@@ -173,14 +170,15 @@ class Streamcasthub : ExtractorApi() {
         val id=url.substringAfterLast("/#")
         val m3u8= "https://ss1.rackcloudservice.cyou/ic/$id/master.txt"
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 m3u8,
-                url,
-                Qualities.Unknown.value,
-                type = ExtractorLinkType.M3U8,
+                ExtractorLinkType.M3U8
             )
+            {
+                this.referer = url
+            }
         )
     }
 }

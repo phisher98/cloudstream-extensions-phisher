@@ -269,7 +269,7 @@ object SuperStreamExtractor : Superstream() {
             .parsedSafe<OsResult>()?.subtitles?.map { sub ->
                 subtitleCallback.invoke(
                     newSubtitleFile(
-                        SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
+                        SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "") ?: sub.lang
                         ?: return@map,
                         sub.url ?: return@map
                     )
