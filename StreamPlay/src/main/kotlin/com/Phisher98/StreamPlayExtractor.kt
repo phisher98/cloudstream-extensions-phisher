@@ -3881,12 +3881,15 @@ object StreamPlayExtractor : StreamPlay() {
     private fun extractPlayer4uLinks(document: Document,season:Int?,episode:Int?,title:String,year:Int?): List<Player4uLinkData> {
         return document.select(".playbtnx").mapNotNull { element ->
             val titleText = element.text()?.split(" | ")?.lastOrNull() ?: return@mapNotNull null
+            //fix adult content
             if (season == null && episode == null) {
-                if (year != null && (titleText.contains(title, ignoreCase = true) && titleText.contains(year.toString(), ignoreCase = true))) {
+                if (year != null && (titleText.startsWith("$title $year", ignoreCase = true) ||
+                            titleText.startsWith("$title ($year)", ignoreCase = true))) {
                     Player4uLinkData(name = titleText, url = element.attr("onclick"))
                 } else null
             } else {
-                if (season != null && episode != null && titleText.contains(title, ignoreCase = true) && titleText.contains("S${"%02d".format(season)}E${"%02d".format(episode)}", ignoreCase = true)) {
+                if (season != null && episode != null &&
+                    titleText.startsWith("$title S${"%02d".format(season)}E${"%02d".format(episode)}", ignoreCase = true)) {
                     Player4uLinkData(name = titleText, url = element.attr("onclick"))
                 } else null
             }
@@ -4842,7 +4845,7 @@ object StreamPlayExtractor : StreamPlay() {
             "Accept-Language" to "en-US,en;q=0.9",
             "Connection" to "keep-alive",
             "Referer" to cinemaOSApi,
-            "Host" to "cinemaos.live",
+            "Host" to "cinemaos.tech",
             "Sec-Fetch-Dest" to "empty",
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "same-origin",
@@ -4857,7 +4860,7 @@ object StreamPlayExtractor : StreamPlay() {
         val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(), seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
         val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,season != null)
         val type = if(season == null) {"movie"}  else {"tv"}
-        val sourceUrl = if(season == null) {"$cinemaOSApi/api/backend?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/backend?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
+        val sourceUrl = if(season == null) {"$cinemaOSApi/api/backendv2?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/backendv2?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
         val sourceResponse = app.get(sourceUrl, headers = sourceHeaders,timeout = 60).parsedSafe<CinemaOSReponse>()
         val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data)
         val json = parseCinemaOSSources(decryptedJson.toString())

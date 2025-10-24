@@ -33,6 +33,7 @@ import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
 import com.phisher98.StreamPlayExtractor.invokeNuvioStreams
 import com.phisher98.StreamPlayExtractor.invokePlaydesi
+import com.phisher98.StreamPlayExtractor.invokePlayer4U
 import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
@@ -83,12 +84,10 @@ fun buildProviders(): List<Provider> {
         Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub)
         },
-        /*
         Provider("player4u", "Player4U") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokePlayer4U(res.title, res.season, res.episode, res.year, callback)
         },
 
-         */
         Provider("vidsrccc", "Vidsrccc") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
         },
