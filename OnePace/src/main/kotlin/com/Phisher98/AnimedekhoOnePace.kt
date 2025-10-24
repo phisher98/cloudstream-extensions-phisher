@@ -8,7 +8,7 @@ import org.jsoup.nodes.Element
 
 @Suppress("NAME_SHADOWING")
 open class OnepaceProvider : MainAPI() {
-    override var mainUrl = "https://onepace.me"
+    override var mainUrl = "https://onepace.co"
     override var name = "OnePace AD"
     override val hasMainPage = true
     override var lang = "en"
@@ -42,9 +42,9 @@ open class OnepaceProvider : MainAPI() {
         var href=""
         if (hreftitle!!.isNotEmpty()) {
             if (hreftitle.contains("Dub")) {
-                href = "https://onepace.me/series/one-pace-english-dub"
+                href = "$mainUrl/series/one-pace-english-dub"
             } else {
-                href = "https://onepace.me/series/one-pace-english-sub"
+                href = "$mainUrl/series/one-pace-english-sub"
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
@@ -109,7 +109,7 @@ open class OnepaceProvider : MainAPI() {
                 val episodes = element.select("ul.seasons-lst.anm-a li").mapNotNull {
                 val name = it.selectFirst("h3.title")?.ownText() ?: "null"
                 val href = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                val poster= "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/OnePack.png"
+                val poster= "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/OnePack.png"
                 val seasonnumber = it.selectFirst("h3.title > span")?.text().toString().substringAfter("S").substringBefore("-")
                 val season=seasonnumber.toIntOrNull()
                 newEpisode(Media(href, mediaType = 2.toString()).toJson())
