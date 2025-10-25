@@ -24,7 +24,7 @@ object SubsExtractors {
         app.get("${openSubAPI}/subtitles/$slug.json", timeout = 120L).parsedSafe<OsResult>()?.subtitles?.map { sub ->
             subtitleCallback.invoke(
                 newSubtitleFile(
-                    SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
+                    SubtitleHelper.fromTagToEnglishLanguageName(sub.lang ?: "") ?: sub.lang
                     ?: return@map,
                     sub.url ?: return@map
                 )

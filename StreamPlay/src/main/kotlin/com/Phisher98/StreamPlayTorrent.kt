@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import org.json.JSONObject
 
 @Suppress("NAME_SHADOWING")
 class StreamPlayTorrent() : StreamPlay() {
@@ -49,6 +50,14 @@ override suspend fun loadLinks(
     val id =data.imdbId
     val year=data.year
     val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+    var type = TvType.TvSeries
+
+    val mappings = JSONObject(anijson).optJSONObject("mappings")
+    if (mappings != null) {
+        val rawtype = mappings.optString("type", "")
+        if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+    }
+
     val anidbEid = getAnidbEid(anijson, episode) ?: 0
     runAllAsync(
         {
@@ -118,7 +127,7 @@ override suspend fun loadLinks(
         {
             if (data.isAnime) invokeTorrentioAnime(
                 TorrentioAnimeAPI,
-                id,
+                type,
                 season,
                 episode,
                 callback
