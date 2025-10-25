@@ -52,11 +52,11 @@ open class Animez : MainAPI() {
 
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?act=search&f[keyword]=$query").document
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
+        val document = app.get("$mainUrl/?act=search&f[keyword]=$query&&pageNum=$page").document
         return document.select("article").map {
             it.toSearchResult()
-        }
+        }.toNewSearchResponseList()
     }
 
 

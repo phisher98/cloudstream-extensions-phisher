@@ -1,6 +1,5 @@
 package com.BanglaPlex
 
-import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -70,25 +69,11 @@ class Banglaplex : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 0..4) {
-            val newpagenumber=i*12
-            val document = app.get("${mainUrl}/search?q=$query&per_page=$newpagenumber").document
-            Log.d("Test",document.toString())
-            val results = document.select("div.movie-container > div.col-md-2").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
+        val newpagenumber=page*12
+        val document = app.get("${mainUrl}/search?q=$query&per_page=$newpagenumber").document
+        val results = document.select("div.movie-container > div.col-md-2").mapNotNull { it.toSearchResult() }
+        return results.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {

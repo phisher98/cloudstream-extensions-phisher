@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
@@ -23,6 +24,7 @@ import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
@@ -63,9 +65,9 @@ class AllWish : MainAPI() {
         return results
     }
 
-    override suspend fun search(query: String): List<AnimeSearchResponse> {
-        val res = app.get("$mainUrl/filter?keyword=$query").document
-        return searchResponseBuilder(res)
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
+        val res = app.get("$mainUrl/filter?keyword=$query&page=$page").document
+        return searchResponseBuilder(res).toNewSearchResponseList()
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {

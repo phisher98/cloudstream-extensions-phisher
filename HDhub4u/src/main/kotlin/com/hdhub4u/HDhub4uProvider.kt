@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
@@ -22,6 +23,7 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.runBlocking
@@ -77,13 +79,13 @@ class HDhub4uProvider : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
         val doc = app.get(
-            "$mainUrl/?s=$query",
+            "$mainUrl/page/$page/?s=$query",
             cacheTime = 60,
             headers = headers
         ).document
-        return doc.select(".recent-movies > li.thumb").mapNotNull { toResult(it) }
+        return doc.select(".recent-movies > li.thumb").mapNotNull { toResult(it) }.toNewSearchResponseList()
     }
 
     private fun extractLinksATags(aTags: Elements): List<String> {

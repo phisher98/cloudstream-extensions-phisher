@@ -88,9 +88,9 @@ class Kickassanime : MainAPI() {
 
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
-    override suspend fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
 val json = """
-{   "page": "1",
+{   "page": "$page",
     "query": "$query"
 }
 """.trimIndent()
@@ -106,7 +106,7 @@ val json = """
         val res=app.post("${host}api/fsearch", requestBody = requestBody, headers = headers).toString()
         return tryParseJson<Search>(res)?.result?.map {
             it.toSearchResponse()
-        } ?: throw ErrorLoadingException("Invalid Json reponse")
+        }?.toNewSearchResponseList() ?: throw ErrorLoadingException("Invalid Json reponse")
     }
 
     private fun SearchResult.toSearchResponse(): SearchResponse {

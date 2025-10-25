@@ -1,11 +1,13 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
@@ -17,8 +19,11 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Animesalt : MainAPI() {
@@ -59,7 +64,7 @@ class Animesalt : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("header h2")?.text()?.trim() ?: return null
         val href = fixUrl(this.selectFirst("a")?.attr("href").toString())
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("data-src"))
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.getImageAttr())
 
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
     }
@@ -72,10 +77,22 @@ class Animesalt : MainAPI() {
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search/$query").document
-        return document.select("article").mapNotNull { it.toSearchResult() }
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val formData = mapOf(
+            "action" to "torofilm_infinite_scroll",
+            "page" to page.toString(),
+            "per_page" to "12",
+            "query_type" to "search",
+            "query_args[s]" to query
+        )
+        val response = app.post("$mainUrl/wp-admin/admin-ajax.php", data = formData)
+            .parsedSafe<Search>() ?: return null
+        val doc = response.data.asJsoup()
+        val results = doc.select("article")
+            .mapNotNull { it.toSearchResult() }
+        return results.toNewSearchResponseList()
     }
+
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
@@ -157,5 +174,28 @@ class Animesalt : MainAPI() {
             loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true
+    }
+
+    data class Search(
+        val success: Boolean,
+        val data: Data,
+    )
+
+    data class Data(
+        val content: String,
+        @JsonProperty("has_more")
+        val hasMore: Boolean,
+        @JsonProperty("max_pages")
+        val maxPages: Long,
+    ) {
+        fun asJsoup(): Document {
+            return Jsoup.parse(content)
+        }
+    }
+
+    private fun Element.getImageAttr(): String? {
+        return this.attr("data-src")
+            .takeIf { it.isNotBlank() }
+            ?: this.attr("src").takeIf { it.isNotBlank() }
     }
 }

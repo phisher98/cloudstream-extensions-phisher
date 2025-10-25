@@ -12,5 +12,7 @@ class AnimesaltProvider : BasePlugin() {
         registerExtractorAPI(AWSStream())
         registerExtractorAPI(Zephyrflick())
         registerExtractorAPI(betaAwstream())
+        registerExtractorAPI(MegaPlay())
+        registerExtractorAPI(Rapid())
     }
 }

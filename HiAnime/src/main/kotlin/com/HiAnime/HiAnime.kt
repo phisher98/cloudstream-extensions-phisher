@@ -19,6 +19,7 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -33,6 +34,7 @@ import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
@@ -122,11 +124,11 @@ class HiAnime : MainAPI() {
                     "$mainUrl/completed?page=" to "Latest Completed",
             )
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val link = "$mainUrl/search?keyword=$query"
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
+        val link = "$mainUrl/search?keyword=$query&page=$page"
         val res = app.get(link).document
 
-        return res.select("div.flw-item").map { it.toSearchResult() }
+        return res.select("div.flw-item").map { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {

@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -40,6 +41,7 @@ import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -136,21 +138,20 @@ open class Anichi : MainAPI() {
         }
     )
 
-    override suspend fun search(query: String): List<SearchResponse>? {
+    override suspend fun search(query: String,page: Int): SearchResponseList? {
         val encodedQuery = withContext(Dispatchers.IO) {
             URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
         }
         val link =
-                """$apiUrl?variables={"search":{"query":"$encodedQuery"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}"""
-        val res =
-                app.get(link, headers = headers).text.takeUnless {
+                """$apiUrl?variables={"search":{"query":"$encodedQuery"},"limit":26,"page":$page,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}"""
+        val res: String =
+            app.get(link, headers = headers).text.takeUnless {
+                it.contains("PERSISTED_QUERY_NOT_FOUND")
+            }
+                ?: app.get(link, headers = headers).text.takeUnless {
                     it.contains("PERSISTED_QUERY_NOT_FOUND")
                 }
-                // Retries
-                ?: app.get(link, headers = headers).text.takeUnless {
-                            it.contains("PERSISTED_QUERY_NOT_FOUND")
-                        }
-                                ?: return emptyList()
+                ?: return null
 
         val response = parseJson<AnichiQuery>(res)
 
@@ -171,7 +172,7 @@ open class Anichi : MainAPI() {
                 addDub(it.availableEpisodes?.dub)
                 addSub(it.availableEpisodes?.sub)
             }
-        }
+        }?.toNewSearchResponseList()
     }
 
     override suspend fun getLoadUrl(name: SyncIdName, id: String): String? {
