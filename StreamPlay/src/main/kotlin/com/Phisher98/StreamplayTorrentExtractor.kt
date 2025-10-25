@@ -1,7 +1,8 @@
 package com.phisher98
 
-import android.annotation.SuppressLint
 import com.google.gson.Gson
+import com.lagradost.api.Log
+import com.lagradost.cloudstream3.TvType
 import com.phisher98.StreamPlayTorrent.Companion.AnimetoshoAPI
 import com.phisher98.StreamPlayTorrent.Companion.TRACKER_LIST_URL
 import com.lagradost.cloudstream3.amap
@@ -9,7 +10,6 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
@@ -355,45 +355,53 @@ suspend fun invokeComet(
 }
 
 suspend fun invokeTorrentioAnime(
-    mainUrl:String,
-    id: String? = null,
-    season: Int? = null,
+    mainUrl: String,
+    type: TvType,
+    id: Int? = null,
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val torrentioAPI:String = mainUrl
-    val url = if(season == null) {
-        "$torrentioAPI/stream/movie/$id.json"
+    val url = if (type == TvType.Movie) {
+        "$mainUrl/stream/movie/kitsu:$id.json"
+    } else {
+        "$mainUrl/stream/series/kitsu:$id:$episode.json"
     }
-    else {
-        "$torrentioAPI/stream/series/$id:$season:$episode.json"
-    }
+    Log.d("Phisher",url)
     val headers = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     )
     val res = app.get(url, headers = headers, timeout = 100L).parsedSafe<TorrentioResponse>()
     res?.streams?.forEach { stream ->
-        val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
         val formattedTitleName = stream.title
             ?.let { title ->
-                val tags = "\\[(.*?)]".toRegex().findAll(title)
-                    .map { match -> "[${match.groupValues[1]}]" }
-                    .joinToString(" | ")
+                val qualityTermsRegex = "(2160p|1080p|720p|WEBRip|WEB-DL|x265|x264|10bit|HEVC|H264)".toRegex(RegexOption.IGNORE_CASE)
+                val tagsList = qualityTermsRegex.findAll(title).map { it.value.uppercase() }.toList()
+                val tags = tagsList.distinct().joinToString(" | ")
+
                 val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.get(1) ?: "0"
-                val provider = "⚙️\\s*([^\\\\]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+                val provider = "⚙️\\s*([^\\n]+)".toRegex().find(title)?.groupValues?.get(1)?.trim() ?: "Unknown"
+
                 "Torrentio | $tags | Seeder: $seeder | Provider: $provider".trim()
             }
 
+        val qualityMatch = "(2160p|1080p|720p)".toRegex(RegexOption.IGNORE_CASE)
+            .find(stream.title ?: "")
+            ?.value
+            ?.lowercase()
+
+        val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
         callback.invoke(
             newExtractorLink(
-                "Torrentio ",
-                formattedTitleName ?: "Torrentio",
+                "Torrentio",
+                formattedTitleName ?: stream.name ?: "",
                 url = magnet,
                 INFER_TYPE
             ) {
-                this.quality = getIndexQuality(stream.name)
+                this.referer = ""
+                this.quality = getQualityFromName(qualityMatch)
             }
         )
+
     }
 }

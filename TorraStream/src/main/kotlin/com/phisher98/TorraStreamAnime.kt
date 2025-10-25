@@ -253,29 +253,43 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+
         val provider = sharedPref.getString("debrid_provider", null)
         val key = sharedPref.getString("debrid_key", null)
         val mediaData = AppUtils.parseJson<LinkData>(data)
-        val episode =mediaData.episode
-        val aniid =mediaData.aniId
-        val anijson = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
-        val jsonObject = JSONObject(anijson)
-        val kitsuId = jsonObject.getJSONObject("mappings").getInt("kitsu_id")
-        val rawtype = jsonObject.getJSONObject("mappings").getString("type")
-        val type=if (rawtype.contains("MOVIE",ignoreCase = true)) TvType.Movie else TvType.TvSeries
-        val anidbEid = getAnidbEid(anijson, episode)
+        val episode = mediaData.episode
+        val aniid = mediaData.aniId
+        var kitsuId = -1
+        var type = TvType.TvSeries
+        var anidbEid: Int? = null
+
+        try {
+            val anijson = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+            val mappings = JSONObject(anijson).optJSONObject("mappings")
+            if (mappings != null) {
+                kitsuId = mappings.optInt("kitsu_id", -1)
+                val rawtype = mappings.optString("type", "")
+                if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+            }
+            anidbEid = try { getAnidbEid(anijson, episode) } catch (_: Exception) { null }
+
+        } catch (_: Exception) {
+        }
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
-        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty())
-        {
-            runAllAsync(
-                { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) }
-            )
+        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
+            if (kitsuId != -1) {
+                runAllAsync(
+                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) }
+                )
+            }
         } else {
             runAllAsync(
                 { invokeAnimetosho(anidbEid, callback) },
-                { invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback) }
+                { if (kitsuId != -1) invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback) }
             )
         }
+
+
         return true
     }
 

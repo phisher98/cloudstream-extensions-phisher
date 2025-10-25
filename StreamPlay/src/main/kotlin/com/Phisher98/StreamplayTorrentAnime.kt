@@ -40,9 +40,10 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlayAnime.LinkData
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.util.Calendar
 
-class StreamplayTorrentAnime : MainAPI() {
+open class StreamplayTorrentAnime : MainAPI() {
     override var name = "StremplayTorrent-Anime"
     override var mainUrl = "https://anilist.co"
     override var supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
@@ -57,6 +58,7 @@ class StreamplayTorrentAnime : MainAPI() {
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
 
+    private val torrentioDebian= "https://torrentio.strem.fun"
     protected fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
     }
@@ -252,6 +254,15 @@ class StreamplayTorrentAnime : MainAPI() {
         val aniid =mediaData.aniId
         val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
         val anidbEid = getAnidbEid(anijson, episode)
+        var type = TvType.TvSeries
+        var kitsuId = -1
+
+        val mappings = JSONObject(anijson).optJSONObject("mappings")
+        if (mappings != null) {
+            kitsuId = mappings.optInt("kitsu_id", -1)
+            val rawtype = mappings.optString("type", "")
+            if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+        }
         runAllAsync(
             {
                 invokeAnimetosho(
@@ -259,16 +270,10 @@ class StreamplayTorrentAnime : MainAPI() {
                     callback
                 )
             },
-            /*
             {
-                invokeTorrentioAnime(
-                    TorrentioAnimeAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
+                invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback)
             },
+            /*
             {
                 invokeComet(
                     CometAPI,
