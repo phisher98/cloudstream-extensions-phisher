@@ -1,22 +1,17 @@
 package com.Coflix
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.HlsPlaylistParser
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import kotlin.text.Regex
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
-import com.lagradost.cloudstream3.base64Decode
+import org.json.JSONObject
 
 open class darkibox : ExtractorApi() {
     override var name = "Darkibox"
@@ -24,7 +19,7 @@ open class darkibox : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-            val response = app.get(url,referer=mainUrl).toString()
+            val response = app.get(url).toString()
             Regex("""sources:\s*\[\{src:\s*"(.*?)"""").find(response)?.groupValues?.get(1)?.let { link ->
                 return listOf(
                     newExtractorLink(
@@ -72,16 +67,11 @@ class waaw : StreamSB() {
     override var mainUrl = "https://waaw.to"
 }
 
-class FileMoonSx : Filesim() {
-    override val mainUrl = "https://filemoon.sx"
-    override val name = "FileMoonSx"
-}
 
-open class Voe : ExtractorApi() {
-    override val name = "Voe"
-    override val mainUrl = "https://voe.sx"
-    override val requiresReferer = true
-    private val redirectRegex = Regex("""window.location.href\s*=\s*'([^']+)';""")
+class Uqload : ExtractorApi() {
+    override val name = "Uqload"
+    override val mainUrl = "https://uqload.cx"
+    override val requiresReferer = false
 
     override suspend fun getUrl(
         url: String,
@@ -89,84 +79,149 @@ open class Voe : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        var res = app.get(url, referer = referer)
-        val redirectUrl = redirectRegex.find(res.document.data())?.groupValues?.get(1)
-        if (redirectUrl != null) {
-            res = app.get(redirectUrl, referer = referer)
-        }
-        val encodedString = res.document.selectFirst("script[type=application/json]")?.data()?.trim()?.substringAfter("[\"")?.substringBeforeLast("\"]")
-        if (encodedString == null) {
-            println("encoded string not found.")
-            return
-        }
-        val decryptedJson = decryptF7(encodedString)
-        val m3u8 = decryptedJson.get("source")?.asString
-        val mp4 = decryptedJson.get("direct_access_url")?.asString
 
-        if (m3u8 != null) {
-            M3u8Helper.generateM3u8(
-                name,
-                m3u8,
-                "$mainUrl/",
-                headers = mapOf("Origin" to "$mainUrl/")
-            ).forEach(callback)
-        }
-        if (mp4!=null)
-        {
+        val html = app.get(url, headers = mapOf("User-Agent" to "Mozilla/5.0")).text
+        val srcRegex = Regex("""sources\s*:\s*\[\s*["']([^"']+)["']""")
+        val videoUrl = srcRegex.find(html)?.groupValues?.get(1)
+        if (videoUrl != null) {
             callback.invoke(
                 newExtractorLink(
-                    source = "$name MP4",
-                    name = "$name MP4",
-                    url = mp4,
+                    name,
+                    name,
+                    videoUrl,
                     INFER_TYPE
-                ) {
-                    this.referer = url
-                    this.quality = Qualities.Unknown.value
+                )
+                {
+                    this.referer = referer ?: mainUrl
                 }
             )
         }
     }
+}
 
-    private fun decryptF7(p8: String): JsonObject {
-        return try {
-            val vF = rot13(p8)
-            val vF2 = replacePatterns(vF)
-            val vF3 = removeUnderscores(vF2)
-            val vF4 = base64Decode(vF3)
-            val vF5 = charShift(vF4, 3)
-            val vF6 = reverse(vF5)
-            val vAtob = base64Decode(vF6)
 
-            JsonParser.parseString(vAtob).asJsonObject
-        } catch (e: Exception) {
-            println("Decryption error: ${e.message}")
-            JsonObject()
-        }
+class Veev : ExtractorApi() {
+    override val name = "Veev"
+    override val mainUrl = "https://veev.to"
+    override val requiresReferer = false
+
+    private val pattern =
+        Regex("""(?://|\.)(?:veev|kinoger|poophq|doods)\.(?:to|pw|com)/(?:e|d)/([0-9A-Za-z]+)""")
+
+    companion object {
+        const val DEFAULT_UA =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0"
     }
 
-    private fun rot13(input: String): String {
-        return input.map { c ->
-            when (c) {
-                in 'A'..'Z' -> ((c - 'A' + 13) % 26 + 'A'.code).toChar()
-                in 'a'..'z' -> ((c - 'a' + 13) % 26 + 'a'.code).toChar()
-                else -> c
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val mediaId = pattern.find(url)?.groupValues?.get(1)
+            ?: return
+        val pageUrl = "$mainUrl/e/$mediaId"
+        val html = app.get(
+            pageUrl,
+            headers = mapOf("User-Agent" to DEFAULT_UA)
+        ).text
+
+        val encRegex = Regex("""[.\s'](?:fc|_vvto\[[^]]*)(?:['\]]*)?\s*[:=]\s*['"]([^'"]+)""")
+        val foundValues = encRegex.findAll(html).map { it.groupValues[1] }.toList()
+
+        if (foundValues.isEmpty()) return
+
+        for (f in foundValues.reversed()) {
+            val ch = veevDecode(f)
+            if (ch == f) continue
+
+            val dlUrl = "$mainUrl/dl?op=player_api&cmd=gi&file_code=$mediaId&r=$mainUrl&ch=$ch&ie=1"
+            val responseText = app.get(dlUrl, headers = mapOf("User-Agent" to DEFAULT_UA)).text
+
+            val json = try {
+                JSONObject(responseText)
+            } catch (e: Exception) {
+                continue
             }
-        }.joinToString("")
-    }
+            val file = json.optJSONObject("file") ?: continue
 
-    private fun replacePatterns(input: String): String {
-        val patterns = listOf("@$", "^^", "~@", "%?", "*~", "!!", "#&")
-        return patterns.fold(input) { result, pattern ->
-            result.replace(Regex(Regex.escape(pattern)), "_")
+            if (file.optString("file_status") != "OK") continue
+
+            val dv = file.getJSONArray("dv").getJSONObject(0).getString("s")
+            val decoded = decodeUrl(veevDecode(dv), buildArray(ch)[0])
+
+            val fileMimeType = file.optString("file_mime_type", "")
+
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    decoded,
+                    INFER_TYPE
+                )
+                {
+                    this.referer = mainUrl
+                    this.quality = Qualities.Unknown.value
+                }
+            )
+            return
         }
     }
 
-    private fun removeUnderscores(input: String): String = input.replace("_", "")
-
-    private fun charShift(input: String, shift: Int): String {
-        return input.map { (it.code - shift).toChar() }.joinToString("")
+    fun String.toExoPlayerMimeType(): String {
+        return when (this.lowercase()) {
+            "video/x-matroska", "video/webm" -> HlsPlaylistParser.MimeTypes.VIDEO_MATROSKA
+            "video/mp4" -> HlsPlaylistParser.MimeTypes.VIDEO_MP4
+            "application/x-mpegurl", "application/vnd.apple.mpegurl" -> HlsPlaylistParser.MimeTypes.APPLICATION_M3U8
+            "video/avi" -> HlsPlaylistParser.MimeTypes.VIDEO_AVI
+            else -> ""
+        }
     }
 
-    private fun reverse(input: String): String = input.reversed()
+    private fun veevDecode(etext: String): String {
+        val result = StringBuilder()
+        val lut = HashMap<Int, String>()
+        var n = 256
+        var c = etext[0].toString()
+        result.append(c)
 
+        for (char in etext.drop(1)) {
+            val code = char.code
+            val nc = if (code < 256) char.toString() else lut[code] ?: (c + c[0])
+            result.append(nc)
+            lut[n++] = c + nc[0]
+            c = nc
+        }
+        return result.toString()
+    }
+
+    private fun jsInt(x: Char): Int = x.digitToIntOrNull() ?: 0
+
+    private fun buildArray(encoded: String): List<List<Int>> {
+        val result = mutableListOf<List<Int>>()
+        val it = encoded.iterator()
+        fun nextIntOrZero(): Int = if (it.hasNext()) jsInt(it.nextChar()) else 0
+        var count = nextIntOrZero()
+        while (count != 0) {
+            val row = mutableListOf<Int>()
+            repeat(count) {
+                row.add(nextIntOrZero())
+            }
+            result.add(row.reversed())
+            count = nextIntOrZero()
+        }
+        return result
+    }
+
+
+    private fun decodeUrl(encoded: String, rules: List<Int>): String {
+        var text = encoded
+        for (r in rules) {
+            if (r == 1) text = text.reversed()
+            val arr = text.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            text = arr.toString(Charsets.UTF_8).replace("dXRmOA==", "")
+        }
+        return text
+    }
 }
