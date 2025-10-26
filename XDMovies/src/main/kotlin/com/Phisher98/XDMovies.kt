@@ -27,6 +27,10 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -46,7 +50,8 @@ class XDMovies : MainAPI() {
             "x-auth-token" to base64Decode("NzI5N3Nra2loa2Fqd25zZ2FrbGFrc2h1d2Q="),
             "x-requested-with" to "XMLHttpRequest"
         )
-
+        private val client = OkHttpClient()
+        private val gson = Gson()
 
         private const val CINEMETAURL = "https://cinemeta-live.strem.io"
         const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
@@ -65,15 +70,39 @@ class XDMovies : MainAPI() {
         "php/fs.php?ott=JioHotstar" to "Hotstar",
     )
 
+    private suspend fun fetchUrl(url: String, headers: Map<String, String> = emptyMap()): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val requestBuilder = Request.Builder().url(url)
+                headers.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
+
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (response.isSuccessful) response.body?.string() else null
+                }
+            } catch (e: Exception) {
+                Log.e("MainPage", "Network request failed: ${e.localizedMessage}")
+                null
+            }
+        }
+    }
+
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse? {
         val url = "$mainUrl/${request.data}"
-        val res: List<Any>? = if (request.data.contains("fetch_media.php")) {
-            app.get(url, headers).text.let { Gson().fromJson(it, Array<HomePageHome>::class.java).toList() }
-        } else {
-            app.get(url, headers).parsedSafe<Home>()?.data
+
+        val res: List<Any>? = try {
+            val responseText = fetchUrl(url, headers) ?: return null
+
+            if (request.data.contains("fetch_media.php")) {
+                gson.fromJson(responseText, Array<HomePageHome>::class.java).toList()
+            } else {
+                gson.fromJson(responseText, Home::class.java)?.data
+            }
+        } catch (e: Exception) {
+            Log.e("MainPage", "Failed to parse main page: ${e.localizedMessage}")
+            null
         }
 
         val home = res?.mapNotNull {
@@ -130,14 +159,19 @@ class XDMovies : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val resString = if (url.contains("details.html")) {
-            val type = url.substringAfterLast("&type=")
-            val apiSlug = if (type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
-            val id = url.substringAfterLast("id=").substringBefore("&")
-            val apiUrl = "$mainUrl/api/$apiSlug?tmdb_id=$id"
-            app.get(apiUrl, headers).text
-        } else {
-            app.get(url, headers).text
+        val resString = try {
+            if (url.contains("details.html")) {
+                val type = url.substringAfterLast("&type=")
+                val apiSlug = if (type.equals("tv", ignoreCase = true)) "abc456" else "xyz123"
+                val id = url.substringAfterLast("id=").substringBefore("&")
+                val apiUrl = "$mainUrl/api/$apiSlug?tmdb_id=$id"
+                fetchUrl(apiUrl, headers) ?: throw Exception("Failed to fetch API data")
+            } else {
+                fetchUrl(url, headers) ?: throw Exception("Failed to fetch page data")
+            }
+        } catch (e: Exception) {
+            Log.e("LoadFunction", "Failed to get data: ${e.localizedMessage}")
+            throw e
         }
 
         val json = JSONObject(resString)
@@ -160,7 +194,6 @@ class XDMovies : MainAPI() {
         val href = "$mainUrl/details.html?id=$tmdbId&type=$tmdbtvTypeslug"
         val source = json.optString("source").takeIf { it.isNotBlank() } ?: json.optString("movie_source").orEmpty()
 
-        // Download links
         val downloadLinks = mutableListOf<String>()
         json.optJSONArray("download_links")?.let { arr ->
             for (i in 0 until arr.length()) {
@@ -169,12 +202,12 @@ class XDMovies : MainAPI() {
         }
         val downloadLinksJson = JSONArray(downloadLinks).toString()
 
-        val tmdbRes = app.get("https://orange-voice-abcf.phisher16.workers.dev/movie/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49")
-            .parsedSafe<IMDB>()
+        val tmdbResText = fetchUrl("https://orange-voice-abcf.phisher16.workers.dev/movie/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49")
+        val tmdbRes = tmdbResText?.let { gson.fromJson(it, IMDB::class.java) }
         val imdbId = tmdbRes?.imdbId
-        val gson = Gson()
+
         val responseData = imdbId?.takeIf { it.isNotBlank() && it != "0" }?.let {
-            val jsonResponse = app.get("$CINEMETAURL/meta/$tvTypeslug/$it.json").text
+            val jsonResponse = fetchUrl("$CINEMETAURL/meta/$tvTypeslug/$it.json") ?: return@let null
             if (jsonResponse.startsWith("{")) gson.fromJson(jsonResponse, ResponseData::class.java) else null
         }
 
@@ -190,11 +223,12 @@ class XDMovies : MainAPI() {
                     val episodesArray = seasonObj.optJSONArray("episodes")
                     val packsArray = seasonObj.optJSONArray("packs")
 
-                    val tmdbSeasonRes = app.get(
+                    val tmdbSeasonResText = fetchUrl(
                         "https://orange-voice-abcf.phisher16.workers.dev/tv/$tmdbId/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
-                    ).parsedSafe<TMDBRes>()
+                    )
+                    val tmdbSeasonRes = tmdbSeasonResText?.let { gson.fromJson(it, TMDBRes::class.java) }
 
-                    // If episodes exist, process normally
+                    // Process episodes array or fallback to packs
                     if (episodesArray != null && episodesArray.length() > 0) {
                         for (e in 0 until episodesArray.length()) {
                             val episodeObj = episodesArray.optJSONObject(e) ?: continue
@@ -227,9 +261,7 @@ class XDMovies : MainAPI() {
                                 this.addDate(tmdbEpisode?.airDate)
                             }
                         }
-                    }
-                    // Fallback: if episodes are empty, generate from packs
-                    else if (packsArray != null && packsArray.length() > 0) {
+                    } else if (packsArray != null && packsArray.length() > 0) {
                         for (p in 0 until packsArray.length()) {
                             val pack = packsArray.optJSONObject(p) ?: continue
                             val downloadLink = pack.optString("download_link").takeIf { it.isNotBlank() } ?: continue
@@ -247,7 +279,7 @@ class XDMovies : MainAPI() {
                 }
             }
 
-        return newTvSeriesLoadResponse(title, href, TvType.TvSeries, episodes) {
+            return newTvSeriesLoadResponse(title, href, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundPoster
                 this.year = year
@@ -282,25 +314,29 @@ class XDMovies : MainAPI() {
         if (data.isBlank()) return false
 
         val links = (tryParseJson<List<String>>(data)
-            ?.mapNotNull { it -> it.trim().takeIf { it.isNotBlank() } }
+            ?.mapNotNull { it.trim().takeIf { it.isNotBlank() } }
             ?: data.trim()
                 .removePrefix("[")
                 .removeSuffix("]")
                 .split(',')
-                .mapNotNull { it -> it.trim().removeSurrounding("\"").removeSurrounding("'").takeIf { it.isNotBlank() } })
+                .mapNotNull { it.trim().removeSurrounding("\"").removeSurrounding("'").takeIf { it.isNotBlank() } })
             .distinct()
 
         if (links.isEmpty()) return false
 
         for (link in links) {
-            if (link.contains("hubcloud", ignoreCase = true)) {
-                HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
-            } else {
-                loadExtractor(link, name, subtitleCallback, callback)
+            try {
+                if (link.contains("hubcloud", ignoreCase = true)) {
+                    HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
+                } else {
+                    loadExtractor(link, name, subtitleCallback, callback)
+                }
+                Log.d("XDMovies", "Processed link: $link")
+            } catch (e: Exception) {
+                Log.e("XDMovies", "Failed to process link $link: ${e.localizedMessage}")
             }
-            Log.d("XDMovies", link)
         }
-
         return true
     }
+
 }
