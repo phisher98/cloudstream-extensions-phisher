@@ -88,93 +88,93 @@ data class ResponseData(
 
 
 data class TMDBRes(
-    @JsonProperty("_id")
-    val id: String,
-    @JsonProperty("air_date")
-    val airDate: String,
-    val episodes: List<TMDBResEpisode>,
-    val name: String,
-    val networks: List<Network>,
-    val overview: String,
-    @JsonProperty("id")
-    val id2: Long,
-    @JsonProperty("poster_path")
-    val posterPath: String,
-    @JsonProperty("season_number")
-    val seasonNumber: Long,
-    @JsonProperty("vote_average")
-    val voteAverage: Long,
+    @SerializedName("_id")
+    val id: String? = null,
+
+    @SerializedName("air_date")
+    val airDate: String? = null,
+
+    val episodes: List<TMDBEpisode>? = null,
+
+    val name: String? = null,
+
+    val networks: List<Network>? = null,
+
+    val overview: String? = null,
+
+    @SerializedName("id")
+    val id2: Long? = null,
+
+    @SerializedName("poster_path")
+    val posterPath: String? = null,
+
+    @SerializedName("season_number")
+    val seasonNumber: Int? = null,
+
+    @SerializedName("vote_average")
+    val voteAverage: Double? = null
 )
 
-data class TMDBResEpisode(
-    @JsonProperty("air_date")
-    val airDate: String,
-    @JsonProperty("episode_number")
-    val episodeNumber: Int,
-    @JsonProperty("episode_type")
-    val episodeType: String,
-    val id: Long,
-    val name: String,
-    val overview: String,
-    @JsonProperty("production_code")
-    val productionCode: String,
-    val runtime: Long?,
-    @JsonProperty("season_number")
-    val seasonNumber: Long,
-    @JsonProperty("show_id")
-    val showId: Long,
-    @JsonProperty("still_path")
-    val stillPath: String?,
-    @JsonProperty("vote_average")
-    val voteAverage: Double,
-    @JsonProperty("vote_count")
-    val voteCount: Long,
-    val crew: List<Crew>,
-    @JsonProperty("guest_stars")
-    val guestStars: List<GuestStar>,
-)
+data class TMDBEpisode(
+    @SerializedName("air_date")
+    val airDate: String? = null,
 
-data class Crew(
-    val job: String,
-    val department: String,
-    @JsonProperty("credit_id")
-    val creditId: String,
-    val adult: Boolean,
-    val gender: Long,
-    val id: Long,
-    @JsonProperty("known_for_department")
-    val knownForDepartment: String,
-    val name: String,
-    @JsonProperty("original_name")
-    val originalName: String,
-    val popularity: Double,
-    @JsonProperty("profile_path")
-    val profilePath: String?,
-)
+    @SerializedName("episode_number")
+    val episodeNumber: Int? = null,
 
-data class GuestStar(
-    val character: String,
-    @JsonProperty("credit_id")
-    val creditId: String,
-    val order: Long,
-    val adult: Boolean,
-    val gender: Long,
-    val id: Long,
-    @JsonProperty("known_for_department")
-    val knownForDepartment: String,
-    val name: String,
-    @JsonProperty("original_name")
-    val originalName: String,
-    val popularity: Double,
-    @JsonProperty("profile_path")
-    val profilePath: String?,
+    @SerializedName("episode_type")
+    val episodeType: String? = null,
+
+    val id: Long? = null,
+
+    val name: String? = null,
+
+    val overview: String? = null,
+
+    @SerializedName("production_code")
+    val productionCode: String? = null,
+
+    val runtime: Int? = null,
+
+    @SerializedName("season_number")
+    val seasonNumber: Int? = null,
+
+    @SerializedName("show_id")
+    val showId: Long? = null,
+
+    @SerializedName("still_path")
+    val stillPath: String? = null,
+
+    @SerializedName("vote_average")
+    val voteAverage: Double? = null,
+
+    @SerializedName("vote_count")
+    val voteCount: Int? = null,
+
+    val crew: List<Crew>? = null,
+
+    @SerializedName("guest_stars")
+    val guestStars: List<GuestStar>? = null
 )
 
 data class Network(
-    val id: Long,
-    @JsonProperty("logo_path")
-    val logoPath: String,
-    val name: String,
-    @JsonProperty("origin_country")
-    val originCountry: String,
+    val id: Long? = null,
+    @SerializedName("logo_path")
+    val logoPath: String? = null,
+    val name: String? = null,
+    @SerializedName("origin_country")
+    val originCountry: String? = null
+)
+
+data class Crew(
+    val id: Long? = null,
+    val name: String? = null,
+    val job: String? = null
+)
+
+data class GuestStar(
+    val id: Long? = null,
+    val name: String? = null,
+    val character: String? = null,
+    val order: Int? = null
 )

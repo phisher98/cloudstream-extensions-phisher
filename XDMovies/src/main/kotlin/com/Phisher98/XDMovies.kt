@@ -77,7 +77,7 @@ class XDMovies : MainAPI() {
                 headers.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
 
                 client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (response.isSuccessful) response.body?.string() else null
+                    if (response.isSuccessful) response.body.string() else null
                 }
             } catch (e: Exception) {
                 Log.e("MainPage", "Network request failed: ${e.localizedMessage}")
@@ -246,11 +246,11 @@ class XDMovies : MainAPI() {
                                 versionNames += "$resolution $codec $size".trim()
                             }
                             if (allLinks.isEmpty()) continue
+                            Log.d("Phisher",tmdbSeasonRes.toString())
 
                             val tmdbEpisode = tmdbSeasonRes?.episodes?.find { it.episodeNumber == epNum }
                             val epName = "S${seasonNum}E${epNum} (${versionNames.joinToString(" / ")})"
                             val info = responseData?.meta?.videos?.find { it.season == seasonNum && it.episode == epNum }
-
                             episodes += newEpisode(allLinks.toJson()) {
                                 this.name = tmdbEpisode?.name ?: info?.name ?: epName
                                 this.season = seasonNum
