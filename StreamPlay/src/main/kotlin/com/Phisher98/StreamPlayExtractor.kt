@@ -3562,7 +3562,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     for (i in 0 until sourcesArray.length()) {
                         val src = sourcesArray.getJSONObject(i)
-                        val label = "RiveStream ${src.optString("source")}"
+                        val label = if(src.optString("source").contains("AsiaCloud",ignoreCase = true)) "RiveStream ${src.optString("source")}[${src.optString("quality")}]" else "RiveStream ${src.optString("source")}"
                         val quality = Qualities.P1080.value
                         val url = src.optString("url")
 
