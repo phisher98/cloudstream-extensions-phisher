@@ -101,17 +101,23 @@ class KisskhProvider : MainAPI() {
             ?: throw ErrorLoadingException("Invalid Json reponse")
 
         val episodes = res.episodes?.map { eps ->
-            newEpisode(Data(res.title, eps.number, res.id, eps.id).toJson())
-            {
-                this.name= "Episode ${eps.number}"
+
+            val displayNumber = eps.number?.let { num ->
+                if (num % 1.0 == 0.0) num.toInt().toString() else num.toString()
+            } ?: ""
+
+            newEpisode(Data(res.title, eps.number?.toInt(), res.id, eps.id).toJson()) {
+                this.name = "Episode $displayNumber"
             }
+
         } ?: throw ErrorLoadingException("No Episode")
+
 
         return newTvSeriesLoadResponse(
             res.title ?: return null,
             url,
             if (res.type == "Movie" || episodes.size == 1) TvType.Movie else TvType.TvSeries,
-            episodes
+            episodes.reversed()
         ) {
             this.posterUrl = res.thumbnail
             this.year = res.releaseDate?.split("-")?.first()?.toIntOrNull()
@@ -291,7 +297,7 @@ class KisskhProvider : MainAPI() {
 
     data class Episodes(
         @JsonProperty("id") val id: Int?,
-        @JsonProperty("number") val number: Int?,
+        @JsonProperty("number") val number: Double?,
         @JsonProperty("sub") val sub: Int?,
     )
 
