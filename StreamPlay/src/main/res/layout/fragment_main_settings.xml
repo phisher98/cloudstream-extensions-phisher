@@ -42,8 +42,7 @@
                     android:layout_marginTop="20dp"
                     android:layout_marginBottom="5dp"
                     android:padding="5dp"
-                    android:focusable="true"
-                    android:tint="#FFFFFF" />
+                    android:focusable="true" />
             </LinearLayout>
         </LinearLayout>
 
@@ -57,6 +56,7 @@
             android:layout_marginBottom="10dp"
             android:layout_marginTop="10dp" />
 
+        <!-- Febbox -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -85,6 +85,7 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Toggle Extensions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -114,6 +115,7 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Enable/Disable Sources -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -140,6 +142,36 @@
                     android:padding="5dp"
                     android:focusable="true"
                     android:nextFocusUp="@id/loginCard" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ✅ NEW: Language Change -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_rowWeight="1"
+                android:text="Change Language"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+
+                <ImageView
+                    android:id="@+id/languageCard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/toggleproviders" />
             </LinearLayout>
         </LinearLayout>
 

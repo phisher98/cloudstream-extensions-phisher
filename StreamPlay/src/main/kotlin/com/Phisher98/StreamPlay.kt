@@ -57,6 +57,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     )
 
     val token: String? = sharedPref?.getString("token", null)
+    val langCode = sharedPref?.getString("tmdb_language_code", "en-US")
+
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
     /** AUTHOR : hexated & Phisher & Code */
@@ -228,6 +230,40 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
         }
 
+        private var cachedCountry: String? = null
+        private var cachedLanguageTag: String? = null
+
+        suspend fun getGeoLanguage(): Pair<String, String> {
+            // If already cached → return directly
+            cachedCountry?.let { country ->
+                cachedLanguageTag?.let { lang ->
+                    return country to lang
+                }
+            }
+
+            return try {
+                // Fetch once and store
+                val geo = app.get("https://ipapi.co/json/").parsedSafe<GeoResponse>()
+
+                val country = geo?.countrycode ?: "US"
+                val langCode = geo?.languages?.split(",")?.firstOrNull() ?: "en"
+
+                // Convert to TMDB format -> lang-COUNTRY (ex: hi-IN, en-US)
+                val langTag = "$langCode-$country"
+
+                cachedCountry = country
+                cachedLanguageTag = langTag
+
+                country to langTag
+            } catch (e: Exception) {
+                // Fallback if IP api fails
+                val fallback = "US" to "en-US"
+                cachedCountry = fallback.first
+                cachedLanguageTag = fallback.second
+                fallback
+            }
+        }
+
         private const val DOMAINS_URL =
             "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
         private var cachedDomains: DomainsParser? = null
@@ -283,7 +319,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("$tmdbAPI${request.data}$adultQuery&page=$page", timeout = 10000)
+        val home = app.get("$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page", timeout = 10000)
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -305,7 +341,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val tmdbAPI = getApiBase()
-        return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=$page&include_adult=${settingsForProvider.enableAdult}")
+        return app.get("$tmdbAPI/search/multi?api_key=$apiKey&language=$langCode&query=$query&page=$page&include_adult=${settingsForProvider.enableAdult}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse()
             }?.toNewSearchResponseList()
@@ -318,9 +354,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val append = "alternative_titles,credits,external_ids,videos,recommendations"
 
         val resUrl = if (type == TvType.Movie) {
-            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&append_to_response=$append"
+            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
         } else {
-            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=$append"
+            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
         }
 
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
@@ -362,7 +398,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->
-                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
+
+                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
                         newEpisode(
                             LinkData(

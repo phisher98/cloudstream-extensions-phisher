@@ -2355,3 +2355,8 @@ data class NuvioStreamsStream(
 data class NuvioStreamsBehaviorHints(
     val notWebReady: Boolean,
 )
+
+data class GeoResponse(
+    val countrycode: String?,
+    val languages: String?
+)

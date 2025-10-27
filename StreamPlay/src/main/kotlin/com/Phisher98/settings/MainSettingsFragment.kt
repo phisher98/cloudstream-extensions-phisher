@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
+import com.Phisher98.LanguageSelectFragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.phisher98.settings.SettingsFragment
 import com.phisher98.settings.ToggleFragment
@@ -50,9 +51,12 @@ class MainSettingsFragment(
         val loginCard: ImageView = view.findView("loginCard")
         val featureCard: ImageView = view.findView("featureCard")
         val toggleproviders: ImageView = view.findView("toggleproviders")
+        val languagechange: ImageView = view.findView("languageCard")
+
         val saveIcon: ImageView = view.findView("saveIcon")
 
         loginCard.setImageDrawable(getDrawable("settings_icon"))
+        languagechange.setImageDrawable(getDrawable("settings_icon"))
         featureCard.setImageDrawable(getDrawable("settings_icon"))
         toggleproviders.setImageDrawable(getDrawable("settings_icon"))
         saveIcon.setImageDrawable(getDrawable("save_icon"))
@@ -60,6 +64,8 @@ class MainSettingsFragment(
         loginCard.makeTvCompatible()
         featureCard.makeTvCompatible()
         toggleproviders.makeTvCompatible()
+        languagechange.makeTvCompatible()
+
 
         saveIcon.makeTvCompatible()
 
@@ -84,6 +90,13 @@ class MainSettingsFragment(
             providersFragment.show(
                 activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
                 "fragment_toggle_providers"
+            )
+        }
+
+        languagechange.setOnClickListener {
+            LanguageSelectFragment(plugin, sharedPref).show(
+                activity?.supportFragmentManager!!,
+                "fragment_language_list"
             )
         }
 
