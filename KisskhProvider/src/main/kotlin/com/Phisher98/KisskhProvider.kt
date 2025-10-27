@@ -103,7 +103,7 @@ class KisskhProvider : MainAPI() {
         val episodes = res.episodes?.map { eps ->
             newEpisode(Data(res.title, eps.number, res.id, eps.id).toJson())
             {
-                this.episode=eps.number
+                this.name= "Episode ${eps.number}"
             }
         } ?: throw ErrorLoadingException("No Episode")
 

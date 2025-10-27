@@ -31,6 +31,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.phisher98.BuildConfig
 import kotlinx.coroutines.delay
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -73,6 +75,33 @@ class AnimeKai : MainAPI() {
 
 
     companion object {
+
+        suspend fun decode(text: String?): String {
+            return try {
+                val res = app.get("${BuildConfig.KAIENC}?text=$text").text
+                JSONObject(res).getString("result")
+            } catch (_: Exception) {
+                app.get("${BuildConfig.KAISVA}/?f=e&d=$text").text
+            }
+        }
+
+        private val JSON = "application/json; charset=utf-8".toMediaType()
+
+        suspend fun decodeReverse(text: String): String {
+            val jsonBody = """{"text":"$text"}""".toRequestBody(JSON)
+
+            return try {
+                val res = app.post(
+                    BuildConfig.KAIDEC,
+                    requestBody = jsonBody
+                ).text
+                JSONObject(res).getString("result")
+            } catch (_: Exception) {
+                app.get("${BuildConfig.KAISVA}/?f=d&d=$text").text
+            }
+        }
+
+
 
         fun getType(t: String): TvType {
             val lower = t.lowercase()
@@ -149,7 +178,8 @@ class AnimeKai : MainAPI() {
         val subEpisodes = mutableListOf<Episode>()
         val dubEpisodes = mutableListOf<Episode>()
 
-        val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
+        val decoded = decode(animeId)
+
         val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded")
             .parsedSafe<Response>()?.getDocument()
 
@@ -233,7 +263,7 @@ class AnimeKai : MainAPI() {
         val token = data.split("|").last().split("=").last()
         val dubType = data.replace("$mainUrl/", "").split("|").firstOrNull() ?: "raw"
         val types = if ("sub" in data) listOf(dubType, "softsub") else listOf(dubType)
-        val decodetoken= app.get("${BuildConfig.KAISVA}/?f=e&d=$token")
+        val decodetoken =decode(token)
         val document =
             app.get("$mainUrl/ajax/links/list?token=$token&_=$decodetoken")
                 .parsed<Response>()
@@ -249,10 +279,12 @@ class AnimeKai : MainAPI() {
         }.distinct()
 
         servers.amap { (type, lid, serverName) ->
-            val decodelid= app.get("${BuildConfig.KAISVA}/?f=e&d=$lid")
+            val decodelid = decode(lid)
+
             val result = app.get("$mainUrl/ajax/links/view?id=$lid&_=$decodelid")
                 .parsed<Response>().result
-            val decodeiframe= app.get("${BuildConfig.KAISVA}/?f=d&d=$result").text
+            val decodeiframe= decodeReverse(result)
+
             val iframe = extractVideoUrlFromJson(decodeiframe)
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"

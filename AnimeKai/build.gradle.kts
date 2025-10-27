@@ -15,6 +15,9 @@ android {
         android.buildFeatures.buildConfig=true
         buildConfigField("String", "KAISVA", "\"${properties.getProperty("KAISVA")}\"")
         buildConfigField("String", "KAIDEC", "\"${properties.getProperty("KAIDEC")}\"")
+        buildConfigField("String", "KAIENC", "\"${properties.getProperty("KAIENC")}\"")
+        buildConfigField("String", "KAIMEG", "\"${properties.getProperty("KAIMEG")}\"")
+
 
     }
 }

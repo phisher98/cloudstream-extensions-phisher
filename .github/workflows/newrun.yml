@@ -89,6 +89,8 @@ jobs:
           MOVIEBOX_SECRET_KEY_DEFAULT: ${{ secrets.MOVIEBOX_SECRET_KEY_DEFAULT }}
           SuperToken: ${{ secrets.SuperToken }}
           KAIDEC: ${{ secrets.KAIDEC }}
+          KAIENC: ${{ secrets.KAIENC }}
+          KAIMEG: ${{ secrets.KAIMEG }}
           NuvioStreams: ${{ secrets.NuvioStreams }}
         run: |
           cd $GITHUB_WORKSPACE/src
@@ -134,6 +136,8 @@ jobs:
           echo MOVIEBOX_SECRET_KEY_ALT=$MOVIEBOX_SECRET_KEY_ALT >> local.properties
           echo SuperToken=$SuperToken >> local.properties
           echo KAIDEC=$KAIDEC >> local.properties
+          echo KAIENC=$KAIENC >> local.properties
+          echo KAIMEG=$KAIMEG >> local.properties
           echo NuvioStreams=$NuvioStreams >> local.properties
       - name: Build Plugins
         run: |

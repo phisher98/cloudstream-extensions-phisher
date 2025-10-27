@@ -1567,7 +1567,7 @@ open class MegaUp : ExtractorApi() {
         """.trimIndent()
             .trim()
             .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val m3u8Data=app.post(BuildConfig.KAIDEC, requestBody = body).text
+        val m3u8Data=app.post(BuildConfig.KAIMEG, requestBody = body).text
 
         if (m3u8Data.isBlank()) {
             Log.d("Phisher", "Encoded result is null or empty")

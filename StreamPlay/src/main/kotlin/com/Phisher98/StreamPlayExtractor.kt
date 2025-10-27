@@ -867,6 +867,32 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?
         ) {
+
+        suspend fun decode(text: String?): String {
+            return try {
+                val res = app.get("${BuildConfig.KAIENC}?text=$text").text
+                JSONObject(res).getString("result")
+            } catch (_: Exception) {
+                app.get("${BuildConfig.KAISVA}/?f=e&d=$text").text
+            }
+        }
+
+        val json = "application/json; charset=utf-8".toMediaType()
+
+        suspend fun decodeReverse(text: String): String {
+            val jsonBody = """{"text":"$text"}""".toRequestBody(json)
+
+            return try {
+                val res = app.post(
+                    BuildConfig.KAIDEC,
+                    requestBody = jsonBody
+                ).text
+                JSONObject(res).getString("result")
+            } catch (_: Exception) {
+                app.get("${BuildConfig.KAISVA}/?f=d&d=$text").text
+            }
+        }
+
         if (jptitle.isNullOrBlank() || title.isNullOrBlank()) return
         val shuffledApis = animekaiAPIs.shuffled().toMutableList()
 
@@ -912,7 +938,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val href = "$animeKaiUrl/watch/$matchedId"
                     val animeId =
                         app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
-                    val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
+                    val decoded = decode(animeId)
                     val epRes =
                         app.get("$animeKaiUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded")
                             .parsedSafe<AnimeKaiResponse>()?.getDocument()
@@ -921,7 +947,7 @@ object StreamPlayExtractor : StreamPlay() {
                         val epNum = ep.attr("num").toIntOrNull()
                         if (epNum == episode) {
                             val token = ep.attr("token")
-                            val decodedtoken = app.get("${BuildConfig.KAISVA}/?f=e&d=$token")
+                            val decodedtoken = decode(token)
                             val document =
                                 app.get("$animeKaiUrl/ajax/links/list?token=$token&_=$decodedtoken")
                                     .parsed<AnimeKaiResponse>()
@@ -936,12 +962,11 @@ object StreamPlayExtractor : StreamPlay() {
                             }
 
                             for ((type, lid, serverName) in servers) {
-                                val decodelid = app.get("${BuildConfig.KAISVA}/?f=e&d=$lid")
+                                val decodelid = decode(lid)
                                 val result =
                                     app.get("$animeKaiUrl/ajax/links/view?id=$lid&_=$decodelid")
                                         .parsed<AnimeKaiResponse>().result
-                                val decodeiframe =
-                                    app.get("${BuildConfig.KAISVA}/?f=d&d=$result").text
+                                val decodeiframe = decodeReverse(result)
                                 val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
 
                                 val nameSuffix = when {
