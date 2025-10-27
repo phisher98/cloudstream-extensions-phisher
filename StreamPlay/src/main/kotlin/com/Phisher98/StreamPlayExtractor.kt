@@ -3507,6 +3507,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val headers = mapOf("User-Agent" to USER_AGENT)
+        Log.d("salman731","invokeRiveStream")
 
         suspend fun <T> retry(times: Int = 3, block: suspend () -> T): T? {
             repeat(times - 1) {
@@ -3562,7 +3563,8 @@ object StreamPlayExtractor : StreamPlay() {
 
                     for (i in 0 until sourcesArray.length()) {
                         val src = sourcesArray.getJSONObject(i)
-                        val label = "RiveStream ${src.optString("source")}"
+                        Log.d("salman731 src",src.toJson())
+                        val label = if(src.optString("source").contains("AsiaCloud",ignoreCase = true)) "RiveStream ${src.optString("source")}[${src.optString("quality")}]" else "RiveStream ${src.optString("source")}"
                         val quality = Qualities.P1080.value
                         val url = src.optString("url")
 
