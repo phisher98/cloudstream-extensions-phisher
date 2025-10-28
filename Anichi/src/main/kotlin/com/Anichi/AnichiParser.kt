@@ -214,7 +214,7 @@ data class Image(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class EpisodeInfo(
     @JsonProperty("episode") val episode: String?,
-    @JsonProperty("airdate") val airdate: String?,  // Keeping only one field
+    @JsonProperty("airDateUtc") val airDateUtc: String?,  // Keeping only one field
     @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
     @JsonProperty("image") val image: String?,
     @JsonProperty("title") val title: Map<String, String>?,

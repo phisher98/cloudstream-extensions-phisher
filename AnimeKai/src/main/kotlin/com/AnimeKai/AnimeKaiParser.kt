@@ -14,6 +14,7 @@ data class Image(
 data class Episode(
     @JsonProperty("episode") val episode: String?,
     @JsonProperty("airdate") val airdate: String?,
+    @JsonProperty("airDateUtc") val airDateUtc: String?,
     @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
     @JsonProperty("image") val image: String?,
     @JsonProperty("title") val title: Map<String, String>?,

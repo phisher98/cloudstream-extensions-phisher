@@ -247,7 +247,7 @@ open class Anichi : MainAPI() {
                     this.score = Score.from10(meta?.rating)
                     this.posterUrl = meta?.image ?: showData.thumbnail
                     this.description = meta?.overview ?: "No summary available"
-                    this.addDate(meta?.airdate)
+                    this.addDate(meta?.airDateUtc)
                     this.runTime = meta?.runtime
                 }
             }
@@ -263,7 +263,7 @@ open class Anichi : MainAPI() {
                     this.score = Score.from10(meta?.rating)
                     this.posterUrl = meta?.image ?: showData.thumbnail
                     this.description = meta?.overview ?: "No summary available"
-                    this.addDate(meta?.airdate)
+                    this.addDate(meta?.airDateUtc)
                     this.runTime = meta?.runtime
                 }
             }

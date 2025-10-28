@@ -197,7 +197,7 @@ class AniList(val plugin: UltimaPlugin) : MainAPI() {
                 this.description = epData?.overview ?: "No summary available"
                 this.score = Score.from10(epData?.rating)
                 this.runTime = epData?.runtime
-                this.addDate(epData?.airdate)
+                this.addDate(epData?.airDateUtc)
             }
         }
 

@@ -213,7 +213,7 @@ class HiAnime : MainAPI() {
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
                     this.description = metaEp?.overview ?: "No summary available"
-                    this.addDate(metaEp?.airdate)
+                    this.addDate(metaEp?.airDateUtc)
                     this.runTime = metaEp?.runtime
                 }
             }
@@ -390,7 +390,7 @@ class HiAnime : MainAPI() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class MetaEpisode(
         @JsonProperty("episode") val episode: String?,
-        @JsonProperty("airdate") val airdate: String?,  // Keeping only one field
+        @JsonProperty("airDateUtc") val airDateUtc: String?,  // Keeping only one field
         @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
         @JsonProperty("image") val image: String?,
         @JsonProperty("title") val title: Map<String, String>?,

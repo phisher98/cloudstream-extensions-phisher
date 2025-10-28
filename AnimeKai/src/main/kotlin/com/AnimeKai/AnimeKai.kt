@@ -208,7 +208,7 @@ class AnimeKai : MainAPI() {
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
                     this.description = metaEp?.overview ?: "No summary available"
-                    this.addDate(metaEp?.airdate)
+                    this.addDate(metaEp?.airDateUtc)
                     this.runTime = metaEp?.runtime
                 }
             }
