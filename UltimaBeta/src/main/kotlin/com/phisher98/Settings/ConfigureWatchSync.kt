@@ -83,7 +83,7 @@ class UltimaConfigureWatchSync(private val plugin: UltimaBetaPlugin) : BottomShe
             makeTvCompatible()
             setOnClickListener {
                 sm.deviceSyncCreds = deviceData
-                plugin.reload(context)
+                plugin.reload()
                 showToast("Saved")
                 dismiss()
             }

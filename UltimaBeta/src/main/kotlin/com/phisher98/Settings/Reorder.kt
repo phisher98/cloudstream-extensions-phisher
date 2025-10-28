@@ -83,7 +83,7 @@ class UltimaReorder(val plugin: UltimaBetaPlugin) : BottomSheetDialogFragment() 
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     sm.currentExtensions = extensions
-                    plugin.reload(context)
+                    plugin.reload()
                 }
 
                 showToast("Saved. Please restart the app to apply changes.")

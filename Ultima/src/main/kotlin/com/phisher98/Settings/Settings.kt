@@ -1,30 +1,22 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.OnClickListener
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.showToast
-import com.lagradost.cloudstream3.plugins.PluginManager.loadSinglePlugin
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.phisher98.BuildConfig
-import kotlinx.coroutines.launch
 import androidx.core.net.toUri
 
 private const val ARG_PARAM1 = "param1"
@@ -89,7 +81,7 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
                 .setTitle("Restart Required")
                 .setMessage("Changes have been saved. Do you want to restart the app to apply them ?")
                 .setPositiveButton("Yes") { _, _ ->
-                    plugin.reload(requireContext())
+                    plugin.reload()
                     showToast("Saved and Restarting...")
                     dismiss()
                     restartApp()
@@ -190,7 +182,7 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
                 .setMessage("This will delete all selected sections.")
                 .setPositiveButton("Reset") { _, _ ->
                     sm.deleteAllData()
-                    plugin.reload(context)
+                    plugin.reload()
                     showToast("Sections cleared")
                     dismiss()
                 }

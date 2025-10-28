@@ -89,7 +89,7 @@ class UltimaMetaProviders(val plugin: UltimaBetaPlugin) : BottomSheetDialogFragm
                     override fun onClick(btn: View) {
                         sm.currentMetaProviders = metaProviders.toTypedArray()
                         sm.currentMediaProviders = mediaProviders.toTypedArray()
-                        plugin.reload(context)
+                        plugin.reload()
                         showToast("Saved")
                         dismiss()
                     }

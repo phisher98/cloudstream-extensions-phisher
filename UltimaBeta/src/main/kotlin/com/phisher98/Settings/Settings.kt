@@ -81,7 +81,7 @@ class UltimaSettings(val plugin: UltimaBetaPlugin) : BottomSheetDialogFragment()
                 .setTitle("Restart Required")
                 .setMessage("Changes have been saved. Do you want to restart the app to apply them ?")
                 .setPositiveButton("Yes") { _, _ ->
-                    plugin.reload(requireContext())
+                    plugin.reload()
                     showToast("Saved and Restarting...")
                     dismiss()
                     restartApp()
@@ -182,7 +182,7 @@ class UltimaSettings(val plugin: UltimaBetaPlugin) : BottomSheetDialogFragment()
                 .setMessage("This will delete all selected sections.")
                 .setPositiveButton("Reset") { _, _ ->
                     sm.deleteAllData()
-                    plugin.reload(context)
+                    plugin.reload()
                     showToast("Sections cleared")
                     dismiss()
                 }

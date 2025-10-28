@@ -93,7 +93,7 @@ class UltimaConfigureExtensions(val plugin: UltimaBetaPlugin) : BottomSheetDialo
             }
 
             sm.currentExtensions = extensions
-            plugin.reload(context)
+            plugin.reload()
             showToast("Saved")
             dismiss()
         }
