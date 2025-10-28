@@ -32,16 +32,20 @@ class UltimaBetaPlugin : Plugin() {
                 else -> {}
             }
         }
-        openSettings = {
-            val frag = UltimaSettings(this)
-            frag.show(
-                activity?.supportFragmentManager ?: throw Exception("Unable to open settings"),
-                ""
-            )
+
+
+        openSettings = { ctx ->
+            val act = ctx as? AppCompatActivity
+            if (act != null && !act.isFinishing && !act.isDestroyed) {
+                val frag = UltimaSettings(this)
+                frag.show(act.supportFragmentManager, "UltimaSettingsDialog")
+            } else {
+                Log.e("UltimaPlugin", "Activity is not valid anymore, cannot show settings dialog")
+            }
         }
     }
 
-    fun reload(context: Context?) {
+    fun reload() {
         val pluginData = PluginManager.getPluginsOnline().find { it.internalName.contains("Ultima Beta") }
         if (pluginData == null) {
             afterPluginsLoadedEvent.invoke(true)

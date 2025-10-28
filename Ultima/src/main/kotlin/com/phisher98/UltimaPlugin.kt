@@ -2,6 +2,7 @@ package com.phisher98
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
@@ -26,16 +27,18 @@ class UltimaPlugin : Plugin() {
             }
         }
 
-        openSettings = {
-            val frag = UltimaSettings(this)
-            frag.show(
-                activity?.supportFragmentManager ?: throw Exception("Unable to open settings"),
-                ""
-            )
+        openSettings = { ctx ->
+            val act = ctx as? AppCompatActivity
+            if (act != null && !act.isFinishing && !act.isDestroyed) {
+                val frag = UltimaSettings(this)
+                frag.show(act.supportFragmentManager, "UltimaSettingsDialog")
+            } else {
+                Log.e("Plugin", "Activity is not valid anymore, cannot show settings dialog")
+            }
         }
     }
 
-    fun reload(context: Context?) {
+    fun reload() {
         val pluginData = PluginManager.getPluginsOnline().find { it.internalName.contains("Ultima") }
         if (pluginData == null) {
             afterPluginsLoadedEvent.invoke(true)
