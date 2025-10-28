@@ -28,6 +28,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -310,33 +312,53 @@ class XDMovies : MainAPI() {
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        if (data.isBlank()) return false
-
-        val links = (tryParseJson<List<String>>(data)
-            ?.mapNotNull { it.trim().takeIf { it.isNotBlank() } }
-            ?: data.trim()
-                .removePrefix("[")
-                .removeSuffix("]")
-                .split(',')
-                .mapNotNull { it.trim().removeSurrounding("\"").removeSurrounding("'").takeIf { it.isNotBlank() } })
-            .distinct()
-
-        if (links.isEmpty()) return false
-
-        for (link in links) {
-            try {
-                if (link.contains("hubcloud", ignoreCase = true)) {
-                    HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
-                } else {
-                    loadExtractor(link, name, subtitleCallback, callback)
-                }
-                Log.d("XDMovies", "Processed link: $link")
-            } catch (e: Exception) {
-                Log.e("XDMovies", "Failed to process link $link: ${e.localizedMessage}")
-            }
+    ): Boolean = withContext(Dispatchers.IO) {
+        if (data.isBlank()) {
+            Log.w("XDMovies", "loadLinks() called with blank data")
+            return@withContext false
         }
-        return true
+
+        val links = try {
+            tryParseJson<List<String>>(data)
+                ?.mapNotNull { it.trim().takeIf(String::isNotBlank) }
+                ?: data.trim()
+                    .removePrefix("[")
+                    .removeSuffix("]")
+                    .split(',')
+                    .map { it.trim().removeSurrounding("\"", "\"").removeSurrounding("'", "'") }
+                    .filter(String::isNotBlank)
+        } catch (e: Exception) {
+            Log.e("XDMovies", "Failed to parse links: ${e.localizedMessage}")
+            return@withContext false
+        }.distinct()
+
+        if (links.isEmpty()) {
+            Log.w("XDMovies", "No valid links found in data: $data")
+            return@withContext false
+        }
+
+        // Run all link loads concurrently to avoid blocking TV UI
+        val results = links.map { link ->
+            async(Dispatchers.IO) {
+                try {
+                    val normalizedLink = link.trim()
+
+                    if (normalizedLink.contains("hubcloud", ignoreCase = true)) {
+                        HubCloud().getUrl(normalizedLink, "HubCloud", subtitleCallback, callback)
+                    } else {
+                        loadExtractor(normalizedLink, name, subtitleCallback, callback)
+                    }
+
+                    Log.d("XDMovies", "✅ Processed: $normalizedLink")
+                    true
+                } catch (e: Exception) {
+                    Log.e("XDMovies", "❌ Error processing [$link]: ${e.localizedMessage}")
+                    false
+                }
+            }
+        }.awaitAll()
+
+        return@withContext results.any { it }
     }
 
 }
