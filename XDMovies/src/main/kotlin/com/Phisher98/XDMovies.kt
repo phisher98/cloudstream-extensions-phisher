@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -24,12 +25,9 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -248,7 +246,6 @@ class XDMovies : MainAPI() {
                                 versionNames += "$resolution $codec $size".trim()
                             }
                             if (allLinks.isEmpty()) continue
-                            Log.d("Phisher",tmdbSeasonRes.toString())
 
                             val tmdbEpisode = tmdbSeasonRes?.episodes?.find { it.episodeNumber == epNum }
                             val epName = "S${seasonNum}E${epNum} (${versionNames.joinToString(" / ")})"
@@ -312,53 +309,34 @@ class XDMovies : MainAPI() {
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean = withContext(Dispatchers.IO) {
-        if (data.isBlank()) {
-            Log.w("XDMovies", "loadLinks() called with blank data")
-            return@withContext false
-        }
+    ): Boolean {
+        if (data.isBlank()) return false
 
         val links = try {
-            tryParseJson<List<String>>(data)
-                ?.mapNotNull { it.trim().takeIf(String::isNotBlank) }
-                ?: data.trim()
-                    .removePrefix("[")
-                    .removeSuffix("]")
-                    .split(',')
-                    .map { it.trim().removeSurrounding("\"", "\"").removeSurrounding("'", "'") }
-                    .filter(String::isNotBlank)
-        } catch (e: Exception) {
-            Log.e("XDMovies", "Failed to parse links: ${e.localizedMessage}")
-            return@withContext false
-        }.distinct()
+            val type = object : TypeToken<ArrayList<String>>() {}.type
+            Gson().fromJson(data, type)
+        } catch (_: Exception) {
+            null
+        } ?: arrayListOf(data)
 
-        if (links.isEmpty()) {
-            Log.w("XDMovies", "No valid links found in data: $data")
-            return@withContext false
-        }
+        var success = false
+        for (rawLink in links) {
+            val normalizedLink = rawLink.trim()
+            Log.d("Phisher",normalizedLink)
 
-        // Run all link loads concurrently to avoid blocking TV UI
-        val results = links.map { link ->
-            async(Dispatchers.IO) {
-                try {
-                    val normalizedLink = link.trim()
+            if (normalizedLink.isEmpty()) continue
 
-                    if (normalizedLink.contains("hubcloud", ignoreCase = true)) {
-                        HubCloud().getUrl(normalizedLink, "HubCloud", subtitleCallback, callback)
-                    } else {
-                        loadExtractor(normalizedLink, name, subtitleCallback, callback)
-                    }
-
-                    Log.d("XDMovies", "✅ Processed: $normalizedLink")
-                    true
-                } catch (e: Exception) {
-                    Log.e("XDMovies", "❌ Error processing [$link]: ${e.localizedMessage}")
-                    false
+            try {
+                if (normalizedLink.contains("hubcloud", ignoreCase = true)) {
+                    HubCloud().getUrl(normalizedLink, "HubCloud", subtitleCallback, callback)
+                } else {
+                    loadExtractor(normalizedLink, name, subtitleCallback, callback)
                 }
+                success = true
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        }.awaitAll()
-
-        return@withContext results.any { it }
+        }
+        return success
     }
-
 }
