@@ -1,5 +1,6 @@
 name: 🐞 Issue report
 description: Report a source issue
+title: "[Site Issue] "
 labels: [Bug]
 assignees: phisher98
 body:
@@ -12,6 +13,17 @@ body:
         You can find the extension name in App.
       placeholder: |
         Example: "Anplay"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: "Issue Type"
+      options:
+        - "Site is broken/offline"
+        - "Duplicate site"
+        - "Other issue"
     validations:
       required: true
 
