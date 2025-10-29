@@ -92,6 +92,8 @@ jobs:
           KAIENC: ${{ secrets.KAIENC }}
           KAIMEG: ${{ secrets.KAIMEG }}
           NuvioStreams: ${{ secrets.NuvioStreams }}
+          YFXENC: ${{ secrets.YFXENC }}
+          YFXDEC: ${{ secrets.YFXDEC }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -139,6 +141,8 @@ jobs:
           echo KAIENC=$KAIENC >> local.properties
           echo KAIMEG=$KAIMEG >> local.properties
           echo NuvioStreams=$NuvioStreams >> local.properties
+          echo YFXDEC=$YFXDEC >> local.properties
+          echo YFXENC=$YFXENC >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
