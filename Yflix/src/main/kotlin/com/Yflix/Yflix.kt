@@ -15,6 +15,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -47,9 +48,10 @@ class Yflix : MainAPI() {
         val href = fixUrl(this.select("a.poster").attr("href"))
         val title = this.select("a.title").text()
         val posterUrl = fixUrl(this.select("a.poster img").attr("data-src"))
-
+        val quality = this.select("div.quality").text()
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.quality = getQualityFromString(quality)
         }
     }
 
