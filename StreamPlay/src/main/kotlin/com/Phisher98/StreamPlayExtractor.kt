@@ -1,9 +1,9 @@
 package com.phisher98
 
 import android.annotation.SuppressLint
-import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -1366,6 +1366,112 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+
+    suspend fun invokeVideasy(
+        id: Int? = null,
+        imdbid: String? = null,
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit
+    ) {
+        if (imdbid.isNullOrBlank()) return
+
+        val sources = listOf("cdn","myflixerzupcloud","moviebox","m4uhd","primewire","hdmovie")
+
+        val apiPath = if (season == null) {
+            "sources-with-title?title=$title&mediaType=movie&year=$year&episodeId=1&seasonId=1&tmdbId=$id&imdbId=$imdbid"
+        } else {
+            "sources-with-title?title=$title&mediaType=tv&year=$year&episodeId=$episode&seasonId=$season&tmdbId=$id&imdbId=$imdbid"
+        }
+
+        for (source in sources) {
+            runCatching {
+                val url = "$Videasy/$source/$apiPath"
+                val response = app.get(url)
+                if (response.code != 200) return@runCatching
+
+                val jsonBody = JSONObject().apply {
+                    put("text", response.text)
+                    put("id", id)
+                }.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                val postRes = app.post("${BuildConfig.VideasyDEC}", requestBody = jsonBody)
+                if (postRes.code != 200) return
+
+                val decryptedJson = postRes.text
+                val json = JSONObject(decryptedJson)
+                val result = json.optJSONObject("result") ?: return@runCatching
+
+                if (result.has("streams")) {
+                    val streams = result.getJSONObject("streams")
+                    for (key in streams.keys()) {
+                        val link = streams.optString(key) ?: continue
+                        callback.invoke(
+                            newExtractorLink(
+                                "Videasy",
+                                "Videasy [${source.uppercase()}]",
+                                url = link,
+                                type = INFER_TYPE
+                            ) {
+                                this.referer = Videasy
+                                this.quality = when {
+                                    "4K" in key -> Qualities.P2160.value
+                                    "1080" in key -> Qualities.P1080.value
+                                    "720" in key -> Qualities.P720.value
+                                    "480" in key -> Qualities.P480.value
+                                    "360" in key -> Qualities.P360.value
+                                    else -> Qualities.Unknown.value
+                                }
+                            }
+                        )
+                    }
+                } else if (result.has("sources")) {
+                    val sourcesArray = result.getJSONArray("sources")
+                    for (i in 0 until sourcesArray.length()) {
+                        val obj = sourcesArray.getJSONObject(i)
+                        val link = obj.optString("url", "") ?: continue
+                        val qualityLabel = obj.optString("quality", "Unknown")
+
+                        if (link.isNotBlank()) {
+                            callback.invoke(
+                                newExtractorLink(
+                                    "Videasy",
+                                    "Videasy [${source.uppercase()}]",
+                                    url = link,
+                                    type = INFER_TYPE
+                                ) {
+                                    this.referer = Videasy
+                                    this.quality = when {
+                                        "4K" in qualityLabel -> Qualities.P2160.value
+                                        "1080" in qualityLabel -> Qualities.P1080.value
+                                        "720" in qualityLabel -> Qualities.P720.value
+                                        "480" in qualityLabel -> Qualities.P480.value
+                                        "360" in qualityLabel -> Qualities.P360.value
+                                        else -> Qualities.Unknown.value
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                val subtitles = result.optJSONArray("subtitles") ?: JSONArray()
+                for (i in 0 until subtitles.length()) {
+                    val sub = subtitles.getJSONObject(i)
+                    val label = sub.optString("label", "Unknown")
+                    val file = sub.optString("file", "")
+                    if (file.isNotBlank()) subtitleCallback(newSubtitleFile(label, file))
+                }
+
+            }.onFailure { e ->
+                println("❌ Failed on $source: ${e.message}")
+            }
+        }
+    }
+
     suspend fun invokeXPrimeAPI(
         title: String?,
         year: Int?,
@@ -1409,7 +1515,6 @@ object StreamPlayExtractor : StreamPlay() {
                 val response = app.get(finalUrl)
                 val json = response.text
                 val serverLabel = "Xprime ${server.name.replaceFirstChar { it.uppercaseChar() }}"
-
                 if (server.name == "primebox") {
                     val stream = objectMapper.readValue<XprimeStream>(json)
                     val streamsJson = objectMapper.readTree(json).get("streams")
@@ -4909,6 +5014,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    @SuppressLint("UseKtx")
     suspend fun invokeVidlink(
         tmdbId: Int? = null,
         season: Int? = null,
@@ -4945,36 +5051,24 @@ object StreamPlayExtractor : StreamPlay() {
         val rawM3u8Url = playlistParts[0]
 
         val finalM3u8Url = run {
-            val uri = Uri.parse(root.stream.playlist)
+            val uri = root.stream.playlist.toUri()
             val hostParam = uri.getQueryParameter("host")
             if (hostParam != null) {
-                val decodedHost = URLDecoder.decode(hostParam, "UTF-8")
-                val path = rawM3u8Url.substringAfter("/proxy/")
-                "$decodedHost/$path"
+                val path = rawM3u8Url
+                path
             } else {
                 rawM3u8Url
             }
         }
 
-        val headersJson = playlistParts.getOrNull(1)
-            ?.split("&")
-            ?.find { it.startsWith("headers=") }
-            ?.removePrefix("headers=")
-            ?: "{}"
-
-        val json = JSONObject(headersJson)
-        val referer = json.optString("referer")
-        val origin = json.optString("origin")
-
         val headers = mapOf(
-            "referer" to referer,
-            "origin" to origin
+            "referer" to vidlink,
         )
 
         M3u8Helper.generateM3u8(
             "Vidlink",
             finalM3u8Url,
-            referer,
+            vidlink,
             headers = headers
         ).forEach(callback)
 
@@ -5457,7 +5551,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val serverId = index+1;
                 val serverUrl = if(season == null) "$vidPlusApi/api/server?id=$tmdbId&sr=$serverId&args=$requestArgs" else  "$vidPlusApi/api/server?id=$tmdbId&sr=$serverId&ep=$episode&ss=$season&args=$requestArgs"
 
-                val apiResponse = app.get(serverUrl,headers=headers, timeout = 20,).text
+                val apiResponse = app.get(serverUrl, headers = headers, timeout = 20).text
 
                 if (apiResponse.contains("\"data\"",ignoreCase = true)) {
                     val decodedPayload = String(Base64.getDecoder().decode(JSONObject(apiResponse).getString("data")))

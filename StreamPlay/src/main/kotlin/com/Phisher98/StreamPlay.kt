@@ -215,6 +215,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val mp4hydra = "https://mp4hydra.org"
         const val vidfastProApi = "https://vidfast.pro"
         const val vidPlusApi = "https://player.vidplus.to"
+        const val Videasy = "https://api.videasy.net"
 
         fun getType(t: String?): TvType {
             return when (t) {

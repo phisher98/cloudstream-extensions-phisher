@@ -94,6 +94,7 @@ jobs:
           NuvioStreams: ${{ secrets.NuvioStreams }}
           YFXENC: ${{ secrets.YFXENC }}
           YFXDEC: ${{ secrets.YFXDEC }}
+          VideasyDEC: ${{ secrets.VideasyDEC }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -143,6 +144,7 @@ jobs:
           echo NuvioStreams=$NuvioStreams >> local.properties
           echo YFXDEC=$YFXDEC >> local.properties
           echo YFXENC=$YFXENC >> local.properties
+          echo VideasyDEC=$VideasyDEC >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
