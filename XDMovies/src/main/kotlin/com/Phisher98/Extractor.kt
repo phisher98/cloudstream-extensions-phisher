@@ -3,21 +3,20 @@ package com.phisher98
 import android.annotation.SuppressLint
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import java.net.URI
-import java.net.URL
-import kotlin.text.Regex
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.Jsoup
+import java.net.URI
+import java.net.URL
 
 class Hubdrive : ExtractorApi() {
     override val name = "Hubdrive"
@@ -110,7 +109,7 @@ class HubCloud : ExtractorApi() {
                 realUrl
             } else {
                 val response = fetchUrl(realUrl)
-                val document = Jsoup.parse(response.body!!.string())
+                val document = Jsoup.parse(response.body.string())
                 val rawHref = document.select("#download").attr("href")
                 if (rawHref.startsWith("http", ignoreCase = true)) {
                     rawHref
@@ -128,7 +127,7 @@ class HubCloud : ExtractorApi() {
             return
         }
 
-        val document = fetchUrl(href).use { Jsoup.parse(it.body!!.string()) }
+        val document = fetchUrl(href).use { Jsoup.parse(it.body.string()) }
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
         val headerDetails = cleanTitle(header)
