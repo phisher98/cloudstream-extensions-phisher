@@ -1459,35 +1459,19 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     }
 }
 
-fun generateVrfRC4(text: String, key: String): String {
-    fun rc4(input: ByteArray, key: ByteArray): ByteArray {
-        val s = IntArray(256) { it }
-        var j = 0
-
-        // Key Scheduling Algorithm (KSA)
-        for (i in 0 until 256) {
-            j = (j + s[i] + key[i % key.size]) % 256
-            s[i] = s[j].also { s[j] = s[i] }
-        }
-
-        // PRGA
-        val out = ByteArray(input.size)
-        var i = 0
-        j = 0
-        for (n in input.indices) {
-            i = (i + 1) % 256
-            j = (j + s[i]) % 256
-            s[i] = s[j].also { s[j] = s[i] }
-            val k = s[(s[i] + s[j]) % 256]
-            out[n] = (input[n].toInt() xor k).toByte()
-        }
-        return out
-    }
-
-    val cipher = rc4(text.toByteArray(Charsets.UTF_8), key.toByteArray(Charsets.UTF_8))
-
-    // URL-safe Base64 without padding
-    return base64Encode(cipher)
+@RequiresApi(Build.VERSION_CODES.O)
+fun generateVrfAES(movieId: String, userId: String): String {
+    // Step 1: Derive key = SHA-256("secret_" + userId)
+    val keyData = "secret_$userId".toByteArray(Charsets.UTF_8)
+    val keyBytes = MessageDigest.getInstance("SHA-256").digest(keyData)
+    val keySpec = SecretKeySpec(keyBytes, "AES")
+    val ivSpec = IvParameterSpec(ByteArray(16))
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
+    val encrypted = cipher.doFinal(movieId.toByteArray(Charsets.UTF_8))
+    return Base64.getUrlEncoder()
+        .withoutPadding()
+        .encodeToString(encrypted)
 }
 
 

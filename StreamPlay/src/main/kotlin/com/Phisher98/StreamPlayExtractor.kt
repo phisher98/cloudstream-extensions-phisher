@@ -2417,6 +2417,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokeVidsrccc(
         id: Int? = null,
         season: Int? = null,
@@ -2443,7 +2444,7 @@ object StreamPlayExtractor : StreamPlay() {
         val movieId = variables["movieId"] ?: ""
         val movieType = variables["movieType"] ?: ""
 
-        val vrf = generateVrfRC4(movieId, userId)
+        val vrf = generateVrfAES(movieId, userId)
         val apiurl = if (season == null) {
             "${vidsrctoAPI}/api/$id/servers?id=$id&type=$movieType&v=$vvalue=&vrf=$vrf&imdbId=$imdbId"
         } else {
