@@ -8,11 +8,10 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
-import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.net.URI
@@ -189,35 +188,4 @@ class Strwishcom : StreamWishExtractor() {
     override val name = "Strwish"
     override val mainUrl = "https://strwish.com"
     override val requiresReferer = true
-}
-
-
-
-open class VidhideExtractor : ExtractorApi() {
-    override var name = "VidHide"
-    override var mainUrl = "https://vidhide.com"
-    override val requiresReferer = false
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(
-            url, referer = referer ?: "$mainUrl/", interceptor = WebViewResolver(
-                Regex("""master\.m3u8""")
-            )
-        )
-        val sources = mutableListOf<ExtractorLink>()
-        if (response.url.contains("m3u8"))
-            sources.add(
-                newExtractorLink(
-                    source = name,
-                    name = name,
-                    url = response.url,
-                    ExtractorLinkType.M3U8
-                ) {
-                    this.referer = referer ?: "$mainUrl/"
-                    this.quality = Qualities.Unknown.value
-                }
-
-            )
-        return sources
-    }
 }
