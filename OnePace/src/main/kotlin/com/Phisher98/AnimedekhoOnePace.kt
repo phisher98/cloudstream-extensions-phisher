@@ -6,8 +6,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.nodes.Element
 
-@Suppress("NAME_SHADOWING")
-open class OnepaceProvider : MainAPI() {
+class OnepaceProvider : MainAPI() {
     override var mainUrl = "https://onepace.co"
     override var name = "OnePace AD"
     override val hasMainPage = true
@@ -41,10 +40,10 @@ open class OnepaceProvider : MainAPI() {
         val hreftitle= this.selectFirst("img")?.attr("alt")
         var href=""
         if (hreftitle!!.isNotEmpty()) {
-            if (hreftitle.contains("Dub")) {
-                href = "$mainUrl/series/one-pace-english-dub"
+            href = if (hreftitle.contains("Dub")) {
+                "$mainUrl/series/one-pace-english-dub"
             } else {
-                href = "$mainUrl/series/one-pace-english-sub"
+                "$mainUrl/series/one-pace-english-sub"
             }
         }
         val title = this.selectFirst("p")?.text() ?:""
@@ -86,8 +85,9 @@ open class OnepaceProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val media = parseJson<Media>(url)
         val document = app.get(media.url).document
-        val ArcINT=media.mediaType?.substringAfter("Arc ")
-        val element= document.selectFirst("div.seasons.aa-crd > div.seasons-bx:contains($ArcINT)")
+        val arcINT = media.mediaType?.substringAfter("Arc ")?.replace("'", "\\'") ?: ""
+        val element = document.selectFirst("div.seasons.aa-crd > div.seasons-bx:contains($arcINT)")
+
         val title = media.mediaType ?:"No Title"
         val poster = "https://images3.alphacoders.com/134/1342304.jpeg"
         val plot = document.selectFirst("div.entry-content p")?.text()?.trim()
