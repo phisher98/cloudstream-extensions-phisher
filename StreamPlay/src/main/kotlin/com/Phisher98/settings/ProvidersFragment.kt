@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.SearchView
 import androidx.annotation.RequiresApi
 import androidx.core.content.edit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -211,6 +212,26 @@ class ProvidersFragment(
             dialog.show()
         }
 
+        val searchView = view.findView<SearchView>("search_provider")
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean = false
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                val query = newText.orEmpty().trim().lowercase()
+
+                for (i in 0 until container.childCount) {
+                    val item = container.getChildAt(i)
+                    val chk = item.findViewById<CheckBox>(
+                        res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+                    )
+                    val isVisible = chk.text.toString().lowercase().contains(query)
+                    item.visibility = if (isVisible) View.VISIBLE else View.GONE
+                }
+
+                return true
+            }
+        })
 
         //
     }

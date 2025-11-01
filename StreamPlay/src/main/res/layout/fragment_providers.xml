@@ -135,6 +135,19 @@
                 android:focusable="true" />
         </LinearLayout>
 
+        <SearchView
+            android:id="@+id/search_provider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:queryHint="Search providers..."
+            android:iconifiedByDefault="false"
+            android:background="@android:color/transparent"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="4dp"
+            android:focusable="true"
+            android:imeOptions="actionDone"
+            android:inputType="text" />
+
         <!-- Divider -->
         <View
             android:layout_width="match_parent"

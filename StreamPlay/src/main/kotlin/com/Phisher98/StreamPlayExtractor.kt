@@ -2347,76 +2347,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeEmbedsu(
-        id: String? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        try {
-            val embedPath = if (season == null) "movie/$id" else "tv/$id/$season/$episode"
-            val url = "$EmbedSu/embed/$embedPath"
-
-            val scriptContent = runCatching {
-                app.get(url, referer = EmbedSu)
-                    .document.selectFirst("script:containsData(window.vConfig)")
-                    ?.data()
-            }.getOrNull() ?: return
-            val encodedJson = runCatching {
-                Regex("atob\\(`(.*?)`\\)").find(scriptContent)
-                    ?.groupValues?.getOrNull(1)
-                    ?.let(::base64Decode)
-                    ?.toJson()
-            }.getOrNull() ?: return
-
-            val embedData = runCatching {
-                Gson().fromJson(encodedJson, Embedsu::class.java)
-            }.getOrNull() ?: return
-
-            val decodedPayload = runCatching {
-                val paddedHash = embedData.hash.padEnd((embedData.hash.length + 3) / 4 * 4, '=')
-                val hashDecoded = base64Decode(paddedHash)
-                val reversedTransformed = hashDecoded
-                    .split(".")
-                    .joinToString("") { it.reversed() }
-                    .reversed()
-                val finalInput =
-                    reversedTransformed.padEnd((reversedTransformed.length + 3) / 4 * 4, '=')
-                base64Decode(finalInput)
-            }.getOrNull() ?: return
-
-            EmbedSuitemparseJson(decodedPayload).forEach { item ->
-                runCatching {
-                    val sourceUrl = app.get("$EmbedSu/api/e/${item.hash}", referer = EmbedSu)
-                        .parsedSafe<Embedsuhref>()
-                        ?.source ?: return@runCatching
-
-                    callback.invoke(
-                        newExtractorLink(
-                            "Embedsu Viper",
-                            "Embedsu Viper",
-                            url = sourceUrl,
-                            type = ExtractorLinkType.M3U8
-                        ) {
-                            referer = EmbedSu
-                            quality = Qualities.P1080.value
-                            headers = mapOf(
-                                "Origin" to "https://embed.su",
-                                "Referer" to "https://embed.su/",
-                                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-                            )
-                        }
-                    )
-                }.onFailure {
-                    Log.w("Embedsu", "Failed to fetch or parse link for item: ${item.hash} $it")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("Embedsu", "Unexpected error in invokeEmbedsu $e")
-        }
-    }
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokeVidsrccc(
         id: Int? = null,
@@ -3760,8 +3690,8 @@ object StreamPlayExtractor : StreamPlay() {
         val referer = prorcpUrl.substringBefore("rcp")
         callback.invoke(
             newExtractorLink(
-                "Vidsrc",
-                "Vidsrc",
+                "VidsrcXYZ",
+                "VidsrcXYZ",
                 url = decryptedSource,
                 ExtractorLinkType.M3U8
             ) {
@@ -4475,52 +4405,6 @@ object StreamPlayExtractor : StreamPlay() {
 
                 }
             }
-        }
-    }
-
-    suspend fun invokeEmbedlc(
-        imdbId: String?,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = if (season == null)
-            "$Embedlc/api/embed/$imdbId"
-        else
-            "$Embedlc/api/embed/$imdbId/$season/$episode"
-
-        val response = app.get(url)
-        val scriptTag = response.document.select("script")
-            .firstOrNull {
-                it.data().contains("playlist") && it.data().contains("decodeURIComponent")
-            }
-            ?: run {
-                Log.e("Embedlc", "❌ No playlist script found.")
-                return
-            }
-
-        val js = scriptTag.data()
-
-        val trackRegex =
-            Regex("""\{\s*kind:\s*"captions",\s*file:\s*"([^"]+)",\s*code:\s*"[^"]+",\s*label:\s*"([^"]+)"""")
-        val tracks = trackRegex.findAll(js).map { it.groupValues[2] to it.groupValues[1] }.toList()
-
-        val sourceRegex = Regex("""\{\s*file:\s*"([^"]+)",\s*type:\s*"([^"]+)"""")
-        val sources =
-            sourceRegex.findAll(js).map { it.groupValues[2] to it.groupValues[1] }.toList()
-
-        tracks.forEach { (label, file) ->
-            val subtitlefile = Embedlc + file
-            subtitleCallback(
-                newSubtitleFile(
-                    label,
-                    subtitlefile
-                )
-            )
-        }
-        sources.forEach { (_, file) ->
-            M3u8Helper.generateM3u8("EmbedLC", Embedlc + file, url).forEach(callback)
         }
     }
 

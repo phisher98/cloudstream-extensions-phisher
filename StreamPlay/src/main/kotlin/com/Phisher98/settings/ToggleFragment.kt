@@ -17,7 +17,7 @@ import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.phisher98.*
 
 class ToggleFragment(
-    private val plugin: StreamPlayPlugin,
+    plugin: StreamPlayPlugin,
     private val sharedPref: SharedPreferences
 ) : BottomSheetDialogFragment() {
 
@@ -32,6 +32,7 @@ class ToggleFragment(
     }
 
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private fun getDrawable(name: String): Drawable {
         val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         return res.getDrawable(id, null)
