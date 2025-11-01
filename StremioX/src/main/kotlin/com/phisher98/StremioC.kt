@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import org.json.JSONObject
 
 class StremioC : MainAPI() {
     override var mainUrl = "https://stremio.github.io/stremio-static-addon-example"
@@ -49,7 +50,14 @@ class StremioC : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val res = parseJson<CatalogEntry>(url)
+        val res: CatalogEntry = if (url.startsWith("{")) {
+            parseJson<CatalogEntry>(url)
+        } else {
+            val json = app.get(url).text
+            val metaJson = JSONObject(json).getJSONObject("meta").toString()
+            parseJson<CatalogEntry>(metaJson)
+        }
+
         mainUrl =
             if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id)) cinemataUrl else mainUrl
         val json = app.get("${mainUrl}/meta/${res.type}/${res.id}.json")
