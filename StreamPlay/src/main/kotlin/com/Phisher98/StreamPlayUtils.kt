@@ -1915,7 +1915,7 @@ fun vidrockEncode(tmdb: String, type: String, season: Int? = null, episode: Int?
 }
 
 fun generateHashedString(): String {
-    val s = "a8f7e9c2d4b6a1f3e8c9d2b4a7f6e9c2d4b6a1f3e8c9d2b4a7f6e9c2d4b6a1f3"
+    val s = "a8f7e9c2d4b6a1f3e8c9d2t4a7f6e9c2d4z6a1f3e8c9d2b4a7f5e9c2d4b6a1f3"
     val a = "2"
     val algorithm = "HmacSHA512"
     val keySpec = SecretKeySpec(s.toByteArray(StandardCharsets.UTF_8), algorithm)
@@ -1969,7 +1969,7 @@ fun cinemaOSDecryptResponse(e: CinemaOSReponseData?): Any {
     val mao = e?.mao
     val salt = e?.salt
 
-    val keyBytes =  "a1b2c3d4e4f6588658455678901477567890abcdef1234567890abcdef123456".toByteArray()
+    val keyBytes =  "a1b2c3d4e4f6477658455678901477567890abcdef1234567890abcdef123456".toByteArray()
     val ivBytes = hexStringToByteArray(cin.toString())
     val authTagBytes = hexStringToByteArray(mao.toString())
     val encryptedBytes = hexStringToByteArray(encrypted.toString())
