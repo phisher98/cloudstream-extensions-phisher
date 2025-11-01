@@ -4875,7 +4875,7 @@ object StreamPlayExtractor : StreamPlay() {
         val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(), seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
         val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,season != null)
         val type = if(season == null) {"movie"}  else {"tv"}
-        val sourceUrl = if(season == null) {"$cinemaOSApi/api/backendv2?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/backendv2?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
+        val sourceUrl = if(season == null) {"$cinemaOSApi/api/fuckit?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/fuckit?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
         val sourceResponse = app.get(sourceUrl, headers = sourceHeaders,timeout = 60).parsedSafe<CinemaOSReponse>()
         val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data)
         val json = parseCinemaOSSources(decryptedJson.toString())
