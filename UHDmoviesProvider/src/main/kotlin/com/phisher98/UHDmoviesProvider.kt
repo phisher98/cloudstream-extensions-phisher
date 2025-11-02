@@ -17,7 +17,7 @@ import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl: String = runBlocking {
-        UHDmoviesProviderPlugin.getDomains()?.UHDMovies ?: "https://uhdmovies.rip"
+        UHDmoviesProviderPlugin.getDynamicDomains()?.UHDMovies ?: UHDmoviesProviderPlugin.getDomains()?.UHDMovies ?: "https://uhdmovies.rip"
     }
     override var name = "UHDmovies"
     override val hasMainPage = true

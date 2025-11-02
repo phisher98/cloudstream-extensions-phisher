@@ -34,6 +34,26 @@ class UHDmoviesProviderPlugin: BasePlugin() {
             return cachedDomains
         }
 
+        suspend fun getDynamicDomains(): Domains? {
+            try {
+                val redirectUrl = "https://mmodlist.com/?type=uhdmovies"
+                val response = app.get(redirectUrl).text
+
+                val regex = Regex("""url=(https?://[^"']+)""", RegexOption.IGNORE_CASE)
+                val latestDomain = regex.find(response)?.groupValues?.get(1)
+
+                if (latestDomain != null) {
+                    cachedDomains = Domains(UHDMovies = latestDomain)
+                } else {
+                    // println("⚠️ [UHDmovies] No redirect URL found in response.")
+                }
+                return cachedDomains
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
+        }
+
         data class Domains(
             @JsonProperty("UHDMovies")
             val UHDMovies: String,
