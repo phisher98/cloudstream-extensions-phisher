@@ -5314,13 +5314,13 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
     ) {
         val STATIC_PATH =
-            "hezushon/b09fcca4f7144731f91e8ef917d2ace2ec6a29aa19a199b12a9d02d132db0ee9/kirumo/11bec683-3937-5830-b400-1ba5ab45241f/wuf/s/APA91e_LxHlKO3YiQ7vznjtYzGy69DCoEINphFQr51qaVRBjehCSbP1Xz9Ks0M503tPCX73Uei4u-LG_yOezROuHI-X_YXeNMLeRlbzyxYQDz9GLDQzeF5H0wBeo7IJ9IFGDho7KIbw_yM8V5JAgcnB-SgNUzWVbgX0UPKWlHmpAlTn7f1TvIoB/143b6797/1000019772292744"
+            "hezushon/ira/2264ec23bfa5e4891e26d563e5daac61bcb05688/b544e02b"
         val url =
             if (season == null) "$vidfastProApi/movie/$tmdbId" else "$vidfastProApi/tv/$tmdbId/$season/$episode"
         val headers = mapOf(
             "Accept" to "*/*",
             "Referer" to vidfastProApi,
-            "X-Csrf-Token" to "JjcyiVDl4pPbnbSLUVDLiMFwJR8C2WNk",
+            "X-Csrf-Token" to "iwwuf3C7tleIfqxlgG5NUxOrOROfn5d9",
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
             "X-Requested-With" to "XMLHttpRequest"
         )
@@ -5332,8 +5332,8 @@ object StreamPlayExtractor : StreamPlay() {
             return;
         }
         // AES encryption setup
-        val keyHex = "3d57e7fcb67c95d0cffa215230aa1cbbd18421a448305a51f4d4505a1fd1305f"
-        val ivHex = "5799f00dfd2f5dfecd20880567fdf7fa"
+        val keyHex = "1f9b96f4e6604062c39f69f4c2edd92210d44d185434b0d569b077a72975bf08"
+        val ivHex = "70ed610a03c6a59c7967abf77db57f71"
         val aesKey = hexStringToByteArray2(keyHex)
         val aesIv = hexStringToByteArray2(ivHex)
 
@@ -5344,7 +5344,7 @@ object StreamPlayExtractor : StreamPlay() {
         val aesEncrypted = cipher.doFinal(paddedData)
 
         // XOR operation
-        val xorKey = hexStringToByteArray2("ff094f1e808cd09a7c")
+        val xorKey = hexStringToByteArray2("d6f87ef72c")
         val xorResult = aesEncrypted.mapIndexed { i, byte ->
             (byte.toInt() xor xorKey[i % xorKey.size].toInt()).toByte()
         }.toByteArray()
@@ -5353,7 +5353,7 @@ object StreamPlayExtractor : StreamPlay() {
         val encodedFinal = customEncode(xorResult)
 
         // Get servers
-        val apiServers = "$vidfastProApi/$STATIC_PATH/5_5N/$encodedFinal"
+        val apiServers = "$vidfastProApi/$STATIC_PATH/wfPFjh__qQ/$encodedFinal"
         val serversResponse = app.get(
             apiServers,
             timeout = 20,
@@ -5365,7 +5365,7 @@ object StreamPlayExtractor : StreamPlay() {
         val urlList = mutableMapOf<String, String>()
         servers.forEach {
             try {
-                val apiStream = "$vidfastProApi/${STATIC_PATH}/kruiW6A/${it.data}"
+                val apiStream = "$vidfastProApi/${STATIC_PATH}/AddlBFe5/${it.data}"
                 val streamResponse = app.get(apiStream, timeout = 20, headers = headers).text
                 if (streamResponse.isNotEmpty()) {
                     val jsonObject = JSONObject(streamResponse)
