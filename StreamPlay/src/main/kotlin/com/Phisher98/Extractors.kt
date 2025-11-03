@@ -2660,3 +2660,23 @@ class Fourspromax : MegaUp() {
     override var mainUrl = "https://4spromax.site"
     override val requiresReferer = true
 }
+
+class XdMoviesExtractor : ExtractorApi() {
+    override val name = "XdMoviesExtractor"
+    override val mainUrl = " https://link.xdmovies.site"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url, allowRedirects = false).headers["location"]
+        if (href!=null) {
+            if (href.contains("hubcloud")) {
+                HubCloud().getUrl(href, "HubDrive", subtitleCallback, callback)
+            } else loadExtractor(href, "HubDrive", subtitleCallback, callback)
+        }
+    }
+}

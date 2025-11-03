@@ -53,6 +53,7 @@ import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
+import com.phisher98.StreamPlayExtractor.invokeXDmovies
 import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
@@ -243,8 +244,11 @@ fun buildProviders(): List<Provider> {
         Provider("NuvioStreams", "NuvioStreams") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             invokeNuvioStreams(res.imdbId, res.season,res.episode,  callback)
         },
-        Provider("VidEasy", "VidEasy") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("VidEasy", "VidEasy") { res, subtitleCallback, callback, _, _ ->
             invokeVideasy(res.id, res.imdbId, res.title, res.year, res.season,res.episode,  callback, subtitleCallback)
+        },
+        Provider("XDMovies", "XDMovies") { res, subtitleCallback, callback, _, _ ->
+            invokeXDmovies(res.id, res.season, res.episode,  callback, subtitleCallback)
         },
     )
 }

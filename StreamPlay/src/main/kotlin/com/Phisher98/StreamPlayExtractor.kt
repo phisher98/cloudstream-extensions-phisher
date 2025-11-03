@@ -5555,6 +5555,80 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokeXDmovies(
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit,
+    ) {
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "Referer" to "$XDmoviesAPI/",
+            "x-requested-with" to "XMLHttpRequest",
+            "x-auth-token" to base64Decode("NzI5N3Nra2loa2Fqd25zZ2FrbGFrc2h1d2Q=")
+        )
+
+        val type = if (season == null) "xyz123" else "abc456"
+        val url = "$XDmoviesAPI/api/$type?tmdb_id=$id"
+
+        val jsonObject = JSONObject(app.get(url, headers = headers).text)
+
+        if (season != null && episode != null) {
+            jsonObject.optJSONObject("download_data")
+                ?.optJSONArray("seasons")
+                ?.let { seasons ->
+                    (0 until seasons.length())
+                        .asSequence()
+                        .map { seasons.getJSONObject(it) }
+                        .firstOrNull { it.optInt("season_num") == season }
+                        ?.optJSONArray("episodes")
+                        ?.let { episodes ->
+                            (0 until episodes.length())
+                                .asSequence()
+                                .map { episodes.getJSONObject(it) }
+                                .firstOrNull { it.optInt("episode_number") == episode }
+                                ?.optJSONArray("versions")
+                                ?.forEachJsonObject { version ->
+                                    val link = version.optString("download_link")
+                                    if (link.isNotBlank())
+                                        try {
+                                            if (link.contains("hubcloud", ignoreCase = true)) {
+                                                HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
+                                            } else {
+                                                loadSourceNameExtractor("XDmovies ", link, "", subtitleCallback, callback)
+                                            }
+                                        } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                        }
+                }
+        }
+        else {
+            jsonObject.optJSONArray("download_links")
+                ?.forEachJsonObject { linkObj ->
+                    val link = linkObj.optString("download_link")
+                    if (link.isNotBlank())
+                        try {
+                            if (link.contains("hubcloud", ignoreCase = true)) {
+                                HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
+                            } else {
+                                loadSourceNameExtractor("XDmovies ", link, "", subtitleCallback, callback)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                }
+        }
+    }
+
+    private inline fun JSONArray.forEachJsonObject(block: (JSONObject) -> Unit) {
+        for (i in 0 until length()) {
+            block(getJSONObject(i))
+        }
+    }
+
 }
 
 

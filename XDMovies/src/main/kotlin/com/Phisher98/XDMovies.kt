@@ -205,7 +205,7 @@ class XDMovies : MainAPI() {
         }
         val downloadLinksJson = JSONArray(downloadLinks).toString()
 
-        val tmdbResText = fetchUrl("https://orange-voice-abcf.phisher16.workers.dev/movie/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49")
+        val tmdbResText = fetchUrl("https://orange-voice-abcf.phisher16.workers.dev/$tmdbtvTypeslug/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49")
         val tmdbRes = tmdbResText?.let { gson.fromJson(it, IMDB::class.java) }
         val imdbId = tmdbRes?.imdbId
 
@@ -425,7 +425,6 @@ class XDMovies : MainAPI() {
         var success = false
         for (rawLink in links) {
             val normalizedLink = rawLink.trim()
-            Log.d("Phisher",normalizedLink)
 
             if (normalizedLink.isEmpty()) continue
 
