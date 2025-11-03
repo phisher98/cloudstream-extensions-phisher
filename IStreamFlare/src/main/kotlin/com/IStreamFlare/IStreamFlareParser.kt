@@ -1,6 +1,5 @@
 package com.IStreamFlare
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 
 data class HomeRes(
@@ -122,8 +121,8 @@ data class LoadDataObject(
 )
 
 data class IMDB(
-    @JsonProperty("imdb_id")
-    val imdbId: String,
+    @SerializedName("imdb_id")
+    val imdbId: String? = null
 )
 
 

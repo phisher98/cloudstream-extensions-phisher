@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 
 data class Home(
@@ -43,8 +42,8 @@ class SearchData : ArrayList<SearchData.SearchDataItem>(){
 }
 
 data class IMDB(
-    @JsonProperty("imdb_id")
-    val imdbId: String,
+    @SerializedName("imdb_id")
+    val imdbId: String? = null
 )
 
 data class Meta(

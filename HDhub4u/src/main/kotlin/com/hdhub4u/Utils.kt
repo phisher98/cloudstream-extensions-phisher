@@ -1,7 +1,7 @@
 package com.hdhub4u
 
 import android.annotation.SuppressLint
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -12,7 +12,6 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
 import org.json.JSONObject
 
 
@@ -126,6 +125,6 @@ suspend fun loadSourceNameExtractor(
 }
 
 data class IMDB(
-    @JsonProperty("imdb_id")
-    val imdbId: String,
+    @SerializedName("imdb_id")
+    val imdbId: String? = null
 )
