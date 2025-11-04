@@ -43,22 +43,28 @@ override suspend fun loadLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
-    val data= AppUtils.parseJson<LinkData>(data)
-    val title=data.title
-    val season =data.season
-    val episode =data.episode
-    val id =data.imdbId
-    val year=data.year
-    val anijson=app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-    var type = TvType.TvSeries
+    val data = AppUtils.parseJson<LinkData>(data)
+    val title = data.title
+    val season = data.season
+    val episode = data.episode
+    val id = data.imdbId
+    val year = data.year
 
-    val mappings = JSONObject(anijson).optJSONObject("mappings")
-    if (mappings != null) {
-        val rawtype = mappings.optString("type", "")
-        if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+    var type = TvType.TvSeries
+    var anijson: String? = null
+
+    try {
+        anijson = app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
+        val mappings = JSONObject(anijson).optJSONObject("mappings")
+        val rawtype = mappings?.optString("type", "")
+        if (rawtype?.contains("MOVIE", ignoreCase = true) == true) {
+            type = TvType.Movie
+        }
+    } catch (e: Exception) {
+        println("Error fetching or parsing mapping: ${e.message}")
     }
 
-    val anidbEid = getAnidbEid(anijson, episode) ?: 0
+    val anidbEid = getAnidbEid(anijson ?: "{}", episode) ?: 0
     runAllAsync(
         {
             invokeTorrentio(
