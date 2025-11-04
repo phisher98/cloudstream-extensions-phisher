@@ -142,8 +142,8 @@ open class Movierulzhd : MainAPI() {
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
-        val background = fixUrlNull(document.selectFirst(".playbox img.cover")?.attr("src"))
-        val posterUrl = fixUrlNull(document.select("div.poster img").attr("src"))
+        val background = fixUrlNull(document.selectFirst(".playbox img.cover")?.getImageAttr())
+        val posterUrl = fixUrlNull(document.selectFirst("div.poster img")?.getImageAttr())
         /*if (backgroud.isNullOrEmpty()) {
             if (background.contains("movierulzhd")) {
                 background = fixUrlNull(document.select("div.poster img").attr("src"))

@@ -24,6 +24,7 @@ class MovierulzhdPlugin: BasePlugin() {
         registerExtractorAPI(Movierulzups())
         registerExtractorAPI(Movierulz())
         registerExtractorAPI(VidStack())
+        registerExtractorAPI(HDm2())
     }
     companion object {
         private const val DOMAINS_URL =
