@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.syncproviders.SyncRepo
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.MediaObject
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.syncproviders.providers.SimklApi.Companion.getPosterUrl
@@ -38,7 +39,7 @@ class Simkl(val plugin: UltimaBetaPlugin) : MainAPI() {
     override val supportedSyncNames = setOf(SyncIdName.Simkl)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    private val api = AccountManager.simklApi
+    private val repo = SyncRepo(AccountManager.simklApi)
     private val apiUrl = "https://api.simkl.com"
     private final val mediaLimit = 20
 
@@ -153,14 +154,14 @@ class Simkl(val plugin: UltimaBetaPlugin) : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.contains("Personal")) {
             // Reading and manipulating personal library
-            api.loginInfo()
+            repo.authUser()
                     ?: return newHomePageResponse(
                             "Login required for personal content.",
                             emptyList<SearchResponse>(),
                             false
                     )
             val homePageList =
-                    api.getPersonalLibrary()?.allLibraryLists?.mapNotNull {
+                    repo.library()?.getOrThrow()?.allLibraryLists?.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null
                         val libraryName =
                                 it.name.asString(plugin.activity ?: return@mapNotNull null)

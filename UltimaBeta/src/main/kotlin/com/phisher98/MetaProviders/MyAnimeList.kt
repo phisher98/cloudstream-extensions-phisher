@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.malApi
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.syncproviders.SyncRepo
 import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import com.lagradost.cloudstream3.syncproviders.providers.MALApi.MalAnime
 import com.lagradost.cloudstream3.syncproviders.providers.MALApi.Recommendations
@@ -40,7 +41,7 @@ open class MyAnimeList(val plugin: UltimaBetaPlugin) : MainAPI() {
     override val supportedSyncNames = setOf(SyncIdName.MyAnimeList)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    private val api = malApi
+    private val repo = SyncRepo(malApi)
     private val apiUrl = "https://api.myanimelist.net/v2"
     private val mediaLimit = 20
 
@@ -96,14 +97,14 @@ open class MyAnimeList(val plugin: UltimaBetaPlugin) : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.contains("Personal")) {
             // Reading and manipulating personal library
-            api.loginInfo()
+            repo.authUser()
                     ?: return newHomePageResponse(
                             "Login required for personal content.",
                             emptyList<SearchResponse>(),
                             false
                     )
             val homePageList =
-                    api.getPersonalLibrary()!!.allLibraryLists.mapNotNull {
+                    repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null
                         val libraryName =
                                 it.name.asString(plugin.activity ?: return@mapNotNull null)
