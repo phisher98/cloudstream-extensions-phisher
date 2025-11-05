@@ -606,7 +606,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
 
         runLimitedAsync(
-            concurrency = 5,
+            concurrency = 10,
             {
                 if (!res.isAnime) invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
             },
