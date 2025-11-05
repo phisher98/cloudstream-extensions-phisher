@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 1
+version = 2
 
 android {
     defaultConfig {
@@ -17,7 +17,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Sports Live Streams"
+    description = "Sports Live Streams (FanCode)"
     language    = "en"
     authors = listOf("Phisher98")
 

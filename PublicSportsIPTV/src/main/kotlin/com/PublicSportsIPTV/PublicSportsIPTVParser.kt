@@ -64,7 +64,7 @@ data class ImageCdn(
     @JsonProperty("SPORT_BY_IMAGE")
     val sportByImage: String,
     @JsonProperty("CLOUDFARE")
-    val cloudfare: String,
+    val cloudfare: String?,
 )
 
 data class Team(
@@ -102,6 +102,7 @@ data class Cricket(
 )
 
 data class StreamingCdn(
+    val language: String,
     @JsonProperty("Primary_Playback_URL")
     val primaryPlaybackUrl: String?,
     @JsonProperty("fancode_cdn")
@@ -110,8 +111,10 @@ data class StreamingCdn(
     val daiGoogleCdn: String?,
     @JsonProperty("cloudfront_cdn")
     val cloudfrontCdn: String?,
-    val language: String,
+    @JsonProperty("sony_cdn")
+    val sonyCdn: String?,
 )
+
 
 data class LoadURL(
     @JsonProperty("Primary_Playback_URL")
@@ -122,4 +125,10 @@ data class LoadURL(
     val daiGoogleCdn: String?,
     @JsonProperty("cloudfront_cdn")
     val cloudfrontCdn: String?,
+    @JsonProperty("title")
+    val title: String?,
+    @JsonProperty("tournament")
+    val tournament: String?,
+    @JsonProperty("poster")
+    val poster: String?,
 )
