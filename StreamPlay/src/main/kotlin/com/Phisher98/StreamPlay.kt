@@ -35,6 +35,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -605,8 +606,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
 
-        runLimitedAsync(
-            concurrency = 10,
+        runAllAsync(
             {
                 if (!res.isAnime) invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
             },
