@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.syncproviders.SyncRepo
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.Media
@@ -51,7 +52,7 @@ open class StreamplayTorrentAnime : MainAPI() {
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    private val api = AccountManager.aniListApi
+    private val repo = SyncRepo(AccountManager.aniListApi)
     private val apiUrl = "https://graphql.anilist.co"
     private val mediaLimit = 20
     private val isAdult = false
@@ -116,14 +117,14 @@ open class StreamplayTorrentAnime : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         if (request.name.contains("Personal")) {
             // Reading and manipulating personal library
-            api.loginInfo()
+            repo.authUser()
                 ?: return newHomePageResponse(
                     "Login required for personal content.",
                     emptyList<SearchResponse>(),
                     false
                 )
             val homePageList =
-                api.getPersonalLibrary()!!.allLibraryLists.mapNotNull {
+                repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)

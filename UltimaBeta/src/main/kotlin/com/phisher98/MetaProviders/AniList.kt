@@ -31,6 +31,7 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.syncproviders.SyncRepo
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
@@ -53,7 +54,7 @@ class AniList(val plugin: UltimaBetaPlugin) : MainAPI() {
     override val supportedSyncNames = setOf(SyncIdName.Anilist)
     override val hasMainPage = true
     override val hasQuickSearch = false
-    private val api = AccountManager.aniListApi
+    private val repo = SyncRepo(AccountManager.aniListApi)
     private val apiUrl = "https://graphql.anilist.co"
     private final val mediaLimit = 20
     private final val isAdult = false
@@ -115,14 +116,14 @@ class AniList(val plugin: UltimaBetaPlugin) : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         if (request.name.contains("Personal")) {
             // Reading and manipulating personal library
-            api.loginInfo()
+            repo.authUser()
                     ?: return newHomePageResponse(
                             "Login required for personal content.",
                             emptyList<SearchResponse>(),
                             false
                     )
             var homePageList =
-                    api.getPersonalLibrary()!!.allLibraryLists.mapNotNull {
+                    repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
                         if (it.items.isEmpty()) return@mapNotNull null
                         val libraryName =
                                 it.name.asString(plugin.activity ?: return@mapNotNull null)
