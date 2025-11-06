@@ -8,10 +8,13 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 
 class FourKHDHub : MainAPI() {
-    override var mainUrl              = "https://4khdhub.fans"
+    override var mainUrl: String = runBlocking {
+        FourKHDHubProvider.getDomains()?.n4khdhub ?: "https://4khdhub.fans"
+    }
     override var name                 = "4K HDHUB"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -20,54 +23,24 @@ class FourKHDHub : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
 
 
-    companion object {
-        private const val DOMAINS_URL = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
-        private var cachedDomains: DomainsParser? = null
-
-        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
-            if (cachedDomains == null || forceRefresh) {
-                try {
-                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return null
-                }
-            }
-            return cachedDomains
-        }
-    }
-
     override val mainPage = mainPageOf(
         "" to "Latest Releases",
-        "category/movies-10810.html" to "Movies",
-        "category/new-series-10811.html" to "Series",
-        "category/anime-10812.html" to "Anime",
-        "category/4k-hdr-10776.html" to "4K HDR"
+        "category/movies-10810" to "Movies",
+        "category/new-series-10811" to "Series",
+        "category/anime-10812" to "Anime",
+        "category/4k-hdr-10776" to "4K HDR"
     )
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val allResults = mutableListOf<SearchResponse>()
-        var currentPage = page
-        val maxPages = 3
-        val FourKHDHubAPI = getDomains()?.n4khdhub
-
-        while (true) {
-            val url = "$FourKHDHubAPI/${request.data}/page/$currentPage.html"
-            val document = app.get(url).document
-            val results = document.select("div.card-grid a").mapNotNull {
+        val url = "$mainUrl/${request.data}/page/$page"
+        val document = app.get(url).document
+        val results = document.select("div.card-grid a").mapNotNull {
                 it.toSearchResult()
-            }
-
-            if (results.isEmpty() || currentPage - page + 1 >= maxPages) break
-
-            allResults += results
-            currentPage++
         }
-
-        return newHomePageResponse(request.name, allResults)
+        return newHomePageResponse(request.name, results)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
@@ -81,8 +54,7 @@ class FourKHDHub : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val FourKHDHubAPI = getDomains()?.n4khdhub
-        val document = app.get("$FourKHDHubAPI/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").document
         val results = document.select("div.card-grid a").mapNotNull {
             it.toSearchResult()
         }
@@ -154,7 +126,7 @@ class FourKHDHub : MainAPI() {
                 val href = item.select("a").mapNotNull { it -> it.attr("href").takeIf { it.isNotBlank() } }
 
                 val fileTitle = item.select("div.file-title").text()
-                    .replace(Regex("""\[[^\]]*]"""), "") // remove language/codec details
+                    .replace(Regex("""\[[^]]*]"""), "") // remove language/codec details
                     .replace(Regex("""\(.+?\)"""), "")   // remove source/site tags
 
                 if (hrefs.isNotEmpty()) {
@@ -226,7 +198,7 @@ class FourKHDHub : MainAPI() {
                         matched = true
                         try {
                             value.second.getUrl(resolvedLink, value.first, subtitleCallback, callback)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             Log.e(key, "Extractor failed for $resolvedLink")
                         }
                     }
@@ -235,7 +207,7 @@ class FourKHDHub : MainAPI() {
                 if (!matched) {
                     Log.w("Extractor", "No extractor matched: $resolvedLink")
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Log.e("Extractor", "Unexpected error while processing: $link")
             }
         }
