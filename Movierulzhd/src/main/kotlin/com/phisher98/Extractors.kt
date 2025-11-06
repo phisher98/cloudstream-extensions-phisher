@@ -42,6 +42,11 @@ class Movierulzups : VidStack() {
     override var mainUrl = "https://onion.uns.wtf"
 }
 
+class cherryMovierulzups : VidStack() {
+    override var name = "Movierulz"
+    override var mainUrl = "https://cherry.upns.online/#gsll8n"
+}
+
 
 open class FMX : ExtractorApi() {
     override var name = "FMX"
@@ -353,7 +358,7 @@ fun getIndexQuality(str: String?): Int {
 
 
 class HDm2 : ExtractorApi() {
-    override val name = "HDm2"
+    override val name = "HDMovie"
     override val mainUrl = "https://hdm2.ink"
     override val requiresReferer = true
 
