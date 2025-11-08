@@ -57,51 +57,11 @@ fun pen(value: String): String {
     }.joinToString("")
 }
 
-
-fun cleanTitle(title: String): String {
-    val parts = title.split(".", "-", "_")
-
-    val qualityTags = listOf(
-        "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
-        "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
-        "HD"
-    )
-
-    val audioTags = listOf(
-        "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
-    )
-
-    val subTags = listOf(
-        "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
-    )
-
-    val codecTags = listOf(
-        "x264", "x265", "H264", "HEVC", "AVC"
-    )
-
-    val startIndex = parts.indexOfFirst { part ->
-        qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
-    }
-
-    val endIndex = parts.indexOfLast { part ->
-        subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
-                audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
-                codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
-    }
-
-    return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
-        parts.subList(startIndex, endIndex + 1).joinToString(".")
-    } else if (startIndex != -1) {
-        parts.subList(startIndex, parts.size).joinToString(".")
-    } else {
-        parts.takeLast(3).joinToString(".")
-    }
-}
-
 suspend fun loadSourceNameExtractor(
     source: String,
     url: String,
     referer: String? = null,
+    quality: Int? = null,
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit,
 ) {
@@ -109,11 +69,11 @@ suspend fun loadSourceNameExtractor(
         CoroutineScope(Dispatchers.IO).launch {
             callback.invoke(
                 newExtractorLink(
-                    "$source[${link.source}]",
-                    "$source[${link.source}]",
+                    "${link.source} $source",
+                    "${link.source} $source",
                     link.url,
                 ) {
-                    this.quality = link.quality
+                    this.quality = quality ?: link.quality
                     this.type = link.type
                     this.referer = link.referer
                     this.headers = link.headers

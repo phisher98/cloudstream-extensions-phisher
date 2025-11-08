@@ -536,11 +536,15 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                     }
 
                     text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                        callback.invoke(
+                        val baseUrlLink = getBaseUrl(link)
+                        val finalURL = if (link.contains("download", true)) link
+                        else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                        callback(
                             newExtractorLink(
-                                "$name Pixeldrain $labelExtras",
-                                "$name Pixeldrain $labelExtras",
-                                link,
+                                "Pixeldrain",
+                                "Pixeldrain $labelExtras",
+                                finalURL
                             ) { this.quality = quality }
                         )
                     }

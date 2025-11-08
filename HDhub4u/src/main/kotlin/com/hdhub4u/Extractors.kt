@@ -1,11 +1,11 @@
 package com.hdhub4u
 
-import android.annotation.SuppressLint
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -48,7 +48,7 @@ open class Hblinks : ExtractorApi() {
                 "hubdrive" in lower -> Hubdrive().getUrl(href, name, subtitleCallback, callback)
                 "hubcloud" in lower -> HubCloud().getUrl(href, name, subtitleCallback, callback)
                 "hubcdn" in lower -> HUBCDN().getUrl(href, name, subtitleCallback, callback)
-                else -> loadSourceNameExtractor(name, href, "", subtitleCallback, callback)
+                else -> loadSourceNameExtractor(name, href, "", Qualities.Unknown.value,subtitleCallback, callback)
             }
         }
     }
@@ -89,12 +89,15 @@ class Hubcdnn : ExtractorApi() {
     }
 }
 
+class PixelDrainDev : PixelDrain(){
+    override var mainUrl = "https://pixeldrain.dev"
+}
+
 class Hubdrive : ExtractorApi() {
     override val name = "Hubdrive"
     override val mainUrl = "https://hubdrive.fit"
     override val requiresReferer = false
 
-    @SuppressLint("SuspiciousIndentation")
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -106,8 +109,7 @@ class Hubdrive : ExtractorApi() {
         {
             HubCloud().getUrl(href,"HubDrive",subtitleCallback, callback)
         }
-        else
-        loadExtractor(href,"HubDrive",subtitleCallback, callback)
+        else loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
 }
 
@@ -119,11 +121,10 @@ class HubCloud : ExtractorApi() {
 
     override suspend fun getUrl(
         url: String,
-        source: String?,
+        referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val realUrl = url.takeIf {
             try { URL(it); true } catch (e: Exception) { Log.e("HubCloud", "Invalid URL: ${e.message}"); false }
         } ?: return
@@ -171,8 +172,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source [FSL Server]",
-                            "$source [FSL Server] $labelExtras",
+                            "$referer [FSL Server]",
+                            "$referer [FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -181,8 +182,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("Download File", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source",
-                            "$source $labelExtras",
+                            "$referer",
+                            "$referer $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -194,8 +195,8 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                "$source [BuzzServer]",
-                                "$source [BuzzServer] $labelExtras",
+                                "$referer [BuzzServer]",
+                                "$referer [BuzzServer] $labelExtras",
                                 dlink,
                             ) { this.quality = quality }
                         )
@@ -205,11 +206,15 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                    callback.invoke(
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
                         newExtractorLink(
                             "Pixeldrain",
                             "Pixeldrain $labelExtras",
-                            link,
+                            finalURL
                         ) { this.quality = quality }
                     )
                 }
@@ -217,8 +222,18 @@ class HubCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source S3 Server",
-                            "$source S3 Server $labelExtras",
+                            "$referer S3 Server",
+                            "$referer S3 Server $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("FSLv2", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$referer FSLv2",
+                            "$referer FSLv2 $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -226,7 +241,7 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String? = null
+                    var redirectUrl: String?
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
@@ -238,7 +253,7 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=")
                         callback.invoke(
                             newExtractorLink(
                                 "10Gbps [Download]",
@@ -262,8 +277,48 @@ class HubCloud : ExtractorApi() {
     private fun getBaseUrl(url: String): String {
         return try {
             URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
+        }
+    }
+
+    fun cleanTitle(title: String): String {
+        val parts = title.split(".", "-", "_")
+
+        val qualityTags = listOf(
+            "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
+            "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
+            "HD"
+        )
+
+        val audioTags = listOf(
+            "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
+        )
+
+        val subTags = listOf(
+            "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
+        )
+
+        val codecTags = listOf(
+            "x264", "x265", "H264", "HEVC", "AVC"
+        )
+
+        val startIndex = parts.indexOfFirst { part ->
+            qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
+        }
+
+        val endIndex = parts.indexOfLast { part ->
+            subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                    audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
+                    codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
+        }
+
+        return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
+            parts.subList(startIndex, endIndex + 1).joinToString(".")
+        } else if (startIndex != -1) {
+            parts.subList(startIndex, parts.size).joinToString(".")
+        } else {
+            parts.takeLast(3).joinToString(".")
         }
     }
 }

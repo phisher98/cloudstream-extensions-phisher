@@ -357,7 +357,7 @@ class VCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=")
                     callback.invoke(
                         newExtractorLink(
                             "10Gbps [Download]",
@@ -902,7 +902,7 @@ class HubCloud : ExtractorApi() {
 
     override suspend fun getUrl(
         url: String,
-        source: String?,
+        referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
@@ -952,8 +952,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("FSL Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source [FSL Server]",
-                            "$source [FSL Server] $labelExtras",
+                            "$referer [FSL Server]",
+                            "$referer [FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -962,8 +962,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("Download File", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source",
-                            "$source $labelExtras",
+                            "$referer",
+                            "$referer $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -975,8 +975,8 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                "$source [BuzzServer]",
-                                "$source [BuzzServer] $labelExtras",
+                                "$referer [BuzzServer]",
+                                "$referer [BuzzServer] $labelExtras",
                                 dlink,
                             ) { this.quality = quality }
                         )
@@ -984,12 +984,17 @@ class HubCloud : ExtractorApi() {
                         Log.w("HubCloud", "BuzzServer: No redirect")
                     }
                 }
+
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                    callback.invoke(
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
                         newExtractorLink(
-                            "$source Pixeldrain",
-                            "$source Pixeldrain $labelExtras",
-                            link,
+                            "Pixeldrain",
+                            "Pixeldrain $labelExtras",
+                            finalURL
                         ) { this.quality = quality }
                     )
                 }
@@ -997,8 +1002,8 @@ class HubCloud : ExtractorApi() {
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source S3 Server",
-                            "$source S3 Server $labelExtras",
+                            "$referer S3 Server",
+                            "$referer S3 Server $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -1018,11 +1023,11 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=")
                     callback.invoke(
                         newExtractorLink(
-                            "$source 10Gbps [Download]",
-                            "$source 10Gbps [Download] $labelExtras",
+                            "$referer 10Gbps [Download]",
+                            "$referer 10Gbps [Download] $labelExtras",
                             finalLink,
                         ) { this.quality = quality }
                     )

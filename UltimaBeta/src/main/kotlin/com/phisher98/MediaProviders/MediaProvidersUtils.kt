@@ -3,8 +3,6 @@ package com.phisher98
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.phisher98.UltimaUtils.Category
-import com.phisher98.UltimaUtils.LinkData
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -37,18 +35,15 @@ import com.phisher98.UltimaMediaProvidersUtils.ServerName.Vcloud
 import com.phisher98.UltimaMediaProvidersUtils.commonLinkLoader
 import com.phisher98.UltimaMediaProvidersUtils.getBaseUrl
 import com.phisher98.UltimaMediaProvidersUtils.getIndexQuality
+import com.phisher98.UltimaUtils.Category
+import com.phisher98.UltimaUtils.LinkData
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.FormBody
-import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 import java.net.URL
 import java.net.URLEncoder
-import java.security.MessageDigest
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 import kotlin.io.encoding.Base64
 
 abstract class MediaProvider {
@@ -541,11 +536,15 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                     }
 
                     text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                        callback.invoke(
+                        val baseUrlLink = getBaseUrl(link)
+                        val finalURL = if (link.contains("download", true)) link
+                        else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                        callback(
                             newExtractorLink(
-                                "$name Pixeldrain $labelExtras",
-                                "$name Pixeldrain $labelExtras",
-                                link,
+                                "Pixeldrain",
+                                "Pixeldrain $labelExtras",
+                                finalURL
                             ) { this.quality = quality }
                         )
                     }

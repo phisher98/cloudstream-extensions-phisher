@@ -156,11 +156,15 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                    callback.invoke(
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
                         newExtractorLink(
                             "Pixeldrain",
                             "Pixeldrain $labelExtras",
-                            link,
+                            finalURL
                         ) { this.quality = quality }
                     )
                 }

@@ -20,6 +20,7 @@ class HDhub4uPlugin: BasePlugin() {
         registerExtractorAPI(Hubdrive())
         registerExtractorAPI(Hubstreamdad())
         registerExtractorAPI(HUBCDN())
+        registerExtractorAPI(PixelDrainDev())
     }
 
     companion object {

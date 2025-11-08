@@ -131,11 +131,15 @@ class HubCloud : ExtractorApi() {
                 }
 
                 text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                    callback.invoke(
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
                         newExtractorLink(
                             "Pixeldrain",
                             "Pixeldrain $labelExtras",
-                            link,
+                            finalURL
                         ) { this.quality = quality }
                     )
                 }
@@ -152,7 +156,7 @@ class HubCloud : ExtractorApi() {
 
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
-                    var redirectUrl: String? = null
+                    var redirectUrl: String?
 
                     while (true) {
                         val response = app.get(currentLink, allowRedirects = false)
@@ -164,7 +168,7 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in redirectUrl) break
                         currentLink = redirectUrl
                     }
-                    val finalLink = redirectUrl?.substringAfter("link=") ?: return@amap
+                    val finalLink = redirectUrl.substringAfter("link=")
                     callback.invoke(
                         newExtractorLink(
                             "$referer 10Gbps [Download]",
@@ -189,7 +193,7 @@ class HubCloud : ExtractorApi() {
     private fun getBaseUrl(url: String): String {
         return try {
             URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
