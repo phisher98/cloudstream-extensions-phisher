@@ -163,7 +163,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Vidora())
         registerExtractorAPI(Fourspromax())
         registerExtractorAPI(XdMoviesExtractor())
-
+        registerExtractorAPI(HubdriveSpace())
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
             if (!act.isFinishing && !act.isDestroyed) {

@@ -275,23 +275,18 @@ class HDhub4uProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = try {
-            val jsonArray = JSONArray(data)
-            List(jsonArray.length()) { index -> jsonArray.getString(index) }
-                .filter { it.isNotBlank() }
-        } catch (e: Exception) {
-            Log.e("Phisher", "Failed to parse link JSON: ${e.message}")
-            return false
-        }
-
-        for (link in links) {
+        val linksList: List<String> = data.removePrefix("[").removeSuffix("]").replace("\"", "").split(',', ' ').map { it.trim() }.filter { it.isNotBlank() }
+        for (link in linksList) {
             try {
                 val finalLink = if ("?id=" in link) {
                     getRedirectLinks(link)
                 } else {
                     link
                 }
-                loadExtractor(finalLink, subtitleCallback, callback)
+                if (finalLink.contains("Hubdrive",ignoreCase = true))
+                {
+                    Hubdrive().getUrl(finalLink,"", subtitleCallback,callback)
+                } else loadExtractor(finalLink, subtitleCallback, callback)
             } catch (e: Exception) {
                 Log.e("Phisher", "Failed to process $link: ${e.message}")
             }
