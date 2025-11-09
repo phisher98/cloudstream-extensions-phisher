@@ -44,7 +44,7 @@ class Movierulzups : VidStack() {
 
 class cherryMovierulzups : VidStack() {
     override var name = "Movierulz"
-    override var mainUrl = "https://cherry.upns.online/#gsll8n"
+    override var mainUrl = "https://cherry.upns.online"
 }
 
 
