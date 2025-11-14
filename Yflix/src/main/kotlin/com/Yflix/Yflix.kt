@@ -94,9 +94,9 @@ class Yflix : MainAPI() {
             "$mainUrl/browser?type%5B%5D=movie&type%5B%5D=tv&sort=release_date" to "Latest Release"
         )
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
-        val res = app.get(link).document
+        val res = app.get(link).documentLarge
         return res.select("div.film-section.md div.item").map { it.toSearchResult() }.toNewSearchResponseList()
     }
 
@@ -114,7 +114,7 @@ class Yflix : MainAPI() {
             "Cookie" to "usertype=guest; session=Mv2Y6x1b2I8SEw3fj0eNDfQYJM3CTpH9KjJc3ACK; cf_clearance=z9kEgtOSx3us4aluy5_5MfYEL6Ei8RJ3jCbcFTD2R1E-1745122952-1.2.1.1-UYjW2QUhPKUmojZE3XUE.gqHf3g5O6lvdl0qDCNPb5IjjavrpZIOpbE64osKxLbcblCAWynfNLv6bKSO75WzURG.FqDtfcu_si3MrCHECNtbMJC.k9cuhqDRcsz8hHPgpQE2fY8rR1z5Z4HfGmCw2MWMT6GelsZW_RQrTMHUYtIqjaEiAtxfcg.O4v_RGPwio_2J2V3rP16JbWO8wRh_dObNvWSMwMW.t44PhOZml_xWuh7DH.EIxLu3AzI91wggYU9rw6JJkaWY.UBbvWB0ThZRPTAJZy_9wlx2QFyh80AXU2c5BPHwEZPQhTQHBGQZZ0BGZkzoAB8pYI3f3eEEpBUW9fEbEJ9uoDKs7WOow8g"
         )
 
-        val res = app.get("${request.data}&page=$page", headers).document
+        val res = app.get("${request.data}&page=$page", headers).documentLarge
         val items = res.select("div.film-section.md div.item").map { it.toSearchResult() }
         return newHomePageResponse(request.name, items)
     }
@@ -122,7 +122,7 @@ class Yflix : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val keyword = url.substringAfter("/watch/").substringBefore(".")
         val poster = document.select("div.poster img").attr("src")
         val title = document.selectFirst("h1.title")?.text().orEmpty()
@@ -275,8 +275,8 @@ class Yflix : MainAPI() {
 
 
     data class Response(
-        @JsonProperty("status") val status: Boolean,
-        @JsonProperty("result") val result: String
+        @get:JsonProperty("status") val status: Boolean,
+        @get:JsonProperty("result") val result: String
     ) {
         fun getDocument(): Document {
             return Jsoup.parse(result)

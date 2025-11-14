@@ -20,7 +20,7 @@ open class DesicinemasProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         val url = if (page == 1 || request.name == "Home") request.data else "${request.data}page/$page/"
-        val doc = app.get(url, referer = mainUrl, timeout = 10000).document
+        val doc = app.get(url, referer = mainUrl, timeout = 10000).documentLarge
 
         val homePages = listOfNotNull(
             doc.selectFirst(".MovieListTop")?.toHomePageList("Most popular").takeIf { request.name == "Home" },
@@ -43,11 +43,11 @@ open class DesicinemasProvider : MainAPI() {
     }
 
     override suspend fun search(query: String) =
-        app.get("$proxy?url=$mainUrl/?s=$query", referer = mainUrl).document
+        app.get("$proxy?url=$mainUrl/?s=$query", referer = mainUrl).documentLarge
             .select(".MovieList li").mapNotNull { it.toHomePageResult() }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get("$proxy?url=$url", referer = mainUrl, timeout = 10000).document
+        val doc = app.get("$proxy?url=$url", referer = mainUrl, timeout = 10000).documentLarge
         val title = doc.selectFirst("h1")?.text()?.trim() ?: return null
         val posterUrl = fixUrlNull(doc.select(".Image img").attr("src"))
 
@@ -64,7 +64,7 @@ open class DesicinemasProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get("${proxy}?url=${data}", referer = mainUrl).document.select(".MovieList .OptionBx").amap {
+        app.get("${proxy}?url=${data}", referer = mainUrl).documentLarge.select(".MovieList .OptionBx").amap {
             val name = it.select("p.AAIco-dns").text()
             val link = it.select("a").attr("href")
             val headers = mapOf(
@@ -75,7 +75,7 @@ open class DesicinemasProvider : MainAPI() {
                 "Connection" to "keep-alive",
                 "Cache-Control" to "no-cache"
             )
-            val src = app.get(link, headers = headers).document
+            val src = app.get(link, headers = headers).documentLarge
             val iframe=src.select("iframe").attr("src")
             loadCustomExtractor(name,iframe,mainUrl,subtitleCallback, callback)
         }

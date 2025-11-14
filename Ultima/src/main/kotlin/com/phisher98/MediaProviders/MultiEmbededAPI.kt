@@ -29,7 +29,7 @@ class MultiEmbededAPIProvider : MediaProvider() {
                 } else {
                     "$url/directstream.php?video_id=${data.imdbId}&s=${data.season}&e=${data.episode}"
                 }
-        val res = app.get(mediaUrl, referer = mediaUrl).document
+        val res = app.get(mediaUrl, referer = mediaUrl).documentLarge
         val script =
                 res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data().toString()
         if (script.isNotEmpty()) {
@@ -46,7 +46,6 @@ class MultiEmbededAPIProvider : MediaProvider() {
             rhino.evaluateString(scope, firstJS + script, "JavaScript", 1, null)
             val file =
                     (scope.get("globalArgument", scope).toJson())
-                            .toString()
                             .substringAfter("file\":\"")
                             .substringBefore("\",")
             callback.invoke(
@@ -66,19 +65,6 @@ class MultiEmbededAPIProvider : MediaProvider() {
     // #region - Encryption and Decryption handlers
     // #endregion - Encryption and Decryption handlers
 
-    // #region - Data classes
-    data class EMovieServer(
-            @JsonProperty("value") val value: String? = null,
-    )
-
-    data class EMovieSources(
-            @JsonProperty("file") val file: String? = null,
-    )
-
-    data class EMovieTraks(
-            @JsonProperty("file") val file: String? = null,
-            @JsonProperty("label") val label: String? = null,
-    )
     // #endregion - Data classes
 
 }

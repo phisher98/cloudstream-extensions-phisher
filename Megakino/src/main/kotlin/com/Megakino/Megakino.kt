@@ -24,7 +24,7 @@ class Megakino : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page").document
+        val document = app.get("$mainUrl/${request.data}/page/$page").documentLarge
         val home = document.select("#dle-content > a").mapNotNull {
             it.toSearchResult()
         }
@@ -60,7 +60,7 @@ class Megakino : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val data= mapOf("do" to "search","subaction" to "search","story" to query.replace(" ","+"))
-        val document=app.post(mainUrl, data = data).document
+        val document=app.post(mainUrl, data = data).documentLarge
         val response = document.select("a.poster.grid-item").map {
                 it.toSearchResult1()
             }
@@ -68,7 +68,7 @@ class Megakino : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("div.page__subcols.d-flex h1")?.text() ?: "Unknown"
         val poster = fixUrl(mainUrl+document.select("div.pmovie__poster.img-fit-cover img").attr("data-src"))
         val year=document.select("div.pmovie__year > span:nth-child(2)").text().toIntOrNull()

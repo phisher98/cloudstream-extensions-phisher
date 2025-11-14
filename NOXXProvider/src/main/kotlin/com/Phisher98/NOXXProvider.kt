@@ -76,7 +76,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         val TVlist = queryTVApi(
             page * 48,
             query
-        ).document
+        ).documentLarge
         val home = TVlist.select("a.block").mapNotNull {
             it.toSearchResult()
         }
@@ -99,7 +99,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     override suspend fun search(query: String): List<SearchResponse> {
         val TVlist = queryTVsearchApi(
             query
-        ).document
+        ).documentLarge
         return TVlist.select("a[href^=\"/tv\"]").mapNotNull {
             val title = it.selectFirst("div > h2")?.text().toString().trim()
             val href = fixUrl(mainUrl + it.attr("href").toString())
@@ -114,7 +114,7 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url, interceptor = ddosGuardKiller).document
+        val doc = app.get(url, interceptor = ddosGuardKiller).documentLarge
         val title = doc.selectFirst("h1.px-5")?.text()?.toString()?.trim() ?: return null
         val poster = fixUrlNull(doc.selectFirst("img.relative")?.attr("src"))
         val tags = doc.select("div.relative a[class*=\"py-0.5\"]").map { it.text().replace("\"","").replace("[","").replace("]","") }
@@ -156,15 +156,15 @@ class NOXXProvider : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = app.get(data, interceptor = ddosGuardKiller).document.select("div.h-vw-65 iframe.w-full").attr("src").toString()
-        val sourcelink= app.get(links, referer = mainUrl).document.selectFirst("iframe")?.attr("src")
+        val links = app.get(data, interceptor = ddosGuardKiller).documentLarge.select("div.h-vw-65 iframe.w-full").attr("src").toString()
+        val sourcelink= app.get(links, referer = mainUrl).documentLarge.selectFirst("iframe")?.attr("src")
         if (sourcelink != null) {
             val embedUrl = sourcelink.replace("/download/", "/e/")
             val response = app.get(embedUrl, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
             val script = if (!getPacked(response.text).isNullOrEmpty()) {
                 getAndUnpack(response.text)
             } else {
-                response.document.selectFirst("script:containsData(sources:)")?.data()
+                response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
             }
             val m3u8 =
                 Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: "")?.groupValues?.getOrNull(1)

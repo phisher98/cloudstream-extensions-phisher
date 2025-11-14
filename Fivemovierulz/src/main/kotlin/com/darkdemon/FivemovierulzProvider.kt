@@ -27,7 +27,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get(request.data + page).document
+        val document = app.get(request.data + page).documentLarge
         val home = document.select("#main .cont_display").mapNotNull {
             it.toSearchResult()
         }
@@ -46,7 +46,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").documentLarge
 
         return document.select("#main .cont_display").mapNotNull {
             it.toSearchResult()
@@ -54,7 +54,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
 
         val title = document.selectFirst("h2.entry-title")?.text()?.trim()?.substringBefore("(")
             ?: return null
@@ -87,7 +87,7 @@ class FivemovierulzProvider : MainAPI() { // all providers must be an instance o
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
 
         val links = document.select("p a")
             .filter { it.text().contains("watch online", ignoreCase = true) }

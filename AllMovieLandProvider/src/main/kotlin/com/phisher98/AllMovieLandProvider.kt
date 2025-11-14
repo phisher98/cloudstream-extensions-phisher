@@ -58,7 +58,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
 
     private suspend fun getDlJson(link: String, url: String): String {
         val baseurl=getBaseUrl(link)
-        val doc = app.get(link, referer = url).document
+        val doc = app.get(link, referer = url).documentLarge
         val jsonString = Regex("""\{.*\}""").find(doc.select("body > script:last-child").toString())?.value.toString()
         val json = parseJson<Getfile>(jsonString)
         tokenKey = json.key
@@ -92,9 +92,9 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
             "PHPSESSID" to "$cookiesSSID"
         )
         val document = if (page == 1) {
-            app.get(request.data, cookies = cookies).document
+            app.get(request.data, cookies = cookies).documentLarge
         } else {
-            app.get(request.data + "/page/$page/", cookies = cookies).document
+            app.get(request.data + "/page/$page/", cookies = cookies).documentLarge
         }
 
         //Log.d("Document", request.data)
@@ -156,7 +156,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
     override suspend fun search(query: String): List<SearchResponse> {
         val searchList = querySearchApi(
             query
-        ).document
+        ).documentLarge
 
         return searchList.select("article.short-mid").mapNotNull {
             it.toSearchResult()
@@ -164,7 +164,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
+        val doc = app.get(url).documentLarge
         val title = doc.selectFirst("h1.fs__title")?.text()?.trim()
             ?: return null
         val poster = fixUrlNull(mainUrl + doc.selectFirst("img.fs__poster-img")?.attr("src"))

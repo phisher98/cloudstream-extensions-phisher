@@ -66,7 +66,7 @@ class AllWish : MainAPI() {
     }
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val res = app.get("$mainUrl/filter?keyword=$query&page=$page").document
+        val res = app.get("$mainUrl/filter?keyword=$query&page=$page").documentLarge
         return searchResponseBuilder(res).toNewSearchResponseList()
     }
 
@@ -80,7 +80,7 @@ class AllWish : MainAPI() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun load(url: String): LoadResponse {
-        val res = app.get(url).document
+        val res = app.get(url).documentLarge
         val id = res.select("main > div.container").attr("data-id")
 
         val vrf = generateEpisodeVrf(id)

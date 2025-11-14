@@ -25,7 +25,7 @@ class Driveseed : ExtractorApi() {
 
     private suspend fun CFType1(url: String): List<String> {
         return runCatching {
-            app.get("$url?type=1").document
+            app.get("$url?type=1").documentLarge
                 .select("a.btn-success")
                 .mapNotNull { it.attr("href").takeIf { href -> href.startsWith("http") } }
         }.getOrElse {
@@ -36,7 +36,7 @@ class Driveseed : ExtractorApi() {
 
     private suspend fun resumeCloudLink(baseUrl: String, path: String): String? {
         return runCatching {
-            app.get(baseUrl + path).document
+            app.get(baseUrl + path).documentLarge
                 .selectFirst("a.btn-success")?.attr("href")
                 ?.takeIf { it.startsWith("http") }
         }.getOrElse {
@@ -50,7 +50,7 @@ class Driveseed : ExtractorApi() {
     private suspend fun resumeBot(url: String): String? {
         return runCatching {
             val response = app.get(url)
-            val docString = response.document.toString()
+            val docString = response.documentLarge.toString()
             val ssid = response.cookies["PHPSESSID"].orEmpty()
             val token = Regex("formData\\.append\\('token', '([a-f0-9]+)'\\)").find(docString)?.groupValues?.getOrNull(1).orEmpty()
             val path = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/+]+)'").find(docString)?.groupValues?.getOrNull(1).orEmpty()
@@ -107,14 +107,14 @@ class Driveseed : ExtractorApi() {
 
         val document = try {
             if (url.contains("r?key=")) {
-                val temp = app.get(url).document.selectFirst("script")
+                val temp = app.get(url).documentLarge.selectFirst("script")
                     ?.data()
                     ?.substringAfter("replace(\"")
                     ?.substringBefore("\")")
                     .orEmpty()
-                app.get(mainUrl + temp).document
+                app.get(mainUrl + temp).documentLarge
             } else {
-                app.get(url).document
+                app.get(url).documentLarge
             }
         } catch (e: Exception) {
             Log.e("Driveseed", "getUrl page load error: ${e.message}")

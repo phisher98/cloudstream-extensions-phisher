@@ -18,7 +18,7 @@ class WatchMMAFull : MainAPI() {
         )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/$page").document
+        val document = app.get("$mainUrl/${request.data}/$page").documentLarge
         val home = document.select("ul.list-movies li").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -42,13 +42,13 @@ class WatchMMAFull : MainAPI() {
 
 
     override suspend fun search(query: String): List<SearchResponse> {
-            val document = app.get("${mainUrl}/search/$query").document
+            val document = app.get("${mainUrl}/search/$query").documentLarge
             val results = document.select("ul.list-movies li").mapNotNull { it.toSearchResult() }
             return results
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.select("meta[property=og:title]").attr("content")
         val rawposter = document.select("meta[property=og:image]").attr("content")
         val poster="$mainUrl$rawposter"
@@ -67,7 +67,7 @@ class WatchMMAFull : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("div.user-action  li").amap {
+        app.get(data).documentLarge.select("div.user-action  li").amap {
             val onclick=it.attr("onclick").substringAfter("(").substringBefore(")")
             val server= onclick.split(",")[0]
             val id= onclick.split(",")[1]

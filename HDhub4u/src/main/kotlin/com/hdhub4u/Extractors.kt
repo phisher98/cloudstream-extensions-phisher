@@ -41,7 +41,7 @@ open class Hblinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").map {
+        app.get(url).documentLarge.select("h3 a,h5 a,div.entry-content p a").map {
             val lower = it.absUrl("href").ifBlank { it.attr("href") }
             val href = lower.lowercase()
             when {
@@ -65,7 +65,7 @@ class Hubcdnn : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.toString().let {
+        app.get(url).documentLarge.toString().let {
             val encoded = Regex("r=([A-Za-z0-9+/=]+)").find(it)?.groups?.get(1)?.value
             if (!encoded.isNullOrEmpty()) {
                 val m3u8 = base64Decode(encoded).substringAfterLast("link=")
@@ -104,7 +104,7 @@ class Hubdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url, timeout = 1000).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        val href=app.get(url, timeout = 1000).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
         if (href.contains("hubcloud"))
         {
             HubCloud().getUrl(href,"HubDrive",subtitleCallback, callback)
@@ -135,7 +135,7 @@ class HubCloud : ExtractorApi() {
             if ("hubcloud.php" in realUrl) {
                 realUrl
             } else {
-                val rawHref = app.get(realUrl).document.select("#download").attr("href")
+                val rawHref = app.get(realUrl).documentLarge.select("#download").attr("href")
                 if (rawHref.startsWith("http", ignoreCase = true)) {
                     rawHref
                 } else {
@@ -152,7 +152,7 @@ class HubCloud : ExtractorApi() {
             return
         }
 
-        val document = app.get(href).document
+        val document = app.get(href).documentLarge
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
@@ -334,7 +334,7 @@ class HUBCDN : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
+        val doc = app.get(url).documentLarge
         val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
 
         val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")

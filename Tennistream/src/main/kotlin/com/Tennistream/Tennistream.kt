@@ -18,7 +18,7 @@ class Tennistream : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}").document
+        val document = app.get("$mainUrl/${request.data}").documentLarge
         val home     = document.select("div.entry-content.cf p a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -56,11 +56,11 @@ class Tennistream : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
        document.select("p a").amap {
            it.attr("href").let { href ->
-               val link=app.get(href).document.selectFirst("iframe")?.attr("src") ?:""
-               var trueurl=app.get(link).document.selectFirst("iframe")?.attr("src") ?:""
+               val link=app.get(href).documentLarge.selectFirst("iframe")?.attr("src") ?:""
+               var trueurl=app.get(link).documentLarge.selectFirst("iframe")?.attr("src") ?:""
                if (trueurl.isEmpty())
                {
                    val fid=app.get(link).text.substringAfter("fid=\"").substringBefore("\"")

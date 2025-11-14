@@ -42,7 +42,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     private suspend fun cfKiller(url: String): NiceResponse {
         var doc = app.get(url)
-        if (doc.document.select("title").text() == "Just a moment...") {
+        if (doc.documentLarge.select("title").text() == "Just a moment...") {
             doc = app.get(url, interceptor = CloudflareKiller())
         }
         return doc
@@ -53,9 +53,9 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         request: MainPageRequest
     ): HomePageResponse {
         val document = if (page == 1) {
-            cfKiller("$mainUrl/${request.data}").document
+            cfKiller("$mainUrl/${request.data}").documentLarge
         } else {
-            cfKiller("$mainUrl/${request.data}" + "/page/$page/").document
+            cfKiller("$mainUrl/${request.data}" + "/page/$page/").documentLarge
         }
 
         val home = document.select("article.gridlove-post").mapNotNull {
@@ -85,7 +85,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("$mainUrl?s=$query ").document
+        val document = cfKiller("$mainUrl?s=$query ").documentLarge
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
@@ -98,7 +98,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     )
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url).document
+        val doc = app.get(url).documentLarge
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw

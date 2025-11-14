@@ -28,7 +28,7 @@ class HiAnimeMediaProvider : MediaProvider() {
     ) {
         data.year ?: return
         val filterUrl = "$url/search?keyword=${fixName(data.title)}&sy=${data.year}"
-        val filterRes = app.get(filterUrl).document
+        val filterRes = app.get(filterUrl).documentLarge
         val result = filterRes.selectFirst("div.film-poster > a")?.attr("href") ?: return
         val seasonId = result.substringAfterLast("-")
         val epListResUrl = "$url/ajax/v2/episode/list/$seasonId"

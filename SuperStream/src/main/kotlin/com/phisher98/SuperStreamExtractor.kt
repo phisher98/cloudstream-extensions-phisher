@@ -30,10 +30,10 @@ object SuperStreamExtractor : SuperStream() {
         callback: (ExtractorLink) -> Unit
     ) {
         val searchUrl = "$SUPERSTREAM_FOURTH_API/search?keyword=$imdbId"
-        val href = app.get(searchUrl).document.selectFirst("h2.film-name a")?.attr("href")
+        val href = app.get(searchUrl).documentLarge.selectFirst("h2.film-name a")?.attr("href")
             ?.let { SUPERSTREAM_FOURTH_API + it }
         val mediaId = href?.let {
-            app.get(it).document.selectFirst("h2.heading-name a")?.attr("href")
+            app.get(it).documentLarge.selectFirst("h2.heading-name a")?.attr("href")
                 ?.substringAfterLast("/")?.toIntOrNull()
         }
         mediaId?.let {

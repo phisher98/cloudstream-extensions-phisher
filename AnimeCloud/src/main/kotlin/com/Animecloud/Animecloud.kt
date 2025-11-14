@@ -26,7 +26,7 @@ class Animecloud : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}?page=$page").document
+        val document = app.get("$mainUrl/${request.data}?page=$page").documentLarge
         val home     = document.select("#__nuxt div.grid a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -69,7 +69,7 @@ class Animecloud : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val animeslug=url.substringAfterLast("/")
         val title = document.selectFirst("#__nuxt h1")?.ownText()?.trim().toString()
         val imdburl=document.selectFirst("div.flex.flex-col.gap-4.w-full > div:nth-child(6) > a.btn.btn-warning.btn-sm")?.attr("href")

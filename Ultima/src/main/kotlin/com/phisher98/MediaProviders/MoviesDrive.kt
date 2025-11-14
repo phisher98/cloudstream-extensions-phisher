@@ -41,7 +41,7 @@ class MoviesDriveProvider : MediaProvider() {
 
         val figures = retry {
             val allFigures =
-                app.get(searchUrl, interceptor = CloudflareKiller()).document.select("figure")
+                app.get(searchUrl, interceptor = CloudflareKiller()).documentLarge.select("figure")
             if (season == null) {
                 allFigures
             } else {
@@ -60,7 +60,7 @@ class MoviesDriveProvider : MediaProvider() {
             if (detailUrl.isBlank()) continue
 
             val detailDoc = retry {
-                app.get(detailUrl, interceptor = CloudflareKiller()).document
+                app.get(detailUrl, interceptor = CloudflareKiller()).documentLarge
             } ?: continue
 
             val imdbId = detailDoc
@@ -103,7 +103,7 @@ class MoviesDriveProvider : MediaProvider() {
                         ?.attr("href")
                         ?.takeIf { it.isNotBlank() } ?: continue
 
-                    val episodeDoc = retry { app.get(seasonHref).document } ?: continue
+                    val episodeDoc = retry { app.get(seasonHref).documentLarge } ?: continue
                     val episodeHeaders = episodeDoc.select("h5:matches($episodePattern)")
 
                     for (header in episodeHeaders) {
@@ -181,7 +181,7 @@ class MoviesDriveProvider : MediaProvider() {
         val regex = Regex("hubcloud|gdflix|gdlink", RegexOption.IGNORE_CASE)
 
         return try {
-            app.get(url).document
+            app.get(url).documentLarge
                 .select("a[href]")
                 .mapNotNull { element ->
                     val href = element.attr("href")

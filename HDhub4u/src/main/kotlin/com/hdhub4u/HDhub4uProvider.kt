@@ -27,7 +27,6 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.runBlocking
-import org.json.JSONArray
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
@@ -65,7 +64,7 @@ class HDhub4uProvider : MainAPI() {
             cacheTime = 60,
             headers = headers,
             allowRedirects = true
-        ).document
+        ).documentLarge
         val home = doc.select(".recent-movies > li.thumb").mapNotNull { toResult(it) }
         return newHomePageResponse(request.name, home, true)
     }
@@ -79,12 +78,12 @@ class HDhub4uProvider : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val doc = app.get(
             "$mainUrl/page/$page/?s=$query",
             cacheTime = 60,
             headers = headers
-        ).document
+        ).documentLarge
         return doc.select(".recent-movies > li.thumb").mapNotNull { toResult(it) }.toNewSearchResponseList()
     }
 
@@ -113,7 +112,7 @@ class HDhub4uProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(
             url, cacheTime = 60, headers = headers
-        ).document
+        ).documentLarge
         var title = doc.select(
             ".page-body h2[data-ved=\"2ahUKEwjL0NrBk4vnAhWlH7cAHRCeAlwQ3B0oATAfegQIFBAM\"], " +
                     "h2[data-ved=\"2ahUKEwiP0pGdlermAhUFYVAKHV8tAmgQ3B0oATAZegQIDhAM\"]"
@@ -201,7 +200,7 @@ class HDhub4uProvider : MainAPI() {
                     baseLinks.forEach { url ->
                         try {
                             val resolvedUrl = getRedirectLinks(url.trim())
-                            val episodeDoc = app.get(resolvedUrl).document
+                            val episodeDoc = app.get(resolvedUrl).documentLarge
 
                             // Look for structure like: <h5><a>Episode 1 – 4GB</a></h5>
                             episodeDoc.select("h5 a").forEach { linkElement ->

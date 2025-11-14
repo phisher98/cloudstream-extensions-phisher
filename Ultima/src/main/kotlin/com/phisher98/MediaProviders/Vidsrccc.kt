@@ -1,16 +1,13 @@
 package com.phisher98
 
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.UltimaUtils.Category
-import com.phisher98.UltimaUtils.LinkData
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Encode
-import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.phisher98.UltimaMediaProvidersUtils.commonLinkLoader
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.UltimaMediaProvidersUtils.ServerName
+import com.phisher98.UltimaMediaProvidersUtils.commonLinkLoader
+import com.phisher98.UltimaUtils.Category
+import com.phisher98.UltimaUtils.LinkData
 import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -33,7 +30,7 @@ class VidsrcccProvider : MediaProvider() {
         } else {
             "$domain/v2/embed/tv/${data.tmdbId}/${data.season}/${data.episode}?autoPlay=false"
         }
-        val doc = app.get(url).document.toString()
+        val doc = app.get(url).documentLarge.toString()
         val regex = Regex("""var\s+(\w+)\s*=\s*(?:"([^"]*)"|(\w+));""")
         val variables = mutableMapOf<String, String>()
 

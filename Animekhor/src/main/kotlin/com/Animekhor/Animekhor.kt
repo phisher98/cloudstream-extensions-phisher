@@ -25,7 +25,7 @@ open class Animekhor : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}&page=$page").document
+        val document = app.get("$mainUrl/${request.data}&page=$page").documentLarge
         val home     = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -61,7 +61,7 @@ open class Animekhor : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").document
+            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
 
             val results = document.select("div.listupd > article").mapNotNull { it.toSearchquery() }
 
@@ -78,7 +78,7 @@ open class Animekhor : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title= document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         val href=document.selectFirst(".eplister li > a")?.attr("href") ?:""
         var poster = document.select("meta[property=og:image]").attr("content")
@@ -87,7 +87,7 @@ open class Animekhor : MainAPI() {
         val tvtag=if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
             val Eppage= document.selectFirst(".eplister li > a")?.attr("href") ?:""
-            val doc= app.get(Eppage).document
+            val doc= app.get(Eppage).documentLarge
             val epposter = doc.select("meta[property=og:image]").attr("content")
             val episodes=doc.select("div.episodelist > ul > li").map { info->
                         val href1 = info.select("a").attr("href")
@@ -115,7 +115,7 @@ open class Animekhor : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
             val regex = Regex("""src=["']([^"']+)["']""",RegexOption.IGNORE_CASE)

@@ -37,7 +37,7 @@ class LayarKacaProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get(request.data + page).document
+        val document = app.get(request.data + page).documentLarge
         val home = document.select("article figure").mapNotNull {
             it.toSearchResult()
         }
@@ -46,7 +46,7 @@ class LayarKacaProvider : MainAPI() {
 
     private suspend fun getProperLink(url: String): String {
         if (url.startsWith(seriesUrl)) return url
-        val res = app.get(url).document
+        val res = app.get(url).documentLarge
         return if (res.select("title").text().contains("Nontondrama", true)) {
             res.selectFirst("a#openNow")?.attr("href")
                 ?: res.selectFirst("div.links a")?.attr("href")
@@ -113,7 +113,7 @@ class LayarKacaProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val fixUrl = getProperLink(url)
-        val document = app.get(fixUrl).document
+        val document = app.get(fixUrl).documentLarge
         val baseurl=fetchURL(fixUrl)
         val title = document.selectFirst("div.movie-info h1")?.text()?.trim().toString()
         val poster = document.select("meta[property=og:image]").attr("content")
@@ -190,7 +190,7 @@ class LayarKacaProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select("ul#player-list > li").map {
                 fixUrl(it.select("a").attr("href"))
             }.amap {
@@ -203,7 +203,7 @@ class LayarKacaProvider : MainAPI() {
     }
 
     private suspend fun String.getIframe(): String {
-        return app.get(this, referer = "$seriesUrl/").document.select("div.embed-container iframe")
+        return app.get(this, referer = "$seriesUrl/").documentLarge.select("div.embed-container iframe")
             .attr("src")
     }
 

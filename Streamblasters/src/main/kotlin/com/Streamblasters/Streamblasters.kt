@@ -29,7 +29,7 @@ class Streamblasters : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page/").document
+        val document = app.get("$mainUrl/${request.data}/page/$page/").documentLarge
         val home     = document.select("div.blog-items > article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -55,7 +55,7 @@ class Streamblasters : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").document
+            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
 
             val results = document.select("div.blog-items > article").mapNotNull { it.toSearchResult() }
 
@@ -72,7 +72,7 @@ class Streamblasters : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
         var poster = document.select("header.entry-header > header").attr("style").substringAfter("background-image:url(").substringBefore(");").trim()
         if (poster.isEmpty())
@@ -125,13 +125,13 @@ class Streamblasters : MainAPI() {
             val servers = JSONArray(data)
             for (i in 0 until servers.length()) {
                 val server = servers.getString(i)
-                val iframe = app.get(server).document.select("#player-api-control > iframe").attr("src")
+                val iframe = app.get(server).documentLarge.select("#player-api-control > iframe").attr("src")
                 loadExtractor(iframe, subtitleCallback, callback)
             }
         }
         else
         {
-            val iframe= app.get(data).document
+            val iframe= app.get(data).documentLarge
             val server=iframe.selectFirst("#player-api-control > iframe")?.attr("src") ?:""
             loadExtractor(server,server,subtitleCallback, callback)
         }

@@ -220,11 +220,11 @@ open class StreamWishExtractor : ExtractorApi() {
 
         val script = when {
             !getPacked(response.text).isNullOrEmpty() -> getAndUnpack(response.text)
-            response.document.select("script").any { it.html().contains("jwplayer(\"vplayer\").setup(") } ->
-                response.document.select("script").firstOrNull {
+            response.documentLarge.select("script").any { it.html().contains("jwplayer(\"vplayer\").setup(") } ->
+                response.documentLarge.select("script").firstOrNull {
                     it.html().contains("jwplayer(\"vplayer\").setup(")
                 }?.html()
-            else -> response.document.selectFirst("script:containsData(sources:)")?.data()
+            else -> response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
         }
 
         var m3u8: String? = null
@@ -298,11 +298,11 @@ class FilemoonV2 : ExtractorApi() {
         )
 
 
-        val href = app.get(url,headers).document.selectFirst("iframe")?.attr("src") ?: ""
+        val href = app.get(url,headers).documentLarge.selectFirst("iframe")?.attr("src") ?: ""
         val scriptContent = app.get(
             href,
             headers = mapOf("Accept-Language" to "en-US,en;q=0.5", "sec-fetch-dest" to "iframe")
-        ).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        ).documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
 
         val m3u8 = JsUnpacker(scriptContent).unpack()?.let { unpacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unpacked)?.groupValues?.get(1)

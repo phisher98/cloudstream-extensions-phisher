@@ -38,7 +38,7 @@ class Ownfmx : MainAPI() { // all providers must be an instance of MainAPI
         request: MainPageRequest
     ): HomePageResponse {
         val url = "$mainUrl/${request.data}" 
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         
         val home = document.select(".movie-card").mapNotNull {
             toResult(it)
@@ -47,15 +47,15 @@ class Ownfmx : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/movies?title=$query").document
+        val document = app.get("$mainUrl/movies?title=$query").documentLarge
 
         return document.select(".movie-card").mapNotNull {
             toResult(it)
         }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).document
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url).documentLarge
 
         val title = document.selectFirst("div.text-muted > span")?.text().toString()
         val poster = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
@@ -71,7 +71,7 @@ class Ownfmx : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val src = app.get(data).document.select("a[href^=https://streamtape]").attr("href")
+        val src = app.get(data).documentLarge.select("a[href^=https://streamtape]").attr("href")
         //Log.d("link",src)
         loadExtractor(
                 src,

@@ -21,7 +21,7 @@ open class Quest4play : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res=app.get(url).document.toString()
+        val res=app.get(url).documentLarge.toString()
         val href=Regex("""source:.'(.*?)'""").find(res)?.groupValues?.get(1) ?:""
         val reallink=app.get(href,referer=mainUrl, allowRedirects = false).headers["location"] ?:""
         callback.invoke(

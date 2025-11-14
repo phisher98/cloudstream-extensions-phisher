@@ -36,7 +36,7 @@ class FourKHDHub : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = "$mainUrl/${request.data}/page/$page"
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val results = document.select("div.card-grid a").mapNotNull {
                 it.toSearchResult()
         }
@@ -54,7 +54,7 @@ class FourKHDHub : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").documentLarge
         val results = document.select("div.card-grid a").mapNotNull {
             it.toSearchResult()
         }
@@ -63,7 +63,7 @@ class FourKHDHub : MainAPI() {
 
     @RequiresApi(Build.VERSION_CODES.N)
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("h1.page-title")?.text()?.substringBefore("(")?.trim().toString()
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.mt-2 span.badge").map { it.text() }

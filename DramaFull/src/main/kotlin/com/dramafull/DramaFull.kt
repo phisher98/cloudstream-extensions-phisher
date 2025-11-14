@@ -116,7 +116,7 @@ class DramaFull : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url).document
+        val doc = app.get(url).documentLarge
         val title = doc.selectFirst("div.right-info h1")?.text() ?: "UnKnown"
         val poster = fixUrlNull(doc.selectFirst("meta[property=og:image]")?.attr("content")) ?: ""
         val genre = doc.select("div.genre-list a").map { it.text() }
@@ -179,7 +179,7 @@ class DramaFull : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val doc = app.get(data).document
+        val doc = app.get(data).documentLarge
         val script = doc.select("script:containsData(signedUrl)").firstOrNull()?.toString() ?: return false
         val signedUrl = Regex("""window\.signedUrl\s*=\s*"(.+?)"""").find(script)?.groupValues?.get(1)?.replace("\\/","/") ?: return false
 

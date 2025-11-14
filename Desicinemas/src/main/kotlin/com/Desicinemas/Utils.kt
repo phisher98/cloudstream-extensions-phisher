@@ -93,7 +93,7 @@ suspend fun resolveIframeSrc(initialUrl: String): String? {
     return try {
         val initialResponse = app.get(initialUrl, allowRedirects = false)
 
-        val refreshUrl = initialResponse.document
+        val refreshUrl = initialResponse.documentLarge
             .selectFirst("meta[http-equiv=refresh]")
             ?.attr("content")
             ?.substringAfter("url=")
@@ -109,7 +109,7 @@ suspend fun resolveIframeSrc(initialUrl: String): String? {
         val cookieHeader = refreshResponse.headers["set-cookie"].orEmpty()
         val redirectBaseUrl = getBaseUrl(refreshUrl)
         val finalResponse = app.get(redirectBaseUrl, headers = mapOf("cookie" to cookieHeader))
-        val iframeSrc = finalResponse.document.selectFirst("iframe")?.attr("src")
+        val iframeSrc = finalResponse.documentLarge.selectFirst("iframe")?.attr("src")
         println("✅ Found iframe src: $iframeSrc")
         iframeSrc
     } catch (e: Exception) {

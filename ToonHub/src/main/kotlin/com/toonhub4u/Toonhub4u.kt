@@ -35,7 +35,7 @@ class Toonhub4u : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page/").document
+        val document = app.get("$mainUrl/${request.data}/page/$page/").documentLarge
         val home     = document.select("li.post-item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -58,13 +58,13 @@ class Toonhub4u : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("${mainUrl}/?s=$query").document
+        val document = app.get("${mainUrl}/?s=$query").documentLarge
         val results = document.select("li.post-item").mapNotNull { it.toSearchResult() }
         return results
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("[")?.substringBefore("1080")?.trim().toString()
         val backgroundposter = document.select("meta[property=og:image]").attr("content")
         val poster= document.select("img.shrinkToFit").attr("src")

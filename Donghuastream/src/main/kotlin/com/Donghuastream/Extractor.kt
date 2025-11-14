@@ -25,7 +25,7 @@ open class Vtbe : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url,referer=mainUrl).document
+        val response = app.get(url,referer=mainUrl).documentLarge
         val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
@@ -72,7 +72,7 @@ open class Ultrahd : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-            val response = app.get(url,referer=mainUrl).document
+            val response = app.get(url,referer=mainUrl).documentLarge
             val extractedpack =response.toString()
             Regex("\\\$\\.\\s*ajax\\(\\s*\\{\\s*url:\\s*\"(.*?)\"").find(extractedpack)?.groupValues?.get(1)?.let { link ->
                 app.get(link).parsedSafe<Root>()?.sources?.map {
@@ -126,7 +126,7 @@ class Rumble : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val response = app.get(url, referer = referer ?: "$mainUrl/")
-        val document = response.document
+        val document = response.documentLarge
 
         val playerScript = document.selectFirst("script:containsData(jwplayer)")?.data()
             ?: return
@@ -180,7 +180,7 @@ open class PlayStreamplay : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url, timeout = 10000).document
+        val doc = app.get(url, timeout = 10000).documentLarge
         val packedScript = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data() ?: return
         val evalRegex = Regex("""eval\(.*?\)\)\)""", RegexOption.DOT_MATCHES_ALL)
         val packedCode = evalRegex.find(packedScript)?.value ?: return

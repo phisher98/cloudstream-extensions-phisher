@@ -90,7 +90,7 @@ class Coflix : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBeforeLast("En") ?: "Unknown"
         var poster = fixUrl(document.select("img.TPostBg").attr("src"))
         if (poster.isEmpty())
@@ -141,8 +141,8 @@ class Coflix : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val iframe = app.get(data).document.select("div.embed iframe").attr("src")
-        app.get(iframe).document.select("div.OptionsLangDisp div.OD.OD_FR.REactiv li").amap {
+        val iframe = app.get(data).documentLarge.select("div.embed iframe").attr("src")
+        app.get(iframe).documentLarge.select("div.OptionsLangDisp div.OD.OD_FR.REactiv li").amap {
             val base64encoded=it.attr("onclick").substringAfter("showVideo('").substringBefore("',")
             val url=base64Decode(base64encoded)
             loadExtractor(url,subtitleCallback, callback)

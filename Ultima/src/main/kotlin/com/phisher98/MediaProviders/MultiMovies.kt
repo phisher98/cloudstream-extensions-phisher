@@ -9,7 +9,6 @@ import com.phisher98.UltimaUtils.LinkData
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
-import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorLink
 
@@ -25,7 +24,7 @@ class MultiMoviesProvider : MediaProvider() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val multimoviesAPI = getDomains()?.multiMovies ?: return ?: domain
+        val multimoviesAPI = getDomains()?.multiMovies ?: return
 
         val fixTitle = data.title.createSlug()
         val mediaurl =
@@ -34,7 +33,7 @@ class MultiMoviesProvider : MediaProvider() {
                 } else {
                     "$multimoviesAPI/episodes/$fixTitle-${data.season}x${data.episode}"
                 }
-        val req = app.get(mediaurl).document
+        val req = app.get(mediaurl).documentLarge
         req.select("ul#playeroptionsul li").amap {
             val id = it.attr("data-post")
             val nume = it.attr("data-nume")

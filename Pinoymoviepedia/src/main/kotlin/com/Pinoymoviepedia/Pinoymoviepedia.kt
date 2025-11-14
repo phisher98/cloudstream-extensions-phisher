@@ -32,7 +32,7 @@ open class Pinoymoviepedia : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -78,7 +78,7 @@ open class Pinoymoviepedia : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search/$query").document
+        val document = app.get("$mainUrl/search/$query").documentLarge
         return document.select("div.result-item").map {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
@@ -92,7 +92,7 @@ open class Pinoymoviepedia : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
-        val document = request.document
+        val document = request.documentLarge
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
         var posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
@@ -133,7 +133,7 @@ open class Pinoymoviepedia : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
             Log.d("Phisher",data)
-            app.get(data).document.select("div.pframe iframe").forEach {
+            app.get(data).documentLarge.select("div.pframe iframe").forEach {
                 val href=it.attr("src")
                 Log.d("Phisher",href)
                 loadExtractor(

@@ -28,7 +28,7 @@ class OnepaceProvider : MainAPI() {
         request: MainPageRequest,
     ): HomePageResponse {
         val link = "$mainUrl${request.data}"
-        val document = app.get(link).document
+        val document = app.get(link).documentLarge
         val home =
             document.select("div.seasons.aa-crd > div.seasons-bx").map {
                 it.toSearchResult()
@@ -68,12 +68,12 @@ class OnepaceProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<AnimeSearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").documentLarge
         val links = document.select("main > section > ul li article > a")
             .mapNotNull { it.attr("href") }
 
         return links.flatMap { link ->
-            val pageDocument = app.get(link).document
+            val pageDocument = app.get(link).documentLarge
             val seasonElements = pageDocument.select("div.seasons.aa-crd > div.seasons-bx")
             seasonElements.mapNotNull { it.toSearchResult() }
         }
@@ -84,7 +84,7 @@ class OnepaceProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val media = parseJson<Media>(url)
-        val document = app.get(media.url).document
+        val document = app.get(media.url).documentLarge
         val arcINT = media.mediaType?.substringAfter("Arc ")?.replace("'", "\\'") ?: ""
         val element = document.selectFirst("div.seasons.aa-crd > div.seasons-bx:contains($arcINT)")
 
@@ -134,11 +134,11 @@ class OnepaceProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         val media = parseJson<Media>(data)
-        val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
+        val body = app.get(media.url).documentLarge.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
         for (i in 0..7) {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
-                .document.selectFirst("iframe")?.attr("src")
+                .documentLarge.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
             loadExtractor(link,subtitleCallback, callback)
         }

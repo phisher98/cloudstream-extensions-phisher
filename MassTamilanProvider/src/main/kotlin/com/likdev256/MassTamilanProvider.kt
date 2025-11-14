@@ -33,7 +33,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get("${request.data}?page=$page").document
+        val document = app.get("${request.data}?page=$page").documentLarge
         Log.d("Phisher","${request.data}?page=$page")
         val home = document.select("div.a-i").mapNotNull {
                 it.toSearchResult()
@@ -54,7 +54,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
     // which is garbaja and im too lazy to work on that PR if you can
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search?keyword=$query").document
+        val document = app.get("$mainUrl/search?keyword=$query").documentLarge
         //Log.d("document", document.toString())
 
         return document.select("div.a-i").mapNotNull {
@@ -69,7 +69,7 @@ class MassTamilanProvider : MainAPI() { // all providers must be an instance of 
 
     override suspend fun load(url: String): LoadResponse {
         val docLink = url.substringBefore(",,")
-        val doc = app.get(docLink).document
+        val doc = app.get(docLink).documentLarge
         //Log.d("Doc", doc.toString())
         val title = url.substringAfter(",,")
         //Log.d("title", title)

@@ -37,7 +37,7 @@ class Plextream : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val iframeScript = app.get(url).document.selectFirst("script:containsData(videoUrls)")?.data() ?: return
+        val iframeScript = app.get(url).documentLarge.selectFirst("script:containsData(videoUrls)")?.data() ?: return
         val regex = Regex("""(\w+)\s*:\s*['"](https://[^'"]+)['"]""")
         val matches = regex.findAll(iframeScript)
         matches.forEach { match ->
@@ -73,11 +73,11 @@ open class Xcloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val directBtn = document.select("div.vd a.btn-primary")
             .firstOrNull { it.text().contains("Generate Direct", ignoreCase = true) }
             ?: return
-        val linksDoc = app.get(fixUrl(directBtn.attr("href"))).document
+        val linksDoc = app.get(fixUrl(directBtn.attr("href"))).documentLarge
         val iframe=linksDoc.select("iframe").attr("src")
         linksDoc.select("h2 a.btn").forEach { link ->
             callback.invoke(

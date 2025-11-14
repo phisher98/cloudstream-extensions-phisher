@@ -39,7 +39,7 @@ class Tamilian : TmdbProvider() {
     ): Boolean {
         val mediaData = AppUtils.parseJson<TmdbLink>(data).toLinkData()
         val script = app.get("$HOST/tamil/tmdb/${mediaData.tmdbId}")
-            .document.selectFirst("script:containsData(function(p,a,c,k,e,d))")
+            .documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")
             ?.data()?.let { getAndUnpack(it) }
 
         val token = script?.substringAfter("FirePlayer(\"")?.substringBefore("\",")

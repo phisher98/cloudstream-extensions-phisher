@@ -1,14 +1,11 @@
 package com.phisher98
 
+import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64DecodeArray
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -36,7 +33,7 @@ class PrimeWireProvider : MediaProvider() {
             "$domain/embed/tv?imdb=${data.imdbId}&season=${data.season}&episode=${data.episode}"
         }
 
-        val doc = app.get(apiurl, timeout = 10).document
+        val doc = app.get(apiurl, timeout = 10).documentLarge
         val userData = doc.select("#user-data")
         val decryptedLinks = decryptLinks(userData.attr("v"))
         for (link in decryptedLinks) {
@@ -64,6 +61,7 @@ class PrimeWireProvider : MediaProvider() {
         return pt.chunked(5)
     }
 
+    @SuppressLint("GetInstance")
     private fun decryptBase64BlowfishEbc(base64Encrypted: String, key: String): String {
         try {
             val encryptedBytes = base64DecodeArray(base64Encrypted)

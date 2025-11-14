@@ -49,8 +49,8 @@ class AnimeWorld : MainAPI() {
         val currentPageUrl = "$mainUrl/${request.data}?page=$page"
         val nextPageUrl = "$mainUrl/${request.data}?page=${page + 1}"
 
-        val currentPageDocument = app.get(currentPageUrl).document
-        val nextPageDocument = app.get(nextPageUrl).document
+        val currentPageDocument = app.get(currentPageUrl).documentLarge
+        val nextPageDocument = app.get(nextPageUrl).documentLarge
 
         val currentResults = currentPageDocument.select("#movies-a ul li").mapNotNull { it.toSearchResult() }
         val nextResults = nextPageDocument.select("#movies-a ul li").mapNotNull { it.toSearchResult() }
@@ -70,12 +70,12 @@ class AnimeWorld : MainAPI() {
     }
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val document = app.get("$mainUrl/search?q=$query&page=$page").document
+        val document = app.get("$mainUrl/search?q=$query&page=$page").documentLarge
         return document.select("#movies-a ul li").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title =document.selectFirst("div.dfxb  h2.entry-title")?.text() ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: throw NotImplementedError("Unable to find title")
         val poster = fixUrlNull(document.selectFirst("div.bghd img")?.attr("src"))
         val tags = document.select("header.entry-header ul li:contains(Genres) p a").map { it.text() }
@@ -87,7 +87,7 @@ class AnimeWorld : MainAPI() {
             val episodes = mutableListOf<Episode>()
             val seasonLinks = document.select("ul.aa-cnt li a").map { it.attr("href") }
             for (seasonUrl in seasonLinks) {
-                val seasonDoc = app.get(mainUrl+seasonUrl).document
+                val seasonDoc = app.get(mainUrl+seasonUrl).documentLarge
                 seasonDoc.select("#episode_by_temp li").forEach { ep ->
                     val href = ep.select("a").attr("href")
                     val name = "Episode " + ep.select("header.entry-header h2").text().substringAfter("EP").trim()
@@ -127,7 +127,7 @@ class AnimeWorld : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         val scriptWithServerData = document.select("script")
             .firstOrNull { it.data().contains("serverData") }?.data() ?: return false
         val regex = Regex("""https:\\/\\/[^\s"']+""")

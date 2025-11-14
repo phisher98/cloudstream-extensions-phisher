@@ -21,7 +21,7 @@ class Toonstream : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page/").document
+        val document = app.get("$mainUrl/${request.data}/page/$page/").documentLarge
         val home     = document.select("#movies-a > ul > li").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             list    = HomePageList(
@@ -58,7 +58,7 @@ class Toonstream : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").document
+            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
 
             val results = document.select("#movies-a > ul > li").mapNotNull { it.toSearch() }
 
@@ -75,7 +75,7 @@ class Toonstream : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title       = document.selectFirst("header.entry-header > h1")?.text()?.trim().toString().replace("Watch Online","")
         val posterraw = document.select("div.bghd > img").attr("src")
         val poster:String = if (posterraw.startsWith("http")) { posterraw } else "https:$posterraw"
@@ -91,7 +91,7 @@ class Toonstream : MainAPI() {
                     "season" to data_season,
                     "post" to data_post
                 ), headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                ).document
+                ).documentLarge
                     season.select("article").forEach {
                         val href = it.selectFirst("article >a")?.attr("href") ?:""
                         val posterRaw=it.selectFirst("article > div.post-thumbnail > figure > img")?.attr("src")
@@ -120,10 +120,10 @@ class Toonstream : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select("#aa-options > div > iframe").forEach {
             val serverlink=it.attr("data-src")
-            val truelink= app.get(serverlink).document.selectFirst("iframe")?.attr("src") ?:""
+            val truelink= app.get(serverlink).documentLarge.selectFirst("iframe")?.attr("src") ?:""
             Log.d("Phisher",truelink)
             loadExtractor(truelink,subtitleCallback, callback)
         }
@@ -149,7 +149,7 @@ open class AWSStream : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val extractedHash = url.substringAfterLast("/")
-        val doc = app.get(url).document
+        val doc = app.get(url).documentLarge
         val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
         val header = mapOf("x-requested-with" to "XMLHttpRequest")
         val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)

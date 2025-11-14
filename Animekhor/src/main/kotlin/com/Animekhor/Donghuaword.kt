@@ -17,7 +17,7 @@ class Donghuaword  : Animekhor() {
     override val supportedTypes       = setOf(TvType.Movie, TvType.Anime)
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select("div.server-item a").map {
             val base64=it.attr("data-hash")
             val decodedUrl = base64Decode(base64)

@@ -22,7 +22,7 @@ open class SuperVideo : ExtractorApi() {
     ) {
         val res = app.get(url.replace("tv","cc"),referer=referer)
         val script =
-            res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+            res.documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("file:\"(.*?m3u8.*?)").find(unpacked)?.groupValues?.getOrNull(1) ?:""
         M3u8Helper.generateM3u8(
@@ -47,7 +47,7 @@ open class Dropload : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val res = app.get(url)
-        val script =res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+        val script =res.documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = JsUnpacker(script).unpack().toString()
         val m3u8 =Regex("file:\"(.*?m3u8.*?)\"").find(unpacked)?.groupValues?.getOrNull(1) ?:""
         val headers= mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")

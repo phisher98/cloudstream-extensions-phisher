@@ -56,7 +56,7 @@ class Animesalt : MainAPI() {
         {
             "$mainUrl/${request.data}/page/$page"
         }
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val home = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -95,7 +95,7 @@ class Animesalt : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title =document.selectFirst("h1")?.text()?: throw NotImplementedError("Unable to find title")
         val poster = fixUrlNull(document.selectFirst("div.bgft img")?.attr("data-src"))
         val sections = listOf("Genres", "Languages")
@@ -127,7 +127,7 @@ class Animesalt : MainAPI() {
                     )
                 )
 
-                seasonResponse.document.select("li article").forEachIndexed { index, ep ->
+                seasonResponse.documentLarge.select("li article").forEachIndexed { index, ep ->
                     val href = ep.select("a").attr("href")
                     val image = ep.select("div.post-thumbnail img").attr("src")
                     val spanText = ep.select("h2.entry-title").text()
@@ -170,7 +170,7 @@ class Animesalt : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("#options-0 iframe").forEach { iframeElement ->
+        app.get(data).documentLarge.select("#options-0 iframe").forEach { iframeElement ->
             loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true

@@ -54,7 +54,7 @@ open class FMX : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url,referer=mainUrl).document
+        val response = app.get(url,referer=mainUrl).documentLarge
             val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
             JsUnpacker(extractedpack).unpack()?.let { unPacked ->
                 Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
@@ -87,7 +87,7 @@ open class Akamaicdn : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers= mapOf("user-agent" to "okhttp/4.12.0")
-        val res = app.get(url, referer = referer, headers = headers).document
+        val res = app.get(url, referer = referer, headers = headers).documentLarge
         val sniffScript = res.selectFirst("script:containsData(sniff\\()")
             ?.data()
             ?.substringAfter("sniff(")
@@ -116,7 +116,7 @@ class GDFlix : ExtractorApi() {
     ) {
         val newUrl = try {
             app.get(url)
-                .document
+                .documentLarge
                 .selectFirst("meta[http-equiv=refresh]")
                 ?.attr("content")
                 ?.substringAfter("url=")
@@ -125,7 +125,7 @@ class GDFlix : ExtractorApi() {
             return
         } ?: url
 
-        val document = app.get(newUrl).document
+        val document = app.get(newUrl).documentLarge
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -147,10 +147,10 @@ class GDFlix : ExtractorApi() {
                 text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
-                        app.get("https://new6.gdflix.dad$link").document
+                        app.get("https://new6.gdflix.dad$link").documentLarge
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-                                app.get(serverUrl).document
+                                app.get(serverUrl).documentLarge
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -178,7 +178,7 @@ class GDFlix : ExtractorApi() {
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.document
+                                val indexbotDoc = indexbotResponse.documentLarge
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -235,7 +235,7 @@ class GDFlix : ExtractorApi() {
 
                 text.contains("GoFile",ignoreCase = true) -> {
                     try {
-                        app.get(anchor.attr("href")).document
+                        app.get(anchor.attr("href")).documentLarge
                             .select(".row .row a").amap { gofileAnchor ->
                                 val link = gofileAnchor.attr("href")
                                 if (link.contains("gofile")) {
@@ -268,7 +268,7 @@ class GDFlix : ExtractorApi() {
             val types = listOf("type=1", "type=2")
             types.map { type ->
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .document.select("a.btn-success").attr("href")
+                    .documentLarge.select("a.btn-success").attr("href")
 
                 if (source?.isNotEmpty() == true) {
                     callback.invoke(

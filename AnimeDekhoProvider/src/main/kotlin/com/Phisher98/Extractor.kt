@@ -63,7 +63,7 @@ class Animedekhoco : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc: Document? = if (url.contains("url=")) app.get(url).document else null
+        val doc: Document? = if (url.contains("url=")) app.get(url).documentLarge else null
         val text: String? = if (!url.contains("url=")) app.get(url).text else null
 
         val links = mutableListOf<Pair<String, String>>()
@@ -113,7 +113,7 @@ class StreamRuby : ExtractorApi() {
             cleanedUrl,
             referer = cleanedUrl,
             headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        ).document
+        ).documentLarge
 
         val scriptData = response.selectFirst("script:containsData(vplayer)")?.data().orEmpty()
 

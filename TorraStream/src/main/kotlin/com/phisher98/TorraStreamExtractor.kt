@@ -241,9 +241,9 @@ suspend fun invoke1337x(
     callback: (ExtractorLink) -> Unit
 ) {
     app.get("$OnethreethreesevenxAPI/category-search/${title?.replace(" ", "+")}+$year/Movies/1/")
-        .document.select("tbody > tr > td a:nth-child(2)").amap {
+        .documentLarge.select("tbody > tr > td a:nth-child(2)").amap {
             val iframe = OnethreethreesevenxAPI + it.attr("href")
-            val doc = app.get(iframe).document
+            val doc = app.get(iframe).documentLarge
 
             val magnet = doc.select("#openPopup").attr("href").trim()
             val qualityRaw = doc.select("div.box-info ul.list li:contains(Type) span").text()

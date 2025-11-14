@@ -61,7 +61,7 @@ class AnimeKaiMediaProvider : MediaProvider() {
                 val href = "$domain/watch/$matchedId"
 
                 // Fetch anime details and episode list
-                val animeId = app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
+                val animeId = app.get(href).documentLarge.selectFirst("div.rate-box")?.attr("data-id")
                 val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
                 val epRes = app.get("$domain/ajax/episodes/list?ani_id=$animeId&_=$decoded")
                     .parsedSafe<AnimeKaiResponse>()?.getDocument()

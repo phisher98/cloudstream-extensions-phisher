@@ -55,7 +55,7 @@ class Filmycab : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = try {
-            app.get("$mainUrl/${request.data}/?to-page=$page").document
+            app.get("$mainUrl/${request.data}/?to-page=$page").documentLarge
         } catch (e: Exception) {
             throw ErrorLoadingException("Failed to fetch main page: ${e.message}")
         }
@@ -92,13 +92,13 @@ class Filmycab : MainAPI() {
 
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val document = app.get("${mainUrl}/site-search.html?to-search=$query&to-page=$page").document
+        val document = app.get("${mainUrl}/site-search.html?to-search=$query&to-page=$page").documentLarge
         val results = document.select("div.thumb").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
         return results
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("div.l1:contains(Name:)")?.ownText()?.substringBefore("(") ?: "Unknown Title"
         val href = document.selectFirst("div.dlbtn a")?.attr("href") ?: ""
         val poster = document.select("div.thumbb > img").attr("src")
@@ -156,7 +156,7 @@ class Filmycab : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select("div.dlink a").forEach {
             val href= it.attr("href")
             if (href.contains("filesdl"))

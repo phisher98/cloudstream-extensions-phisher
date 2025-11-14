@@ -56,8 +56,8 @@ class VegaMoviesProvider : MediaProvider() {
         val secondaryUrl = "$vegaMoviesAPI/?search=$query"
         val excludedButtonTexts = setOf("Filepress", "GDToT", "DropGalaxy")
 
-        val searchDoc = retry { app.get(primaryUrl, interceptor = cfInterceptor, headers = headers).document }
-            ?: retry { app.get(secondaryUrl, interceptor = cfInterceptor, headers = headers).document }
+        val searchDoc = retry { app.get(primaryUrl, interceptor = cfInterceptor, headers = headers).documentLarge }
+            ?: retry { app.get(secondaryUrl, interceptor = cfInterceptor, headers = headers).documentLarge }
             ?: return
         val articles = searchDoc.select("article h2")
         if (articles.isEmpty()) return
@@ -68,7 +68,7 @@ class VegaMoviesProvider : MediaProvider() {
             val hrefpattern = article.selectFirst("a")?.attr("href").orEmpty()
             if (hrefpattern.isBlank()) continue
 
-            val doc = retry { app.get(hrefpattern).document } ?: continue
+            val doc = retry { app.get(hrefpattern).documentLarge } ?: continue
 
             val imdbAnchor =
                 doc.selectFirst("div.entry-inner p strong a[href*=\"imdb.com/title/tt\"]")
@@ -94,7 +94,7 @@ class VegaMoviesProvider : MediaProvider() {
                 if (btnLinks.isEmpty()) continue
 
                 for (detailUrl in btnLinks) {
-                    val detailDoc = retry { app.get(detailUrl).document } ?: continue
+                    val detailDoc = retry { app.get(detailUrl).documentLarge } ?: continue
 
                     val streamingLinks = detailDoc.select("button.btn.btn-sm.btn-outline")
                         .filterNot { btn ->
@@ -141,7 +141,7 @@ class VegaMoviesProvider : MediaProvider() {
                     if (episodeLinks.isEmpty()) continue
 
                     for (episodeUrl in episodeLinks) {
-                        val episodeDoc = retry { app.get(episodeUrl).document } ?: continue
+                        val episodeDoc = retry { app.get(episodeUrl).documentLarge } ?: continue
 
                         val matchBlock =
                             episodeDoc.selectFirst("h4:contains(Episodes):contains(${data.episode})")

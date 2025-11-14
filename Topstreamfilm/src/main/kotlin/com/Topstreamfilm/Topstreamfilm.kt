@@ -29,7 +29,7 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
         request: MainPageRequest
     ): HomePageResponse {
         val url ="$mainUrl/${request.data}/page/$page"
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val home = document.select("article").mapNotNull {
             it.toSearchResult()
         }
@@ -50,14 +50,14 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?story=$query&do=search&subaction=search").document
+        val document = app.get("$mainUrl/?story=$query&do=search&subaction=search").documentLarge
         return document.select("article").mapNotNull {
             it.toSearchResult()
         }
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("h1.Title")?.text() ?:return null
         val plot = document.select("div.Description p:nth-child(2)").text()
         val poster = fixUrlNull(document.select("article div.TPostBg img.TPostBg").attr("data-src"))
@@ -118,8 +118,8 @@ class TopStreamFilm : MainAPI() { // all providers must be an instance of MainAP
 
         }
         else {
-            val iframe = app.get(data).document.select("div.TPlayer iframe").attr("src")
-            app.get(iframe).document.select("ul li").map {
+            val iframe = app.get(data).documentLarge.select("div.TPlayer iframe").attr("src")
+            app.get(iframe).documentLarge.select("ul li").map {
                 val href = httpsify(it.attr("data-link"))
                 loadExtractor(href, subtitleCallback, callback)
             }

@@ -30,7 +30,7 @@ open class SeaTV : Donghuastream() {
     )
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select(".mobius option").amap { server ->
             val base64 = server.attr("value").takeIf { it.isNotEmpty() }
             val doc = base64?.let { base64Decode(it).let(Jsoup::parse) }

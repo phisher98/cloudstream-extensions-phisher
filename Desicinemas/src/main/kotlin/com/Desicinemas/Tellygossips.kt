@@ -21,7 +21,7 @@ class Tellygossips(private val source:String) : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url, referer = this.referer).document
+        val doc = app.get(url, referer = this.referer).documentLarge
         val configStr = doc.select("script")
             .map { it.data() }
             .firstOrNull { it.contains("var config = ") }

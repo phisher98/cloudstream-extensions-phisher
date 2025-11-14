@@ -51,7 +51,7 @@ class MegaPlay : ExtractorApi() {
                     "Referer" to mainUrl
                 )
 
-                val id = app.get(url, headers = headers).document.selectFirst("#megaplay-player")?.attr("data-id")
+                val id = app.get(url, headers = headers).documentLarge.selectFirst("#megaplay-player")?.attr("data-id")
 
                 val apiUrl = "$mainUrl/stream/getSources?id=$id&id=$id"
                 val gson = Gson()
@@ -163,7 +163,7 @@ class MegaPlay : ExtractorApi() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
         ) {
-            val res = app.get(url).document
+            val res = app.get(url).documentLarge
             val script = res.selectFirst("script[type=module]")?.data() ?: return
 
             val videoB64 = Regex("video_b64:\\s*\"([^\"]+)\"").find(script)?.groupValues?.get(1) ?: return

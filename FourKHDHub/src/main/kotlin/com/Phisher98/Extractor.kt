@@ -26,7 +26,7 @@ class Hubdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        val href=app.get(url).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
         if (href.contains("hubcloud"))
         {
             HubCloud().getUrl(href,"HubDrive",subtitleCallback, callback)
@@ -59,7 +59,7 @@ class HubCloud : ExtractorApi() {
             if ("hubcloud.php" in realUrl) {
                 realUrl
             } else {
-                val rawHref = app.get(realUrl).document.select("#download").attr("href")
+                val rawHref = app.get(realUrl).documentLarge.select("#download").attr("href")
                 if (rawHref.startsWith("http", ignoreCase = true)) {
                     rawHref
                 } else {
@@ -76,7 +76,7 @@ class HubCloud : ExtractorApi() {
             return
         }
 
-        val document = app.get(href).document
+        val document = app.get(href).documentLarge
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 

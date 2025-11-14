@@ -29,7 +29,7 @@ class NoverseMediaProvider : MediaProvider() {
                     "$url/serie/$fixTitle/season-${data.season}"
                 }
 
-        val doc = app.get(mediaUrl).document
+        val doc = app.get(mediaUrl).documentLarge
         val links =
                 if (data.season == null) {
                     doc.select("div.section-row table.table-striped tbody tr").map {

@@ -30,7 +30,7 @@ class TamilblastersProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl/page/$page"
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val home = document.select("div.article-content-col").mapNotNull {
             it.toSearchResult()
         }
@@ -47,7 +47,7 @@ class TamilblastersProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val searchDoc = app.get("$mainUrl/?s=$query").document
+        val searchDoc = app.get("$mainUrl/?s=$query").documentLarge
         return searchDoc.select("div.article-content-col").mapNotNull {
             it.toSearchResult()
         }
@@ -56,7 +56,7 @@ class TamilblastersProvider : MainAPI() {
     data class VideoEntry(val title: String, val url: String)
 
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val ogdesc = document.selectFirst("meta[property='og:description']")?.attr("content") ?: return null
         val title = ogdesc.substringAfter("Name:").substringBefore("(").trim()
         val year = "\\((\\d{4})\\)".toRegex().find(ogdesc)?.groupValues?.get(1)?.toIntOrNull()
@@ -103,7 +103,7 @@ class TamilblastersProvider : MainAPI() {
                 return true
             }
         } else {
-            val doc = app.get(data).document
+            val doc = app.get(data).documentLarge
             doc.select("iframe").mapNotNull { iframe ->
                 var streamurl = iframe.attr("src")
                 if (streamurl.contains("hg")) {

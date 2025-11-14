@@ -21,7 +21,7 @@ class DoraBash : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/$page").document
+        val document = app.get("$mainUrl/${request.data}/$page").documentLarge
         val home = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -48,7 +48,7 @@ class DoraBash : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").document
+            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
 
             val results =
                 document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
@@ -66,7 +66,7 @@ class DoraBash : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         val href = document.selectFirst(".eplister li > a")?.attr("href") ?: ""
         var poster = document.select("div.ime > img").attr("src")
@@ -75,7 +75,7 @@ class DoraBash : MainAPI() {
         val tvtag = if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
             val Eppage = document.selectFirst(".eplister li > a")?.attr("href") ?: ""
-            val doc = app.get(Eppage).document
+            val doc = app.get(Eppage).documentLarge
             @Suppress("NAME_SHADOWING") val episodes =
                 doc.select("div.episodelist > ul > li").map { info ->
                     val href = info.select("a").attr("href")
@@ -115,13 +115,13 @@ class DoraBash : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select("div.player-embed iframe").forEach {
             val href = it.attr("src")
             Log.d("Phisher",href)
             if (href.contains("gdplaydora.blogspot.com"))
             {
-                val truelink=app.get(href).document.selectFirst("#container source")?.attr("src")
+                val truelink=app.get(href).documentLarge.selectFirst("#container source")?.attr("src")
                 if (truelink != null) {
                     callback.invoke(
                         newExtractorLink(
@@ -150,8 +150,8 @@ class DoraBash : MainAPI() {
         return true
     }
     private suspend fun gettrueurl(href: String): String? {
-        val filemoon=app.get(href).document.selectFirst("iframe")?.attr("src") ?:""
-        val Filedata= app.get(filemoon, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        val filemoon=app.get(href).documentLarge.selectFirst("iframe")?.attr("src") ?:""
+        val Filedata= app.get(filemoon, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         val Fileurl=JsUnpacker(Filedata).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
         }

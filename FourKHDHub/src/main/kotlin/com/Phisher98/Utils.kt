@@ -22,7 +22,7 @@ suspend fun getRedirectLinks(url: String): String {
         val data = encode(jsonObject.optString("data", "")).trim()
         val wphttp1 = jsonObject.optString("blog_url", "").trim()
         val directlink = runCatching {
-            app.get("$wphttp1?re=$data".trim()).document.select("body").text().trim()
+            app.get("$wphttp1?re=$data".trim()).documentLarge.select("body").text().trim()
         }.getOrDefault("").trim()
 
         encodedurl.ifEmpty { directlink }

@@ -35,7 +35,7 @@ class DahmerMoviesMediaProvider : MediaProvider() {
         val request = app.get(mediaUrl, timeout = 60L)
         if (!request.isSuccessful) return
         val paths =
-                request.document
+                request.documentLarge
                         .select("a")
                         .map { it.text() to it.attr("href") }
                         .filter {

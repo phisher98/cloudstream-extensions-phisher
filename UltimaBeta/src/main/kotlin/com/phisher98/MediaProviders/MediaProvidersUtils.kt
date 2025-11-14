@@ -368,7 +368,7 @@ class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : Vid
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val iFramePage = app.get(url, referer = referer).document
+        val iFramePage = app.get(url, referer = referer).documentLarge
         val jsData = iFramePage.selectFirst("script:containsData(jwplayer)") ?: return
         val fileLink = Regex("""file": `(.*)`""").find(jsData.html())?.groupValues?.get(1) ?: return
         newExtractorLink(
@@ -464,7 +464,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                 if ("hubcloud.php" in realUrl) {
                     realUrl
                 } else {
-                    val rawHref = app.get(realUrl).document.select("#download").attr("href")
+                    val rawHref = app.get(realUrl).documentLarge.select("#download").attr("href")
                     if (rawHref.startsWith("http", ignoreCase = true)) {
                         rawHref
                     } else {
@@ -481,7 +481,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                 return
             }
 
-            val document = app.get(href).document
+            val document = app.get(href).documentLarge
             val size = document.selectFirst("i#size")?.text().orEmpty()
             val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
@@ -951,7 +951,7 @@ class ZoroExtractor(provider: String?, dubType: String?, domain: String = "") : 
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val iFramePage = app.get(url, referer = referer).document
+        val iFramePage = app.get(url, referer = referer).documentLarge
         val jsData =
                 iFramePage
                         .selectFirst("script:containsData(JsonData)")
@@ -995,7 +995,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
     ) {
         val newUrl = try {
             app.get(url)
-                .document
+                .documentLarge
                 .selectFirst("meta[http-equiv=refresh]")
                 ?.attr("content")
                 ?.substringAfter("url=")
@@ -1004,7 +1004,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
             return
         } ?: url
 
-        val document = app.get(newUrl).document
+        val document = app.get(newUrl).documentLarge
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -1026,10 +1026,10 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
                 text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
-                        app.get("https://new6.gdflix.dad$link").document
+                        app.get("https://new6.gdflix.dad$link").documentLarge
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-                                app.get(serverUrl).document
+                                app.get(serverUrl).documentLarge
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -1057,7 +1057,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.document
+                                val indexbotDoc = indexbotResponse.documentLarge
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -1121,7 +1121,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
 
                 text.contains("GoFile",ignoreCase = true) -> {
                     try {
-                        app.get(anchor.attr("href")).document
+                        app.get(anchor.attr("href")).documentLarge
                             .select(".row .row a").amap { gofileAnchor ->
                                 val link = gofileAnchor.attr("href")
                                 if (link.contains("gofile")) {
@@ -1162,7 +1162,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
             val types = listOf("type=1", "type=2")
             types.map { type ->
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .document.select("a.btn-success").attr("href")
+                    .documentLarge.select("a.btn-success").attr("href")
 
                 if (referer?.isNotEmpty() == true) {
                     callback.invoke(
@@ -1379,16 +1379,16 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
 
         if (href.contains("api/index.php")) {
             href = runCatching {
-                app.get(url).document.selectFirst("div.main h4 a")?.attr("href")
+                app.get(url).documentLarge.selectFirst("div.main h4 a")?.attr("href")
             }.getOrNull() ?: return
         }
 
-        val doc = runCatching { app.get(href).document }.getOrNull() ?: return
+        val doc = runCatching { app.get(href).documentLarge }.getOrNull() ?: return
         val scriptTag = doc.selectFirst("script:containsData(url)")?.data() ?: ""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag)?.groupValues?.getOrNull(1).orEmpty()
         if (urlValue.isEmpty()) return
 
-        val document = runCatching { app.get(urlValue).document }.getOrNull() ?: return
+        val document = runCatching { app.get(urlValue).documentLarge }.getOrNull() ?: return
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 

@@ -38,7 +38,7 @@ class DramaDrip : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page").document
+        val document = app.get("$mainUrl/${request.data}/page/$page").documentLarge
         val home = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -76,7 +76,7 @@ class DramaDrip : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").documentLarge
         val results = document.select("article").mapNotNull {
             it.toSearchResult()
         }
@@ -85,7 +85,7 @@ class DramaDrip : MainAPI() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
 
         var imdbId: String? = null
         var tmdbId: String? = null
@@ -139,7 +139,7 @@ class DramaDrip : MainAPI() {
             .mapNotNull { linkElement ->
                 val link = linkElement.attr("href")
                 val actual=cinematickitloadBypass(link) ?: return@mapNotNull null
-                val page = app.get(actual).document
+                val page = app.get(actual).documentLarge
                 page.select("div.wp-block-button.movie_btn a")
                     .eachAttr("href")
             }.flatten()
@@ -189,7 +189,7 @@ class DramaDrip : MainAPI() {
                             try {
                                 val rawqualityPageLink=if (qualityPageLink.contains("modpro")) qualityPageLink else cinematickitloadBypass(qualityPageLink) ?: ""
                                 val response = app.get(rawqualityPageLink)
-                                val episodeDoc = response.document
+                                val episodeDoc = response.documentLarge
 
                                 val episodeButtons =
                                     episodeDoc.select("a").filter { element: Element ->

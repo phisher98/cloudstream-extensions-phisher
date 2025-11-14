@@ -16,7 +16,7 @@ open class AnimeCloudProxy : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val id=url.substringAfterLast("/")
-        val csrftkn = app.get(url,referer=mainUrl).document.select("form#wrapper input[name=csrftkn]").attr("value")
+        val csrftkn = app.get(url,referer=mainUrl).documentLarge.select("form#wrapper input[name=csrftkn]").attr("value")
         val seassion_ck = app.get("$mainUrl/proxy/player/adehu1awmdxx?csrftkn=$csrftkn",referer=mainUrl).cookies["session"]
         val m3u8="$mainUrl/proxy/nocache/$id/"
         val headers= mapOf("Cookie" to "session=$seassion_ck")
@@ -58,7 +58,7 @@ open class LuluStream : ExtractorApi() {
                 "auto" to "1",
                 "referer" to (referer ?: "")
             )
-        ).document
+        ).documentLarge
         post.selectFirst("script:containsData(vplayer)")?.data()
             ?.let { script ->
                 Regex("file:\"(.*)\"").find(script)?.groupValues?.get(1)?.let { link ->

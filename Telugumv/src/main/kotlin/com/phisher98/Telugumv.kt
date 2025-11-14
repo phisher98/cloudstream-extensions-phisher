@@ -40,9 +40,9 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         request: MainPageRequest
     ): HomePageResponse {
         val document = if (page == 1) {
-            app.get(request.data).document
+            app.get(request.data).documentLarge
         } else {
-            app.get(request.data + "page/$page/").document
+            app.get(request.data + "page/$page/").documentLarge
         }
 
         //Log.d("Document", request.data)
@@ -77,7 +77,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").documentLarge
         //Log.d("document", document.toString())
 
         return document.select("div.result-item").mapNotNull {
@@ -129,7 +129,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
     )
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
+        val doc = app.get(url).documentLarge
         val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.trim()
             ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
@@ -227,7 +227,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val req = app.get(data).document
+        val req = app.get(data).documentLarge
         req.select("ul#playeroptionsul li").map {
                 Triple(
                     it.attr("data-post"),
@@ -252,7 +252,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                 when {
                     !link.contains("youtube") -> {
                         if (link.contains("gdmirrorbot.nl")) {
-                            app.get(link).document.select("ul#videoLinks li").map {
+                            app.get(link).documentLarge.select("ul#videoLinks li").map {
                                 @Suppress("NAME_SHADOWING") val link = it.attr("data-link")
                                 loadExtractor(link, referer = mainUrl, subtitleCallback, callback)
                             }
@@ -261,7 +261,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                                 app.get(
                                     link,
                                     referer = mainUrl
-                                ).document.select("div.dropdown-menu > button").map {
+                                ).documentLarge.select("div.dropdown-menu > button").map {
                                     val encoded = it.attr("data-server")
                                     val link = base64Decode(encoded)
                                     Log.d("Phisher", link)
@@ -276,7 +276,7 @@ class Telugumv : MainAPI() { // all providers must be an instance of MainAPI
                                         Log.d("Phisher", dukelink)
                                     } else
                                         if (link.contains("hin.autoembed.cc")) {
-                                            val linkdoc = app.get(link).document.toString()
+                                            val linkdoc = app.get(link).documentLarge.toString()
                                             Regex("\"file\":\"(https?://[^\"]+)\"").find(linkdoc)?.groupValues?.get(
                                                 1
                                             )?.let { link ->

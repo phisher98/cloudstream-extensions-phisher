@@ -1,16 +1,15 @@
 package com.phisher98
 
-import com.phisher98.UltimaMediaProvidersUtils.fixUrl
-import com.phisher98.UltimaUtils.Category
-import com.phisher98.UltimaUtils.LinkData
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
-import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.phisher98.UltimaMediaProvidersUtils.fixUrl
+import com.phisher98.UltimaUtils.Category
+import com.phisher98.UltimaUtils.LinkData
 
 class AllMovielandMediaProvider : MediaProvider() {
     override val name = "AllMovieland"
@@ -30,7 +29,7 @@ class AllMovielandMediaProvider : MediaProvider() {
         val resData = app.get(
             "$host/play/${data.imdbId}",
             referer = "$url/"
-        ).document.selectFirst("script:containsData(playlist)")?.data()
+        ).documentLarge.selectFirst("script:containsData(playlist)")?.data()
             ?.substringAfter("{")?.substringBefore(";")?.substringBefore(")") ?: return
 
         val json = tryParseJson<AllMovielandPlaylist>("{$resData}") ?: return

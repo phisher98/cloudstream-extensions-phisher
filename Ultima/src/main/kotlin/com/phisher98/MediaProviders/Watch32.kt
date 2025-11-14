@@ -27,7 +27,7 @@ class Watch32Provider : MediaProvider() {
         val searchUrl = "$domain/search/${data.title.trim().replace(" ", "-")}"
 
         val matchedElement = runCatching {
-            val doc = app.get(searchUrl, timeout = 120L).document
+            val doc = app.get(searchUrl, timeout = 120L).documentLarge
             val results = doc.select("div.flw-item")
 
             results.firstOrNull { item ->
@@ -45,7 +45,7 @@ class Watch32Provider : MediaProvider() {
 
         if (typee == TvType.TvSeries) {
             val seasonLinks = runCatching {
-                app.get("$domain/ajax/season/list/$infoId").document.select("div.dropdown-menu a")
+                app.get("$domain/ajax/season/list/$infoId").documentLarge.select("div.dropdown-menu a")
             }.getOrNull() ?: return
 
             val matchedSeason = seasonLinks.firstOrNull {
@@ -55,7 +55,7 @@ class Watch32Provider : MediaProvider() {
             val seasonId = matchedSeason.attr("data-id")
 
             val episodeLinks = runCatching {
-                app.get("$domain/ajax/season/episodes/$seasonId").document.select("li.nav-item a")
+                app.get("$domain/ajax/season/episodes/$seasonId").documentLarge.select("li.nav-item a")
             }.getOrNull() ?: return
 
             val matchedEpisode = episodeLinks.firstOrNull {
@@ -65,7 +65,7 @@ class Watch32Provider : MediaProvider() {
             val dataId = matchedEpisode.attr("data-id")
 
             val serverDoc = runCatching {
-                app.get("$domain/ajax/episode/servers/$dataId").document
+                app.get("$domain/ajax/episode/servers/$dataId").documentLarge
             }.getOrNull() ?: return
 
             val sourceButtons = serverDoc.select("li.nav-item a")
@@ -82,7 +82,7 @@ class Watch32Provider : MediaProvider() {
         else
         {
             val episodeLinks = runCatching {
-                app.get("$domain/ajax/episode/list/$infoId").document.select("li.nav-item a")
+                app.get("$domain/ajax/episode/list/$infoId").documentLarge.select("li.nav-item a")
             }.getOrNull() ?: return
 
             episodeLinks.forEach { ep ->

@@ -77,7 +77,7 @@ open class Movierulzhd : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url, timeout = 20L).document
+        val document = app.get(url, timeout = 20L).documentLarge
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -124,7 +124,7 @@ open class Movierulzhd : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search/$query").document
+        val document = app.get("$mainUrl/search/$query").documentLarge
         return document.select("div.result-item").map {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
@@ -138,7 +138,7 @@ open class Movierulzhd : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
-        val document = request.document
+        val document = request.documentLarge
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
@@ -288,7 +288,7 @@ open class Movierulzhd : MainAPI() {
                 }
             } else {
                 try {
-                    val document = app.get(data).document
+                    val document = app.get(data).documentLarge
                     val items = document.select("ul#playeroptionsul > li").map {
                         Triple(
                             it.attr("data-post"),

@@ -71,7 +71,7 @@ open class Hdmovie2 : Movierulzhd() {
                 }
             }
         } else {
-            val document = app.get(data).document
+            val document = app.get(data).documentLarge
             val id = document.selectFirst("ul#playeroptionsul > li")?.attr("data-post") ?: return false
             val type = if (data.contains("/movies/")) "movie" else "tv"
 
@@ -96,9 +96,9 @@ open class Hdmovie2 : Movierulzhd() {
         }
 
         if (data.contains("hdmovie2")) {
-            val directLinks = app.get(data).document.selectFirst("p > a")?.attr("href")
+            val directLinks = app.get(data).documentLarge.selectFirst("p > a")?.attr("href")
             directLinks?.let {
-                val doc = app.get(it).document
+                val doc = app.get(it).documentLarge
                 doc.select("p > a").forEach { element ->
                     val label = element.selectFirst("button")?.text()?.trim() ?: return@forEach
                     val href = element.attr("href")

@@ -2,17 +2,14 @@ package com.phisher98
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.newSubtitleFile
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import okhttp3.MediaType.Companion.toMediaType
@@ -42,7 +39,7 @@ class ElevenmoviesProvider : MediaProvider() {
             "$domain/tv/${data.tmdbId}/${data.season}/${data.episode}"
         }
 
-        val encodedToken = app.get(apiurl).document.selectFirst("script[type=application/json]")
+        val encodedToken = app.get(apiurl).documentLarge.selectFirst("script[type=application/json]")
             ?.data()
             ?.substringAfter("{\"data\":\"")
             ?.substringBefore("\",")

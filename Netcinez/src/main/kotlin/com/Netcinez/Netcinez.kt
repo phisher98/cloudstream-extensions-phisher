@@ -57,7 +57,7 @@ class Netcinez : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = "$mainUrl/${request.data}"
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
 
         val home = document.select("#box_movies > div.movie").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
@@ -84,7 +84,7 @@ class Netcinez : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/?s=$query").document
+            val document = app.get("${mainUrl}/?s=$query").documentLarge
             val results = document.select("#box_movies > div.movie").mapNotNull { it.toSearchResult() }
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -97,7 +97,7 @@ class Netcinez : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("div.dataplus h1")?.text() ?: document.select("div.dataplus span.original").text()
         val poster = fixUrl(document.select("div.headingder > div.cover").attr("data-bg"))
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")
@@ -154,14 +154,14 @@ class Netcinez : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val doc = app.get(data).document
+        val doc = app.get(data).documentLarge
         val iframeUrl = doc.selectFirst("#player-container iframe")?.absUrl("src")
         if (iframeUrl.isNullOrEmpty()) {
             Log.d("Error:", "Iframe not found")
             return false
         }
 
-        val iframeDoc = app.get(iframeUrl).document
+        val iframeDoc = app.get(iframeUrl).documentLarge
         val buttons = iframeDoc.select("div.btn-container a")
         if (buttons.isEmpty()) {
             Log.d("Error:", "No buttons found in iframe")
@@ -173,7 +173,7 @@ class Netcinez : MainAPI() {
 
             val label = button.text().trim()
             try {
-                val finalDoc = app.get(intermediateUrl).document
+                val finalDoc = app.get(intermediateUrl).documentLarge
                 val finalElement = finalDoc.selectFirst("div.container a, source")
                 val finalUrl = when (finalElement?.tagName()) {
                     "a" -> finalElement.absUrl("href")

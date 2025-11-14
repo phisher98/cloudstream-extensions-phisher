@@ -1,14 +1,10 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64DecodeArray
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -36,7 +32,7 @@ class PrimeWireProvider : MediaProvider() {
             "$domain/embed/tv?imdb=${data.imdbId}&season=${data.season}&episode=${data.episode}"
         }
 
-        val doc = app.get(apiurl, timeout = 10).document
+        val doc = app.get(apiurl, timeout = 10).documentLarge
         val userData = doc.select("#user-data")
         val decryptedLinks = decryptLinks(userData.attr("v"))
         for (link in decryptedLinks) {

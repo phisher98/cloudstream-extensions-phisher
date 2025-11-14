@@ -401,7 +401,7 @@ class MPlayer : MainAPI() {
     }
 
 private suspend fun getSeasonData(url: String): List<Pair<Int, String>> {
-    val document = app.get(url).document
+    val document = app.get(url).documentLarge
     return document.select("div.hs__items-container > div").mapNotNull { element ->
         val tab = element.attr("data-tab").toIntOrNull()
         val id = element.attr("data-id")

@@ -77,7 +77,7 @@ class ups2up : ExtractorApi() {
             }
             result
         } else {
-            response.document.selectFirst("script:containsData(sources:)")?.data()
+            response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
         } ?: return
 
         // m3u8 urls could be prefixed by 'file:', 'hls2:' or 'hls4:', so we just match ':'
@@ -129,7 +129,7 @@ class hglink : ExtractorApi() {
             }
             result
         } else {
-            response.document.selectFirst("script:containsData(sources:)")?.data()
+            response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
         } ?: return
 
         // m3u8 urls could be prefixed by 'file:', 'hls2:' or 'hls4:', so we just match ':'

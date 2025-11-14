@@ -4,9 +4,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -14,33 +12,10 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.*
-suspend fun loadSourceNameExtractor(
-    source: String,
-    url: String,
-    referer: String? = null,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit,
-    quality: String? = null,
-) {
-        loadExtractor(url, referer, subtitleCallback) { link ->
-            CoroutineScope(Dispatchers.IO).launch {
-            callback(
-                newExtractorLink(
-                    source,
-                    source,
-                    url = link.url,
-                    type = link.type
-                ) {
-                    this.referer = link.referer
-                    this.quality = getQualityFromName(quality)
-                    this.headers = link.headers
-                    this.extractorData = link.extractorData
-                }
-            )
-        }
-    }
-}
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 
 
 suspend fun loadCustomExtractor(
@@ -80,7 +55,7 @@ class Kwik : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val res = app.get(url,referer=url)
         val script =
-            res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+            res.documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
         callback.invoke(

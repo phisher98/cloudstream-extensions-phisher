@@ -22,7 +22,7 @@ class Animexin : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}&page=$page").document
+        val document = app.get("$mainUrl/${request.data}&page=$page").documentLarge
         val home     = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -49,7 +49,7 @@ class Animexin : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").document
+            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
 
             val results = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
 
@@ -67,7 +67,7 @@ class Animexin : MainAPI() {
 
     @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title       = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
         val href=document.selectFirst(".eplister li > a")?.attr("href") ?:""
         var poster = document.select("div.ime > img").attr("src")
@@ -76,7 +76,7 @@ class Animexin : MainAPI() {
         val tvtag=if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
             val Eppage= document.selectFirst(".eplister li > a")?.attr("href") ?:""
-            val doc= app.get(Eppage).document
+            val doc= app.get(Eppage).documentLarge
             val episodes=doc.select("div.episodelist > ul > li").map { info->
                         val href1 = info.select("a").attr("href")
                         val episode = info.select("a span").text().substringAfter("-").substringBeforeLast("-")
@@ -108,7 +108,7 @@ class Animexin : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select(".mobius option").forEach { server->
             val base64 = server.attr("value")
             val decoded=base64Decode(base64)

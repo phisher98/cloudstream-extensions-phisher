@@ -26,7 +26,7 @@ class TwoEmbedMediaProvider : MediaProvider() {
                     "$url/embedtv/${data.imdbId}&s=${data.season}&e=${data.episode}"
                 }
         val framesrc =
-                app.get(mediaUrl).document.selectFirst("iframe#iframesrc")?.attr("data-src")
+                app.get(mediaUrl).documentLarge.selectFirst("iframe#iframesrc")?.attr("data-src")
                         ?: return
         val referer = getBaseUrl(framesrc) + "/"
         val id = framesrc.substringAfter("id=").substringBefore("&")

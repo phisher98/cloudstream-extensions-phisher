@@ -21,7 +21,7 @@ open class YTS : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}&page=$page").document
+        val document = app.get("$mainUrl/${request.data}&page=$page").documentLarge
         val home     = document.select("div.row div.browse-movie-wrap").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -51,7 +51,7 @@ open class YTS : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/browse-movies?keyword=$query&quality=all&genre=all&rating=0&order_by=latest&year=0&page=$i").document
+            val document = app.get("${mainUrl}/browse-movies?keyword=$query&quality=all&genre=all&rating=0&order_by=latest&year=0&page=$i").documentLarge
             val results = document.select("div.row div.browse-movie-wrap").mapNotNull { it.toSearchResult() }
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)
@@ -66,7 +66,7 @@ open class YTS : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url).documentLarge
         val title = document.selectFirst("#mobile-movie-info h1")?.text()?.trim() ?:"No Title"
         val poster = getURL(document.select("#movie-poster img").attr("src"))
         val year = document.selectFirst("#mobile-movie-info h2")?.text()?.trim()?.toIntOrNull()
@@ -84,7 +84,7 @@ open class YTS : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data).documentLarge
         document.select("p.hidden-md.hidden-lg a").amap {
             val href=getURL(it.attr("href").replace(" ","%20"))
             val quality =it.ownText().substringBefore(".").replace("p","").toInt()

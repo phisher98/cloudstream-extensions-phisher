@@ -40,7 +40,7 @@ open class AnimeDekhoProvider : MainAPI() {
         request: MainPageRequest,
     ): HomePageResponse {
         val link = "$mainUrl${request.data}"
-        val document = app.get(link).document
+        val document = app.get(link).documentLarge
         val home =
             document.select("article").mapNotNull {
                 it.toSearchResult()
@@ -62,7 +62,7 @@ open class AnimeDekhoProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<AnimeSearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").document
+        val document = app.get("$mainUrl/?s=$query").documentLarge
         return document.select("ul[data-results] li article").mapNotNull {
             it.toSearchResult()
         }
@@ -70,7 +70,7 @@ open class AnimeDekhoProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val media = parseJson<Media>(url)
-        val document = app.get(media.url).document
+        val document = app.get(media.url).documentLarge
         val title = document.selectFirst("h1.entry-title")?.text()?.trim()?.substringAfter("Watch Online ")
             ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.substringAfter("Watch Online ")?.substringBefore(" Movie in Hindi Dubbed Free") ?: "No Title"
         val poster = fixUrlNull(document.selectFirst("div.post-thumbnail figure img")?.attr("src") ?: media.poster)
@@ -139,7 +139,7 @@ open class AnimeDekhoProvider : MainAPI() {
         }
 
         val bodyClass = runCatching {
-            app.get(media.url).document.selectFirst("body")?.attr("class")
+            app.get(media.url).documentLarge.selectFirst("body")?.attr("class")
         }.getOrNull()
 
         val term = Regex("""(?:term|postid)-(\d+)""").find(bodyClass ?: "")
@@ -154,7 +154,7 @@ open class AnimeDekhoProvider : MainAPI() {
         for (i in 0..10) {
             val iframeUrl = runCatching {
                 app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
-                    .document.selectFirst("iframe")?.attr("src")
+                    .documentLarge.selectFirst("iframe")?.attr("src")
             }.getOrNull()
             if (!iframeUrl.isNullOrEmpty()) {
                 Log.d("Error:", "Found iframe: $iframeUrl")

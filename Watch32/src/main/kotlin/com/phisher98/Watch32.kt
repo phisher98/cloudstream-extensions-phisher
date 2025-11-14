@@ -35,7 +35,7 @@ class Watch32 : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/${query.replace(" ", "-")}"
         val response = app.get(url)
-        return if (response.code == 200) searchResponseBuilder(response.document)
+        return if (response.code == 200) searchResponseBuilder(response.documentLarge)
         else listOf()
     }
 
@@ -55,7 +55,7 @@ class Watch32 : MainAPI() {
         if (response.code == 200)
                 return newHomePageResponse(
                         request.name,
-                        searchResponseBuilder(response.document),
+                        searchResponseBuilder(response.documentLarge),
                         true
                 )
         else throw ErrorLoadingException("Could not load data")
@@ -66,14 +66,14 @@ class Watch32 : MainAPI() {
         if (res.code != 200) throw ErrorLoadingException("Could not load data$url")
 
         val type = url
-        val contentId = res.document.select("div.detail_page-watch").attr("data-id")
-        val details = res.document.select("div.detail_page-infor")
+        val contentId = res.documentLarge.select("div.detail_page-watch").attr("data-id")
+        val details = res.documentLarge.select("div.detail_page-infor")
         val name = details.select("h2.heading-name > a").text()
-        val year = res.document.select("div.row-line:has(> span.type > strong:contains(Released))").text().replace("Released:", "").trim().substringBefore("-").toIntOrNull()
-        val actors = res.document
+        val year = res.documentLarge.select("div.row-line:has(> span.type > strong:contains(Released))").text().replace("Released:", "").trim().substringBefore("-").toIntOrNull()
+        val actors = res.documentLarge
             .select("div.row-line:has(> span.type > strong:contains(Casts)) a")
             .map { it.text().trim() }
-        val genres = res.document
+        val genres = res.documentLarge
             .select("div.row-line:has(> span.type > strong:contains(Genre)) a")
             .map { it.text().trim() }
 
@@ -88,18 +88,18 @@ class Watch32 : MainAPI() {
                                 .replace("N/A", "").substringAfter(":").trim())
                 this.tags = genres
                 addActors(actors)
-                addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
+                addTrailer(res.documentLarge.select("iframe#iframe-trailer").attr("data-src"))
             }
         } else {
             val episodes = ArrayList<Episode>()
             val seasonsRes =
-                    app.get("$mainUrl/ajax/season/list/$contentId").document.select("a.ss-item")
+                    app.get("$mainUrl/ajax/season/list/$contentId").documentLarge.select("a.ss-item")
 
             seasonsRes.forEach { season ->
                 val seasonId = season.attr("data-id")
                 val seasonNum = season.text().replace("Season ", "")
                 app.get("$mainUrl/ajax/season/episodes/$seasonId")
-                        .document
+                        .documentLarge
                         .select("a.eps-item")
                         .forEach { episode ->
                             val epId = episode.attr("data-id")
@@ -127,7 +127,7 @@ class Watch32 : MainAPI() {
                                 .replace("N/A", "").substringAfter(":").trim())
                 this.tags = genres
                 addActors(actors)
-                addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
+                addTrailer(res.documentLarge.select("iframe#iframe-trailer").attr("data-src"))
             }
         }
     }
@@ -138,7 +138,7 @@ class Watch32 : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val serversRes = app.get("$mainUrl/ajax/episode/$data").document.select("a.link-item")
+        val serversRes = app.get("$mainUrl/ajax/episode/$data").documentLarge.select("a.link-item")
         serversRes.forEach { server ->
             val linkId =
                 server.attr("data-linkid").ifEmpty { server.attr("data-id") }
