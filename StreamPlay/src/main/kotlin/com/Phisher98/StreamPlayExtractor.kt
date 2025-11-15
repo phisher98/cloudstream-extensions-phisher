@@ -4982,7 +4982,7 @@ object StreamPlayExtractor : StreamPlay() {
         val fixtitle = "$tmdbId-${title?.replace(" ","-")}"
         val url = if (season == null) "$mappleTvApi/watch/movie/$fixtitle" else "$mappleTvApi/watch/tv/$season-$episode/$fixtitle"
         val headers = mapOf(
-            "next-action" to "4096461eb15a94443bdbca459eaf3d267f59e6e07e",
+            "next-action" to "40c2896f5f22d9d6342e5a6d8f4d8c58d69654bacd",
             "Referer" to mappleTvApi,
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
         )
