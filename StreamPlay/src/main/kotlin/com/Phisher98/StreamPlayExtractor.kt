@@ -4976,16 +4976,19 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val serverList = listOf("mapple","alfa","sakura","wiggles")
+        val sessionrawJson= app.get("https://enc-dec.app/api/enc-mapple").textLarge
+        val sessionjsonObj = JSONObject(sessionrawJson)
+        val sessionId = sessionjsonObj.optJSONObject("result")?.optString("sessionId")
         val fixtitle = "$tmdbId-${title?.replace(" ","-")}"
         val url = if (season == null) "$mappleTvApi/watch/movie/$fixtitle" else "$mappleTvApi/watch/tv/$season-$episode/$fixtitle"
         val headers = mapOf(
-            "next-action" to "4006332a0cdf5a4fabe21356fbb734d0726af11119",
+            "next-action" to "4096461eb15a94443bdbca459eaf3d267f59e6e07e",
             "Referer" to mappleTvApi,
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
         )
         serverList.forEach {
             try {
-                val requestPayload = if(season == null) """[{"mediaId":$tmdbId,"mediaType":"movie","tv_slug":"","source":"$it"}]""" else """[{"mediaId":$tmdbId,"mediaType":"tv","tv_slug":"$season-$episode","source":"$it"}]"""
+                val requestPayload = if(season == null) """[{"mediaId":$tmdbId,"mediaType":"movie","tv_slug":"","source":"$it","useFallbackVideo":false,"sessionId":"$sessionId"}]""" else """[{"mediaId":$tmdbId,"mediaType":"tv","tv_slug":"$season-$episode","source":"$it,"useFallbackVideo":false,"sessionId":"$sessionId""}]"""
                 val response = app.post(url, timeout = 30, json = requestPayload, headers = headers).text
                 val rawJson = response.split("\n")[1].replace("1:","")
                 val jsonObj = JSONObject(rawJson)
