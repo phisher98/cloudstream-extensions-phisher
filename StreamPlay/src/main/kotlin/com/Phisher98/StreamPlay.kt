@@ -364,17 +364,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } ?: emptyList()
             }
 
-        val simklid = runCatching {
-            res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
-                val path = if (type == TvType.Movie) "movies" else "tv"
-                val resJson = JSONObject(app.get("$simkl/$path/$imdb").text)
-                resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-            }
-        }.getOrNull()
-
-
-
-
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = res.seasons?.mapNotNull { season ->
@@ -547,7 +536,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
-                    addSimklId(simklid)
                 }
             }
         } else {
@@ -588,7 +576,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
-                addSimklId(simklid)
             }
         }
     }
