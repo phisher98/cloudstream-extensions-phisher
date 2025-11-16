@@ -5630,6 +5630,56 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokeKimcartoon(
+        title: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val fixTitle = title.createSlug()
+        val doc = if (season == null || season == 1) {
+            app.get("$kimcartoonAPI/Cartoon/$fixTitle").document
+        } else {
+            val res = app.get("$kimcartoonAPI/Cartoon/$fixTitle-Season-$season")
+            if (res.url == "$kimcartoonAPI/") app.get("$kimcartoonAPI/Cartoon/$fixTitle-Season-0$season").document else res.document
+        }
+
+        val iframe = if (season == null) {
+            doc.select("div.full.item_ep h3 a").firstNotNullOf { it.attr("href") }
+        } else {
+            doc.select("div.full.item_ep h3 a").find {
+                it.attr("href").contains(Regex("(?i)Episode-0*$episode"))
+            }?.attr("href")
+        } ?: return
+        val id=iframe.substringAfter("id=")
+        val headers = mapOf("referer" to "https://am.vidstream.vip", "Origin" to "https://am.vidstream.vip", "User-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36")
+        app.get(iframe).document.select("#selectServer option").amap { s ->
+            val server=s.attr("sv")
+            val href=app.post("${kimcartoonAPI}/ajax/anime/load_episodes_v2?s=$server", data = mapOf("episode_id" to id)).document.selectFirst("iframe")?.attr("src")?.replace("\\\"","")  ?:""
+            if (href.contains("vidstream")) {
+                val response = app.get(href, referer = kimcartoonAPI).toString()
+                val m3u8 = Regex("file\":\"(.*?m3u8.*?)\"").find(response)?.groupValues?.getOrNull(1)
+                if (m3u8 != null) {
+                    callback.invoke(
+                        newExtractorLink(
+                            "KimCartoon",
+                            "KimCartoon ${server.uppercase()}",
+                            url = m3u8,
+                            INFER_TYPE
+                        ) {
+                            this.quality = Qualities.P1080.value
+                            this.headers = headers
+                        }
+                    )
+                } else {
+                    ""
+                }
+            }
+            else loadSourceNameExtractor("KimCartoon ${server.uppercase()}", href,"https://am.vidstream.vip",subtitleCallback, callback)
+        }
+    }
+
 }
 
 
