@@ -138,7 +138,7 @@ class StreamPlayAnime : MainAPI() {
                     false
                 )
             val homePageList =
-                repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
+                repo.library().getOrThrow()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)
@@ -475,7 +475,7 @@ class StreamPlayAnime : MainAPI() {
     private fun extractSeason(title: String): Int? {
         val regex = Regex("""(?i)(?:season\s*(\d+)|(\d+)(?:st|nd|rd|th)?\s*season)""")
         val match = regex.find(title)
-        val seasonStr = match?.groups?.get(1)?.value ?: match?.groups?.get(2)?.value
-        return seasonStr?.toIntOrNull()
+        val seasonStr = match?.groups?.get(1)?.value ?: match?.groups?.get(2)?.value ?: "1"
+        return seasonStr.toIntOrNull()
     }
 }

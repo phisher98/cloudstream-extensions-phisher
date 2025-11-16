@@ -846,14 +846,14 @@ object StreamPlayExtractor : StreamPlay() {
                     Qualities.P720.value
                 )
             }.map {
-                loadCustomTagExtractor(
-                    "Animetosho",
+                loadSourceNameExtractor(
+                    "Animetosho ",
                     it.first,
                     "$animetoshoAPI/",
                     subtitleCallback,
                     callback,
                     it.third
-                )
+                ).apply { Log.d("Phisher",it.third.toString()) }
             }
         }
     }
