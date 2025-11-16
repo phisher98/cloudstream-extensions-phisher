@@ -236,7 +236,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeVidFast(res.id, res.season,res.episode, callback, subtitleCallback)
         },
         Provider("vidplus", "VidPlus") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeVidPlus(res.id, res.season,res.episode,  callback,subtitleCallback)
+            if (!res.isAnime) invokeVidPlus(res.id, res.season,res.episode,  callback)
         },
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
             if (res.isAnime || res.isCartoon) invokeToonstream(res.title, res.season, res.episode, subtitleCallback, callback)

@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -65,7 +66,6 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.security.MessageDigest
-import java.util.Base64
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -5373,8 +5373,7 @@ object StreamPlayExtractor : StreamPlay() {
                 if (streamResponse.isNotEmpty()) {
                     val jsonObject = JSONObject(streamResponse)
                     val url = jsonObject.getString("url")
-
-                    urlList.put(it.name, url)
+                    urlList[it.name] = url
                 }
             } catch (e: Exception) {
                 TODO("Not yet implemented")
@@ -5405,7 +5404,6 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit,
     )
     {
         val headers = mapOf(
@@ -5419,7 +5417,7 @@ object StreamPlayExtractor : StreamPlay() {
             "id" to tmdbId,
             "key" to "cGxheWVyLnZpZHNyYy5jb19zZWNyZXRLZXk="
         )
-        val encoded = Base64.getEncoder().encodeToString(data.toJson().toByteArray())
+        val encoded = base64Encode(data.toJson().toByteArray())
         val apiUrl = "$vidPlusApi/api/tmdb?params=cbc7.$encoded.9lu"
         val response = app.get(apiUrl, headers = headers).text
         val jsonObject = JSONObject(response)
@@ -5442,10 +5440,10 @@ object StreamPlayExtractor : StreamPlay() {
                 val apiResponse = app.get(serverUrl, headers = headers, timeout = 20).text
 
                 if (apiResponse.contains("\"data\"",ignoreCase = true)) {
-                    val decodedPayload = String(Base64.getDecoder().decode(JSONObject(apiResponse).getString("data")))
+                    val decodedPayload = String(base64DecodeArray(JSONObject(apiResponse).getString("data")))
                     val payloadJson = JSONObject(decodedPayload)
 
-                    val ciphertext = Base64.getDecoder().decode(payloadJson.getString("encryptedData"))
+                    val ciphertext = base64DecodeArray(payloadJson.getString("encryptedData"))
                     val password = payloadJson.getString("key")
                     val salt = hexStringToByteArray2(payloadJson.getString("salt"))
                     val iv = hexStringToByteArray2(payloadJson.getString("iv"))
