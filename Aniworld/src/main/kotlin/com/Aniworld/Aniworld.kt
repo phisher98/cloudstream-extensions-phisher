@@ -134,7 +134,6 @@ open class Aniworld : MainAPI() {
             epsDocument.select("div#stream > ul:nth-child(4) li").forEach { eps ->
                 val epsLink = eps.selectFirst("a") ?: return@forEach
                 val seasonNumber = epsLink.attr("data-season-id").toIntOrNull() ?: 0
-                if (seasonNumber == 0) return@forEach
 
                 episodes.add(
                     newEpisode(fixUrl(epsLink.attr("href"))) {
