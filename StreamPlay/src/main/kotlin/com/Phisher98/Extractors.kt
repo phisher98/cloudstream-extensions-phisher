@@ -254,7 +254,7 @@ class VCloudGDirect : ExtractorApi() {
 
 class VCloud : ExtractorApi() {
     override val name: String = "V-Cloud"
-    override val mainUrl: String = "https://vcloud.lol"
+    override val mainUrl: String = "https://vcloud.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -897,7 +897,7 @@ open class PixelDrain : ExtractorApi() {
 
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.ink"
+    override val mainUrl = "https://hubcloud.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
