@@ -39,7 +39,7 @@ class Hubdrive : ExtractorApi() {
 
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.ink"
+    override val mainUrl = "https://hubcloud.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
