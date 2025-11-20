@@ -414,6 +414,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             this.posterUrl = getImageUrl(eps.stillPath)
                             this.score = Score.from10(eps.voteAverage)
                             this.description = eps.overview
+                            this.runTime = eps.runTime
                         }.apply {
                             this.addDate(eps.airDate)
                         }
@@ -714,6 +715,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         @get:JsonProperty("vote_average") val voteAverage: Double? = null,
         @get:JsonProperty("episode_number") val episodeNumber: Int? = null,
         @get:JsonProperty("season_number") val seasonNumber: Int? = null,
+        @get:JsonProperty("runtime") val runTime: Int? = null
     )
 
     data class MediaDetailEpisodes(
