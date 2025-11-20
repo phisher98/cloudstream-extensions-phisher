@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 open class YTS : MainAPI() {
-    override var mainUrl              = "https://wwv.yts-official.mx"
+    override var mainUrl              = "https://www.yts-official.to"
     override var name                 = "YTS"
     override val hasMainPage          = true
     override var lang                 = "en"

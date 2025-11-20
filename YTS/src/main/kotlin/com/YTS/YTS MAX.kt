@@ -22,7 +22,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Element
 
 class YTSMX : YTS(){
-    override var mainUrl              = "https://yts.mx"
+    override var mainUrl              = "https://yts.lt"
     override var name                 = "YTS MX"
     override val hasMainPage          = true
     override var lang                 = "en"
