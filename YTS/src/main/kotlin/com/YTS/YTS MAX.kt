@@ -30,6 +30,7 @@ class YTSMX : YTS(){
     override val hasDownloadSupport   = true
     override val supportedTypes       = setOf(TvType.Movie, TvType.Torrent)
     override val mainPage = mainPageOf(
+        "browse-movies" to "Latest",
         "browse-movies/0/all/all/0/featured/0/all" to "Featured Movies",
         "browse-movies/0/1080p.x265/all/0/latest/0/all" to "1080p Movies",
         "browse-movies/0/2160p/all/0/latest/0/all" to "4K Movies",

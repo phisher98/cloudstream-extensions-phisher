@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 open class YTS : MainAPI() {
-    override var mainUrl              = "https://www.yts-official.to"
+    override var mainUrl              = "https://www.yts-official.cc"
     override var name                 = "YTS"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -14,7 +14,7 @@ open class YTS : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Torrent)
 
     override val mainPage = mainPageOf(
-        "browse-movies?keyword=&quality=all&genre=all&rating=0&year=0&order_by=latest" to "Latest",
+        "browse-movies?keyword=&quality=2160p&genre=all&rating=0&year=0&order_by=latest" to "Latest",
         "browse-movies?keyword=&quality=all&genre=all&rating=0&year=0&order_by=featured" to "Featured",
         "browse-movies?keyword=&quality=2160p&genre=all&rating=0&year=0&order_by=latest" to "4K Movies",
         "browse-movies?keyword=&quality=1080p&genre=all&rating=0&year=0&order_by=latest" to "1080p Movies",
