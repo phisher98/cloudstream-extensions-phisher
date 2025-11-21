@@ -605,25 +605,47 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val disabledProviderIds = sharedPref
             ?.getStringSet("disabled_providers", emptySet())
             ?.toSet() ?: emptySet()
-
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
-
+        val authToken = token
         runAllAsync(
             {
-                if (!res.isAnime) invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+                try {
+                    if (!res.isAnime) {
+                        invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+                    }
+                } catch (_: Throwable) {
+                    // ignore failure but do not cancel the rest
+                }
             },
             {
-                if (!res.isAnime) invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+                try {
+                    if (!res.isAnime) {
+                        invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+                    }
+                } catch (_: Throwable) {
+                    // ignore failure
+                }
             },
             *providersList.map { provider ->
                 suspend {
-                    provider.invoke(res, subtitleCallback, callback, token ?: "", dahmerMoviesAPI)
+                    try {
+                        provider.invoke(
+                            res,
+                            subtitleCallback,
+                            callback,
+                            authToken ?: "",
+                            dahmerMoviesAPI
+                        )
+                    } catch (_: Throwable) {
+                        // provider failure shouldn't kill others
+                    }
                 }
             }.toTypedArray()
         )
 
         return true
     }
+
 
 
     data class LinkData(
