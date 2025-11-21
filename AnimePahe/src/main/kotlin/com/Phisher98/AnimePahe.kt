@@ -343,10 +343,9 @@ class AnimePahe : MainAPI() {
                 val source = match?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
                 val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p")?.toIntOrNull()
                     ?: Qualities.Unknown.value
-                Log.d("Phisher","$source $quality")
 
                 val href = it.attr("data-src")
-                if ("kwik.si" in href) {
+                if ("kwik" in href) {
                     loadCustomExtractor(
                         "Animepahe $source [$type]",
                         href,

@@ -768,7 +768,7 @@ object StreamPlayExtractor : StreamPlay() {
                 ?: Qualities.Unknown.value
 
             val href = it.attr("data-src")
-            if ("kwik.si" in href && (dubtype == null || type.contains(dubtype, ignoreCase = true))) {
+            if ("kwik" in href && (dubtype == null || type.contains(dubtype, ignoreCase = true))) {
                 loadCustomExtractor(
                     "Animepahe $source [$type]",
                     href,

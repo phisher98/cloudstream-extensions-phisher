@@ -23,7 +23,7 @@ class IStreamFlare  : MainAPI() {
     {
         val headers = mapOf(
             "User-Agent" to "Dalvik/2.1.0 (Linux; U; Android 13; Subsystem for Android(TM) Build/TQ3A.230901.001)",
-            "x-api-key" to base64Decode("a0M3VjFmOFFSYVp5dlluaA==")
+            "x-api-key" to base64Decode("TFpKQW43MU9LRXlQYlhVdg==")
         )
 
         private const val cinemeta_url = "https://v3-cinemeta.strem.io/meta"

@@ -8,5 +8,6 @@ class IStreamFlareProvider: BasePlugin() {
     override fun load() {
         registerMainAPI(IStreamFlare())
         registerExtractorAPI(Istreamcdn())
+        registerExtractorAPI(Istreamjam())
     }
 }

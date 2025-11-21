@@ -1304,7 +1304,7 @@ open class Driveseed : ExtractorApi() {
 
 class Kwik : ExtractorApi() {
     override val name            = "Kwik"
-    override val mainUrl         = "https://kwik.si"
+    override val mainUrl         = "https://kwik.*"
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {

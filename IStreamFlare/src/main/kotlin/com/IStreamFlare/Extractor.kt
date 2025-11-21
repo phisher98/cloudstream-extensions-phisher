@@ -9,7 +9,14 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
 
-class Istreamcdn : ExtractorApi() {
+
+
+class Istreamjam : Istreamcdn() {
+    override val name = "Istreamjam"
+    override val mainUrl = "https://stream.istreamjam.com"
+    override val requiresReferer = false
+}
+open class Istreamcdn : ExtractorApi() {
     override val name = "IStreamCDN"
     override val mainUrl = "https://istreamcdn.com"
     override val requiresReferer = false
