@@ -5592,12 +5592,13 @@ object StreamPlayExtractor : StreamPlay() {
                                 ?.optJSONArray("versions")
                                 ?.forEachJsonObject { version ->
                                     val link = version.optString("download_link")
+                                    val codec = version.optString("codec")
                                     if (link.isNotBlank())
                                         try {
                                             if (link.contains("hubcloud", ignoreCase = true)) {
                                                 HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
                                             } else {
-                                                loadSourceNameExtractor("XDmovies ", link, "", subtitleCallback, callback)
+                                                loadSourceNameExtractor("XDmovies ", link, "", subtitleCallback, callback,null,codec)
                                             }
                                         } catch (e: Exception) {
                                         e.printStackTrace()
@@ -5610,18 +5611,24 @@ object StreamPlayExtractor : StreamPlay() {
             jsonObject.optJSONArray("download_links")
                 ?.forEachJsonObject { linkObj ->
                     val link = linkObj.optString("download_link")
+                    val codec = extractCodec(linkObj.optString("custom_title"))
                     if (link.isNotBlank())
                         try {
                             if (link.contains("hubcloud", ignoreCase = true)) {
                                 HubCloud().getUrl(link, "HubCloud", subtitleCallback, callback)
                             } else {
-                                loadSourceNameExtractor("XDmovies ", link, "", subtitleCallback, callback)
+                                loadSourceNameExtractor("XDmovies ", link, "", subtitleCallback, callback,null,codec)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
                 }
         }
+    }
+    private fun extractCodec(title: String): String {
+        val codecRegex = Regex("(?i)(av1|h\\.264|h\\.265|hdr|sdr)")
+        val match = codecRegex.find(title)?.value ?: return ""
+        return match
     }
 
     private inline fun JSONArray.forEachJsonObject(block: (JSONObject) -> Unit) {
