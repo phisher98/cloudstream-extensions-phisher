@@ -2,7 +2,6 @@ package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.VidSrcTo
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -14,7 +13,6 @@ class MovierulzhdPlugin: BasePlugin() {
         registerMainAPI(Movierulzhd())
         registerMainAPI(Hdmovie2())
         registerExtractorAPI(FMHD())
-        registerExtractorAPI(VidSrcTo())
         registerExtractorAPI(Akamaicdn())
         registerExtractorAPI(Luluvdo())
         registerExtractorAPI(FMX())
