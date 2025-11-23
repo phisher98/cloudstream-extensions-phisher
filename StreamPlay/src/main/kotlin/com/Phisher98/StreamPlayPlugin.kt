@@ -16,7 +16,6 @@ import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.Streamlare
 import com.lagradost.cloudstream3.extractors.VidHidePro6
-import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.Vidmolyme
 import com.lagradost.cloudstream3.extractors.Voe
@@ -114,7 +113,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(GDFlix1())
         registerExtractorAPI(GDFlix2())
         registerExtractorAPI(furher())
-        registerExtractorAPI(VidSrcExtractor())
         registerExtractorAPI(Servertwo())
         registerExtractorAPI(MultimoviesAIO())
         registerExtractorAPI(HubCloud())
