@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
@@ -49,7 +50,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override var name = "StreamPlay"
     override val hasMainPage = true
     override val instantLinkLoading = true
-    override val useMetaLoadResponse = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -367,13 +367,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val simklid = runCatching {
             res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
                 val path = if (type == TvType.Movie) "movies" else "tv"
-                val resJson = JSONObject(app.get("$simkl/$path/$imdb").text)
+                val resJson = JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
                 resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
             }
         }.getOrNull()
-
-
-
 
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
