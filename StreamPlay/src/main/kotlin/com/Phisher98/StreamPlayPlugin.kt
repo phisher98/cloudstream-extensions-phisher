@@ -19,7 +19,6 @@ import com.lagradost.cloudstream3.extractors.VidHidePro6
 import com.lagradost.cloudstream3.extractors.VidSrcExtractor
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.Vidmolyme
-import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.plugins.Plugin
 import androidx.core.content.edit
@@ -68,7 +67,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Mwish())
         registerExtractorAPI(TravelR())
         registerExtractorAPI(Playm4u())
-        registerExtractorAPI(Vidplay())
         registerExtractorAPI(FileMoon())
         registerExtractorAPI(VCloud())
         registerExtractorAPI(Kwik())

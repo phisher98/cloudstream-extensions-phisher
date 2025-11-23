@@ -17,7 +17,6 @@ import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
-import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -127,8 +126,6 @@ object UltimaMediaProvidersUtils {
     enum class ServerName {
         MyCloud,
         Mp4upload,
-        Streamtape,
-        Vidplay,
         Filemoon,
         Jeniusplay,
         Uqload,
@@ -233,12 +230,6 @@ object UltimaMediaProvidersUtils {
         try {
             val domain = referer ?: getBaseUrl(url)
             when (serverName) {
-                ServerName.Vidplay ->
-                        AnyVidplay(providerName, dubStatus, domain)
-                                .getUrl(url, domain, subtitleCallback, callback)
-                ServerName.MyCloud ->
-                        AnyMyCloud(providerName, dubStatus, domain)
-                                .getUrl(url, domain, subtitleCallback, callback)
                 ServerName.Filemoon ->
                         AnyFileMoon(providerName, dubStatus, domain)
                                 .getUrl(url, null, subtitleCallback, callback)
@@ -323,65 +314,6 @@ class AnyFileMoon(provider: String?, dubType: String?, domain: String = "") : Fi
     override val requiresReferer = false
 }
 
-@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
-class AnyMyCloud(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
-    override val name =
-            (if (provider != null) "$provider: " else "") +
-                    "MyCloud" +
-                    (if (dubType != null) ": $dubType" else "")
-    override val mainUrl = domain
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ) {
-        val encIFrameUrl = app.get(url).url.split("#").getOrNull(1) ?: return
-        val fileLink = Base64.UrlSafe.decode(encIFrameUrl).toString(Charsets.UTF_8)
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                fileLink,
-                INFER_TYPE
-            )
-            {
-                quality = Qualities.Unknown.value
-            }
-        )
-    }
-}
-
-class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
-    override val name =
-            (if (provider != null) "$provider: " else "") +
-                    "Vidplay" +
-                    (if (dubType != null) ": $dubType" else "")
-    override val mainUrl = domain
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ) {
-        val iFramePage = app.get(url, referer = referer).documentLarge
-        val jsData = iFramePage.selectFirst("script:containsData(jwplayer)") ?: return
-        val fileLink = Regex("""file": `(.*)`""").find(jsData.html())?.groupValues?.get(1) ?: return
-        newExtractorLink(
-            name,
-            name,
-            fileLink,
-            INFER_TYPE
-        )
-        {
-            quality = Qualities.Unknown.value
-        }
-    }
-}
 
 class AnyMp4Upload(provider: String?, dubType: String?, domain: String = "") : Mp4Upload() {
     override var name =
