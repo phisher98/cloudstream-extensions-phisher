@@ -3684,23 +3684,20 @@ object StreamPlayExtractor : StreamPlay() {
             "$Vidsrcxyz/embed/tv?imdb=$id&season=$season&episode=$episode"
         }
         val iframeUrl = extractIframeUrl(url) ?: return
-        val prorcpUrl = extractProrcpUrl(iframeUrl) ?: return
-        val decryptedSource = extractAndDecryptSource(prorcpUrl) ?: return
+        val prorcpUrl = extractProrcpUrl(iframeUrl) ?: "Not Found 2"
+
+        val decryptedSource = extractAndDecryptSource(prorcpUrl,iframeUrl) ?: return
 
         val referer = prorcpUrl.substringBefore("rcp")
-        callback.invoke(
-            newExtractorLink(
-                "VidsrcXYZ",
-                "VidsrcXYZ",
-                url = decryptedSource,
-                ExtractorLinkType.M3U8
-            ) {
-                this.referer = referer
-                this.quality = Qualities.P1080.value
-            }
-        )
-    }
+        decryptedSource.forEach { (version, url)->
+            M3u8Helper.generateM3u8(
+                "VidsrcXYZ Server ${version.capitalize()}",
+                url,
+                referer
+            ).forEach(callback)
+        }
 
+    }
     private suspend fun extractIframeUrl(url: String): String? {
         return httpsify(
             app.get(url).documentLarge.select("iframe").attr("src")
@@ -3708,19 +3705,15 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     private suspend fun extractProrcpUrl(iframeUrl: String): String? {
-        val doc = app.get(iframeUrl).documentLarge
+        val doc = app.get(iframeUrl, referer = iframeUrl).document
         val regex = Regex("src:\\s+'(.*?)'")
         val matchedSrc = regex.find(doc.html())?.groupValues?.get(1) ?: return null
         val host = getBaseUrl(iframeUrl)
-        val newDoc = app.get(host + matchedSrc).documentLarge
-
-        val regex1 = Regex("""(https?://.*?/prorcp.*?)["']\)""")
-        return regex1.find(newDoc.html())?.groupValues?.get(1)
+        return host + matchedSrc
     }
 
-    private suspend fun extractAndDecryptSource(prorcpUrl: String): String? {
-        val responseText = app.get(prorcpUrl).text
-
+    private suspend fun extractAndDecryptSource(prorcpUrl: String, referer: String): List<Pair<String, String>>? {
+        val responseText = app.get(prorcpUrl, referer = referer).text
         val playerJsRegex = Regex("""Playerjs\(\{.*?file:"(.*?)".*?\}\)""")
         val temp = playerJsRegex.find(responseText)?.groupValues?.get(1)
 
@@ -3728,16 +3721,47 @@ object StreamPlayExtractor : StreamPlay() {
             mapOf("id" to "playerjs", "content" to temp)
         } else {
             val document = Jsoup.parse(responseText)
-            val node = document.select("#reporting_content").next()
+            val reporting = document.selectFirst("#reporting_content") ?: return null
+            val node = reporting.nextElementSibling() ?: return null
             mapOf("id" to node.attr("id"), "content" to node.text())
         }
 
-        return encryptedURLNode["id"]?.let { id ->
-            encryptedURLNode["content"]?.let { content ->
-                decryptMethods[id]?.invoke(content)
+        val id = encryptedURLNode["id"] ?: return null
+        val content = encryptedURLNode["content"] ?: return null
+
+        val decrypted = decryptMethods[id]?.invoke(content) ?: return null
+
+        // Domain mapping
+        val vSubs = mapOf(
+            "v1" to "shadowlandschronicles.com",
+            "v2" to "cloudnestra.com",
+            "v3" to "thepixelpioneer.com",
+            "v4" to "putgate.org",
+            "v5" to ""
+        )
+        val placeholderRegex = "\\{(v\\d+)\\}".toRegex()
+        val mirrors: List<Pair<String, String>> = decrypted
+            .split(" or ")
+            .map { it.trim() }
+            .filter { it.startsWith("http") }
+            .map { rawUrl ->
+                val match = placeholderRegex.find(rawUrl)
+                val version = match?.groupValues?.get(1) ?: ""   // v1, v2, v3 etc or "" if none
+                val domain = vSubs[version] ?: ""
+
+                // replace {vX} with actual domain
+                val finalUrl = if (domain.isNotEmpty()) {
+                    placeholderRegex.replace(rawUrl) { domain }
+                } else {
+                    rawUrl
+                }
+
+                version to finalUrl
             }
-        }
+
+        return mirrors.ifEmpty { null }
     }
+
 
 
     suspend fun invokePrimeSrc(

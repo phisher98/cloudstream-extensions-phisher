@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -72,8 +71,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-var sfServer: String? = null
-
 val encodedIndex = arrayOf(
     "GamMovies",
     "JSMovies",
@@ -121,15 +118,6 @@ val mimeType = arrayOf(
     "video/x-msvideo"
 )
 
-fun Document.getMirrorLink(): String? {
-    return this.select("div.mb-4 a").randomOrNull()
-        ?.attr("href")
-}
-
-fun Document.getMirrorServer(server: Int): String {
-    return this.select("div.text-center a:contains(Server $server)").attr("href")
-}
-
 suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: String): String {
     val link =
         app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").documentLarge.toString()
@@ -162,49 +150,6 @@ suspend fun getDirectGdrive(url: String): String {
         )
     ).url
 
-}
-
-suspend fun bypassBqrecipes(url: String): String? {
-    var res = app.get(url)
-    var location = res.text.substringAfter(".replace('").substringBefore("');")
-    var cookies = res.cookies
-    res = app.get(location, cookies = cookies)
-    cookies = cookies + res.cookies
-    val document = res.documentLarge
-    location = document.select("form#recaptcha").attr("action")
-    val data =
-        document.select("form#recaptcha input").associate { it.attr("name") to it.attr("value") }
-    res = app.post(location, data = data, cookies = cookies)
-    location = res.documentLarge.selectFirst("a#messagedown")?.attr("href") ?: return null
-    cookies = (cookies + res.cookies).minus("var")
-    return app.get(location, cookies = cookies, allowRedirects = false).headers["location"]
-}
-
-suspend fun bypassOuo(url: String?): String? {
-    var res = session.get(url ?: return null)
-    run lit@{
-        (1..2).forEach { _ ->
-            if (res.headers["location"] != null) return@lit
-            val document = res.documentLarge
-            val nextUrl = document.select("form").attr("action")
-            val data = document.select("form input").mapNotNull {
-                it.attr("name") to it.attr("value")
-            }.toMap().toMutableMap()
-            val captchaKey =
-                document.select("script[src*=https://www.google.com/recaptcha/api.js?render=]")
-                    .attr("src").substringAfter("render=")
-            val token = getCaptchaToken(url, captchaKey)
-            data["x-token"] = token ?: ""
-            res = session.post(
-                nextUrl,
-                data = data,
-                headers = mapOf("content-type" to "application/x-www-form-urlencoded"),
-                allowRedirects = false
-            )
-        }
-    }
-
-    return res.headers["location"]
 }
 
 suspend fun bypassHrefli(url: String): String? {
@@ -363,34 +308,6 @@ fun generateWpKey(r: String, m: String): String {
 }
 
 
-suspend fun loadCustomTagExtractor(
-    tag: String? = null,
-    url: String,
-    referer: String? = null,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit,
-    quality: Int? = null,
-) {
-    loadExtractor(url, referer, subtitleCallback) { link ->
-        CoroutineScope(Dispatchers.IO).launch {
-            val extractorLink = newExtractorLink(
-                link.source,
-                "${link.name} $tag",
-                link.url,
-            ) {
-                this.quality = when (link.type) {
-                    ExtractorLinkType.M3U8 -> link.quality
-                    else -> quality ?: link.quality
-                }
-                this.type = link.type
-                this.headers = link.headers
-                this.referer = link.referer
-                this.extractorData = link.extractorData
-            }
-            callback.invoke(extractorLink)
-        }
-    }
-}
 suspend fun loadSourceNameExtractor(
     source: String,
     url: String,
@@ -615,13 +532,6 @@ fun getQuality(str: String): Int {
     }
 }
 
-fun getDeviceId(length: Int = 16): String {
-    val allowedChars = ('a'..'f') + ('0'..'9')
-    return (1..length)
-        .map { allowedChars.random() }
-        .joinToString("")
-}
-
 fun String.encodeUrl(): String {
     val url = URL(this)
     val uri = URI(url.protocol, url.userInfo, url.host, url.port, url.path, url.query, url.ref)
@@ -836,64 +746,6 @@ object CryptoJS {
         return ByteArray(length).apply {
             SecureRandom().nextBytes(this)
         }
-    }
-}
-
-fun extractcatflixValue(text: String, key: String): String? {
-    val regex = Regex("""$key\s*=\s*['"](.*?)['"]""")
-    return regex.find(text)?.groupValues?.getOrNull(1)
-}
-
-fun catdecryptHexWithKey(hex: String, key: String): String {
-    val cipherBytes = hex.chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-    val keyBytes = base64DecodeArray(key)
-
-    val decryptedChars = cipherBytes.mapIndexed { i, byte ->
-        (byte.toInt() xor keyBytes[i % keyBytes.size].toInt()).toChar()
-    }
-    return decryptedChars.joinToString("")
-}
-
-fun hashOuter(e: String): String {
-    var t: Long = 0L // Use Long here
-    for (ch in e) {
-        t = (ch.code + (t shl 6) + (t shl 16) - t) and 0xFFFFFFFFL // Use Long type constant
-    }
-    return t.toString(16) // Convert to hexadecimal
-}
-
-fun hashInner(e: String): String {
-    var t = e
-    var n: Long = 0xDEADBEEFL // Use Long for n
-    for (i in t.indices) {
-        var r = t[i].code
-        r = r xor (17 * i and 0xFF)
-        n = (n shl 5 or (n ushr 27)) and 0xFFFFFFFFL // Use Long type constant
-        n = n xor r.toLong()
-        n = (n * 73244475) and 0xFFFFFFFFL // Use Long type constant
-    }
-    n = n xor (n ushr 16)
-    n = (n * 295559667) and 0xFFFFFFFFL // Use Long type constant
-    n = n xor (n ushr 13)
-    n = (n * 877262033) and 0xFFFFFFFFL // Use Long type constant
-    n = n xor (n ushr 16)
-    return n.toString(16).padStart(8, '0') // Return 8-digit hexadecimal string
-}
-
-
-fun decryptBase64BlowfishEbc(base64Encrypted: String, key: String): String {
-    try {
-        val encryptedBytes = base64DecodeArray(base64Encrypted)
-        val secretKeySpec = SecretKeySpec(key.toByteArray(), "Blowfish")
-        val cipher = Cipher.getInstance("Blowfish/ECB/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec)
-        val decryptedBytes = cipher.doFinal(encryptedBytes)
-        return String(decryptedBytes)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        return "Decryption failed: ${e.message}"
     }
 }
 
