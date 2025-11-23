@@ -13,6 +13,7 @@ on:
       - main
     paths-ignore:
       - '*.md'
+      - '.github/**'
 
 jobs:
   build:
@@ -47,6 +48,7 @@ jobs:
       - name: Access Secrets
         env:
           TMDB_API: ${{ secrets.TMDB_API }}
+          SIMKL_API: ${{ secrets.SIMKL_API }}
           DUMP_API: ${{ secrets.DUMP_API }}
           DUMP_KEY: ${{ secrets.DUMP_KEY }}
           ANICHI_API: ${{ secrets.ANICHI_API }}
@@ -98,6 +100,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
+          echo SIMKL_API=$SIMKL_API >> local.properties
           echo DUMP_API=$DUMP_API >> local.properties
           echo DUMP_KEY=$DUMP_KEY >> local.properties
           echo ANICHI_API=$ANICHI_API >> local.properties
