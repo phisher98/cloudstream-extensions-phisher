@@ -12,9 +12,9 @@ import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -71,6 +71,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
         private const val simkl = "https://api.simkl.com"
+        private const val simklApi = BuildConfig.SIMKL_API
         private var currentBaseUrl: String? = null
 
         suspend fun getApiBase(): String {
@@ -367,7 +368,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val simklid = runCatching {
             res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
                 val path = if (type == TvType.Movie) "movies" else "tv"
-                val resJson = JSONObject(app.get("$simkl/$path/$imdb").text)
+                val resJson = JSONObject(app.get("$simkl/$path/$imdb?client_id=$simklApi").text)
                 resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
             }
         }.getOrNull()
