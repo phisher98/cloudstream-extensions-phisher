@@ -22,7 +22,6 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TraktProvider
 import com.lagradost.cloudstream3.mvvm.logError
@@ -35,7 +34,6 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -89,7 +87,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     private fun MediaDetails.toSearchResponse(): SearchResponse {
 
         val media = this.media ?: this
-        val mediaType = if (media.ids?.tvdb == null) TvType.Movie else TvType.TvSeries
+        val mediaType = if (media.airedEpisodes == null) TvType.Movie else TvType.TvSeries
         val poster = media.images?.poster?.firstOrNull()
         return if (mediaType == TvType.Movie) {
             newMovieSearchResponse(
