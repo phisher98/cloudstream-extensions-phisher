@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.NextAiring
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -29,6 +30,7 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newSearchResponseList
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
@@ -84,16 +86,25 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         return newHomePageResponse(request.name, results)
     }
 
+    override suspend fun search(query: String, page: Int): SearchResponseList {
+        val apiResponse =
+            getApi("$traktApiUrl/search/movie,show?extended=full,images&limit=20&page=$page&query=$query")
+
+        return newSearchResponseList(parseJson<List<MediaDetails>>(apiResponse).map { element ->
+            element.toSearchResponse()
+        })
+    }
+
     private fun MediaDetails.toSearchResponse(): SearchResponse {
 
         val media = this.media ?: this
-        val mediaType = if (media.airedEpisodes == null) TvType.Movie else TvType.TvSeries
+        val mediaType = if (media.airedEpisodes !== null) TvType.TvSeries else TvType.Movie
         val poster = media.images?.poster?.firstOrNull()
         return if (mediaType == TvType.Movie) {
             newMovieSearchResponse(
                 name = media.title ?: "",
                 url = Data(
-                    type = mediaType,
+                    type = TvType.Movie,
                     mediaDetails = media,
                 ).toJson(),
                 type = TvType.Movie,
@@ -105,7 +116,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
             newTvSeriesSearchResponse(
                 name = media.title ?: "",
                 url = Data(
-                    type = mediaType,
+                    type = TvType.TvSeries,
                     mediaDetails = media,
                 ).toJson(),
                 type = TvType.TvSeries,
@@ -119,6 +130,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     override suspend fun load(url: String): LoadResponse {
         val data = parseJson<Data>(url)
         val mediaDetails = data.mediaDetails
+
         val moviesOrShows = if (data.type == TvType.Movie) "movies" else "shows"
 
         val posterUrl = fixPath(mediaDetails?.images?.poster?.firstOrNull())
@@ -295,6 +307,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
                 addTrailer(mediaDetails.trailer)
                 addImdbId(mediaDetails.ids?.imdb)
                 addTMDbId(mediaDetails.ids?.tmdb.toString())
+                addSimklId(simklid)
             }
         }
     }
