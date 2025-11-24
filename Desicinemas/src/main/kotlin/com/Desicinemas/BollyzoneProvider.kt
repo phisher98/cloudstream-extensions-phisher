@@ -58,7 +58,7 @@ class BollyzoneProvider : DesicinemasProvider() {
         val title = selectFirst("h2.Title")?.text()?.trim() ?: return null
         val href = fixUrlNull(selectFirst("a")?.attr("href")) ?: return null
         val img = selectFirst("img")
-        val posterUrl = fixUrlNull(img?.getImageAttr())
+        val posterUrl ="$proxy?url=" + fixUrlNull(img?.getImageAttr())
 
         return newAnimeSearchResponse(title, href) {
             this.posterUrl = posterUrl
@@ -82,7 +82,7 @@ class BollyzoneProvider : DesicinemasProvider() {
 
         // Handle TV series
         val title = doc.select("meta[property=og:title]").attr("content")
-        val posterUrl = doc.selectFirst("div.Image img")?.getImageAttr()
+        val posterUrl = "$proxy?url=" + doc.selectFirst("div.Image img")?.getImageAttr()
         val description = doc.select("meta[property=og:description]").attr("content")
         val tags = doc.select(".Genre a").map { it.text() }.distinct()
 
@@ -105,7 +105,7 @@ class BollyzoneProvider : DesicinemasProvider() {
 
                 newEpisode(epUrl) {
                     name = epName
-                    this.posterUrl = epPoster
+                    this.posterUrl = "$proxy?url=$epPoster"
                 }
             }
         }.toMutableList()
@@ -136,7 +136,7 @@ class BollyzoneProvider : DesicinemasProvider() {
             )
             val src = app.get(link, headers = headers).documentLarge
             val iframe=src.selectFirst("#Proceed a[href]")?.attr("href").orEmpty()
-            val iframeURL = resolveIframeSrc(iframe) ?: return@amap
+            val iframeURL = resolveIframeSrc(iframe) ?: src.selectFirst("IFRAME")?.attr("src") ?: return@amap
             loadCustomExtractor(name,iframeURL,mainUrl,subtitleCallback, callback)
         }
         return true

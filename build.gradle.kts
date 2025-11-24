@@ -84,7 +84,6 @@ subprojects {
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("com.google.code.gson:gson:2.13.2")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-        implementation("app.cash.quickjs:quickjs-android:0.9.2")
         implementation("com.github.vidstige:jadb:v1.2.1")
         implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     }
