@@ -1,7 +1,6 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
-// use an integer for version numbers
-version = 1
+version = 6
 
 android {
     buildFeatures {
@@ -19,7 +18,7 @@ android {
 cloudstream {
     language = "en"
 
-     description = "[!] Requires Setup \n- Allows you to use any Stremio addon by pasting their manifest.json url"
+     description = "[!] Requires Setup \n- Allows you to use any Stremio addon by pasting their manifest.json url\n- Supports 5 addon urls"
      authors = listOf("Hexated,phisher98,erynith")
 
     /**
@@ -33,7 +32,6 @@ cloudstream {
     tvTypes = listOf(
         "TvSeries",
         "Movie",
-        "AsianDrama",
         "Torrent"
     )
     requiresResources = true

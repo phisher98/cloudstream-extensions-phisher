@@ -1,14 +1,18 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.webkit.URLUtil
 import com.fasterxml.jackson.annotation.JsonProperty
+import org.json.JSONObject
+import java.time.LocalDate
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -41,16 +45,17 @@ import com.phisher98.SubsExtractors.invokeOpenSubs
 import com.phisher98.SubsExtractors.invokeWatchsomuch
 
 class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
-    override var mainUrl = "https://torrentio.strem.fun"
+    override var mainUrl = "https://example.com"
     override var name = "Stremio"
     override val hasMainPage = true
     override val hasQuickSearch = true
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama, TvType.Torrent)
+    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Torrent)
 
     companion object {
         const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = BuildConfig.TMDB_API
+        private const val simkl = "https://api.simkl.com"
 
         fun getType(t: String?): TvType {
             return when (t) {
@@ -67,31 +72,41 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         }
     }
 
-    override val mainPage = mainPageOf(
-        "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending",
-        "$tmdbAPI/movie/popular?api_key=$apiKey&region=US" to "Popular Movies",
-        "$tmdbAPI/tv/popular?api_key=$apiKey&region=US&with_original_language=en" to "Popular TV Shows",
-        "$tmdbAPI/tv/airing_today?api_key=$apiKey&region=US&with_original_language=en" to "Airing Today TV Shows",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=213" to "Netflix",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=1024" to "Amazon",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2739" to "Disney+",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=453" to "Hulu",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2552" to "Apple TV+",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=49" to "HBO",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
-        "$tmdbAPI/movie/top_rated?api_key=$apiKey&region=US" to "Top Rated Movies",
-        "$tmdbAPI/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows",
-        "$tmdbAPI/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
-        "$tmdbAPI/discover/tv?api_key=$apiKey&with_original_language=ko" to "Korean Shows",
-    )
+    override val mainPage = run {
+        val categories = mutableListOf<Pair<String, String>>()
+        val currentMonth = LocalDate.now().monthValue
 
-    private fun getImageUrl(link: String?): String? {
-        if (link == null) return null
+        categories += "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending"
+        categories += "$tmdbAPI/movie/popular?api_key=$apiKey&region=US" to "Popular Movies"
+        if (currentMonth == 11 || currentMonth == 12) {
+            categories += "$tmdbAPI/discover/movie?api_key=$apiKey&with_keywords=207317&region=US" to "Christmas Movies"
+        }
+        if (currentMonth == 10) {
+            categories += "$tmdbAPI/discover/movie?api_key=$apiKey&with_genres=27&region=US" to "Halloween Horror Movies"
+        }
+        categories += "$tmdbAPI/tv/popular?api_key=$apiKey&region=US&with_original_language=en" to "Popular TV Shows"
+        categories += "$tmdbAPI/tv/airing_today?api_key=$apiKey&region=US&with_original_language=en" to "Airing Today TV Shows"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=213" to "Netflix"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=1024" to "Amazon Prime"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2739" to "Disney+"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=453" to "Hulu"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2552" to "Apple TV+"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=49" to "HBO Max"
+        categories += "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+"
+        categories += "$tmdbAPI/movie/top_rated?api_key=$apiKey&region=US" to "Top Rated Movies"
+        categories += "$tmdbAPI/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows"
+        categories += "$tmdbAPI/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies"
+
+        mainPageOf(*(categories).toTypedArray())
+    }
+
+    private fun getImageUrl(link: String?, fallback: String?): String? {
+        if (link == null) return fallback
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
     }
 
-    private fun getOriImageUrl(link: String?): String? {
-        if (link == null) return null
+    private fun getOriImageUrl(link: String?, fallback: String?): String? {
+        if (link == null) return fallback
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
@@ -114,7 +129,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
-            this.posterUrl = getImageUrl(posterPath)
+            this.posterUrl = getImageUrl(posterPath, "https://files.catbox.moe/90n81c.jpg")
         }
     }
 
@@ -141,8 +156,8 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
             ?: throw ErrorLoadingException("Invalid Json Response")
 
         val title = res.title ?: res.name ?: return null
-        val poster = getOriImageUrl(res.posterPath)
-        val bgPoster = getOriImageUrl(res.backdropPath)
+        val poster = getOriImageUrl(res.posterPath, "https://files.catbox.moe/32gthr.jpg")
+        val bgPoster = getOriImageUrl(res.backdropPath, "https://files.catbox.moe/9qao8w.jpg")
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
         val genres = res.genres?.mapNotNull { it.name }
@@ -155,7 +170,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
             ActorData(
                 Actor(
                     cast.name ?: cast.originalName ?: return@mapNotNull null,
-                    getImageUrl(cast.profilePath)
+                    getImageUrl(cast.profilePath, "https://files.catbox.moe/90n81c.jpg")
                 ), roleString = cast.character
             )
         } ?: return null
@@ -164,6 +179,14 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
         val trailer =
             res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
+
+        val simklid = runCatching {
+            res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
+                val path = if (type == TvType.Movie) "movies" else "tv"
+                val resJson = JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
+                resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+            }
+        }.getOrNull()
 
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
@@ -178,7 +201,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                             this.name = eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
                             this.season = eps.seasonNumber
                             this.episode = eps.episodeNumber
-                            this.posterUrl = getImageUrl(eps.stillPath)
+                            this.posterUrl = getImageUrl(eps.stillPath, "https://files.catbox.moe/qbz6xd.jpg")
                             this.score = Score.from10(eps.voteAverage)
                             this.description = eps.overview
                             this.runTime = eps.runtime
@@ -202,6 +225,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
+                addSimklId(simklid)
             }
         } else {
             newMovieLoadResponse(
@@ -224,6 +248,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
+                addSimklId(simklid)
             }
         }
     }
@@ -237,15 +262,9 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val res = parseJson<LoadData>(data)
 
         runAllAsync(
-            {
-                invokeMainSource(res.imdbId, res.season, res.episode, subtitleCallback, callback)
-            },
-            {
-                invokeWatchsomuch(res.imdbId, res.season, res.episode, subtitleCallback)
-            },
-            {
-                invokeOpenSubs(res.imdbId, res.season, res.episode, subtitleCallback)
-            },
+            suspend { invokeMainSource(res.imdbId, res.season, res.episode, subtitleCallback, callback) },
+            suspend { invokeWatchsomuch(res.imdbId, res.season, res.episode, subtitleCallback) },
+            suspend { invokeOpenSubs(res.imdbId, res.season, res.episode, subtitleCallback) }
         )
 
         return true
@@ -258,15 +277,22 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixMainUrl = sharedPref.getString("stremio_addon", mainUrl)?.fixSourceUrl()
-        val url = if (season == null) {
-            "$fixMainUrl/stream/movie/$imdbId.json"
-        } else {
-            "$fixMainUrl/stream/series/$imdbId:$season:$episode.json"
-        }
-        val res = app.get(url, timeout = 120L).parsedSafe<StreamsResponse>()
-        res?.streams?.forEach { stream ->
-            stream.runCallback(subtitleCallback, callback)
+        val addonList = listOf("stremio_addon", "stremio_addon2", "stremio_addon3", "stremio_addon4", "stremio_addon5")
+
+        for (addonPref in addonList) {
+            val fixMainUrl = sharedPref.getString(addonPref, "")?.fixSourceUrl()
+            val url = if (season == null) {
+                "$fixMainUrl/stream/movie/$imdbId.json"
+            } else {
+                "$fixMainUrl/stream/series/$imdbId:$season:$episode.json"
+            }
+
+            if (!URLUtil.isValidUrl(url)) continue
+
+            val res = app.get(url, timeout = 10L).parsedSafe<StreamsResponse>()
+            res?.streams?.forEach { stream ->
+                stream.runCallback(subtitleCallback, callback)
+            }
         }
     }
 
