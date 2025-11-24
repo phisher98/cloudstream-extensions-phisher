@@ -300,8 +300,8 @@ class VCloud : ExtractorApi() {
                 text.contains("Download [FSL Server]") -> {
                     callback.invoke(
                         newExtractorLink(
-                            "[FSL Server]",
-                            "[FSL Server]",
+                            "FSL Server",
+                            "FSL Server",
                             link,
                         ) { this.quality = quality }
                     )
@@ -323,8 +323,8 @@ class VCloud : ExtractorApi() {
                     if (dlink.isNotEmpty()) {
                         callback.invoke(
                             newExtractorLink(
-                                "[BuzzServer]",
-                                "[BuzzServer] $labelExtras",
+                                "BuzzServer",
+                                "BuzzServer $labelExtras",
                                 baseUrl + dlink,
                             ) { this.quality = quality }
                         )
@@ -372,6 +372,16 @@ class VCloud : ExtractorApi() {
                         newExtractorLink(
                             "S3 Server",
                             "S3 Server $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("Mega Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "Mega Server",
+                            "Mega Server $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )

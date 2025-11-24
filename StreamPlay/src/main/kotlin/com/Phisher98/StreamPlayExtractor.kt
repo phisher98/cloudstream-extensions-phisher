@@ -59,6 +59,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
@@ -2177,7 +2178,6 @@ object StreamPlayExtractor : StreamPlay() {
             val titleQuery = buildString {
                 append("search/")
                 append(title.trim().replace(" ", "+"))
-                if (year != null) append("+$year")
                 if (season != null) append("+season+$season")
             }
             searchAndFilter(titleQuery, fallbackTitle = title)
@@ -2271,21 +2271,31 @@ object StreamPlayExtractor : StreamPlay() {
 
         val episodeLinks =
             doc.select("h4:matches($seasonPattern), h3:matches($seasonPattern), h5:matches($seasonPattern)")
-                .flatMap { header ->
+                .map { header ->
                     var sibling = header.nextElementSibling()
-                    while (sibling != null && sibling.select("a").isEmpty()) {
+                    val matched = mutableListOf<Element>()
+                    while (sibling != null) {
                         Log.d(
                             "Phisher",
-                            "Skipping sibling tag: ${sibling.tagName()} text: ${sibling.text()}"
+                            "Checking sibling tag: ${sibling.tagName()} text: ${sibling.text()}"
                         )
+
+                        val anchors = sibling.select("a")
+                        if (anchors.isNotEmpty()) {
+                            val good = anchors.filter {
+                                it.text().contains(Regex(episodePattern, RegexOption.IGNORE_CASE))
+                            }
+                            if (good.isNotEmpty()) {
+                                matched.addAll(good)
+                                // break
+                            }
+                        }
                         sibling = sibling.nextElementSibling()
                     }
 
-                    val links = sibling?.select("a").orEmpty().filter {
-                        it.text().contains(Regex(episodePattern, RegexOption.IGNORE_CASE))
-                    }
-                    links
+                    matched
                 }
+                .flatten()
 
         for (episodeLink in episodeLinks) {
             val episodeUrl = episodeLink.attr("href")
