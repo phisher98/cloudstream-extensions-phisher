@@ -56,10 +56,30 @@ class SettingsFragment(
     ): View {
         val root = getLayout("settings", inflater, container)
 
-        // ===== ADDON =====
+        // ===== ADDON 1 =====
         val stremioAddonInput = root.findView<EditText>("stremio_addon_input")
         stremioAddonInput.setText(sharedPref.getString("stremio_addon", ""))
         stremioAddonInput.makeTvCompatible()
+
+        // ===== ADDON 2 =====
+        val stremioAddon2Input = root.findView<EditText>("stremio_addon2_input")
+        stremioAddon2Input.setText(sharedPref.getString("stremio_addon2", ""))
+        stremioAddon2Input.makeTvCompatible()
+
+        // ===== ADDON 3 =====
+        val stremioAddon3Input = root.findView<EditText>("stremio_addon3_input")
+        stremioAddon3Input.setText(sharedPref.getString("stremio_addon3", ""))
+        stremioAddon3Input.makeTvCompatible()
+
+        // ===== ADDON 4 =====
+        val stremioAddon4Input = root.findView<EditText>("stremio_addon4_input")
+        stremioAddon4Input.setText(sharedPref.getString("stremio_addon4", ""))
+        stremioAddon4Input.makeTvCompatible()
+
+        // ===== ADDON 5 =====
+        val stremioAddon5Input = root.findView<EditText>("stremio_addon5_input")
+        stremioAddon5Input.setText(sharedPref.getString("stremio_addon5", ""))
+        stremioAddon5Input.makeTvCompatible()
 
         // ===== SAVE =====
         val saveBtn = root.findView<ImageView>("save")
@@ -68,6 +88,10 @@ class SettingsFragment(
         saveBtn.setOnClickListener {
             sharedPref.edit {
                 putString("stremio_addon", stremioAddonInput.text.toString())
+                putString("stremio_addon2", stremioAddon2Input.text.toString())
+                putString("stremio_addon3", stremioAddon3Input.text.toString())
+                putString("stremio_addon4", stremioAddon4Input.text.toString())
+                putString("stremio_addon5", stremioAddon5Input.text.toString())
             }
 
             AlertDialog.Builder(requireContext())
@@ -96,6 +120,10 @@ class SettingsFragment(
                 .setPositiveButton("Reset") { _, _ ->
                     sharedPref.edit().clear().commit()
                     stremioAddonInput.text.clear()
+                    stremioAddon2Input.text.clear()
+                    stremioAddon3Input.text.clear()
+                    stremioAddon4Input.text.clear()
+                    stremioAddon5Input.text.clear()
                     restartApp()
                 }
                 .setNegativeButton("Cancel", null)
