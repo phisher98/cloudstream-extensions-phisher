@@ -208,6 +208,16 @@ class HubCloud : ExtractorApi() {
                     return@amap
                 }
 
+                text.contains("Mega Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$referer [Mega Server]",
+                            "$referer [Mega Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
                 }

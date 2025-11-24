@@ -603,7 +603,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             ?.toSet() ?: emptySet()
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
         val authToken = token
-        runAllAsync(
+        runLimitedAsync( concurrency = 10,
             {
                 try {
                     if (!res.isAnime) {

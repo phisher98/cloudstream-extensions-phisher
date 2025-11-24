@@ -79,86 +79,85 @@ data class Provider(
 @RequiresApi(Build.VERSION_CODES.O)
 fun buildProviders(): List<Provider> {
     return listOf(
-        Provider("uhdmovies", "UHD Movies (Multi)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("uhdmovies", "UHD Movies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
-        Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub)
         },
-        Provider("player4u", "Player4U") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("player4u", "Player4U") { res, _, callback, _, _ ->
             if (!res.isAnime) invokePlayer4U(res.title, res.season, res.episode, res.year, callback)
         },
-
-        Provider("vidsrccc", "Vidsrccc") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("vidsrccc", "Vidsrccc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
         },
-        Provider("topmovies", "Top Movies") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("topmovies", "Top Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeTopMovies(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moviesmod", "MoviesMod") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("moviesmod", "MoviesMod") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMoviesmod(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("bollyflix", "Bollyflix") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("bollyflix", "Bollyflix") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeBollyflix(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("watchsomuch", "WatchSoMuch") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("watchsomuch", "WatchSoMuch") { res, subtitleCallback, _, _, _ ->
             if (!res.isAnime) invokeWatchsomuch(res.imdbId, res.season, res.episode, subtitleCallback)
         },
-        Provider("ninetv", "NineTV") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("ninetv", "NineTV") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeNinetv(res.id, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("ridomovies", "RidoMovies") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("ridomovies", "RidoMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeRidomovies(res.id, res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moviehubapi", "MovieHub API") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("moviehubapi", "MovieHub API") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMoviehubAPI(res.id, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("allmovieland", "AllMovieland") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("allmovieland", "AllMovieland") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeAllMovieland(res.imdbId, res.season, res.episode, callback)
         },
-        Provider("multiembed", "MultiEmbed") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("multiembed", "MultiEmbed") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, callback)
         },
-        Provider("emovies", "EMovies") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("emovies", "EMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeEmovies(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback)
         },
-        Provider("extramovies", "ExtraMovies") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("extramovies", "ExtraMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeExtramovies(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("multimovies", "MultiMovies (Multi)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("multimovies", "MultiMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("2embed", "2Embed") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("2embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("zshow", "ZShow") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("zshow", "ZShow") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeZshow(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("showflix", "ShowFlix (South Indian)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("showflix", "ShowFlix (South Indian)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeShowflix(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moflix", "Moflix (Multi)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("moflix", "Moflix (Multi)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
         },
-        Provider("zoechip", "ZoeChip") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("zoechip", "ZoeChip") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeZoechip(res.title, res.year, res.season, res.episode, callback)
         },
-        Provider("nepu", "Nepu") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("nepu", "Nepu") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeNepu(res.title, res.airedYear ?: res.year, res.season, res.episode, callback)
         },
-        Provider("playdesi", "PlayDesi") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("playdesi", "PlayDesi") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, _, _ ->
             invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback)
         },
-        Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, token, dahmerMoviesAPI ->
+        Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode, res.year, subtitleCallback, callback)
         },
-        Provider("primesrc", "PrimeSrc") { res, subtitleCallback, callback, _, dahmerMoviesAPI ->
+        Provider("primesrc", "PrimeSrc") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("film1k", "Film1k") { res, subtitleCallback, callback, _, _ ->

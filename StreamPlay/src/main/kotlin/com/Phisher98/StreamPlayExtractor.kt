@@ -1951,7 +1951,7 @@ object StreamPlayExtractor : StreamPlay() {
         val fixtitle =
             title?.substringBefore("-")?.substringBefore(":")?.replace("&", " ")?.trim().orEmpty()
         val query = if (season == null) "$fixtitle $year" else "$fixtitle season $season $year"
-        val url = "$vegaMoviesAPI/?s=$query"
+        val url = "$vegaMoviesAPI/search/$query"
         val excludedButtonTexts = setOf("Filepress", "GDToT", "DropGalaxy")
 
         val searchDoc =
@@ -4171,13 +4171,15 @@ object StreamPlayExtractor : StreamPlay() {
 
         val query = buildString {
             append(title)
+            /*
             when {
                 season != null -> append(" season $season")
                 year != null -> append(" $year")
             }
+             */
         }.replace(" ", "+")
 
-        val searchUrl = "$baseUrl/?s=$query"
+        val searchUrl = "$baseUrl/page/0/?s=$query" //Temp as Source is changing its Search API
         val searchDoc = runCatching { app.get(searchUrl).documentLarge }.getOrNull() ?: return
 
         val normalizedTitle = title.lowercase().replace(Regex("[^a-z0-9]"), "")
@@ -4202,10 +4204,12 @@ object StreamPlayExtractor : StreamPlay() {
         val matchedPosts = if (!imdbId.isNullOrBlank()) {
             val matched = posts.mapNotNull { post ->
                 val postUrl = post.absUrl("href")
+
                 val postDoc =
                     runCatching { app.get(postUrl).documentLarge }.getOrNull() ?: return@mapNotNull null
                 val imdbLink = postDoc.selectFirst("div.kp-hc a[href*=\"imdb.com/title/$imdbId\"]")
                     ?.attr("href")
+
                 val matchedImdbId =
                     imdbLink?.substringAfterLast("/tt")?.substringBefore("/")?.let { "tt$it" }
                 if (matchedImdbId == imdbId) post else null
