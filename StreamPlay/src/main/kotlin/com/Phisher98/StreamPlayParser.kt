@@ -2360,3 +2360,12 @@ data class GeoResponse(
     val countrycode: String?,
     val languages: String?
 )
+
+data class YflixResponse(
+    @get:JsonProperty("status") val status: Boolean,
+    @get:JsonProperty("result") val result: String
+) {
+    fun getDocument(): Document {
+        return Jsoup.parse(result)
+    }
+}

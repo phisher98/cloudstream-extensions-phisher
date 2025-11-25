@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 477
+version = 478
 
 android {
     buildFeatures {
@@ -51,6 +51,8 @@ android {
         buildConfigField("String", "KAIENC", "\"${properties.getProperty("KAIENC")}\"")
         buildConfigField("String", "Nuviostreams", "\"${properties.getProperty("Nuviostreams")}\"")
         buildConfigField("String", "VideasyDEC", "\"${properties.getProperty("VideasyDEC")}\"")
+        buildConfigField("String", "YFXENC", "\"${properties.getProperty("YFXENC")}\"")
+        buildConfigField("String", "YFXDEC", "\"${properties.getProperty("YFXDEC")}\"")
     }
 }
 

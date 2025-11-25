@@ -41,6 +41,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
@@ -2094,4 +2095,34 @@ fun decryptVidzeeUrl(encrypted: String, key: ByteArray): String {
 
     val decryptedBytes = cipher.doFinal(cipherData)
     return decryptedBytes.toString(Charsets.UTF_8)
+}
+
+suspend fun yflixDecode(text: String?): String {
+    return try {
+        val res = app.get("${BuildConfig.YFXENC}?text=$text").text
+        JSONObject(res).getString("result")
+    } catch (_: Exception) {
+        ""
+    }
+}
+
+private val JSON = "application/json; charset=utf-8".toMediaType()
+
+suspend fun yflixDecodeReverse(text: String): String {
+    val jsonBody = """{"text":"$text"}""".toRequestBody(JSON)
+
+    return try {
+        val res = app.post(
+            BuildConfig.YFXDEC,
+            requestBody = jsonBody
+        ).text
+        JSONObject(res).getString("result")
+    } catch (_: Exception) {
+        ""
+    }
+}
+
+fun yflixextractVideoUrlFromJson(jsonData: String): String {
+    val jsonObject = JSONObject(jsonData)
+    return jsonObject.getString("url")
 }

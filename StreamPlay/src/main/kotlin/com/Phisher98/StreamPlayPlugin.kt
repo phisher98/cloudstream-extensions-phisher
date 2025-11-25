@@ -160,6 +160,8 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Fourspromax())
         registerExtractorAPI(XdMoviesExtractor())
         registerExtractorAPI(HubdriveSpace())
+        registerExtractorAPI(Rapidairmax())
+        registerExtractorAPI(Rapidshare())
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
             if (!act.isFinishing && !act.isDestroyed) {

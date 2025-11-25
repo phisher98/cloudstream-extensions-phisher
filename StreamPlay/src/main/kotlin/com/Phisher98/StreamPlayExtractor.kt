@@ -5724,7 +5724,149 @@ object StreamPlayExtractor : StreamPlay() {
             else loadSourceNameExtractor("KimCartoon ${server.uppercase()}", href,"https://am.vidstream.vip",subtitleCallback, callback)
         }
     }
+    suspend fun invokeYflix(
+        title: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        if (title.isNullOrBlank()) return
 
+        val type = if (season == null) "movie" else "tv"
+        val searchUrl = "$yFlix/browser?keyword=${title.trim().replace(" ", "-")}&type=$type"
+
+        val matchedElement = runCatching {
+            val doc = app.get(searchUrl).documentLarge
+            val results = doc.select("div.item")
+            results.firstOrNull { item ->
+                val titleElement = item.selectFirst("div.info a")
+                val name = titleElement?.text()?.trim() ?: return@firstOrNull false
+                name.contains(title, ignoreCase = true)
+            }?.selectFirst("div.info a")
+        }.getOrNull() ?: return
+
+        val href = yFlix + matchedElement.attr("href")
+        val document = app.get(href).documentLarge
+
+        val typee = if (season == null) TvType.Movie else TvType.TvSeries
+
+        val keyword = href.substringAfter("/watch/").substringBefore(".")
+        val dataid = document.select("#movie-rating").attr("data-id")
+        val decoded = yflixDecode(dataid)
+
+        val epRes = app
+            .get("$yFlix/ajax/episodes/list?keyword=$keyword&id=$dataid&_=$decoded")
+            .parsedSafe<YflixResponse>()
+            ?.getDocument()
+
+        val movieNode = epRes?.selectFirst("ul.episodes a")
+
+        suspend fun fetchAndProcessServers(eid: String) {
+            val decodetoken = try {
+                yflixDecode(eid)
+            } catch (e: Exception) {
+                Log.d("Yflix", "Failed to decode eid token: ${e.message}")
+                return
+            }
+
+            val listResp = runCatching {
+                app.get("$yFlix/ajax/links/list?eid=$eid&_=$decodetoken")
+                    .parsedSafe<YflixResponse>()
+            }.getOrNull()
+
+            val doc = listResp?.getDocument()
+            if (doc == null) {
+                Log.d("Yflix", "No document returned for links list (eid=$eid)")
+                return
+            }
+
+            val servers = doc.select("li.server")
+            if (servers.isEmpty()) {
+                Log.d("Yflix", "No servers found in the links list (eid=$eid)")
+                return
+            }
+
+            servers.forEach { serverNode ->
+                try {
+                    val lid = serverNode.attr("data-lid").trim()
+                    if (lid.isBlank()) {
+                        Log.d("Yflix", "Skipping server with empty lid (eid=$eid)")
+                        return@forEach
+                    }
+
+                    val serverName = serverNode.selectFirst("span")?.text()?.trim()?.ifEmpty { "Server" }
+
+                    val decodelid = try {
+                        yflixDecode(lid)
+                    } catch (e: Exception) {
+                        Log.d("Yflix", "Failed to decode lid ($lid): ${e.message}")
+                        return@forEach
+                    }
+
+                    val viewResp = runCatching {
+                        app.get("$yFlix/ajax/links/view?id=$lid&_=$decodelid")
+                            .parsedSafe<YflixResponse>()
+                    }.getOrNull()
+
+                    val result = viewResp?.result
+                    if (result.isNullOrBlank()) {
+                        Log.d("Yflix", "Empty result for server $serverName (lid=$lid)")
+                        return@forEach
+                    }
+
+                    val decodedIframePayload = try {
+                        yflixDecodeReverse(result)
+                    } catch (e: Exception) {
+                        Log.d("Yflix", "Failed to decodeReverse for lid=$lid : ${e.message}")
+                        return@forEach
+                    }
+
+                    val iframeUrl = try {
+                        yflixextractVideoUrlFromJson(decodedIframePayload)
+                    } catch (e: Exception) {
+                        Log.d("Yflix", "Failed to extract video url for lid=$lid : ${e.message}")
+                        null
+                    }
+
+                    if (iframeUrl.isNullOrBlank()) {
+                        Log.d("Yflix", "No iframe/video url extracted for server $serverName (lid=$lid)")
+                        return@forEach
+                    }
+
+                    val displayName = "⌜ YFlix ⌟  |  $serverName"
+                    loadExtractor(iframeUrl, displayName, subtitleCallback, callback)
+                } catch (inner: Exception) {
+                    Log.d("Yflix", "Error processing server node: ${inner.message}")
+                }
+            }
+        }
+
+        val eid = if (typee == TvType.TvSeries) {
+            val targetSeason = season ?: return
+            val targetEpisode = episode ?: return
+
+            val seasonBlocks = epRes?.select("ul.episodes") ?: return
+            var found: String? = null
+            loop@ for (seasonBlock in seasonBlocks) {
+                val seasonNumber = seasonBlock.attr("data-season").toIntOrNull() ?: 1
+                if (seasonNumber != targetSeason) continue
+
+                val eps = seasonBlock.select("a")
+                for ((index, ep) in eps.withIndex()) {
+                    val epNum = ep.attr("num").toIntOrNull() ?: (index + 1)
+                    if (epNum == targetEpisode) {
+                        found = ep.attr("eid")
+                        break@loop
+                    }
+                }
+            }
+            found
+        } else {
+            movieNode?.attr("eid")
+        } ?: return
+        fetchAndProcessServers(eid)
+    }
 }
 
 
