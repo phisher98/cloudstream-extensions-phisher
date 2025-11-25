@@ -53,9 +53,9 @@ class RingZ : MainAPI() {
 
     override val mainPage = mainPageOf(
         *listOfNotNull(
-            "$mainUrl/m.json" to "Movies",
-            "$mainUrl/s.json" to "Web Series",
-            "$mainUrl/anime.json" to "Anime",
+            "$mainUrl/test.json" to "Movies",
+            "$mainUrl/srs.json" to "Web Series",
+            "$mainUrl/lstanime.json" to "Anime",
             if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
         ).toTypedArray()
     )
