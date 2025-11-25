@@ -88,3 +88,27 @@ data class IMDB(
     @SerializedName("imdb_id")
     val imdbId: String? = null
 )
+
+fun cleanTitle(raw: String): String {
+    val name = raw.substringBefore("(").trim()
+        .replace(Regex("""\s+"""), " ") // collapse extra spaces
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+    val seasonRegex = Regex("""Season\s*\d+""", RegexOption.IGNORE_CASE)
+    val yearRegex = Regex("""\b(19|20)\d{2}\b""")
+
+    val season = seasonRegex.find(raw)?.value?.replaceFirstChar { it.uppercase() }
+    val year = yearRegex.find(raw)?.value
+
+    val parts = mutableListOf<String>()
+    if (season != null) parts += season
+    if (year != null) parts += year
+
+    return if (parts.isEmpty()) {
+        name
+    } else {
+        name + parts.joinToString("") { " ($it)" }
+    }
+}
+
+
