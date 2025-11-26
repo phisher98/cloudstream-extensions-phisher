@@ -249,7 +249,7 @@ fun buildProviders(): List<Provider> {
             invokeVideasy(res.id, res.imdbId, res.title, res.year, res.season,res.episode,  callback, subtitleCallback)
         },
         Provider("XDMovies", "XDMovies") { res, subtitleCallback, callback, _, _ ->
-            invokeXDmovies(res.id, res.season, res.episode,  callback, subtitleCallback)
+            invokeXDmovies(res.title,res.id, res.season, res.episode,  callback, subtitleCallback)
         },
         Provider("KimCartoon", "KimCartoon") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeKimcartoon(res.title, res.season, res.episode, subtitleCallback, callback)

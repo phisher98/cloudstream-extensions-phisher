@@ -35,16 +35,19 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.runAllAsync
+import kotlinx.coroutines.sync.withLock
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
-
+import kotlinx.coroutines.*
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "StreamPlay"
     override val hasMainPage = true
@@ -72,86 +75,95 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val simkl = "https://api.simkl.com"
         private var currentBaseUrl: String? = null
 
+
+        private val apiMutex = Mutex() // Prevents race conditions
+        private const val TAG = "StreamPlay"
+
         suspend fun getApiBase(): String {
-            // If already found a working base, reuse it
             currentBaseUrl?.let { return it }
+            return apiMutex.withLock {
+                currentBaseUrl?.let { return it }
 
-            // Try official first
-            if (isOfficialAvailable()) {
+                // 1. Try Official Fast
+                if (checkConnectivity(OFFICIAL_TMDB_URL)) {
+                    Log.d(TAG, "✅ Using official TMDB API")
+                    currentBaseUrl = OFFICIAL_TMDB_URL
+                    return OFFICIAL_TMDB_URL
+                }
+
+                // 2. Fetch Proxies
+                val proxies = fetchProxyList()
+                if (proxies.isEmpty()) {
+                    Log.e(TAG, "❌ No proxies found, falling back to official")
+                    return OFFICIAL_TMDB_URL
+                }
+
+                // 3. Parallel Race: Check all proxies at the same time
+                val workingProxy = coroutineScope {
+                    val deferredChecks = proxies.map { proxy ->
+                        async {
+                            if (checkConnectivity(proxy)) proxy else null
+                        }
+                    }
+                    deferredChecks.awaitAll().firstOrNull { it != null }
+                }
+
+                if (workingProxy != null) {
+                    Log.d(TAG, "✅ Switched to proxy: $workingProxy")
+                    currentBaseUrl = workingProxy
+                    return workingProxy
+                }
+
+                // 4. Ultimate Fallback
+                Log.e(TAG, "❌ All proxies failed, fallback to official")
                 currentBaseUrl = OFFICIAL_TMDB_URL
-                Log.d("TMDB", "✅ Using official TMDB API")
-                return OFFICIAL_TMDB_URL
+                OFFICIAL_TMDB_URL
             }
-
-            // If official fails, try proxies from the remote list
-            val proxies = fetchProxyList()
-            for (proxy in proxies) {
-                if (isProxyWorking(proxy)) {
-                    currentBaseUrl = proxy
-                    Log.d("TMDB", "✅ Switched to proxy: $proxy")
-                    return proxy
-                }
-            }
-
-            // Fallback to official if nothing worked
-            Log.e("TMDB", "❌ No proxy worked, fallback to official")
-            return OFFICIAL_TMDB_URL
         }
 
-        private suspend fun isOfficialAvailable(): Boolean {
-            val testUrl =
-                "$OFFICIAL_TMDB_URL/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
+        private suspend fun checkConnectivity(url: String): Boolean {
+            val testUrl = "$url/configuration?api_key=$apiKey"
 
-            return withTimeoutOrNull(3000) {
+            return withTimeoutOrNull(2000) { // 2s timeout max
                 try {
                     val response = app.get(
                         testUrl,
-                        timeout = 2000,
-                        headers = mapOf(
-                            "Cache-Control" to "no-cache",
-                            "Pragma" to "no-cache"
-                        )
+                        timeout = 1500, // Fast socket timeout
+                        headers = mapOf("Cache-Control" to "no-cache")
                     )
-                    response.okhttpResponse.code in listOf(200, 304)
+                    response.code == 200 || response.code == 304
                 } catch (e: Exception) {
-                    Log.d("TMDB", "Official TMDB unavailable: ${e.message}")
-                    false
-                }
-            } ?: false
-        }
-
-        private suspend fun isProxyWorking(proxyUrl: String): Boolean {
-            val testUrl =
-                "$proxyUrl/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
-
-            return withTimeoutOrNull(3000) {
-                try {
-                    val response = app.get(
-                        testUrl,
-                        timeout = 2000,
-                        headers = mapOf(
-                            "Cache-Control" to "no-cache",
-                            "Pragma" to "no-cache"
-                        )
-                    )
-                    response.okhttpResponse.code in listOf(200, 304)
-                } catch (e: Exception) {
-                    Log.d("TMDB", "Proxy failed: $proxyUrl -> ${e.message}")
                     false
                 }
             } ?: false
         }
 
         private suspend fun fetchProxyList(): List<String> = try {
-            val response = app.get(REMOTE_PROXY_LIST).text
+            val response = app.get(REMOTE_PROXY_LIST, timeout = 5000).text
             val json = JSONObject(response)
             val arr = json.getJSONArray("proxies")
 
-            List(arr.length()) { arr.getString(it).trim().removeSuffix("/") }
+            // Convert to list and clean strings
+            (0 until arr.length()).map { arr.getString(it).trim().removeSuffix("/") }
                 .filter { it.isNotEmpty() }
         } catch (e: Exception) {
-            Log.e("TMDB", "Error fetching proxy list: ${e.message}")
+            Log.e(TAG, "Error fetching proxy list: ${e.message}")
             emptyList()
+        }
+
+        private const val DOMAINS_URL =
+            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
+        private var cachedDomains: DomainsParser? = null
+
+        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
+            if (cachedDomains == null || forceRefresh) {
+                try {
+                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            return cachedDomains
         }
 
         const val anilistAPI = "https://graphql.anilist.co"
@@ -233,21 +245,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 else -> ShowStatus.Completed
             }
         }
-        private const val DOMAINS_URL =
-            "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/domains.json"
-        private var cachedDomains: DomainsParser? = null
 
-        suspend fun getDomains(forceRefresh: Boolean = false): DomainsParser? {
-            if (cachedDomains == null || forceRefresh) {
-                try {
-                    cachedDomains = app.get(DOMAINS_URL).parsedSafe<DomainsParser>()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return null
-                }
-            }
-            return cachedDomains
-        }
+
     }
 
     override val mainPage = mainPageOf(
@@ -364,162 +363,128 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } ?: emptyList()
             }
 
-        val simklid = runCatching {
-            res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
-                val path = if (type == TvType.Movie) "movies" else "tv"
-                val resJson = JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+        val simklid = coroutineScope {
+            async {
+                runCatching {
+                    res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
+                        val path = if (type == TvType.Movie) "movies" else "tv"
+                        val resJson =
+                            JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
+                        resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+                    }
+                }.getOrNull()
             }
-        }.getOrNull()
+        }
 
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
-            val episodes = res.seasons?.mapNotNull { season ->
-
-                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
-                    .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
-                        newEpisode(
-                            LinkData(
-                                data.id,
-                                res.external_ids?.imdb_id,
-                                res.external_ids?.tvdb_id,
-                                data.type,
-                                eps.seasonNumber,
-                                eps.episodeNumber,
-                                eps.id,
-                                title = title,
-                                year = season.airDate?.split("-")?.first()?.toIntOrNull(),
-                                orgTitle = orgTitle,
-                                isAnime = isAnime,
-                                airedYear = year,
-                                lastSeason = lastSeason,
-                                epsTitle = eps.name,
-                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
-                                date = season.airDate,
-                                airedDate = res.releaseDate ?: res.firstAirDate,
-                                isAsian = isAsian,
-                                isBollywood = isBollywood,
-                                isCartoon = isCartoon,
-                                alttitle = res.title,
-                                nametitle = res.name
-                            ).toJson()
-                        ) {
-                            this.name =
-                                eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
-                            this.season = eps.seasonNumber
-                            this.episode = eps.episodeNumber
-                            this.posterUrl = getImageUrl(eps.stillPath)
-                            this.score = Score.from10(eps.voteAverage)
-                            this.description = eps.overview
-                            this.runTime = eps.runTime
-                        }.apply {
-                            this.addDate(eps.airDate)
-                        }
+            val episodes = coroutineScope {
+                res.seasons?.map { season ->
+                    async {
+                        app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
+                            .parsedSafe<MediaDetailEpisodes>()
+                            ?.episodes
+                            ?.map { eps ->
+                                newEpisode(
+                                    LinkData(
+                                        data.id,
+                                        res.external_ids?.imdb_id,
+                                        res.external_ids?.tvdb_id,
+                                        data.type,
+                                        eps.seasonNumber,
+                                        eps.episodeNumber,
+                                        eps.id,
+                                        title = title,
+                                        year = season.airDate?.split("-")?.first()?.toIntOrNull(),
+                                        orgTitle = orgTitle,
+                                        isAnime = isAnime,
+                                        airedYear = year,
+                                        lastSeason = lastSeason,
+                                        epsTitle = eps.name,
+                                        jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
+                                        date = season.airDate,
+                                        airedDate = res.releaseDate ?: res.firstAirDate,
+                                        isAsian = isAsian,
+                                        isBollywood = isBollywood,
+                                        isCartoon = isCartoon,
+                                        alttitle = res.title,
+                                        nametitle = res.name
+                                    ).toJson()
+                                ) {
+                                    this.name = eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
+                                    this.season = eps.seasonNumber
+                                    this.episode = eps.episodeNumber
+                                    this.posterUrl = getImageUrl(eps.stillPath)
+                                    this.score = Score.from10(eps.voteAverage)
+                                    this.description = eps.overview
+                                    this.runTime = eps.runTime
+                                }.apply {
+                                    this.addDate(eps.airDate)
+                                }
+                            }
                     }
-            }?.flatten() ?: listOf()
+                }?.awaitAll()?.filterNotNull()?.flatten() ?: listOf()
+            }
             if (isAnime) {
-                val gson = Gson()
                 val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
                 val imdbId = res.external_ids?.imdb_id.orEmpty()
-                val cineJsonText = app.get("$Cinemeta/meta/$animeType/$imdbId.json").text
-                val cinejson = runCatching {
-                    gson.fromJson(cineJsonText, CinemetaRes::class.java)
-                }.getOrNull()
-                val animevideos = cinejson?.meta?.videos
-                val jptitle = cinejson?.meta?.name
-                val animeepisodes = animevideos
-                    ?.filter { it.season!= 0 }
-                    ?.map { video ->
-                        newEpisode(
-                            LinkData(
-                                id = data.id,
-                                imdbId = res.external_ids?.imdb_id,
-                                tvdbId = res.external_ids?.tvdb_id,
-                                type = data.type,
-                                season = video.season,
-                                episode = video.number,
-                                epid = null,
-                                aniId = null,
-                                animeId = null,
-                                title = title,
-                                year = video.released?.split("-")?.firstOrNull()?.toIntOrNull() ?: cinejson.meta.year?.toIntOrNull() ?: 0,
-                                orgTitle = orgTitle,
-                                isAnime = true,
-                                airedYear = year,
-                                lastSeason = null,
-                                epsTitle = video.name,
-                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title ?: jptitle,
-                                date = video.released,
-                                airedDate = res.releaseDate ?: res.firstAirDate,
-                                isAsian = isAsian,
-                                isBollywood = isBollywood,
-                                isCartoon = isCartoon,
-                                alttitle = res.title,
-                                nametitle = res.name,
-                                isDub = false
-                            ).toJson()
-                        ) {
-                            this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
-                            this.season = video.season
-                            this.episode = video.number
-                            this.posterUrl = video.thumbnail
-                            this.score = Score.from10(video.rating)
-                            this.description = video.description
-                        }.apply {
-                            this.addDate(video.released)
-                        }
-                    } ?: emptyList()
+                val cineRes = app.get("$Cinemeta/meta/$animeType/$imdbId.json").parsedSafe<CinemetaRes>()
+                val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
+                val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
+                    ?: cineRes?.meta?.name
 
-                val animeepisodesDub = animevideos
-                    ?.filter { it.season!= 0 }
-                    ?.map { video ->
-                        newEpisode(
-                            LinkData(
-                                id = data.id,
-                                imdbId = res.external_ids?.imdb_id,
-                                tvdbId = res.external_ids?.tvdb_id,
-                                type = data.type,
-                                season = video.season,
-                                episode = video.number,
-                                epid = null,
-                                aniId = null,
-                                animeId = null,
-                                title = title,
-                                year = video.released?.split("-")?.firstOrNull()?.toIntOrNull() ?: cinejson.meta.year?.toIntOrNull() ?: 0,
-                                orgTitle = orgTitle,
-                                isAnime = true,
-                                airedYear = year,
-                                lastSeason = null,
-                                epsTitle = video.name,
-                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title ?: jptitle,
-                                date = video.released,
-                                airedDate = res.releaseDate ?: res.firstAirDate,
-                                isAsian = isAsian,
-                                isBollywood = isBollywood,
-                                isCartoon = isCartoon,
-                                alttitle = res.title,
-                                nametitle = res.name,
-                                isDub = true
-                            ).toJson()
-                        ) {
-                            this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
-                            this.season = video.season
-                            this.episode = video.number
-                            this.posterUrl = video.thumbnail
-                            this.score = Score.from10(video.rating)
-                            this.description = video.description
-                        }.apply {
-                            this.addDate(video.released)
-                        }
-                    } ?: emptyList()
+                fun buildEpisodeList(isDub: Boolean) = animeVideos.map { video ->
+                    val videoYear = video.released?.split("-")?.firstOrNull()?.toIntOrNull()
+                        ?: cineRes?.meta?.year?.toIntOrNull() ?: 0
+
+                    newEpisode(
+                        LinkData(
+                            id = data.id,
+                            imdbId = imdbId,
+                            tvdbId = res.external_ids?.tvdb_id,
+                            type = data.type,
+                            season = video.season,
+                            episode = video.number,
+                            epid = null,
+                            aniId = null,
+                            animeId = null,
+                            title = title,
+                            year = videoYear,
+                            orgTitle = orgTitle,
+                            isAnime = true,
+                            airedYear = year,
+                            lastSeason = null,
+                            epsTitle = video.name,
+                            jpTitle = jpTitle,
+                            date = video.released,
+                            airedDate = res.releaseDate ?: res.firstAirDate,
+                            isAsian = isAsian,
+                            isBollywood = isBollywood,
+                            isCartoon = isCartoon,
+                            alttitle = res.title,
+                            nametitle = res.name,
+                            isDub = isDub
+                        ).toJson()
+                    ) {
+                        this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
+                        this.season = video.season
+                        this.episode = video.number
+                        this.posterUrl = video.thumbnail
+                        this.score = Score.from10(video.rating)
+                        this.description = video.description
+                        addDate(video.released)
+                    }
+                }
+
                 return newAnimeLoadResponse(title, url, TvType.Anime) {
-                    addEpisodes(DubStatus.Subbed, animeepisodes)
-                    addEpisodes(DubStatus.Dubbed, animeepisodesDub)
+                    addEpisodes(DubStatus.Subbed, buildEpisodeList(isDub = false))
+                    addEpisodes(DubStatus.Dubbed, buildEpisodeList(isDub = true))
+
                     this.posterUrl = poster
                     this.backgroundPosterUrl = bgPoster
                     this.year = year
                     this.plot = res.overview
-                    this.tags = keywords?.map { it.replaceFirstChar { it.titlecase() } }
+                    this.tags = keywords?.map { it.replaceFirstChar { c -> c.titlecase() } }
                         ?.takeIf { it.isNotEmpty() } ?: genres
                     this.score = Score.from10(res.vote_average.toString())
                     this.showStatus = getStatus(res.status)
@@ -527,7 +492,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.actors = actors
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
-                    addImdbId(res.external_ids?.imdb_id)
+                    addImdbId(imdbId)
                 }
             } else {
                 return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
@@ -541,11 +506,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
-                    //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
-                    addSimklId(simklid)
+                    addSimklId(simklid.await())
                 }
             }
         } else {
@@ -586,7 +550,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 addTrailer(trailer)
                 addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
-                addSimklId(simklid)
+                addSimklId(simklid.await())
             }
         }
     }

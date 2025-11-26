@@ -28,13 +28,6 @@ data class VidsrcccData(
     val source: String,
 )
 
-data class VidsrcccSubtitle(
-    val kind: String,
-    val file: String,
-    val label: String,
-    val default: Boolean?,
-)
-
 
 //FlixHQAPI
 
@@ -169,7 +162,7 @@ data class Episodedata(
 
 //HinAuto
 
-typealias HinAuto = List<HinAutoRoot2>;
+typealias HinAuto = List<HinAutoRoot2>
 
 data class HinAutoRoot2(
     val file: String,
@@ -246,8 +239,6 @@ data class AnichiDownloadLink(
 )
 
 
-
-
 data class CrunchyrollAccessToken(
     val accessToken: String? = null,
     val tokenType: String? = null,
@@ -280,6 +271,7 @@ data class AniwaveResponse(
         return Jsoup.parse(result)
     }
 }
+
 data class MoflixResponse(
     @JsonProperty("title") val title: Episode? = null,
     @JsonProperty("episode") val episode: Episode? = null,
@@ -321,13 +313,16 @@ data class GpressSources(
     @JsonProperty("label") val label: Int? = null,
     @JsonProperty("max") val max: String,
 )
+
 //AsianHDResponse
 data class AsianHDResponse(
     val data: Data
 )
+
 data class Data(
     val links: List<Link>
 )
+
 data class Link(
     val type: String,
     val url: String
@@ -464,7 +459,6 @@ data class CatflixJuicydata(
 )
 
 
-
 data class IndexMedia(
     @JsonProperty("id") val id: String? = null,
     @JsonProperty("driveId") val driveId: String? = null,
@@ -530,7 +524,6 @@ data class SmashyData(
 data class Source(
     val file: String,
 )
-
 
 
 data class AnilistExternalLinks(
@@ -712,14 +705,14 @@ data class GokuServer(
 )
 //Tom
 
-data class TomResponse (
-    var videoSource    : String,
-    var subtitles      : ArrayList<TomSubtitles> = arrayListOf(),
+data class TomResponse(
+    var videoSource: String,
+    var subtitles: ArrayList<TomSubtitles> = arrayListOf(),
 )
 
-data class TomSubtitles (
-    var file    : String,
-    var label   : String
+data class TomSubtitles(
+    var file: String,
+    var label: String
 )
 
 //Gojo
@@ -1171,8 +1164,6 @@ data class EmbedsuhrefSubtitle(
 )
 
 
-
-
 data class SubtitlesAPI(
     val subtitles: List<Subtitle>,
     val cacheMaxAge: Long,
@@ -1259,7 +1250,6 @@ data class AnimeNexusDaum(
     val status: String,
     val type: String,
 )
-
 
 
 data class AnimeNexusEp(
@@ -1372,65 +1362,65 @@ data class VidSrcVipSource(
 
 //Dramacool
 
-data class Dramacool (
-    var streams : ArrayList<DramacoolStreams> = arrayListOf()
+data class Dramacool(
+    var streams: ArrayList<DramacoolStreams> = arrayListOf()
 )
 
-data class DramacoolSubtitles (
-    var lang : String,
-    var url  : String
+data class DramacoolSubtitles(
+    var lang: String,
+    var url: String
 )
 
-data class DramacoolStreams (
-    var subtitles : ArrayList<DramacoolSubtitles> = arrayListOf(),
-    var title     : String,
-    var url       : String
+data class DramacoolStreams(
+    var subtitles: ArrayList<DramacoolSubtitles> = arrayListOf(),
+    var title: String,
+    var url: String
 )
 
 
 //Consumet
 
-data class ConsumetSearch (
-    var results     : ArrayList<ConsumetResults> = arrayListOf()
+data class ConsumetSearch(
+    var results: ArrayList<ConsumetResults> = arrayListOf()
 )
 
-data class ConsumetResults (
-    var id          : String,
-    var title       : String,
-    var type        : String
+data class ConsumetResults(
+    var id: String,
+    var title: String,
+    var type: String
 )
 
-data class ConsumetInfo (
-    var id          : String,
-    var episodes    : ArrayList<ConsumetEpisodes> = arrayListOf()
+data class ConsumetInfo(
+    var id: String,
+    var episodes: ArrayList<ConsumetEpisodes> = arrayListOf()
 )
 
 
-data class ConsumetEpisodes (
-    var id     : String,
-    var number : Int? = null,
-    var season : Int? = null,
+data class ConsumetEpisodes(
+    var id: String,
+    var number: Int? = null,
+    var season: Int? = null,
 )
 
-data class ConsumetWatch (
-    var headers   : ConsumetHeaders      = ConsumetHeaders(),
-    var sources   : ArrayList<ConsumetSources>   = arrayListOf(),
-    var subtitles : ArrayList<ConsumetSubtitles> = arrayListOf()
+data class ConsumetWatch(
+    var headers: ConsumetHeaders = ConsumetHeaders(),
+    var sources: ArrayList<ConsumetSources> = arrayListOf(),
+    var subtitles: ArrayList<ConsumetSubtitles> = arrayListOf()
 )
 
-data class ConsumetHeaders (
-    var Referer : String? = null,
+data class ConsumetHeaders(
+    var Referer: String? = null,
 )
 
-data class ConsumetSources (
-    var url     : String,
-    var quality : String,
-    var isM3U8  : Boolean
+data class ConsumetSources(
+    var url: String,
+    var quality: String,
+    var isM3U8: Boolean
 )
 
-data class ConsumetSubtitles (
-    var url  : String,
-    var lang : String
+data class ConsumetSubtitles(
+    var url: String,
+    var lang: String
 )
 
 
@@ -1512,9 +1502,9 @@ data class Trackiframe(
 
 data class SeasonDetail
     (
-    val quality:String?,
-    val episodeLinkMap:MutableMap<String,MutableList<String>>?,
-    val season:String?,
+    val quality: String?,
+    val episodeLinkMap: MutableMap<String, MutableList<String>>?,
+    val season: String?,
 )
 
 
@@ -1611,6 +1601,7 @@ data class ServersResKAA(
     val servers: List<ServerKAA>,
 
     )
+
 data class ServerKAA(
     val name: String,
     val shortName: String,
@@ -1812,6 +1803,7 @@ data class AnimeKaiM3U8(
     val tracks: List<AnimekaiTrack>,
     val download: String,
 )
+
 data class AnimekaiSource(
     val file: String,
 )
@@ -1822,7 +1814,6 @@ data class AnimekaiTrack(
     val kind: String,
     val default: Boolean?,
 )
-
 
 
 data class Xprime(
@@ -1854,8 +1845,6 @@ data class XprimeSubtitle(
 data class AkIframe(
     @JsonProperty("idUrl") val idUrl: String? = null,
 )
-
-
 
 
 data class AnichiStream(
@@ -1924,7 +1913,6 @@ data class Elevenmoviesjson(
 )
 
 
-
 //Domains Parser
 
 data class DomainsParser(
@@ -1945,8 +1933,8 @@ data class DomainsParser(
     val rogmovies: String,
     val luxmovies: String,
     val xprime: String,
-    val extramovies:String,
-    val dramadrip:String,
+    val extramovies: String,
+    val dramadrip: String,
     val toonstream: String,
 )
 
@@ -2197,7 +2185,8 @@ data class MorphDaum(
 data class CinemaOsSecretKeyRequest(
     val tmdbId: String,
     val seasonId: String,
-    val episodeId: String)
+    val episodeId: String
+)
 
 
 data class CinemaOSReponse(
@@ -2258,14 +2247,12 @@ data class VidnestHeaders(
     val referer: String,
     @JsonProperty("User-Agent")
     val userAgent: String,
-)
-{
+) {
     fun toMap(): Map<String, String> = mapOf(
         "Referer" to referer,
         "User-Agent" to userAgent
     )
 }
-
 
 
 data class PrimeSrcServerList(
@@ -2368,4 +2355,19 @@ data class YflixResponse(
     fun getDocument(): Document {
         return Jsoup.parse(result)
     }
+}
+
+class SearchData : ArrayList<SearchData.SearchDataItem>() {
+    data class SearchDataItem(
+        val audio_languages: String,
+        val exact_match: Int,
+        val id: Int,
+        val path: String,
+        val poster: String,
+        val qualities: List<String>,
+        val release_year: String,
+        val title: String,
+        val tmdb_id: Int,
+        val type: String
+    )
 }

@@ -2,38 +2,14 @@ package com.phisher98
 
 import com.google.gson.annotations.SerializedName
 
-data class Home(
-    val `data`: List<Data>,
-    val status: String
-) {
-    data class Data(
-        val last_updated: String,
-        val poster_path: String,
-        val release_date: String,
-        val title: String,
-        val tmdb_id: Int,
-        val type: String
-    )
-}
-
-data class HomePageHome(
-    @SerializedName("tmdb_id")
-    val tmdbId: Long,
-    val title: String,
-    @SerializedName("release_date")
-    val releaseDate: String,
-    @SerializedName("poster_path")
-    val posterPath: String,
-    val type: String,
-    val timestamp: String,
-)
-
-
 class SearchData : ArrayList<SearchData.SearchDataItem>(){
     data class SearchDataItem(
+        val audio_languages: String,
         val exact_match: Int,
         val id: Int,
+        val path: String,
         val poster: String,
+        val qualities: List<String>,
         val release_year: String,
         val title: String,
         val tmdb_id: Int,
