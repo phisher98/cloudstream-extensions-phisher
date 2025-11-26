@@ -36,7 +36,7 @@ class XDMovies : MainAPI() {
     override var mainUrl = "https://xdmovies.site"
     override var name = "XD Movies"
     override val hasMainPage = true
-    override var lang = "hi"
+    override var lang = "en"
     override val hasDownloadSupport = true
     override val instantLinkLoading = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime)
