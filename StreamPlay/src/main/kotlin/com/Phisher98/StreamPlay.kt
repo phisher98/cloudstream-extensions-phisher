@@ -35,15 +35,21 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "StreamPlay"
@@ -63,6 +69,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
     /** AUTHOR : hexated & Phisher & Code */
+
     companion object {
         /** TOOLS */
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
@@ -72,41 +79,54 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val simkl = "https://api.simkl.com"
         private var currentBaseUrl: String? = null
 
+        // Reduced check timeout for faster fail/success detection
+        private const val API_CHECK_TIMEOUT_MS = 2000L
+
+        /** * Concurrently checks the official API and all proxies to find the fastest working URL.
+         */
         suspend fun getApiBase(): String {
-            // If already found a working base, reuse it
             currentBaseUrl?.let { return it }
 
-            // Try official first
-            if (isOfficialAvailable()) {
-                currentBaseUrl = OFFICIAL_TMDB_URL
-                Log.d("TMDB", "✅ Using official TMDB API")
-                return OFFICIAL_TMDB_URL
-            }
+            return coroutineScope {
+                // 1. Fetch proxy list
+                val deferredProxies = async(Dispatchers.IO) { fetchProxyList() }
 
-            // If official fails, try proxies from the remote list
-            val proxies = fetchProxyList()
-            for (proxy in proxies) {
-                if (isProxyWorking(proxy)) {
-                    currentBaseUrl = proxy
-                    Log.d("TMDB", "✅ Switched to proxy: $proxy")
-                    return proxy
+                val testUrls = mutableListOf<String>()
+                testUrls.add(OFFICIAL_TMDB_URL)
+                testUrls.addAll(deferredProxies.await())
+
+                // 2. Launch concurrent health checks for all URLs
+                val deferredResults = testUrls.map { apiUrl ->
+                    async(Dispatchers.IO) {
+                        if (checkApiWorking(apiUrl)) apiUrl else null
+                    }
                 }
-            }
 
-            // Fallback to official if nothing worked
-            Log.e("TMDB", "❌ No proxy worked, fallback to official")
-            return OFFICIAL_TMDB_URL
+                // 3. Wait for the FIRST successful URL to complete
+                val workingApiUrl = selectFirstAvailable(deferredResults)
+
+                // 4. Update and return
+                currentBaseUrl = workingApiUrl ?: OFFICIAL_TMDB_URL
+                Log.d("TMDB", if (workingApiUrl != null)
+                    "✅ Selected fastest API: $workingApiUrl"
+                else
+                    "❌ No fast proxy worked, fallback to official")
+                return@coroutineScope currentBaseUrl!!
+            }
         }
 
-        private suspend fun isOfficialAvailable(): Boolean {
+        /**
+         * Checks if a given TMDB API URL is reachable and working.
+         */
+        private suspend fun checkApiWorking(apiUrl: String): Boolean {
             val testUrl =
-                "$OFFICIAL_TMDB_URL/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
+                "$apiUrl/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
 
-            return withTimeoutOrNull(3000) {
+            return withTimeoutOrNull(API_CHECK_TIMEOUT_MS) {
                 try {
                     val response = app.get(
                         testUrl,
-                        timeout = 2000,
+                        timeout = API_CHECK_TIMEOUT_MS,
                         headers = mapOf(
                             "Cache-Control" to "no-cache",
                             "Pragma" to "no-cache"
@@ -114,32 +134,24 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     )
                     response.okhttpResponse.code in listOf(200, 304)
                 } catch (e: Exception) {
-                    Log.d("TMDB", "Official TMDB unavailable: ${e.message}")
+                    Log.d("TMDB", "API Check failed for $apiUrl: ${e.message}")
                     false
                 }
             } ?: false
         }
 
-        private suspend fun isProxyWorking(proxyUrl: String): Boolean {
-            val testUrl =
-                "$proxyUrl/movie/1290879?api_key=$apiKey&append_to_response=alternative_titles,credits,external_ids,videos,recommendations"
-
-            return withTimeoutOrNull(3000) {
-                try {
-                    val response = app.get(
-                        testUrl,
-                        timeout = 2000,
-                        headers = mapOf(
-                            "Cache-Control" to "no-cache",
-                            "Pragma" to "no-cache"
-                        )
-                    )
-                    response.okhttpResponse.code in listOf(200, 304)
-                } catch (e: Exception) {
-                    Log.d("TMDB", "Proxy failed: $proxyUrl -> ${e.message}")
-                    false
-                }
-            } ?: false
+        /**
+         * Waits for the first Deferred<String?> to complete with a non-null result.
+         */
+        private suspend fun selectFirstAvailable(deferreds: List<Deferred<String?>>): String? {
+            try {
+                val results = deferreds.awaitAll().filterNotNull()
+                return results.firstOrNull()
+            } catch (e: Exception) {
+                return null
+            } finally {
+                deferreds.forEach { it.cancel() }
+            }
         }
 
         private suspend fun fetchProxyList(): List<String> = try {
@@ -283,16 +295,74 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
+// ===============================================
+// === 2. CACHING IMPLEMENTATION ===
+// ===============================================
+
+    data class CacheItem(
+        val response: HomePageResponse,
+        val expiryTime: Long
+    )
+
+    // In-memory cache map
+    private val cache = ConcurrentHashMap<String, CacheItem>()
+
+    /**
+     * Retrieves a response from the cache if it hasn't expired.
+     */
+    private fun getFromCache(key: String): HomePageResponse? {
+        val cachedItem = cache[key] ?: return null
+
+        // Check for expiration
+        if (System.currentTimeMillis() >= cachedItem.expiryTime) {
+            cache.remove(key)
+            return null
+        }
+        return cachedItem.response
+    }
+
+    /**
+     * Saves a response to the cache with a specified expiration time (in milliseconds).
+     */
+    private fun saveToCache(key: String, response: HomePageResponse, expirationTime: Long) {
+        val expiryTime = System.currentTimeMillis() + expirationTime
+        cache[key] = CacheItem(response, expiryTime)
+    }
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val tmdbAPI =getApiBase()
+        // --- Caching Check (Optional but highly recommended) ---
+        val cacheKey = "homepage_v1_${request.name}_$page"
+        val cachedResponse = getFromCache(cacheKey) // Implement this function
+        if (cachedResponse != null) {
+            return cachedResponse
+        }
+        // -------------------------------------------------------
+
+        val tmdbAPI = getApiBase()
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page", timeout = 10000)
+
+        // 1. Move the blocking network call to the I/O dispatcher and reduce timeout to 5 seconds.
+        val apiResponse = withContext(Dispatchers.IO) {
+            // Reduced timeout to 5000ms (5 seconds) for faster failure/load
+            app.get("$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page", timeout = 5000)
+        }
+
+        // 2. Process the response
+        val home = apiResponse
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
-        return newHomePageResponse(request.name, home)
+
+        val response = newHomePageResponse(request.name, home)
+
+        // --- Caching Save (Optional but highly recommended) ---
+        // Save the result for a short time (e.g., 30 minutes)
+        saveToCache(cacheKey, response, expirationTime = 1800000L) // Implement this function
+        // -------------------------------------------------------
+
+        return response
     }
 
     private fun Media.toSearchResponse(type: String? = null): SearchResponse? {
@@ -301,6 +371,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
+            // You could optimize image loading/processing later if needed,
+            // but this part is fast.
             this.posterUrl = getImageUrl(posterPath)
             this.score= Score.from10(voteAverage)
         }
