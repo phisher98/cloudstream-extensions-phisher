@@ -1,7 +1,11 @@
 package com.Phisher98
 
 import android.util.Base64
+import com.Phisher98.FourKHDHub.Companion.TMDBAPI
+import com.Phisher98.FourKHDHub.Companion.TMDBIMAGEBASEURL
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.Actor
+import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import org.json.JSONObject
@@ -45,4 +49,46 @@ fun pen(value: String): String {
             else -> it
         }
     }.joinToString("")
+}
+
+suspend fun fetchtmdb(title: String): Int? {
+    val url =
+        "$TMDBAPI/search/multi?api_key=98ae14df2b8d8f8f8136499daf79f0e0&query=" + java.net.URLEncoder.encode(
+            title,
+            "UTF-8"
+        )
+    val json = JSONObject(app.get(url).text)
+    val results = json.optJSONArray("results") ?: return null
+    val t = title.lowercase()
+    for (i in 0 until results.length()) {
+        val obj = results.optJSONObject(i) ?: continue
+        val name = obj.optString(
+            "name",
+            obj.optString(
+                "title",
+                obj.optString(
+                    "original_name",
+                    obj.optString("original_title", "")
+                )
+            )
+        ).lowercase().replace("-"," ")
+        if (name.contains(t)) return obj.optInt("id")
+    }
+    return null
+}
+
+fun parseCredits(jsonText: String?): List<ActorData> {
+    if (jsonText.isNullOrBlank()) return emptyList()
+    val list = ArrayList<ActorData>()
+    val root = JSONObject(jsonText)
+    val castArr = root.optJSONArray("cast") ?: return list
+    for (i in 0 until castArr.length()) {
+        val c = castArr.optJSONObject(i) ?: continue
+        val name = c.optString("name").takeIf { it.isNotBlank() } ?: c.optString("original_name").orEmpty()
+        val profile = c.optString("profile_path").takeIf { it.isNotBlank() }?.let { "$TMDBIMAGEBASEURL$it" }
+        val character = c.optString("character").takeIf { it.isNotBlank() }
+        val actor = Actor(name, profile)
+        list += ActorData(actor, roleString = character)
+    }
+    return list
 }

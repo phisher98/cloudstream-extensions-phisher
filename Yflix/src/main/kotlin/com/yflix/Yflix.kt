@@ -200,8 +200,6 @@ class Yflix : MainAPI() {
                 simklIdMovie?.let { addSimklId(it) }
                 imdbIdFromMovie?.let { addImdbId(it) }
                 tmdbMovieId?.let { addTMDbId(it.toString()) }
-
-                // assign actors for movie
                 this.actors = movieCastList
             }
         }

@@ -199,7 +199,7 @@ open class M4ufree : ExtractorApi() {
                 "Accept" to "*/*",
                 "X-Requested-With" to "XMLHttpRequest",
             )
-        ).text.let { AppUtils.tryParseJson<Source>(it) }?.data
+        ).text.let { tryParseJson<Source>(it) }?.data
 
         callback.invoke(
             newExtractorLink(
@@ -2330,14 +2330,9 @@ class Videostr : ExtractorApi() {
     )
 }
 
-
-class HubdriveSpace : Hubdrive() {
-    override var mainUrl = "https://hubdrive.space"
-}
-
-open class Hubdrive : ExtractorApi() {
+class Hubdrive : ExtractorApi() {
     override val name = "Hubdrive"
-    override val mainUrl = "https://hubdrive.fit"
+    override val mainUrl = "https://hubdrive.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -2789,7 +2784,7 @@ open class Rapidshare : ExtractorApi() {
                     }
                 }
                 if (m3u8File != null) {
-                    M3u8Helper.generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
+                    generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
                 } else {
                     Log.d("Error:", "No 'file' found in first source")
                 }

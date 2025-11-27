@@ -83,9 +83,7 @@ class XDMovies : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = if (request.data.contains("Homepage")) app.get(mainUrl).documentLarge
-        else app.get("$mainUrl/${request.data}&page=$page").documentLarge
-
+        val document = app.get("$mainUrl/${if (request.data.contains("Homepage")) "?" else "${request.data}&"}page=$page").documentLarge
         val home = document.select("div.container div.movie-grid a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(

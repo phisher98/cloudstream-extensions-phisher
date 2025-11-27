@@ -3,6 +3,8 @@ package com.hdhub4u
 import android.annotation.SuppressLint
 import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -112,3 +114,24 @@ fun cleanTitle(raw: String): String {
 }
 
 
+data class ResponseDataLocal(val meta: MetaLocal?)
+
+data class MetaLocal(
+    val name: String? = null,
+    val description: String? = null,
+    val actorsData: List<ActorData>? = null,
+    val year: String? = null,
+    val background: String? = null,
+    val genres: List<String>? = null,
+    val videos: List<VideoLocal>? = null,
+    val rating: Score?
+)
+data class VideoLocal(
+    val title: String? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    val overview: String? = null,
+    val thumbnail: String? = null,
+    val released: String? = null,
+    val rating: Score?
+)

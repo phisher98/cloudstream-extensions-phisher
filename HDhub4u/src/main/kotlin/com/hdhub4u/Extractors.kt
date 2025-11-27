@@ -95,7 +95,7 @@ class PixelDrainDev : PixelDrain(){
 
 class Hubdrive : ExtractorApi() {
     override val name = "Hubdrive"
-    override val mainUrl = "https://hubdrive.fit"
+    override val mainUrl = "https://hubdrive.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
