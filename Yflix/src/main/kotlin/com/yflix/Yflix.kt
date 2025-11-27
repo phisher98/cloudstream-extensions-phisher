@@ -1,10 +1,13 @@
-package com.Yflix
+package com.yflix
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -42,7 +45,15 @@ class Yflix : MainAPI() {
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.OVA, TvType.AnimeMovie, TvType.Anime, TvType.Cartoon, TvType.AsianDrama)
+    override val supportedTypes = setOf(
+        TvType.Movie,
+        TvType.TvSeries,
+        TvType.OVA,
+        TvType.AnimeMovie,
+        TvType.Anime,
+        TvType.Cartoon,
+        TvType.AsianDrama
+    )
 
     private fun Element.toSearchResult(): SearchResponse {
         val href = fixUrl(this.select("a.poster").attr("href"))
@@ -57,7 +68,11 @@ class Yflix : MainAPI() {
 
 
     companion object {
+        private const val SIMKL = "https://api.simkl.com"
 
+        const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
+
+        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
         suspend fun decode(text: String?): String {
             return try {
                 val res = app.get("${BuildConfig.YFXENC}?text=$text").text
@@ -94,10 +109,11 @@ class Yflix : MainAPI() {
             "$mainUrl/browser?type%5B%5D=movie&type%5B%5D=tv&sort=release_date" to "Latest Release"
         )
 
-    override suspend fun search(query: String,page: Int): SearchResponseList {
+    override suspend fun search(query: String, page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
         val res = app.get(link).documentLarge
-        return res.select("div.film-section.md div.item").map { it.toSearchResult() }.toNewSearchResponseList()
+        return res.select("div.film-section.md div.item").map { it.toSearchResult() }
+            .toNewSearchResponseList()
     }
 
 
@@ -120,7 +136,6 @@ class Yflix : MainAPI() {
     }
 
 
-
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).documentLarge
         val keyword = url.substringAfter("/watch/").substringBefore(".")
@@ -129,72 +144,135 @@ class Yflix : MainAPI() {
         val plot = document.selectFirst("div.detailWrap div.description")?.text()
         val year = document.select("div.metadata.set span:nth-child(4)").text().toIntOrNull()
         val rating = document.selectFirst("div.metadata.set span.IMDb")?.ownText()
-        val contentrating = document.select("div.metadata.set span.ratingR").text()
+        val contentRating = document.select("div.metadata.set span.ratingR").text()
         val genres = document.select("li:contains(Genres:) a").map { it.text() }
+        val backgroundPoster =
+            document.selectFirst("div.detail-bg")?.attr("style")?.substringAfter("url('")
+                ?.substringBefore("'")
+        val dataId = document.select("#movie-rating").attr("data-id")
+        val decoded = decode(dataId)
 
-
-        val backgroundposter = document.selectFirst("div.detail-bg ")?.attr("style")?.substringAfter("url('")?.substringBefore("'")
-        val dataid = document.select("#movie-rating").attr("data-id")
-
-        val decoded = decode(dataid)
-        val epRes = app.get("$mainUrl/ajax/episodes/list?keyword=$keyword&id=$dataid&_=$decoded")
+        val epRes = app.get("$mainUrl/ajax/episodes/list?keyword=$keyword&id=$dataId&_=$decoded")
             .parsedSafe<Response>()?.getDocument()
-
         val movieNode = epRes?.selectFirst("ul.episodes a")
         val allLinks = epRes?.select("ul.episodes a") ?: emptyList()
+        val recommendations =
+            document.select("div.film-section.md div.item").map { it.toSearchResult() }
 
-        val recommendations = document.select("div.film-section.md div.item").map { it.toSearchResult() }
-
-
-        if (allLinks.size == 1 && movieNode != null &&
-            movieNode.text().contains("Movie", ignoreCase = true)
+        if (allLinks.size == 1 && movieNode != null && movieNode.text()
+                .contains("Movie", ignoreCase = true)
         ) {
             val movieId = movieNode.attr("eid")
+            val tmdbMovieId = runCatching { fetchtmdb(title) }.getOrNull()
 
+            val imdbIdFromMovie = tmdbMovieId?.let { id ->
+                runCatching {
+                    val url =
+                        "$TMDBAPI/movie/$id/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                    val jsonText = app.get(url).textLarge
+                    JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
+                }.getOrNull()
+            }
+
+            val simklIdMovie = imdbIdFromMovie?.let { imdb ->
+                runCatching {
+                    val simklJson =
+                        JSONObject(app.get("$SIMKL/movies/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
+                    simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+                }.getOrNull()
+            }
             return newMovieLoadResponse(title, url, TvType.Movie, movieId) {
                 this.posterUrl = poster
-                this.backgroundPosterUrl = backgroundposter ?: poster
+                this.backgroundPosterUrl = backgroundPoster ?: poster
                 this.plot = plot
                 this.year = year
-                this.contentRating = contentrating
+                this.contentRating = contentRating
                 this.tags = genres
                 this.score = Score.from10(rating)
                 this.recommendations = recommendations
+                simklIdMovie?.let { addSimklId(it) }
+                imdbIdFromMovie?.let { addImdbId(it) }
+                tmdbMovieId?.let { addTMDbId(it.toString()) }
             }
         }
 
-        val episodes = mutableListOf<Episode>()
+        val episodes = ArrayList<Episode>()
+        val tmdbShowId = runCatching { fetchtmdb(title) }.getOrNull()
+
+        val imdbIdFromShow = tmdbShowId?.let { id ->
+            runCatching {
+                val url = "$TMDBAPI/tv/$id/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                val jsonText = app.get(url).textLarge
+                JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
+            }.getOrNull()
+        }
+
+
+        val simklIdShow = imdbIdFromShow?.let { imdb ->
+            runCatching {
+                val simklJson =
+                    JSONObject(app.get("$SIMKL/tv/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
+                simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+            }.getOrNull()
+        }
+
         epRes?.select("ul.episodes")?.forEach { seasonBlock ->
             val seasonNumber = seasonBlock.attr("data-season").toIntOrNull() ?: 1
+            val tmdbSeasonJson = tmdbShowId?.let { id ->
+                runCatching {
+                    app.get("$TMDBAPI/tv/$id/season/$seasonNumber?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
+                }.getOrNull()?.let { JSONObject(it) }
+            }
+            val tmdbEpisodeMap = tmdbSeasonJson?.optJSONArray("episodes")?.let { arr ->
+                val map = HashMap<Int, JSONObject>(arr.length())
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val epNum = o.optInt("episode_number", -1)
+                    if (epNum >= 0) map[epNum] = o
+                }
+                map
+            }
             seasonBlock.select("a").forEachIndexed { index, ep ->
                 val epNum = ep.attr("num").toIntOrNull() ?: (index + 1)
                 val epTitle = ep.selectFirst("span:last-child")?.text()?.trim().orEmpty()
-                val airDate = ep.attr("title").trim()
+                val airDate = ep.attr("title").trim().takeIf { it.isNotBlank() }
                 val eid = ep.attr("eid")
-                episodes.add(
-                    newEpisode(eid) {
-                        this.name = epTitle
-                        this.episode = epNum
-                        this.season = seasonNumber
-                        addDate(airDate)
-                    }
-                )
+                val tmdbEpJson = tmdbEpisodeMap?.get(epNum)
+                val desc =
+                    tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() } ?: ep.selectFirst(
+                        "span.description"
+                    )?.text()?.takeIf { it.isNotBlank() }
+                val posterUrl = tmdbEpJson?.optString("still_path")?.takeIf { it.isNotBlank() }
+                    ?.let { "$TMDBIMAGEBASEURL$it" }
+                val score =
+                    tmdbEpJson?.optDouble("vote_average")?.let { Score.from10(it.toString()) }
+                episodes += newEpisode(eid) {
+                    this.name = epTitle
+                    this.season = seasonNumber
+                    this.episode = epNum
+                    this.posterUrl = posterUrl
+                    this.description = desc
+                    this.score = score
+                    this.addDate(airDate)
+                }
             }
         }
 
-
-        return newTvSeriesLoadResponse( title, url, TvType.TvSeries, episodes)
-        {
+        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
             this.posterUrl = poster
-            this.backgroundPosterUrl = backgroundposter ?: poster
+            this.backgroundPosterUrl = backgroundPoster ?: poster
             this.plot = plot
             this.year = year
-            this.contentRating = contentrating
+            this.contentRating = contentRating
             this.tags = genres
             this.score = Score.from10(rating)
             this.recommendations = recommendations
+            addSimklId(simklIdShow)
+            addImdbId(imdbIdFromShow)
+            addTMDbId(imdbIdFromShow.toString())
         }
     }
+
 
     override suspend fun loadLinks(
         data: String,
@@ -202,7 +280,7 @@ class Yflix : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val eid= data.substringAfterLast("/")
+        val eid = data.substringAfterLast("/")
         try {
             val decodetoken = decode(eid)
             val listResp = app.get("$mainUrl/ajax/links/list?eid=$eid&_=$decodetoken")
@@ -228,7 +306,8 @@ class Yflix : MainAPI() {
                         return@forEach
                     }
 
-                    val serverName = serverNode.selectFirst("span")?.text()?.trim()?.ifEmpty { "Server" }
+                    val serverName =
+                        serverNode.selectFirst("span")?.text()?.trim()?.ifEmpty { "Server" }
                     val decodelid = decode(lid)
                     val viewResp = app.get("$mainUrl/ajax/links/view?id=$lid&_=$decodelid")
                         .parsedSafe<Response>()
@@ -255,7 +334,10 @@ class Yflix : MainAPI() {
                     }
 
                     if (iframeUrl.isNullOrBlank()) {
-                        Log.d("Yflix", "No iframe/video url extracted for server $serverName (lid=$lid)")
+                        Log.d(
+                            "Yflix",
+                            "No iframe/video url extracted for server $serverName (lid=$lid)"
+                        )
                         return@forEach
                     }
 
@@ -287,4 +369,33 @@ class Yflix : MainAPI() {
         val jsonObject = JSONObject(jsonData)
         return jsonObject.getString("url")
     }
+
+    suspend fun fetchtmdb(title: String): Int? {
+        val url =
+            "$TMDBAPI/search/multi?api_key=98ae14df2b8d8f8f8136499daf79f0e0&query=" + java.net.URLEncoder.encode(
+                title,
+                "UTF-8"
+            )
+        val json = JSONObject(app.get(url).text)
+        val results = json.optJSONArray("results") ?: return null
+        val t = title.lowercase()
+        for (i in 0 until results.length()) {
+            val obj = results.optJSONObject(i) ?: continue
+            val name = obj.optString(
+                "name",
+                obj.optString(
+                    "title",
+                    obj.optString(
+                        "original_name",
+                        obj.optString("original_title", "")
+                    )
+                )
+            ).lowercase()
+            if (name.contains(t)) return obj.optInt("id")
+        }
+        return null
+    }
+
+
 }
+

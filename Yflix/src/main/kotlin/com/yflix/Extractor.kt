@@ -1,4 +1,4 @@
-package com.Yflix
+package com.yflix
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
