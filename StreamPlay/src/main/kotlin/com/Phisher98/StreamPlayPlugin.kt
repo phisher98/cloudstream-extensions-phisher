@@ -159,7 +159,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Vidora())
         registerExtractorAPI(Fourspromax())
         registerExtractorAPI(XdMoviesExtractor())
-        registerExtractorAPI(HubdriveSpace())
+        registerExtractorAPI(Hubdrive())
         registerExtractorAPI(Rapidairmax())
         registerExtractorAPI(Rapidshare())
         openSettings = { ctx ->
