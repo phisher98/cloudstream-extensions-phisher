@@ -16,7 +16,6 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.net.URI
-import java.net.URL
 
 class HdStream4u : VidHidePro() {
     override var mainUrl = "https://hdstream4u.com"
@@ -105,11 +104,8 @@ class Hubdrive : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val href=app.get(url, timeout = 1000).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
-        if (href.contains("hubcloud"))
-        {
-            HubCloud().getUrl(href,"HubDrive",subtitleCallback, callback)
-        }
-        else loadExtractor(href,"HubDrive",subtitleCallback, callback)
+
+        loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
 }
 
@@ -125,8 +121,9 @@ class HubCloud : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val tag = "HubCloud"
         val realUrl = url.takeIf {
-            try { URL(it); true } catch (e: Exception) { Log.e("HubCloud", "Invalid URL: ${e.message}"); false }
+            try { URI(it).toURL(); true } catch (e: Exception) { Log.e(tag, "Invalid URL: ${e.message}"); false }
         } ?: return
 
         val baseUrl=getBaseUrl(realUrl)
@@ -135,7 +132,7 @@ class HubCloud : ExtractorApi() {
             if ("hubcloud.php" in realUrl) {
                 realUrl
             } else {
-                val rawHref = app.get(realUrl).documentLarge.select("#download").attr("href")
+                val rawHref = app.get(realUrl).document.select("#download").attr("href")
                 if (rawHref.startsWith("http", ignoreCase = true)) {
                     rawHref
                 } else {
@@ -143,16 +140,16 @@ class HubCloud : ExtractorApi() {
                 }
             }
         } catch (e: Exception) {
-            Log.e("HubCloud", "Failed to extract href: ${e.message}")
+            Log.e(tag, "Failed to extract href: ${e.message}")
             ""
         }
 
         if (href.isBlank()) {
-            Log.w("HubCloud", "No valid href found")
+            Log.w(tag, "No valid href found")
             return
         }
 
-        val document = app.get(href).documentLarge
+        val document = app.get(href).document
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
@@ -201,7 +198,7 @@ class HubCloud : ExtractorApi() {
                             ) { this.quality = quality }
                         )
                     } else {
-                        Log.w("HubCloud", "BuzzServer: No redirect")
+                        Log.w(tag, "BuzzServer: No redirect")
                     }
                 }
 
@@ -239,29 +236,51 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
+                text.contains("Mega Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$referer [Mega Server]",
+                            "$referer [Mega Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
                     var redirectUrl: String?
+                    var redirectCount = 0
+                    val maxRedirects = 3
 
-                    while (true) {
+                    while (redirectCount < maxRedirects) {
                         val response = app.get(currentLink, allowRedirects = false)
                         redirectUrl = response.headers["location"]
+
                         if (redirectUrl == null) {
-                            Log.e("HubCloud", "10Gbps: No redirect")
+                            Log.e(tag, "10Gbps: No redirect")
                             return@amap
                         }
-                        if ("link=" in redirectUrl) break
+
+                        if ("link=" in redirectUrl) {
+                            val finalLink = redirectUrl.substringAfter("link=")
+                            callback.invoke(
+                                newExtractorLink(
+                                    "10Gbps [Download]",
+                                    "10Gbps [Download] $labelExtras",
+                                    finalLink
+                                ) { this.quality = quality }
+                            )
+                            return@amap
+                        }
+
                         currentLink = redirectUrl
+                        redirectCount++
                     }
-                    val finalLink = redirectUrl.substringAfter("link=")
-                        callback.invoke(
-                            newExtractorLink(
-                                "10Gbps [Download]",
-                                "10Gbps [Download] $labelExtras",
-                                finalLink,
-                            ) { this.quality = quality }
-                        )
+
+                    Log.e(tag, "10Gbps: Redirect limit reached ($maxRedirects)")
+                    return@amap
                 }
+
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
                 }
@@ -325,7 +344,7 @@ class HubCloud : ExtractorApi() {
 
 class HUBCDN : ExtractorApi() {
     override val name = "HUBCDN"
-    override val mainUrl = "https://hubcdn.fans"
+    override val mainUrl = "https://hubcdn.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
