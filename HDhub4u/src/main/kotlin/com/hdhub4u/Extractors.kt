@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.extractors.HubCloud
 import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
@@ -103,12 +104,11 @@ class Hubdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url, timeout = 1000).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
-
-        loadExtractor(href,"HubDrive",subtitleCallback, callback)
+        val href=app.get(url, timeout = 2000).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        if (href.contains("hubcloud",ignoreCase = true)) HubCloud().getUrl(href,"HubDrive",subtitleCallback,callback)
+        else loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
 }
-
 
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
@@ -125,9 +125,9 @@ class HubCloud : ExtractorApi() {
         val realUrl = url.takeIf {
             try { URI(it).toURL(); true } catch (e: Exception) { Log.e(tag, "Invalid URL: ${e.message}"); false }
         } ?: return
+        Log.d("Phisher",url)
 
         val baseUrl=getBaseUrl(realUrl)
-
         val href = try {
             if ("hubcloud.php" in realUrl) {
                 realUrl
@@ -164,6 +164,10 @@ class HubCloud : ExtractorApi() {
         document.select("div.card-body h2 a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.text()
+            Log.d("Phisher",headerDetails)
+
+            Log.d("Phisher",text)
+
 
             when {
                 text.contains("FSL Server", ignoreCase = true) -> {
@@ -342,6 +346,8 @@ class HubCloud : ExtractorApi() {
     }
 }
 
+
+
 class HUBCDN : ExtractorApi() {
     override val name = "HUBCDN"
     override val mainUrl = "https://hubcdn.*"
@@ -379,5 +385,4 @@ class HUBCDN : ExtractorApi() {
         }
     }
 }
-
 

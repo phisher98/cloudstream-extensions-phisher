@@ -19,10 +19,10 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -31,11 +31,12 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
+import java.text.Normalizer
 
 
 class HDhub4uProvider : MainAPI() {
     override var mainUrl: String = runBlocking {
-        HDhub4uPlugin.getDomains()?.HDHUB4u ?: "https://hdhub4u.menu"
+        HDhub4uPlugin.getDomains()?.HDHUB4u ?: "https://hdhub4u.rehab"
     }
     override var name = "HDHub4U"
     override var lang = "hi"
@@ -83,9 +84,9 @@ class HDhub4uProvider : MainAPI() {
             .text()
         val title = cleanTitle(titleText)
         val url = post.select("figure:nth-child(1) > a:nth-child(2)").attr("href")
-        return newAnimeSearchResponse(title, url, TvType.Movie) {
+        return newMovieSearchResponse(title, url, TvType.Movie) {
             this.posterUrl = post.select("figure:nth-child(1) > img:nth-child(1)").attr("src")
-            this.quality = getSearchQuality(title)
+            this.quality = getSearchQuality(titleText)
         }
     }
 
@@ -439,24 +440,25 @@ class HDhub4uProvider : MainAPI() {
      * @return The corresponding `SearchQuality` enum value, or `null` if no match is found.
      */
     private fun getSearchQuality(check: String?): SearchQuality? {
-        val lowercaseCheck = check?.lowercase()
-        if (lowercaseCheck != null) {
-            return when {
-                lowercaseCheck.contains("4k") || lowercaseCheck.contains("uhd") || lowercaseCheck.contains("2160p") -> SearchQuality.UHD
-                lowercaseCheck.contains("1440p") || lowercaseCheck.contains("qhd") -> SearchQuality.BlueRay
-                lowercaseCheck.contains("1080p") || lowercaseCheck.contains("fullhd") -> SearchQuality.HD
-                lowercaseCheck.contains("720p") -> SearchQuality.SD
-                lowercaseCheck.contains("webrip") || lowercaseCheck.contains("web-dl") -> SearchQuality.WebRip
-                lowercaseCheck.contains("bluray") -> SearchQuality.BlueRay
-                lowercaseCheck.contains("hdts") || lowercaseCheck.contains("hdcam") || lowercaseCheck.contains("hdtc") -> SearchQuality.HdCam
-                lowercaseCheck.contains("dvd") -> SearchQuality.DVD
-                lowercaseCheck.contains("camrip") || lowercaseCheck.contains("rip") -> SearchQuality.CamRip
-                lowercaseCheck.contains("cam") -> SearchQuality.Cam
-                lowercaseCheck.contains("hdrip") || lowercaseCheck.contains("hdtv") -> SearchQuality.HD
-                lowercaseCheck.contains("hq") -> SearchQuality.HQ
-                else -> null
-            }
-        }
+        val s = check ?: return null
+        val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+        val patterns = listOf(
+            Regex("\\b(4k|ds4k|uhd|2160p)\\b") to SearchQuality.UHD,
+            Regex("\\b(1440p|qhd)\\b") to SearchQuality.BlueRay,
+            Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b") to SearchQuality.BlueRay,
+            Regex("\\b(1080p|fullhd)\\b") to SearchQuality.HD,
+            Regex("\\b(720p)\\b") to SearchQuality.SD,
+            Regex("\\b(web[- ]?dl|webrip|webdl)\\b") to SearchQuality.WebRip,
+            Regex("\\b(hdrip|hdtv)\\b") to SearchQuality.HD,
+            Regex("\\b(camrip|cam[- ]?rip)\\b") to SearchQuality.CamRip,
+            Regex("\\b(hdts|hdcam|hdtc)\\b") to SearchQuality.HdCam,
+            Regex("\\b(cam)\\b") to SearchQuality.Cam,
+            Regex("\\b(dvd)\\b") to SearchQuality.DVD,
+            Regex("\\b(hq)\\b") to SearchQuality.HQ,
+            Regex("\\b(rip)\\b") to SearchQuality.CamRip
+        )
+
+        for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
         return null
     }
 }
