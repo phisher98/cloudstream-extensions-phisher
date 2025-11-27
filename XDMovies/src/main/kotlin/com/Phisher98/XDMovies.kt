@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.MainAPI
@@ -57,6 +56,7 @@ class XDMovies : MainAPI() {
 
         private const val CINEMETAURL = "https://cinemeta-live.strem.io"
         const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
+        const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
 
         private val titleRegex = Regex("""S(\d{1,2})E(\d{1,3})""", RegexOption.IGNORE_CASE)
         private val seasonNumRegex1 = Regex("""season-(?:packs|episodes)-(\d+)""")
@@ -128,8 +128,6 @@ class XDMovies : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).documentLarge
-
-        // metadata (cached selectors)
         val infoDiv = document.selectFirst("div.info")
         val detailsWrapper = document.selectFirst("div.details-wrapper")
         val headerStyle = document.selectFirst("#movie-header")?.attr("style").orEmpty()
@@ -139,7 +137,6 @@ class XDMovies : MainAPI() {
         val poster = detailsWrapper?.selectFirst("img")?.attr("src").orEmpty()
         val backgroundPoster = headerStyle.substringAfter("url('").substringBefore("');")
         val tags = document.select("p:contains(Genres:) a").map { it.text().trim() }
-        val actors = document.select("div.cast p").text().split(",").map { it.trim() }
         val firstAirDate = document.select("p:contains(First Air Date:)").text().removePrefix("First Air Date:").trim()
         val year = firstAirDate.substringBefore("-").toIntOrNull()
         val description = document.select("p.overview").text()
@@ -159,12 +156,18 @@ class XDMovies : MainAPI() {
 
         val tmdbResText: String? = runCatching {
             app.get(
-                "https://orange-voice-abcf.phisher16.workers.dev/$tmdbTvTypeSlug/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                "$TMDBAPI/$tmdbTvTypeSlug/$tmdbId/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
             ).text
         }.getOrNull()
 
         val tmdbRes = gson.fromJson(tmdbResText, IMDB::class.java)
         val imdbId = tmdbRes?.imdbId
+
+        val creditsJsonText = runCatching {
+            app.get("$TMDBAPI/$tmdbTvTypeSlug/$tmdbId/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").text
+        }.getOrNull()
+
+        val actors = parseTmdbActors(creditsJsonText)
 
         val simklid = runCatching {
             tmdbRes?.imdbId?.takeIf { it.isNotBlank() }?.let { imdb ->
@@ -197,7 +200,7 @@ class XDMovies : MainAPI() {
 
                 val tmdbSeasonRes: TMDBRes? = runCatching {
                     val text = app.get(
-                        "https://orange-voice-abcf.phisher16.workers.dev/tv/$tmdbId/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
+                        "$TMDBAPI/tv/$tmdbId/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
                     ).textLarge
                     gson.fromJson(text, TMDBRes::class.java)
                 }.getOrNull()
@@ -211,7 +214,7 @@ class XDMovies : MainAPI() {
                     val epNum = m?.groupValues?.get(2)?.toIntOrNull()
                         ?: (card.parent()?.children()?.indexOf(card)?.plus(1) ?: 1)
                     val links = card.select("a.movie-download-btn, a.download-button")
-                        .mapNotNull { it.attr("href").trim().takeIf { it.isNotEmpty() } }
+                        .mapNotNull { it -> it.attr("href").trim().takeIf { it.isNotEmpty() } }
                     if (links.isNotEmpty()) episodeMap.getOrPut(epNum) { mutableListOf() }.addAll(links)
                 }
 
@@ -274,7 +277,7 @@ class XDMovies : MainAPI() {
                 this.tags = tags
                 this.score = rating
                 this.contentRating = source
-                addActors(actors)
+                this.actors=actors
                 addImdbId(imdbId)
                 addSimklId(simklid)
             }
@@ -288,7 +291,7 @@ class XDMovies : MainAPI() {
             this.tags = tags
             this.score = rating
             this.contentRating = source
-            addActors(actors)
+            this.actors=actors
             addImdbId(imdbId)
             addSimklId(simklid)
         }
@@ -316,11 +319,7 @@ class XDMovies : MainAPI() {
             if (normalizedLink.isEmpty()) continue
 
             try {
-                if (normalizedLink.contains("hubcloud", ignoreCase = true)) {
-                    HubCloud().getUrl(normalizedLink, "HubCloud", subtitleCallback, callback)
-                } else {
-                    loadExtractor(normalizedLink, name, subtitleCallback, callback)
-                }
+                loadExtractor(normalizedLink, name, subtitleCallback, callback)
                 success = true
             } catch (_: Exception) {
                 Log.e("XDMovies", "Failed to load link: $normalizedLink")

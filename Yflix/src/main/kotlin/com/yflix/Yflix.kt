@@ -2,6 +2,8 @@ package com.yflix
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.Actor
+import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -69,7 +71,7 @@ class Yflix : MainAPI() {
 
     companion object {
         private const val SIMKL = "https://api.simkl.com"
-
+        private const val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
         const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
 
         const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
@@ -159,16 +161,13 @@ class Yflix : MainAPI() {
         val recommendations =
             document.select("div.film-section.md div.item").map { it.toSearchResult() }
 
-        if (allLinks.size == 1 && movieNode != null && movieNode.text()
-                .contains("Movie", ignoreCase = true)
-        ) {
+        if (allLinks.size == 1 && movieNode != null && movieNode.text().contains("Movie", ignoreCase = true)) {
             val movieId = movieNode.attr("eid")
             val tmdbMovieId = runCatching { fetchtmdb(title) }.getOrNull()
 
             val imdbIdFromMovie = tmdbMovieId?.let { id ->
                 runCatching {
-                    val url =
-                        "$TMDBAPI/movie/$id/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                    val url = "$TMDBAPI/movie/$id/external_ids?api_key=$TMDB_API_KEY"
                     val jsonText = app.get(url).textLarge
                     JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
@@ -181,6 +180,14 @@ class Yflix : MainAPI() {
                     simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
                 }.getOrNull()
             }
+
+            val movieCreditsJsonText = tmdbMovieId?.let { id ->
+                runCatching {
+                    app.get("$TMDBAPI/movie/$id/credits?api_key=$TMDB_API_KEY&language=en-US").textLarge
+                }.getOrNull()
+            }
+            val movieCastList = parseCredits(movieCreditsJsonText)
+
             return newMovieLoadResponse(title, url, TvType.Movie, movieId) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundPoster ?: poster
@@ -193,6 +200,9 @@ class Yflix : MainAPI() {
                 simklIdMovie?.let { addSimklId(it) }
                 imdbIdFromMovie?.let { addImdbId(it) }
                 tmdbMovieId?.let { addTMDbId(it.toString()) }
+
+                // assign actors for movie
+                this.actors = movieCastList
             }
         }
 
@@ -201,12 +211,11 @@ class Yflix : MainAPI() {
 
         val imdbIdFromShow = tmdbShowId?.let { id ->
             runCatching {
-                val url = "$TMDBAPI/tv/$id/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                val url = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
                 val jsonText = app.get(url).textLarge
                 JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
             }.getOrNull()
         }
-
 
         val simklIdShow = imdbIdFromShow?.let { imdb ->
             runCatching {
@@ -216,13 +225,22 @@ class Yflix : MainAPI() {
             }.getOrNull()
         }
 
+        // fetch show credits once (used for actors)
+        val showCreditsJsonText = tmdbShowId?.let { id ->
+            runCatching {
+                app.get("$TMDBAPI/tv/$id/credits?api_key=$TMDB_API_KEY&language=en-US").textLarge
+            }.getOrNull()
+        }
+        val castList: List<ActorData> = parseCredits(showCreditsJsonText)
+
         epRes?.select("ul.episodes")?.forEach { seasonBlock ->
             val seasonNumber = seasonBlock.attr("data-season").toIntOrNull() ?: 1
             val tmdbSeasonJson = tmdbShowId?.let { id ->
                 runCatching {
-                    app.get("$TMDBAPI/tv/$id/season/$seasonNumber?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
+                    app.get("$TMDBAPI/tv/$id/season/$seasonNumber?api_key=$TMDB_API_KEY&language=en-US").textLarge
                 }.getOrNull()?.let { JSONObject(it) }
             }
+
             val tmdbEpisodeMap = tmdbSeasonJson?.optJSONArray("episodes")?.let { arr ->
                 val map = HashMap<Int, JSONObject>(arr.length())
                 for (i in 0 until arr.length()) {
@@ -232,16 +250,17 @@ class Yflix : MainAPI() {
                 }
                 map
             }
+
             seasonBlock.select("a").forEachIndexed { index, ep ->
                 val epNum = ep.attr("num").toIntOrNull() ?: (index + 1)
                 val tmdbEpJson = tmdbEpisodeMap?.get(epNum)
-                val epTitle = tmdbEpJson?.optString("name")?.takeIf { it.isNotBlank() } ?: ep.selectFirst("span:last-child")?.text()?.trim().orEmpty()
-                val airDate = ep.attr("title").trim().takeIf { it.isNotBlank() }
+                val epTitle = tmdbEpJson?.optString("name")?.takeIf { it.isNotBlank() }
+                    ?: ep.selectFirst("span:last-child")?.text()?.trim().orEmpty()
+                val airDate = tmdbEpJson?.optString("air_date")?.takeIf { it.isNotBlank() }
+                    ?: ep.attr("title").trim().takeIf { it.isNotBlank() }
                 val eid = ep.attr("eid")
-                val desc =
-                    tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() } ?: ep.selectFirst(
-                        "span.description"
-                    )?.text()?.takeIf { it.isNotBlank() }
+                val desc = tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() }
+                    ?: ep.selectFirst("span.description")?.text()?.takeIf { it.isNotBlank() }
                 val posterUrl = tmdbEpJson?.optString("still_path")?.takeIf { it.isNotBlank() }
                     ?.let { "$TMDBIMAGEBASEURL$it" }
                 val score =
@@ -269,7 +288,8 @@ class Yflix : MainAPI() {
             this.recommendations = recommendations
             addSimklId(simklIdShow)
             addImdbId(imdbIdFromShow)
-            addTMDbId(imdbIdFromShow.toString())
+            tmdbShowId?.let { addTMDbId(it.toString()) }
+            this.actors = castList
         }
     }
 
@@ -390,10 +410,26 @@ class Yflix : MainAPI() {
                         obj.optString("original_title", "")
                     )
                 )
-            ).lowercase()
+            ).lowercase().replace("-"," ")
             if (name.contains(t)) return obj.optInt("id")
         }
         return null
+    }
+
+    fun parseCredits(jsonText: String?): List<ActorData> {
+        if (jsonText.isNullOrBlank()) return emptyList()
+        val list = ArrayList<ActorData>()
+        val root = JSONObject(jsonText)
+        val castArr = root.optJSONArray("cast") ?: return list
+        for (i in 0 until castArr.length()) {
+            val c = castArr.optJSONObject(i) ?: continue
+            val name = c.optString("name").takeIf { it.isNotBlank() } ?: c.optString("original_name").orEmpty()
+            val profile = c.optString("profile_path").takeIf { it.isNotBlank() }?.let { "$TMDBIMAGEBASEURL$it" }
+            val character = c.optString("character").takeIf { it.isNotBlank() }
+            val actor = Actor(name, profile)
+            list += ActorData(actor, roleString = character)
+        }
+        return list
     }
 
 

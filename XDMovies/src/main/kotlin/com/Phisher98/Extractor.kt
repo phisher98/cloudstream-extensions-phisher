@@ -2,6 +2,8 @@ package com.phisher98
 
 import android.annotation.SuppressLint
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.Actor
+import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
@@ -10,6 +12,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.phisher98.XDMovies.Companion.TMDBIMAGEBASEURL
+import org.json.JSONObject
 import java.net.URI
 
 class Hubdrive : ExtractorApi() {
@@ -233,7 +237,7 @@ class HubCloud : ExtractorApi() {
     private fun getBaseUrl(url: String): String {
         return try {
             URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -277,4 +281,31 @@ class HubCloud : ExtractorApi() {
             parts.takeLast(3).joinToString(".")
         }
     }
+}
+
+fun parseTmdbActors(jsonText: String?): List<ActorData> {
+    if (jsonText.isNullOrBlank()) return emptyList()
+
+    val list = mutableListOf<ActorData>()
+    val root = JSONObject(jsonText)
+    val castArr = root.optJSONArray("cast") ?: return emptyList()
+
+    for (i in 0 until castArr.length()) {
+        val c = castArr.optJSONObject(i) ?: continue
+
+        val name = c.optString("name").takeIf { it.isNotBlank() }
+            ?: c.optString("original_name").orEmpty()
+
+        val img = c.optString("profile_path")
+            .takeIf { it.isNotBlank() }
+            ?.let { "$TMDBIMAGEBASEURL$it" }
+
+        val role = c.optString("character").takeIf { it.isNotBlank() }
+
+        list += ActorData(
+            Actor(name, img),
+            roleString = role
+        )
+    }
+    return list
 }
