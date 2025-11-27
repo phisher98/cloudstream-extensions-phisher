@@ -79,10 +79,7 @@ class FourKHDHub : MainAPI() {
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.mt-2 span.badge").map { it.text() }
         val year = document.selectFirst("div.mt-2 span")?.text()?.toIntOrNull()
-        val tvType = when (true) {
-            ("Movies" in tags) -> TvType.Movie
-            else -> TvType.TvSeries
-        }
+        val tvType = if ("Movies" in tags) TvType.Movie else TvType.TvSeries
         val tmdbId = runCatching { fetchtmdb(title) }.getOrNull()
 
         val hrefs: List<String> = document.select("div.download-item a").eachAttr("href")
@@ -130,8 +127,7 @@ class FourKHDHub : MainAPI() {
                                 if (name.isNullOrBlank()) continue
                                 val profile = obj.optString("profile_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
                                 val character = obj.optString("character").takeIf { it.isNotBlank() }
-                                val actor = Actor(name, profile)
-                                add(ActorData(actor, roleString = character))
+                                add(ActorData(Actor(name, profile), roleString = character))
                             }
                         }
                 }
@@ -147,8 +143,21 @@ class FourKHDHub : MainAPI() {
 
         return if (tvType == TvType.TvSeries) {
             val tvSeriesEpisodes = mutableListOf<Episode>()
-            val episodesMap = mutableMapOf<Pair<Int, Int>, MutableList<String>>() // season, episode -> hrefs
-            val maxEpisodePerSeason = mutableMapOf<Int, Int>() // season -> highest episode
+            val episodesMap = mutableMapOf<Pair<Int, Int>, MutableList<String>>()
+            val maxEpisodePerSeason = mutableMapOf<Int, Int>()
+            val imdbIdFromSeries = tmdbId?.let { id ->
+                runCatching {
+                    val url = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
+                    JSONObject(app.get(url).textLarge).optString("imdb_id").takeIf { it.isNotBlank() }
+                }.getOrNull()
+            }
+
+            val simklIdseries = imdbIdFromSeries?.let { imdb ->
+                runCatching {
+                    JSONObject(app.get("$SIMKL/tv/$imdb?client_id=${BuildConfig.SIMKL_CLIENT_ID}").text)
+                        .optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+                }.getOrNull()
+            }
 
             document.select("div.episodes-list div.season-item").forEach { seasonElement ->
                 val seasonText = seasonElement.select("div.episode-number").text()
@@ -160,7 +169,7 @@ class FourKHDHub : MainAPI() {
                     val episode = Regex("""Episode-0*([1-9][0-9]*)""").find(episodeText)?.groupValues?.get(1)?.toIntOrNull()
                         ?: return@forEach
 
-                    val hrefsForEp = episodeItem.select("a").mapNotNull { it -> it.attr("href").takeIf { it.isNotBlank() } }
+                    val hrefsForEp = episodeItem.select("a").mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
                     if (hrefsForEp.isNotEmpty()) {
                         val key = season to episode
                         episodesMap.getOrPut(key) { mutableListOf() }.addAll(hrefsForEp)
@@ -224,11 +233,11 @@ class FourKHDHub : MainAPI() {
                 val size = Regex("""(\d+(?:\.\d+)?\s*GB)""").find(headerText)?.groupValues?.get(1) ?: "Unknown Size"
                 val quality = Regex("""(\d{3,4}p)""").find(headerText)?.groupValues?.get(1) ?: "Unknown Quality"
 
-                val hrefList = item.select("a").mapNotNull { it -> it.attr("href").takeIf { it.isNotBlank() } }
+                val hrefList = item.select("a").mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
 
                 val fileTitle = item.select("div.file-title").text()
-                    .replace(Regex("""\[[^]]*]"""), "") // remove language/codec details
-                    .replace(Regex("""\(.+?\)"""), "")   // remove source/site tags
+                    .replace(Regex("""\[[^]]*]"""), "")
+                    .replace(Regex("""\(.+?\)"""), "")
 
                 if (hrefList.isNotEmpty()) {
                     var nextEpisode = maxEpisodePerSeason.getOrDefault(season, 0) + 1
@@ -281,21 +290,20 @@ class FourKHDHub : MainAPI() {
                 this.actors = finalActorsFromTmdb
                 this.score = Score.from10(tmdbRating)
                 addTrailer(trailer)
+                addSimklId(simklIdseries)
             }
         } else {
             val imdbIdFromMovie = tmdbId?.let { id ->
                 runCatching {
                     val url = "$TMDBAPI/movie/$id/external_ids?api_key=$TMDB_API_KEY"
-                    val jsonText = app.get(url).textLarge
-                    JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
+                    JSONObject(app.get(url).textLarge).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
             }
 
             val simklIdMovie = imdbIdFromMovie?.let { imdb ->
                 runCatching {
-                    val simklJson =
-                        JSONObject(app.get("$SIMKL/movies/$imdb?client_id=${BuildConfig.SIMKL_CLIENT_ID}").text)
-                    simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
+                    JSONObject(app.get("$SIMKL/movies/$imdb?client_id=${BuildConfig.SIMKL_CLIENT_ID}").text)
+                        .optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
                 }.getOrNull()
             }
 
