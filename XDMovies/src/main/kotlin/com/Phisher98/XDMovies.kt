@@ -1,7 +1,6 @@
 package com.phisher98
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
@@ -304,8 +303,9 @@ class XDMovies : MainAPI() {
         if (data.isBlank()) return false
 
         val rawLinks: List<String> = try {
-            val type = object : TypeToken<ArrayList<String>>() {}.type
-            gson.fromJson<ArrayList<String>>(data, type)?.toList() ?: listOf(data)
+            val arr = JSONArray(data)
+            List(arr.length()) { idx -> arr.optString(idx) }
+                .filter { it.isNotBlank() }
         } catch (_: Exception) {
             listOf(data)
         }
@@ -313,14 +313,14 @@ class XDMovies : MainAPI() {
         var success = false
 
         for (rawLink in rawLinks) {
-            val normalizedLink = rawLink.trim()
-            if (normalizedLink.isEmpty()) continue
+            val normalized = rawLink.trim()
+            if (normalized.isEmpty()) continue
 
             try {
-                loadExtractor(normalizedLink, name, subtitleCallback, callback)
+                loadExtractor(normalized, name, subtitleCallback, callback)
                 success = true
             } catch (_: Exception) {
-                Log.e("XDMovies", "Failed to load link: $normalizedLink")
+                Log.e("XDMovies", "Failed to load link: $normalized")
             }
         }
 
