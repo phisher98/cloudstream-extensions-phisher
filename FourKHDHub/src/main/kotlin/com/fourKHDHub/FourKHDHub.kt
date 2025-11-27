@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.fourKHDHub
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.extractors.HubCloud
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -330,52 +331,48 @@ class FourKHDHub : MainAPI() {
         }
     }
 
+    private val LINK_REGEX = Regex("""https?://[^\s'",\]\[]+""", RegexOption.IGNORE_CASE)
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
-        val links = Regex("""https?://[^\s'",\]\[]+""").findAll(data).map { it.value }
+        val links = LINK_REGEX.findAll(data).map { it.value }.distinct()
         val extractors = mapOf(
-            "hubdrive" to Pair("HUB Drive", Hubdrive()),
-            "hubcloud" to Pair("Hub Cloud", HubCloud())
+            "hubdrive" to ("HUB Drive" to Hubdrive()),
+            "hubcloud" to ("Hub Cloud" to HubCloud())
         )
-
-        for (link in links) {
+        links.forEach { rawLink ->
             try {
+                val needsRedirect = rawLink.contains("id=", ignoreCase = true)
                 val resolvedLink = try {
-                    if ("id=" in link.lowercase()) {
-                        getRedirectLinks(link)
-                    } else {
-                        link
-                    }
+                    if (needsRedirect) getRedirectLinks(rawLink) else rawLink
                 } catch (e: Exception) {
-                    Log.e("Phisher", "Redirect failed for $link $e")
-                    continue
+                    Log.e("Phisher", "Redirect failed for $rawLink — ${e.message}")
+                    return@forEach
                 }
-                Log.d("Phisher",resolvedLink.toJson())
-
+                Log.d("Phisher", resolvedLink.toJson())
                 val resolvedLower = resolvedLink.lowercase()
-                var matched = false
 
-                for ((key, value) in extractors) {
+                val matched = extractors.entries.any { (key, pair) ->
                     if (key in resolvedLower) {
-                        matched = true
+                        val (displayName, extractor) = pair
                         try {
-                            value.second.getUrl(resolvedLink, value.first, subtitleCallback, callback)
-                        } catch (_: Exception) {
-                            Log.e(key, "Extractor failed for $resolvedLink")
+                            extractor.getUrl(resolvedLink, displayName, subtitleCallback, callback)
+                            true
+                        } catch (e: Exception) {
+                            Log.e(key, "Extractor failed for $resolvedLink — ${e.message}")
+                            false
                         }
-                    }
+                    } else false
                 }
-
                 if (!matched) {
                     Log.w("Extractor", "No extractor matched: $resolvedLink")
                 }
-            } catch (_: Exception) {
-                Log.e("Extractor", "Unexpected error while processing: $link")
+            } catch (e: Exception) {
+                Log.e("Extractor", "Unexpected error while processing $rawLink — ${e.message}")
             }
         }
 

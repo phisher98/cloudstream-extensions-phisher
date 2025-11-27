@@ -1,14 +1,15 @@
-package com.Phisher98
+package com.fourKHDHub
 
 import android.util.Base64
-import com.Phisher98.FourKHDHub.Companion.TMDBAPI
-import com.Phisher98.FourKHDHub.Companion.TMDBIMAGEBASEURL
+import com.fourKHDHub.FourKHDHub.Companion.TMDBAPI
+import com.fourKHDHub.FourKHDHub.Companion.TMDBIMAGEBASEURL
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import org.json.JSONObject
+import java.net.URLEncoder
 
 suspend fun getRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
@@ -53,7 +54,7 @@ fun pen(value: String): String {
 
 suspend fun fetchtmdb(title: String): Int? {
     val url =
-        "$TMDBAPI/search/multi?api_key=98ae14df2b8d8f8f8136499daf79f0e0&query=" + java.net.URLEncoder.encode(
+        "$TMDBAPI/search/multi?api_key=98ae14df2b8d8f8f8136499daf79f0e0&query=" + URLEncoder.encode(
             title,
             "UTF-8"
         )
