@@ -1341,7 +1341,6 @@ object StreamPlayExtractor : StreamPlay() {
             Log.e("UHDMovies", "Main page load failed: ${e.localizedMessage}")
             return
         }
-        Log.d("UHDMovies", "I'm here".toString())
 
         val seasonPattern = season?.let { "(?i)(S0?$it|Season 0?$it)" }
         val episodePattern = episode?.let { "(?i)(Episode $it)" }
@@ -1485,7 +1484,7 @@ object StreamPlayExtractor : StreamPlay() {
                     put("id", id)
                 }.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
 
-                val postRes = app.post("${BuildConfig.VideasyDEC}", requestBody = jsonBody)
+                val postRes = app.post(BuildConfig.VideasyDEC, requestBody = jsonBody)
                 if (postRes.code != 200) return
 
                 val decryptedJson = postRes.text
@@ -2938,7 +2937,6 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         api: String = "https://parse.showflix.sbs"
     ) {
-        if (season == null) "movieName" else "seriesName"
         val classes = if (season == null) "moviesv2" else "seriesv2"
         val body = """
     {
@@ -3173,7 +3171,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             val serverResponse = app.get(jsonfile, headers = headers, referer = "$allmovielandAPI/")
             if (serverResponse.code != 200) return@runCatching
-            val serverJson = serverResponse.text.replace(Regex(""",\s*\/"""), "")
+            val serverJson = serverResponse.text.replace(Regex(""",\s*/"""), "")
             val cleanedJson = serverJson.replace(Regex(",\\s*\\[\\s*]"), "")
 
             val servers = tryParseJson<ArrayList<AllMovielandServer>>(cleanedJson)?.let { list ->
@@ -3638,7 +3636,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             val sourceButtons = serverDoc.select("li.nav-item a")
             for (source in sourceButtons) {
-                val sourceId = source.attr("data-id") ?: continue
+                val sourceId = source.attr("data-id")
 
                 val iframeUrl = runCatching {
                     app.get("$Watch32/ajax/episode/sources/$sourceId")
@@ -3768,7 +3766,7 @@ object StreamPlayExtractor : StreamPlay() {
                                             json.keys().asSequence()
                                                 .associateWith { json.getString(it) }
                                         }
-                                    } catch (e: Exception) {
+                                    } catch (_: Exception) {
                                         emptyMap()
                                     }
 
@@ -3791,7 +3789,7 @@ object StreamPlayExtractor : StreamPlay() {
                                             this.referer = referer
                                             this.headers = videoHeaders
                                         })
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     Log.e(
                                         "RiveStreamSourceError",
                                         "Failed to decode proxy URL: $url"
@@ -4155,7 +4153,7 @@ object StreamPlayExtractor : StreamPlay() {
         year: Int?
     ): List<Player4uLinkData> {
         return document.select(".playbtnx").mapNotNull { element ->
-            val titleText = element.text()?.split(" | ")?.lastOrNull() ?: return@mapNotNull null
+            val titleText = element.text().split(" | ")?.lastOrNull() ?: return@mapNotNull null
             //fix adult content
             if (season == null && episode == null) {
                 if (year != null && (titleText.startsWith("$title $year", ignoreCase = true) ||
@@ -4345,7 +4343,7 @@ object StreamPlayExtractor : StreamPlay() {
                     headers = streamHeaders,
                     requestBody = requestBody
                 ).body.string()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 continue
             }
 
@@ -4672,7 +4670,7 @@ object StreamPlayExtractor : StreamPlay() {
                 "content-type" to "application/json",
                 "x-client-token" to xClientToken,
                 "x-tr-signature" to xTrSignature,
-                "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03"}""",
+                "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","sp_code":""}""",
                 "x-client-status" to "0"
             )
 
@@ -4872,7 +4870,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
                                     "Accept" to "",
                                     "Content-Type" to "",
-                                    "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+                                    "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","sp_code":""}""",
                                     "X-Client-Status" to "0",
                                     "x-client-token" to subToken,
                                     "x-tr-signature" to subSign
