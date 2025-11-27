@@ -31,7 +31,7 @@ class FourKHDHub : MainAPI() {
         const val TMDBAPI = "https://wild-surf-4a0d.phisher1.workers.dev"
         const val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
         private const val SIMKL = "https://api.simkl.com"
-        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
+        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
 
     }
 
@@ -59,8 +59,11 @@ class FourKHDHub : MainAPI() {
         val title = this.selectFirst("h3")?.text() ?: return null
         val href = this.attr("href")
         val posterUrl = this.select("img").attr("src")
+        val tags = select("span.movie-card-format").map { it.text() }
+        val quality = getSearchQuality(tags)
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.quality = quality
         }
 
     }

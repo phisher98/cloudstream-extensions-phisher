@@ -6,10 +6,12 @@ import com.fourKHDHub.FourKHDHub.Companion.TMDBIMAGEBASEURL
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.text.Normalizer
 
 suspend fun getRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
@@ -92,4 +94,27 @@ fun parseCredits(jsonText: String?): List<ActorData> {
         list += ActorData(actor, roleString = character)
     }
     return list
+}
+
+fun getSearchQuality(tags: List<String>): SearchQuality {
+    if (tags.isEmpty()) return SearchQuality.HD
+    val text = Normalizer.normalize(tags.joinToString(" "), Normalizer.Form.NFKC).lowercase()
+    val patterns = listOf(
+        Regex("\\b(4k|ds4k|uhd|2160p)\\b") to SearchQuality.UHD,
+        Regex("\\b(1440p|qhd)\\b") to SearchQuality.BlueRay,
+        Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b") to SearchQuality.BlueRay,
+        Regex("\\b(1080p|fullhd)\\b") to SearchQuality.HD,
+        Regex("\\b(720p)\\b") to SearchQuality.SD,
+        Regex("\\b(web[- ]?dl|webrip|webdl)\\b") to SearchQuality.WebRip,
+        Regex("\\b(hdrip|hdtv)\\b") to SearchQuality.HD,
+        Regex("\\b(camrip|cam[- ]?rip)\\b") to SearchQuality.CamRip,
+        Regex("\\b(hdts|hdcam|hdtc)\\b") to SearchQuality.HdCam,
+        Regex("\\b(cam)\\b") to SearchQuality.Cam,
+        Regex("\\b(dvd)\\b") to SearchQuality.DVD,
+        Regex("\\b(hq)\\b") to SearchQuality.HQ,
+        Regex("\\b(rip)\\b") to SearchQuality.CamRip
+    )
+    for ((regex, quality) in patterns) if (regex.containsMatchIn(text)) return quality
+
+    return SearchQuality.HD
 }

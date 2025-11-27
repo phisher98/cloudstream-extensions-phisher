@@ -102,7 +102,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
     private fun getImageUrl(link: String?, fallback: String?): String? {
         if (link == null) return fallback
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
     private fun getOriImageUrl(link: String?, fallback: String?): String? {

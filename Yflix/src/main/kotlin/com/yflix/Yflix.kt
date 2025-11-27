@@ -74,7 +74,7 @@ class Yflix : MainAPI() {
         private const val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
         const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
 
-        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/w500"
+        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
         suspend fun decode(text: String?): String {
             return try {
                 val res = app.get("${BuildConfig.YFXENC}?text=$text").text
