@@ -166,6 +166,22 @@ class XDMovies : MainAPI() {
 
         val actors = parseTmdbActors(creditsJsonText)
 
+        val detailsJsonText = runCatching {
+            app.get(
+                "$TMDBAPI/$tmdbTvTypeSlug/$tmdbId?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
+            ).text
+        }.getOrNull()
+
+        val genres: List<String> = detailsJsonText
+            ?.let { JSONObject(it) }
+            ?.optJSONArray("genres")
+            ?.let { array ->
+                (0 until array.length()).mapNotNull { i ->
+                    array.optJSONObject(i)?.optString("name").takeIf { it!!.isNotBlank() }
+                }
+            }
+            ?: emptyList()
+
         val simklid = runCatching {
             tmdbRes?.imdbId?.takeIf { it.isNotBlank() }?.let { imdb ->
                 val path = if (tvType == TvType.Movie) "movies" else "tv"
@@ -275,6 +291,7 @@ class XDMovies : MainAPI() {
                 this.score = rating
                 this.contentRating = source
                 this.actors=actors
+                this.tags = genres
                 addImdbId(imdbId)
                 addSimklId(simklid)
             }
@@ -289,6 +306,7 @@ class XDMovies : MainAPI() {
             this.score = rating
             this.contentRating = source
             this.actors=actors
+            this.tags = genres
             addImdbId(imdbId)
             addSimklId(simklid)
         }
