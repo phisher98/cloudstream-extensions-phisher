@@ -18,20 +18,20 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.net.URI
 
 class HdStream4u : VidHidePro() {
-    override var mainUrl = "https://hdstream4u.com"
+    override var mainUrl = "https://hdstream4u.*"
 }
 
 class Hubstream : VidStack() {
-    override var mainUrl = "https://hubstream.art"
+    override var mainUrl = "https://hubstream.*"
 }
 
 class Hubstreamdad : Hblinks() {
-    override var mainUrl = "https://hblinks.dad"
+    override var mainUrl = "https://hblinks.*"
 }
 
 open class Hblinks : ExtractorApi() {
     override val name = "Hblinks"
-    override val mainUrl = "https://hblinks.pro"
+    override val mainUrl = "https://hblinks.*"
     override val requiresReferer = true
 
     override suspend fun getUrl(
@@ -55,7 +55,7 @@ open class Hblinks : ExtractorApi() {
 
 class Hubcdnn : ExtractorApi() {
     override val name = "Hubcdn"
-    override val mainUrl = "https://hubcdn.cloud"
+    override val mainUrl = "https://hubcdn.*"
     override val requiresReferer = true
 
     override suspend fun getUrl(
