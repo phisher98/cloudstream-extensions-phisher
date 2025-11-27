@@ -234,10 +234,10 @@ class Yflix : MainAPI() {
             }
             seasonBlock.select("a").forEachIndexed { index, ep ->
                 val epNum = ep.attr("num").toIntOrNull() ?: (index + 1)
-                val epTitle = ep.selectFirst("span:last-child")?.text()?.trim().orEmpty()
+                val tmdbEpJson = tmdbEpisodeMap?.get(epNum)
+                val epTitle = tmdbEpJson?.optString("name")?.takeIf { it.isNotBlank() } ?: ep.selectFirst("span:last-child")?.text()?.trim().orEmpty()
                 val airDate = ep.attr("title").trim().takeIf { it.isNotBlank() }
                 val eid = ep.attr("eid")
-                val tmdbEpJson = tmdbEpisodeMap?.get(epNum)
                 val desc =
                     tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() } ?: ep.selectFirst(
                         "span.description"
