@@ -23,5 +23,5 @@ cloudstream {
     )
     iconUrl = "https://fibwatch.art/themes/default/img/logo-light.png?cache=123"
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
