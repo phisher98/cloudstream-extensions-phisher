@@ -42,13 +42,13 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -2696,172 +2696,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
-    //only sub
-    @Suppress("SuspiciousIndentation")
-    suspend fun invokewhvx(
-        imdbId: String? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-    ) {
-        val subUrl = if (season == null) {
-            "$Whvx_API/search?id=$imdbId"
-        } else {
-            "$Whvx_API/search?id=$imdbId&season=$season&episode=$episode"
-        }
-        val json = app.get(subUrl).text
-        val data = parseJson<ArrayList<WHVXSubtitle>>(json)
-        data.forEach {
-            subtitleCallback.invoke(
-                newSubtitleFile(
-                    it.languageName,
-                    it.url
-                )
-            )
-        }
-    }
-
-    suspend fun invokeShinobiMovies(
-        apiUrl: String,
-        api: String,
-        title: String? = null,
-        year: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        invokeIndex(
-            apiUrl,
-            api,
-            title,
-            year,
-            season,
-            episode,
-            callback,
-        )
-    }
-
-    private suspend fun invokeIndex(
-        apiUrl: String,
-        api: String,
-        title: String? = null,
-        year: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit,
-        password: String = "",
-    ) {
-        val passHeaders = mapOf("Authorization" to password)
-        val query = getIndexQuery(title, year, season, episode).let {
-            if (api in mkvIndex) "$it mkv" else it
-        }
-        val body =
-            """{"q":"$query","password":null,"page_token":null,"page_index":0}""".toRequestBody(
-                RequestBodyTypes.JSON.toMediaTypeOrNull()
-            )
-        val data = mapOf("q" to query, "page_token" to "", "page_index" to "0")
-        val search = if (api in encodedIndex) {
-            decodeIndexJson(
-                if (api in lockedIndex) app.post(
-                    "${apiUrl}search",
-                    data = data,
-                    headers = passHeaders,
-                    referer = apiUrl,
-                    timeout = 120L
-                ).text else app.post(
-                    "${apiUrl}search",
-                    data = data,
-                    referer = apiUrl
-                ).text
-            )
-        } else {
-            app.post(
-                "${apiUrl}search",
-                requestBody = body,
-                referer = apiUrl,
-                timeout = 120L
-            ).text
-        }
-        val media = if (api in untrimmedIndex) searchIndex(
-            title,
-            season,
-            episode,
-            year,
-            search,
-            false
-        ) else searchIndex(title, season, episode, year, search)
-        media?.amap { file ->
-            val pathBody =
-                """{"id":"${file.id ?: return@amap null}"}""".toRequestBody(
-                    RequestBodyTypes.JSON.toMediaTypeOrNull()
-                )
-            val pathData = mapOf(
-                "id" to file.id,
-            )
-            val path = (if (api in encodedIndex) {
-                if (api in lockedIndex) {
-                    app.post(
-                        "${apiUrl}id2path",
-                        data = pathData,
-                        headers = passHeaders,
-                        referer = apiUrl,
-                        timeout = 120L
-                    )
-                } else {
-                    app.post(
-                        "${apiUrl}id2path",
-                        data = pathData,
-                        referer = apiUrl,
-                        timeout = 120L
-                    )
-                }
-            } else {
-                app.post(
-                    "${apiUrl}id2path",
-                    requestBody = pathBody,
-                    referer = apiUrl,
-                    timeout = 120L
-                )
-            }).text.let { path ->
-                if (api in ddomainIndex) {
-                    val worker = app.get(
-                        "${fixUrl(path, apiUrl).encodeUrl()}?a=view",
-                        referer = if (api in needRefererIndex) apiUrl else "",
-                        timeout = 120L
-                    ).documentLarge.selectFirst("script:containsData(downloaddomain)")
-                        ?.data()
-                        ?.substringAfter("\"downloaddomain\":\"")
-                        ?.substringBefore("\",")?.let {
-                            "$it/0:"
-                        }
-                    fixUrl(path, worker ?: return@amap null)
-                } else {
-                    fixUrl(path, apiUrl)
-                }
-            }.encodeUrl()
-
-            val size = "%.2f GB".format(
-                bytesToGigaBytes(
-                    file.size?.toDouble()
-                        ?: return@amap null
-                )
-            )
-            val quality = getIndexQuality(file.name)
-            val tags = getIndexQualityTags(file.name)
-
-            callback.invoke(
-                newExtractorLink(
-                    api,
-                    "$api $tags [$size]",
-                    url = path
-                ) {
-                    this.referer = if (api in needRefererIndex) apiUrl else ""
-                    this.quality = quality
-                }
-            )
-        }
-    }
-
     suspend fun invokeDahmerMovies(
         apiurl: String? = null,
         title: String? = null,
@@ -3583,7 +3417,6 @@ object StreamPlayExtractor : StreamPlay() {
         title: String?,
         season: Int? = null,
         episode: Int? = null,
-        year: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
@@ -4153,7 +3986,7 @@ object StreamPlayExtractor : StreamPlay() {
         year: Int?
     ): List<Player4uLinkData> {
         return document.select(".playbtnx").mapNotNull { element ->
-            val titleText = element.text().split(" | ")?.lastOrNull() ?: return@mapNotNull null
+            val titleText = element.text().split(" | ").lastOrNull() ?: return@mapNotNull null
             //fix adult content
             if (season == null && episode == null) {
                 if (year != null && (titleText.startsWith("$title $year", ignoreCase = true) ||
@@ -4489,7 +4322,6 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokeHdmovie2(
         title: String? = null,
         year: Int? = null,
-        season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
@@ -4510,7 +4342,7 @@ object StreamPlayExtractor : StreamPlay() {
             "X-Requested-With" to "XMLHttpRequest"
         )
 
-        suspend fun String.getIframe(): String = Jsoup.parse(this).select("iframe").attr("src")
+        fun String.getIframe(): String = Jsoup.parse(this).select("iframe").attr("src")
 
         suspend fun fetchSource(post: String, nume: String, type: String): String {
             val response = app.post(
@@ -4553,9 +4385,9 @@ object StreamPlayExtractor : StreamPlay() {
                 innerDoc.select("div > p > a").forEach {
                     val href = it.attr("href")
                     if (href.contains("GDFlix")) {
-                        val redirectedUrl = (1..10).mapNotNull {
+                        val redirectedUrl = (1..10).firstNotNullOfOrNull {
                             app.get(href, allowRedirects = false).headers["location"]
-                        }.firstOrNull() ?: href
+                        } ?: href
 
                         loadSourceNameExtractor(
                             "Hdmovie2$type",
@@ -4570,7 +4402,7 @@ object StreamPlayExtractor : StreamPlay() {
         } else {
             loadSourceNameExtractor(
                 "Hdmovie2",
-                link!!,
+                link,
                 hdmovie2API,
                 subtitleCallback,
                 callback
@@ -5093,7 +4925,6 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         year: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit,
     ) {
         val sourceHeaders = mapOf(
             "Accept" to "*/*",
@@ -5256,52 +5087,85 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeMappleTv(
         tmdbId: Int? = null,
-        title: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val serverList = listOf("mapple", "alfa", "sakura", "wiggles")
-        val sessionrawJson = app.get("https://enc-dec.app/api/enc-mapple").textLarge
-        val sessionjsonObj = JSONObject(sessionrawJson)
-        val sessionId = sessionjsonObj.optJSONObject("result")?.optString("sessionId")
-        val fixtitle = "$tmdbId-${title?.replace(" ", "-")}"
-        val url =
-            if (season == null) "$mappleTvApi/watch/movie/$fixtitle" else "$mappleTvApi/watch/tv/$season-$episode/$fixtitle"
+
+        val sessionRawJson = try {
+            app.get("https://enc-dec.app/api/enc-mapple").textLarge
+        } catch (_: Exception) {
+            Log.e("invokeMappleTv", "failed to fetch session")
+            return
+        }
+
+        val sessionJsonObj = JSONObject(sessionRawJson)
+        val sessionId = sessionJsonObj.optJSONObject("result")?.optString("sessionId")
+        if (sessionId.isNullOrEmpty()) {
+            Log.e("invokeMappleTv", "sessionId is null or empty")
+            return
+        }
+        if (tmdbId == null) {
+            Log.e("invokeMappleTv", "tmdbId is null")
+            return
+        }
+
+        val url = if (season == null) {
+            "$mappleTvApi/watch/movie/$tmdbId"
+        } else {
+            "$mappleTvApi/watch/tv/$tmdbId/$season-$episode"
+        }
+
         val headers = mapOf(
-            "next-action" to "40770771b1e06bb7435ca5d311ed845d4fd406dca2",
-            "Referer" to mappleTvApi,
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "Next-Action" to "40770771b1e06bb7435ca5d311ed845d4fd406dca2",
+            "Referer" to "$mappleTvApi/",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
         )
-        serverList.forEach {
+
+        serverList.forEach { source ->
             try {
-                val requestPayload =
-                    if (season == null) """[{"mediaId":$tmdbId,"mediaType":"movie","tv_slug":"","source":"$it","useFallbackVideo":false,"sessionId":"$sessionId"}]""" else """[{"mediaId":$tmdbId,"mediaType":"tv","tv_slug":"$season-$episode","source":"$it,"useFallbackVideo":false,"sessionId":"$sessionId""}]"""
-                val response =
-                    app.post(url, timeout = 30, json = requestPayload, headers = headers).text
-                val rawJson = response.split("\n")[1].replace("1:", "")
+                val item = JSONObject().apply {
+                    put("mediaId", tmdbId)
+                    put("mediaType", if (season == null) "movie" else "tv")
+                    put("tv_slug", if (season == null) "" else "$season-$episode")
+                    put("source", source)
+                    put("useFallbackVideo", false)
+                    put("sessionId", sessionId)
+                }
+                val payload = JSONArray().put(item).toString()
+
+                val responseText: String? = withTimeoutOrNull(10_000L) {
+                    app.post(url, timeout = 10, json = payload, headers = headers).text
+                }
+
+                if (responseText == null) {
+                    Log.w("invokeMappleTv", "timeout after 5s for source=$source; moving to next source")
+                    return@forEach
+                }
+
+                val rawJson = responseText.split("\n")[1].replace("1:", "")
                 val jsonObj = JSONObject(rawJson)
                 val data = jsonObj.optJSONObject("data")
                 val streamUrl = data!!.getString("stream_url")
+
                 M3u8Helper.generateM3u8(
-                    "MappleTv [${it.capitalize()}]",
+                    "MappleTv [${source.capitalize()}]",
                     streamUrl,
                     mappleTvApi,
                     headers = mapOf("Referer" to mappleTvApi)
                 ).forEach(callback)
-            } catch (e: Exception) {
-                Log.d("excetion", e.message.toString())
+
+        } catch (_: Exception) {
+                Log.e("invokeMappleTv", "error for source=$source")
             }
         }
-
     }
 
     suspend fun invokeVidnest(
         tmdbId: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val serverList = listOf("hollymoviehd", "moviebox", "flixhq", "", "allmovies", "layarkaca")
@@ -5611,7 +5475,6 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit,
     ) {
         val STATIC_PATH =
             "hezushon/ira/2264ec23bfa5e4891e26d563e5daac61bcb05688/b544e02b"
@@ -5672,7 +5535,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val url = jsonObject.getString("url")
                     urlList[it.name] = url
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 TODO("Not yet implemented")
             }
         }
@@ -5786,7 +5649,7 @@ object StreamPlayExtractor : StreamPlay() {
                     val streamURl = match?.groupValues?.get(1)
                     if (!streamURl.isNullOrEmpty()) {
                         var finalStreamUrl = streamURl
-                        if (!hasHost(streamURl.toString())) {
+                        if (!hasHost(streamURl)) {
                             finalStreamUrl = app.head(
                                 "$vidPlusApi$streamURl",
                                 headers = headers,
@@ -5798,7 +5661,7 @@ object StreamPlayExtractor : StreamPlay() {
                         urlListMap[entry] = finalStreamUrl.toString()
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 TODO("Not yet implemented")
             }
         }

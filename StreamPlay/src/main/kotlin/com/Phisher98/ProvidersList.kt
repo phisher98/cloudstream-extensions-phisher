@@ -156,7 +156,8 @@ fun buildProviders(): List<Provider> {
             invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback)
         },
         Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode, res.year, subtitleCallback, callback)
+            if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
+                subtitleCallback, callback)
         },
         Provider("primesrc", "PrimeSrc") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback)
@@ -183,7 +184,8 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokehdhub4u(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("hdmovie2", "Hdmovie2") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeHdmovie2(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeHdmovie2(res.title, res.year,
+                res.episode, subtitleCallback, callback)
         },
         Provider("dramadrip", "Dramadrip (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime)invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
@@ -206,11 +208,11 @@ fun buildProviders(): List<Provider> {
         Provider("vidlink", "Vidlink") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVidlink(res.id, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("mappletv", "MappleTV") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMappleTv(res.id, res.title, res.season, res.episode, subtitleCallback, callback)
+        Provider("mappletv", "MappleTV") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeMappleTv(res.id, res.season, res.episode, callback)
         },
-        Provider("vidnest", "Vidnest") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeVidnest(res.id, res.season, res.episode, subtitleCallback, callback)
+        Provider("vidnest", "Vidnest") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeVidnest(res.id, res.season, res.episode, callback)
         },
         Provider("dotmovies", "DotMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeDotmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback)
@@ -221,8 +223,8 @@ fun buildProviders(): List<Provider> {
         Provider("kisskh", "KissKH (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback)
         },
-        Provider("cinemaos", "CinemaOS") { res, subtitleCallback, callback, _, _ ->
-            invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback, subtitleCallback)
+        Provider("cinemaos", "CinemaOS") { res, _, callback, _, _ ->
+            invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback)
         },
         Provider("dahmermovies", "DahmerMovies") { res, _, callback, _, dahmerMoviesAPI ->
             if (!res.isAnime) invokeDahmerMovies(dahmerMoviesAPI, res.title, res.year, res.season, res.episode, callback)
@@ -233,8 +235,8 @@ fun buildProviders(): List<Provider> {
         Provider("mp4hydra", "MP4Hydra") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokemp4hydra(res.title, res.year,res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("vidfast", "VidFast") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeVidFast(res.id, res.season,res.episode, callback, subtitleCallback)
+        Provider("vidfast", "VidFast") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeVidFast(res.id, res.season,res.episode, callback)
         },
         Provider("vidplus", "VidPlus") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidPlus(res.id, res.season,res.episode,  callback)

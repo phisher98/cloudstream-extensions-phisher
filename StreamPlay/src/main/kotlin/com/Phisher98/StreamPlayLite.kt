@@ -1,5 +1,7 @@
 package com.phisher98
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -40,6 +42,7 @@ import com.phisher98.StreamPlayExtractor.sharedPref
 class StreamPlayLite() : StreamPlay(sharedPref) {
     override var name = "StreamPlay-Lite"
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -164,7 +167,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.title,
                     res.season,
                     res.episode,
-                    res.year,
                     subtitleCallback,
                     callback
                 )
