@@ -34,25 +34,6 @@ class Hubdrive : ExtractorApi() {
         else loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
 }
-
-class XdMoviesExtractor : ExtractorApi() {
-    override val name = "XdMoviesExtractor"
-    override val mainUrl = " https://link.xdmovies.site"
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val href=app.get(url, allowRedirects = false).headers["location"]
-        if (href!=null) {
-           loadExtractor(href, "HubDrive", subtitleCallback, callback)
-        }
-    }
-}
-
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.*"
@@ -179,6 +160,16 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
+                text.contains("Mega Server", ignoreCase = true) -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$referer [Mega Server]",
+                            "$referer [Mega Server] $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
                     var redirectUrl: String?
@@ -212,16 +203,6 @@ class HubCloud : ExtractorApi() {
 
                     Log.e(tag, "10Gbps: Redirect limit reached ($maxRedirects)")
                     return@amap
-                }
-
-                text.contains("Mega Server", ignoreCase = true) -> {
-                    callback.invoke(
-                        newExtractorLink(
-                            "$referer [Mega Server]",
-                            "$referer [Mega Server] $labelExtras",
-                            link,
-                        ) { this.quality = quality }
-                    )
                 }
 
                 else -> {
@@ -285,6 +266,23 @@ class HubCloud : ExtractorApi() {
     }
 }
 
+class XdMoviesExtractor : ExtractorApi() {
+    override val name = "XdMoviesExtractor"
+    override val mainUrl = " https://link.xdmovies.site"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val href=app.get(url, allowRedirects = false).headers["location"]
+        if (href!=null) {
+           loadExtractor(href, "HubDrive", subtitleCallback, callback)
+        }
+    }
+}
 fun parseTmdbActors(jsonText: String?): List<ActorData> {
     if (jsonText.isNullOrBlank()) return emptyList()
 

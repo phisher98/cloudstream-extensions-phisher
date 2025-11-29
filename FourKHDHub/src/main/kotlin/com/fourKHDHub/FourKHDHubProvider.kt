@@ -10,6 +10,12 @@ class FourKHDHubProvider: BasePlugin() {
     override fun load() {
         registerMainAPI(FourKHDHub())
         registerExtractorAPI(HubCloud())
+        registerExtractorAPI(HdStream4u())
+        registerExtractorAPI(Hubstream())
+        registerExtractorAPI(Hubstreamdad())
+        registerExtractorAPI(Hubcdnn())
+        registerExtractorAPI(PixelDrainDev())
+        registerExtractorAPI(HUBCDN())
     }
 
     companion object {

@@ -162,6 +162,11 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Hubdrive())
         registerExtractorAPI(Rapidairmax())
         registerExtractorAPI(Rapidshare())
+        registerExtractorAPI(HdStream4u())
+        registerExtractorAPI(Hubstream())
+        registerExtractorAPI(Hubcdnn())
+        registerExtractorAPI(HUBCDN())
+        registerExtractorAPI(PixelDrainDev())
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
             if (!act.isFinishing && !act.isDestroyed) {
