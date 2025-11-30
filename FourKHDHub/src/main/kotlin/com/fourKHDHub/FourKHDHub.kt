@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.extractors.HubCloud
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
