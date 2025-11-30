@@ -96,7 +96,7 @@ class YTSMX : YTS(){
         val document = app.get(data).documentLarge
         val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
         document.select("p.hidden-md.hidden-lg a").map {
-            val infoHash=it.attr("href").substringAfter("download/")
+            val infoHash=it.attr("href").substringAfter("download/").substringBefore("?")
             if (infoHash.startsWith("http"))
             {
                 Log.d("Error","Subtitles")
