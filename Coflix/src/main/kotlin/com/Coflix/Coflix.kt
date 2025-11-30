@@ -13,7 +13,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 class Coflix : MainAPI() {
-    override var mainUrl              = "https://coflix.bet"
+    override var mainUrl              = "https://coflix.si"
     override var name                 = "Coflix"
     override val hasMainPage          = true
     override var lang                 = "fr"
@@ -105,24 +105,35 @@ class Coflix : MainAPI() {
         return if (type==TvType.TvSeries)
         {
             val episodes = mutableListOf<Episode>()
-            document.select("section.sc-seasons ul li input").map {
-                val dataseason=it.attr("data-season")
-                val dataid=it.attr("post-id")
-                app.get("$coflixAPI/series/$dataid/$dataseason").parsedSafe<EpRes>()?.episodes?.map { ep->
-                    val season=ep.season.toIntOrNull()
-                    val epnumber=ep.number.toIntOrNull()
-                    val eptitle=ep.title
-                    val epposter=fetchImageUrl(ep.image)
-                    val ephref=ep.links
-                    episodes+=newEpisode(ephref)
-                    {
-                        this.name=eptitle
-                        this.season=season
-                        this.episode=epnumber
-                        this.posterUrl=epposter
+            document.select("section.sc-seasons ul li input")
+                .mapNotNull { input ->
+                    val dataseason = input.attr("data-season")
+                    val dataid = input.attr("post-id")
+
+                    if (dataseason.isBlank() || dataid.isBlank()) return@mapNotNull null
+
+                    val epRes = try {
+                        app.get("$coflixAPI/series/$dataid/$dataseason").parsedSafe<EpRes>()
+                    } catch (_: Exception) {
+                        null
                     }
-                }
-            }
+
+                    epRes?.episodes?.map { ep ->
+                        val season = ep.season.toIntOrNull()
+                        val epnumber = ep.number.toIntOrNull()
+                        val eptitle = ep.title
+                        val epposter = fetchImageUrl(ep.image)
+                        val ephref = ep.links
+
+                        newEpisode(ephref) {
+                            this.name = eptitle
+                            this.season = season
+                            this.episode = epnumber
+                            this.posterUrl = epposter
+                        }
+                    }
+                }.flatten().let { episodes.addAll(it) }
+
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.plot = description
@@ -141,12 +152,30 @@ class Coflix : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        val referer = getBaseUrl(mainUrl)
         val iframe = app.get(data).documentLarge.select("div.embed iframe").attr("src")
-        app.get(iframe).documentLarge.select("div.OptionsLangDisp div.OD.OD_FR.REactiv li").amap {
-            val base64encoded=it.attr("onclick").substringAfter("showVideo('").substringBefore("',")
-            val url=base64Decode(base64encoded)
-            loadExtractor(url,subtitleCallback, callback)
+        val doc= app.get(iframe,referer = referer ).documentLarge
+        val lis = doc.select("li[onclick]")
+        lis.amap { li ->
+            val onclick = li.attr("onclick")
+            val base64encoded = onclick
+                .substringAfter("showVideo('")
+                .substringBefore("',")
+                .trim()
+
+            if (base64encoded.isNotEmpty()) {
+                try {
+                    val url = base64Decode(base64encoded)
+                    loadExtractor(url,referer, subtitleCallback, callback)
+                } catch (_: IllegalArgumentException) {
+                }
+            }
         }
         return true
     }
+
+    private suspend fun getBaseUrl(url: String): String {
+        return app.get(url).url
+    }
+
 }

@@ -2,7 +2,11 @@ package com.Coflix
 
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.StreamSB
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidStack
+import com.lagradost.cloudstream3.extractors.Vidguardto
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -67,6 +71,27 @@ class waaw : StreamSB() {
     override var mainUrl = "https://waaw.to"
 }
 
+class wishonly : StreamWishExtractor() {
+    override var mainUrl = "https://wishonly.site"
+}
+
+class FileMoonSx : Filesim() {
+    override val mainUrl = "https://filemoon.sx"
+    override val name = "FileMoonSx"
+}
+
+class Vidguardto2 : Vidguardto() {
+    override val mainUrl = "https://listeamed.net"
+}
+
+class CoflixUPN : VidStack() {
+    override var mainUrl = "https://coflix.upn.one"
+}
+
+class Mivalyo : VidhideExtractor() {
+    override var mainUrl = "https://mivalyo.com"
+}
+
 
 class Uqload : ExtractorApi() {
     override val name = "Uqload"
@@ -106,7 +131,7 @@ class Veev : ExtractorApi() {
     override val requiresReferer = false
 
     private val pattern =
-        Regex("""(?://|\.)(?:veev|kinoger|poophq|doods)\.(?:to|pw|com)/(?:e|d)/([0-9A-Za-z]+)""")
+        Regex("""(?://|\.)(?:veev|kinoger|poophq|doods)\.(?:to|pw|com)/[ed]/([0-9A-Za-z]+)""")
 
     companion object {
         const val DEFAULT_UA =
@@ -141,7 +166,7 @@ class Veev : ExtractorApi() {
 
             val json = try {
                 JSONObject(responseText)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 continue
             }
             val file = json.optJSONObject("file") ?: continue
