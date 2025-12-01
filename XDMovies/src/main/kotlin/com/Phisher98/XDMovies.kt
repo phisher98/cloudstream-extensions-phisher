@@ -79,7 +79,7 @@ class XDMovies : MainAPI() {
         "category.php?ott=JioHotstar" to "Hotstar",
     )
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${if (request.data.contains("Homepage")) "?" else "${request.data}&"}page=$page").documentLarge

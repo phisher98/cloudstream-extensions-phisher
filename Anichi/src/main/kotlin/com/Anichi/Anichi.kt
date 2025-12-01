@@ -135,8 +135,8 @@ open class Anichi : MainAPI() {
             Dispatchers.IO
         ) {
             URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
-        }
-    )
+        },1
+    )?.items
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
         val encodedQuery = withContext(Dispatchers.IO) {
