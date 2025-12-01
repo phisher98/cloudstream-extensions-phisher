@@ -1,6 +1,6 @@
 package com.RingZ
 
-import com.lagradost.api.Log
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -30,6 +30,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -51,14 +52,18 @@ class RingZ : MainAPI() {
 
     }
 
-    override val mainPage = mainPageOf(
-        *listOfNotNull(
-            "$mainUrl/test.json" to "Movies",
-            "$mainUrl/srs.json" to "Web Series",
-            "$mainUrl/lstanime.json" to "Anime",
-            if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
-        ).toTypedArray()
-    )
+    override val mainPage = runBlocking {
+        val pages = RingzConfigLoader.fetchPages(
+            base64Decode("aHR0cHM6Ly9tYWluLnJpbmd6YXBrLmlu"),
+            mainUrl,
+            "/t",
+            settingsForProvider.enableAdult
+        )
+
+        mainPageOf(*pages.toTypedArray())
+    }
+
+
 
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -112,7 +117,7 @@ class RingZ : MainAPI() {
                 val allMovies = getJsonArray("AllMovieDataList", "allMovieDataList")
                 val searchResponses = allMovies.toSearchResponses("Movies", TvType.Movie)
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name, searchResponses, isHorizontalImages = true)),
+                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
                     hasNext = false
                 )
             }
@@ -121,25 +126,25 @@ class RingZ : MainAPI() {
                 val animeList = getJsonArray("webSeriesDataList")
                 val searchResponses = animeList.toSearchResponses("Anime", TvType.Anime, filterGenre = "Anime")
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name, searchResponses, isHorizontalImages = true)),
+                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
                     hasNext = false
                 )
             }
 
-            request.name.contains("Adult", ignoreCase = true) -> {
+            request.name.contains("desihub", ignoreCase = true) || request.name.contains("Webseries", ignoreCase = true)  -> {
                 val webSeriesList = getJsonArray("webSeriesDataList")
                 val searchResponses = webSeriesList.toSearchResponses("Series", TvType.TvSeries)
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name, searchResponses, isHorizontalImages = true)),
+                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
                     hasNext = false
                 )
             }
 
             else -> {
-                val seriesList = getJsonArray("webSeriesDataList")
-                val searchResponses = seriesList.toSearchResponses("Series", TvType.TvSeries)
+                val allMovies = getJsonArray("AllMovieDataList", "allMovieDataList")
+                val searchResponses = allMovies.toSearchResponses("Movies", TvType.Movie)
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name, searchResponses, isHorizontalImages = true)),
+                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
                     hasNext = false
                 )
             }
@@ -147,21 +152,20 @@ class RingZ : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val urls = listOfNotNull(
-            "$mainUrl/m.json" to "Movies",
-            "$mainUrl/s.json" to "Web Series",
-            "$mainUrl/anime.json" to "Anime",
-            if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
+        val urls = RingzConfigLoader.fetchPages(
+            "https://main.ringzapk.in",
+            mainUrl,
+            "/t",
+            settingsForProvider.enableAdult
         )
+
 
         val results = mutableListOf<SearchResponse>()
 
-        // Helper to fetch JSON safely
         suspend fun fetchJson(url: String) = JSONObject(app.get(url, headers).text)
 
         // Helper to convert JSONObject to LoadURL
         fun JSONObject.toLoadURL(type: String, fallbackUrl: String): LoadURL {
-            Log.d("Phisher",fallbackUrl)
             return LoadURL(
                 url = this.optString("l", fallbackUrl),
                 title = this.optString("mn"),
@@ -177,7 +181,6 @@ class RingZ : MainAPI() {
             )
         }
 
-        // Helper to convert JSON array to SearchResponse
         fun JSONArray.toSearchResponses(type: String, tvType: TvType, filterGenre: String? = null,fallback: String? =null): List<SearchResponse> {
             val list = mutableListOf<SearchResponse>()
             for (i in 0 until this.length()) {
