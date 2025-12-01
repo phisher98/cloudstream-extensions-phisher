@@ -86,9 +86,9 @@ class Kickassanime : MainAPI() {
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
 val json = """
 {   "page": "$page",
     "query": "$query"

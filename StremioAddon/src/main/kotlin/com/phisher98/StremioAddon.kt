@@ -1,7 +1,9 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.os.Build
 import android.webkit.URLUtil
+import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.json.JSONObject
 import java.time.LocalDate
@@ -72,6 +74,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override val mainPage = run {
         val categories = mutableListOf<Pair<String, String>>()
         val currentMonth = LocalDate.now().monthValue
@@ -133,7 +136,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         return app.get(
