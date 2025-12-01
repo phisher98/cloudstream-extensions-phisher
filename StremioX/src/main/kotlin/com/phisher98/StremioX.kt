@@ -39,9 +39,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.SubsExtractors.invokeOpenSubs
 import com.phisher98.SubsExtractors.invokeWatchsomuch
 
-class StremioX : TmdbProvider() {
-    override var mainUrl = "https://torrentio.strem.fun"
-    override var name = "StremioX"
+class StremioX(override var mainUrl: String, override var name: String) : TmdbProvider() {
     override val hasMainPage = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(TvType.Others)

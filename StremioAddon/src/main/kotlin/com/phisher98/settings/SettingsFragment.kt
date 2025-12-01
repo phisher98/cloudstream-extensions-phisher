@@ -29,6 +29,7 @@ class SettingsFragment(
         return inflater.inflate(res.getLayout(id), container, false)
     }
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     private fun getDrawable(name: String): Drawable {
         val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
         return res.getDrawable(id, null)
@@ -118,7 +119,7 @@ class SettingsFragment(
                 .setTitle("Reset")
                 .setMessage("This will delete all saved settings.")
                 .setPositiveButton("Reset") { _, _ ->
-                    sharedPref.edit().clear().commit()
+                    sharedPref.edit(commit = true) { clear() }
                     stremioAddonInput.text.clear()
                     stremioAddon2Input.text.clear()
                     stremioAddon3Input.text.clear()

@@ -13,9 +13,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.json.JSONObject
 
-class StremioC : MainAPI() {
-    override var mainUrl = "https://stremio.github.io/stremio-static-addon-example"
-    override var name = "StremioC"
+class StremioC(override var mainUrl: String, override var name: String) : MainAPI() {
     override val supportedTypes = setOf(TvType.Others)
     override val hasMainPage = true
 
