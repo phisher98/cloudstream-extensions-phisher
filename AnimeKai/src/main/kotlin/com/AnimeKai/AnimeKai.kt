@@ -130,7 +130,7 @@ class AnimeKai : MainAPI() {
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=dub" to "Recently DUB",
             )
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
         val res = app.get(link).documentLarge
         return res.select("div.aitem-wrapper div.aitem").map { it.toSearchResult() }.toNewSearchResponseList()
@@ -208,7 +208,7 @@ class AnimeKai : MainAPI() {
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
                     this.description = metaEp?.overview ?: "No summary available"
-                    this.addDate(metaEp?.airDateUtc)
+                    this.addDate(metaEp?.airdate)
                     this.runTime = metaEp?.runtime
                 }
             }
