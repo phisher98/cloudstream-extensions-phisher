@@ -24,5 +24,5 @@ cloudstream {
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
     iconUrl="https://ringzapk.com/logo.png"
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
