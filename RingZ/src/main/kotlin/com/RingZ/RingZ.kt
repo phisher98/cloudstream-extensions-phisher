@@ -30,7 +30,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -52,18 +51,14 @@ class RingZ : MainAPI() {
 
     }
 
-    override val mainPage = runBlocking {
-        val pages = RingzConfigLoader.fetchPages(
-            base64Decode("aHR0cHM6Ly9tYWluLnJpbmd6YXBrLmlu"),
-            mainUrl,
-            "/t",
-            settingsForProvider.enableAdult
-        )
-
-        mainPageOf(*pages.toTypedArray())
-    }
-
-
+    override val mainPage = mainPageOf(
+        *listOfNotNull(
+            "$mainUrl/mm.json" to "Movies",
+            "$mainUrl/ss.json" to "Web Series",
+            "$mainUrl/lstanime.json" to "Anime",
+            if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
+        ).toTypedArray()
+    )
 
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -131,7 +126,7 @@ class RingZ : MainAPI() {
                 )
             }
 
-            request.name.contains("desihub", ignoreCase = true) || request.name.contains("Webseries", ignoreCase = true)  -> {
+            request.name.contains("Adult", ignoreCase = true) || request.name.contains("Web Series", ignoreCase = true)  -> {
                 val webSeriesList = getJsonArray("webSeriesDataList")
                 val searchResponses = webSeriesList.toSearchResponses("Series", TvType.TvSeries)
                 newHomePageResponse(
@@ -152,13 +147,12 @@ class RingZ : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val urls = RingzConfigLoader.fetchPages(
-            "https://main.ringzapk.in",
-            mainUrl,
-            "/t",
-            settingsForProvider.enableAdult
+        val urls = listOfNotNull(
+            "$mainUrl/m.json" to "Movies",
+            "$mainUrl/s.json" to "Web Series",
+            "$mainUrl/anime.json" to "Anime",
+            if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
         )
-
 
         val results = mutableListOf<SearchResponse>()
 

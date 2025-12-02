@@ -1,5 +1,6 @@
 package com.RingZ
 
+import android.util.Log
 import com.RingZ.RingZ.Companion.headers
 import com.lagradost.cloudstream3.app
 import org.json.JSONArray
@@ -47,7 +48,10 @@ object RingzConfigLoader {
                     highestId = idNum
                     selected = obj
                 }
+                Log.d("Phisher",highestId.toString())
+
             }
+            Log.d("Phisher",selected.toString())
 
             if (selected == null && array.length() > 0)
                 selected = array.getJSONObject(array.length() - 1)
