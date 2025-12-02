@@ -43,10 +43,11 @@ import kotlin.random.Random
 
 class Yflix : MainAPI() {
     override var mainUrl = "https://yflix.to"
-    override var name = "YFlix"
+    override var name = "Yflix"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
+    override val hasQuickSearch = true
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
@@ -110,6 +111,8 @@ class Yflix : MainAPI() {
             "$mainUrl/browser?type%5B%5D=movie&type%5B%5D=tv&sort=imdb" to "Top IMDB",
             "$mainUrl/browser?type%5B%5D=movie&type%5B%5D=tv&sort=release_date" to "Latest Release"
         )
+
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query,1).items
 
     override suspend fun search(query: String, page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
