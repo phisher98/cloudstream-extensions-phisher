@@ -58,7 +58,7 @@ import java.time.LocalDate
 open class Anichi : MainAPI() {
     override var name = "Anichi"
     override val instantLinkLoading = true
-    override val hasQuickSearch = false
+    override val hasQuickSearch = true
     override val hasMainPage = true
 
     private fun getStatus(t: String): ShowStatus {

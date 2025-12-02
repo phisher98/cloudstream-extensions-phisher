@@ -43,7 +43,7 @@ import kotlin.random.Random
 class AnimeKai : MainAPI() {
     override var mainUrl = AnimeKaiPlugin.currentAnimeKaiServer
     override var name = "Animekai"
-    override val hasQuickSearch = false
+    override val hasQuickSearch = true
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
@@ -122,13 +122,15 @@ class AnimeKai : MainAPI() {
     }
 
 
-    override val mainPage =
-        mainPageOf(
+    override val mainPage = mainPageOf(
             "$mainUrl/browser?keyword=&status[]=releasing&sort=trending" to "Trending",
             "$mainUrl/browser?keyword=&status[]=releasing&sort=updated_date" to "Latest Episode",
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=sub&language[]=softsub" to "Recently SUB",
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=dub" to "Recently DUB",
-            )
+    )
+
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query,1).items
+
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
