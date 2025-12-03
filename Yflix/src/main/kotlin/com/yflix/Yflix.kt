@@ -146,7 +146,7 @@ class Yflix : MainAPI() {
         val keyword = url.substringAfter("/watch/").substringBefore(".")
         val poster = document.select("div.poster img").attr("src")
         val title = document.selectFirst("h1.title")?.text().orEmpty()
-        val plot = document.selectFirst("div.detailWrap div.description")?.text()
+        val plot = document.selectFirst("div.description")?.text()
         val year = document.select("div.metadata.set span:nth-child(4)").text().toIntOrNull()
         val rating = document.selectFirst("div.metadata.set span.IMDb")?.ownText()
         val contentRating = document.select("div.metadata.set span.ratingR").text()
@@ -190,11 +190,25 @@ class Yflix : MainAPI() {
                     app.get("$TMDBAPI/movie/$id/credits?api_key=$TMDB_API_KEY&language=en-US").textLarge
                 }.getOrNull()
             }
+
+            val bgurl = runCatching {
+                val json = app.get(
+                    "$TMDBAPI/movie/$tmdbMovieId/images?api_key=$TMDB_API_KEY&language=en-US&include_image_language=en,null"
+                ).textLarge
+
+                val backdrops = JSONObject(json).optJSONArray("backdrops")
+                val bestBackdrop = backdrops?.optJSONObject(0)?.optString("file_path")?.takeIf { it.isNotBlank() }
+
+                bestBackdrop?.let { "https://image.tmdb.org/t/p/original$it" }
+            }.getOrNull()
+
+
+
             val movieCastList = parseCredits(movieCreditsJsonText)
 
             return newMovieLoadResponse(title, url, TvType.Movie, movieId) {
                 this.posterUrl = poster
-                this.backgroundPosterUrl = backgroundPoster ?: poster
+                this.backgroundPosterUrl = bgurl ?: backgroundPoster ?: poster
                 this.plot = plot
                 this.year = year
                 this.contentRating = contentRating
@@ -234,6 +248,17 @@ class Yflix : MainAPI() {
             }.getOrNull()
         }
         val castList: List<ActorData> = parseCredits(showCreditsJsonText)
+
+        val bgurl = runCatching {
+            val json = app.get(
+                "$TMDBAPI/movie/$imdbIdFromShow/images?api_key=$TMDB_API_KEY&language=en-US&include_image_language=en,null"
+            ).textLarge
+
+            val backdrops = JSONObject(json).optJSONArray("backdrops")
+            val bestBackdrop = backdrops?.optJSONObject(0)?.optString("file_path")?.takeIf { it.isNotBlank() }
+
+            bestBackdrop?.let { "https://image.tmdb.org/t/p/original$it" }
+        }.getOrNull()
 
         epRes?.select("ul.episodes")?.forEach { seasonBlock ->
             val seasonNumber = seasonBlock.attr("data-season").toIntOrNull() ?: 1
@@ -281,7 +306,7 @@ class Yflix : MainAPI() {
 
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
             this.posterUrl = poster
-            this.backgroundPosterUrl = backgroundPoster ?: poster
+            this.backgroundPosterUrl = bgurl ?: backgroundPoster ?: poster
             this.plot = plot
             this.year = year
             this.contentRating = contentRating
