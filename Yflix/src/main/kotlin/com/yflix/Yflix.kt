@@ -42,8 +42,8 @@ import kotlin.random.Random
 
 
 class Yflix : MainAPI() {
-    override var mainUrl = "https://yflix.to"
-    override var name = "Yflix"
+    override var mainUrl = YflixPlugin.currentYflixServer
+    override var name = YflixPlugin.getCurrentServerName()
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
@@ -117,7 +117,7 @@ class Yflix : MainAPI() {
     override suspend fun search(query: String, page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
         val res = app.get(link).documentLarge
-        return res.select("div.film-section.md div.item").map { it.toSearchResult() }
+        return res.select("div.item").map { it.toSearchResult() }
             .toNewSearchResponseList()
     }
 
@@ -136,7 +136,7 @@ class Yflix : MainAPI() {
         )
 
         val res = app.get("${request.data}&page=$page", headers).documentLarge
-        val items = res.select("div.film-section.md div.item").map { it.toSearchResult() }
+        val items = res.select("div.item").map { it.toSearchResult() }
         return newHomePageResponse(request.name, items)
     }
 
@@ -152,13 +152,14 @@ class Yflix : MainAPI() {
         val contentRating = document.select("div.metadata.set span.ratingR").text()
         val genres = document.select("li:contains(Genres:) a").map { it.text() }
         val backgroundPoster =
-            document.selectFirst("div.detail-bg")?.attr("style")?.substringAfter("url('")
+            document.selectFirst("div.detail-bg,div.site-movie-bg")?.attr("style")?.substringAfter("url('")
                 ?.substringBefore("'")
         val dataId = document.select("#movie-rating").attr("data-id")
         val decoded = decode(dataId)
 
         val epRes = app.get("$mainUrl/ajax/episodes/list?keyword=$keyword&id=$dataId&_=$decoded")
             .parsedSafe<Response>()?.getDocument()
+
         val movieNode = epRes?.selectFirst("ul.episodes a")
         val allLinks = epRes?.select("ul.episodes a") ?: emptyList()
         val recommendations =
@@ -309,13 +310,13 @@ class Yflix : MainAPI() {
             val document = listResp?.getDocument()
 
             if (document == null) {
-                Log.d("Yflix", "No document returned for links list")
+                Log.d(name, "No document returned for links list")
                 return false
             }
 
-            val servers = document.select("li.server")
+            val servers = document.select("li.server,div.server")
             if (servers.isEmpty()) {
-                Log.d("Yflix", "No servers found in the links list")
+                Log.d(name, "No servers found in the links list")
                 return false
             }
 
@@ -323,7 +324,7 @@ class Yflix : MainAPI() {
                 try {
                     val lid = serverNode.attr("data-lid").trim()
                     if (lid.isBlank()) {
-                        Log.d("Yflix", "Skipping server with empty lid")
+                        Log.d(name, "Skipping server with empty lid")
                         return@forEach
                     }
 
@@ -335,14 +336,14 @@ class Yflix : MainAPI() {
 
                     val result = viewResp?.result
                     if (result.isNullOrBlank()) {
-                        Log.d("Yflix", "Empty result for server $serverName (lid=$lid)")
+                        Log.d(name, "Empty result for server $serverName (lid=$lid)")
                         return@forEach
                     }
 
                     val decodedIframePayload = try {
                         decodeReverse(result)
                     } catch (e: Exception) {
-                        Log.d("Yflix", "Failed to decodeReverse for lid=$lid : ${e.message}")
+                        Log.d(name, "Failed to decodeReverse for lid=$lid : ${e.message}")
                         return@forEach
                     }
 
@@ -350,28 +351,28 @@ class Yflix : MainAPI() {
                     val iframeUrl = try {
                         extractVideoUrlFromJson(decodedIframePayload)
                     } catch (e: Exception) {
-                        Log.d("Yflix", "Failed to extract video url for lid=$lid : ${e.message}")
+                        Log.d(name, "Failed to extract video url for lid=$lid : ${e.message}")
                         null
                     }
 
                     if (iframeUrl.isNullOrBlank()) {
                         Log.d(
-                            "Yflix",
+                            name,
                             "No iframe/video url extracted for server $serverName (lid=$lid)"
                         )
                         return@forEach
                     }
 
-                    val displayName = "⌜ YFlix ⌟  |  $serverName"
+                    val displayName = "⌜ $name ⌟  |  $serverName"
                     loadExtractor(iframeUrl, displayName, subtitleCallback, callback)
                 } catch (inner: Exception) {
-                    Log.d("Yflix", "Error processing server node: ${inner.message}")
+                    Log.d(name, "Error processing server node: ${inner.message}")
                 }
             }
 
             return true
         } catch (e: Exception) {
-            Log.d("Yflix", "loadLinks failed: ${e.message}")
+            Log.d(name, "loadLinks failed: ${e.message}")
             return false
         }
     }
