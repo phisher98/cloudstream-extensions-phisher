@@ -1,5 +1,6 @@
 package com.RingZ
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
@@ -41,8 +42,7 @@ class RingZ : MainAPI() {
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Movie, TvType.Anime, TvType.Cartoon)
 
-    companion object
-    {
+    companion object {
         val headers = mapOf(
             "cf-access-client-id" to base64Decode("ODMzMDQ5YjA4N2FjZjZlNzg3Y2VkZmQ4NWQxY2NkYjguYWNjZXNz"),
             "cf-access-client-secret" to base64Decode("MDJkYjI5NmE5NjFkNzUxM2MzMTAyZDc3ODVkZjQxMTNlZmYwMzZiMmQ1N2QwNjBmZmNjMmJhM2JhODIwYzZhYQ=="),
@@ -92,16 +92,23 @@ class RingZ : MainAPI() {
         }
 
         // Helper to create MovieSearchResponse list
-        fun JSONArray.toSearchResponses(type: String, tvType: TvType, filterGenre: String? = null): List<MovieSearchResponse> {
+        fun JSONArray.toSearchResponses(
+            type: String,
+            tvType: TvType,
+            filterGenre: String? = null
+        ): List<MovieSearchResponse> {
             val list = mutableListOf<MovieSearchResponse>()
             for (i in 0 until this.length()) {
                 val item = this.getJSONObject(i)
-                if (filterGenre != null && !item.optString("gn").contains(filterGenre, ignoreCase = true)) continue
+                if (filterGenre != null && !item.optString("gn")
+                        .contains(filterGenre, ignoreCase = true)
+                ) continue
 
                 val loadUrl = item.toLoadURL(type)
                 list += newMovieSearchResponse(item.optString("mn"), loadUrl.toJson(), tvType) {
                     this.posterUrl = item.optString("IH")
-                    if (type == "Movies") this.quality = getQualityFromString(item.optString("qlty").takeIf { it.isNotEmpty() })
+                    if (type == "Movies") this.quality =
+                        getQualityFromString(item.optString("qlty").takeIf { it.isNotEmpty() })
                 }
             }
             return list
@@ -112,25 +119,47 @@ class RingZ : MainAPI() {
                 val allMovies = getJsonArray("AllMovieDataList", "allMovieDataList")
                 val searchResponses = allMovies.toSearchResponses("Movies", TvType.Movie)
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
+                    list = listOf(
+                        HomePageList(
+                            request.name.capitalize(),
+                            searchResponses,
+                            isHorizontalImages = true
+                        )
+                    ),
                     hasNext = false
                 )
             }
 
             request.name.contains("Anime", ignoreCase = true) -> {
                 val animeList = getJsonArray("webSeriesDataList")
-                val searchResponses = animeList.toSearchResponses("Anime", TvType.Anime, filterGenre = "Anime")
+                val searchResponses =
+                    animeList.toSearchResponses("Anime", TvType.Anime, filterGenre = "Anime")
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
+                    list = listOf(
+                        HomePageList(
+                            request.name.capitalize(),
+                            searchResponses,
+                            isHorizontalImages = true
+                        )
+                    ),
                     hasNext = false
                 )
             }
 
-            request.name.contains("Adult", ignoreCase = true) || request.name.contains("Web Series", ignoreCase = true)  -> {
+            request.name.contains("Adult", ignoreCase = true) || request.name.contains(
+                "Web Series",
+                ignoreCase = true
+            ) -> {
                 val webSeriesList = getJsonArray("webSeriesDataList")
                 val searchResponses = webSeriesList.toSearchResponses("Series", TvType.TvSeries)
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
+                    list = listOf(
+                        HomePageList(
+                            request.name.capitalize(),
+                            searchResponses,
+                            isHorizontalImages = true
+                        )
+                    ),
                     hasNext = false
                 )
             }
@@ -139,7 +168,13 @@ class RingZ : MainAPI() {
                 val allMovies = getJsonArray("AllMovieDataList", "allMovieDataList")
                 val searchResponses = allMovies.toSearchResponses("Movies", TvType.Movie)
                 newHomePageResponse(
-                    list = listOf(HomePageList(request.name.capitalize(), searchResponses, isHorizontalImages = true)),
+                    list = listOf(
+                        HomePageList(
+                            request.name.capitalize(),
+                            searchResponses,
+                            isHorizontalImages = true
+                        )
+                    ),
                     hasNext = false
                 )
             }
@@ -175,20 +210,28 @@ class RingZ : MainAPI() {
             )
         }
 
-        fun JSONArray.toSearchResponses(type: String, tvType: TvType, filterGenre: String? = null,fallback: String? =null): List<SearchResponse> {
+        fun JSONArray.toSearchResponses(
+            type: String,
+            tvType: TvType,
+            filterGenre: String? = null,
+            fallback: String? = null
+        ): List<SearchResponse> {
             val list = mutableListOf<SearchResponse>()
             for (i in 0 until this.length()) {
                 val item = this.getJSONObject(i)
 
                 val name = item.optString("mn")
                 if (!name.contains(query, ignoreCase = true)) continue
-                if (filterGenre != null && !item.optString("gn").contains(filterGenre, ignoreCase = true)) continue
+                if (filterGenre != null && !item.optString("gn")
+                        .contains(filterGenre, ignoreCase = true)
+                ) continue
 
                 val loadUrl = item.toLoadURL(type, fallbackUrl = "$fallback")
 
                 list += newMovieSearchResponse(name, loadUrl.toJson(), tvType) {
                     this.posterUrl = item.optString("IH")
-                    if (tvType == TvType.Movie) this.quality = getQualityFromString(item.optString("qlty").takeIf { it.isNotEmpty() })
+                    if (tvType == TvType.Movie) this.quality =
+                        getQualityFromString(item.optString("qlty").takeIf { it.isNotEmpty() })
                 }
             }
             return list
@@ -206,7 +249,12 @@ class RingZ : MainAPI() {
                 else -> TvType.TvSeries
             }
 
-            results += jsonArray.toSearchResponses(type, tvType, filterGenre = if (type == "Anime") "Anime" else null,url)
+            results += jsonArray.toSearchResponses(
+                type,
+                tvType,
+                filterGenre = if (type == "Anime") "Anime" else null,
+                url
+            )
         }
 
         return results
@@ -229,35 +277,49 @@ class RingZ : MainAPI() {
         // Helper to fetch JSON
         suspend fun fetchJson(fullUrl: String) = JSONObject(app.get(fullUrl, headers).text)
 
-        // Helper to parse episodes from series/anime object
         fun parseEpisodes(seriesObj: JSONObject): List<Episode> {
-            val episodeMap = mutableMapOf<String, MutableList<String>>()
+            val episodeMap = mutableMapOf<String, MutableList<JSONObject>>()
+
             val keys = seriesObj.keys()
             while (keys.hasNext()) {
                 val key = keys.next()
+
                 if (key.startsWith("eServer") || key == "eTape") {
-                    val serverUrls = seriesObj.getJSONObject(key)
-                    val epKeys = serverUrls.keys()
+                    val serverBlock = seriesObj.getJSONObject(key)
+                    val epKeys = serverBlock.keys()
+
                     while (epKeys.hasNext()) {
                         val epNum = epKeys.next()
-                        val epUrl = serverUrls.getString(epNum)
-                        val urls = episodeMap.getOrPut(epNum) { mutableListOf() }
-                        urls.add(epUrl)
+                        val epUrl = serverBlock.getString(epNum)
+
+                        val list = episodeMap.getOrPut(epNum) { mutableListOf() }
+
+                        val entry = JSONObject().apply {
+                            put("source", key)
+                            put("url", epUrl)
+                            put("episode", epNum)
+                        }
+
+                        list.add(entry)
                     }
                 }
             }
 
-            return episodeMap.entries.sortedBy { it.key.toInt() }.map { (epNum, urls) ->
-                newEpisode(urls) {
-                    name = "Episode $epNum"
-                    episode = epNum.toInt()
+            return episodeMap.entries
+                .sortedBy { it.key.toInt() }
+                .map { (epNum, jsonList) ->
+                    newEpisode(jsonList.toString()) {
+                        name = "Episode $epNum"
+                        episode = epNum.toInt()
+                    }
                 }
-            }
         }
+
 
         return when (tvTag) {
             TvType.TvSeries, TvType.Anime -> {
-                val seriesResText = fetchJson(if (href.contains(mainUrl)) href else "$mainUrl/$href")
+                val seriesResText =
+                    fetchJson(if (href.contains(mainUrl)) href else "$mainUrl/$href")
                 val webSeriesList = seriesResText.getJSONArray("webSeriesDataList")
                 val seriesObj = (0 until webSeriesList.length())
                     .map { webSeriesList.getJSONObject(it) }
@@ -287,13 +349,27 @@ class RingZ : MainAPI() {
                     .firstOrNull { it.optString("id") == res.id }
 
                 if (movie != null) {
-                    val links = buildList {
-                        for (key in movie.keys()) {
-                            val link = movie.optString(key)
-                            if (link.startsWith("http") && key != "hf") add(link)
+                    val linksArray = JSONArray()
+                    val keysIter = movie.keys()
+                    while (keysIter.hasNext()) {
+                        val key = keysIter.next()
+                        val value = movie.optString(key)
+                        if (key == "hf") continue
+                        val entry = JSONObject()
+                        entry.put("key", key)
+                        entry.put("value", value)
+                        if (value.startsWith("http", ignoreCase = true)) {
+                            entry.put("url", value)
                         }
+                        linksArray.put(entry)
                     }
-                    newMovieLoadResponse(movie.optString("mn"), url, TvType.Movie, links.toJson()) {
+
+                    newMovieLoadResponse(
+                        movie.optString("mn"),
+                        url,
+                        TvType.Movie,
+                        linksArray.toString()
+                    ) {
                         this.posterUrl = poster
                         this.tags = genre
                     }
@@ -314,19 +390,79 @@ class RingZ : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val urls = JSONArray(data)
-        for (i in 0 until urls.length()) {
-            val url = urls.getString(i)
-            val serverName = "Server ${i + 1}"
+        Log.d("Phisher", data)
+
+        val urlsArray = try {
+            JSONArray(data)
+        } catch (_: Exception) {
+            JSONArray().apply { put(data) }
+        }
+
+        for (i in 0 until urlsArray.length()) {
+            val item = urlsArray.get(i)
+
+            var urlStr: String? = null
+            var keyName: String? = null
+            var valueStr: String? = null
+
+            when (item) {
+                is JSONObject -> {
+                    if (item.has("url")) urlStr = item.optString("url").ifEmpty { null }
+                    if (item.has("value")) valueStr = item.optString("value").ifEmpty { null }
+                    if (item.has("key")) keyName = item.optString("key").ifEmpty { null }
+                }
+
+                is String -> {
+                    val trimmed = item.trim()
+                    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                        (trimmed.startsWith("[") && trimmed.endsWith("]"))
+                    ) {
+                        try {
+                            val maybeObj = JSONObject(trimmed)
+                            if (maybeObj.has("url")) {
+                                urlStr = maybeObj.optString("url").ifEmpty { null }
+                                keyName = maybeObj.optString("key").ifEmpty { null }
+                                valueStr = maybeObj.optString("value").ifEmpty { null }
+                            } else {
+                                urlStr = item
+                            }
+                        } catch (_: Exception) {
+                            urlStr = item
+                        }
+                    } else {
+                        urlStr = item
+                    }
+                }
+
+                else -> {
+                    // fallback: convert to string
+                    urlStr = item.toString()
+                }
+            }
+
+            if (urlStr.isNullOrEmpty() && !valueStr.isNullOrEmpty() && valueStr.startsWith(
+                    "http",
+                    ignoreCase = true
+                )
+            ) {
+                urlStr = valueStr
+            }
+
+            val serverName =  "Server ${i + 1}"
+
+            val quality = inferQuality(urlStr, keyName, valueStr)
+
+            val finalUrl = urlStr ?: continue
+
             callback.invoke(
                 newExtractorLink(
                     serverName,
                     serverName,
-                    url = url,
+                    url = finalUrl,
                     INFER_TYPE
                 ) {
                     this.referer = ""
-                    this.quality= getQualityFromUrl(url)
+                    this.quality = quality
                 }
             )
         }
@@ -334,17 +470,41 @@ class RingZ : MainAPI() {
         return true
     }
 
-    fun getQualityFromUrl(url: String): Int {
-        val lowerUrl = url.lowercase()
-        return when {
-            lowerUrl.contains("2160") || lowerUrl.contains("4k") -> Qualities.P2160.value
-            lowerUrl.contains("1080") -> Qualities.P1080.value
-            lowerUrl.contains("720")  -> Qualities.P720.value
-            lowerUrl.contains("480")  -> Qualities.P480.value
-            lowerUrl.contains("360")  -> Qualities.P360.value
-            else -> Qualities.Unknown.value
+    /**
+     * Infer quality by checking url first, then key, then value.
+     * Returns Qualities.*.value or Qualities.Unknown.value when not determinable.
+     */
+    fun inferQuality(url: String?, key: String?, value: String?): Int {
+        fun matchQualityFromString(s: String?): Int {
+            if (s == null) return Qualities.Unknown.value
+            val lower = s.lowercase()
+            return when {
+                lower.contains("2160") || lower.contains("4k") -> Qualities.P2160.value
+                lower.contains("1080") -> Qualities.P1080.value
+                lower.contains("720") -> Qualities.P720.value
+                lower.contains("480") -> Qualities.P480.value
+                lower.contains("360") -> Qualities.P360.value
+                lower.contains("hd") && lower.contains("1080") -> Qualities.P1080.value
+                lower.contains("hd") && lower.contains("720") -> Qualities.P720.value
+                else -> Qualities.Unknown.value
+            }
         }
-    }
 
+        // 1) Try from URL
+        val qFromUrl = matchQualityFromString(url)
+        if (qFromUrl != Qualities.Unknown.value) return qFromUrl
+
+        // 2) Try from key (e.g., "4s1", "480p", "1080p", "4k")
+        val qFromKey = matchQualityFromString(key)
+        if (qFromKey != Qualities.Unknown.value) return qFromKey
+
+        // 3) Try from value (sometimes key="480p" and value="TRUE", or value might contain the link)
+        val qFromValue = matchQualityFromString(value)
+        if (qFromValue != Qualities.Unknown.value) return qFromValue
+
+        // 4) Default unknown
+        return Qualities.Unknown.value
+    }
 }
+
 
