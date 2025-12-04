@@ -10,7 +10,8 @@ import com.lagradost.cloudstream3.plugins.Plugin
 enum class ServerList(val link: Pair<String, Boolean>) {
     Yflix("https://yflix.to" to true),
     Moviesz("https://1movies.bz" to true),
-    SOLARMovie("https://solarmovie.fi" to true)
+    SOLARMovie("https://solarmovie.fi" to true),
+    Sfix("https://sflix.fi" to true),
 }
 
 @CloudstreamPlugin
@@ -34,6 +35,7 @@ class YflixPlugin : Plugin() {
             ServerList.Yflix.link.first to "YFlix",
             ServerList.Moviesz.link.first to "1Movies",
             ServerList.SOLARMovie.link.first to "SolarMovie",
+            ServerList.Sfix.link.first to "SFlix",
         )
 
         var currentYflixServer: String
