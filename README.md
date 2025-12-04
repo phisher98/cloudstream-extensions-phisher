@@ -40,14 +40,6 @@ Want to sync your devices using **Ultima’s Cross Device Watch Sync**?
 
 This guide will show you how to use a **private GitHub project** and a **personal access token** to sync playback history across devices.
 
----
-
-## 💬 Feedback
-
-![Feedback](https://github.com/user-attachments/assets/9f7dfe73-f11d-41fe-996c-072de0f6853b)
-
----
-
 ## 📄 License
 
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
