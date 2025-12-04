@@ -12,6 +12,7 @@ enum class ServerList(val link: Pair<String, Boolean>) {
     Moviesz("https://1movies.bz" to true),
     SOLARMovie("https://solarmovie.fi" to true),
     Sfix("https://sflix.fi" to true),
+    Movhub("https://movhub.ws" to true),
 }
 
 @CloudstreamPlugin
@@ -36,6 +37,7 @@ class YflixPlugin : Plugin() {
             ServerList.Moviesz.link.first to "1Movies",
             ServerList.SOLARMovie.link.first to "SolarMovie",
             ServerList.Sfix.link.first to "SFlix",
+            ServerList.Movhub.link.first to "Movhub",
         )
 
         var currentYflixServer: String
