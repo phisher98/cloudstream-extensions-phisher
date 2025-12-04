@@ -55,7 +55,7 @@ class XDMovies : MainAPI() {
 
         private const val CINEMETAURL = "https://cinemeta-live.strem.io"
         const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
-        const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
+        const val TMDBAPI = "https://divine-darkness-fad4.phisher13.workers.dev"
 
         private val titleRegex = Regex("""S(\d{1,2})E(\d{1,3})""", RegexOption.IGNORE_CASE)
         private val seasonNumRegex1 = Regex("""season-(?:packs|episodes)-(\d+)""")
