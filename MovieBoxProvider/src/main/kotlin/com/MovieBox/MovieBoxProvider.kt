@@ -2,22 +2,49 @@ package com.MovieBox
 
 import android.annotation.SuppressLint
 import android.net.Uri
-import android.util.Log
 import com.fasterxml.jackson.databind.JsonNode
-import org.json.JSONObject
-import java.net.URLEncoder
-import kotlin.math.abs
-import kotlin.math.max
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.Actor
+import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
+import com.lagradost.cloudstream3.base64Encode
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.mapper
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.net.URLEncoder
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import kotlin.math.max
 
 class MovieBoxProvider : MainAPI() {
     override var mainUrl = "https://api.inmoviebox.com"
@@ -209,7 +236,7 @@ class MovieBoxProvider : MainAPI() {
                         posterUrl = coverImg
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             } ?: emptyList()
 
@@ -251,7 +278,7 @@ class MovieBoxProvider : MainAPI() {
         for (result in results) {
             val subjects = result["subjects"] ?: continue
             for (subject in subjects) {
-            val title = subject["title"]?.asText()?.substringBefore("[") ?: continue
+            val title = subject["title"]?.asText() ?: continue
             val id = subject["subjectId"]?.asText() ?: continue
             val coverImg = subject["cover"]?.get("url")?.asText()
             val subjectType = subject["subjectType"]?.asInt() ?: 1
@@ -276,12 +303,11 @@ class MovieBoxProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
 
-        // ------------------ PARSE ID ------------------
-        val id = if (url.contains("get?subjectId")) {
-            Uri.parse(url).getQueryParameter("subjectId") ?: url.substringAfterLast('/')
-        } else {
-            url.substringAfterLast('/')
-        }
+        val id = Regex("""subjectId=([^&]+)""")
+            .find(url)
+            ?.groupValues?.get(1)
+            ?: url.substringAfterLast('/')
+
 
         val finalUrl = "$mainUrl/wefeed-mobile-bff/subject-api/get?subjectId=$id"
         val xClientToken = generateXClientToken()
@@ -301,7 +327,7 @@ class MovieBoxProvider : MainAPI() {
 
         val response = app.get(finalUrl, headers = headers)
         if (response.code != 200) {
-            throw ErrorLoadingException("Failed to load data: ${response.body?.string()}")
+            throw ErrorLoadingException("Failed to load data: ${response.body.string()}")
         }
 
         val body = response.body.string()
@@ -477,14 +503,19 @@ class MovieBoxProvider : MainAPI() {
     ): Boolean {
         try {
             val parts = data.split("|")
-            val originalSubjectId = if (parts[0].contains("get?subjectId")) {
-                Uri.parse(parts[0]).getQueryParameter("subjectId") ?: parts[0].substringAfterLast('/')
-            } else if(parts[0].contains("/")) {
-                parts[0].substringAfterLast('/')
+            val originalSubjectId = when {
+                parts[0].contains("get?subjectId") -> {
+                    Regex("""subjectId=([^&]+)""")
+                        .find(parts[0])
+                        ?.groupValues?.get(1)
+                        ?: parts[0].substringAfterLast('/')
+                }
+                parts[0].contains("/") -> {
+                    parts[0].substringAfterLast('/')
+                }
+                else -> parts[0]
             }
-            else {
-                parts[0]
-            }
+
             val season = if (parts.size > 1) parts[1].toIntOrNull() ?: 0 else 0
             val episode = if (parts.size > 2) parts[2].toIntOrNull() ?: 0 else 0
             val subjectUrl = "$mainUrl/wefeed-mobile-bff/subject-api/get?subjectId=$originalSubjectId"
@@ -506,21 +537,19 @@ class MovieBoxProvider : MainAPI() {
             val subjectIds = mutableListOf<Pair<String, String>>() // Pair of (subjectId, language)
             var originalLanguageName = "Original"
             if (subjectResponse.code == 200) {
-                val subjectResponseBody = subjectResponse.body?.string()
-                if (subjectResponseBody != null) {
-                    val subjectRoot = mapper.readTree(subjectResponseBody)
-                    val subjectData = subjectRoot["data"]
-                    val dubs = subjectData?.get("dubs")
-                    if (dubs != null && dubs.isArray) {
-                        for (dub in dubs) {
-                            val dubSubjectId = dub["subjectId"]?.asText()
-                            val lanName = dub["lanName"]?.asText()
-                            if (dubSubjectId != null && lanName != null) {
-                                if (dubSubjectId == originalSubjectId) {
-                                    originalLanguageName = lanName
-                                } else {
-                                    subjectIds.add(Pair(dubSubjectId, lanName))
-                                }
+                val subjectResponseBody = subjectResponse.body.string()
+                val subjectRoot = mapper.readTree(subjectResponseBody)
+                val subjectData = subjectRoot["data"]
+                val dubs = subjectData?.get("dubs")
+                if (dubs != null && dubs.isArray) {
+                    for (dub in dubs) {
+                        val dubSubjectId = dub["subjectId"]?.asText()
+                        val lanName = dub["lanName"]?.asText()
+                        if (dubSubjectId != null && lanName != null) {
+                            if (dubSubjectId == originalSubjectId) {
+                                originalLanguageName = lanName
+                            } else {
+                                subjectIds.add(Pair(dubSubjectId, lanName))
                             }
                         }
                     }
@@ -530,7 +559,7 @@ class MovieBoxProvider : MainAPI() {
             // Always add the original subject ID first as the default source with proper language name
             subjectIds.add(0, Pair(originalSubjectId, originalLanguageName))
             
-            var hasAnyLinks = false
+            //var hasAnyLinks = false
             
             // Process each subjectId (including dubs)
             for ((subjectId, language) in subjectIds) {
@@ -553,271 +582,124 @@ class MovieBoxProvider : MainAPI() {
                     val response = app.get(url, headers = headers)
                     if (response.code == 200) {
                         val responseBody = response.body.string()
-                        if (responseBody != null) {
-                            val root = mapper.readTree(responseBody)
-                            val playData = root["data"]
-                            // Handle the new API response format with streams
-                            val streams = playData?.get("streams")
-                            if (streams != null && streams.isArray) {
-                                for (stream in streams) {
-                                    val streamUrl = stream["url"]?.asText() ?: continue
-                                    val format = stream["format"]?.asText() ?: ""
-                                    val resolutions = stream["resolutions"]?.asText() ?: ""
-                                    val codecName = stream["codecName"]?.asText() ?: "h264"
-                                    val signCookieRaw = stream["signCookie"]?.asText()
-                                    val signCookie = if (signCookieRaw.isNullOrEmpty()) null else signCookieRaw
-                                    val duration = stream["duration"]?.asInt()
-                                    val id = stream["id"]?.asText() ?: "$subjectId|$season|$episode"
-                                    val quality = getHighestQuality(resolutions)
-                                    callback.invoke(
-                                        newExtractorLink(
-                                            source = "$name $language",
-                                            name = "$name ($language)",
-                                            url = streamUrl,
-                                            type = when {
-                                                streamUrl.startsWith("magnet:", ignoreCase = true) -> ExtractorLinkType.MAGNET
-                                                streamUrl.contains(".mpd", ignoreCase = true) -> ExtractorLinkType.DASH
-                                                streamUrl.substringAfterLast('.', "").equals("torrent", ignoreCase = true) -> ExtractorLinkType.TORRENT
-                                                format.equals("HLS", ignoreCase = true) || streamUrl.substringAfterLast('.', "").equals("m3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
-                                                streamUrl.contains(".mp4", ignoreCase = true) || streamUrl.contains(".mkv", ignoreCase = true) -> ExtractorLinkType.VIDEO
-                                                else -> INFER_TYPE
-                                            }
-                                        ) {
-                                            this.headers = mapOf("Referer" to mainUrl)
-                                            if (quality != null) {
-                                                this.quality = quality
-                                            }
-                                            if (signCookie != null) {
-                                                this.headers += mapOf("Cookie" to signCookie)
-                                            }
+                        val root = mapper.readTree(responseBody)
+                        val playData = root["data"]
+                        // Handle the new API response format with streams
+                        val streams = playData?.get("streams")
+                        if (streams != null && streams.isArray) {
+                            for (stream in streams) {
+                                val streamUrl = stream["url"]?.asText() ?: continue
+                                val format = stream["format"]?.asText() ?: ""
+                                val resolutions = stream["resolutions"]?.asText() ?: ""
+                                //val codecName = stream["codecName"]?.asText() ?: "h264"
+                                val signCookieRaw = stream["signCookie"]?.asText()
+                                val signCookie = if (signCookieRaw.isNullOrEmpty()) null else signCookieRaw
+                                //val duration = stream["duration"]?.asInt()
+                                val id = stream["id"]?.asText() ?: "$subjectId|$season|$episode"
+                                val quality = getHighestQuality(resolutions)
+                                callback.invoke(
+                                    newExtractorLink(
+                                        source = "$name $language",
+                                        name = "$name ($language)",
+                                        url = streamUrl,
+                                        type = when {
+                                            streamUrl.startsWith("magnet:", ignoreCase = true) -> ExtractorLinkType.MAGNET
+                                            streamUrl.contains(".mpd", ignoreCase = true) -> ExtractorLinkType.DASH
+                                            streamUrl.substringAfterLast('.', "").equals("torrent", ignoreCase = true) -> ExtractorLinkType.TORRENT
+                                            format.equals("HLS", ignoreCase = true) || streamUrl.substringAfterLast('.', "").equals("m3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
+                                            streamUrl.contains(".mp4", ignoreCase = true) || streamUrl.contains(".mkv", ignoreCase = true) -> ExtractorLinkType.VIDEO
+                                            else -> INFER_TYPE
                                         }
-                                    )
-                                    val subLink = "$mainUrl/wefeed-mobile-bff/subject-api/get-stream-captions?subjectId=$subjectId&streamId=$id"
-                                    val xClientToken = generateXClientToken()
-                                    val xTrSignature = generateXTrSignature("GET", "", "", subLink)
-                                    val headers = mapOf(
-                                        "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
-                                        "Accept" to "",
-                                        "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
-                                        "X-Client-Status" to "0",
-                                        "Content-Type" to "",
-                                        "X-Client-Token" to xClientToken,
-                                        "x-tr-signature" to xTrSignature,      
-                                    )
-                                    val subResponse = app.get(subLink, headers = headers)
-                                        if (subResponse != null) {
-                                            val subRoot = mapper.readTree(subResponse.toString())
-                                            val extCaptions = subRoot["data"]?.get("extCaptions")
-                                            if (extCaptions != null && extCaptions.isArray) {
-                                                for (caption in extCaptions) {
-                                                    val captionUrl = caption["url"]?.asText() ?: continue
-                                                    val lang = caption["language"]?.asText()
-                                                        ?: caption["lanName"]?.asText()
-                                                        ?: caption["lan"]?.asText()
-                                                        ?: "Unknown"
-                                                    subtitleCallback.invoke(
-                                                        newSubtitleFile(
-                                                            url = captionUrl,
-                                                            lang = "$lang ($language - $resolutions)"
-                                                        )
-                                                    )
-                                                }
-                                            }
-
+                                    ) {
+                                        this.headers = mapOf("Referer" to mainUrl)
+                                        if (quality != null) {
+                                            this.quality = quality
+                                        }
+                                        if (signCookie != null) {
+                                            this.headers += mapOf("Cookie" to signCookie)
+                                        }
                                     }
-
-                                    val subLink1 = "$mainUrl/wefeed-mobile-bff/subject-api/get-ext-captions?subjectId=$subjectId&resourceId=$id&episode=0"
-                                    val xClientToken1 = generateXClientToken()
-                                    val xTrSignature1 = generateXTrSignature("GET", "", "", subLink1)
-                                    val headers1 = mapOf(
-                                        "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
-                                        "Accept" to "",
-                                        "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
-                                        "X-Client-Status" to "0",
-                                        "Content-Type" to "",
-                                        "X-Client-Token" to xClientToken1,
-                                        "x-tr-signature" to xTrSignature1,      
-                                    )
-                                    val subResponse1 = app.get(subLink1, headers = headers1)
-
-                                        if (subResponse1 != null) {
-                                            val subRoot = mapper.readTree(subResponse1.toString())
-                                            val extCaptions = subRoot["data"]?.get("extCaptions")
-                                            if (extCaptions != null && extCaptions.isArray) {
-                                                for (caption in extCaptions) {
-                                                    val captionUrl = caption["url"]?.asText() ?: continue
-                                                    val lang = caption["lan"]?.asText()
-                                                        ?: caption["lanName"]?.asText()
-                                                        ?: caption["language"]?.asText()
-                                                        ?: "Unknown"
-                                                    subtitleCallback.invoke(
-                                                        newSubtitleFile(
-                                                            url = captionUrl,
-                                                            lang = "$lang ($language - $resolutions)"
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                        }
-
-
-                                    hasAnyLinks = true
+                                )
+                                val subLink = "$mainUrl/wefeed-mobile-bff/subject-api/get-stream-captions?subjectId=$subjectId&streamId=$id"
+                                val xClientToken = generateXClientToken()
+                                val xTrSignature = generateXTrSignature("GET", "", "", subLink)
+                                val headers = mapOf(
+                                    "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
+                                    "Accept" to "",
+                                    "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+                                    "X-Client-Status" to "0",
+                                    "Content-Type" to "",
+                                    "X-Client-Token" to xClientToken,
+                                    "x-tr-signature" to xTrSignature,
+                                )
+                                val subResponse = app.get(subLink, headers = headers)
+                                val subRoot = mapper.readTree(subResponse.toString())
+                                val extCaptions = subRoot["data"]?.get("extCaptions")
+                                if (extCaptions != null && extCaptions.isArray) {
+                                    for (caption in extCaptions) {
+                                        val captionUrl = caption["url"]?.asText() ?: continue
+                                        val lang = caption["language"]?.asText()
+                                            ?: caption["lanName"]?.asText()
+                                            ?: caption["lan"]?.asText()
+                                            ?: "Unknown"
+                                        subtitleCallback.invoke(
+                                            newSubtitleFile(
+                                                url = captionUrl,
+                                                lang = "$lang ($language)"
+                                            )
+                                        )
+                                    }
                                 }
+
+                                val subLink1 = "$mainUrl/wefeed-mobile-bff/subject-api/get-ext-captions?subjectId=$subjectId&resourceId=$id&episode=0"
+                                val xClientToken1 = generateXClientToken()
+                                val xTrSignature1 = generateXTrSignature("GET", "", "", subLink1)
+                                val headers1 = mapOf(
+                                    "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
+                                    "Accept" to "",
+                                    "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+                                    "X-Client-Status" to "0",
+                                    "Content-Type" to "",
+                                    "X-Client-Token" to xClientToken1,
+                                    "x-tr-signature" to xTrSignature1,
+                                )
+                                val subResponse1 = app.get(subLink1, headers = headers1)
+
+                                val subRoot1 = mapper.readTree(subResponse1.toString())
+                                val extCaptions1 = subRoot1["data"]?.get("extCaptions")
+                                if (extCaptions1 != null && extCaptions1.isArray) {
+                                    for (caption in extCaptions1) {
+                                        val captionUrl = caption["url"]?.asText() ?: continue
+                                        val lang = caption["lan"]?.asText()
+                                            ?: caption["lanName"]?.asText()
+                                            ?: caption["language"]?.asText()
+                                            ?: "Unknown"
+                                        subtitleCallback.invoke(
+                                            newSubtitleFile(
+                                                url = captionUrl,
+                                                lang = "$lang ($language)"
+                                            )
+                                        )
+                                    }
+                                }
+
+
+                                //hasAnyLinks = true
                             }
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     continue
                 }
             }
             
             return true
               
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return false
         }
     }
 }
-
-data class MovieBoxMainResponse(
-    val code: Int? = null,
-    val message: String? = null,
-    val data: MovieBoxData? = null
-)
-
-data class MovieBoxData(
-    val subjectId: String? = null,
-    val subjectType: Int? = null,
-    val title: String? = null,
-    val description: String? = null,
-    val releaseDate: String? = null,
-    val duration: String? = null,
-    val genre: String? = null,
-    val cover: MovieBoxCover? = null,
-    val countryName: String? = null,
-    val language: String? = null,
-    val imdbRatingValue: String? = null,
-    val staffList: List<MovieBoxStaff>? = null,
-    val hasResource: Boolean? = null,
-    val resourceDetectors: List<MovieBoxResourceDetector>? = null,
-    val year: Int? = null,
-    val durationSeconds: Int? = null,
-    val dubs: List<MovieBoxDub>? = null
-)
-
-data class MovieBoxCover(
-    val url: String? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-    val size: Int? = null,
-    val format: String? = null
-)
-
-data class MovieBoxStaff(
-    val staffId: String? = null,
-    val staffType: Int? = null,
-    val name: String? = null,
-    val character: String? = null,
-    val avatarUrl: String? = null
-)
-
-data class MovieBoxResourceDetector(
-    val type: Int? = null,
-    val totalEpisode: Int? = null,
-    val totalSize: String? = null,
-    val uploadTime: String? = null,
-    val uploadBy: String? = null,
-    val resourceLink: String? = null,
-    val downloadUrl: String? = null,
-    val source: String? = null,
-    val firstSize: String? = null,
-    val resourceId: String? = null,
-    val postId: String? = null,
-    val extCaptions: List<MovieBoxCaption>? = null,
-    val resolutionList: List<MovieBoxResolution>? = null,
-    val subjectId: String? = null,
-    val codecName: String? = null
-)
-
-data class MovieBoxResolution(
-    val episode: Int? = null,
-    val title: String? = null,
-    val resourceLink: String? = null,
-    val linkType: Int? = null,
-    val size: String? = null,
-    val uploadBy: String? = null,
-    val resourceId: String? = null,
-    val postId: String? = null,
-    val extCaptions: List<MovieBoxCaption>? = null,
-    val se: Int? = null,
-    val ep: Int? = null,
-    val sourceUrl: String? = null,
-    val resolution: Int? = null,
-    val codecName: String? = null,
-    val duration: Int? = null,
-    val requireMemberType: Int? = null,
-    val memberIcon: String? = null
-)
-
-data class MovieBoxCaption(
-    val url: String? = null,
-    val label: String? = null,
-    val language: String? = null
-)
-
-data class MovieBoxSeasonResponse(
-    val code: Int? = null,
-    val message: String? = null,
-    val data: MovieBoxSeasonData? = null
-)
-
-data class MovieBoxSeasonData(
-    val subjectId: String? = null,
-    val subjectType: Int? = null,
-    val seasons: List<MovieBoxSeason>? = null
-)
-
-data class MovieBoxSeason(
-    val se: Int? = null,
-    val maxEp: Int? = null,
-    val allEp: String? = null,
-    val resolutions: List<MovieBoxSeasonResolution>? = null
-)
-
-data class MovieBoxSeasonResolution(
-    val resolution: Int? = null,
-    val epNum: Int? = null
-)
-
-data class MovieBoxStreamResponse(
-    val code: Int? = null,
-    val message: String? = null,
-    val data: MovieBoxStreamData? = null
-)
-
-data class MovieBoxStreamData(
-    val streams: List<MovieBoxStream>? = null,
-    val title: String? = null
-)
-
-data class MovieBoxStream(
-    val format: String? = null,
-    val id: String? = null,
-    val url: String? = null,
-    val resolutions: String? = null,
-    val size: String? = null,
-    val duration: Int? = null,
-    val codecName: String? = null,
-    val signCookie: String? = null
-)
-
-data class MovieBoxDub(
-    val subjectId: String? = null,
-    val lanName: String? = null,
-    val lanCode: String? = null,
-    val original: Boolean? = null,
-    val type: Int? = null
-)
 
 fun getHighestQuality(input: String): Int? {
     val qualities = listOf(
@@ -848,14 +730,14 @@ private suspend fun identifyID(
     // try multi -> tv -> movie (with year)
     val tryOrder = listOf("multi", "tv", "movie")
     for (type in tryOrder) {
-        val res = searchAndPick(type, normTitle, year, imdbRatingValue)
+        val res = searchAndPick(normTitle, year, imdbRatingValue)
         if (res.first != null) return res
     }
 
     // retry without year (often helpful for dubbed/localized titles)
     if (year != null) {
         for (type in tryOrder) {
-            val res = searchAndPick(type, normTitle, null, imdbRatingValue)
+            val res = searchAndPick(normTitle, null, imdbRatingValue)
             if (res.first != null) return res
         }
     }
@@ -866,12 +748,12 @@ private suspend fun identifyID(
         .trim()
     if (stripped.isNotBlank() && stripped != normTitle) {
         for (type in tryOrder) {
-            val res = searchAndPick(type, stripped, year, imdbRatingValue)
+            val res = searchAndPick(stripped, year, imdbRatingValue)
             if (res.first != null) return res
         }
         if (year != null) {
             for (type in tryOrder) {
-                val res = searchAndPick(type, stripped, null, imdbRatingValue)
+                val res = searchAndPick(stripped, null, imdbRatingValue)
                 if (res.first != null) return res
             }
         }
@@ -881,7 +763,6 @@ private suspend fun identifyID(
 }
 
 private suspend fun searchAndPick(
-    typeHint: String,
     normTitle: String,
     year: Int?,
     imdbRatingValue: Double?,
@@ -966,8 +847,8 @@ private suspend fun searchAndPick(
     val detailKind = if (bestIsTv) "tv" else "movie"
     val detailUrl = "https://api.themoviedb.org/3/$detailKind/$bestId?api_key=1865f43a0549ca50d341dd9ab8b29f49&append_to_response=external_ids"
     val detailText = app.get(detailUrl).text
-    val detailJson = org.json.JSONObject(detailText)
-    val imdbId = detailJson.optJSONObject("external_ids")?.optString("imdb_id", null)
+    val detailJson = JSONObject(detailText)
+    val imdbId = detailJson.optJSONObject("external_ids")?.optString("imdb_id")
 
     return Pair(bestId, imdbId)
 }
@@ -1001,7 +882,7 @@ private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
     return try {
         val resp = app.get(url).text
         mapper.readTree(resp)["meta"]
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }
