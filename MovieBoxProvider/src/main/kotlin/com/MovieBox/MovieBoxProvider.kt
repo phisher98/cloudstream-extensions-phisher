@@ -2,6 +2,7 @@ package com.MovieBox
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -509,7 +510,7 @@ class MovieBoxProvider : MainAPI() {
                     
                     val response = app.get(url, headers = headers)
                     if (response.code == 200) {
-                        val responseBody = response.body?.string()
+                        val responseBody = response.body.string()
                         if (responseBody != null) {
                             val root = mapper.readTree(responseBody)
                             val playData = root["data"]
@@ -525,24 +526,27 @@ class MovieBoxProvider : MainAPI() {
                                     val signCookie = if (signCookieRaw.isNullOrEmpty()) null else signCookieRaw
                                     val duration = stream["duration"]?.asInt()
                                     val id = stream["id"]?.asText() ?: "$subjectId|$season|$episode"
-                                    
+                                    val quality = getHighestQuality(resolutions)
                                     callback.invoke(
                                         newExtractorLink(
-                                            source = name,
-                                            name = "$name ($language - $resolutions)",
+                                            source = "$name $language",
+                                            name = "$name ($language)",
                                             url = streamUrl,
                                             type = when {
                                                 streamUrl.startsWith("magnet:", ignoreCase = true) -> ExtractorLinkType.MAGNET
-                                                streamUrl.substringAfterLast('.', "").equals("mpd", ignoreCase = true) -> ExtractorLinkType.DASH
+                                                streamUrl.contains(".mpd", ignoreCase = true) -> ExtractorLinkType.DASH
                                                 streamUrl.substringAfterLast('.', "").equals("torrent", ignoreCase = true) -> ExtractorLinkType.TORRENT
                                                 format.equals("HLS", ignoreCase = true) || streamUrl.substringAfterLast('.', "").equals("m3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
-                                                else -> ExtractorLinkType.VIDEO
+                                                streamUrl.contains(".mp4", ignoreCase = true) || streamUrl.contains(".mkv", ignoreCase = true) -> ExtractorLinkType.VIDEO
+                                                else -> INFER_TYPE
                                             }
                                         ) {
                                             this.headers = mapOf("Referer" to mainUrl)
-                                            this.quality = Qualities.Unknown.value
+                                            if (quality != null) {
+                                                this.quality = quality
+                                            }
                                             if (signCookie != null) {
-                                                this.headers = this.headers + mapOf("Cookie" to signCookie)
+                                                this.headers += mapOf("Cookie" to signCookie)
                                             }
                                         }
                                     )
@@ -570,7 +574,7 @@ class MovieBoxProvider : MainAPI() {
                                                         ?: caption["lan"]?.asText()
                                                         ?: "Unknown"
                                                     subtitleCallback.invoke(
-                                                        SubtitleFile(
+                                                        newSubtitleFile(
                                                             url = captionUrl,
                                                             lang = "$lang ($language - $resolutions)"
                                                         )
@@ -605,7 +609,7 @@ class MovieBoxProvider : MainAPI() {
                                                         ?: caption["language"]?.asText()
                                                         ?: "Unknown"
                                                     subtitleCallback.invoke(
-                                                        SubtitleFile(
+                                                        newSubtitleFile(
                                                             url = captionUrl,
                                                             lang = "$lang ($language - $resolutions)"
                                                         )
@@ -772,3 +776,23 @@ data class MovieBoxDub(
     val original: Boolean? = null,
     val type: Int? = null
 )
+
+fun getHighestQuality(input: String): Int? {
+    val qualities = listOf(
+        "2160" to Qualities.P2160.value,
+        "1440" to Qualities.P1440.value,
+        "1080" to Qualities.P1080.value,
+        "720"  to Qualities.P720.value,
+        "480"  to Qualities.P480.value,
+        "360"  to Qualities.P360.value,
+        "240"  to Qualities.P240.value
+    )
+
+    for ((label, mappedValue) in qualities) {
+        if (input.contains(label, ignoreCase = true)) {
+            return mappedValue
+        }
+    }
+    return null
+}
+
