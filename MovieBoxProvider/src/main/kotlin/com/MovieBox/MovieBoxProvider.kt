@@ -441,7 +441,7 @@ class MovieBoxProvider : MainAPI() {
             }
 
             return newTvSeriesLoadResponse(title, finalUrl, type, episodes) {
-                this.posterUrl = Poster ?: coverUrl
+                this.posterUrl =  coverUrl ?: Poster
                 this.backgroundPosterUrl = Background ?: backgroundUrl
                 this.plot = Description ?: description
                 this.year = year
@@ -455,7 +455,7 @@ class MovieBoxProvider : MainAPI() {
         }
 
         return newMovieLoadResponse(title, finalUrl, type, id) {
-            this.posterUrl = Poster ?: coverUrl
+            this.posterUrl = coverUrl ?: Poster
             this.backgroundPosterUrl = Background ?: backgroundUrl
             this.plot = Description ?: description
             this.year = year
