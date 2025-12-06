@@ -25,12 +25,14 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -51,14 +53,53 @@ class RingZ : MainAPI() {
 
     }
 
-    override val mainPage = mainPageOf(
+    data class MainCategory(
+        val url: String,
+        val title: String,
+        val adult: Boolean? = false
+    )
+
+    private fun defaultMainPage() = mainPageOf(
         *listOfNotNull(
-            "$mainUrl/mm.json" to "Movies",
-            "$mainUrl/ss.json" to "Web Series",
+            "$mainUrl/Nwm.json" to "Movies",
+            "$mainUrl/Nws.json" to "Web Series",
             "$mainUrl/lstanime.json" to "Anime",
             if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
         ).toTypedArray()
     )
+
+    private suspend fun fetchMainPageFromGithub(): List<Pair<String, String>> {
+        val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/RingzCategories.json"
+        val resp = app.get(jsonUrl)
+        val body = resp.text
+
+        val categories = try {
+            AppUtils.parseJson<List<MainCategory>>(body)
+        } catch (_: Throwable) {
+            Log.e(name, "Failed to parse RingzCategories")
+            null
+        }
+
+        return (categories ?: emptyList())
+            .filter { settingsForProvider.enableAdult || it.adult != true }
+            .map { cat ->
+                "$mainUrl/${cat.url}" to cat.title
+            }
+    }
+
+    override val mainPage = runBlocking {
+        try {
+            val pages = fetchMainPageFromGithub()
+            if (pages.isNotEmpty()) {
+                mainPageOf(*pages.toTypedArray())
+            } else {
+                defaultMainPage()
+            }
+        } catch (_: Throwable) {
+            defaultMainPage()
+        }
+    }
+
 
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
