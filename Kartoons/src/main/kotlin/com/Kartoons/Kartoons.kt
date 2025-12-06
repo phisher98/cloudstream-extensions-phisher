@@ -172,7 +172,7 @@ class Kartoons() : MainAPI() {
             callback.invoke(
                 newExtractorLink(
                     name,
-                    name,
+                    link.name ?: name,
                     m3u8,
                     ExtractorLinkType.M3U8
                 )
