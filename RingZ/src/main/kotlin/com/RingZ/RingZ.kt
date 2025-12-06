@@ -223,12 +223,19 @@ class RingZ : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val urls = listOfNotNull(
-            "$mainUrl/m.json" to "Movies",
-            "$mainUrl/s.json" to "Web Series",
-            "$mainUrl/anime.json" to "Anime",
-            if (settingsForProvider.enableAdult) "$mainUrl/desihub.json" to "Adult (18+)" else null
-        )
+        val urls = try {
+            fetchMainPageFromGithub()
+        } catch (_: Throwable) {
+            listOfNotNull(
+                "$mainUrl/Nwm.json" to "Movies",
+                "$mainUrl/Nws.json" to "Web Series",
+                "$mainUrl/lstanime.json" to "Anime",
+                if (settingsForProvider.enableAdult)
+                    "$mainUrl/desihub.json" to "Adult (18+)"
+                else null
+            )
+        }
+
 
         val results = mutableListOf<SearchResponse>()
 
