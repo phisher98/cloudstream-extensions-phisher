@@ -67,7 +67,7 @@ class Toonhub4u : MainAPI() {
         val document = app.get(url).documentLarge
         val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("[")?.substringBefore("1080")?.trim().toString()
         val backgroundposter = document.select("meta[property=og:image]").attr("content")
-        val poster= document.select("img.shrinkToFit").attr("src")
+        val poster= document.select("p:nth-child(3) > img").attr("src")
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
         val tvtag=if (document.select("div.entry-content p strong").text().contains("TV Series")) TvType.TvSeries else TvType.Movie
         val hrefs = document.select("div.mks_toggle_content a").map { it.attr("href").replace("/file/","/embed/") }.toJson()
