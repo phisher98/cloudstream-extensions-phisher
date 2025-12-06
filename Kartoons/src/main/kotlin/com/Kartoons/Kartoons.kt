@@ -129,7 +129,7 @@ class Kartoons() : MainAPI() {
             }
 
 
-            newTvSeriesLoadResponse(title, "", tvtag, episodesList) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesList) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundPoster
                 this.plot = description
@@ -139,7 +139,7 @@ class Kartoons() : MainAPI() {
                 this.recommendations = recommendations
             }
         } else {
-            newMovieLoadResponse(title, "", TvType.Movie, href) {
+            newMovieLoadResponse(title, url, TvType.Movie, href) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundPoster
                 this.plot = description
