@@ -1,11 +1,11 @@
 // use an integer for version numbers
-version = 9
+version = 10
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Animez Animes"
+    description = "Animes"
     language    = "en"
     authors = listOf("Phisher98")
 
@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","Anime","AnimeMovie")
-    iconUrl="Animez/icon.png"
+    iconUrl="https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/Animez/icon.png"
 
     isCrossPlatform = true
 }
