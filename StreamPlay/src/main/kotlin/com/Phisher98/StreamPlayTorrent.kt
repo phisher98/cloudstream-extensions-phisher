@@ -9,6 +9,8 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.json.JSONObject
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Suppress("NAME_SHADOWING")
 class StreamPlayTorrent() : StreamPlay() {
@@ -32,7 +34,10 @@ class StreamPlayTorrent() : StreamPlay() {
         const val PeerflixApi="https://peerflix.mov"
         const val AnimetoshoAPI="https://feed.animetosho.org"
         const val TorrentioAnimeAPI="https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
-        const val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
+        val TRACKER_LIST_URL= listOf(
+            "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
+            "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
+        )
 
     }
 
@@ -84,17 +89,6 @@ override suspend fun loadLinks(
                 callback
             )
         },
-
-        {
-            invokeMediaFusion(
-                MediafusionApi,
-                id,
-                season,
-                episode,
-                callback
-            )
-
-        },
         {
             invokeThepiratebay(
                 ThePirateBayApi,
@@ -105,6 +99,18 @@ override suspend fun loadLinks(
             )
 
         },
+        /*
+        {
+            invokeMediaFusion(
+                MediafusionApi,
+                id,
+                season,
+                episode,
+                callback
+            )
+
+        },
+
 
         {
             invokePeerFlix(
@@ -124,6 +130,7 @@ override suspend fun loadLinks(
                 callback
             )
         },
+         */
         {
             if (data.isAnime) invokeAnimetosho(
                 anidbEid,
@@ -163,34 +170,41 @@ override suspend fun loadLinks(
 }
 }
 
-suspend fun generateMagnetLink(url: String, hash: String?): String {
-    // Fetch the content of the file from the provided URL
-    val response = app.get(url)
-    val trackerList = response.text.trim().split("\n") // Assuming each tracker is on a new line
 
-    // Build the magnet link
-    return buildString {
-        append("magnet:?xt=urn:btih:$hash")
-        trackerList.forEach { tracker ->
-            if (tracker.isNotBlank()) {
-                append("&tr=").append(tracker.trim())
-            }
+suspend fun generateMagnetLink(
+    trackerUrls: List<String>,
+    hash: String?,
+): String {
+    require(hash?.isNotBlank() == true)
+
+    val trackers = mutableSetOf<String>()
+
+    trackerUrls.forEach { url ->
+        try {
+            val response = app.get(url)
+            response.text
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .forEach { trackers.add(it) }
+        } catch (_: Exception) {
+            // ignore bad sources
         }
     }
-}
 
-/*
-fun generateMagnetLinkFromSource(trackersList: List<String>, hash: String?): String {
-    // Fetch the content of the file from the provided URL
-
-    // Build the magnet link
     return buildString {
-        append("magnet:?xt=urn:btih:$hash")
-        for (index in 0 until trackersList.size - 1) {
-            if (trackersList[index].isNotBlank()) {
-                append("&tr=").append(trackersList[index].trim())
-            }
+        append("magnet:?xt=urn:btih:").append(hash)
+
+        if (hash.isNotBlank()) {
+            append("&dn=")
+            append(URLEncoder.encode(hash, StandardCharsets.UTF_8.name()))
         }
+
+        trackers
+            .take(10) // practical limit
+            .forEach { tracker ->
+                append("&tr=")
+                append(URLEncoder.encode(tracker, StandardCharsets.UTF_8.name()))
+            }
     }
 }
- */

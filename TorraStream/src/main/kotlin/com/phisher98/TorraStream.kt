@@ -1,7 +1,6 @@
 package com.phisher98
 
 import android.content.SharedPreferences
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -40,6 +39,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.json.JSONObject
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -63,7 +64,10 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         const val AnimetoshoAPI = "https://feed.animetosho.org"
         const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
         const val TorboxAPI= "https://stremio.torbox.app"
-        const val TRACKER_LIST_URL = "https://newtrackon.com/api/all"
+        val TRACKER_LIST_URL = listOf(
+        "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
+        "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
+        )
         private const val simkl = "https://api.simkl.com"
     }
 
@@ -341,7 +345,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
                 suspend { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback) }
             )
         }
-        Log.d("Phisher API",apiUrl)
 
         if (!key.isNullOrEmpty()) {
             runAllAsync(
@@ -350,11 +353,11 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         } else {
             runAllAsync(
                 suspend { invokeTorrentio(apiUrl, id, season, episode, callback) },
-                suspend { invoke1337x(OnethreethreesevenxAPI, title, year, callback) },
-                suspend { invokeMediaFusion(MediafusionApi, id, season, episode, callback) },
+                //suspend { invoke1337x(OnethreethreesevenxAPI, title, year, callback) },
+                //suspend { invokeMediaFusion(MediafusionApi, id, season, episode, callback) },
                 suspend { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
-                suspend { invokePeerFlix(PeerflixApi, id, season, episode, callback) },
-                suspend { invokeComet(CometAPI, id, season, episode, callback) },
+                //suspend { invokePeerFlix(PeerflixApi, id, season, episode, callback) },
+                //suspend { invokeComet(CometAPI, id, season, episode, callback) },
                 suspend { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
                 suspend { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
                 suspend { invokeAIOStreams(AIOStreams, id, season, episode, callback) },
@@ -448,16 +451,41 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     }
 }
 
-suspend fun generateMagnetLink(url: String, hash: String?): String {
-    val response = app.get(url)
-    val trackerList = response.text.trim().split("\n")
+suspend fun generateMagnetLink(
+    trackerUrls: List<String>,
+    hash: String?,
+): String {
+    require(hash?.isNotBlank() == true)
 
-    return buildString {
-        append("magnet:?xt=urn:btih:$hash")
-        trackerList.forEach { tracker ->
-            if (tracker.isNotBlank()) {
-                append("&tr=").append(tracker.trim())
-            }
+    val trackers = mutableSetOf<String>()
+
+    trackerUrls.forEach { url ->
+        try {
+            val response = app.get(url)
+            response.text
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .forEach { trackers.add(it) }
+        } catch (_: Exception) {
+            // ignore bad sources
         }
     }
+
+    return buildString {
+        append("magnet:?xt=urn:btih:").append(hash)
+
+        if (hash.isNotBlank()) {
+            append("&dn=")
+            append(URLEncoder.encode(hash, StandardCharsets.UTF_8.name()))
+        }
+
+        trackers
+            .take(10) // practical limit
+            .forEach { tracker ->
+                append("&tr=")
+                append(URLEncoder.encode(tracker, StandardCharsets.UTF_8.name()))
+            }
+    }
 }
+
