@@ -42,9 +42,11 @@ class Kartoons() : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.Cartoon)
 
     override val mainPage = mainPageOf(
-        "api/popularity/trending?limit=15&period=week" to "Trending Now",
+        "api/popularity/shows?limit=15&period=day" to "Popular Shows",
+        "api/popularity/movies?limit=15&period=day" to "Popular Movies",
+        "api/shows" to "Shows",
         "api/movies" to "Movies",
-        "api/popularity/shows?limit=15&period=week" to "Shows",
+
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
