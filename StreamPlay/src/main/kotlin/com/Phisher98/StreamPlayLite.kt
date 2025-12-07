@@ -32,7 +32,6 @@ import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokemorph
@@ -227,18 +226,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             },
             {
                 if (!res.isAnime) invokeElevenmovies(
-                    res.id,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeXPrimeAPI(
-                    res.title,
-                    res.year,
-                    res.imdbId,
                     res.id,
                     res.season,
                     res.episode,

@@ -55,7 +55,6 @@ import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeXDmovies
-import com.phisher98.StreamPlayExtractor.invokeXPrimeAPI
 import com.phisher98.StreamPlayExtractor.invokeYflix
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
@@ -170,9 +169,6 @@ fun buildProviders(): List<Provider> {
         },
         Provider("vidsrcxyz", "VidSrcXyz (English)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)
-        },
-        Provider("xprimeapi", "XPrime API") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeXPrimeAPI(res.title, res.year, res.imdbId, res.id, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("vidzeeapi", "Vidzee API") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVidzee(res.id, res.season, res.episode, subtitleCallback, callback)
