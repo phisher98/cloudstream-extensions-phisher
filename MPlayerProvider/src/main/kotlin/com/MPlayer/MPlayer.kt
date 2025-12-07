@@ -104,14 +104,14 @@ class MPlayer : MainAPI() {
     private fun MovieItem.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
         val bigpic=getMBigPic(this)
-        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,bigpic,this.type,this.stream,this.description,this.shareUrl,null).toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,bigpic,this.type,this.stream,this.description,this.shareUrl,null,languages = this.languages).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
 
     private fun Item.toSearchResult(): SearchResponse {
         val portraitLargeImageUrl = getPortraitLargeImageUrl(this)
-        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,null,this.type,null,this.description,this.shareUrl,null).toJson()) {
+        return newMovieSearchResponse(title, LoadUrl(this.title, this.titleContentImageInfo,null,this.type,null,this.description,this.shareUrl,null,languages = this.languages).toJson()) {
             posterUrl = portraitLargeImageUrl
         }
     }
@@ -165,6 +165,7 @@ class MPlayer : MainAPI() {
                 val description = item.optString("description")
                 val type = item.optString("type")
                 val shareUrl = item.optString("shareUrl")
+                val languages: List<String> = item.optJSONArray("languages")?.let { arr -> List(arr.length()) { idx -> arr.optString(idx) } } ?: emptyList()
 
                 // --- Image handling ---
                 val imageInfo = item.optJSONArray("imageInfo")
@@ -180,16 +181,34 @@ class MPlayer : MainAPI() {
                 }
 
                 // --- Stream URL handling ---
-                var streamUrl: String? = null
+                //val streamUrl: String? = null
                 val stream = item.optJSONObject("stream")
+
+                var alternativeStream: String? = null
+
                 if (stream != null) {
-                    val hls = stream.optJSONObject("hls")
                     val thirdParty = stream.optJSONObject("thirdParty")
-                    streamUrl = hls?.optString("high")
-                        ?.let { endpointurl + it }
-                        ?: thirdParty?.optString("hlsUrl")
-                                ?: thirdParty?.optString("dashUrl")
+                    val mxplay = stream.optJSONObject("mxplay")
+
+                    val hlsObj = stream.optJSONObject("hls") ?: mxplay?.optJSONObject("hls")
+                    val dashObj = stream.optJSONObject("dash") ?: mxplay?.optJSONObject("dash")
+
+                    val hlsRaw = hlsObj.bestVariant() ?: thirdParty?.optString("hlsUrl")?.takeIf { it.isNotBlank() }
+
+                    val dashRaw = dashObj.bestVariant() ?: thirdParty?.optString("dashUrl")?.takeIf { it.isNotBlank() }
+
+                    val hlsUrl = normalizeUrl(hlsRaw)
+                    val dashUrl = normalizeUrl(dashRaw)
+
+                    val urls = listOfNotNull(hlsUrl, dashUrl).distinct()
+
+                    alternativeStream = when (urls.size) {
+                        0 -> null
+                        1 -> urls[0]
+                        else -> Gson().toJson(urls)
+                    }
                 }
+
 
                 // --- Build response ---
                 if (type.contains("movie", ignoreCase = true)) {
@@ -207,8 +226,9 @@ class MPlayer : MainAPI() {
                                 null,
                                 description,
                                 shareUrl,
-                                streamUrl,
-                                portraitLargeImageUrl
+                                alternativeStream,
+                                portraitLargeImageUrl,
+                                languages = languages
                             ).toJson()
                         ) {
                             posterUrl = portraitLargeImageUrl
@@ -229,8 +249,9 @@ class MPlayer : MainAPI() {
                                 null,
                                 description,
                                 shareUrl,
-                                null,
-                                portraitLargeImageUrl
+                                alternativeStream,
+                                portraitLargeImageUrl,
+                                languages = languages
                             ).toJson()
                         ) {
                             posterUrl = portraitLargeImageUrl
@@ -243,11 +264,14 @@ class MPlayer : MainAPI() {
         return result
     }
 
+    /*
     fun getBigPic(item: Item): String? {
         return item.imageInfo
             .firstOrNull { it.type == "bigpic" }
             ?.url?.let { imageUrl + it }
     }
+
+     */
 
 
 
@@ -264,29 +288,59 @@ class MPlayer : MainAPI() {
             Log.e("Error", "Failed to parse video from JSON")
             return null
         }
+
         val title = video.title
         val poster = getMovieBigPic(url) ?: video.titleContentImageInfo ?: video.alternativeposter
         val type = if (video.tvType.contains("tvshow", true)) TvType.TvSeries else TvType.Movie
-        val hrefList = listOfNotNull(
-            video.stream?.hls?.high,
-            video.stream?.hls?.base,
-            video.stream?.hls?.main,
-            video.stream?.dash?.high,
-            video.stream?.dash?.base,
-            video.stream?.dash?.main,
 
-            video.stream?.mxplay?.hls?.high,
-            video.stream?.mxplay?.hls?.base,
-            video.stream?.mxplay?.hls?.main,
-            video.stream?.mxplay?.dash?.high,
-            video.stream?.mxplay?.dash?.base,
-            video.stream?.mxplay?.dash?.main,
+        val languages: List<String> = video.languages.orEmpty()
 
-            // alternative or fallback
-            video.stream?.thirdParty?.hlsUrl,
-            video.stream?.thirdParty?.dashUrl,
-            video.alternativestream
-        ).map { it }.distinct()
+        val alternativeUrls: List<String> = video.alternativestream
+            ?.trim()
+            ?.let { alt ->
+                when {
+                    alt.startsWith("[") -> {
+                        try {
+                            gson.fromJson(alt, Array<String>::class.java)?.toList().orEmpty()
+                        } catch (e: Exception) {
+                            Log.e("Error M Player:", "Failed to parse alternativestream: ${e.message}")
+                            listOf(alt)
+                        }
+                    }
+                    alt.contains("|") -> {
+                        alt.split("|")
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                    }
+                    else -> listOf(alt)
+                }
+            } ?: emptyList()
+
+        val hrefList = buildList {
+            addAll(
+                listOfNotNull(
+                    video.stream?.hls?.high,
+                    video.stream?.hls?.base,
+                    video.stream?.hls?.main,
+                    video.stream?.dash?.high,
+                    video.stream?.dash?.base,
+                    video.stream?.dash?.main,
+
+                    video.stream?.mxplay?.hls?.high,
+                    video.stream?.mxplay?.hls?.base,
+                    video.stream?.mxplay?.hls?.main,
+                    video.stream?.mxplay?.dash?.high,
+                    video.stream?.mxplay?.dash?.base,
+                    video.stream?.mxplay?.dash?.main,
+
+                    video.stream?.thirdParty?.hlsUrl,
+                    video.stream?.thirdParty?.dashUrl,
+                )
+            )
+
+            addAll(alternativeUrls)
+        }.distinct()
+
         return if (type == TvType.TvSeries) {
             val epposter = getMovieBigPic(url)
             val seasonData = getSeasonData("$mainUrl${video.shareUrl}")
@@ -311,7 +365,7 @@ class MPlayer : MainAPI() {
                         Log.e("Error M Player:", "Failed to parse JSON on page $page: ${e.message}")
                         break
                     }
-                    episodesParser?.items?.forEach { it ->
+                    episodesParser?.items?.forEach {
                         val streamUrls = listOfNotNull(
                             it.stream.hls.high,
                             it.stream.hls.base,
@@ -353,6 +407,7 @@ class MPlayer : MainAPI() {
                 posterUrl = epposter ?: video.alternativeposter
                 backgroundPosterUrl = epposter
                 plot = video.description
+                tags = languages
             }
         }
         else {
@@ -360,6 +415,7 @@ class MPlayer : MainAPI() {
                 posterUrl = poster.toString()
                 backgroundPosterUrl = poster.toString()
                 plot = video.description
+                tags = languages
             }
         }
     }
@@ -370,6 +426,7 @@ class MPlayer : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+
         val urls = if (data.trim().startsWith("[")) {
             val gson=Gson()
             try {
@@ -381,9 +438,10 @@ class MPlayer : MainAPI() {
         } else listOf(data)
         urls.forEach { url ->
             val label = if (url.contains(".m3u8")) "HLS"
-            else if (url.contains(".mpd")) "DASH (Doesn't Work in CS)"
+            else if (url.contains(".mpd")) "DASH"
             else ""
             val fullUrl = if (url.startsWith("video")) endpointurl + url else url
+
             callback.invoke(
                 newExtractorLink(
                     label,
@@ -392,7 +450,7 @@ class MPlayer : MainAPI() {
                     type = INFER_TYPE
                 ) {
                     this.referer = "$mainUrl/"
-                    this.quality = Qualities.Unknown.value
+                    this.quality = Qualities.P1080.value
                 }
             )
         }
@@ -422,22 +480,42 @@ private fun Headers.getCookies(cookieKey: String = "set-cookie"): Map<String, St
             it.second.split(";").firstOrNull()
         }
 
-    // [name=value, name2=value2] -----> mapOf(name to value, name2 to value2)
     return cookieList.associate {
         val split = it.split("=", limit = 2)
         (split.getOrNull(0)?.trim() ?: "") to (split.getOrNull(1)?.trim() ?: "")
     }.filter { it.key.isNotBlank() && it.value.isNotBlank() }
 }
 
-data class LoadUrl(
-    val title: String,
-    val titleContentImageInfo: List<Any>? = emptyList(),
-    val bigpic:String? = null,
-    val tvType: String,
-    val stream: MovieStream? = null,
-    val description: String,
-    val shareUrl: String? = null,
-    val alternativestream: String? = null,
-    val alternativeposter: String? = null
-)
+    data class LoadUrl(
+        val title: String,
+        val titleContentImageInfo: List<Any>? = emptyList(),
+        val bigpic:String? = null,
+        val tvType: String,
+        val stream: MovieStream? = null,
+        val description: String,
+        val shareUrl: String? = null,
+        val alternativestream: String? = null,
+        val alternativeposter: String? = null,
+        val languages: List<String>? = emptyList(),
+    )
+
+    private fun JSONObject?.bestVariant(): String? {
+        if (this == null) return null
+        val keys = arrayOf("high", "base", "main")
+        for (k in keys) {
+            val v = optString(k)
+            if (!v.isNullOrBlank()) return v
+        }
+        return null
+    }
+
+    private fun normalizeUrl(url: String?): String? {
+        if (url.isNullOrBlank()) return null
+        return if (url.startsWith("http", ignoreCase = true)) {
+            url
+        } else {
+            endpointurl + url
+        }
+    }
+
 }
