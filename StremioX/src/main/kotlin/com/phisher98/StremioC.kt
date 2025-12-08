@@ -45,7 +45,7 @@ import java.util.Locale
 
 class StremioC(override var mainUrl: String, override var name: String) : MainAPI() {
     override val supportedTypes = setOf(TvType.Others)
-    override val hasMainPage = false
+    override val hasMainPage = true
 
     companion object {
         val TRACKER_LIST_URLS = listOf(
