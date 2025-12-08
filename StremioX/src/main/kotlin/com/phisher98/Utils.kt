@@ -86,24 +86,6 @@ data class TorrentioStream(
     @SerializedName("fileIdx") val fileIdx: Int? = null
 )
 
-data class DebianRoot(
-    @SerializedName("streams") val streams: List<Stream> = emptyList(),
-    @SerializedName("cacheMaxAge") val cacheMaxAge: Long = 0,
-    @SerializedName("staleRevalidate") val staleRevalidate: Long = 0,
-    @SerializedName("staleError") val staleError: Long = 0
-)
-
-data class Stream(
-    @SerializedName("name") val name: String = "",
-    @SerializedName("title") val title: String = "",
-    @SerializedName("url") val url: String = "",
-    @SerializedName("behaviorHints") val behaviorHints: BehaviorHints = BehaviorHints()
-)
-
-data class BehaviorHints(
-    @SerializedName("bingeGroup") val bingeGroup: String? = null,
-    @SerializedName("filename") val filename: String? = null
-)
 
 suspend fun generateMagnetLink(
     trackerUrls: List<String>,
