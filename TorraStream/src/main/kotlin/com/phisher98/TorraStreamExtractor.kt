@@ -794,7 +794,10 @@ suspend fun invokeKnaben(
             val sizeText = tds.getOrNull(2)?.text().orEmpty()
             val seedsText = tds.getOrNull(4)?.text().orEmpty()
             val seeds = seedsText.toIntOrNull() ?: 0
-
+            val qualityMatch = "(2160p|1080p|720p)"
+                .toRegex(RegexOption.IGNORE_CASE)
+                .find(rawTitle)
+                ?.value
             val formattedTitleName = buildString {
                 append("Knaben | ")
                 append(rawTitle)
@@ -822,7 +825,7 @@ suspend fun invokeKnaben(
                     url = magnet,
                     type = INFER_TYPE
                 ) {
-                    this.quality = getQualityFromName(rawTitle)
+                    this.quality = getQualityFromName(qualityMatch)
                 }
             )
         }
