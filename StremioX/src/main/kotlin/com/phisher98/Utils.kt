@@ -1,13 +1,16 @@
 package com.phisher98
 
+import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import okhttp3.Interceptor
-import okhttp3.Response
+
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.TimeUnit
+import kotlin.sequences.forEach
 
 fun String.fixSourceUrl(): String {
     return this.replace("/manifest.json", "").replace("stremio://", "https://")
@@ -69,5 +72,73 @@ fun fixUrl(url: String, domain: String): String {
             return domain + url
         }
         return "$domain/$url"
+    }
+}
+
+data class TorrentioResponse(
+    @SerializedName("streams") val streams: List<TorrentioStream> = emptyList()
+)
+
+data class TorrentioStream(
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("infoHash") val infoHash: String? = null,
+    @SerializedName("fileIdx") val fileIdx: Int? = null
+)
+
+data class DebianRoot(
+    @SerializedName("streams") val streams: List<Stream> = emptyList(),
+    @SerializedName("cacheMaxAge") val cacheMaxAge: Long = 0,
+    @SerializedName("staleRevalidate") val staleRevalidate: Long = 0,
+    @SerializedName("staleError") val staleError: Long = 0
+)
+
+data class Stream(
+    @SerializedName("name") val name: String = "",
+    @SerializedName("title") val title: String = "",
+    @SerializedName("url") val url: String = "",
+    @SerializedName("behaviorHints") val behaviorHints: BehaviorHints = BehaviorHints()
+)
+
+data class BehaviorHints(
+    @SerializedName("bingeGroup") val bingeGroup: String? = null,
+    @SerializedName("filename") val filename: String? = null
+)
+
+suspend fun generateMagnetLink(
+    trackerUrls: List<String>,
+    hash: String?,
+): String {
+    require(hash?.isNotBlank() == true)
+
+    val trackers = mutableSetOf<String>()
+
+    trackerUrls.forEach { url ->
+        try {
+            val response = app.get(url)
+            response.text
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") }
+                .forEach { trackers.add(it) }
+        } catch (_: Exception) {
+            // ignore bad sources
+        }
+    }
+
+    return buildString {
+        append("magnet:?xt=urn:btih:").append(hash)
+
+        if (hash.isNotBlank()) {
+            append("&dn=")
+            append(URLEncoder.encode(hash, StandardCharsets.UTF_8.name()))
+        }
+
+        trackers
+            .take(10) // practical limit
+            .forEach { tracker ->
+                append("&tr=")
+                append(URLEncoder.encode(tracker, StandardCharsets.UTF_8.name()))
+            }
     }
 }
