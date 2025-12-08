@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import java.util.Locale
 
 suspend fun invokeTorrentio(
     mainUrl:String,
@@ -403,5 +404,191 @@ suspend fun invokeTorrentioAnime(
             }
         )
 
+    }
+}
+
+suspend fun invokeUindex(
+    uindex: String,
+    title: String? = null,
+    year: Int? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val isTv = season != null
+
+    val searchQuery = buildString {
+        if (!title.isNullOrBlank()) append(title)
+        if (year != null) {
+            if (isNotEmpty()) append(' ')
+            append(year)
+        }
+    }.replace(' ', '+')
+
+    val url = "$uindex/search.php?search=$searchQuery&c=${if (isTv) 2 else 1}"
+
+    val headers = mapOf(
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+
+    val rows = app.get(url, headers = headers).documentLarge.select("tr")
+
+    val episodePatterns: List<Regex> = if (isTv && episode != null) {
+        val rawPatterns = listOf(
+            String.format(Locale.US, "S%02dE%02d", season, episode),
+            "S${season}E$episode",
+            String.format(Locale.US, "S%02dE%d", season, episode),
+            String.format(Locale.US, "S%dE%02d", season, episode),
+        )
+
+        rawPatterns.distinct().map {
+            Regex("\\b$it\\b", RegexOption.IGNORE_CASE)
+        }
+    } else {
+        emptyList()
+    }
+
+    rows.amap { row ->
+        val rowTitle = row.select("td:nth-child(2) > a:nth-child(2)").text()
+        val magnet = row.select("td:nth-child(2) > a:nth-child(1)").attr("href")
+
+        if (rowTitle.isBlank() || magnet.isBlank()) return@amap
+
+        if (isTv && episodePatterns.isNotEmpty()) {
+            if (episodePatterns.none { it.containsMatchIn(rowTitle) }) return@amap
+        }
+
+        val qualityMatch = "(2160p|1080p|720p)"
+            .toRegex(RegexOption.IGNORE_CASE)
+            .find(rowTitle)
+            ?.value
+
+        val seeder = row
+            .select("td:nth-child(4) > span")
+            .text()
+            .replace(",", "")
+            .ifBlank { "0" }
+
+        val fileSize = row.select("td:nth-child(3)").text()
+
+        val formattedTitleName = run {
+            val qualityTermsRegex =
+                "(WEBRip|WEB-DL|x265|x264|10bit|HEVC|H264)"
+                    .toRegex(RegexOption.IGNORE_CASE)
+
+            val tags = qualityTermsRegex.findAll(rowTitle)
+                .map { it.value.uppercase() }
+                .distinct()
+                .joinToString(" | ")
+
+            "UIndex | $tags | Seeder: $seeder | FileSize: $fileSize".trim()
+        }
+
+        callback.invoke(
+            newExtractorLink(
+                "UIndex",
+                formattedTitleName.ifBlank { rowTitle },
+                url = magnet,
+                type = INFER_TYPE
+            ) {
+                this.quality = getQualityFromName(qualityMatch)
+            }
+        )
+    }
+}
+
+suspend fun invokeKnaben(
+    knaben: String,
+    isAnime: Boolean,
+    title: String? = null,
+    year: Int? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val isTv = season != null
+    val host = knaben.trimEnd('/')
+
+    val baseQuery = buildString {
+        val queryText = title?.takeIf { it.isNotBlank() } ?: return@buildString
+
+        append(
+            queryText
+                .trim()
+                .replace("\\s+".toRegex(), "+")
+        )
+
+        if (isTv && episode != null) {
+            append("+S${season.toString().padStart(2, '0')}")
+            append("E${episode.toString().padStart(2, '0')}")
+        } else if (!isTv && year != null) {
+            append("+$year")
+        }
+    }
+
+    if (baseQuery.isBlank()) return
+
+    val category = when {
+        isAnime -> "6000000"
+        isTv -> "2000000"
+        else -> "3000000"
+    }
+
+    for (page in 1..2) {
+        val url = "$host/search/$baseQuery/$category/$page/seeders"
+
+        val doc = app.get(url).document
+
+        doc.select("tr.text-nowrap.border-start").forEach { row ->
+            val infoTd = row.selectFirst("td:nth-child(2)") ?: return@forEach
+
+            val titleElement = infoTd.selectFirst("a[title]") ?: return@forEach
+            val rawTitle = titleElement.attr("title").ifBlank { titleElement.text() }
+
+            val magnet = infoTd.selectFirst("a[href^=magnet:?]")?.attr("href") ?: return@forEach
+
+            val source = row
+                .selectFirst("td.d-sm-none.d-xl-table-cell a")
+                ?.text()
+                ?.trim()
+                .orEmpty()
+
+            val tds = row.select("td")
+            val sizeText = tds.getOrNull(2)?.text().orEmpty()
+            val seedsText = tds.getOrNull(4)?.text().orEmpty()
+            val seeds = seedsText.toIntOrNull() ?: 0
+
+            val formattedTitleName = buildString {
+                append("Knaben | ")
+                append(rawTitle)
+
+                if (seeds > 0) {
+                    append(" | Seeds: ")
+                    append(seeds)
+                }
+
+                if (sizeText.isNotBlank()) {
+                    append(" | ")
+                    append(sizeText)
+                }
+
+                if (source.isNotBlank()) {
+                    append(" | ")
+                    append(source)
+                }
+            }
+
+            callback(
+                newExtractorLink(
+                    "Knaben",
+                    formattedTitleName.ifBlank { rawTitle },
+                    url = magnet,
+                    type = INFER_TYPE
+                ) {
+                    this.quality = getQualityFromName(rawTitle)
+                }
+            )
+        }
     }
 }

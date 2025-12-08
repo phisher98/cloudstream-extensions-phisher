@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -161,8 +162,10 @@ class StreamPlayAnime : MainAPI() {
 
         val anititle = data.getTitle()
         val aniyear = data.startDate.year
+        val posterurl = data.coverImage.medium
         val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
+
         val jpTitle = data.title.romaji
 
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
@@ -225,10 +228,10 @@ class StreamPlayAnime : MainAPI() {
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeMetaData?.images
+                this.posterUrl =  data.getCoverImage() ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
-                    ?: data.getCoverImage()
+
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
             }
@@ -242,10 +245,9 @@ class StreamPlayAnime : MainAPI() {
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeMetaData?.images
+                this.posterUrl = data.getCoverImage() ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
-                    ?: data.getCoverImage()
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
                 this.showStatus = getStatus(data.status)
@@ -455,7 +457,8 @@ class StreamPlayAnime : MainAPI() {
             "type" to "ANIME",
             "format" to listOf(
                 if (type == TvType.AnimeMovie) "MOVIE" else "TV",
-                "ONA"
+                "ONA",
+                "OVA"
             )
         )
 
@@ -469,6 +472,7 @@ class StreamPlayAnime : MainAPI() {
             ?.data
             ?.let { it.Page?.media ?: it.media }
             ?.firstOrNull()
+
         return AniIds(res?.id, res?.idMal)
     }
 

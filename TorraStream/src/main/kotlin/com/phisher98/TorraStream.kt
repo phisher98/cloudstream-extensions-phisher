@@ -69,6 +69,8 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
         )
         private const val simkl = "https://api.simkl.com"
+        private const val Uindex = "https://uindex.org"
+        private const val Knaben = "https://knaben.org"
     }
 
     private val traktApiUrl = "https://api.trakt.tv"
@@ -325,6 +327,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         val provider = sharedPref.getString("debrid_provider", null)
         val key = sharedPref.getString("debrid_key", null)
         val dataObj = parseJson<LinkData>(data)
+        val isAnime = dataObj.isAnime
         val title = dataObj.title
         val season = dataObj.season
         val episode = dataObj.episode
@@ -360,7 +363,9 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
                 //suspend { invokeComet(CometAPI, id, season, episode, callback) },
                 suspend { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
                 suspend { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
-                suspend { invokeAIOStreams(AIOStreams, id, season, episode, callback) },
+                //suspend { invokeAIOStreams(AIOStreams, id, season, episode, callback) },
+                suspend { invokeUindex(Uindex,title,year, season, episode,callback) },
+                suspend { invokeKnaben(Knaben,isAnime,title,year, season, episode,callback) },
                 suspend { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
             )
         }

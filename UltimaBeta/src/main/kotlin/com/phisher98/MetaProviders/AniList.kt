@@ -338,7 +338,8 @@ class AniList(val plugin: UltimaBetaPlugin) : MainAPI() {
             "type" to "ANIME",
             "format" to listOf(
                 if (type == TvType.AnimeMovie) "MOVIE" else "TV",
-                "ONA"
+                "ONA",
+                "OVA"
             )
         )
 

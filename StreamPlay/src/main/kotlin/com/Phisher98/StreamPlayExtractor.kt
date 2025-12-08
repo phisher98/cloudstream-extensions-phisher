@@ -4,9 +4,6 @@ import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.gson.Gson
@@ -44,10 +41,12 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -1114,54 +1113,78 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
         val shuffledApis = hianimeAPIs.shuffled().toMutableList()
+        val episodeNumber = (episode ?: 1).toString()
+        val timeoutMillis = 10_000L
 
         while (shuffledApis.isNotEmpty()) {
             val api = shuffledApis.removeAt(0)
             try {
-                animeIds?.amap { id ->
-                    val episodeId = app.get(
-                        "$api/ajax/v2/episode/list/${id ?: return@amap}",
-                        headers = headers
-                    ).takeIf { it.isSuccessful }
-                        ?.parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
-                        ?.select("div.ss-list a")
-                        ?.find { it.attr("data-number") == "${episode ?: 1}" }
-                        ?.attr("data-id") ?: return@amap
+                withTimeout(timeoutMillis) {
+                    animeIds?.amap { id ->
+                        val animeId = id ?: return@amap
 
-                    val servers = app.get(
-                        "$api/ajax/v2/episode/servers?episodeId=$episodeId",
-                        headers = headers
-                    ).takeIf { it.isSuccessful }
-                        ?.parsedSafe<HianimeResponses>()?.html?.let { Jsoup.parse(it) }
-                        ?.select("div.item.server-item")
-                        ?.map {
-                            Triple(it.text(), it.attr("data-id"), it.attr("data-type"))
-                        }
+                        val episodeId = app.get(
+                            "$api/ajax/v2/episode/list/$animeId",
+                            headers = headers
+                        )
+                            .takeIf { it.isSuccessful }
+                            ?.parsedSafe<HianimeResponses>()?.html
+                            ?.let { Jsoup.parse(it) }
+                            ?.select("div.ss-list a")
+                            ?.find { it.attr("data-number") == episodeNumber }
+                            ?.attr("data-id")
+                            ?: return@amap
 
-                    servers?.forEach { (label, id, effectiveType) ->
-                        if (dubtype == null || effectiveType.contains(dubtype, ignoreCase = true)) {
-                            val sourceUrl = app.get("$api/ajax/v2/episode/sources?id=$id")
-                                .takeIf { it.isSuccessful }
-                                ?.parsedSafe<EpisodeServers>()?.link
-                            if (!sourceUrl.isNullOrBlank()) {
-                                loadCustomExtractor(
-                                    "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
-                                    sourceUrl,
-                                    "",
-                                    subtitleCallback,
-                                    callback,
+                        val servers = app.get(
+                            "$api/ajax/v2/episode/servers?episodeId=$episodeId",
+                            headers = headers
+                        )
+                            .takeIf { it.isSuccessful }
+                            ?.parsedSafe<HianimeResponses>()?.html
+                            ?.let { Jsoup.parse(it) }
+                            ?.select("div.item.server-item")
+                            ?.map {
+                                Triple(
+                                    it.text(),
+                                    it.attr("data-id"),
+                                    it.attr("data-type")
                                 )
+                            }
+
+                        servers?.forEach { (label, serverId, effectiveType) ->
+                            if (dubtype == null ||
+                                (if (effectiveType.equals("raw", ignoreCase = true)) "SUB" else effectiveType).contains(dubtype, ignoreCase = true)) {
+                                val sourceUrl = app.get(
+                                    "$api/ajax/v2/episode/sources?id=$serverId",
+                                    headers = headers
+                                )
+                                    .takeIf { it.isSuccessful }
+                                    ?.parsedSafe<EpisodeServers>()?.link
+
+                                if (!sourceUrl.isNullOrBlank()) {
+                                    loadCustomExtractor(
+                                        "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
+                                        sourceUrl,
+                                        "",
+                                        subtitleCallback,
+                                        callback,
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 return
+            } catch (_: TimeoutCancellationException) {
+                println("Timed out with domain $api")
             } catch (e: Exception) {
                 println("Failed with domain $api: ${e.message}")
             }
         }
+
         println("All hianimeAPI domains failed.")
     }
+
 
     suspend fun invokeKickAssAnime(
         slug: String?,

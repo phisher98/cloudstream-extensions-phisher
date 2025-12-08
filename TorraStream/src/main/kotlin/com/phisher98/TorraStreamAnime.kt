@@ -128,7 +128,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                     false
                 )
             val homePageList =
-                repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
+                repo.library().getOrThrow()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)
@@ -425,7 +425,8 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             "type" to "ANIME",
             "format" to listOf(
                 if (type == TvType.AnimeMovie) "MOVIE" else "TV",
-                "ONA"
+                "ONA",
+                "OVA"
             )
         )
 

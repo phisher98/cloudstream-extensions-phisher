@@ -34,6 +34,8 @@ class StreamPlayTorrent() : StreamPlay() {
         const val PeerflixApi="https://peerflix.mov"
         const val AnimetoshoAPI="https://feed.animetosho.org"
         const val TorrentioAnimeAPI="https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
+        private const val Uindex = "https://uindex.org"
+        private const val Knaben = "https://knaben.org"
         val TRACKER_LIST_URL= listOf(
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
@@ -54,7 +56,7 @@ override suspend fun loadLinks(
     val episode = data.episode
     val id = data.imdbId
     val year = data.year
-
+    val isAnime = data.isAnime
     var type = TvType.TvSeries
     var anijson: String? = null
 
@@ -98,6 +100,15 @@ override suspend fun loadLinks(
                 callback
             )
 
+        },
+        {
+        invokeUindex(
+            Uindex,
+            title,
+            year,
+            season,
+            episode,
+            callback)
         },
         /*
         {
@@ -145,6 +156,15 @@ override suspend fun loadLinks(
                 episode,
                 callback
             )
+        },
+        {
+            invokeKnaben(Knaben,
+                isAnime,
+                title,
+                year,
+                season,
+                episode,
+                callback)
         },
 
         //Source till here
