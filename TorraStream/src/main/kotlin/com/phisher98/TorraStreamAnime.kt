@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -209,6 +210,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         return if (data.format.contains("Movie",ignoreCase = true)) {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
+                addMalId(ids.idMal)
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
@@ -221,6 +223,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         } else {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
                 addAniListId(id.toInt())
+                addMalId(ids.idMal)
                 addEpisodes(DubStatus.Subbed, episodes)
                 this.year = data.startDate.year
                 this.plot = data.description
