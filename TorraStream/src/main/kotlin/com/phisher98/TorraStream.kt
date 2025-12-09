@@ -334,7 +334,10 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         val id = dataObj.imdbId
         val year = dataObj.year
         val anijson = app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-        val mappings = JSONObject(anijson).optJSONObject("mappings")
+        val mappings = runCatching {
+            val response = app.get("https://api.ani.zip/mappings?imdb_id=$id")
+            JSONObject(response.text).optJSONObject("mappings")
+        }.getOrNull()
 
         val isMovie = mappings
             ?.optString("type", "")

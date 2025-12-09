@@ -611,14 +611,13 @@ suspend fun invokeDebianTorbox(
         "$torBoxAPI/$key/stream/series/$id:$season:$episode.json"
     }
 
-    val response = app.get(url).parsedSafe<TorBox>() ?: return
+    val response = app.get(url, timeout = 10_000).parsedSafe<TorBoxDebian>() ?: return
 
     response.streams.forEach { stream ->
-        val resolution = stream.resolution ?: extractResolutionFromDescription(stream.description)
+        val resolution = extractResolutionFromDescription(stream.description)
         val displayName = buildString {
             if (stream.name.isNotBlank()) append(" ${stream.name}")
-            if (stream.behaviorHints.filename.isNotBlank()) append(" ${stream.behaviorHints.filename}")
-            if (!stream.quality.isNullOrBlank()) append(" ${stream.quality}")
+            if (stream.behaviorHints.filename.isNotBlank()) append(" ${stream.behaviorHints.filename}".substringAfterLast("."))
         }.trim()
 
         val sourceName = stream.name

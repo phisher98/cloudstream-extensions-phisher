@@ -1,6 +1,5 @@
 package com.phisher98
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 
@@ -130,6 +129,26 @@ data class TorBoxBehaviorHints(
     val videoHash: String?,
     val videoSize: Long?,
 )
+
+data class TorBoxDebian(
+    val streams: List<TorBoxDebianStream>,
+)
+
+data class TorBoxDebianStream(
+    val name: String,
+    val description: String,
+    val behaviorHints: TorBoxDebianBehaviorHints,
+    val url: String,
+)
+
+data class TorBoxDebianBehaviorHints(
+    val notWebReady: Boolean,
+    val videoSize: Long,
+    val filename: String,
+    val bingeGroup: String,
+    val videoHash: String?,
+)
+
 
 data class File(
     val id: Long,
