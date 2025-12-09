@@ -261,7 +261,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val provider = sharedPref.getString("debrid_provider", null)
         val key = sharedPref.getString("debrid_key", null)
         val mediaData = AppUtils.parseJson<LinkData>(data)
-        val episode = mediaData.episode
+        var episode = mediaData.episode
         val aniid = mediaData.aniId
         var kitsuId = -1
         var type = TvType.TvSeries
@@ -273,12 +273,16 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             if (mappings != null) {
                 kitsuId = mappings.optInt("kitsu_id", -1)
                 val rawtype = mappings.optString("type", "")
-                if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+                if (rawtype.contains("MOVIE", ignoreCase = true)) {
+                    type = TvType.Movie
+                    episode = 1
+                }
             }
             anidbEid = try { getAnidbEid(anijson, episode) } catch (_: Exception) { null }
 
         } catch (_: Exception) {
         }
+
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {

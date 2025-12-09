@@ -251,18 +251,26 @@ open class StreamplayTorrentAnime : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val mediaData = AppUtils.parseJson<LinkData>(data)
-        val episode =mediaData.episode
+        var episode =mediaData.episode
         val aniid =mediaData.aniId
-        val anijson=app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
-        val anidbEid = getAnidbEid(anijson, episode)
+        var anidbEid: Int? = null
         var type = TvType.TvSeries
         var kitsuId = -1
 
-        val mappings = JSONObject(anijson).optJSONObject("mappings")
-        if (mappings != null) {
-            kitsuId = mappings.optInt("kitsu_id", -1)
-            val rawtype = mappings.optString("type", "")
-            if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+        try {
+            val anijson = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
+            val mappings = JSONObject(anijson).optJSONObject("mappings")
+            if (mappings != null) {
+                kitsuId = mappings.optInt("kitsu_id", -1)
+                val rawtype = mappings.optString("type", "")
+                if (rawtype.contains("MOVIE", ignoreCase = true)) {
+                    type = TvType.Movie
+                    episode = 1
+                }
+            }
+            anidbEid = try { getAnidbEid(anijson, episode) } catch (_: Exception) { null }
+
+        } catch (_: Exception) {
         }
         runAllAsync(
             {
@@ -274,17 +282,6 @@ open class StreamplayTorrentAnime : MainAPI() {
             {
                 invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback)
             },
-            /*
-            {
-                invokeComet(
-                    CometAPI,
-                    id,
-                    season,
-                    episode,
-                    callback
-                )
-            },
-             */
         )
 
 
