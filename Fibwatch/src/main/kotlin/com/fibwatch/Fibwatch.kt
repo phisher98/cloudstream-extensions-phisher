@@ -170,7 +170,6 @@ open class Fibwatch : MainAPI() {
                     this.recommendations = recommendations
                 }
             }
-
             // bounded concurrency to avoid overload
             val semaphore = Semaphore(6)
             val episodes = coroutineScope {
@@ -195,10 +194,9 @@ open class Fibwatch : MainAPI() {
                                     Regex("""\be(\d{1,3})\b""").find(lower)?.let { m -> episodeNum = m.groupValues[1].toIntOrNull() }
                                 }
 
-                                val allqualities = runCatching { app.get(epUrl).document }.getOrNull() ?: return@withPermit null
+                                val allqualities = runCatching { app.get(fixUrl(epUrl)).document }.getOrNull() ?: return@withPermit null
 
-                                val shouldRequestResSwitcher = allqualities
-                                    .select("div.available-res:contains(Available in Other Parts:)").isNotEmpty()
+                                val shouldRequestResSwitcher = allqualities.select("div.available-res:contains(Available in Other Parts:)").isNotEmpty()
 
                                 val innerVideoId = allqualities.selectFirst("input#video-id")?.attr("value")?.takeIf { it.isNotBlank() }
 
@@ -301,7 +299,7 @@ open class Fibwatch : MainAPI() {
                 url
             } else {
                 runCatching {
-                    val doc = app.get(url).document
+                    val doc = app.get(fixUrl(url)).document
                     val onclick = doc.selectFirst("a.hidden-button.buttonDownloadnew")
                         ?.attr("onclick") ?: return@runCatching null
 
