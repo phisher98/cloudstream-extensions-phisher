@@ -5,6 +5,7 @@ import android.os.Build
 import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import org.json.JSONObject
 import java.time.LocalDate
 import com.lagradost.cloudstream3.Actor
@@ -280,10 +281,21 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val addonList = listOf("stremio_addon", "stremio_addon2", "stremio_addon3", "stremio_addon4", "stremio_addon5")
+        val addonList = buildList {
+            var index = 0
+            while (true) {
+                val key = if (index == 0) "stremio_addon" else "stremio_addon${index + 1}"
+                if (!sharedPref.contains(key)) break
+                add(key)
+                index++
+            }
+        }
 
         for (addonPref in addonList) {
             val fixMainUrl = sharedPref.getString(addonPref, "")?.fixSourceUrl()
+
+            if (fixMainUrl.isNullOrBlank()) continue
+
             val url = if (season == null) {
                 "$fixMainUrl/stream/movie/$imdbId.json"
             } else {
@@ -292,11 +304,17 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
             if (!URLUtil.isValidUrl(url)) continue
 
-            val res = app.get(url, timeout = 10L).parsedSafe<StreamsResponse>()
-            res?.streams?.forEach { stream ->
-                stream.runCallback(subtitleCallback, callback)
+            runCatching {
+                app.get(url, timeout = 10L).parsedSafe<StreamsResponse>()
+            }.onSuccess { res ->
+                res?.streams?.forEach { stream ->
+                    stream.runCallback(subtitleCallback, callback)
+                }
+            }.onFailure { e ->
+                Log.e(name, "Error loading from $addonPref")
             }
         }
+
     }
 
     private data class StreamsResponse(val streams: List<Stream>)
