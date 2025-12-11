@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.Gson
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -231,7 +230,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val XDmoviesAPI = "https://xdmovies.site"
         const val kimcartoonAPI = "https://kimcartoon.si"
         const val yFlix = "https://yflix.to"
-
+        const val moviesClubApi = "https://moviesapi.club"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

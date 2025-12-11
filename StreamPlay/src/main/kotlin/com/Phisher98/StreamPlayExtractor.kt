@@ -5953,6 +5953,42 @@ object StreamPlayExtractor : StreamPlay() {
         } ?: return
         fetchAndProcessServers(eid)
     }
+
+    suspend fun invokeMoviesApi(
+        id: Int?,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        if (id == null) return
+
+        val href = if (season == null) "$moviesClubApi/movie/$id" else "$moviesClubApi/tv/$id-$season-$episode"
+        val pageDoc = runCatching { app.get(href).document }.getOrNull() ?: return
+        val iframeElement = pageDoc.selectFirst("iframe[src], iframe[data-src]") ?: return
+        val iframeSrc = iframeElement.attr("src").ifEmpty { iframeElement.attr("data-src") }
+        if (iframeSrc.isEmpty()) return
+        val iframeDoc = runCatching { app.get(iframeSrc).document }.getOrNull() ?: return
+        val scriptData = iframeDoc.select("script")
+            .firstOrNull { e ->
+                val d = e.data()
+                d.contains("function(p,a,c,k,e,d)")
+            }?.data() ?: iframeDoc.selectFirst("script")?.data() ?: return
+        val unPacked = runCatching { getAndUnpack(scriptData) }.getOrNull() ?: scriptData
+        val m3u8 = Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+
+        if (m3u8!=null)
+        {
+            M3u8Helper.generateM3u8(
+                "MoviesApi Club",
+                m3u8,
+                iframeSrc,
+                headers = mapOf("Referer" to iframeSrc)
+            ).forEach(callback)
+        }
+    }
+
+
 }
 
 

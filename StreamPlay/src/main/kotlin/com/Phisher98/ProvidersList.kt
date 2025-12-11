@@ -24,6 +24,7 @@ import com.phisher98.StreamPlayExtractor.invokeMappleTv
 import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
+import com.phisher98.StreamPlayExtractor.invokeMoviesApi
 import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.phisher98.StreamPlayExtractor.invokeMultiEmbed
@@ -254,6 +255,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("YFlix", "YFlix") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeYflix(res.title, res.season, res.episode, subtitleCallback, callback)
+        },
+        Provider("moviesapi", "MoviesApi Club") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeMoviesApi(res.id, res.season, res.episode, subtitleCallback, callback)
         },
     )
 }
