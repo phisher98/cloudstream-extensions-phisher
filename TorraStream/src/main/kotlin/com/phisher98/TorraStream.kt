@@ -33,11 +33,13 @@ import com.lagradost.cloudstream3.newSearchResponseList
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
-import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.json.JSONObject
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -346,39 +348,42 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         episode = if (isMovie) 1 else episode
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
 
+        suspend fun runAllAsync(vararg tasks: suspend () -> Unit) {
+            coroutineScope {
+                tasks.map { async { it() } }.awaitAll()
+            }
+        }
+
         val apiUrl = buildApiUrl(sharedPref, mainUrl)
+
         if (provider == "AIO Streams" && !key.isNullOrEmpty()) {
             runAllAsync(
-                suspend { invokeAIOStreamsDebian(key, id, season, episode, callback) }
+                { invokeAIOStreamsDebian(key, id, season, episode, callback) }
             )
         }
 
         if (provider == "TorBox" && !key.isNullOrEmpty()) {
             runAllAsync(
-                suspend { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback) }
+                { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback) }
             )
         }
 
         if (!key.isNullOrEmpty()) {
             runAllAsync(
-                suspend { invokeTorrentioDebian(apiUrl, id, season, episode, callback) }
+                { invokeTorrentioDebian(apiUrl, id, season, episode, callback) }
             )
         } else {
             runAllAsync(
-                suspend { invokeTorrentio(apiUrl, id, season, episode, callback) },
-                //suspend { invoke1337x(OnethreethreesevenxAPI, title, year, callback) },
-                //suspend { invokeMediaFusion(MediafusionApi, id, season, episode, callback) },
-                suspend { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
-                //suspend { invokePeerFlix(PeerflixApi, id, season, episode, callback) },
-                //suspend { invokeComet(CometAPI, id, season, episode, callback) },
-                suspend { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
-                suspend { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
-                //suspend { invokeAIOStreams(AIOStreams, id, season, episode, callback) },
-                suspend { invokeUindex(Uindex,title,year, season, episode,callback) },
-                suspend { invokeKnaben(Knaben,isAnime,title,year, season, episode,callback) },
-                suspend { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
+                { invokeTorrentio(apiUrl, id, season, episode, callback) },
+                { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
+                { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
+                { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
+                { invokeUindex(Uindex, title, year, season, episode, callback) },
+                { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback) },
+                { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
             )
         }
+
 
 
         // Subtitles

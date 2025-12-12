@@ -84,37 +84,38 @@ suspend fun invokeTorrentioDebian(
     }
     val res = app.get(url).parsedSafe<DebianRoot>()
     res?.streams?.forEach { stream ->
-        val fileurl = stream.url
-        val size = Regex("""(\d+\.\d+)\s*GB""").find(stream.title)?.groupValues?.get(1)
+        val fileUrl = stream.url
 
-        val name = stream.behaviorHints.filename
+        val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(stream.title)
+            ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
+
+        val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
+
+        val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
 
         val formattedName = name
-            ?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
-            ?.replace(Regex("\\.mkv$"), "")
-            ?.replace('.', ' ')
-            ?.trim()
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .replace('-', ' ')
+            .replace("[", "")
+            .replace("]", "")
+            .trim()
 
-        val tbTag = when {
-            stream.name.contains("TB+", ignoreCase = true) -> "TB+"
-            stream.name.contains("TB download", ignoreCase = true) -> "TB download"
-            else -> null
-        }
+        val parts = listOfNotNull(
+            size?.let { "📦 $it" },
+            seedersNum?.let { "🌱 $it" }
+        )
 
-        val sizeTag = size?.let { "$it GB" }
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
 
-        val tagPrefix = listOfNotNull(tbTag, sizeTag).joinToString(" | ")
-        val finalTitle = if (tagPrefix.isNotEmpty()) {
-            "[$tagPrefix] ${formattedName ?: name}"
-        } else {
-            formattedName ?: name
-        } ?: "Unknown"
+        val finalTitle = "Torrentio+ | $formattedName$suffix"
 
         callback.invoke(
             newExtractorLink(
-                "Torrentio",
+                "Torrentio+",
                 finalTitle,
-                url = fileurl,
+                url = fileUrl,
                 INFER_TYPE
             ) {
                 this.referer = ""
@@ -139,37 +140,38 @@ suspend fun invokeTorrentioAnimeDebian(
     }
     val res = app.get(url).parsedSafe<DebianRoot>()
     res?.streams?.forEach { stream ->
-        val fileurl = stream.url
-        val size = Regex("""(\d+\.\d+)\s*GB""").find(stream.title)?.groupValues?.get(1)
+        val fileUrl = stream.url
 
-        val name = stream.behaviorHints.filename
+        val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(stream.title)
+            ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
+
+        val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
+
+        val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
 
         val formattedName = name
-            ?.replace(Regex("^(.*?)\\.(\\d{4})\\."), "")
-            ?.replace(Regex("\\.mkv$"), "")
-            ?.replace('.', ' ')
-            ?.trim()
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .replace('-', ' ')
+            .replace("[", "")
+            .replace("]", "")
+            .trim()
 
-        val tbTag = when {
-            stream.name.contains("TB+", ignoreCase = true) -> "TB+"
-            stream.name.contains("TB download", ignoreCase = true) -> "TB download"
-            else -> null
-        }
+        val parts = listOfNotNull(
+            size?.let { "📦 $it" },
+            seedersNum?.let { "🌱 $it" }
+        )
 
-        val sizeTag = size?.let { "$it GB" }
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
 
-        val tagPrefix = listOfNotNull(tbTag, sizeTag).joinToString(" | ")
-        val finalTitle = if (tagPrefix.isNotEmpty()) {
-            "[$tagPrefix] ${formattedName ?: name}"
-        } else {
-            formattedName ?: name
-        } ?: "Unknown"
+        val finalTitle = "Torrentio+ Anime | $formattedName$suffix"
 
         callback.invoke(
             newExtractorLink(
-                "Torrentio Anime",
+                "Torrentio+ Anime",
                 finalTitle,
-                url = fileurl,
+                url = fileUrl,
                 INFER_TYPE
             ) {
                 this.referer = ""
@@ -614,16 +616,57 @@ suspend fun invokeDebianTorbox(
     val response = app.get(url, timeout = 10_000).parsedSafe<TorBoxDebian>() ?: return
 
     response.streams.forEach { stream ->
+
         val resolution = extractResolutionFromDescription(stream.description)
-        val displayName = buildString {
-            if (stream.name.isNotBlank()) append(" ${stream.name}")
-            if (stream.behaviorHints.filename.isNotBlank()) append(" ${stream.behaviorHints.filename}".substringAfterLast("."))
-        }.trim()
 
         val sourceName = stream.name
             .substringBeforeLast("(")
             .trim()
             .ifBlank { "TorBox" }
+
+        // --- ADD ONLY THIS PART ---
+
+        val fileSize = Regex("Size:\\s*([^|\\n]+)")
+            .find(stream.description)
+            ?.groupValues?.get(1)
+            ?.trim()
+            ?: ""
+
+        val seeders = Regex("Seeders:\\s*(\\d+)")
+            .find(stream.description)
+            ?.groupValues?.get(1)
+            ?.trim()
+            ?: ""
+
+        val displayName = buildString {
+            append("TorBox+ | ")
+            val rawName = stream.behaviorHints.filename
+            val baseName = rawName
+                .substringBeforeLast(".")
+                .replace(".", " ")
+                .trim()
+
+            if (baseName.isNotBlank())
+                append(baseName)
+
+            // --- filesize ---
+            val fileSize = Regex("Size:\\s*([^|\\n]+)")
+                .find(stream.description)
+                ?.groupValues?.get(1)
+                ?.trim()
+            if (!fileSize.isNullOrBlank())
+                append(" | 📦 $fileSize")
+
+            // --- seeders ---
+            val seeders = Regex("Seeders:\\s*(\\d+)")
+                .find(stream.description)
+                ?.groupValues?.get(1)
+                ?.trim()
+            if (!seeders.isNullOrBlank())
+                append(" | 🌱 $seeders")
+
+        }.trim()
+
 
         callback(
             newExtractorLink(
@@ -637,6 +680,7 @@ suspend fun invokeDebianTorbox(
             }
         )
     }
+
 }
 
 
@@ -831,5 +875,58 @@ suspend fun invokeKnaben(
 
 
 
+suspend fun invokeTorboxAnimeDebian(
+    mainUrl: String,
+    key: String,
+    type: TvType,
+    id: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if (type == TvType.Movie) {
+        "$mainUrl/$key/stream/movie/kitsu:$id.json"
+    } else {
+        "$mainUrl/$key/stream/series/kitsu:$id:$episode.json"
+    }
+    val res = app.get(url, timeout = 10_000).parsedSafe<DebianRoot>()
+    res?.streams?.forEach { stream ->
+        val fileUrl = stream.url
 
+        val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(stream.title)
+            ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
 
+        val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
+
+        val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
+
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .replace('-', ' ')
+            .replace("[", "")
+            .replace("]", "")
+            .trim()
+
+        val parts = listOfNotNull(
+            size?.let { "📦 $it" },
+            seedersNum?.let { "🌱 $it" }
+        )
+
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
+
+        val finalTitle = "TorBox+ Anime | $formattedName$suffix"
+
+        callback.invoke(
+            newExtractorLink(
+                "TorBox+ Anime",
+                finalTitle,
+                url = fileUrl,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getIndexQuality(stream.name)
+            }
+        )
+    }
+}

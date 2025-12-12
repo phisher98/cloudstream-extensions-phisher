@@ -40,6 +40,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.TorraStream.Companion.TorboxAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -287,7 +288,8 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
-                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) }
+                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) },
+                    { invokeTorboxAnimeDebian(TorboxAPI, key,type, kitsuId, episode, callback) }
                 )
             }
         } else {
