@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.util.Log
 import com.phisher98.TorraStream.Companion.AnimetoshoAPI
 import com.phisher98.TorraStream.Companion.SubtitlesAPI
 import com.phisher98.TorraStream.Companion.TRACKER_LIST_URL
@@ -93,13 +94,10 @@ suspend fun invokeTorrentioDebian(
         val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
-
+        val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
         val formattedName = name
             .substringBeforeLast('.')
             .replace('.', ' ')
-            .replace('-', ' ')
-            .replace("[", "")
-            .replace("]", "")
             .trim()
 
         val parts = listOfNotNull(
@@ -109,11 +107,11 @@ suspend fun invokeTorrentioDebian(
 
         val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
 
-        val finalTitle = "Torrentio+ | $formattedName$suffix"
+        val finalTitle = "Torrentio+ | [$cache] | $formattedName$suffix"
 
         callback.invoke(
             newExtractorLink(
-                "Torrentio+",
+                "Torrentio+ [$cache]",
                 finalTitle,
                 url = fileUrl,
                 INFER_TYPE
@@ -149,13 +147,10 @@ suspend fun invokeTorrentioAnimeDebian(
         val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
-
+        val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
         val formattedName = name
             .substringBeforeLast('.')
             .replace('.', ' ')
-            .replace('-', ' ')
-            .replace("[", "")
-            .replace("]", "")
             .trim()
 
         val parts = listOfNotNull(
@@ -165,11 +160,11 @@ suspend fun invokeTorrentioAnimeDebian(
 
         val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
 
-        val finalTitle = "Torrentio+ Anime | $formattedName$suffix"
+        val finalTitle = "Torrentio+ Anime | [$cache] | $formattedName$suffix"
 
         callback.invoke(
             newExtractorLink(
-                "Torrentio+ Anime",
+                "Torrentio+ [$cache]",
                 finalTitle,
                 url = fileUrl,
                 INFER_TYPE
@@ -451,7 +446,7 @@ suspend fun invokeSubtitleAPI(
         "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     )
     app.get(url, headers = headers, timeout = 100L)
-        .parsedSafe<SubtitlesAPI>()?.subtitles?.amap {
+        .parsedSafe<SubtitlesAPI>()?.subtitles?.amap { it ->
             val lan = getLanguage(it.lang) ?:"Unknown"
             val suburl = it.url
             subtitleCallback.invoke(
@@ -462,7 +457,6 @@ suspend fun invokeSubtitleAPI(
             )
         }
 }
-
 
 suspend fun invokeAnimetosho(
     id: Int? = null,
@@ -624,22 +618,13 @@ suspend fun invokeDebianTorbox(
             .trim()
             .ifBlank { "TorBox" }
 
-        // --- ADD ONLY THIS PART ---
-
-        val fileSize = Regex("Size:\\s*([^|\\n]+)")
-            .find(stream.description)
+        val cache = Regex("""\((.*?)\)""").find(stream.name)
             ?.groupValues?.get(1)
-            ?.trim()
-            ?: ""
-
-        val seeders = Regex("Seeders:\\s*(\\d+)")
-            .find(stream.description)
-            ?.groupValues?.get(1)
-            ?.trim()
-            ?: ""
+            ?.takeIf { it == "Instant" }
+            ?: "TorBox Download"
 
         val displayName = buildString {
-            append("TorBox+ | ")
+            append("TorBox+ | [$cache] | ")
             val rawName = stream.behaviorHints.filename
             val baseName = rawName
                 .substringBeforeLast(".")
@@ -670,7 +655,7 @@ suspend fun invokeDebianTorbox(
 
         callback(
             newExtractorLink(
-                sourceName,
+                "$sourceName [$cache]",
                 displayName,
                 url = stream.url,
                 INFER_TYPE
@@ -903,10 +888,11 @@ suspend fun invokeTorboxAnimeDebian(
         val formattedName = name
             .substringBeforeLast('.')
             .replace('.', ' ')
-            .replace('-', ' ')
-            .replace("[", "")
-            .replace("]", "")
             .trim()
+        val cache = Regex("""\((.*?)\)""").find(stream.name)
+            ?.groupValues?.get(1)
+            ?.takeIf { it == "Instant" }
+            ?: "TorBox Download"
 
         val parts = listOfNotNull(
             size?.let { "📦 $it" },
@@ -915,11 +901,11 @@ suspend fun invokeTorboxAnimeDebian(
 
         val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
 
-        val finalTitle = "TorBox+ Anime | $formattedName$suffix"
+        val finalTitle = "TorBox+ Anime | [$cache] | $formattedName$suffix"
 
         callback.invoke(
             newExtractorLink(
-                "TorBox+ Anime",
+                "TorBox+ [$cache]",
                 finalTitle,
                 url = fileUrl,
                 INFER_TYPE
