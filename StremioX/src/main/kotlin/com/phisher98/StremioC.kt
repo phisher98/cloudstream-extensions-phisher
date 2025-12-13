@@ -228,7 +228,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                 }
             }
             return HomePageList(
-                "$type - ${name ?: id}",
+                name ?: id,
                 entries
             )
         }
@@ -324,11 +324,11 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             return provider.newEpisode(
                 LoadData(type, id, seasonNumber, episode ?: number, imdbId)
             ) {
-                this.name = name ?: title
+                this.name = this@Video.name ?: title
                 this.posterUrl = thumbnail
-                this.description = overview ?: description
+                this.description = overview ?:  this@Video.description
                 this.season = seasonNumber
-                this.episode = episode ?: number
+                this.episode =  this@Video.episode ?: number
             }
         }
     }
