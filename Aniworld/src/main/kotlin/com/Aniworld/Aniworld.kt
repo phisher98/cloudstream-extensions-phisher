@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -105,7 +106,6 @@ open class Aniworld : MainAPI() {
         val mappings = jsonObject?.optJSONObject("mappings")
         val malidId: Int? = mappings?.optInt("mal_id")?.takeIf { mappings.has("mal_id") }
         val anilistid: Int? = mappings?.optInt("anilist_id")?.takeIf { mappings.has("anilist_id") }
-
         val title = document.selectFirst("div.series-title span")?.text() ?: return null
 
         val poster: String? = if (!isTvSeries) {
@@ -129,16 +129,21 @@ open class Aniworld : MainAPI() {
         val episodes = mutableListOf<Episode>()
         document.select("div#stream > ul:first-child li").forEach { ele ->
             val pageLink = ele.selectFirst("a")?.attr("href") ?: return@forEach
+            val seasonno = if ("-" in pageLink) { pageLink.substringAfterLast("-").toIntOrNull() ?: 0 } else { 0 }
+
             val epsDocument = app.get(fixUrl(pageLink)).documentLarge
 
-            epsDocument.select("div#stream > ul:nth-child(4) li").forEach { eps ->
-                val epsLink = eps.selectFirst("a") ?: return@forEach
-                val seasonNumber = epsLink.attr("data-season-id").toIntOrNull() ?: 0
+            epsDocument.select("#season$seasonno tr").forEach { eps ->
+                val epno = eps.select("td > meta").attr("content").toIntOrNull() ?: eps.attr("data-episode-season-id")
+                    .toIntOrNull() ?: return@forEach
+                val epname = eps.select("td.seasonEpisodeTitle span").text()
+                val href = fixUrl(eps.select("td.seasonEpisodeTitle a").attr("href"))
 
                 episodes.add(
-                    newEpisode(fixUrl(epsLink.attr("href"))) {
-                        season = seasonNumber
-                        episode = epsLink.text().toIntOrNull()
+                    newEpisode(href) {
+                        this.name = epname
+                        season = seasonno
+                        episode = epno
                     }
                 )
             }
@@ -154,6 +159,7 @@ open class Aniworld : MainAPI() {
                 addMalId(malidId)
                 addAniListId(anilistid)
             }
+            addImdbId(imdbid)
             plot = description
             this.tags = tags
         }
@@ -176,7 +182,9 @@ open class Aniworld : MainAPI() {
             }.filter {
                 it.third != "Vidoza"
             }.amap {
-            val redirectUrl = app.get(fixUrl(it.second)).url
+            val response = app.get(fixUrl(it.second), allowRedirects = false)
+            val redirectUrl = response.headers["Location"] ?: return@amap
+
             val lang = it.first.getLanguage(document)
             val name = "${it.third} [${lang}]"
             loadCustomExtractor(name,redirectUrl,"",subtitleCallback,callback)
