@@ -27,7 +27,6 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.getQualityFromString
-import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -37,6 +36,7 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.SuperStreamExtractor.invokeExternalM3u8Source
 import com.phisher98.SuperStreamExtractor.invokeExternalSource
 import com.phisher98.SuperStreamExtractor.invokeInternalSource
 import com.phisher98.SuperStreamExtractor.invokeOpenSubs
@@ -697,8 +697,9 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 ),
             ) {
                 this.recommendations = data.recommend.mapNotNull { it.toSearchResponse(this@Superstream) }
-                this.posterUrl = background ?: data.posterOrg ?: data.poster
-                this.year = data.year
+                this.posterUrl = data.posterOrg ?: data.poster
+                this.backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
+                        this.year = data.year
                 addActors(cast)
                 this.plot = data.description
                 this.tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
@@ -761,8 +762,8 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                 year = data.year
                 plot = data.description
                 addActors(cast)
+                this.posterUrl = data.posterOrg ?: data.poster
                 backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
-                posterUrl = data.posterOrg ?: data.poster
                 score = Score.from10(data.imdbRating)
                 tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
                 addImdbId(data.imdbId)
@@ -876,6 +877,16 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                     parsed.episode,
                     Supertoken,
                     subtitleCallback,
+                    callback
+                )
+            },
+            {
+                invokeExternalM3u8Source(
+                    parsed.mediaId,
+                    parsed.type,
+                    parsed.season,
+                    parsed.episode,
+                    uitoken,
                     callback
                 )
             },

@@ -4,6 +4,8 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -57,7 +59,9 @@ object SuperStreamExtractor : Superstream() {
         } else {
             """{"childmode":"0","app_version":"11.5","module":"TV_downloadurl_v3","channel":"Website","episode":"$episode","expired_date":"${getExpiryDate()}","platform":"android","tid":"$id","oss":"1","uid":"$superToken","open_udid":"59e139fd173d9045a2b5fc13b40dfd87","appid":"$appId","season":"$season","lang":"en","group":""}"""
         }
+
         val linkData = queryApiParsed<LinkDataProp>(query)
+
         linkData.data?.list?.forEach { link ->
             val extractorLink = link.toExtractorLink() ?: return@forEach
             callback.invoke(extractorLink)
@@ -201,6 +205,88 @@ object SuperStreamExtractor : Superstream() {
                         }
                     )
                 }
+            }
+        }
+    }
+
+    suspend fun invokeExternalM3u8Source(
+        mediaId: Int? = null,
+        type: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        uitoken: String?,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+
+        val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
+        val shareKey = app.get("$thirdAPI/mbp/to_share_page?box_type=${type}&mid=$mediaId&json=1")
+            .parsedSafe<ExternalResponse>()?.data?.link
+            ?: app.get("$thirdAPI/mbp/to_share_page?box_type=${type}&mid=$mediaId&json=1")
+                .parsedSafe<ExternalResponse>()?.data?.shareLink
+                ?.substringAfterLast("/") ?: return
+        val headers = mapOf("Accept-Language" to "en")
+        val shareRes =
+            app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
+                .parsedSafe<ExternalResponse>()?.data ?: return
+
+        val fids = if (season == null) {
+            shareRes.file_list
+        } else {
+            val parentId =
+                shareRes.file_list?.find { it.file_name.equals("season $season", true) }?.fid
+            app.get(
+                "$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1",
+                headers = headers
+            )
+                .parsedSafe<ExternalResponse>()?.data?.file_list?.filter {
+                    it.file_name?.contains("s${seasonSlug}e${episodeSlug}", true) == true
+                }
+        } ?: return
+
+        fids.amapIndexed { index, fileList ->
+            val superToken = uitoken?.let {
+                if (it.startsWith("ui=")) it else "ui=$it"
+            } ?: ""
+            val mediaType = "application/x-www-form-urlencoded; charset=UTF-8".toMediaType()
+            val body = """fid=${fileList.fid}&share_key=$shareKey""".trimIndent().toRequestBody(mediaType)
+            val player = app.post(
+                "$thirdAPI/file/player",
+                requestBody = body,
+                headers = mapOf(
+                    "Cookie" to superToken,
+                    "content-type" to "application/x-www-form-urlencoded; charset=UTF-8"
+                )
+            ).text
+
+            val document = Jsoup.parse(player)
+
+            val scriptText = document.select("script")
+                .map { it.data() }
+                .firstOrNull { it.contains("var sources") }
+                ?: return@amapIndexed
+
+            val sourcesJson = Regex("""var\s+sources\s*=\s*(\[[\s\S]*?]);""")
+                .find(scriptText)
+                ?.groupValues
+                ?.get(1)
+                ?: return@amapIndexed
+            val urls = mutableListOf<String>()
+
+            val jsonArray = org.json.JSONArray(sourcesJson)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                val fileUrl = obj.optString("file")
+                if (fileUrl.isNotEmpty()) {
+                    urls.add(fileUrl)
+                }
+            }
+
+            urls.forEach {
+                M3u8Helper.generateM3u8(
+                    "⌜ SuperStream ⌟ External HLS [Server ${index + 1}]",
+                    it,
+                    ""
+                ).forEach(callback)
             }
         }
     }
