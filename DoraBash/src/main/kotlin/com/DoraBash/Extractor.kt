@@ -48,7 +48,7 @@ class waaw : StreamSB() {
     override var mainUrl = "https://waaw.to"
 }
 
-class FileMoonSx : Filesim() {
-    override val mainUrl = "https://filemoon.sx"
+class FileMoonIN : Filesim() {
+    override val mainUrl = "https://filemoon.in"
     override val name = "FileMoonSx"
 }

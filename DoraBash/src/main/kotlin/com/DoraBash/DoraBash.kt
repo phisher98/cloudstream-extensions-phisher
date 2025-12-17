@@ -1,12 +1,16 @@
 package com.DoraBash
 
-import com.lagradost.api.Log
+import android.util.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class DoraBash : MainAPI() {
-    override var mainUrl = "https://dorabash.com"
+    override var mainUrl = "https://dorabash.in"
     override var name = "DoraBash"
     override val hasMainPage = true
     override var lang = "hi"
@@ -14,15 +18,13 @@ class DoraBash : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.Anime, TvType.Cartoon)
 
     override val mainPage = mainPageOf(
-        "anime?status=&type=&order=update" to "Latest",
-        "tag/hindi-dubbed-episodes/page" to "Seasons",
-        "tag/movies/page" to "Movies",
-        "anime/?status=&type=tv&sub=sub&page=" to "Special",
+        "anime-type/tv" to "Seasons",
+        "anime-type/movie" to "Movies",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/$page").documentLarge
-        val home = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
+        val document = app.get("$mainUrl/${request.data}").documentLarge
+        val home = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
             list = HomePageList(
@@ -34,76 +36,59 @@ class DoraBash : MainAPI() {
         )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title = this.select("div.bsx > a").attr("title")
-        val href = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx > a img").attr("src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+    private suspend fun Element.toSearchResult(): SearchResponse {
+        val title = this.select("h3 a").attr("title").substringAfter("Doraemon")
+        val href = fixUrl(this.select("h3 > a").attr("href"))
+        val sourceURL = app.get(href).document.select("div.anime-data h4 a").attr("href")
+        val posterUrl = fixUrlNull(this.select("img").attr("src"))
+        return newMovieSearchResponse(title.capitalize(), sourceURL, TvType.Movie) {
             this.posterUrl = posterUrl
         }
     }
 
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val searchResponse = mutableListOf<SearchResponse>()
-
-        for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
-
-            val results =
-                document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
-
-            if (!searchResponse.containsAll(results)) {
-                searchResponse.addAll(results)
-            } else {
-                break
-            }
-
-            if (results.isEmpty()) break
-        }
-
-        return searchResponse
-    }
-
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
-        val title = document.selectFirst("h1.entry-title")?.text()?.trim().toString()
-        val href = document.selectFirst(".eplister li > a")?.attr("href") ?: ""
-        var poster = document.select("div.ime > img").attr("src")
-        val description = document.selectFirst("div.entry-content")?.text()?.trim()
-        val type = document.selectFirst(".spe")?.text().toString()
-        val tvtag = if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
+        val doc = app.get(url).document
+        val title = doc.select("meta[property=og:title]").attr("content").substringBeforeLast("-").trim()
+        val backgroundposter = doc.select("main div.absolute img").attr("src")
+        val description = doc.selectFirst("div.mb-6 > section > p:nth-child(1)")?.text()?.trim()
+        val poster = doc.select("meta[property=og:image]").attr("content").trim()
+        val rating = doc.select("div.flex.flex-wrap.justify-center.lg\\:justify-start.gap-1.lg\\:gap-2.mb-4.text-sm.font-semibold span:nth-child(1)").text()
+        val year = doc.select("div.flex.flex-wrap.justify-center.lg\\:justify-start.gap-1.lg\\:gap-2.mb-4.text-sm.font-semibold span:nth-child(4)").text()
+        val contentRating = doc.select("div.flex.flex-wrap.justify-center.lg\\:justify-start.gap-1.lg\\:gap-2.mb-4.text-sm.font-semibold span:nth-child(7)").text()
+        val duration = doc.select("div.flex.flex-wrap.justify-center.lg\\:justify-start.gap-1.lg\\:gap-2.mb-4.text-sm.font-semibold span:nth-child(8)").text()
+
+        val type = doc.select("div.flex.flex-wrap.justify-center.lg\\:justify-start.gap-1.lg\\:gap-2.mb-4.text-sm.font-semibold span:nth-child(2)").text()
+        val tvtag = if (type.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
-            val Eppage = document.selectFirst(".eplister li > a")?.attr("href") ?: ""
-            val doc = app.get(Eppage).documentLarge
-            @Suppress("NAME_SHADOWING") val episodes =
-                doc.select("div.episodelist > ul > li").map { info ->
-                    val href = info.select("a").attr("href")
-                    val Rawepisode=info.select("a span").text().substringAfter("Episode").substringBeforeLast("-").trim()
-                    val episode ="Episode $Rawepisode"
-                    val poster = info.selectFirst("a img")?.attr("src") ?: ""
-                    newEpisode(href)
-                    {
-                        this.episode=Rawepisode.toIntOrNull()
-                        this.name=episode
-                        this.posterUrl=poster
-                    }
+            val seasonId = doc.selectFirst("#seasonContent")?.attr("data-season")
+
+            val episodes = app.get("$mainUrl/wp-admin/admin-ajax.php?action=get_episodes&anime_id=$seasonId&page=1&order=desc").parsed<EpJson>().data.episodes.map { ep ->
+                newEpisode(ep.url) {
+                    this.episode = ep.metaNumber.toIntOrNull()
+                    this.name = ep.number
+                    this.posterUrl = ep.thumbnail
                 }
-            if (poster.isEmpty()) {
-                poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim()
-                    .toString()
             }
-            newTvSeriesLoadResponse(title, url, TvType.Anime, episodes.reversed()) {
+
+            newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
+                this.score = Score.from10(rating)
+                this.year = year.toIntOrNull()
+                this.duration = duration.toIntOrNull()
+                this.contentRating = contentRating
                 this.plot = description
             }
+
         } else {
-            if (poster.isEmpty()) {
-                poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim()
-                    .toString()
-            }
-            newMovieLoadResponse(title, url, TvType.Movie, href) {
+            newMovieLoadResponse(title, url, TvType.Movie, url.replace("series","watch")) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
+                this.score = Score.from10(rating)
+                this.year = year.toIntOrNull()
+                this.duration = duration.toIntOrNull()
+                this.contentRating = contentRating
                 this.plot = description
             }
         }
@@ -116,46 +101,61 @@ class DoraBash : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).documentLarge
-        document.select("div.player-embed iframe").forEach {
-            val href = it.attr("src")
-            Log.d("Phisher",href)
-            if (href.contains("gdplaydora.blogspot.com"))
-            {
-                val truelink=app.get(href).documentLarge.selectFirst("#container source")?.attr("src")
-                if (truelink != null) {
-                    callback.invoke(
-                        newExtractorLink(
-                            this.name,
-                            this.name,
-                            url = truelink,
-                            INFER_TYPE
-                        ) {
-                            this.referer = ""
-                            this.quality = Qualities.Unknown.value
-                        }
-                    )
-                }
+
+        document.select("div.player-selection").forEach { container ->
+
+            val type = when {
+                container.hasClass("player-dub") -> "DUB"
+                container.hasClass("player-sub") -> "SUB"
+                else -> return@forEach
             }
-            else {
-                val truelink = gettrueurl(href)
-                if (truelink != null) {
-                    M3u8Helper.generateM3u8(
-                        this.name,
-                        truelink,
-                        "",
-                    ).forEach(callback)
-                }
+
+            container.select("span[data-embed-id]").forEach { span ->
+                val raw = span.attr("data-embed-id")
+                val parts = raw.split(":", limit = 2)
+                if (parts.size != 2) return@forEach
+                val name = base64Decode(parts[0]).replace(type, ignoreCase = true, newValue = "")
+                val url  = base64Decode(parts[1])
+                Log.d("DoraBash","$name $type $url")
+                loadCustomExtractor(
+                    "$name $type",
+                    url,
+                    url,
+                    subtitleCallback,
+                    callback
+                )
             }
         }
+
         return true
     }
-    private suspend fun gettrueurl(href: String): String? {
-        val filemoon=app.get(href).documentLarge.selectFirst("iframe")?.attr("src") ?:""
-        val Filedata= app.get(filemoon, headers = mapOf("Accept-Language" to "en-US,en;q=0.5","sec-fetch-dest" to "iframe")).documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
-        val Fileurl=JsUnpacker(Filedata).unpack()?.let { unPacked ->
-            Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
+    suspend fun loadCustomExtractor(
+        name: String? = null,
+        url: String,
+        referer: String? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        quality: Int? = null,
+    ) {
+        loadExtractor(url, referer, subtitleCallback) { link ->
+            CoroutineScope(Dispatchers.IO).launch {
+                callback.invoke(
+                    newExtractorLink(
+                        name ?: link.source,
+                        name ?: link.name,
+                        link.url,
+                    ) {
+                        this.quality = when {
+                            else -> quality ?: link.quality
+                        }
+                        this.type = link.type
+                        this.referer = link.referer
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
+                )
+            }
         }
-        return Fileurl
     }
 
 }
