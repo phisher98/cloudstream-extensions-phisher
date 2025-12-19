@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.app
 
 
 @CloudstreamPlugin
-class dudefilmsPlugin: BasePlugin() {
+class DudefilmsPlugin: BasePlugin() {
     override fun load() {
         registerMainAPI(Dudefilms())
         registerExtractorAPI(GDFlix())
