@@ -27,6 +27,7 @@ import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Voe
+import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.*
@@ -2529,6 +2530,7 @@ internal class Akirabox : ExtractorApi() {
 
 }
 
+
 class BuzzServer : ExtractorApi() {
     override val name = "BuzzServer"
     override val mainUrl = "https://buzzheavier.com"
@@ -2946,3 +2948,66 @@ class Hubcdnn : ExtractorApi() {
 class PixelDrainDev : PixelDrain(){
     override var mainUrl = "https://pixeldrain.dev"
 }
+
+open class Krakenfiles : ExtractorApi() {
+    override val name = "Krakenfiles"
+    override val mainUrl = "https://krakenfiles.com"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val id = Regex("/(?:view|embed-video)/([\\da-zA-Z]+)")
+            .find(url)
+            ?.groupValues
+            ?.get(1)
+            ?: return
+
+        val doc = app.get("$mainUrl/embed-video/$id").document
+        val title = doc.select("span.coin-name").text()
+        val link = doc.selectFirst("source")?.attr("src") ?: return
+        val quality = getQualityFromName(title)
+
+
+        callback(
+            newExtractorLink(
+                name,
+                name,
+                httpsify(link)
+            ) {
+                this.quality = quality
+            }
+        )
+    }
+
+}
+
+private val QUALITY_REGEX_MAP = listOf(
+    Regex("""\b(4k|2160p?|2160)\b""", RegexOption.IGNORE_CASE) to Qualities.P2160.value,
+    Regex("""\b1440p?|1440\b""", RegexOption.IGNORE_CASE)     to Qualities.P1440.value,
+    Regex("""\b1080p?|1080\b""", RegexOption.IGNORE_CASE)     to Qualities.P1080.value,
+    Regex("""\b720p?|720\b""", RegexOption.IGNORE_CASE)      to Qualities.P720.value,
+    Regex("""\b480p?|480\b""", RegexOption.IGNORE_CASE)      to Qualities.P480.value
+)
+
+private var lastResolvedQuality: Int = Qualities.Unknown.value
+
+fun getQualityFromName(qualityName: String?): Int {
+    if (qualityName.isNullOrBlank())
+        return lastResolvedQuality
+
+    for ((regex, quality) in QUALITY_REGEX_MAP) {
+        if (regex.containsMatchIn(qualityName)) {
+            lastResolvedQuality = maxOf(lastResolvedQuality, quality)
+            return lastResolvedQuality
+        }
+    }
+    return lastResolvedQuality
+}
+
+
+
+

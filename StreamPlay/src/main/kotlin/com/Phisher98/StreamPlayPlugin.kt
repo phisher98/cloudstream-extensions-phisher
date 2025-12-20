@@ -167,6 +167,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Hubcdnn())
         registerExtractorAPI(HUBCDN())
         registerExtractorAPI(PixelDrainDev())
+        registerExtractorAPI(Krakenfiles())
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
             if (!act.isFinishing && !act.isDestroyed) {
