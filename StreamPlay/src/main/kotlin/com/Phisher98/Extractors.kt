@@ -2985,29 +2985,6 @@ open class Krakenfiles : ExtractorApi() {
 
 }
 
-private val QUALITY_REGEX_MAP = listOf(
-    Regex("""\b(4k|2160p?|2160)\b""", RegexOption.IGNORE_CASE) to Qualities.P2160.value,
-    Regex("""\b1440p?|1440\b""", RegexOption.IGNORE_CASE)     to Qualities.P1440.value,
-    Regex("""\b1080p?|1080\b""", RegexOption.IGNORE_CASE)     to Qualities.P1080.value,
-    Regex("""\b720p?|720\b""", RegexOption.IGNORE_CASE)      to Qualities.P720.value,
-    Regex("""\b480p?|480\b""", RegexOption.IGNORE_CASE)      to Qualities.P480.value
-)
-
-private var lastResolvedQuality: Int = Qualities.Unknown.value
-
-fun getQualityFromName(qualityName: String?): Int {
-    if (qualityName.isNullOrBlank())
-        return lastResolvedQuality
-
-    for ((regex, quality) in QUALITY_REGEX_MAP) {
-        if (regex.containsMatchIn(qualityName)) {
-            lastResolvedQuality = maxOf(lastResolvedQuality, quality)
-            return lastResolvedQuality
-        }
-    }
-    return lastResolvedQuality
-}
-
 
 
 
