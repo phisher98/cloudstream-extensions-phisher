@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -33,10 +34,10 @@ class Animeav1 : MainAPI() {
     override var mainUrl              = "https://animeav1.com"
     override var name                 = "AnimeAv1"
     override val hasMainPage          = true
-    override var lang                 = "mx"
+    override var lang                 = "es-mx"
     override val hasDownloadSupport   = true
     override val hasQuickSearch       = true
-    override val supportedTypes       = setOf(TvType.Movie,TvType.Anime,TvType.TvSeries)
+    override val supportedTypes       = setOf(TvType.Anime, TvType.AnimeMovie)
 
     override val mainPage = mainPageOf(
         "catalogo?status=emision" to "Emision",
@@ -69,30 +70,31 @@ class Animeav1 : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("${mainUrl}/catalogo?search=$query").documentLarge
-        val results =document.select("article").mapNotNull { it.toSearchResult() }
+        val results = document.select("article").mapNotNull { it.toSearchResult() }
         return results
     }
 
 
-    private fun getTvType(text: String): TvType {
+    private fun String.toTvType(): TvType {
         return when {
-            text.contains("TV Anime", ignoreCase = true) -> TvType.Anime
-            text.contains("Película", ignoreCase = true) -> TvType.Movie
-            text.contains("OVA", ignoreCase = true) -> TvType.Anime
+            this.contains("TV Anime", ignoreCase = true) -> TvType.Anime
+            this.contains("Película", ignoreCase = true) -> TvType.Movie
+            this.contains("OVA", ignoreCase = true) -> TvType.Anime
             else -> TvType.Movie
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
-        val title= document.selectFirst("article h1")?.text() ?: "Unknown"
-        val poster = document.select("img.aspect-poster.w-full.rounded-lg").attr("src")
+        val document    = app.get(url).documentLarge
+        val title       = document.selectFirst("article h1")?.text() ?: "Desconocido"
+        val poster      = document.select("img.aspect-poster").attr("src")
         val description = document.selectFirst("div.entry.text-lead p")?.text()
-        val rawtype= document.select("div.flex.flex-wrap.items-center.gap-2.text-sm > span:nth-child(1)")
-            .text()
-        val type = getTvType(rawtype)
-        val tags=document.select("header > div:nth-child(3) a").map { it.text() }
-        val href=fixUrl(document.select("div.grid > article a").attr("href"))
+        val type        = document.select("header div.text-sm").text().toTvType()
+        val tags        = document.select("header a[href*=?genre=]").map { it.text() }
+        val year        = document.select("header div.text-sm span:matches(\\d{4})").text().toIntOrNull()
+        val score       = document.select("article [class*=ic-star] .text-lead").text()
+        val href        = fixUrl(document.select("div.grid > article a").attr("href"))
+
         return if (type == TvType.Anime) {
             val episodes = mutableListOf<Episode>()
             val mediaId = Regex("/(\\d+)\\.jpg$").find(poster)?.groupValues?.get(1) ?: "0"
@@ -125,11 +127,15 @@ class Animeav1 : MainAPI() {
                 this.posterUrl = poster
                 this.plot = description
                 this.tags = tags
+                this.year = year
+                this.score = Score.from10(score)
             }
-        } else newMovieLoadResponse(title, url, TvType.Movie, href) {
+        } else newMovieLoadResponse(title, url, TvType.AnimeMovie, href) {
             this.posterUrl = poster
             this.plot = description
             this.tags = tags
+            this.year = year
+            this.score = Score.from10(score)
         }
     }
 

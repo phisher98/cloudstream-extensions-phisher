@@ -1,5 +1,6 @@
 package com.latanime
 
+import com.lagradost.cloudstream3.addDubStatus
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
@@ -17,10 +18,10 @@ import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newAnimeLoadResponse
+import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
-import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -29,10 +30,10 @@ class Latanime : MainAPI() {
     override var mainUrl              = "https://latanime.org"
     override var name                 = "Latanime"
     override val hasMainPage          = true
-    override var lang                 = "mx"
+    override var lang                 = "es-mx"
     override val hasDownloadSupport   = true
     override val hasQuickSearch       = true
-    override val supportedTypes       = setOf(TvType.Anime)
+    override val supportedTypes       = setOf(TvType.Anime, TvType.AnimeMovie)
 
     override val mainPage = mainPageOf(
         "animes?fecha=false&genero=false&letra=false&categoria=anime" to "Anime",
@@ -58,58 +59,49 @@ class Latanime : MainAPI() {
         val title     = this.select("h3").text()
         val href      = this.attr("href")
         val posterUrl = fixUrlNull(this.selectFirst("img")?.getImageAttr())
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        val isDub     = title.contains("Latino") || title.contains("Castellano")
+        return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
+            addDubStatus(isDub)
         }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("${mainUrl}/buscar?q=$query").documentLarge
-        val results =document.select("div.row a").mapNotNull { it.toSearchResult() }
-        return results
-    }
-
-
-    private fun getTvType(text: String): TvType {
-        return when {
-            text.contains("Episodios", ignoreCase = true) -> TvType.TvSeries
-            else -> TvType.Movie
-        }
+        return document.select("div.row a").mapNotNull { it.toSearchResult() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
-        val title= document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: "Unknown"
-        val poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim() ?: "Unknown"
-        val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim() ?: "Unknown"
-        val rawtype= document.select("p:nth-child(4)").text()
-        val type = getTvType(rawtype)
-        val tags=document.select("a div.btn").map { it.text() }
-        val href=fixUrl(document.select("div.grid > article a").attr("href"))
-        return if (type==TvType.TvSeries)
-        {
-            val episodes = mutableListOf<Episode>()
-            document.select("div.row div.row a").map {
-                val epposter=it.select("img").attr("data-src")
-                val ephref=it.attr("href")
-                episodes.add(
-                    newEpisode(ephref)
-                    {
-                        this.posterUrl=epposter
-                    })
+        val document    = app.get(url).documentLarge
+        val title       = document.selectFirst("h2")?.text() ?: "Desconocido"
+        val poster      = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim()
+        val description = document.selectFirst("h2 ~ p.my-2")?.text()
+        val tags        = document.select("a div.btn").map { it.text() }
+        val year        = document.select(".span-tiempo").text().substringAfterLast(" de ").toIntOrNull()
+        val epsAnchor   = document.select("div.row a[href*='/ver/']")
 
+        return if (epsAnchor.size > 1) {
+            val episodes: List<Episode>? = epsAnchor.map {
+                val epPoster = it.select("img").attr("data-src")
+                val epHref   = it.attr("href")
+
+                newEpisode(epHref) {
+                    this.posterUrl = epPoster
+                }
             }
+
             newAnimeLoadResponse(title, url, TvType.Anime) {
-                addEpisodes(DubStatus.Subbed,episodes)
+                addEpisodes(DubStatus.Subbed, episodes)
                 this.posterUrl = poster
                 this.plot = description
                 this.tags = tags
+                this.year = year
             }
-        }
-        else newMovieLoadResponse(title, url, TvType.Movie, href) {
+        } else newMovieLoadResponse(title, url, TvType.AnimeMovie, epsAnchor.attr("href")) {
             this.posterUrl = poster
             this.plot = description
             this.tags = tags
+            this.year = year
         }
     }
 
@@ -122,7 +114,7 @@ class Latanime : MainAPI() {
     ): Boolean {
         val document = app.get(data).documentLarge
         document.select("#play-video a").map {
-            val href= base64Decode( it.attr("data-player")).substringAfter("=")
+            val href = base64Decode(it.attr("data-player")).substringAfter("=")
             loadExtractor(
                 href,
                 "",
