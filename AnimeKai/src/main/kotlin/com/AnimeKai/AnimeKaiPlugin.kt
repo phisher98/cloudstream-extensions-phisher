@@ -21,6 +21,7 @@ class AnimeKaiPlugin : Plugin() {
         registerMainAPI(AnimeKai())
         registerExtractorAPI(MegaUp())
         registerExtractorAPI(Fourspromax())
+        registerExtractorAPI(MegaUpTwoTwo())
 
         this.openSettings = { ctx ->
             val activity = ctx as AppCompatActivity

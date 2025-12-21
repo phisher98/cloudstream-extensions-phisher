@@ -168,6 +168,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(HUBCDN())
         registerExtractorAPI(PixelDrainDev())
         registerExtractorAPI(Krakenfiles())
+        registerExtractorAPI(MegaUpTwoTwo())
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
             if (!act.isFinishing && !act.isDestroyed) {

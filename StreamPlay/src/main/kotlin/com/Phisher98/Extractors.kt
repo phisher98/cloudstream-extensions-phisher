@@ -1615,6 +1615,17 @@ class GDMirrorbot : ExtractorApi() {
     }
 }
 
+class MegaUpTwoTwo : MegaUp() {
+    override var mainUrl = "https://megaup22.online"
+    override val requiresReferer = true
+}
+
+class Fourspromax : MegaUp() {
+    override var mainUrl = "https://4spromax.site"
+    override val requiresReferer = true
+}
+
+
 open class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"
@@ -2711,11 +2722,6 @@ class Vidora : ExtractorApi() {
     }
 }
 
-class Fourspromax : MegaUp() {
-    override var mainUrl = "https://4spromax.site"
-    override val requiresReferer = true
-}
-
 class XdMoviesExtractor : ExtractorApi() {
     override val name = "XdMoviesExtractor"
     override val mainUrl = " https://link.xdmovies.site"
@@ -2972,9 +2978,9 @@ open class Krakenfiles : ExtractorApi() {
         val quality = getQualityFromName(title)
 
 
-        callback(
+        callback.invoke(
             newExtractorLink(
-                name,
+                "$name $quality",
                 name,
                 httpsify(link)
             ) {
@@ -2982,9 +2988,7 @@ open class Krakenfiles : ExtractorApi() {
             }
         )
     }
-
 }
-
 
 
 
