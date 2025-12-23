@@ -2129,7 +2129,7 @@ fun yflixextractVideoUrlFromJson(jsonData: String): String {
 }
 
 
-private suspend fun <T> retry(
+suspend fun <T> retry(
     times: Int = 3,
     delayMillis: Long = 1000,
     block: suspend () -> T
@@ -2137,7 +2137,7 @@ private suspend fun <T> retry(
     repeat(times) { attempt ->
         try {
             return block()
-        } catch (e: Throwable) {
+        } catch (_: Throwable) {
             if (attempt < times - 1) delay(delayMillis)
         }
     }
