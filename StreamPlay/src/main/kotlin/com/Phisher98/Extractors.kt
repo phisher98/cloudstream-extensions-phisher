@@ -27,7 +27,6 @@ import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Voe
-import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.*
@@ -295,13 +294,13 @@ class VCloud : ExtractorApi() {
         val div = document.selectFirst("div.card-body") ?: return
 
         div.select("h2 a.btn").amap {
+
             val link = it.attr("href")
             val text = it.text()
             val quality = getIndexQuality(header)
-            val source = name
 
             when {
-                text.contains("Download [FSL Server]") -> {
+                text.contains("FSL") -> {
                     callback.invoke(
                         newExtractorLink(
                             "FSL Server",
@@ -311,11 +310,11 @@ class VCloud : ExtractorApi() {
                     )
                 }
 
-                text.contains("Download [Server : 1]") -> {
+                text.contains("FSLv2", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            "$source [Server]",
-                            "$source $labelExtras",
+                            "FSLv2",
+                            "FSLv2 $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -337,12 +336,16 @@ class VCloud : ExtractorApi() {
                     }
                 }
 
-                text.contains("pixel", ignoreCase = true) -> {
-                    callback.invoke(
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) || text.contains("PixeLServer", ignoreCase = true) -> {
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
                         newExtractorLink(
                             "Pixeldrain",
                             "Pixeldrain $labelExtras",
-                            link,
+                            finalURL
                         ) { this.quality = quality }
                     )
                 }

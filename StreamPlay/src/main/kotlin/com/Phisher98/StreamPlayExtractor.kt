@@ -1983,7 +1983,7 @@ object StreamPlayExtractor : StreamPlay() {
             val doc = retry { app.get(hrefpattern, headers = headers).documentLarge } ?: continue
 
             val imdbAnchor =
-                doc.selectFirst("div.entry-inner p strong a[href*=\"imdb.com/title/tt\"]")
+                doc.selectFirst("div.entry-content.single-content > p:nth-child(5) a[href*=\"imdb.com/title/tt\"]")
             val imdbHref = imdbAnchor?.attr("href")?.lowercase()
 
             if (imdbId != null && (imdbHref == null || !imdbHref.contains(imdbId.lowercase()))) {
@@ -3059,24 +3059,6 @@ object StreamPlayExtractor : StreamPlay() {
                 loadExtractor(trueUrl, subtitleCallback, callback)
             }
         }
-    }
-
-
-    private suspend fun <T> retry(
-        times: Int = 3,
-        delayMillis: Long = 1000,
-        block: suspend () -> T
-    ): T? {
-        var lastException: Throwable? = null
-        repeat(times) { attempt ->
-            try {
-                return block()
-            } catch (e: Throwable) {
-                lastException = e
-                if (attempt < times - 1) delay(delayMillis)
-            }
-        }
-        return null
     }
 
     suspend fun invokeMoviesdrive(
@@ -5958,7 +5940,6 @@ object StreamPlayExtractor : StreamPlay() {
         id: Int?,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         if (id == null) return

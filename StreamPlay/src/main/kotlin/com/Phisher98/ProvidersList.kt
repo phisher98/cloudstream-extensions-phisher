@@ -257,7 +257,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeYflix(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesapi", "MoviesApi Club") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMoviesApi(res.id, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeMoviesApi(res.id, res.season, res.episode, callback)
         },
     )
 }
