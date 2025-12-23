@@ -2127,3 +2127,19 @@ fun yflixextractVideoUrlFromJson(jsonData: String): String {
     val jsonObject = JSONObject(jsonData)
     return jsonObject.getString("url")
 }
+
+
+private suspend fun <T> retry(
+    times: Int = 3,
+    delayMillis: Long = 1000,
+    block: suspend () -> T
+): T? {
+    repeat(times) { attempt ->
+        try {
+            return block()
+        } catch (e: Throwable) {
+            if (attempt < times - 1) delay(delayMillis)
+        }
+    }
+    return null
+}
