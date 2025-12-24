@@ -38,5 +38,4 @@ cloudstream {
     )
 
     iconUrl = "https://raw.githubusercontent.com/YoureMotherHelped-Love-Mom/StreamCloud_Plug_in/main/TokusatsuUltimateIcon.png"
-    isCrossPlatform = true
 }
