@@ -143,11 +143,10 @@ class TokusatsuUltimate : MainAPI() {
                 val epHref = fixUrl(epHrefElement.attr("href"))
                 
                 episodes.add(
-                    Episode(
-                        data = epHref,
-                        name = epTitle,
-                        episode = epNum
-                    )
+                    newEpisode(epHref) {
+                        this.name = epTitle
+                        this.episode = epNum
+                    }
                 )
             }
         }
@@ -168,11 +167,10 @@ class TokusatsuUltimate : MainAPI() {
                 }
                 
                 episodes.add(
-                    Episode(
-                        data = fixUrl(link.attr("href")),
-                        name = epTitle,
-                        episode = epNum
-                    )
+                    newEpisode(fixUrl(link.attr("href"))) {
+                        this.name = epTitle
+                        this.episode = epNum
+                    }
                 )
             }
         }
@@ -219,7 +217,7 @@ class TokusatsuUltimate : MainAPI() {
             videoRegex.findAll(scriptText).forEach { match ->
                 val videoUrl = match.value
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = name,
                         name = name,
                         url = videoUrl,
