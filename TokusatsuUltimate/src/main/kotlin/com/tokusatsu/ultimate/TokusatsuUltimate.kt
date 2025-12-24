@@ -193,7 +193,7 @@ class TokusatsuUltimate : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         
-        // Look for embedded players or video sources
+        // Look for embedded players or video sources 
         document.select("iframe, .player-iframe, .video-player, .play-video").forEach { element ->
             val iframeSrc = element.attr("src")
             if (iframeSrc.isNotEmpty()) {
