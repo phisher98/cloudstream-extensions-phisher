@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="hello_fragment">Hello funny fragment!!</string>
-    <string name="loaded_from_app_trans">[loaded from app trans]</string>
-</resources>
