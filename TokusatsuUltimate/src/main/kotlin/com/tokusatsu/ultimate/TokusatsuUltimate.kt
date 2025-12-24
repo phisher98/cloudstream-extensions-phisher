@@ -7,7 +7,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.jsoup.Jsoup
 
 class TokusatsuUltimate : MainAPI() {
-    override var mainUrl = "https://toku555.com"
+    override var mainUrl = "https://toku555.com/"
     override var name = "TokusatsuUltimate"
     override val hasMainPage = true
     override var lang = "en"
@@ -66,7 +66,11 @@ class TokusatsuUltimate : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "${mainUrl}${request.data}page/$page/"
+        val url = if (request.data.endsWith("/")) {
+            "${mainUrl}${request.data}page/$page/"
+        } else {
+            "${mainUrl}${request.data}/page/$page/"
+        }
         
         val document = app.get(url).document
         val home = document.select("div.film-poster, .item, .series-item").mapNotNull { element ->

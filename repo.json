@@ -1,0 +1,9 @@
+{
+    "name": "Tokusatsu Ultimate Repo",
+    "iconUrl": "https://raw.githubusercontent.com/YoureMotherHelped-Love-Mom/StreamCloud_Plug_in/main/TokusatsuUltimateIcon.png",
+    "description": "Tokusatsu Ultimate Repository",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/YoureMotherHelped-Love-Mom/cloudstream-extensions-phisher/builds/plugins.json"
+    ]
+}

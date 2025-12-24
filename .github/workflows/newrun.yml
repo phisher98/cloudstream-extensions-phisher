@@ -154,6 +154,9 @@ jobs:
           find . -name "*.cs3" -type f -exec cp {} $GITHUB_WORKSPACE/builds \; || true
           find . -name "*.jar" -type f -exec cp {} $GITHUB_WORKSPACE/builds \; || true
           cp build/plugins.json $GITHUB_WORKSPACE/builds || true
+          # Copy static configuration files if they exist in the source
+          cp $GITHUB_WORKSPACE/src/repo.json $GITHUB_WORKSPACE/builds || true
+          cp $GITHUB_WORKSPACE/src/CXX.json $GITHUB_WORKSPACE/builds || true
 
       - name: Push builds
         run: |
