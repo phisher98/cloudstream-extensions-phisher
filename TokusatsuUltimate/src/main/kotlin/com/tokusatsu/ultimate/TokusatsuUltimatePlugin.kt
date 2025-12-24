@@ -9,5 +9,6 @@ class TokusatsuUltimatePlugin: Plugin() {
     override fun load(context: Context) {
         // Registers the main API for this plugin
         registerMainAPI(TokusatsuUltimate())
+        registerExtractorAPI(TokusatsuUltimate.P2pplay())
     }
 }

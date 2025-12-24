@@ -1,10 +1,42 @@
 package com.tokusatsu.ultimate
 
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import org.jsoup.Jsoup
+import com.lagradost.cloudstream3.DubStatus
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.ShowStatus
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newAnimeLoadResponse
+import com.lagradost.cloudstream3.newAnimeSearchResponse
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.fixUrl
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import java.net.URI
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class TokusatsuUltimate : MainAPI() {
     override var mainUrl = "https://toku555.com"
@@ -57,16 +89,14 @@ class TokusatsuUltimate : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "kamen-rider/" to "Kamen Rider Series",
-        "super-sentai/" to "Super Sentai Series",
-        "tokusatsu-anime/" to "Tokusatsu Anime",
-        "metal-heroes/" to "Metal Heroes",
-        "recent/" to "Recently Updated",
-        "popular/" to "Popular Series"
+        "kamen-rider" to "Kamen Rider Series",
+        "super-sentai" to "Super Sentai Series",
+        "tokusatsu-anime" to "Tokusatsu Anime",
+        "metal-heroes" to "Metal Heroes",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "${mainUrl}${request.data}page/$page/"
+        val url = "${mainUrl}/${request.data}/page/$page/"
         
         val document = app.get(url).document
         val home = document.select("div.film-poster, .item, .series-item").mapNotNull { element ->
@@ -90,7 +120,7 @@ class TokusatsuUltimate : MainAPI() {
             list = HomePageList(
                 name = request.name,
                 list = home,
-                isHorizontalImages = false
+                isHorizontalImages = true
             ),
             hasNext = true
         )
@@ -116,64 +146,47 @@ class TokusatsuUltimate : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val titleElement = document.selectFirst("h1.heading-title, .title, .film-name") ?: 
+        val titleElement = document.selectFirst("h1.heading-title, .title, .film-name,div.row h1") ?:
             throw ErrorLoadingException("No title found")
         val title = cleanTitle(titleElement.text().trim())
 
-        val posterElement = document.selectFirst(".film-poster img, .poster img, img[src*='image']")
+        val posterElement = document.selectFirst(".film-poster img, .poster img, img[src*='image'],div.row >div > img")
         val posterUrl = fixUrlNull(posterElement?.attr("src") ?: posterElement?.attr("data-src"))
 
         val year = document.selectFirst(".year, .date, .released")?.text()?.trim()
             ?.toIntOrNull()
 
-        val description = document.selectFirst(".description, .summary, .overview, .synopsis, .content")?.text()?.trim()
+        val description = document.selectFirst("div.row.content > p:nth-child(1),div.row.content > p:nth-child(2)")?.text()?.trim()
 
         val tags = document.select(".genres a, .tags a, .category a").map { it.text().trim() }
 
         val episodes = mutableListOf<Episode>()
         
         // Look for episode list
-        document.select(".listing.items .item, .episodes .episode, .season-episodes .episode, .listing a").forEach { epElement ->
-            val epTitleElement = epElement.selectFirst(".title, .episode-title, .name")
-            val epHrefElement = epElement.selectFirst("a")
-            val epNum = epElement.selectFirst(".num, .episode-num")?.text()?.trim()?.toIntOrNull()
-            
-            if (epHrefElement != null) {
-                val epTitle = epTitleElement?.text()?.trim() ?: "Episode ${epNum ?: episodes.size + 1}"
-                val epHref = fixUrl(epHrefElement.attr("href"))
-                
-                episodes.add(
-                    Episode(
-                        data = epHref,
-                        name = epTitle,
-                        episode = epNum
-                    )
-                )
-            }
+        document.select("ul.pagination.post-tape li").amap { epElement ->
+            val epTitle = epElement.select("a").text()
+            val epHref = epElement.select("a").attr("href")
+            val href= app.get(epHref).document.select("div.player iframe").attr("src")
+            val epNum = epTitle.toIntOrNull()
+
+            episodes.add(
+                newEpisode(href)
+                {
+                    this.name = "Episode $epTitle"
+                    this.episode = epNum
+                }
+            )
         }
 
         // If no episodes found, try to find them in a different structure
         if (episodes.isEmpty()) {
-            document.select("a[href*='/episode/'], a[href*='/watch/'], a[href*='/season/']").forEach { link ->
-                val epNum = try {
-                    val href = link.attr("href")
-                    val regex = Regex("""(?:episode|ep|epi|watch|season).*?(\d+)""", RegexOption.IGNORE_CASE)
-                    regex.find(href)?.groupValues?.get(1)?.toIntOrNull()
-                } catch (e: Exception) {
-                    null
-                }
-                
-                val epTitle = link.text().trim().ifEmpty { 
-                    "Episode ${episodes.size + 1}" 
-                }
-                
-                episodes.add(
-                    Episode(
-                        data = fixUrl(link.attr("href")),
-                        name = epTitle,
-                        episode = epNum
-                    )
-                )
+            val iframe=document.select("div.player iframe").attr("src")
+            return newMovieLoadResponse(title, url, TvType.AnimeMovie,iframe) {
+                this.posterUrl = posterUrl
+                this.year = year
+                this.plot = description
+                this.tags = tags
+
             }
         }
 
@@ -182,7 +195,6 @@ class TokusatsuUltimate : MainAPI() {
             this.year = year
             this.plot = description
             this.tags = tags
-            
             addEpisodes(DubStatus.Subbed, episodes.reversed())
         }
     }
@@ -193,44 +205,103 @@ class TokusatsuUltimate : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
-        
-        // Look for embedded players or video sources
-        document.select("iframe, .player-iframe, .video-player, .play-video").forEach { element ->
-            val iframeSrc = element.attr("src")
-            if (iframeSrc.isNotEmpty()) {
-                loadExtractor(fixUrl(iframeSrc), data, subtitleCallback, callback)
-            }
-        }
-
-        // Look for video player links
-        document.select("a[href*='player'], a[href*='watch']").forEach { link ->
-            val linkHref = link.attr("href")
-            if (linkHref.isNotEmpty()) {
-                loadExtractor(fixUrl(linkHref), data, subtitleCallback, callback)
-            }
-        }
-
-        // Look for direct video links
-        document.select("script").forEach { script ->
-            val scriptText = script.data().toString()
-            // Look for video URLs in JavaScript
-            val videoRegex = Regex("""(https?://[\w\d\-_.~:/?#\[\]@!\$&'()*+,;=%]+\.(?:mp4|m3u8|mkv|webm)[\w\d\-_.~:/?#\[\]@!\$&'()*+,;=%]*)""")
-            videoRegex.findAll(scriptText).forEach { match ->
-                val videoUrl = match.value
-                callback.invoke(
-                    ExtractorLink(
-                        source = name,
-                        name = name,
-                        url = videoUrl,
-                        referer = data,
-                        quality = Qualities.Unknown.value,
-                        isM3u8 = videoUrl.contains(".m3u8")
-                    )
-                )
-            }
-        }
-
+        loadExtractor(data, data, subtitleCallback, callback)
         return true
     }
+
+    class P2pplay : VidStack() {
+        override var mainUrl = "https://t1.p2pplay.pro"
+        override val requiresReferer = true
+    }
+
+    open class VidStack : ExtractorApi() {
+        override var name = "Vidstack"
+        override var mainUrl = "https://vidstack.io"
+        override val requiresReferer = true
+
+        override suspend fun getUrl(
+            url: String,
+            referer: String?,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+        )
+        {
+            val headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
+            val hash = url.substringAfterLast("#").substringAfter("/")
+            val baseurl = getBaseUrl(url)
+
+            val encoded = app.get("$baseurl/api/v1/video?id=$hash", headers = headers).text.trim()
+
+            val key = "kiemtienmua911ca"
+            val ivList = listOf("1234567890oiuytr", "0123456789abcdef")
+
+            val decryptedText = ivList.firstNotNullOfOrNull { iv ->
+                try {
+                    AesHelper.decryptAES(encoded, key, iv)
+                } catch (e: Exception) {
+                    null
+                }
+            } ?: throw Exception("Failed to decrypt with all IVs")
+
+            val m3u8 = Regex("\"source\":\"(.*?)\"").find(decryptedText)
+                ?.groupValues?.get(1)
+                ?.replace("\\/", "/") ?: ""
+            val subtitlePattern = Regex("\"([^\"]+)\":\\s*\"([^\"]+)\"")
+            val subtitleSection = Regex("\"subtitle\":\\{(.*?)\\}").find(decryptedText)?.groupValues?.get(1)
+
+            subtitleSection?.let { section ->
+                subtitlePattern.findAll(section).forEach { match ->
+                    val lang = match.groupValues[1]
+                    val rawPath = match.groupValues[2].split("#")[0]
+                    if (rawPath.isNotEmpty()) {
+                        val path = rawPath.replace("\\/", "/")
+                        val subUrl = "$mainUrl$path"
+                        subtitleCallback(newSubtitleFile(lang, fixUrl(subUrl)))
+                    }
+                }
+            }
+
+            callback.invoke(
+                newExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = m3u8.replace("https","http"),
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = url
+                    this.headers = mapOf("referer" to url,"Origin" to url.substringAfterLast("/"))
+                    this.quality = Qualities.Unknown.value
+                }
+            )
+        }
+
+        private fun getBaseUrl(url: String): String {
+            return try {
+                URI(url).let { "${it.scheme}://${it.host}" }
+            } catch (e: Exception) {
+                Log.e("Vidstack", "getBaseUrl fallback: ${e.message}")
+                mainUrl
+            }
+        }
+    }
+
+    object AesHelper {
+        private const val TRANSFORMATION = "AES/CBC/PKCS5PADDING"
+
+        fun decryptAES(inputHex: String, key: String, iv: String): String {
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            val secretKey = SecretKeySpec(key.toByteArray(Charsets.UTF_8), "AES")
+            val ivSpec = IvParameterSpec(iv.toByteArray(Charsets.UTF_8))
+
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+            val decryptedBytes = cipher.doFinal(inputHex.hexToByteArray())
+            return String(decryptedBytes, Charsets.UTF_8)
+        }
+
+        private fun String.hexToByteArray(): ByteArray {
+            check(length % 2 == 0) { "Hex string must have an even length" }
+            return chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        }
+    }
+
 }
