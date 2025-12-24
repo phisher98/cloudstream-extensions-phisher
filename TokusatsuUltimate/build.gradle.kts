@@ -22,6 +22,6 @@ cloudstream {
         "Anime"
     )
 
-    iconUrl = "https://raw.githubusercontent.com/YoureMotherHelped-Love-Mom/StreamCloud_Plug_in/main/TokusatsuUltimateIcon.png"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/TokusatsuUltimate/TokusatsuUltimateIcon.png"
     isCrossPlatform = false
 }
