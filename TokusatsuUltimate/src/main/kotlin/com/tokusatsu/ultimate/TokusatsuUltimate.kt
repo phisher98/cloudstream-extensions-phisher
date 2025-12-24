@@ -218,13 +218,14 @@ class TokusatsuUltimate : MainAPI() {
                 val videoUrl = match.value
                 callback.invoke(
                     newExtractorLink(
-                        source = name,
-                        name = name,
-                        url = videoUrl,
-                        referer = data,
-                        quality = Qualities.Unknown.value,
-                        isM3u8 = videoUrl.contains(".m3u8")
-                    )
+                        name,  // source
+                        name,  // name
+                        videoUrl,  // url
+                        if (videoUrl.contains(".m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO  // type
+                    ) {
+                        this.quality = Qualities.Unknown.value
+                        this.headers = mapOf("Referer" to data)
+                    }
                 )
             }
         }
