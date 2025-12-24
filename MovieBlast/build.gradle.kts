@@ -24,7 +24,7 @@ cloudstream {
         "Movie",
         "TvSeries"
     )
-    iconUrl="https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/movieblast.jpg"
+    iconUrl="https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/movieblast.png"
 
     isCrossPlatform = false
 }
