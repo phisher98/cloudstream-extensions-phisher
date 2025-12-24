@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="header_tw">Login</string>
-    <string name="text_hint">Token</string>
-    <string name="Text_Token">Get Token from Febbox</string>
-    <string name="insert_token">Insert Token</string>
-    <string name="save_token">Save Token</string>
-    <string name="reset_token">Reset Token</string>
-</resources>
