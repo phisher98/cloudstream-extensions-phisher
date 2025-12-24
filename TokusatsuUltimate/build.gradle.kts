@@ -21,7 +21,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Stream tokusatsu content including Kamen Rider, Super Sentai, Metal Heroes, and other Japanese special effect series with English subs"
-    authors = listOf("Bascode-040612V1")
+    authors = listOf("YoureMotherHelped-Love-Mom")
 
     /**
      * Status int as the following:
@@ -37,6 +37,6 @@ cloudstream {
         "Anime"
     )
 
-    iconUrl = "https://raw.githubusercontent.com/Bascode-040612V1/StreamCloud_Plug_in/main/TokusatsuUltimateIcon.png"
+    iconUrl = "https://raw.githubusercontent.com/YoureMotherHelped-Love-Mom/StreamCloud_Plug_in/main/TokusatsuUltimateIcon.png"
     isCrossPlatform = true
 }
