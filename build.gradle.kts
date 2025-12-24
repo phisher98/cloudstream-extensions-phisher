@@ -13,7 +13,7 @@ buildscript {
 
     dependencies {
         classpath("com.android.tools.build:gradle:8.13.0")
-        classpath("com.github.recloudstream:gradle:cce1b8d") // Use specific commit that includes latest changes
+        classpath("com.github.recloudstream.gradle:gradle:cce1b8d84dc796b8da4a92a64cedfb046d1937b3") // Use full commit hash
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
     }
 }
