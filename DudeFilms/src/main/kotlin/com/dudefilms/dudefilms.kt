@@ -32,7 +32,7 @@ import org.jsoup.nodes.Element
 
 
 class Dudefilms : MainAPI() {
-    override var mainUrl = "https://dudefilms.media"
+    override var mainUrl = "https://dudefilms.archi"
     override var name = "Dudefilms"
     override var lang = "hi"
     override val hasMainPage = true
