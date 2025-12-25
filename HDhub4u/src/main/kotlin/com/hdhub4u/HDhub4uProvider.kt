@@ -100,24 +100,14 @@ class HDhub4uProvider : MainAPI() {
     }
 
     private fun extractLinksATags(aTags: Elements): List<String> {
-        val links = mutableListOf<String>()
-        val baseUrl: List<String> = listOf("https://hdstream4u.com", "https://hubstream.art")
-        baseUrl.forEachIndexed { index, _ ->
-            var count = 0
-            for (aTag in aTags) {
-                val href = aTag.attr("href")
-                if (href.contains(baseUrl[index])) {
-                    try {
-                        links[count] = links[count] + " , " + href
-                    } catch (_: Exception) {
-                        links.add(href)
-                        count++
-                    }
-                }
-            }
-        }
-        return links
+        val allowedDomains = Regex("""https://(.*\.)?(hdstream4u|hubstream)\..*""")
+
+        return aTags
+            .mapNotNull { it.attr("href") }
+            .filter { allowedDomains.containsMatchIn(it) }
+            .distinct()
     }
+
 
 
     override suspend fun load(url: String): LoadResponse {
@@ -135,9 +125,10 @@ class HDhub4uProvider : MainAPI() {
         val poster = doc.select("main.page-body img.aligncenter").attr("src")
         val trailer = doc.selectFirst(".responsive-embed-container > iframe:nth-child(1)")?.attr("src")
             ?.replace("/embed/", "/watch?v=")
-        extractLinksATags(doc.select(".page-body > div a"))
+
         val typeraw = doc.select("h1.page-title span").text()
         val tvtype = if (typeraw.contains("movie", ignoreCase = true)) TvType.Movie else TvType.TvSeries
+        val isMovie = tvtype == TvType.Movie
 
         var actorData: List<ActorData> = emptyList()
         var genre: List<String>? = null
@@ -173,22 +164,35 @@ class HDhub4uProvider : MainAPI() {
 
         if (tmdbIdResolved.isBlank() && imdbUrl.isNotBlank()) {
             val imdbIdOnly = imdbUrl.substringAfter("title/").substringBefore("/")
-            try {
-                val findText = app.get("$TMDBAPI/find/$imdbIdOnly?api_key=$TMDBAPIKEY&external_source=imdb_id").text
-                if (findText.isNotBlank()) {
-                    val findJson = JSONObject(findText)
-                    val tvArr = findJson.optJSONArray("tv_results")
-                    val movieArr = findJson.optJSONArray("movie_results")
 
-                    when {
-                        tvArr != null && tvArr.length() > 0 -> tmdbIdResolved = tvArr.optJSONObject(0)?.optInt("id")?.toString().orEmpty()
-                        movieArr != null && movieArr.length() > 0 -> tmdbIdResolved = movieArr.optJSONObject(0)?.optInt("id")?.toString().orEmpty()
-                    }
+            try {
+                val findJson = JSONObject(
+                    app.get(
+                        "$TMDBAPI/find/$imdbIdOnly" +
+                                "?api_key=$TMDBAPIKEY&external_source=imdb_id"
+                    ).text
+                )
+
+                tmdbIdResolved = if (isMovie) {
+                    findJson
+                        .optJSONArray("movie_results")
+                        ?.optJSONObject(0)
+                        ?.optInt("id")
+                        ?.toString()
+                        .orEmpty()
+                } else {
+                    findJson
+                        .optJSONArray("tv_results")
+                        ?.optJSONObject(0)
+                        ?.optInt("id")
+                        ?.toString()
+                        .orEmpty()
                 }
             } catch (_: Exception) {
                 // ignore resolve errors
             }
         }
+
 
 
         val responseData: ResponseDataLocal? = if (tmdbIdResolved.isBlank()) null else kotlin.runCatching {
@@ -306,7 +310,7 @@ class HDhub4uProvider : MainAPI() {
             val movieList = mutableListOf<String>()
             movieList.addAll(
                 doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
-                    .map { it.attr("href") }
+                    .map { it.attr("href") } + extractLinksATags(doc.select(".page-body > div a"))
             )
 
             return newMovieLoadResponse(title, url, TvType.Movie, movieList) {
@@ -439,24 +443,36 @@ class HDhub4uProvider : MainAPI() {
      * @param check The string to check for keywords.
      * @return The corresponding `SearchQuality` enum value, or `null` if no match is found.
      */
-    private fun getSearchQuality(check: String?): SearchQuality? {
+    fun getSearchQuality(check: String?): SearchQuality? {
         val s = check ?: return null
         val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
         val patterns = listOf(
-            Regex("\\b(4k|ds4k|uhd|2160p)\\b") to SearchQuality.UHD,
-            Regex("\\b(1440p|qhd)\\b") to SearchQuality.BlueRay,
-            Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b") to SearchQuality.BlueRay,
-            Regex("\\b(1080p|fullhd)\\b") to SearchQuality.HD,
-            Regex("\\b(720p)\\b") to SearchQuality.SD,
-            Regex("\\b(web[- ]?dl|webrip|webdl)\\b") to SearchQuality.WebRip,
-            Regex("\\b(hdrip|hdtv)\\b") to SearchQuality.HD,
-            Regex("\\b(camrip|cam[- ]?rip)\\b") to SearchQuality.CamRip,
-            Regex("\\b(hdts|hdcam|hdtc)\\b") to SearchQuality.HdCam,
-            Regex("\\b(cam)\\b") to SearchQuality.Cam,
-            Regex("\\b(dvd)\\b") to SearchQuality.DVD,
-            Regex("\\b(hq)\\b") to SearchQuality.HQ,
-            Regex("\\b(rip)\\b") to SearchQuality.CamRip
+            Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.UHD,
+
+            // CAM / THEATRE SOURCES FIRST
+            Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+            Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+            Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+
+            // WEB / RIP
+            Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+
+            // BLURAY
+            Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+
+            // RESOLUTIONS
+            Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+            Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+            Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+
+            // GENERIC HD LAST
+            Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+
+            Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+            Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+            Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
         )
+
 
         for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
         return null
