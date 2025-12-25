@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.json.JSONTokener
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -86,6 +87,7 @@ open class Aniworld : MainAPI() {
                 fixUrl(it.link),
                 TvType.Anime
             ) {
+                this.posterUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/aniworld.jpg"
             }
         } ?: throw ErrorLoadingException()
 
@@ -98,10 +100,16 @@ open class Aniworld : MainAPI() {
 
         val isTvSeries = name.equals("Serienstream", ignoreCase = true)
 
-        val jsonObject: JSONObject? = if (!isTvSeries) {
-            val anijson = app.get("https://api.ani.zip/mappings?imdb_id=$imdbid").toString()
-            if (anijson.isNotBlank()) JSONObject(anijson) else null
-        } else null
+        val jsonObject: JSONObject? =
+            if (!isTvSeries && imdbid.isNotBlank()) {
+                runCatching {
+                    val response =
+                        app.get("https://api.ani.zip/mappings?imdb_id=$imdbid").text
+
+                    val value = JSONTokener(response).nextValue()
+                    value as? JSONObject
+                }.getOrNull()
+            } else null
 
         val mappings = jsonObject?.optJSONObject("mappings")
         val malidId: Int? = mappings?.optInt("mal_id")?.takeIf { mappings.has("mal_id") }
