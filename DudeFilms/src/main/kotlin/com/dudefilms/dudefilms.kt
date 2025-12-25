@@ -47,6 +47,7 @@ class Dudefilms : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
+        "" to "HomePage",
         "category/bollywood" to "Bollywood",
         "category/hollywood" to "Hollywood",
         "category/gujarati" to "Gujarati",
@@ -83,7 +84,6 @@ class Dudefilms : MainAPI() {
         val res = doc.select("div.simple-grid-grid-post").mapNotNull { it.toSearchResult() }
         return res.toNewSearchResponseList()
     }
-
 
 
     override suspend fun load(url: String): LoadResponse {
@@ -234,7 +234,7 @@ class Dudefilms : MainAPI() {
             this.plot = description ?: plot
             this.tags = genre
             addActors(cast)
-            this.score = Score.from100(responseData?.meta?.imdbRating)
+            this.score = Score.from10(responseData?.meta?.imdbRating)
             addImdbId(imdbId)
         }
     }
