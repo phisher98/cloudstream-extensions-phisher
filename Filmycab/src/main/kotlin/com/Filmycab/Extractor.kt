@@ -38,6 +38,13 @@ class Filesdl : ExtractorApi() {
             val source = it.text()
             val href = it.attr("href")
             when {
+
+                source.contains("Hubcloud", ignoreCase = true) -> HubCloud().getUrl(href,"FilmyCab",subtitleCallback,callback)
+
+                source.contains("GDFLIX", ignoreCase = true) -> GDFlix().getUrl(href,"",subtitleCallback,callback)
+
+                source.contains("Gofile", ignoreCase = true) -> Gofile().getUrl(href,"",subtitleCallback,callback)
+
                 source.contains("Direct Download", ignoreCase = true) || source.contains("Ultra FastDL", ignoreCase = true) -> {
                     val response = app.get(href, allowRedirects = false)
                     val redirectUrl = response.headers["location"] ?: href
@@ -52,12 +59,6 @@ class Filesdl : ExtractorApi() {
                         }
                     )
                 }
-
-                source.contains("Hubcloud", ignoreCase = true) -> HubCloud().getUrl(href,"FilmyCab",subtitleCallback,callback)
-
-                source.contains("GDFLIX", ignoreCase = true) -> GDFlix().getUrl(href,"",subtitleCallback,callback)
-
-                source.contains("Gofile", ignoreCase = true) -> Gofile().getUrl(href,"",subtitleCallback,callback)
             }
         }
     }
@@ -65,7 +66,7 @@ class Filesdl : ExtractorApi() {
 
 class HubCloud : ExtractorApi() {
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.ink"
+    override val mainUrl = "https://hubcloud.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -266,7 +267,7 @@ class HubCloud : ExtractorApi() {
 
 class GDFlix : ExtractorApi() {
     override val name = "GDFlix"
-    override val mainUrl = "https://new5.gdflix.net"
+    override val mainUrl = "https://*.gdflix.*"
     override val requiresReferer = false
 
     private suspend fun getLatestUrl(): String {
@@ -316,15 +317,17 @@ class GDFlix : ExtractorApi() {
                     )
                 }
 
-                text.contains("PixelDrain") -> {
-                    callback.invoke(
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    callback(
                         newExtractorLink(
-                            "$name Pixeldrain",
-                            "Pixeldrain $fileName[$fileSize]",
-                            link
-                        ) {
-                            this.quality = quality
-                        }
+                            "GDFlix Pixeldrain",
+                            "GDFlix Pixeldrain $fileName[$fileSize]",
+                            finalURL
+                        ) { this.quality = quality }
                     )
                 }
 
@@ -432,6 +435,13 @@ class GDFlix : ExtractorApi() {
                     Log.d("Error", "No Server matched")
                 }
             }
+        }
+    }
+    fun getBaseUrl(url: String): String {
+        return try {
+            URI(url).let { "${it.scheme}://${it.host}" }
+        } catch (_: Exception) {
+            ""
         }
     }
 }

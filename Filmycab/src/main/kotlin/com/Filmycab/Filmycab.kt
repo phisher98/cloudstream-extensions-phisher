@@ -27,7 +27,7 @@ import org.jsoup.nodes.Element
 
 class Filmycab : MainAPI() {
     override var mainUrl: String = runBlocking {
-        FilmycabProvider.getDomains()?.Filmycab ?: "https://filmycab.wtf"
+        FilmycabProvider.getDomains()?.Filmycab ?: "https://filmycab.casa"
     }
     override var name = "FilmyCab"
     override val hasMainPage = true
@@ -91,7 +91,7 @@ class Filmycab : MainAPI() {
     }
 
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val document = app.get("${mainUrl}/site-search.html?to-search=$query&to-page=$page").documentLarge
         val results = document.select("div.thumb").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
         return results
