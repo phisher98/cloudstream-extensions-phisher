@@ -2143,3 +2143,7 @@ suspend fun <T> retry(
     }
     return null
 }
+
+fun String.fixSourceUrl(): String {
+    return this.replace("/manifest.json", "").replace("stremio://", "https://")
+}

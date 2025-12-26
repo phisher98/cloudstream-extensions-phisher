@@ -11,21 +11,19 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import androidx.core.net.toUri
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.showToast
 
-class SettingsBottomFragment(
-    plugin: StremioXPlugin,
+class StreamPlayStremioCatelogFrag(
+    plugin: StreamPlayPlugin,
     private val sharedPref: SharedPreferences
 ) : BottomSheetDialogFragment() {
     private val PREF_KEY_LINKS = "streamplay_stremio_saved_links"
@@ -60,12 +58,12 @@ class SettingsBottomFragment(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = getLayout("bottom_sheet_layout", inflater, container)
+        val view = getLayout("stremio_bottom_sheet_layout", inflater, container)
 
         listOf("addlinks", "showlinks", "saveIcon").forEach { name ->
             val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-            if (id == 0) Log.w("SettingsBottomFragment", "View id '$name' not found")
-            else Log.d("SettingsBottomFragment", "View id '$name' -> $id")
+            if (id == 0) Log.w("StreamPlayStremioCatelogFrag", "View id '$name' not found")
+            else Log.d("StreamPlayStremioCatelogFrag", "View id '$name' -> $id")
         }
 
         // safe find helpers (throws clear exceptions if missing)
@@ -89,22 +87,18 @@ class SettingsBottomFragment(
 
         // ---------- ADD dialog ----------
         addlinks.setOnClickListener {
-            val dialogView = getLayout("addlinks", inflater, container)
+            val dialogView = getLayout("streamio_addon_addlinks", inflater, container)
             val etName: EditText
             val etLink: EditText
-            val rg: RadioGroup
             try {
                 etName = dialogView.findView("etName")
                 etLink = dialogView.findView("etLink")
-                rg = dialogView.findView("radioGroup")
             } catch (t: Throwable) {
                 Toast.makeText(requireContext(), "Dialog fields not found", Toast.LENGTH_SHORT).show()
                 Log.e("SettingsBottomFragment", "Missing dialog views $t")
                 return@setOnClickListener
             }
 
-            val rbXId = res.getIdentifier("rbX", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-            try { dialogView.findView<RadioButton>("rbX").isChecked = true } catch (_: Throwable) {}
 
             val dlg = AlertDialog.Builder(requireContext())
                 .setView(dialogView)
@@ -117,7 +111,7 @@ class SettingsBottomFragment(
                 btnSave.setOnClickListener {
                     val name = etName.text.toString().trim()
                     val link = etLink.text.toString().trim()
-                    val type = if (rg.checkedRadioButtonId == rbXId) "StremioX" else "StremioC"
+                    val type = "StremioC"
 
                     if (link.isEmpty()) {
                         showToast("Please enter a link")
@@ -156,7 +150,7 @@ class SettingsBottomFragment(
 
         // ---------- SHOW list dialog ----------
         showlinks.setOnClickListener {
-            val dialogView = getLayout("dialog_list_links", inflater, container)
+            val dialogView = getLayout("stremio_dialog_list_links", inflater, container)
             val dlg = AlertDialog.Builder(requireContext())
                 .setView(dialogView)
                 .setPositiveButton("Close", null)
@@ -295,7 +289,7 @@ class SettingsBottomFragment(
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-            val layoutId = res.getIdentifier("item_saved_link", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
+            val layoutId = res.getIdentifier("stremio_item_saved_link", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
             val v = layoutInflater.inflate(res.getLayout(layoutId), parent, false)
             return VH(v)
         }

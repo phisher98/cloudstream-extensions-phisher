@@ -22,18 +22,24 @@ import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.plugins.Plugin
 import androidx.core.content.edit
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.extractors.Vidguardto2
+import com.lagradost.cloudstream3.plugins.PluginData
+import com.lagradost.cloudstream3.plugins.PluginManager
+import org.json.JSONArray
 
 @CloudstreamPlugin
 class StreamPlayPlugin: Plugin() {
     private val registeredMainApis = mutableListOf<MainAPI>()
+    private val PREF_FILE = "StreamPlay"
+    private val PREF_KEY_LINKS = "streamplay_stremio_saved_links"
 
     override fun load(context: Context) {
 
-        val sharedPref = context.getSharedPreferences("StreamPlay", Context.MODE_PRIVATE)
+        val sharedPref = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
         val mainApis = listOf(
             StreamPlay(sharedPref), StreamPlayLite(),
-            StreamPlayTorrent(), StreamPlayAnime(), StreamplayTorrentAnime()
+            StreamPlayTorrent(), StreamPlayAnime(), StreamplayTorrentAnime(), StreamPlayStremioCatelog("","StreamPlay StremioC")
         )
         val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)
         val defaultEnabled = mainApis.map { it.name }.toSet()
@@ -53,6 +59,7 @@ class StreamPlayPlugin: Plugin() {
         }
 
         sharedPref.edit { remove("enabled_plugins_set") }
+        reload(context)
         //=====================MainAPI============================//
 
         //registerMainAPI(StreamPlayTest(sharedPref))
@@ -83,7 +90,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(dlions())
         registerExtractorAPI(MixDrop())
         registerExtractorAPI(dwish())
-        registerExtractorAPI(Embedwish())
         registerExtractorAPI(UqloadsXyz())
         registerExtractorAPI(Uploadever())
         registerExtractorAPI(Netembed())
@@ -121,7 +127,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(VidHidePro6())
         registerExtractorAPI(MixDropSi())
         registerExtractorAPI(MixDropPs())
-        registerExtractorAPI(Mp4Upload())
         registerExtractorAPI(Streamlare())
         registerExtractorAPI(StreamSB8())
         registerExtractorAPI(StreamSB())
@@ -129,7 +134,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(OkRuHTTP())
         registerExtractorAPI(Embtaku())
         registerExtractorAPI(bulbasaur())
-        registerExtractorAPI(GDMirrorbot())
         registerExtractorAPI(Megacloud())
         registerExtractorAPI(Cdnstreame())
         registerExtractorAPI(Rapidplayers())
@@ -149,7 +153,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(smoothpre())
         registerExtractorAPI(Akirabox())
         registerExtractorAPI(BuzzServer())
-        registerExtractorAPI(StreamWishExtractor())
         registerExtractorAPI(FilemoonV2())
         registerExtractorAPI(Vidguardto2())
         registerExtractorAPI(Hubstreamdad())
@@ -169,6 +172,8 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(PixelDrainDev())
         registerExtractorAPI(Krakenfiles())
         registerExtractorAPI(MegaUpTwoTwo())
+
+
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
             if (!act.isFinishing && !act.isDestroyed) {
@@ -179,4 +184,71 @@ class StreamPlayPlugin: Plugin() {
             }
         }
     }
+
+    fun reload(context: Context) {
+        try {
+            val prefs = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
+            val json = prefs.getString(PREF_KEY_LINKS, null) ?: "[]"
+            val arr = JSONArray(json)
+            val links = mutableListOf<LinkEntry>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                links.add(
+                    LinkEntry(
+                        id = obj.optLong("id", System.currentTimeMillis()),
+                        name = obj.optString("name", ""),
+                        link = obj.optString("link", ""),
+                        type = obj.optString("type", "StremioX")
+                    )
+                )
+            }
+            for (item in links) {
+                val pluginsOnline: Array<PluginData> = PluginManager.getPluginsOnline()
+                var found: PluginData? = null
+                for (p in pluginsOnline) {
+                    if (p.internalName.contains(item.name, ignoreCase = true)) {
+                        found = p
+                        break
+                    }
+                }
+                if (found != null) {
+                    try {
+                        PluginManager.unloadPlugin(found.filePath)
+                    } catch (e: Throwable) {
+                        Log.e("StreamplayStremioXPlugin", "unload failed ${e.message}")
+                    }
+                } else {
+                    try {
+                        when (item.type) {
+                            "StremioC" -> {
+                                try {
+                                    registerMainAPI(StreamPlayStremioCatelog(item.link, item.name))
+                                } catch (_: Throwable) {
+                                    try { registerMainAPI(StreamPlayStremioCatelog("", item.name)) } catch (_: Throwable) {}
+                                }
+                            }
+                            else -> {
+                                try { registerMainAPI(StreamPlayStremioCatelog(item.link, item.name)) } catch (_: Throwable) {}
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        Log.e("StreamplayStremioXPlugin", "register failed ${e.message}")
+                    }
+                }
+            }
+            try {
+                MainActivity.afterPluginsLoadedEvent.invoke(true)
+            } catch (e: Throwable) {
+                Log.w("StreamplayStremioXPlugin", "afterPluginsLoaded invoke failed ${e.message}")
+            }
+        } catch (e: Throwable) {
+            Log.e("StreamplayStremioXPlugin", "reload error ${e.message}")
+        }
+    }
+    data class LinkEntry(
+        val id: Long,
+        val name: String,
+        val link: String,
+        val type: String
+    )
 }

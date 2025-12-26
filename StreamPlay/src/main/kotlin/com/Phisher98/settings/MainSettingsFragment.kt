@@ -52,6 +52,7 @@ class MainSettingsFragment(
         val featureCard: ImageView = view.findView("featureCard")
         val toggleproviders: ImageView = view.findView("toggleproviders")
         val languagechange: ImageView = view.findView("languageCard")
+        val stremioaddon: ImageView = view.findView("stremioaddons")
 
         val saveIcon: ImageView = view.findView("saveIcon")
 
@@ -59,13 +60,14 @@ class MainSettingsFragment(
         languagechange.setImageDrawable(getDrawable("settings_icon"))
         featureCard.setImageDrawable(getDrawable("settings_icon"))
         toggleproviders.setImageDrawable(getDrawable("settings_icon"))
+        stremioaddon.setImageDrawable(getDrawable("settings_icon"))
         saveIcon.setImageDrawable(getDrawable("save_icon"))
 
         loginCard.makeTvCompatible()
         featureCard.makeTvCompatible()
         toggleproviders.makeTvCompatible()
         languagechange.makeTvCompatible()
-
+        stremioaddon.makeTvCompatible()
 
         saveIcon.makeTvCompatible()
 
@@ -97,6 +99,14 @@ class MainSettingsFragment(
             LanguageSelectFragment(plugin, sharedPref).show(
                 activity?.supportFragmentManager!!,
                 "fragment_language_list"
+            )
+        }
+
+        stremioaddon.setOnClickListener {
+            val providersFragment = StreamPlayStremioCatelogFrag(plugin, sharedPref)
+            providersFragment.show(
+                activity?.supportFragmentManager ?: throw Exception("No FragmentManager"),
+                "stremio_bottom_sheet_layout"
             )
         }
 

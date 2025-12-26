@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 494
+version = 495
 
 android {
     buildFeatures {
@@ -54,6 +54,10 @@ android {
         buildConfigField("String", "YFXENC", "\"${properties.getProperty("YFXENC")}\"")
         buildConfigField("String", "YFXDEC", "\"${properties.getProperty("YFXDEC")}\"")
     }
+}
+
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
 }
 
 cloudstream {
