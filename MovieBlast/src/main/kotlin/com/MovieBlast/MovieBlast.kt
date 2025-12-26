@@ -61,14 +61,13 @@ class MovieBlast : MainAPI() {
 
 
     override val mainPage = mainPageOf(
+        "api/genres/new/all" to "Recently Added",
+        "api/genres/media/names/New%20HD%20Released" to "New HD Releases"
         "api/genres/pinned/all" to "Latest",
         "api/genres/trending/all" to "Trending",
-        "api/genres/new/all" to "Recently Added",
+        "api/media/seriesEpisodesAll" to "Latest • Series",
         "api/genres/popularmovies/all" to "Popular • Movies",
         "api/genres/popularseries/all" to "Popular • Series",
-        "api/media/seriesEpisodesAll" to "Latest • Series",
-        "api/genres/recommended/all" to "Recommended",
-        "api/genres/media/names/New%20HD%20Released" to "New HD Releases"
     )
 
     override suspend fun getMainPage(
