@@ -358,7 +358,7 @@ fun getIndexQuality(str: String?): Int {
 
 
 class HDm2 : ExtractorApi() {
-    override val name = "HDMovie"
+    override val name = "Ultra Stream V3"
     override val mainUrl = "https://hdm2.ink"
     override val requiresReferer = true
 

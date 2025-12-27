@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -42,6 +43,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import org.jsoup.nodes.Element
 import java.net.URI
+import java.text.Normalizer
 
 open class Movierulzhd : MainAPI() {
 
@@ -77,7 +79,7 @@ open class Movierulzhd : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url, timeout = 20L).documentLarge
+        val document = app.get(url).document
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -85,7 +87,7 @@ open class Movierulzhd : MainAPI() {
         return newHomePageResponse(request.name, home)
     }
 
-    private fun getProperLink(uri: String): String {
+    fun getProperLink(uri: String): String {
         return when {
             uri.contains("/episodes/") -> {
                 var title = uri.substringAfter("$mainUrl/episodes/")
@@ -115,10 +117,12 @@ open class Movierulzhd : MainAPI() {
                 posterUrl = fixUrlNull(this.select("div.poster img").attr("data-wpfc-original-src"))
             }
         }
-        val quality = getQualityFromString(this.select("span.quality").text())
+        val quality = getSearchQuality(this.select("span.quality").text())
+        val score = this.select("div.rating").text()
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
             this.quality = quality
+            this.score = Score.from10(score)
         }
 
     }
@@ -435,7 +439,46 @@ open class Movierulzhd : MainAPI() {
         val nume: String? = null,
     )
 
+    /**
+     * Determines the search quality based on the presence of specific keywords in the input string.
+     *
+     * @param check The string to check for keywords.
+     * @return The corresponding `SearchQuality` enum value, or `null` if no match is found.
+     */
+    fun getSearchQuality(check: String?): SearchQuality? {
+        val s = check ?: return null
+        val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+        val patterns = listOf(
+            Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.UHD,
 
+            // CAM / THEATRE SOURCES FIRST
+            Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+            Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+            Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+
+            // WEB / RIP
+            Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+
+            // BLURAY
+            Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+
+            // RESOLUTIONS
+            Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+            Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+            Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+
+            // GENERIC HD LAST
+            Regex("\\b(hdrip|hdtv|HD)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+
+            Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+            Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+            Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+        )
+
+
+        for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
+        return null
+    }
 
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,

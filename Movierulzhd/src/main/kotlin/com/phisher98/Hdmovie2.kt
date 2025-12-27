@@ -2,15 +2,25 @@ package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 import java.util.Calendar
 
 open class Hdmovie2 : Movierulzhd() {
@@ -21,6 +31,7 @@ open class Hdmovie2 : Movierulzhd() {
     override var name = "Hdmovie2"
     override val mainPage = mainPageOf(
         "release/${Calendar.getInstance().get(Calendar.YEAR)}" to "Latest",
+        "genre/bollywood" to "BollyWood",
         "movies" to "Movies",
         "genre/hindi-webseries" to "Hindi Web Series",
         "genre/netflix" to "Netflix",
