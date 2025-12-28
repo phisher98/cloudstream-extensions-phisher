@@ -34,6 +34,7 @@ import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.sharedPref
 import com.phisher98.StreamPlayExtractor.token
 import org.json.JSONObject
+import java.net.URLEncoder
 
 
 class StreamPlayStremioCatelog(override var mainUrl: String, override var name: String) : MainAPI() {
@@ -74,18 +75,31 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
 
     override suspend fun load(url: String): LoadResponse {
         val res: CatalogEntry = if (url.startsWith("{")) {
-            parseJson<CatalogEntry>(url)
+            parseJson(url)
         } else {
             val json = app.get(url).text
             val metaJson = JSONObject(json).getJSONObject("meta").toString()
-            parseJson<CatalogEntry>(metaJson)
+            parseJson(metaJson)
         }
 
         mainUrl =
-            if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id)) cinemataUrl else mainUrl
-        val json = app.get("${mainUrl}/meta/${res.type}/${res.id}.json")
-            .parsedSafe<CatalogResponse>()?.meta ?: throw RuntimeException(url)
-        return json.toLoadResponse(this, res.id)
+            if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id))
+                Companion.cinemataUrl
+            else
+                mainUrl
+
+        val encodedId = URLEncoder.encode(res.id, "UTF-8")
+
+        val response = app.get("${mainUrl}/meta/${res.type}/$encodedId.json")
+            .parsedSafe<CatalogResponse>()
+            ?: throw RuntimeException("Failed to load meta")
+
+        val entry = response.meta
+            ?: response.metas?.firstOrNull { it.id == res.id }
+            ?: response.metas?.firstOrNull()
+            ?: throw RuntimeException("Meta not found")
+
+        return entry.toLoadResponse(this, res.id)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

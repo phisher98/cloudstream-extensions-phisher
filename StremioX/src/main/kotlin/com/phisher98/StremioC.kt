@@ -40,6 +40,7 @@ import com.phisher98.StremioC.Companion.TRACKER_LIST_URLS
 import com.phisher98.SubsExtractors.invokeOpenSubs
 import com.phisher98.SubsExtractors.invokeWatchsomuch
 import org.json.JSONObject
+import java.net.URLEncoder
 import java.util.Locale
 
 
@@ -86,18 +87,31 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
 
     override suspend fun load(url: String): LoadResponse {
         val res: CatalogEntry = if (url.startsWith("{")) {
-            parseJson<CatalogEntry>(url)
+            parseJson(url)
         } else {
             val json = app.get(url).text
             val metaJson = JSONObject(json).getJSONObject("meta").toString()
-            parseJson<CatalogEntry>(metaJson)
+            parseJson(metaJson)
         }
 
         mainUrl =
-            if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id)) cinemataUrl else mainUrl
-        val json = app.get("${mainUrl}/meta/${res.type}/${res.id}.json")
-            .parsedSafe<CatalogResponse>()?.meta ?: throw RuntimeException(url)
-        return json.toLoadResponse(this, res.id)
+            if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id))
+                cinemataUrl
+            else
+                mainUrl
+
+        val encodedId = URLEncoder.encode(res.id, "UTF-8")
+
+        val response = app.get("${mainUrl}/meta/${res.type}/$encodedId.json")
+            .parsedSafe<CatalogResponse>()
+            ?: throw RuntimeException("Failed to load meta")
+
+        val entry = response.meta
+            ?: response.metas?.firstOrNull { it.id == res.id }
+            ?: response.metas?.firstOrNull()
+            ?: throw RuntimeException("Meta not found")
+
+        return entry.toLoadResponse(this, res.id)
     }
 
     override suspend fun loadLinks(
@@ -107,8 +121,10 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val loadData = parseJson<LoadData>(data)
+        val encodedId = URLEncoder.encode(loadData.id, "UTF-8")
+
         val request = app.get(
-            "${mainUrl}/stream/${loadData.type}/${loadData.id}.json",
+            "${mainUrl}/stream/${loadData.type}/$encodedId.json",
             timeout = 120L
         )
         if (request.isSuccessful) {
