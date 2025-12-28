@@ -251,10 +251,10 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         @JsonProperty("type") val type: String?,
         @JsonProperty("videos") val videos: List<Video>?,
         @JsonProperty("genre") val genre: List<String>?,
-        @JsonProperty("genres") val genres: List<String>?,
-        @JsonProperty("cast") val cast: List<String>?,
-        @JsonProperty("year") val yearNum: String? = null,
-        @JsonProperty("trailers") val trailersSources: ArrayList<Trailer>? = arrayListOf()
+        @JsonProperty("genres") val genres: List<String> = emptyList(),
+        @JsonProperty("cast") val cast: List<String> = emptyList(),
+        @JsonProperty("trailers") val trailersSources: List<Trailer> = emptyList(),
+        @JsonProperty("year") val yearNum: String? = null
     ) {
         fun toSearchResponse(provider: StremioC): SearchResponse {
             return provider.newMovieSearchResponse(
@@ -281,7 +281,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     year = yearNum?.toIntOrNull()
                     tags = genre ?: genres
                     addActors(cast)
-                    addTrailer(trailersSources?.map { "https://www.youtube.com/watch?v=${it.source}" })
+                    addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" })
                     addImdbId(imdbId)
                 }
             } else {
@@ -300,7 +300,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     year = yearNum?.toIntOrNull()
                     tags = genre ?: genres
                     addActors(cast)
-                    addTrailer(trailersSources?.map { "https://www.youtube.com/watch?v=${it.source}" }
+                    addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" }
                         ?.randomOrNull())
                     addImdbId(imdbId)
                 }
