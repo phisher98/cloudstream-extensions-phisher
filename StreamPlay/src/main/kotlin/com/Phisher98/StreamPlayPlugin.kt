@@ -38,8 +38,8 @@ class StreamPlayPlugin: Plugin() {
 
         val sharedPref = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
         val mainApis = listOf(
-            StreamPlay(sharedPref), StreamPlayLite(),
-            StreamPlayTorrent(), StreamPlayAnime(), StreamplayTorrentAnime(), StreamPlayStremioCatelog("","StreamPlay StremioC")
+            StreamPlay(sharedPref),
+            StreamPlayAnime(), StreamPlayStremioCatelog("","StreamPlay StremioC")
         )
         val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)
         val defaultEnabled = mainApis.map { it.name }.toSet()
