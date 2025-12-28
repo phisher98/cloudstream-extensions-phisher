@@ -28,7 +28,7 @@ class SettingsBottomFragment(
     plugin: StremioXPlugin,
     private val sharedPref: SharedPreferences
 ) : BottomSheetDialogFragment() {
-    private val PREF_KEY_LINKS = "streamplay_stremio_saved_links"
+    private val PREF_KEY_LINKS = "stremio_saved_links"
 
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
 
