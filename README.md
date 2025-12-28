@@ -40,6 +40,22 @@ Want to sync your devices using **Ultima’s Cross Device Watch Sync**?
 
 This guide will show you how to use a **private GitHub project** and a **personal access token** to sync playback history across devices.
 
+---
+
+## STREMIO ADDON SETUPS
+
+Want to learn how to add and manage Stremio addons more effectively?
+
+📘 **Stremio Addon – Written Guide**  
+Step-by-step instructions for adding, managing, and using Stremio addon links in Cloudstream.  
+[Open guide →](https://github.com/phisher98/cloudstream-extensions-phisher/blob/master/docs/README-StremioAddon.md)
+
+📘 **StremioX / StremioC – Written Guide**  
+Detailed explanation of StremioX (stream addons) and StremioC (catalogue addons), including usage and limitations.  
+[Open guide →](https://github.com/phisher98/cloudstream-extensions-phisher/blob/master/docs/README-StremioX.md)
+
+---
+
 ## 📄 License
 
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
