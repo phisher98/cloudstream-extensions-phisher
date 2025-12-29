@@ -50,7 +50,7 @@ suspend fun loadCustomExtractor(
 
 class Kwik : ExtractorApi() {
     override val name            = "Kwik"
-    override val mainUrl         = "https://kwik.*"
+    override val mainUrl         = "https://kwik.cx"
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
@@ -66,9 +66,9 @@ class Kwik : ExtractorApi() {
                 url = m3u8,
                 INFER_TYPE
             ) {
-                this.referer = ""
+                this.referer = mainUrl
                 this.quality = getQualityFromName("")
-                this.headers= mapOf("origin" to "https://www.miruro.tv")
+                this.headers= mapOf("origin" to mainUrl)
             }
         )
     }

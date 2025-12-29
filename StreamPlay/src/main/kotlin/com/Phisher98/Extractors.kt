@@ -1410,7 +1410,9 @@ class Kwik : ExtractorApi() {
                 url = m3u8,
                 type = INFER_TYPE
             ) {
+                this.referer = mainUrl
                 this.quality = getQualityFromName(referer)
+                this.headers= mapOf("origin" to mainUrl)
             }
         )
     }
