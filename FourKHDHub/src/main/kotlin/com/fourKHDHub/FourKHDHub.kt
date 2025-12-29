@@ -15,7 +15,7 @@ import org.jsoup.nodes.Element
 
 class FourKHDHub : MainAPI() {
     override var mainUrl: String = runBlocking {
-        FourKHDHubProvider.getDomains()?.n4khdhub ?: "https://4khdhub.fans"
+        FourKHDHubProvider.getDomains()?.n4khdhub ?: "https://4khdhub.dad"
     }
     override var name                 = "4K HDHUB"
     override val hasMainPage          = true
@@ -35,12 +35,22 @@ class FourKHDHub : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "" to "Latest Releases",
-        "category/movies-10810" to "Movies",
-        "category/new-series-10811" to "Series",
-        "category/anime-10812" to "Anime",
-        "category/4k-hdr-10776" to "4K HDR"
+        "" to "Home",
+        "category/movies" to "Latest Movies",
+        "category/hindi-movies" to "Hindi Movies",
+        "category/english-movies" to "English Movies",
+        "category/series" to "Latest Episodes",
+        "category/korean-series" to "Korean Series",
+        "category/netflix" to "Netflix",
+        "category/amazon_prime_video" to "Amazon Prime Video",
+        "category/jiohotstar" to "JioHotstar",
+        "category/disney" to "Disney+",
+        "category/Apple_TV" to "Apple TV+",
+        "category/anime" to "Anime",
+        "category/2160p-HDR" to "4K HDR",
+        "category/imdb" to "Top IMDb"
     )
+
 
     override suspend fun getMainPage(
         page: Int,
