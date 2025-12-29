@@ -133,7 +133,6 @@ class MovieBoxProvider : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "https://api.inmoviebox.com/wefeed-mobile-bff/tab/ranking-list?tabId=0&categoryType=4741626294545400336&page=1&perPage=10" to "Test",
         "1|1" to "Trending Movies",
         "1|2" to "Trending Series",
         "1|1006" to "Trending Anime",
@@ -164,11 +163,7 @@ class MovieBoxProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val perPage = 15
-        val url = if (request.data.contains("inmoviebox"))
-        {
-            request.data
-        }
-        else "$mainUrl/wefeed-mobile-bff/subject-api/list"
+        val url =  "$mainUrl/wefeed-mobile-bff/subject-api/list"
 
         val data1 = request.data
 
@@ -199,13 +194,6 @@ class MovieBoxProvider : MainAPI() {
         // Use current timestamps instead of hardcoded ones
         val xClientToken = generateXClientToken()
         val xTrSignature = generateXTrSignature("POST", "application/json", "application/json; charset=utf-8", url , jsonBody)
-        val getxTrSignature = generateXTrSignature(
-            method = "GET",
-            accept = "*/*",
-            contentType = "",
-            url = "/wefeed-mobile-bff/tab/ranking-list?tabId=0&categoryType=4741626294545400336&page=1&perPage=10",
-            body = ""
-        )
 
         val headers = mapOf(
             "user-agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
@@ -218,45 +206,12 @@ class MovieBoxProvider : MainAPI() {
             "x-client-status" to "0",
         )
 
-        val getHeaders = mapOf(
-            "Accept-Encoding" to "gzip, deflate, br",
-            "Connection" to "keep-alive",
-
-            "User-Agent" to
-                    "com.community.mbox.in/50020075 (Linux; U; Android 13; en_US; Subsystem for Android(TM); Build/TQ3A.230901.001; Cronet/143.0.7445.0)",
-
-            "Authorization" to
-                    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQzNjM5NjU1MTAyMDgzNDA2MDAsImV4cCI6MTc3MjAzNjczOSwiaWF0IjoxNzY0MjYwNDM5fQ.9xg_tgJkC4VwcHSOgH2NeEv9O_4X4I5twTr2AURkWwA",
-
-            "x-client-info" to
-                    """{"package_name":"com.community.mbox.in","version_name":"3.0.10.1110.03","version_code":50020075,"os":"android","os_version":"13","install_ch":"ps","device_id":"b513bc1345932bda0531560e7d8426ce","install_store":"ps","gaid":"60b3206c-8ffc-4910-b14a-37563e99b1ba","brand":"Windows","model":"Subsystem for Android(TM)","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":""}""",
-
-            "x-client-status" to "1",
-            "X-Play-Mode" to "2",
-            "X-Family-Mode" to "0",
-
-            "x-tr-signature" to getxTrSignature
-        )
-
-
-
-
         val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
-        val response = if (request.data.contains("inmoviebox"))
-            {
-                app.get(
-                    url,
-                    headers = getHeaders,
-                )
-            }
-        else
-        {
-            app.post(
+        val response = app.post(
                 url,
                 headers = headers,
                 requestBody = requestBody
-            )
-        }
+        )
 
 
             val responseBody = response.body.string()
