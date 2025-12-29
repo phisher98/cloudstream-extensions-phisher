@@ -133,9 +133,22 @@ class MovieBoxProvider : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "1|1" to "Trending Movies",
-        "1|2" to "Trending Series",
-        "1|1006" to "Trending Anime",
+        "4516404531735022304" to "Trending",
+        "5692654647815587592" to "Trending in Cinema",
+        "414907768299210008"  to "Bollywood",
+        "3859721901924910512" to "South Indian",
+        "8019599703232971616" to "Hollywood",
+        "4741626294545400336" to "Top Series This Week",
+        "8434602210994128512" to "Anime",
+        "1255898847918934600" to "Reality TV",
+        "4903182713986896328" to "Indian Drama",
+        "7878715743607948784" to "Korean Drama",
+        "8788126208987989488" to "Chinese Drama",
+        "3910636007619709856" to "Western TV",
+        "5177200225164885656" to "Turkish Drama",
+        "1|1" to "Movies",
+        "1|2" to "Series",
+        "1|1006" to "Anime",
         "1|1;country=India" to "Indian (Movies)",
         "1|2;country=India" to "Indian (Series)",
         "1|1;classify=Hindi dub;country=United States" to "USA (Movies)",
@@ -163,7 +176,7 @@ class MovieBoxProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val perPage = 15
-        val url =  "$mainUrl/wefeed-mobile-bff/subject-api/list"
+        val url = if (request.data.contains("|")) "$mainUrl/wefeed-mobile-bff/subject-api/list" else "$mainUrl/wefeed-mobile-bff/tab/ranking-list?tabId=0&categoryType=${request.data}&page=$page&perPage=$perPage"
 
         val data1 = request.data
 
@@ -195,6 +208,8 @@ class MovieBoxProvider : MainAPI() {
         val xClientToken = generateXClientToken()
         val xTrSignature = generateXTrSignature("POST", "application/json", "application/json; charset=utf-8", url , jsonBody)
 
+        val getxTrSignature = generateXTrSignature("GET", "application/json", "application/json", url)
+
         val headers = mapOf(
             "user-agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
             "accept" to "application/json",
@@ -204,15 +219,22 @@ class MovieBoxProvider : MainAPI() {
             "x-tr-signature" to xTrSignature,
             "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
             "x-client-status" to "0",
+            "x-play-mode" to "2" // Optional, if needed for specific API behavior
         )
 
-        val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
-        val response = app.post(
-                url,
-                headers = headers,
-                requestBody = requestBody
+        val getheaders = mapOf(
+            "user-agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
+            "accept" to "application/json",
+            "content-type" to "application/json",
+            "connection" to "keep-alive",
+            "x-client-token" to xClientToken,
+            "x-tr-signature" to getxTrSignature,
+            "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+            "x-client-status" to "0",
         )
 
+            val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
+            val response = if (request.data.contains("|")) app.post(url, headers = headers, requestBody = requestBody) else app.get(url, headers = getheaders)
 
             val responseBody = response.body.string()
             // Use Jackson to parse the new API response structure
