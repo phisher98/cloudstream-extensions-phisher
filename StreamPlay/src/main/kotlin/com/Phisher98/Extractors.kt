@@ -1519,7 +1519,7 @@ class Pahe : ExtractorApi() {
                 url = location,
                 INFER_TYPE
             ) {
-                this.referer = ""
+                this.referer = "https://kwik.cx/"
                 this.quality = Qualities.Unknown.value
             }
         )
