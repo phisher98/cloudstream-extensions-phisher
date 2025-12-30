@@ -1729,18 +1729,18 @@ open class MegaUp : ExtractorApi() {
     )
 }
 
-@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 open class GDFlix : ExtractorApi() {
     override val name = "GDFlix"
-    override val mainUrl = "https://new6.gdflix.dad"
+    override val mainUrl = "https://*.gdflix.*"
     override val requiresReferer = false
 
     override suspend fun getUrl(
         url: String,
-        source: String?,
+        referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val source = ""
         val newUrl = try {
             app.get(url)
                 .documentLarge
@@ -1859,13 +1859,6 @@ open class GDFlix : ExtractorApi() {
                     }
                 }
 
-                text.contains("CLOUD DOWNLOAD",ignoreCase = true) -> {
-                    callback.invoke(
-                        newExtractorLink("$source GDFlix[CLOUD]", "$source GDFlix[CLOUD] [$fileSize]", anchor.attr("href")) {
-                            this.quality = getIndexQuality(fileName)
-                        }
-                    )
-                }
 
                 text.contains("GoFile",ignoreCase = true) -> {
                     try {
@@ -1904,7 +1897,7 @@ open class GDFlix : ExtractorApi() {
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
                     .documentLarge.select("a.btn-success").attr("href")
 
-                if (source?.isNotEmpty() == true) {
+                if (source.isNotEmpty()) {
                     callback.invoke(
                         newExtractorLink("$source GDFlix[CF]", "$source GDFlix[CF] [$fileSize]", sourceurl) {
                             this.quality = getIndexQuality(fileName)

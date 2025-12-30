@@ -132,10 +132,6 @@ class HubCloud : ExtractorApi() {
         document.select("div.card-body h2 a.btn").amap { element ->
             val link = element.attr("href")
             val text = element.text()
-            Log.d("Phisher",headerDetails)
-
-            Log.d("Phisher",text)
-
 
             when {
                 text.contains("FSL Server", ignoreCase = true) -> {
