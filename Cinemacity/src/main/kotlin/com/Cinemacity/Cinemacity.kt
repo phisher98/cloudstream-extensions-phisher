@@ -85,7 +85,7 @@ class Cinemacity : MainAPI() {
         page: Int, request: MainPageRequest
     ): HomePageResponse {
         val doc = if (page==1) app.get("$mainUrl/${request.data}").document
-        else app.get("$mainUrl/${request.data}page/$page").document
+        else app.get("$mainUrl/${request.data}/page/$page").document
 
         val home = doc.select("div.dar-short_item").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home, true)
@@ -118,7 +118,7 @@ class Cinemacity : MainAPI() {
 
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val doc = app.get("$mainUrl/index.php?do=search&subaction=search&search_start=0&full_search=0&story=$query").document
+        val doc = app.get("$mainUrl/index.php?do=search&subaction=search&search_start=$page&full_search=0&story=$query").document
         val res = doc.select("div.dar-short_item").mapNotNull { it.toSearchResult() }
         return res.toNewSearchResponseList()
     }
