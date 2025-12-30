@@ -131,7 +131,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                         headers = mapOf("Cache-Control" to "no-cache")
                     )
                     response.code == 200 || response.code == 304
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     false
                 }
             } ?: false
@@ -188,7 +188,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val kissKhAPI = "https://kisskh.ovh"
         const val PlaydesiAPI = "https://playdesi.info"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
-        const val Whvx_API = BuildConfig.Whvx_API
         const val nineTvAPI = "https://moviesapi.club"
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
@@ -212,7 +211,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val KickassAPI = "https://kaa.to"
         const val Player4uApi = "https://player4u.xyz"
         const val Vidsrcxyz = "https://vidsrc-embed.su"
-        const val Xprime = "https://xprime.tv"
         const val Elevenmovies = "https://111movies.com"
         const val Watch32 = "https://watch32.sx"
         const val movieBox= "https://api.inmoviebox.com"
@@ -231,6 +229,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val kimcartoonAPI = "https://kimcartoon.si"
         const val yFlix = "https://yflix.to"
         const val moviesClubApi = "https://moviesapi.club"
+        const val cinemacity = "https://cinemacity.cc"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

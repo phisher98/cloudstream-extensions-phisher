@@ -59,6 +59,7 @@ import com.phisher98.StreamPlayExtractor.invokeXDmovies
 import com.phisher98.StreamPlayExtractor.invokeYflix
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
+import com.phisher98.StreamPlayExtractor.invokecinemacity
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokemp4hydra
@@ -256,8 +257,11 @@ fun buildProviders(): List<Provider> {
         Provider("YFlix", "YFlix") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeYflix(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moviesapi", "MoviesApi Club") { res, subtitleCallback, callback, _, _ ->
+        Provider("moviesapi", "MoviesApi Club") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMoviesApi(res.id, res.season, res.episode, callback)
+        },
+        Provider("CinemaCity", "CinemaCity (English)") { res, _, callback, _, _ ->
+            invokecinemacity(res.imdbId, res.season,res.episode,  callback)
         },
     )
 }

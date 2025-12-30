@@ -5969,6 +5969,111 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokecinemacity(
+        imdbId: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (imdbId.isNullOrBlank()) return
+
+        val headers = mapOf(
+            "Cookie" to base64Decode("ZGxlX3VzZXJfaWQ9MzI3Mjk7IGRsZV9wYXNzd29yZD04OTQxNzFjNmE4ZGFiMThlZTU5NGQ1YzY1MjAwOWEzNTs=")
+        )
+
+        val searchUrl = "$cinemacity/index.php?do=search&subaction=search&search_start=1&full_search=0&story=$imdbId"
+
+        val pageUrl = app.get(searchUrl, headers)
+            .document
+            .selectFirst("div.dar-short_item > a")
+            ?.attr("href")
+            ?: return
+
+        val script = app.get(pageUrl, headers)
+            .document
+            .select("script:containsData(atob)")
+            .getOrNull(1)
+            ?.data()
+            ?: return
+
+        val playerJson = JSONObject(
+            base64Decode(
+                script.substringAfter("atob(\"").substringBefore("\")")
+            ).substringAfter("new Playerjs(").substringBeforeLast(");")
+        )
+
+
+        val fileArray = JSONArray(playerJson.getString("file"))
+
+        fun extractQuality(url: String): Int {
+            return when {
+                url.contains("2160p") -> Qualities.P2160.value
+                url.contains("1440p") -> Qualities.P1440.value
+                url.contains("1080p") -> Qualities.P1080.value
+                url.contains("720p")  -> Qualities.P720.value
+                url.contains("480p")  -> Qualities.P480.value
+                url.contains("360p")  -> Qualities.P360.value
+                else -> Qualities.Unknown.value
+            }
+        }
+
+        suspend fun emitExtractorLinks(files: String) {
+
+            callback.invoke(
+                newExtractorLink(
+                    "CineCity",
+                    "CineCity",
+                    files,
+                    INFER_TYPE
+                ) {
+                    referer = pageUrl
+                    quality = extractQuality(files)
+                }
+            )
+        }
+
+        val first = fileArray.getJSONObject(0)
+
+        // MOVIE
+        if (!first.has("folder")) {
+            emitExtractorLinks(
+                files = first.getString("file")
+            )
+            return
+        }
+
+        // SERIES
+        for (i in 0 until fileArray.length()) {
+            val seasonJson = fileArray.getJSONObject(i)
+
+            val seasonNumber = Regex("Season\\s*(\\d+)", RegexOption.IGNORE_CASE)
+                .find(seasonJson.optString("title"))
+                ?.groupValues
+                ?.get(1)
+                ?.toIntOrNull()
+                ?: continue
+
+            if (season != null && seasonNumber != season) continue
+
+            val episodes = seasonJson.getJSONArray("folder")
+            for (j in 0 until episodes.length()) {
+                val epJson = episodes.getJSONObject(j)
+
+                val episodeNumber = Regex("Episode\\s*(\\d+)", RegexOption.IGNORE_CASE)
+                    .find(epJson.optString("title"))
+                    ?.groupValues
+                    ?.get(1)
+                    ?.toIntOrNull()
+                    ?: continue
+
+                if (episode != null && episodeNumber != episode) continue
+
+                emitExtractorLinks(
+                    files = epJson.getString("file")
+                )
+            }
+        }
+    }
 
 }
 
