@@ -3,18 +3,21 @@ package com.phisher98.settings
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.content.res.Resources
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.view.*
-import android.widget.*
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.BuildConfig
-import com.phisher98.StreamPlayPlugin
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Switch
 import androidx.core.content.edit
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
-import com.phisher98.*
+import com.phisher98.BuildConfig
+import com.phisher98.StreamPlay
+import com.phisher98.StreamPlayAnime
+import com.phisher98.StreamPlayPlugin
 
 class ToggleFragment(
     plugin: StreamPlayPlugin,
@@ -57,10 +60,10 @@ class ToggleFragment(
 
         val apis = listOf(
             StreamPlay(sharedPref),
-            StreamPlayLite(),
-            StreamPlayTorrent(),
+            //StreamPlayLite(),
+            //StreamPlayTorrent(),
             StreamPlayAnime(),
-            StreamplayTorrentAnime()
+            //StreamplayTorrentAnime()
         )
 
         val savedKey = "enabled_plugins_saved"
