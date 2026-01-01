@@ -533,12 +533,6 @@ data class SubtitleKAA(
     val src: String,
 )
 
-data class Player4uLinkData(
-    val name: String,
-    val url: String,
-)
-
-
 //
 //StremplayAPI
 
@@ -977,5 +971,6 @@ data class EmbedmasterSourceItem(
 data class VideasySource(
     val key: String,
     val name: String,
+    val language: String,
     val movieOnly: Boolean = false
 )

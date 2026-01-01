@@ -1498,23 +1498,33 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
         val videasySources = listOf(
-            VideasySource("myflixerzupcloud", "Neon"),
-            VideasySource("1movies", "Sage"),
-            VideasySource("moviebox", "Cypher"),
-            VideasySource("cdn", "Yoru", movieOnly = true),
-            VideasySource("primewire", "Reyna"),
-            VideasySource("onionplay", "Omen"),
-            VideasySource("m4uhd", "Breach"),
-            VideasySource("hdmovie", "Vyse"),
-            VideasySource("meine?language=german", "Killjoy"),
-            VideasySource("meine?language=italian", "Harbor"),
-            VideasySource("meine?language=french", "Chamber", movieOnly = true),
-            VideasySource("cuevana-latino", "Gekko"),
-            VideasySource("cuevana-spanish", "Kayo"),
-            VideasySource("superflix", "Raze"),
-            VideasySource("overflix", "Phoenix"),
-            VideasySource("visioncine", "Astra")
+            VideasySource("myflixerzupcloud", "Neon", "Original"),
+            VideasySource("1movies", "Sage", "Original"),
+            VideasySource("moviebox", "Cypher", "Original"),
+            VideasySource("cdn", "Yoru", "Original", movieOnly = true),
+            VideasySource("primewire", "Reyna", "Original"),
+            VideasySource("onionplay", "Omen", "Original"),
+            VideasySource("m4uhd", "Breach", "Original"),
+
+            // hdmovie variants
+            VideasySource("hdmovie", "Vyse", "Original"),
+            VideasySource("hdmovie", "Fade", "Hindi"),
+
+            // meine (language-based)
+            VideasySource("meine?language=german", "Killjoy", "German"),
+            VideasySource("meine?language=italian", "Harbor", "Italian"),
+            VideasySource("meine?language=french", "Chamber", "French", movieOnly = true),
+
+            // latin / spanish
+            VideasySource("cuevana-latino", "Gekko", "Latin"),
+            VideasySource("cuevana-spanish", "Kayo", "Spanish"),
+
+            // portuguese
+            VideasySource("superflix", "Raze", "Portuguese"),
+            VideasySource("overflix", "Phoenix", "Portuguese"),
+            VideasySource("visioncine", "Astra", "Portuguese")
         )
+
 
 
         for (source in videasySources) {
@@ -1552,7 +1562,7 @@ object StreamPlayExtractor : StreamPlay() {
                         if (link.isBlank()) continue
                         Log.d("Phisher","${source.name} ${source.key}")
                         M3u8Helper.generateM3u8(
-                            "Videasy · ${source.name}",
+                            "Videasy · ${source.name} (${source.language})",
                             link,
                             Videasy,
                             headers = videasyheaders
@@ -1569,7 +1579,7 @@ object StreamPlayExtractor : StreamPlay() {
                         if (link.isBlank()) continue
                         Log.d("Phisher","${source.name} ${source.key} $q")
                         M3u8Helper.generateM3u8(
-                            "Videasy · ${source.name}",
+                            "Videasy · ${source.name} (${source.language})",
                             link,
                             Videasy,
                             headers = videasyheaders
