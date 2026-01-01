@@ -1,6 +1,7 @@
 package com.hdhub4u
 
 import android.annotation.SuppressLint
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.ActorData
@@ -134,4 +135,72 @@ data class VideoLocal(
     val thumbnail: String? = null,
     val released: String? = null,
     val rating: Score?
+)
+
+data class Search(
+    @JsonProperty("facet_counts")
+    val facetCounts: List<Any?>,
+    val found: Long,
+    val hits: List<Hit>,
+    @JsonProperty("out_of")
+    val outOf: Long,
+    val page: Long,
+    @JsonProperty("request_params")
+    val requestParams: RequestParams,
+    @JsonProperty("search_cutoff")
+    val searchCutoff: Boolean,
+    @JsonProperty("search_time_ms")
+    val searchTimeMs: Long,
+)
+
+data class Hit(
+    val document: Document,
+    val highlight: Map<String, Any>,
+    val highlights: List<Any?>,
+    @JsonProperty("text_match")
+    val textMatch: Long,
+    @JsonProperty("text_match_info")
+    val textMatchInfo: TextMatchInfo,
+)
+
+data class Document(
+    val category: List<String>,
+    val id: String,
+    val permalink: String,
+    @JsonProperty("post_date")
+    val postDate: String,
+    @JsonProperty("post_thumbnail")
+    val postThumbnail: String,
+    @JsonProperty("post_title")
+    val postTitle: String,
+    @JsonProperty("post_type")
+    val postType: String,
+    @JsonProperty("sort_by_date")
+    val sortByDate: Long,
+)
+
+data class TextMatchInfo(
+    @JsonProperty("best_field_score")
+    val bestFieldScore: String,
+    @JsonProperty("best_field_weight")
+    val bestFieldWeight: Long,
+    @JsonProperty("fields_matched")
+    val fieldsMatched: Long,
+    @JsonProperty("num_tokens_dropped")
+    val numTokensDropped: Long,
+    val score: String,
+    @JsonProperty("tokens_matched")
+    val tokensMatched: Long,
+    @JsonProperty("typo_prefix_score")
+    val typoPrefixScore: Long,
+)
+
+data class RequestParams(
+    @JsonProperty("collection_name")
+    val collectionName: String,
+    @JsonProperty("first_q")
+    val firstQ: String,
+    @JsonProperty("per_page")
+    val perPage: Long,
+    val q: String,
 )

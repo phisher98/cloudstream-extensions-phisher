@@ -13,6 +13,7 @@ import com.phisher98.StreamPlayExtractor.invokeCinemaOS
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.phisher98.StreamPlayExtractor.invokeDotmovies
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
+import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
 import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
@@ -260,8 +261,11 @@ fun buildProviders(): List<Provider> {
         Provider("moviesapi", "MoviesApi Club") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMoviesApi(res.id, res.season, res.episode, callback)
         },
-        Provider("CinemaCity", "CinemaCity (English)") { res, _, callback, _, _ ->
+        Provider("CinemaCity", "CinemaCity") { res, _, callback, _, _ ->
             invokecinemacity(res.imdbId, res.season,res.episode,  callback)
+        },
+        Provider("EmbedMaster", "EmbedMaster") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeEmbedMaster(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
     )
 }

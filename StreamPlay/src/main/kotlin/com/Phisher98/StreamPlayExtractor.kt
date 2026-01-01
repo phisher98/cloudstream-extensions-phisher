@@ -48,6 +48,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.FormBody
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -1153,7 +1154,12 @@ object StreamPlayExtractor : StreamPlay() {
 
                         servers?.forEach { (label, serverId, effectiveType) ->
                             if (dubtype == null ||
-                                (if (effectiveType.equals("raw", ignoreCase = true)) "SUB" else effectiveType).contains(dubtype, ignoreCase = true)) {
+                                (if (effectiveType.equals(
+                                        "raw",
+                                        ignoreCase = true
+                                    )
+                                ) "SUB" else effectiveType).contains(dubtype, ignoreCase = true)
+                            ) {
                                 val sourceUrl = app.get(
                                     "$api/ajax/v2/episode/sources?id=$serverId",
                                     headers = headers
@@ -4098,7 +4104,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    @SuppressLint("NewApi")
     suspend fun invokehdhub4u(
         imdbId: String?,
         title: String?,
@@ -4111,58 +4116,89 @@ object StreamPlayExtractor : StreamPlay() {
         val baseUrl = runCatching { getDomains()?.hdhub4u }.getOrNull() ?: return
         if (title.isNullOrBlank()) return
 
-        val query = buildString {
-            append(title)
-            /*
-            when {
-                season != null -> append(" season $season")
-                year != null -> append(" $year")
+        val response = app.get(
+            "https://search.pingora.fyi/collections/post/documents/search" +
+                    "?q=$title" +
+                    "&query_by=post_title,category" +
+                    "&query_by_weights=4,2" +
+                    "&sort_by=sort_by_date:desc" +
+                    "&limit=20" +
+                    "&highlight_fields=none" +
+                    "&use_cache=true" +
+                    "&page=1",
+            referer = baseUrl
+        )
+
+        val json = try {
+            JSONObject(response.text)
+        } catch (e: Exception) {
+            Log.d("HDhub4u", "Failed to parse JSON: ${e.message}")
+            return
+        }
+        val hits = json.optJSONArray("hits") ?: return
+        Log.d("HDhub4u", "Hits count = ${hits.length()}")
+
+        val normalizeRegex = Regex("[^a-z0-9]")
+        val normalizedTitle = title.lowercase().replace(normalizeRegex, "")
+        val seasonText = season?.let { "season $it" }
+
+        val posts = mutableListOf<String>()
+
+        for (i in 0 until hits.length()) {
+            val document = hits.optJSONObject(i)
+                ?.optJSONObject("document")
+                ?: continue
+
+            val postTitle = document.optString("post_title").lowercase()
+            val permalink = baseUrl + document.optString("permalink")
+
+            if (postTitle.isBlank() || permalink.isBlank()) continue
+
+            val cleanTitle = postTitle.replace(normalizeRegex, "")
+            Log.d("HDhub4u", "Post[$i] title=$postTitle url=$permalink")
+            val matches = when {
+                season != null ->
+                    cleanTitle.contains(normalizedTitle) &&
+                            postTitle.contains(seasonText!!, ignoreCase = true)
+
+                year != null ->
+                    cleanTitle.contains(normalizedTitle) &&
+                            postTitle.contains(year.toString())
+
+                else ->
+                    cleanTitle.contains(normalizedTitle)
             }
-             */
-        }.replace(" ", "+")
 
-        val searchUrl = "$baseUrl/page/0/?s=$query" //Temp as Source is changing its Search API
-        val searchDoc = runCatching { app.get(searchUrl).documentLarge }.getOrNull() ?: return
-
-        val normalizedTitle = title.lowercase().replace(Regex("[^a-z0-9]"), "")
-        val seasonStr = season?.toString()
-
-        val posts = searchDoc.select("ul.recent-movies li.thumb").filter { li ->
-            val text = li.selectFirst("figcaption p")?.text()?.lowercase().orEmpty()
-            val cleanText = text.replace(Regex("[^a-z0-9]"), "")
-            when {
-                season == null && year != null -> cleanText.contains(normalizedTitle) && text.contains(
-                    year.toString()
-                )
-
-                season != null -> cleanText.contains(normalizedTitle) &&
-                        text.contains("season", true) &&
-                        text.contains("season $seasonStr", true)
-
-                else -> cleanText.contains(normalizedTitle)
+            if (matches) {
+                posts += permalink
             }
-        }.mapNotNull { li -> li.selectFirst("figcaption a") }
+        }
 
         val matchedPosts = if (!imdbId.isNullOrBlank()) {
-            val matched = posts.mapNotNull { post ->
-                val postUrl = post.absUrl("href")
+            val matched = posts.mapNotNull { postUrl ->
+                val postDoc = runCatching {
+                    app.get(postUrl).documentLarge
+                }.getOrNull() ?: return@mapNotNull null
 
-                val postDoc =
-                    runCatching { app.get(postUrl).documentLarge }.getOrNull()
-                        ?: return@mapNotNull null
-                val imdbLink = postDoc.selectFirst("div.kp-hc a[href*=\"imdb.com/title/$imdbId\"]")
+                val imdbHref = postDoc
+                    .selectFirst("""a[href*="imdb.com/title/$imdbId"]""")
                     ?.attr("href")
+                    ?: return@mapNotNull null
 
-                val matchedImdbId =
-                    imdbLink?.substringAfterLast("/tt")?.substringBefore("/")?.let { "tt$it" }
-                if (matchedImdbId == imdbId) post else null
+                val foundImdbId = imdbHref
+                    .substringAfter("/tt")
+                    .substringBefore("/")
+                    .let { "tt$it" }
+
+                if (foundImdbId == imdbId) postUrl else null
             }
+
             matched.ifEmpty { posts }
         } else posts
 
+
         for (el in matchedPosts) {
-            val postUrl = el.absUrl("href")
-            val doc = runCatching { app.get(postUrl).documentLarge }.getOrNull() ?: continue
+            val doc = runCatching { app.get(el).documentLarge }.getOrNull() ?: continue
 
             if (season == null) {
                 val qualityLinks =
@@ -5045,7 +5081,10 @@ object StreamPlayExtractor : StreamPlay() {
                 }
 
                 if (responseText == null) {
-                    Log.w("invokeMappleTv", "timeout after 5s for source=$source; moving to next source")
+                    Log.w(
+                        "invokeMappleTv",
+                        "timeout after 5s for source=$source; moving to next source"
+                    )
                     return@forEach
                 }
 
@@ -5061,7 +5100,7 @@ object StreamPlayExtractor : StreamPlay() {
                     headers = mapOf("Referer" to mappleTvApi)
                 ).forEach(callback)
 
-        } catch (_: Exception) {
+            } catch (_: Exception) {
                 Log.e("invokeMappleTv", "error for source=$source")
             }
         }
@@ -5944,7 +5983,8 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         if (id == null) return
 
-        val href = if (season == null) "$moviesClubApi/movie/$id" else "$moviesClubApi/tv/$id-$season-$episode"
+        val href =
+            if (season == null) "$moviesClubApi/movie/$id" else "$moviesClubApi/tv/$id-$season-$episode"
         val pageDoc = runCatching { app.get(href).document }.getOrNull() ?: return
         val iframeElement = pageDoc.selectFirst("iframe[src], iframe[data-src]") ?: return
         val iframeSrc = iframeElement.attr("src").ifEmpty { iframeElement.attr("data-src") }
@@ -5958,8 +5998,7 @@ object StreamPlayExtractor : StreamPlay() {
         val unPacked = runCatching { getAndUnpack(scriptData) }.getOrNull() ?: scriptData
         val m3u8 = Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)
 
-        if (m3u8!=null)
-        {
+        if (m3u8 != null) {
             M3u8Helper.generateM3u8(
                 "MoviesApi Club",
                 m3u8,
@@ -5981,7 +6020,8 @@ object StreamPlayExtractor : StreamPlay() {
             "Cookie" to base64Decode("ZGxlX3VzZXJfaWQ9MzI3Mjk7IGRsZV9wYXNzd29yZD04OTQxNzFjNmE4ZGFiMThlZTU5NGQ1YzY1MjAwOWEzNTs=")
         )
 
-        val searchUrl = "$cinemacity/index.php?do=search&subaction=search&search_start=1&full_search=0&story=$imdbId"
+        val searchUrl =
+            "$cinemacity/index.php?do=search&subaction=search&search_start=1&full_search=0&story=$imdbId"
 
         val pageUrl = app.get(searchUrl, headers)
             .document
@@ -6010,9 +6050,9 @@ object StreamPlayExtractor : StreamPlay() {
                 url.contains("2160p") -> Qualities.P2160.value
                 url.contains("1440p") -> Qualities.P1440.value
                 url.contains("1080p") -> Qualities.P1080.value
-                url.contains("720p")  -> Qualities.P720.value
-                url.contains("480p")  -> Qualities.P480.value
-                url.contains("360p")  -> Qualities.P360.value
+                url.contains("720p") -> Qualities.P720.value
+                url.contains("480p") -> Qualities.P480.value
+                url.contains("360p") -> Qualities.P360.value
                 else -> Qualities.Unknown.value
             }
         }
@@ -6075,7 +6115,152 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+
+    suspend fun invokeEmbedMaster(
+        imdbId: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        if (imdbId.isNullOrBlank()) return
+
+        val session_token_regex =
+            Regex("""var\s+token\s*=\s*['"]([^'"]+)['"]""")
+
+        val scrapemaster_headers = mapOf(
+            "Accept" to "application/json",
+            "Origin" to "https://embdmstrplayer.com",
+            "Referer" to "https://embdmstrplayer.com/",
+            "User-Agent" to USER_AGENT
+        )
+
+
+        val embedPageUrl = when (season) {
+            null -> "$embedmaster/movie/$imdbId"
+            else -> "$embedmaster/tv/$imdbId/$season/$episode"
+        }
+
+        val embedResponse = app.get(embedPageUrl)
+        val embedDocument = embedResponse.document
+        val embedBaseUrl = getBaseUrl(embedResponse.url)
+
+        val watchActionPath = embedDocument
+            .select("form[action]")
+            .attr("action")
+            .takeIf { it.isNotBlank() }
+            ?: return
+
+        val attestToken = embedDocument
+            .selectFirst("input[name=attest]")
+            ?.attr("value")
+            ?: return
+
+        val postBody = FormBody.Builder()
+            .add("attest", attestToken)
+            .build()
+
+        val postHeaders = mapOf(
+            "Origin" to embedBaseUrl,
+            "Referer" to embedPageUrl,
+            "User-Agent" to USER_AGENT,
+            "Content-Type" to "application/x-www-form-urlencoded"
+        )
+
+        val watchPageText = app.post(
+            embedBaseUrl + watchActionPath,
+            requestBody = postBody,
+            headers = postHeaders
+        ).text
+
+        val sessionToken = session_token_regex
+            .find(watchPageText)
+            ?.groupValues
+            ?.get(1)
+            ?: return
+
+        val sourcesText = app.get(
+            "https://scrapemaster.net/api/sources/$sessionToken",
+            headers = scrapemaster_headers
+        ).text
+
+        val jsonMapper = jacksonObjectMapper()
+
+        sourcesText
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it.first() == '{' && it.last() == '}' }
+            .mapNotNull {
+                runCatching {
+                    jsonMapper.readValue<EmbedmasterSourceItem>(it)
+                }.getOrNull()
+            }
+            .filter { it.type == "server" && it.sourceUrl.isNotBlank() }
+            .forEach { source ->
+
+                val playResponse = app.get(
+                    "https://embdmstrplayer.com/play/${source.sourceUrl}"
+                )
+
+                val doc = playResponse.document
+                val baseUrl = getBaseUrl(playResponse.url)
+
+                val candidateUrls = mutableSetOf<String>()
+
+                doc.select("iframe[src], a[href], source[src], video[src]").forEach { el ->
+                    val attrName = if (el.hasAttr("src")) "src" else "href"
+                    val rawValue = el.attr(attrName).trim()
+
+                    if (rawValue.isEmpty()) return@forEach
+
+                    val finalUrl = when {
+                        rawValue.startsWith("http") -> rawValue
+                        rawValue.startsWith("//") -> "https:$rawValue"
+                        rawValue.startsWith("/") -> baseUrl + rawValue
+                        else -> "$baseUrl/$rawValue"
+                    }
+
+                    candidateUrls.add(finalUrl)
+                }
+
+                candidateUrls.forEach { url ->
+                    if (!url.contains(".php", ignoreCase = true)) {
+                        loadExtractor(
+                            url,
+                            embedmaster,
+                            subtitleCallback,
+                            callback
+                        )
+                        return@forEach
+                    }
+
+                    val phpPageText = app.get(url).text
+                    val playerFileRegex = Regex("""file\s*:\s*["']([^"']+)["']""")
+
+                    val realMediaUrl = playerFileRegex
+                        .find(phpPageText)
+                        ?.groupValues
+                        ?.get(1)
+                        ?: return@forEach
+
+                    callback.invoke(
+                        newExtractorLink(
+                            "EmbedMaster",
+                            "EmbedMaster ${source.sourceName}",
+                            realMediaUrl,
+                            ExtractorLinkType.M3U8
+                        )
+                        {
+                            this.quality = Qualities.P1080.value
+                        }
+                    )
+
+                }
+
+            }
+    }
 }
+
 
 
 

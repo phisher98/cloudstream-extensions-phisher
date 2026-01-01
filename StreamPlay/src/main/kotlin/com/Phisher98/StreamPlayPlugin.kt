@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import androidx.core.content.edit
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainActivity
+import com.lagradost.cloudstream3.extractors.FilemoonV2
 import com.lagradost.cloudstream3.extractors.Vidguardto2
 import com.lagradost.cloudstream3.plugins.PluginData
 import com.lagradost.cloudstream3.plugins.PluginManager
@@ -172,7 +173,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(PixelDrainDev())
         registerExtractorAPI(Krakenfiles())
         registerExtractorAPI(MegaUpTwoTwo())
-
+        registerExtractorAPI(Movearnpre())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity

@@ -230,6 +230,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val yFlix = "https://yflix.to"
         const val moviesClubApi = "https://moviesapi.club"
         const val cinemacity = "https://cinemacity.cc"
+        const val embedmaster = "https://embedmaster.link"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

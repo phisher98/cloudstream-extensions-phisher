@@ -90,14 +90,35 @@ class HDhub4uProvider : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList {
-        val doc = app.get(
-            "$mainUrl/page/$page/?s=$query",
-            cacheTime = 60,
-            headers = headers
-        ).documentLarge
-        return doc.select(".recent-movies > li.thumb").mapNotNull { toResult(it) }.toNewSearchResponseList()
+    private fun Document.toSearchResult(): SearchResponse {
+        return newMovieSearchResponse(
+            name = postTitle,
+            url = permalink,
+            type = TvType.Movie
+        ) {
+            posterUrl = postThumbnail
+        }
     }
+
+
+    override suspend fun search(query: String, page: Int): SearchResponseList {
+        val response = app.get(
+            "https://search.pingora.fyi/collections/post/documents/search" +
+                    "?q=$query" +
+                    "&query_by=post_title,category" +
+                    "&query_by_weights=4,2" +
+                    "&sort_by=sort_by_date:desc" +
+                    "&limit=15" +
+                    "&highlight_fields=none" +
+                    "&use_cache=true" +
+                    "&page=$page",
+            headers = headers,
+            referer = mainUrl
+        ).parsedSafe<Search>()
+
+        return response?.hits!!.map { hit -> hit.document.toSearchResult() }.toNewSearchResponseList()
+    }
+
 
     private fun extractLinksATags(aTags: Elements): List<String> {
         val allowedDomains = Regex("""https://(.*\.)?(hdstream4u|hubstream)\..*""")
