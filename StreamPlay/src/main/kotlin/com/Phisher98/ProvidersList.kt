@@ -14,10 +14,10 @@ import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.phisher98.StreamPlayExtractor.invokeDotmovies
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
-import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
+import com.phisher98.StreamPlayExtractor.invokeHexa
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
@@ -34,7 +34,6 @@ import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
 import com.phisher98.StreamPlayExtractor.invokeNuvioStreams
 import com.phisher98.StreamPlayExtractor.invokePlaydesi
-import com.phisher98.StreamPlayExtractor.invokePlayer4U
 import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
@@ -51,7 +50,6 @@ import com.phisher98.StreamPlayExtractor.invokeVidPlus
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVideasy
 import com.phisher98.StreamPlayExtractor.invokeVidlink
-import com.phisher98.StreamPlayExtractor.invokeVidnest
 import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
@@ -88,9 +86,6 @@ fun buildProviders(): List<Provider> {
         Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub)
         },
-        Provider("player4u", "Player4U") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokePlayer4U(res.title, res.season, res.episode, res.year, callback)
-        },
         Provider("vidsrccc", "Vidsrccc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
         },
@@ -120,9 +115,6 @@ fun buildProviders(): List<Provider> {
         },
         Provider("multiembed", "MultiEmbed") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, callback)
-        },
-        Provider("emovies", "EMovies") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeEmovies(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback)
@@ -210,9 +202,6 @@ fun buildProviders(): List<Provider> {
         Provider("mappletv", "MappleTV") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMappleTv(res.id, res.season, res.episode, callback)
         },
-        Provider("vidnest", "Vidnest") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeVidnest(res.id, res.season, res.episode, callback)
-        },
         Provider("dotmovies", "DotMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeDotmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
@@ -266,6 +255,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("EmbedMaster", "EmbedMaster") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeEmbedMaster(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+        },
+        Provider("HexaSU", "HexaSU") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeHexa(res.id, res.season, res.episode, callback)
         },
     )
 }

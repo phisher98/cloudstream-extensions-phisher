@@ -191,7 +191,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val nineTvAPI = "https://moviesapi.club"
         const val zshowAPI = BuildConfig.ZSHOW_API
         const val ridomoviesAPI = "https://ridomovies.tv"
-        const val emoviesAPI = "https://emovies.si"
         const val allmovielandAPI = "https://allmovieland.ac"
         const val vidsrctoAPI = "https://vidsrc.cc"
         const val animetoshoAPI = "https://animetosho.org"
@@ -209,7 +208,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
         const val KickassAPI = "https://kaa.to"
-        const val Player4uApi = "https://player4u.xyz"
         const val Vidsrcxyz = "https://vidsrc-embed.su"
         const val Elevenmovies = "https://111movies.com"
         const val Watch32 = "https://watch32.sx"
@@ -219,8 +217,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vidlink = "https://vidlink.pro"
         const val cinemaOSApi = "https://cinemaos.tech"
         const val mappleTvApi = "https://mapple.uk"
-        const val vidnestApi = "https://backend.vidnest.fun"
-        const val vidnestVercelApi = "https://vidnest-backend.vercel.app"
         const val mp4hydra = "https://mp4hydra.org"
         const val vidfastProApi = "https://vidfast.pro"
         const val vidPlusApi = "https://player.vidplus.to"
@@ -231,6 +227,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val moviesClubApi = "https://moviesapi.club"
         const val cinemacity = "https://cinemacity.cc"
         const val embedmaster = "https://embedmaster.link"
+        const val hexaSU = "https://themoviedb.hexa.su"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

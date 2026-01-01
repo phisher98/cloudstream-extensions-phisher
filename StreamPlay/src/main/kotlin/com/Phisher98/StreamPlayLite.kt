@@ -11,13 +11,11 @@ import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
 import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeElevenmovies
-import com.phisher98.StreamPlayExtractor.invokeEmovies
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
-import com.phisher98.StreamPlayExtractor.invokePlayer4U
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeShowflix
@@ -95,16 +93,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                 if (!res.isAnime) invokeRidomovies(
                     res.id,
                     res.imdbId,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            },
-            {
-                if (!res.isAnime) invokeEmovies(
-                    res.title,
-                    res.year,
                     res.season,
                     res.episode,
                     subtitleCallback,
@@ -195,17 +183,6 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.episode,
                     callback
                 )
-            },
-            {
-                if (settingsForProvider.enableAdult) {
-                    if (!res.isAnime) invokePlayer4U(
-                        res.title,
-                        res.season,
-                        res.episode,
-                        res.year,
-                        callback
-                    )
-                }
             },
             {
                 invokeStreamPlay(

@@ -1267,8 +1267,8 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateVrfAES(movieId: String, userId: String): String {
     // Step 1: Derive key = SHA-256("hack_" + userId)
-    val driveKey = base64Decode("aGU1aWRnb2JJUV8=")
-    val keyData = "$driveKey$userId".toByteArray(Charsets.UTF_8)
+    val driveKey = base64Decode("MmpFWUwzSlJ4Qg==")
+    val keyData = "${driveKey}_$userId".toByteArray(Charsets.UTF_8)
     val keyBytes = MessageDigest.getInstance("SHA-256").digest(keyData)
     val keySpec = SecretKeySpec(keyBytes, "AES")
     val ivSpec = IvParameterSpec(ByteArray(16))
@@ -2098,4 +2098,10 @@ suspend fun <T> retry(
 
 fun String.fixSourceUrl(): String {
     return this.replace("/manifest.json", "").replace("stremio://", "https://")
+}
+
+fun generateHexKey32(): String {
+    val bytes = ByteArray(32)
+    SecureRandom().nextBytes(bytes)
+    return bytes.joinToString("") { "%02x".format(it) }
 }

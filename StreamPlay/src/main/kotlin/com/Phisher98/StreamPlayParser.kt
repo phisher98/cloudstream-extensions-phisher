@@ -7,29 +7,6 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
-//Vidsrccc
-
-data class Vidsrcccservers(
-    val data: List<VidsrcccDaum>,
-    val success: Boolean,
-)
-
-data class VidsrcccDaum(
-    val name: String,
-    val hash: String,
-)
-
-data class Vidsrcccm3u8(
-    val data: VidsrcccData,
-    val success: Boolean,
-)
-
-data class VidsrcccData(
-    val type: String,
-    val source: String,
-)
-
-
 //Anichi
 
 data class AnichiRoot(
@@ -320,18 +297,6 @@ data class AllMovielandPlaylist(
     @JsonProperty("file") val file: String? = null,
     @JsonProperty("key") val key: String? = null,
     @JsonProperty("href") val href: String? = null,
-)
-data class EMovieServer(
-    @JsonProperty("value") val value: String? = null,
-)
-
-data class EMovieSources(
-    @JsonProperty("file") val file: String? = null,
-)
-
-data class EMovieTraks(
-    @JsonProperty("file") val file: String? = null,
-    @JsonProperty("label") val label: String? = null,
 )
 
 data class ShowflixSearchMovies(
@@ -921,31 +886,6 @@ data class VidlinkCaption(
     val hasCorsRestrictions: Boolean,
 )
 
-
-data class Vidnest(
-    val streams: List<VidnestStream>,
-    val totalLanguages: Long,
-)
-
-data class VidnestStream(
-    val language: String,
-    val url: String,
-    val headers: VidnestHeaders,
-)
-
-data class VidnestHeaders(
-    @JsonProperty("Referer")
-    val referer: String,
-    @JsonProperty("User-Agent")
-    val userAgent: String,
-) {
-    fun toMap(): Map<String, String> = mapOf(
-        "Referer" to referer,
-        "User-Agent" to userAgent
-    )
-}
-
-
 data class PrimeSrcServerList(
     val servers: List<PrimeSrcServer>,
 )
@@ -1032,4 +972,10 @@ data class EmbedmasterSourceItem(
     val sourceIcon: Long? = null,
     @JsonProperty("source_url")
     val sourceUrl: String,
+)
+
+data class VideasySource(
+    val key: String,
+    val name: String,
+    val movieOnly: Boolean = false
 )
