@@ -72,47 +72,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-val encodedIndex = arrayOf(
-    "GamMovies",
-    "JSMovies",
-    "BlackMovies",
-    "CodexMovies",
-    "RinzryMovies",
-    "EdithxMovies",
-    "XtremeMovies",
-    "PapaonMovies[1]",
-    "PapaonMovies[2]",
-    "JmdkhMovies",
-    "RubyMovies",
-    "ShinobiMovies",
-    "VitoenMovies",
-)
-
-val lockedIndex = arrayOf(
-    "CodexMovies",
-    "EdithxMovies",
-)
-
-val mkvIndex = arrayOf(
-    "EdithxMovies",
-    "JmdkhMovies",
-)
-
-val untrimmedIndex = arrayOf(
-    "PapaonMovies[1]",
-    "PapaonMovies[2]",
-    "EdithxMovies",
-)
-
-val needRefererIndex = arrayOf(
-    "ShinobiMovies",
-)
-
-val ddomainIndex = arrayOf(
-    "RinzryMovies",
-    "ShinobiMovies"
-)
-
 val mimeType = arrayOf(
     "video/x-matroska",
     "video/mp4",
