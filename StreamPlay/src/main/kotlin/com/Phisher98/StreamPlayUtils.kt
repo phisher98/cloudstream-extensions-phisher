@@ -126,13 +126,6 @@ suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: S
     return link
 }
 
-//EmbedSu
-
-fun EmbedSuitemparseJson(jsonString: String): List<EmbedsuItem> {
-    val gson = Gson()
-    return gson.fromJson(jsonString, Array<EmbedsuItem>::class.java).toList()
-}
-
 suspend fun getDirectGdrive(url: String): String {
     val fixUrl = if (url.contains("&export=download")) {
         url
