@@ -839,6 +839,8 @@ data class MorphDaum(
 
 data class CinemaOsSecretKeyRequest(
     val tmdbId: String,
+
+    val imdbId: String,
     val seasonId: String,
     val episodeId: String
 )
