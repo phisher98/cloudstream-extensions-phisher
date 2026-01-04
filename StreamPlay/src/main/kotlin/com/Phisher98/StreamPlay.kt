@@ -228,6 +228,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val cinemacity = "https://cinemacity.cc"
         const val embedmaster = "https://embedmaster.link"
         const val hexaSU = "https://themoviedb.hexa.su"
+        const val bidSrc = "https://bidsrc.pro"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

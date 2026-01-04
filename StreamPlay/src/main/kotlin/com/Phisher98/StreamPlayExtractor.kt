@@ -55,17 +55,21 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.Base64
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.collections.mapOf
 import kotlin.math.max
 
 
@@ -1278,7 +1282,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val encodedJson = match?.groupValues?.get(1)
 
                 if (encodedJson != null) {
-                    val unescapedJson = org.jsoup.parser.Parser.unescapeEntities(encodedJson, false)
+                    val unescapedJson = Parser.unescapeEntities(encodedJson, false)
                     val json = JSONObject(unescapedJson)
 
                     val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
@@ -4728,92 +4732,54 @@ object StreamPlayExtractor : StreamPlay() {
         year: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val sourceHeaders = mapOf(
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.9",
-            "Connection" to "keep-alive",
-            "Referer" to cinemaOSApi,
-            "Host" to "cinemaos.tech",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
-            "sec-ch-ua-mobile" to "?0",
-            "sec-ch-ua-platform" to "\"Windows\"",
-            "Content-Type" to "application/json"
-        )
-
-        val fixTitle = title?.replace(" ", "+")
-        val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(
-            tmdbId = tmdbId.toString(),
-            seasonId = season?.toString() ?: "",
-            episodeId = episode?.toString() ?: ""
-        )
-        val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest, season != null)
-        val type = if (season == null) {
-            "movie"
-        } else {
-            "tv"
-        }
-        val sourceUrl = if (season == null) {
-            "$cinemaOSApi/api/fuckit?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"
-        } else {
-            "$cinemaOSApi/api/fuckit?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"
-        }
-        val sourceResponse =
-            app.get(sourceUrl, headers = sourceHeaders, timeout = 60).parsedSafe<CinemaOSReponse>()
-        val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data)
-        val json = parseCinemaOSSources(decryptedJson.toString())
-        json.forEach {
-            val extractorLinkType = if (it["type"]?.contains("hls", true) ?: false) {
-                ExtractorLinkType.M3U8
-            } else if (it["type"]?.contains("dash", true) ?: false) {
-                ExtractorLinkType.DASH
-            } else if (it["type"]?.contains("mp4", true) ?: false) {
-                ExtractorLinkType.VIDEO
-            } else {
-                INFER_TYPE
-            }
-            val bitrateQuality = if (it["bitrate"]?.contains("fhd", true) ?: false) {
-                Qualities.P1080.value
-            } else if (it["bitrate"]?.contains("hd", true) ?: false) {
-                Qualities.P720.value
-            } else {
-                Qualities.P1080.value
-            }
-            val quality =
-                if (it["quality"]?.isNotEmpty() == true && it["quality"]?.toIntOrNull() != null) getQualityFromName(
-                    it["quality"]
-                ) else if (it["quality"]?.isNotEmpty() == true) if (it["quality"]?.contains(
-                        "fhd",
-                        true
-                    ) ?: false
-                ) {
-                    Qualities.P1080.value
-                } else if (it["quality"]?.contains("hd", true) ?: false) {
-                    Qualities.P720.value
-                } else {
-                    Qualities.P1080.value
-                } else bitrateQuality
-            callback.invoke(
-                newExtractorLink(
-                    "CinemaOS [${it["server"]}] ${it["bitrate"]}  ${it["speed"]}".replace(
-                        "\\s{2,}".toRegex(),
-                        " "
-                    ).trim(),
-                    "CinemaOS [${it["server"]}] ${it["bitrate"]} ${it["speed"]}".replace(
-                        "\\s{2,}".toRegex(),
-                        " "
-                    ).trim(),
-                    url = it["url"].toString(),
-                    type = extractorLinkType
-                )
-                {
-                    this.headers = mapOf("Referer" to cinemaOSApi)
-                    this.quality = quality
-                }
+        try {
+            val sourceHeaders = mapOf(
+                "Accept" to "*/*",
+                "Accept-Language" to "en-US,en;q=0.9",
+                "Connection" to "keep-alive",
+                "Referer" to cinemaOSApi,
+                "Host" to "cinemaos.tech",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "same-origin",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+                "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
+                "sec-ch-ua-mobile" to "?0",
+                "sec-ch-ua-platform" to "\"Windows\"",
+                "Content-Type" to "application/json"
             )
+
+            val fixTitle = title?.replace(" ", "+")
+            val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(),imdbId= imdbId?.toString() ?: "", seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
+            val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,season != null)
+            val type = if(season == null) {"movie"}  else {"tv"}
+            val sourceUrl = if(season == null) {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
+            val sourceResponse = app.get(sourceUrl, headers = sourceHeaders,timeout = 60).parsedSafe<CinemaOSReponse>()
+            val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data,)
+            val json = parseCinemaOSSources(decryptedJson.toString())
+            json.forEach {
+                try {
+                    val extractorLinkType = if(it["type"]?.contains("hls",true) ?: false) { ExtractorLinkType.M3U8} else if(it["type"]?.contains("dash",true) ?: false){ ExtractorLinkType.DASH} else if(it["type"]?.contains("mp4",true) ?: false){ ExtractorLinkType.VIDEO} else { INFER_TYPE}
+                    val bitrateQuality = if(it["bitrate"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["bitrate"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value}
+                    val quality =  if(it["quality"]?.isNotEmpty() == true && it["quality"]?.toIntOrNull() !=null) getQualityFromName(it["quality"]) else if (it["quality"]?.isNotEmpty() == true)  if(it["quality"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["quality"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value} else bitrateQuality
+                    callback.invoke(
+                        newExtractorLink(
+                            "CinemaOS [${it["server"]}] ${it["bitrate"]}  ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
+                            "CinemaOS [${it["server"]}] ${it["bitrate"]} ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
+                            url = it["url"].toString(),
+                            type = extractorLinkType
+                        )
+                        {
+                            this.headers = mapOf("Referer" to cinemaOSApi) + M3U8_HEADERS
+                            this.quality = quality
+                        }
+                    )
+                } catch (e: Exception) {
+                    TODO("Not yet implemented")
+                }
+            }
+        } catch (e: Exception) {
+            TODO("Not yet implemented")
         }
     }
 
@@ -6064,6 +6030,46 @@ object StreamPlayExtractor : StreamPlay() {
                 ).forEach(callback)
             }
         }
+
+    }
+
+    suspend fun invokBidsrc(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+
+        val headers = mapOf("referer" to bidSrc)
+
+        val api = if (season == null) {
+            "$bidSrc/api/movie/$tmdbId"
+        } else {
+            "$bidSrc/api/tv/$tmdbId/$season/$episode"
+        }
+
+        val response = app.get(api, timeout = 30, headers = headers).parsedSafe<BidSrcResponse>()
+        response?.servers?.forEach { server ->
+            val decodedUrl = String(Base64.getDecoder().decode(server.url)).reversed()
+            val finalUrl = decodedUrl.substringAfter("/api/proxy?url=")
+            val decoded = URLDecoder.decode(finalUrl, StandardCharsets.UTF_8)
+            callback.invoke(
+                newExtractorLink(
+                    "Bidsrc",
+                    "Bidsrc ${server.name}",
+                    decoded,
+                    if(decoded.contains("m3u8")) ExtractorLinkType.M3U8 else INFER_TYPE
+                )
+                {
+                    this.quality = Qualities.P1080.value
+                    this.headers = if(server.headers != null) mapOf(
+                                    "Referer" to server.headers.referer,
+                                    "Origin" to server.headers.origin) else mapOf()
+                }
+            )
+        }
+
+
 
     }
 }
