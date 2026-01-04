@@ -70,7 +70,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
         private const val Cinemeta = "https://v3-cinemeta.strem.io"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
-        private const val apiKey = BuildConfig.TMDB_API
+        private const val apiKey = "2a7d4498c790ee971ae3369d0327d57c"
         private const val simkl = "https://api.simkl.com"
         private var currentBaseUrl: String? = null
 
@@ -228,6 +228,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val cinemacity = "https://cinemacity.cc"
         const val embedmaster = "https://embedmaster.link"
         const val hexaSU = "https://themoviedb.hexa.su"
+        const val bidSrc = "https://bidsrc.pro"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

@@ -976,3 +976,25 @@ data class VideasySource(
     val language: String,
     val movieOnly: Boolean = false
 )
+
+data class BidSrcResponse(
+    val total: Long,
+    val sources: List<String>,
+    val servers: List<Server>,
+)
+
+data class Server(
+    val name: String,
+    val quality: String,
+    val type: String,
+    val url: String,
+    val headers: BidSrcHeaders?,
+)
+
+data class BidSrcHeaders(
+    @JsonProperty("Referer")
+    val referer: String,
+    @JsonProperty("Origin")
+    val origin: String,
+)
+

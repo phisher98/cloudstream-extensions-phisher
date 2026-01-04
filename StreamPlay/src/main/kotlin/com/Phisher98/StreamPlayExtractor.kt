@@ -55,17 +55,21 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.Base64
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.collections.mapOf
 import kotlin.math.max
 
 
@@ -1278,7 +1282,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val encodedJson = match?.groupValues?.get(1)
 
                 if (encodedJson != null) {
-                    val unescapedJson = org.jsoup.parser.Parser.unescapeEntities(encodedJson, false)
+                    val unescapedJson = Parser.unescapeEntities(encodedJson, false)
                     val json = JSONObject(unescapedJson)
 
                     val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
@@ -6026,6 +6030,46 @@ object StreamPlayExtractor : StreamPlay() {
                 ).forEach(callback)
             }
         }
+
+    }
+
+    suspend fun invokBidsrc(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+
+        val headers = mapOf("referer" to bidSrc)
+
+        val api = if (season == null) {
+            "$bidSrc/api/movie/$tmdbId"
+        } else {
+            "$bidSrc/api/tv/$tmdbId/$season/$episode"
+        }
+
+        val response = app.get(api, timeout = 30, headers = headers).parsedSafe<BidSrcResponse>()
+        response?.servers?.forEach { server ->
+            val decodedUrl = String(Base64.getDecoder().decode(server.url)).reversed()
+            val finalUrl = decodedUrl.substringAfter("/api/proxy?url=")
+            val decoded = URLDecoder.decode(finalUrl, StandardCharsets.UTF_8)
+            callback.invoke(
+                newExtractorLink(
+                    "Bidsrc",
+                    "Bidsrc ${server.name}",
+                    decoded,
+                    if(decoded.contains("m3u8")) ExtractorLinkType.M3U8 else INFER_TYPE
+                )
+                {
+                    this.quality = Qualities.P1080.value
+                    this.headers = if(server.headers != null) mapOf(
+                                    "Referer" to server.headers.referer,
+                                    "Origin" to server.headers.origin) else mapOf()
+                }
+            )
+        }
+
+
 
     }
 }
