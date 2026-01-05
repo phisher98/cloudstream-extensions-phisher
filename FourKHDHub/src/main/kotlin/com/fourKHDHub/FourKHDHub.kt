@@ -93,7 +93,8 @@ class FourKHDHub : MainAPI() {
         val tags = document.select("div.mt-2 span.badge").map { it.text() }
         val year = document.selectFirst("div.mt-2 span")?.text()?.toIntOrNull()
         val tvType = if ("Movies" in tags) TvType.Movie else TvType.TvSeries
-        val tmdbId = runCatching { fetchtmdb(title) }.getOrNull()
+        val isMovie = tvType == TvType.Movie
+        val tmdbId = runCatching { fetchtmdb(title,isMovie) }.getOrNull()
 
         val hrefs: List<String> = document.select("div.download-item a").eachAttr("href")
 
@@ -218,9 +219,7 @@ class FourKHDHub : MainAPI() {
                             epOverview = epObj.optString("overview").takeIf { it.isNotBlank() }
                             epThumb = epObj.optString("still_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
                             epAir = epObj.optString("air_date").takeIf { it.isNotBlank() }
-                            epRating = if (epObj.has("vote_average") && !epObj.isNull("vote_average")) {
-                                val v = epObj.optDouble("vote_average"); if (v != 0.0) v else null
-                            } else null
+                            epRating = epObj.optDouble("vote_average").takeIf { !it.isNaN() && it > 0.0 }
                             break
                         }
                     }
@@ -233,7 +232,7 @@ class FourKHDHub : MainAPI() {
                     this.posterUrl = epThumb
                     this.description = epOverview
                     addDate(epAir)
-                    this.score = Score.from10(epRating)
+                    this.score = safeScoreFrom10(epRating)
                 }
             }
 
@@ -269,9 +268,7 @@ class FourKHDHub : MainAPI() {
                                 epOverview = epObj.optString("overview").takeIf { it.isNotBlank() }
                                 epThumb = epObj.optString("still_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
                                 epAir = epObj.optString("air_date").takeIf { it.isNotBlank() }
-                                epRating = if (epObj.has("vote_average") && !epObj.isNull("vote_average")) {
-                                    val v = epObj.optDouble("vote_average"); if (v != 0.0) v else null
-                                } else null
+                                epRating = epObj.optDouble("vote_average").takeIf { !it.isNaN() && it > 0.0 }
                                 break
                             }
                         }
@@ -284,7 +281,7 @@ class FourKHDHub : MainAPI() {
                         this.posterUrl = epThumb
                         this.description = epOverview
                         addDate(epAir)
-                        this.score = Score.from10(epRating)
+                        this.score = safeScoreFrom10(epRating)
 
                     }
 
@@ -301,7 +298,7 @@ class FourKHDHub : MainAPI() {
                 this.tags = tags
                 this.recommendations = recommendations
                 this.actors = finalActorsFromTmdb
-                this.score = Score.from10(tmdbRating)
+                this.score = safeScoreFrom10(tmdbRating)
                 addTrailer(trailer)
                 addSimklId(simklIdseries)
             }
@@ -336,7 +333,7 @@ class FourKHDHub : MainAPI() {
                 this.tags = tags
                 this.recommendations = recommendations
                 this.actors = finalMovieActors
-                this.score = Score.from10(tmdbRating)
+                this.score = safeScoreFrom10(tmdbRating)
                 addTrailer(trailer)
                 addSimklId(simklIdMovie)
             }

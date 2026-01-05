@@ -3,9 +3,11 @@ package com.fourKHDHub
 import android.util.Base64
 import com.fourKHDHub.FourKHDHub.Companion.TMDBAPI
 import com.fourKHDHub.FourKHDHub.Companion.TMDBIMAGEBASEURL
+import com.fourKHDHub.FourKHDHub.Companion.TMDB_API_KEY
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -61,31 +63,26 @@ fun pen(value: String): String {
     }.joinToString("")
 }
 
-suspend fun fetchtmdb(title: String): Int? {
+suspend fun fetchtmdb(title: String, isMovie: Boolean): Int? {
     val url =
-        "$TMDBAPI/search/multi?api_key=98ae14df2b8d8f8f8136499daf79f0e0&query=" + URLEncoder.encode(
-            title,
-            "UTF-8"
-        )
+        "$TMDBAPI/search/multi?api_key=$TMDB_API_KEY&query=" +
+                URLEncoder.encode(title, "UTF-8")
+
     val json = JSONObject(app.get(url).text)
-    val results = json.optJSONArray("results") ?: return null
-    val t = title.lowercase()
-    for (i in 0 until results.length()) {
-        val obj = results.optJSONObject(i) ?: continue
-        val name = obj.optString(
-            "name",
-            obj.optString(
-                "title",
-                obj.optString(
-                    "original_name",
-                    obj.optString("original_title", "")
-                )
-            )
-        ).lowercase().replace("-"," ")
-        if (name.contains(t)) return obj.optInt("id")
+
+    return if (isMovie) {
+        json.optJSONArray("results")
+            ?.optJSONObject(0)
+            ?.takeIf { it.optString("media_type") == "movie" }
+            ?.optInt("id")
+    } else {
+        json.optJSONArray("results")
+            ?.optJSONObject(0)
+            ?.takeIf { it.optString("media_type") == "tv" }
+            ?.optInt("id")
     }
-    return null
 }
+
 
 fun parseCredits(jsonText: String?): List<ActorData> {
     if (jsonText.isNullOrBlank()) return emptyList()
@@ -152,3 +149,10 @@ suspend fun loadSourceNameExtractor(
         }
     }
 }
+
+fun safeScoreFrom10(value: Double?): Score? {
+    return value?.takeIf { !it.isNaN() && it > 0.0 }?.let {
+        Score.from10(it)
+    }
+}
+
