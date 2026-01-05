@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.StreamPlayExtractor.invokBidsrc
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
@@ -258,6 +259,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("HexaSU", "HexaSU") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeHexa(res.id, res.season, res.episode, callback)
+        },
+        Provider("BidSrc", "BidSrc") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokBidsrc(res.id, res.season, res.episode, callback)
         },
     )
 }
