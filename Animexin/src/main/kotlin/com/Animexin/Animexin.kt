@@ -61,17 +61,22 @@ class Animexin : MainAPI() {
         val type=document.selectFirst(".spe")?.text().toString()
         val tvtag=if (type.contains("Movie")) TvType.Movie else TvType.TvSeries
         return if (tvtag == TvType.TvSeries) {
-            val episodes=document.select("div.eplister > ul > li").map { info->
-                        val href1 = info.select("a").attr("href")
-                        val posterr=info.selectFirst("a img")?.attr("src") ?:""
-                        val epnum = info.selectFirst("div.epl-num")?.text()?.toIntOrNull()
-                        newEpisode(href1)
-                        {
-                            this.episode = epnum
-                            this.name="Episode $epnum"
-                            this.posterUrl=posterr
-                        }
+            val episodeRegex = Regex("(\\d+)")
+
+            val episodes = document.select("div.eplister > ul > li").map { info ->
+                val href1 = info.select("a").attr("href")
+                val posterr = info.selectFirst("a img")?.attr("src") ?: ""
+
+                val epText = info.selectFirst("div.epl-num")?.text().orEmpty()
+                val epnum = episodeRegex.find(epText)?.groupValues?.get(1)?.toIntOrNull()
+
+                newEpisode(href1) {
+                    this.episode = epnum
+                    this.name = epnum?.let { "Episode $it" } ?: epText
+                    this.posterUrl = posterr
+                }
             }
+
             newTvSeriesLoadResponse(title, url, TvType.Anime, episodes.reversed()) {
                 this.posterUrl = poster
                 this.plot = description
