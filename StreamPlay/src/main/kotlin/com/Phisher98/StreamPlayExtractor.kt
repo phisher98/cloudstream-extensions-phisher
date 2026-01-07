@@ -3068,7 +3068,7 @@ object StreamPlayExtractor : StreamPlay() {
         val figures = retry {
             val resp = app.get(searchUrl, interceptor = wpRedisInterceptor)
             if (resp.code != 200) return@retry null
-            val allFigures = resp.documentLarge.select("figure")
+            val allFigures = resp.documentLarge.select("div a")
             if (season == null) allFigures
             else {
                 val seasonPattern = Regex("""season\s*${season}\b""", RegexOption.IGNORE_CASE)
@@ -3154,12 +3154,14 @@ object StreamPlayExtractor : StreamPlay() {
 
                 if (allLinks.isNotEmpty()) {
                     allLinks.forEach { serverUrl ->
+                        Log.d("Phisher",serverUrl)
                         processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
                     }
                 } else {
                     detailDoc.select("h5 a:contains(HubCloud)")
                         .mapNotNull { it.attr("href").takeIf { href -> href.isNotBlank() } }
                         .forEach { fallbackUrl ->
+                            Log.d("Phisher",fallbackUrl)
                             processMoviesdriveUrl(fallbackUrl, subtitleCallback, callback)
                         }
                 }
@@ -6033,6 +6035,7 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokBidsrc(
         tmdbId: Int? = null,
         season: Int? = null,
