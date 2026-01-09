@@ -296,9 +296,10 @@ class StreamPlayAnime : MainAPI() {
                     invokeAnimepahe(it, episode, subtitleCallback, callback, dubStatus)
                 }
             },
-            { invokeAnizone(jpTitle, episode, callback, dubStatus) },
+
+            { invokeAnizone(jpTitle,zorotitle, episode, callback, dubStatus) },
             { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
-            { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback, dubStatus) },
+            { invokeKickAssAnime(zorotitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback, dubStatus) },
             {
                 malId?.let {

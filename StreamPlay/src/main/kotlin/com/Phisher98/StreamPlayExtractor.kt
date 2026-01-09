@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -304,7 +305,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String
     ) {
-        if (dubtype.equals("SUB", ignoreCase = true) != true) return
+        if (!dubtype.equals("SUB", ignoreCase = true)) return
         fun formatString(input: String?) = input?.replace(" ", "_").orEmpty()
 
         val jpFixTitle = formatString(jptitle)
@@ -342,18 +343,43 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeAnizone(
         jptitle: String? = null,
+        engtitle:String? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
+        Log.d("Phisher","$jptitle $engtitle")
         if (dubtype?.equals("SUB", ignoreCase = true) != true) return
         val searchResponse = app.get("https://anizone.to/anime?search=${jptitle}")
         if (searchResponse.code != 200) return
+
         val href = searchResponse.documentLarge
             .select("div.h-6.inline.truncate a")
             .firstOrNull {
                 it.text().equals(jptitle, ignoreCase = true)
             }?.attr("href")
+            ?: run {
+                if (engtitle.isNullOrBlank()) null
+                else {
+                    val fallback = app.get("https://anizone.to/anime?search=${engtitle}")
+                    if (fallback.code != 200) null
+                    else fallback.documentLarge
+                        .select("div.h-6.inline.truncate a")
+                        .firstOrNull {
+                            val jp = jptitle ?: return@firstOrNull false
+
+                            fun norm(s: String) =
+                                s.lowercase()
+                                    .replace(Regex("[-:]"), " ")
+                                    .replace(Regex("\\s+"), " ")
+                                    .trim()
+
+                            norm(it.text()).startsWith(norm(jp))
+                        }
+                        ?.attr("href")
+                }
+            }
+
         if (href.isNullOrBlank()) return
         val episodeResponse = app.get("$href/$episode")
         if (episodeResponse.code != 200) return
@@ -532,6 +558,7 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 kaasSlug?.let {
                     invokeKickAssAnime(
+                        title,
                         it,
                         episode,
                         subtitleCallback,
@@ -563,12 +590,14 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             },
             { invokeTokyoInsider(jptitle, title, episode, callback, dubStatus) },
-            { invokeAnizone(jptitle, episode, callback, dubStatus) },
+            { invokeAnizone(jptitle,title, episode, callback, dubStatus) },
             {
                 if (aniXL != null) {
                     invokeAniXL(aniXL, episode, callback, dubStatus)
                 }
-            })
+            }
+
+            )
     }
 
     suspend fun invokeAniXL(
@@ -1192,18 +1221,58 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeKickAssAnime(
-        slug: String?,
+        engtitle: String?,
+        slugid: String?,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
+        var slug = slugid
+        if (slug.isNullOrBlank()) {
+            if (engtitle.isNullOrBlank()) return
+
+            val host = "https://kickass-anime.ro/"
+
+            val json = """
+                {
+                    "page": 1,
+                    "query": "$engtitle"
+                }
+            """.trimIndent()
+
+            val requestBody = json.toRequestBody("application/json".toMediaType())
+
+            val headers = mapOf(
+                "Accept" to "*/*",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Content-Type" to "application/json",
+                "x-origin" to "kickass-anime.ru"
+            )
+
+            val searchJson = app
+                .post("${host}api/fsearch", requestBody = requestBody, headers = headers)
+                .toString()
+
+            val resultArray = JSONObject(searchJson).optJSONArray("result") ?: return
+
+            for (i in 0 until resultArray.length()) {
+                val item = resultArray.getJSONObject(i)
+                if (item.optString("title_en", "")
+                        .equals(engtitle, ignoreCase = true)
+                ) {
+                    slug = item.optString("slug")
+                    break
+                }
+            }
+        }
+
         val locale = if (dubtype?.equals("DUB", ignoreCase = true) == true) {
             "en-US"
         } else {
             "ja-JP"
         }
-        val json = app.get("$KickassAPI/api/show/$slug/episodes?ep=1&lang=$locale").toString()
+        val json = app.get("$KickassAPI/api/show/$slug/episodes?ep=1&lang=$locale", timeout = 5000L).toString()
         val jsonresponse = parseJsonToEpisodes(json)
 
         val matchedSlug = jsonresponse.firstOrNull {
@@ -6087,7 +6156,11 @@ object StreamPlayExtractor : StreamPlay() {
         response?.servers?.forEach { server ->
             val decodedUrl = String(Base64.getDecoder().decode(server.url)).reversed()
             val finalUrl = decodedUrl.substringAfter("/api/proxy?url=")
-            val decoded = URLDecoder.decode(finalUrl, StandardCharsets.UTF_8)
+            val decoded = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                URLDecoder.decode(finalUrl, StandardCharsets.UTF_8)
+            } else {
+                TODO("VERSION.SDK_INT < TIRAMISU")
+            }
             callback.invoke(
                 newExtractorLink(
                     "Bidsrc",
