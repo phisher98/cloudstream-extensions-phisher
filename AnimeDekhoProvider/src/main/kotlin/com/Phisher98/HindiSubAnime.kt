@@ -20,7 +20,7 @@ class HindiSubAnime : AnimeDekhoProvider() {
             "/category/shounen/" to "Shounen",
             "/category/action/" to "Action",
             "/category/fantasy/" to "Fantasy",
-            "/series/" to "Series",
+            "/serie/" to "Series",
         )
 
     override suspend fun loadLinks(

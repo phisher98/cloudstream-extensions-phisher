@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
-    iconUrl="https://animenosub.com/wp-content/uploads/2024/02/Animenosub-logo.png"
+    iconUrl="https://animenosub.to/wp-content/uploads/2024/02/Animenosub-logo.png"
 
     isCrossPlatform = true
 }

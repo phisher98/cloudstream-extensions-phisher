@@ -10,6 +10,43 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+data class Home(
+    val data: List<HomeDaum>,
+    val pages: Long,
+    val status: Long,
+)
+
+data class HomeDaum(
+    val id: Long,
+    @JsonProperty("created_at")
+    val createdAt: String?,
+    @JsonProperty("updated_at")
+    val updatedAt: String?,
+    val slug: String,
+    val title: String,
+    @JsonProperty("alternate_titles")
+    val alternateTitles: String?,
+    val generes: Any?,
+    val imdb: String?,
+    val tmdb: Long,
+    @JsonProperty("tmdb_type")
+    val tmdbType: String,
+    val anilist: Any?,
+    val desc: String?,
+    val start: Long,
+    val end: Long?,
+    val poster: String,
+    val backdrop: String,
+    @JsonProperty("vote_avg")
+    val voteAvg: Double,
+    @JsonProperty("vote_count")
+    val voteCount: Long,
+    @JsonProperty("item_type")
+    val itemType: String,
+    @JsonProperty("view_count")
+    val viewCount: Long,
+)
+
 data class EpisodeParser(
     val data: Data?,
     val status: Long?,
