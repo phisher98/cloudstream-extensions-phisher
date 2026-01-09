@@ -166,6 +166,11 @@ class FourKHDHub : MainAPI() {
                 }.getOrNull()
             }
 
+            val logoPath = imdbIdFromSeries?.let {
+                "https://live.metahub.space/logo/medium/$it/img"
+            }
+
+
             val simklIdseries = imdbIdFromSeries?.let { imdb ->
                 runCatching {
                     JSONObject(app.get("$SIMKL/tv/$imdb?client_id=${BuildConfig.SIMKL_CLIENT_ID}").text)
@@ -201,6 +206,7 @@ class FourKHDHub : MainAPI() {
                     }.getOrNull()
                 }
             }
+
 
             episodesMap.toSortedMap(compareBy({ it.first }, { it.second })).forEach { (seasonEpisode, hrefsList) ->
                 val (season, episode) = seasonEpisode
@@ -293,6 +299,7 @@ class FourKHDHub : MainAPI() {
             newTvSeriesLoadResponse(fixedTitle, url, TvType.TvSeries, tvSeriesEpisodes) {
                 this.posterUrl = fixedPoster
                 this.backgroundPosterUrl = fixedBackdrop
+                try { this.logoUrl = logoPath } catch(_:Throwable){}
                 this.year = fixedYear
                 this.plot = fixedPlot
                 this.tags = tags
@@ -308,6 +315,10 @@ class FourKHDHub : MainAPI() {
                     val url = "$TMDBAPI/movie/$id/external_ids?api_key=$TMDB_API_KEY"
                     JSONObject(app.get(url).textLarge).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
+            }
+
+            val logoPath = imdbIdFromMovie?.let {
+                "https://live.metahub.space/logo/medium/$it/img"
             }
 
             val simklIdMovie = imdbIdFromMovie?.let { imdb ->
@@ -328,6 +339,7 @@ class FourKHDHub : MainAPI() {
             newMovieLoadResponse(fixedTitle, url, TvType.Movie, hrefs) {
                 this.posterUrl = fixedPoster
                 this.backgroundPosterUrl = fixedBackdrop
+                try { this.logoUrl = logoPath } catch(_:Throwable){}
                 this.year = fixedYear
                 this.plot = fixedPlot
                 this.tags = tags

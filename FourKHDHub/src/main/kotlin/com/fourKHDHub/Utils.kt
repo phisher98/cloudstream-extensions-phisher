@@ -65,22 +65,29 @@ fun pen(value: String): String {
 
 suspend fun fetchtmdb(title: String, isMovie: Boolean): Int? {
     val url =
-        "$TMDBAPI/search/multi?api_key=$TMDB_API_KEY&query=" +
+        "${TMDBAPI}/search/multi?api_key=${TMDB_API_KEY}&query=" +
                 URLEncoder.encode(title, "UTF-8")
 
     val json = JSONObject(app.get(url).text)
+    val results = json.optJSONArray("results") ?: return null
 
-    return if (isMovie) {
-        json.optJSONArray("results")
-            ?.optJSONObject(0)
-            ?.takeIf { it.optString("media_type") == "movie" }
-            ?.optInt("id")
-    } else {
-        json.optJSONArray("results")
-            ?.optJSONObject(0)
-            ?.takeIf { it.optString("media_type") == "tv" }
-            ?.optInt("id")
+    val targetType = if (isMovie) "movie" else "tv"
+
+    for (i in 0 until results.length()) {
+        val item = results.optJSONObject(i) ?: continue
+
+        if (item.optString("media_type") != targetType) continue
+
+        val resultTitle = if (isMovie)
+            item.optString("title")
+        else
+            item.optString("name")
+
+        if (resultTitle.equals(title, ignoreCase = true)) {
+            return item.optInt("id")
+        }
     }
+    return null
 }
 
 

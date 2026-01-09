@@ -38,6 +38,7 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 import kotlin.random.Random
 
 
@@ -167,7 +168,8 @@ class Yflix : MainAPI() {
 
         if (allLinks.size == 1 && movieNode != null && movieNode.text().contains("Movie", ignoreCase = true)) {
             val movieId = movieNode.attr("eid")
-            val tmdbMovieId = runCatching { fetchtmdb(title) }.getOrNull()
+
+            val tmdbMovieId = runCatching { fetchtmdb(title,true) }.getOrNull()
 
             val imdbIdFromMovie = tmdbMovieId?.let { id ->
                 runCatching {
@@ -175,6 +177,10 @@ class Yflix : MainAPI() {
                     val jsonText = app.get(url).textLarge
                     JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
+            }
+
+            val logoPath = imdbIdFromMovie?.let {
+                "https://live.metahub.space/logo/medium/$it/img"
             }
 
             val simklIdMovie = imdbIdFromMovie?.let { imdb ->
@@ -209,6 +215,7 @@ class Yflix : MainAPI() {
             return newMovieLoadResponse(title, url, TvType.Movie, movieId) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgurl ?: backgroundPoster ?: poster
+                try { this.logoUrl = logoPath } catch(_:Throwable){}
                 this.plot = plot
                 this.year = year
                 this.contentRating = contentRating
@@ -223,14 +230,22 @@ class Yflix : MainAPI() {
         }
 
         val episodes = ArrayList<Episode>()
-        val tmdbShowId = runCatching { fetchtmdb(title) }.getOrNull()
+        val tmdbShowId = runCatching { fetchtmdb(title,false) }.getOrNull()
+        if (title.contains("Special"))
+        {
+            Log.d("Phisher",tmdbShowId.toString())
 
+        }
         val imdbIdFromShow = tmdbShowId?.let { id ->
             runCatching {
                 val url = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
                 val jsonText = app.get(url).textLarge
                 JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
             }.getOrNull()
+        }
+
+        val logoPath = imdbIdFromShow?.let {
+            "https://live.metahub.space/logo/medium/$it/img"
         }
 
         val simklIdShow = imdbIdFromShow?.let { imdb ->
@@ -251,7 +266,7 @@ class Yflix : MainAPI() {
 
         val bgurl = runCatching {
             val json = app.get(
-                "$TMDBAPI/movie/$imdbIdFromShow/images?api_key=$TMDB_API_KEY&language=en-US&include_image_language=en,null"
+                "$TMDBAPI/tv/$imdbIdFromShow/images?api_key=$TMDB_API_KEY&language=en-US&include_image_language=en,null"
             ).textLarge
 
             val backdrops = JSONObject(json).optJSONArray("backdrops")
@@ -307,6 +322,7 @@ class Yflix : MainAPI() {
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
             this.posterUrl = poster
             this.backgroundPosterUrl = bgurl ?: backgroundPoster ?: poster
+            try { this.logoUrl = logoPath } catch(_:Throwable){}
             this.plot = plot
             this.year = year
             this.contentRating = contentRating
@@ -417,31 +433,33 @@ class Yflix : MainAPI() {
         return jsonObject.getString("url")
     }
 
-    suspend fun fetchtmdb(title: String): Int? {
+    suspend fun fetchtmdb(title: String, isMovie: Boolean): Int? {
         val url =
-            "$TMDBAPI/search/multi?api_key=98ae14df2b8d8f8f8136499daf79f0e0&query=" + java.net.URLEncoder.encode(
-                title,
-                "UTF-8"
-            )
+            "$TMDBAPI/search/multi?api_key=$TMDB_API_KEY&query=" +
+                    URLEncoder.encode(title, "UTF-8")
+
         val json = JSONObject(app.get(url).text)
         val results = json.optJSONArray("results") ?: return null
-        val t = title.lowercase()
+
+        val targetType = if (isMovie) "movie" else "tv"
+
         for (i in 0 until results.length()) {
-            val obj = results.optJSONObject(i) ?: continue
-            val name = obj.optString(
-                "name",
-                obj.optString(
-                    "title",
-                    obj.optString(
-                        "original_name",
-                        obj.optString("original_title", "")
-                    )
-                )
-            ).lowercase().replace("-"," ")
-            if (name.contains(t)) return obj.optInt("id")
+            val item = results.optJSONObject(i) ?: continue
+
+            if (item.optString("media_type") != targetType) continue
+
+            val resultTitle = if (isMovie)
+                item.optString("title")
+            else
+                item.optString("name")
+
+            if (resultTitle.equals(title, ignoreCase = true)) {
+                return item.optInt("id")
+            }
         }
         return null
     }
+
 
     fun parseCredits(jsonText: String?): List<ActorData> {
         if (jsonText.isNullOrBlank()) return emptyList()
