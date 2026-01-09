@@ -61,7 +61,7 @@ open class AWSStream : ExtractorApi() {
         val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)
         val response = app.post(m3u8Url, headers = header, data = formdata).parsedSafe<Response>()
         response?.videoSource?.let { m3u8 ->
-            callback(
+            callback.invoke(
                 newExtractorLink(
                     name,
                     name,

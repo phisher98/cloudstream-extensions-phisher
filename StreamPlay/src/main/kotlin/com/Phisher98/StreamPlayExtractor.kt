@@ -1224,6 +1224,37 @@ object StreamPlayExtractor : StreamPlay() {
                 val query = server.src.substringAfter("?id=").substringBefore("&")
                 val html = app.get(server.src).toString()
 
+                //If HTML have m3u8
+                if (html.contains(".m3u8", ignoreCase = true)) {
+                    val match = Regex("""(https?:)?//[^\s"'<>]+\.m3u8""", RegexOption.IGNORE_CASE)
+                        .find(html)
+
+                    val videoheaders = mapOf(
+                        "Accept" to "*/*",
+                        "Accept-Language" to "en-US,en;q=0.5",
+                        "Origin" to host,
+                        "Sec-Fetch-Dest" to "empty",
+                        "Sec-Fetch-Mode" to "cors",
+                        "Sec-Fetch-Site" to "cross-site"
+                    )
+
+                    match?.value?.let { url ->
+                        val m3u8Url = if (url.startsWith("//")) "https:$url" else url
+                        callback.invoke(
+                            newExtractorLink(
+                                "VidStreaming",
+                                "VidStreaming",
+                                m3u8Url,
+                                ExtractorLinkType.M3U8
+                            )
+                            {
+                                this.quality = Qualities.P1080.value
+                                this.headers = videoheaders
+                            }
+                        )
+                    }
+                }
+
                 val (sig, timeStamp, route) = getSignature(html, server.name, query, key)
                     ?: return@forEach
                 val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
@@ -4752,7 +4783,8 @@ object StreamPlayExtractor : StreamPlay() {
             )
 
             val fixTitle = title?.replace(" ", "+")
-            val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(),imdbId= imdbId?.toString() ?: "", seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
+            val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(),imdbId= imdbId
+                ?: "", seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
             val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,season != null)
             val type = if(season == null) {"movie"}  else {"tv"}
             val sourceUrl = if(season == null) {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
@@ -4776,11 +4808,11 @@ object StreamPlayExtractor : StreamPlay() {
                             this.quality = quality
                         }
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     TODO("Not yet implemented")
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             TODO("Not yet implemented")
         }
     }

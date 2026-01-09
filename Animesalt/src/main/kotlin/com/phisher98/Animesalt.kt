@@ -27,7 +27,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Animesalt : MainAPI() {
-    override var mainUrl = "https://animesalt.cc"
+    override var mainUrl = "https://animesalt.top"
     override var name = "Animesalt"
     override val hasMainPage = true
     override var lang = "hi"

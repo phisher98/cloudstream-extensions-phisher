@@ -86,7 +86,7 @@ class Kickassanime : MainAPI() {
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query,1).items
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
 val json = """
@@ -162,15 +162,47 @@ val json = """
         app.get(data).parsedSafe<ServersRes>()?.servers?.amap{ it ->
             if(it.name.contains("VidStreaming")) {
                 val host = getBaseUrl(it.src)
-                val headers =
-                    mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+                val headers = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
                 val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
                 val query = it.src.substringAfter("?id=").substringBefore("&")
                 val html = app.get(it.src).toString()
+
+                //If HTML have m3u8
+                if (html.contains(".m3u8", ignoreCase = true)) {
+                    val match = Regex("""(https?:)?//[^\s"'<>]+\.m3u8""", RegexOption.IGNORE_CASE)
+                        .find(html)
+
+                    val videoheaders = mapOf(
+                        "Accept" to "*/*",
+                        "Accept-Language" to "en-US,en;q=0.5",
+                        "Origin" to host,
+                        "Sec-Fetch-Dest" to "empty",
+                        "Sec-Fetch-Mode" to "cors",
+                        "Sec-Fetch-Site" to "cross-site"
+                    )
+
+                    match?.value?.let { url ->
+                        val m3u8Url = if (url.startsWith("//")) "https:$url" else url
+                        callback.invoke(
+                            newExtractorLink(
+                                "VidStreaming",
+                                "VidStreaming",
+                                m3u8Url,
+                                ExtractorLinkType.M3U8
+                            )
+                            {
+                                this.quality = Qualities.P1080.value
+                                this.headers = videoheaders
+                            }
+                        )
+                    }
+                }
+
                 val (sig, timeStamp, route) = getSignature(html, it.name, query, key) ?: return@amap
                 val sourceurl = "$host$route?id=$query&e=$timeStamp&s=$sig"
                 val encjson = app.get(sourceurl, headers = headers).parsedSafe<Encrypted>()?.data
                     ?: "Not Found"
+
                 val (encryptedData, ivhex) = encjson.substringAfter(":\"")
                     .substringBefore('"')
                     .replace("\\", "")
@@ -178,6 +210,7 @@ val json = """
                 val iv = ivhex.decodeHex()
                 val decrypted =
                     tryParseJson<m3u8>(CryptoAES.decrypt(encryptedData, key, iv).toJson())
+
                 val m3u8 = httpsify(decrypted?.hls!!)
                 val videoheaders = mapOf(
                     "Accept" to "*/*",
