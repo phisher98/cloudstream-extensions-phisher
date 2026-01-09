@@ -155,10 +155,13 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val aniyear = data.startDate.year
         val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
+        val posterurl = data.coverImage.extraLarge
+        val backgroundUrl = data.bannerImage
 
         val jpTitle = data.title.romaji
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
+        val logoposter = animeMetaData?.images?.find { it.coverType == "Clearlogo" }?.url
 
         val href = LinkData(
             malId = ids.idMal,
@@ -214,11 +217,12 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                 addMalId(ids.idMal)
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeMetaData?.images
+                this.backgroundPosterUrl = backgroundUrl ?: animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl = posterurl ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
+                try { this.logoUrl = logoposter } catch(_:Throwable){}
                 this.tags = data.genres
             }
         } else {
@@ -235,6 +239,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
+                try { this.logoUrl = logoposter } catch(_:Throwable){}
                 this.tags = data.genres
                 this.showStatus = getStatus(data.status)
                 this.recommendations = data.recommendations?.edges
@@ -342,7 +347,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             fun totalEpisodes(): Int {
                 return nextAiringEpisode?.episode?.minus(1)
                     ?: episodes ?: airingSchedule?.nodes?.getOrNull(0)?.episode
-                    ?: throw Exception("Unable to calculate total episodes")
+                    ?: 0
             }
 
             fun getTitle(): String {

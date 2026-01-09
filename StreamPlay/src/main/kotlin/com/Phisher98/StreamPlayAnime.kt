@@ -1,6 +1,5 @@
 package com.phisher98
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -162,7 +161,9 @@ class StreamPlayAnime : MainAPI() {
 
         val anititle = data.getTitle()
         val aniyear = data.startDate.year
-        val posterurl = data.coverImage.medium
+        val posterurl = data.coverImage.extraLarge
+        val backgroundUrl = data.bannerImage
+
         val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
 
@@ -170,6 +171,7 @@ class StreamPlayAnime : MainAPI() {
 
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
+        val logoposter = animeMetaData?.images?.find { it.coverType == "Clearlogo" }?.url
 
         val href = LinkData(
             malId = ids.idMal,
@@ -227,11 +229,11 @@ class StreamPlayAnime : MainAPI() {
                 addMalId(ids.idMal)
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl =  data.getCoverImage() ?: animeMetaData?.images
+                this.backgroundPosterUrl = backgroundUrl ?: animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl =  posterurl ?: data.getCoverImage() ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
-
+                try { this.logoUrl = logoposter } catch(_:Throwable){}
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
             }
@@ -241,7 +243,7 @@ class StreamPlayAnime : MainAPI() {
                 addMalId(ids.idMal)
                 addEpisodes(DubStatus.Subbed, episodes)
                 addEpisodes(DubStatus.Dubbed, episodesDub)
-
+                try { this.logoUrl = logoposter } catch(_:Throwable){}
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
@@ -365,8 +367,9 @@ class StreamPlayAnime : MainAPI() {
 
             fun totalEpisodes(): Int {
                 return nextAiringEpisode?.episode?.minus(1)
-                    ?: episodes ?: airingSchedule?.nodes?.getOrNull(0)?.episode
-                    ?: throw Exception("Unable to calculate total episodes")
+                    ?: episodes
+                    ?: airingSchedule?.nodes?.getOrNull(0)?.episode
+                    ?: 0
             }
 
             fun getTitle(): String {
