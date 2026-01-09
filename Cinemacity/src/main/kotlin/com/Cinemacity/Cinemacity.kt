@@ -191,6 +191,10 @@ class Cinemacity : MainAPI() {
             }.getOrNull()?.toString()
         }
 
+        val logoPath = imdbId?.let {
+            "https://live.metahub.space/logo/medium/$it/img"
+        }
+
         val creditsJson = tmdbId?.let {
             runCatching {
                 app.get(
@@ -348,6 +352,7 @@ class Cinemacity : MainAPI() {
             ) {
                 this.backgroundPosterUrl = background ?: bgposter
                 this.posterUrl = poster
+                try { this.logoUrl = logoPath } catch(_:Throwable){}
                 this.year = year ?: responseData?.meta?.year?.toIntOrNull()
                 this.plot = buildString {
                     append(description ?: descriptions)
@@ -375,6 +380,7 @@ class Cinemacity : MainAPI() {
         ) {
             this.backgroundPosterUrl = background ?: bgposter
             this.posterUrl = poster
+            try { this.logoUrl = logoPath } catch(_:Throwable){}
             this.year = year ?: responseData?.meta?.year?.toIntOrNull()
             this.plot = buildString {
                 append(description ?: descriptions)

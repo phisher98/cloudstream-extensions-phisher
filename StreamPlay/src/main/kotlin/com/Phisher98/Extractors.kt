@@ -1861,25 +1861,20 @@ open class GDFlix : ExtractorApi() {
 
 
                 text.contains("GoFile",ignoreCase = true) -> {
-                    try {
-                        app.get(anchor.attr("href")).documentLarge
-                            .select(".row .row a").amap { gofileAnchor ->
-                                val link = gofileAnchor.attr("href")
-                                if (link.contains("gofile")) {
-                                    Gofile().getUrl(link, "", subtitleCallback, callback)
-                                }
-                            }
-                    } catch (e: Exception) {
-                        Log.d("Gofile", e.toString())
-                    }
+                    Gofile().getUrl(anchor.attr("href"))
                 }
 
-                text.contains("PixelDrain",ignoreCase = true) || text.contains("Pixel",ignoreCase = true)-> {
+                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) || text.contains("PixeLServer", ignoreCase = true) -> {
+                    val link = anchor.attr("href")
+                    val baseUrlLink = getBaseUrl(link)
+                    val finalURL = if (link.contains("download", true)) link
+                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
                     callback.invoke(
                         newExtractorLink(
-                            "$source GDFlix[Pixeldrain]",
-                            "$source GDFlix[Pixeldrain] [$fileSize]",
-                            anchor.attr("href"),
+                            "Pixeldrain",
+                            "Pixeldrain [$fileSize]",
+                            finalURL
                         ) { this.quality = quality }
                     )
                 }

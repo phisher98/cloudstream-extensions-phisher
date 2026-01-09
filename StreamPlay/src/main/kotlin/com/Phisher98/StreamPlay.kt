@@ -377,6 +377,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
         }
 
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = res.id,
+            appLangCode = langCode ?: "en"
+        )
+
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = coroutineScope {
@@ -507,6 +515,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.showStatus = getStatus(res.status)
                     this.recommendations = recommendations
                     this.actors = actors
+                    try { this.logoUrl = logoUrl } catch(_:Throwable){}
                     addTrailer(trailer)
                     addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
@@ -543,7 +552,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 this.duration = res.runtime
                 this.tags = keywords?.map { word -> word.replaceFirstChar { it.titlecase() } }
                     ?.takeIf { it.isNotEmpty() } ?: genres
-
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.score = Score.from10(res.vote_average.toString())
                 this.recommendations = recommendations
                 this.actors = actors

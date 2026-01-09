@@ -56,8 +56,7 @@ class MovieBoxProvider : MainAPI() {
     private val secretKeyDefault = base64Decode("NzZpUmwwN3MweFNOOWpxbUVXQXQ3OUVCSlp1bElRSXNWNjRGWnIyTw==")
     private val secretKeyAlt = base64Decode("WHFuMm5uTzQxL0w5Mm8xaXVYaFNMSFRiWHZZNFo1Wlo2Mm04bVNMQQ==")
 
-
-    private fun md5(input: ByteArray): String {
+        private fun md5(input: ByteArray): String {
         return MessageDigest.getInstance("MD5").digest(input)
             .joinToString("") { "%02x".format(it) }
     }
@@ -415,6 +414,14 @@ class MovieBoxProvider : MainAPI() {
             imdbRatingValue = imdbRating?.toDouble(),
         )
 
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbId,
+            appLangCode = "en"
+        )
+
         val meta = if (!imdbId.isNullOrBlank()) fetchMetaData(imdbId, type) else null
         val metaVideos = meta?.get("videos")?.toList() ?: emptyList()
 
@@ -495,6 +502,7 @@ class MovieBoxProvider : MainAPI() {
             return newTvSeriesLoadResponse(title, finalUrl, type, episodes) {
                 this.posterUrl =  coverUrl ?: Poster
                 this.backgroundPosterUrl = Background ?: backgroundUrl
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.plot = Description ?: description
                 this.year = year
                 this.tags = tags
@@ -509,6 +517,7 @@ class MovieBoxProvider : MainAPI() {
         return newMovieLoadResponse(title, finalUrl, type, id) {
             this.posterUrl = coverUrl ?: Poster
             this.backgroundPosterUrl = Background ?: backgroundUrl
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             this.plot = Description ?: description
             this.year = year
             this.tags = tags
@@ -911,4 +920,51 @@ private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
     } catch (_: Exception) {
         null
     }
+}
+
+suspend fun fetchTmdbLogoUrl(
+    tmdbAPI: String,
+    apiKey: String,
+    type: TvType,
+    tmdbId: Int?,
+    appLangCode: String?
+): String? {
+
+    if (tmdbId == null) return null
+
+    val appLang = appLangCode
+        ?.substringBefore("-")
+        ?.lowercase()
+
+    val url = if (type == TvType.Movie) {
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+    } else {
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
+    }
+
+    val json = runCatching { JSONObject(app.get(url).text) }.getOrNull()
+        ?: return null
+
+    val logos = json.optJSONArray("logos") ?: return null
+    if (logos.length() == 0) return null
+
+    fun logoUrlAt(i: Int): String = "https://image.tmdb.org/t/p/w500${logos.getJSONObject(i).optString("file_path")}"
+
+    if (!appLang.isNullOrBlank()) {
+        for (i in 0 until logos.length()) {
+            val logo = logos.optJSONObject(i) ?: continue
+            if (logo.optString("iso_639_1") == appLang) {
+                return logoUrlAt(i)
+            }
+        }
+    }
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        if (logo.optString("iso_639_1") == "en") {
+            return logoUrlAt(i)
+        }
+    }
+
+    return logoUrlAt(0)
 }

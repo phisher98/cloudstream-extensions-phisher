@@ -157,7 +157,6 @@ class HDhub4uProvider : MainAPI() {
         var background: String = image
         var description: String? = null
 
-
         val imdbUrl = doc.select("div span a[href*='imdb.com']").attr("href")
             .ifEmpty {
                 val tmdbHref = doc.select("div span a[href*='themoviedb.org']").attr("href")
@@ -216,11 +215,11 @@ class HDhub4uProvider : MainAPI() {
 
 
 
-        val responseData: ResponseDataLocal? = if (tmdbIdResolved.isBlank()) null else kotlin.runCatching {
+        val responseData: ResponseDataLocal? = if (tmdbIdResolved.isBlank()) null else runCatching {
 
             val type = if (tvtype == TvType.TvSeries) "tv" else "movie"
             val detailsText = app.get(
-                "$TMDBAPI/$type/$tmdbIdResolved?api_key=$TMDBAPIKEY&append_to_response=credits"
+                "$TMDBAPI/$type/$tmdbIdResolved?api_key=$TMDBAPIKEY&append_to_response=credits,external_ids"
             ).text
             val detailsJson = if (detailsText.isNotBlank()) JSONObject(detailsText) else JSONObject()
 
@@ -242,6 +241,14 @@ class HDhub4uProvider : MainAPI() {
             val metaBackground = detailsJson.optString("backdrop_path")
                 .takeIf { it.isNotBlank() }?.let { TMDBBASE + it } ?: image
 
+            val imdbid = detailsJson
+                .optJSONObject("external_ids")
+                ?.optString("imdb_id")
+                ?.takeIf { it.isNotBlank() }
+
+            val logoPath = imdbid?.let {
+                "https://live.metahub.space/logo/medium/$it/img"
+            }
             val actorDataList = mutableListOf<ActorData>()
 
             //cast
@@ -309,7 +316,8 @@ class HDhub4uProvider : MainAPI() {
                     background = metaBackground,
                     genres = metaGenres.ifEmpty { null },
                     videos = videos.ifEmpty { null },
-                    rating = Score.from10(metaRating)
+                    rating = Score.from10(metaRating),
+                    logo = logoPath
                 )
             )
         }.getOrNull()
@@ -336,6 +344,7 @@ class HDhub4uProvider : MainAPI() {
 
             return newMovieLoadResponse(title, url, TvType.Movie, movieList) {
                 this.backgroundPosterUrl = background
+                try { this.logoUrl = responseData?.meta?.logo } catch(_:Throwable){}
                 this.posterUrl = poster
                 this.year = year.toIntOrNull()
                 this.plot = description ?: plot
@@ -419,6 +428,7 @@ class HDhub4uProvider : MainAPI() {
 
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodesData) {
                 this.backgroundPosterUrl = background
+                try { this.logoUrl = responseData?.meta?.logo } catch(_:Throwable){}
                 this.posterUrl = poster
                 this.year = year.toIntOrNull()
                 this.plot = description ?: plot

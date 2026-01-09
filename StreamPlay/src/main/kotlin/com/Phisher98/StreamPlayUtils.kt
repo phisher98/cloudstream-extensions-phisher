@@ -50,7 +50,6 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.net.URI
 import java.net.URL
-import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.spec.KeySpec
@@ -68,7 +67,6 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.experimental.xor
-import kotlin.math.max
 import kotlin.math.min
 
 
@@ -2113,3 +2111,55 @@ fun generateHexKey32(): String {
     SecureRandom().nextBytes(bytes)
     return bytes.joinToString("") { "%02x".format(it) }
 }
+
+
+
+suspend fun fetchTmdbLogoUrl(
+    tmdbAPI: String,
+    apiKey: String,
+    type: TvType,
+    tmdbId: Int?,
+    appLangCode: String?
+): String? {
+
+    if (tmdbId == null) return null
+
+    val appLang = appLangCode
+        ?.substringBefore("-")
+        ?.lowercase()
+
+    val url = if (type == TvType.Movie) {
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+    } else {
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
+    }
+
+    val json = runCatching { JSONObject(app.get(url).text) }.getOrNull()
+        ?: return null
+
+    val logos = json.optJSONArray("logos") ?: return null
+    if (logos.length() == 0) return null
+
+    fun logoUrlAt(i: Int): String = "https://image.tmdb.org/t/p/w500${logos.getJSONObject(i).optString("file_path")}"
+
+    if (!appLang.isNullOrBlank()) {
+        for (i in 0 until logos.length()) {
+            val logo = logos.optJSONObject(i) ?: continue
+            if (logo.optString("iso_639_1") == appLang) {
+                return logoUrlAt(i)
+            }
+        }
+    }
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        if (logo.optString("iso_639_1") == "en") {
+            return logoUrlAt(i)
+        }
+    }
+
+    return logoUrlAt(0)
+}
+
+
+

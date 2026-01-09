@@ -18,6 +18,7 @@ import com.phisher98.BuildConfig
 import com.phisher98.StreamPlay
 import com.phisher98.StreamPlayAnime
 import com.phisher98.StreamPlayPlugin
+import com.phisher98.StreamPlayStremioCatelog
 
 class ToggleFragment(
     plugin: StreamPlayPlugin,
@@ -63,6 +64,7 @@ class ToggleFragment(
             //StreamPlayLite(),
             //StreamPlayTorrent(),
             StreamPlayAnime(),
+            StreamPlayStremioCatelog("","")
             //StreamplayTorrentAnime()
         )
 

@@ -125,7 +125,8 @@ data class MetaLocal(
     val background: String? = null,
     val genres: List<String>? = null,
     val videos: List<VideoLocal>? = null,
-    val rating: Score?
+    val rating: Score?,
+    val logo: String?
 )
 data class VideoLocal(
     val title: String? = null,
