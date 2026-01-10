@@ -171,7 +171,16 @@ class StreamPlayAnime : MainAPI() {
 
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
-        val logoposter = animeMetaData?.images?.find { it.coverType == "Clearlogo" }?.url
+        val tmdbid = animeMetaData?.mappings?.themoviedbId?.toIntOrNull()
+        val type = if (data.format.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
 
         val href = LinkData(
             malId = ids.idMal,
@@ -233,7 +242,7 @@ class StreamPlayAnime : MainAPI() {
                 this.posterUrl =  posterurl ?: data.getCoverImage() ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
-                try { this.logoUrl = logoposter } catch(_:Throwable){}
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
             }
@@ -243,7 +252,7 @@ class StreamPlayAnime : MainAPI() {
                 addMalId(ids.idMal)
                 addEpisodes(DubStatus.Subbed, episodes)
                 addEpisodes(DubStatus.Dubbed, episodesDub)
-                try { this.logoUrl = logoposter } catch(_:Throwable){}
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage

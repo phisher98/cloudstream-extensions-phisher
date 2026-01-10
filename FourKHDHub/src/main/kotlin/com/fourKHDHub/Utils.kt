@@ -22,46 +22,72 @@ import org.json.JSONObject
 import java.net.URLEncoder
 import java.text.Normalizer
 
+private val REDIRECT_REGEX =
+    Regex("s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'")
+
 suspend fun getRedirectLinks(url: String): String {
-    val doc = app.get(url).toString()
-    val regex = "s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'".toRegex()
-    val combinedString = buildString {
-        regex.findAll(doc).forEach { matchResult ->
-            val extractedValue = matchResult.groups[1]?.value ?: matchResult.groups[2]?.value
-            if (!extractedValue.isNullOrEmpty()) append(extractedValue)
-        }
+    val html = runCatching {
+        app.get(url).text
+    }.getOrElse {
+        Log.e("Error", "Failed to load redirect page: ${it.message}")
+        return ""
     }
-    return try {
-        val decodedString = base64Decode(pen(base64Decode(base64Decode(combinedString))))
-        val jsonObject = JSONObject(decodedString)
-        val encodedurl = base64Decode(jsonObject.optString("o", "")).trim()
-        val data = encode(jsonObject.optString("data", "")).trim()
-        val wphttp1 = jsonObject.optString("blog_url", "").trim()
-        val directlink = runCatching {
-            app.get("$wphttp1?re=$data".trim()).documentLarge.select("body").text().trim()
-        }.getOrDefault("").trim()
 
-        encodedurl.ifEmpty { directlink }
-    } catch (e: Exception) {
-        Log.e("Error:", "Error processing links $e")
-        "" // Return an empty string on failure
+    // Faster than buildString + forEach
+    val combined = StringBuilder(128)
+    for (m in REDIRECT_REGEX.findAll(html)) {
+        m.groups[1]?.value?.let(combined::append)
+            ?: m.groups[2]?.value?.let(combined::append)
+    }
+
+    if (combined.isEmpty()) return ""
+
+    return runCatching {
+        val decoded = base64Decode(
+            pen(
+                base64Decode(
+                    base64Decode(combined.toString())
+                )
+            )
+        )
+
+        val json = JSONObject(decoded)
+
+        val encodedUrl = base64Decode(json.optString("o"))
+        if (encodedUrl.isNotBlank()) return@runCatching encodedUrl.trim()
+
+        val data = encode(json.optString("data"))
+        val wp = json.optString("blog_url")
+        if (wp.isBlank() || data.isBlank()) return@runCatching ""
+
+        app.get("$wp?re=$data")
+            .documentLarge
+            .body()
+            .text()
+            .trim()
+    }.getOrElse {
+        Log.e("Error", "Error processing redirect: ${it.message}")
+        ""
     }
 }
 
-
-fun encode(value: String): String {
-    return String(Base64.decode(value, Base64.DEFAULT))
-}
+fun encode(value: String): String =
+    if (value.isEmpty()) "" else String(Base64.decode(value, Base64.DEFAULT))
 
 fun pen(value: String): String {
-    return value.map {
-        when (it) {
-            in 'A'..'Z' -> ((it - 'A' + 13) % 26 + 'A'.code).toChar()
-            in 'a'..'z' -> ((it - 'a' + 13) % 26 + 'a'.code).toChar()
-            else -> it
-        }
-    }.joinToString("")
+    val out = StringBuilder(value.length)
+    for (c in value) {
+        out.append(
+            when (c) {
+                in 'A'..'Z' -> ((c - 'A' + 13) % 26 + 'A'.code).toChar()
+                in 'a'..'z' -> ((c - 'a' + 13) % 26 + 'a'.code).toChar()
+                else -> c
+            }
+        )
+    }
+    return out.toString()
 }
+
 
 suspend fun fetchtmdb(title: String, isMovie: Boolean): Int? {
     val url =

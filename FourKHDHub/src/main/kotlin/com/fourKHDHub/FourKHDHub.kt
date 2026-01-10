@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.jsoup.nodes.Element
@@ -352,7 +351,8 @@ class FourKHDHub : MainAPI() {
         }
     }
 
-    private val LINK_REGEX = Regex("""https?://[^\s'",\]\[]+""", RegexOption.IGNORE_CASE)
+    private val LINK_REGEX =
+        Regex("""https?://[^\s'",\]\[]+""", RegexOption.IGNORE_CASE)
 
     override suspend fun loadLinks(
         data: String,
@@ -360,44 +360,73 @@ class FourKHDHub : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = LINK_REGEX.findAll(data).map { it.value }.distinct()
-        val extractors = mapOf(
-            "hubdrive" to ("HUB Drive" to Hubdrive()),
-            "hubcloud" to ("Hub Cloud" to HubCloud())
-        )
-        links.forEach { rawLink ->
-            try {
-                val needsRedirect = rawLink.contains("id=", ignoreCase = true)
+
+        if (data.isBlank()) return false
+
+        val hubCloud = HubCloud()
+        val hubDrive = Hubdrive()
+        val hubCdn = Hubcdnn()
+
+        LINK_REGEX.findAll(data)
+            .map { it.value }
+            .forEach { rawLink ->
+
                 val resolvedLink = try {
-                    if (needsRedirect) getRedirectLinks(rawLink) else rawLink
+                    if ("id=" in rawLink.lowercase())
+                        getRedirectLinks(rawLink)
+                    else
+                        rawLink
                 } catch (e: Exception) {
                     Log.e("Phisher", "Redirect failed for $rawLink — ${e.message}")
                     return@forEach
                 }
-                Log.d("Phisher", resolvedLink.toJson())
-                val resolvedLower = resolvedLink.lowercase()
 
-                val matched = extractors.entries.any { (key, pair) ->
-                    if (key in resolvedLower) {
-                        val (displayName, extractor) = pair
-                        try {
-                            extractor.getUrl(resolvedLink, displayName, subtitleCallback, callback)
-                            true
-                        } catch (e: Exception) {
-                            Log.e(key, "Extractor failed for $resolvedLink — ${e.message}")
-                            false
-                        }
-                    } else false
+                if (resolvedLink.isBlank()) {
+                    Log.e("Extractor", "Resolved link is empty for $rawLink")
+                    return@forEach
                 }
-                if (!matched) {
-                    Log.w("Extractor", "No extractor matched: $resolvedLink")
+
+                val lower = resolvedLink.lowercase()
+
+                when {
+                    "hubcloud" in lower -> {
+                        hubCloud.getUrl(
+                            resolvedLink,
+                            name,
+                            subtitleCallback,
+                            callback
+                        )
+                    }
+
+                    "hubdrive" in lower -> {
+                        hubDrive.getUrl(
+                            resolvedLink,
+                            name,
+                            subtitleCallback,
+                            callback
+                        )
+                    }
+
+                    "hubcdn" in lower -> {
+                        hubCdn.getUrl(
+                            resolvedLink,
+                            name,
+                            subtitleCallback,
+                            callback
+                        )
+                    }
+
+                    else -> {
+                        loadExtractor(
+                            resolvedLink,
+                            name,
+                            subtitleCallback,
+                            callback
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                Log.e("Extractor", "Unexpected error while processing $rawLink — ${e.message}")
             }
-        }
 
         return true
     }
-
 }

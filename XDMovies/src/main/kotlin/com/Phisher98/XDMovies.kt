@@ -190,6 +190,15 @@ class XDMovies : MainAPI() {
             }
         }.getOrNull()
 
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = tvType,
+            tmdbId = tmdbId,
+            appLangCode = "en"
+        )
+
         val downloadLinks = document.select("div.download-item a")
             .mapNotNull { it.attr("href").trim().takeIf { link -> link.isNotEmpty() } }
 
@@ -285,6 +294,7 @@ class XDMovies : MainAPI() {
             return newTvSeriesLoadResponse(title, url, tvType, episodes) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundPoster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -300,6 +310,7 @@ class XDMovies : MainAPI() {
         return newMovieLoadResponse(title, url, TvType.Movie, href) {
             this.posterUrl = poster
             this.backgroundPosterUrl = backgroundPoster
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             this.year = year
             this.plot = description
             this.tags = tags
@@ -320,28 +331,30 @@ class XDMovies : MainAPI() {
     ): Boolean {
         if (data.isBlank()) return false
 
-        val rawLinks: List<String> = try {
-            val arr = JSONArray(data)
-            List(arr.length()) { idx -> arr.optString(idx) }
-                .filter { it.isNotBlank() }
-        } catch (_: Exception) {
-            listOf(data)
+        val links = runCatching {
+            JSONArray(data).let { arr ->
+                buildList(arr.length()) {
+                    for (i in 0 until arr.length()) {
+                        arr.optString(i).trim().takeIf { it.isNotEmpty() }?.let { add(it) }
+                    }
+                }
+            }
+        }.getOrElse {
+            listOf(data.trim()).filter { it.isNotEmpty() }
         }
 
         var success = false
 
-        for (rawLink in rawLinks) {
-            val normalized = rawLink.trim()
-            if (normalized.isEmpty()) continue
-
-            try {
-                loadExtractor(normalized, name, subtitleCallback, callback)
+        links.forEach { link ->
+            runCatching {
+                loadExtractor(link, name, subtitleCallback, callback)
                 success = true
-            } catch (_: Exception) {
-                Log.e("XDMovies", "Failed to load link: $normalized")
+            }.onFailure {
+                Log.e("XDMovies", "Failed to load link: $link")
             }
         }
 
         return success
     }
+
 }

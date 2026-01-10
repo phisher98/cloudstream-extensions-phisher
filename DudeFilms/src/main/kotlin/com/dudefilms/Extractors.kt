@@ -63,7 +63,7 @@ class PixelDrainDev : PixelDrain(){
 
 class Hubdrive : ExtractorApi() {
     override val name = "Hubdrive"
-    override val mainUrl = "https://hubdrive.*"
+    override val mainUrl = "https://hubdrive.space"
     override val requiresReferer = false
 
     override suspend fun getUrl(
@@ -79,6 +79,7 @@ class Hubdrive : ExtractorApi() {
 }
 
 class HubCloud : ExtractorApi() {
+
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.*"
     override val requiresReferer = false
@@ -90,79 +91,84 @@ class HubCloud : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val tag = "HubCloud"
-        val realUrl = url.takeIf {
-            try { URI(it).toURL(); true } catch (e: Exception) { Log.e(tag, "Invalid URL: ${e.message}"); false }
-        } ?: return
-        Log.d("Phisher",url)
+        val ref = referer.orEmpty()
 
-        val baseUrl=getBaseUrl(realUrl)
-        val href = try {
+        val uri = runCatching { URI(url) }.getOrElse {
+            Log.e(tag, "Invalid URL: ${it.message}")
+            return
+        }
+
+        val realUrl = uri.toString()
+        val baseUrl = "${uri.scheme}://${uri.host}"
+
+        val href = runCatching {
             if ("hubcloud.php" in realUrl) {
                 realUrl
             } else {
-                val rawHref = app.get(realUrl).document.select("#download").attr("href")
-                if (rawHref.startsWith("http", ignoreCase = true)) {
-                    rawHref
-                } else {
-                    baseUrl.trimEnd('/') + "/" + rawHref.trimStart('/')
-                }
+                val raw = app.get(realUrl).document
+                    .selectFirst("#download")
+                    ?.attr("href")
+                    .orEmpty()
+
+                if (raw.startsWith("http", true)) raw
+                else baseUrl.trimEnd('/') + "/" + raw.trimStart('/')
             }
-        } catch (e: Exception) {
-            Log.e(tag, "Failed to extract href: ${e.message}")
+        }.getOrElse {
+            Log.e(tag, "Failed to extract href: ${it.message}")
             ""
         }
 
-        if (href.isBlank()) {
-            Log.w(tag, "No valid href found")
-            return
-        }
+        if (href.isBlank()) return
 
         val document = app.get(href).document
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
         val headerDetails = cleanTitle(header)
+        val quality = getIndexQuality(header)
 
         val labelExtras = buildString {
             if (headerDetails.isNotEmpty()) append("[$headerDetails]")
             if (size.isNotEmpty()) append("[$size]")
         }
-        val quality = getIndexQuality(header)
 
-        document.select("div.card-body h2 a.btn").amap { element ->
+        document.select("a.btn").forEach { element ->
             val link = element.attr("href")
-            val text = element.text()
-
+            val text = element.ownText()
+            val label = text.lowercase()
+            Log.d("Phisher",label)
             when {
-                text.contains("FSL Server", ignoreCase = true) -> {
-                    callback.invoke(
+                "fsl server" in label -> {
+                    callback(
                         newExtractorLink(
-                            "$referer [FSL Server]",
-                            "$referer [FSL Server] $labelExtras",
-                            link,
+                            "$ref [FSL Server]",
+                            "$ref [FSL Server] $labelExtras",
+                            link
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("Download File", ignoreCase = true) -> {
-                    callback.invoke(
+                "download file" in label -> {
+                    callback(
                         newExtractorLink(
-                            "$referer",
-                            "$referer $labelExtras",
-                            link,
+                            ref,
+                            "$ref $labelExtras",
+                            link
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("BuzzServer", ignoreCase = true) -> {
-                    val buzzResp = app.get("$link/download", referer = link, allowRedirects = false)
-                    val dlink = buzzResp.headers["hx-redirect"].orEmpty()
+                "buzzserver" in label -> {
+                    val resp = app.get("$link/download", referer = link, allowRedirects = false)
+                    val dlink = resp.headers["hx-redirect"]
+                        ?: resp.headers["HX-Redirect"].orEmpty()
+
                     if (dlink.isNotBlank()) {
-                        callback.invoke(
+                        callback(
                             newExtractorLink(
-                                "$referer [BuzzServer]",
-                                "$referer [BuzzServer] $labelExtras",
-                                dlink,
+                                "$ref [BuzzServer]",
+                                "$ref [BuzzServer] $labelExtras",
+                                dlink
                             ) { this.quality = quality }
                         )
                     } else {
@@ -170,83 +176,71 @@ class HubCloud : ExtractorApi() {
                     }
                 }
 
-                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) -> {
-                    val baseUrlLink = getBaseUrl(link)
-                    val finalURL = if (link.contains("download", true)) link
-                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+                "pixeldra" in label || "pixelserver" in label || "pixel server" in label || "pixeldrain" in label -> {
+                    val base = getBaseUrl(link)
+                    val finalUrl =
+                        if ("download" in link) link
+                        else "$base/api/file/${link.substringAfterLast("/")}?download"
 
                     callback(
                         newExtractorLink(
-                            "Pixeldrain",
-                            "Pixeldrain $labelExtras",
-                            finalURL
+                            "$ref Pixeldrain",
+                            "$ref Pixeldrain $labelExtras",
+                            finalUrl
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("S3 Server", ignoreCase = true) -> {
-                    callback.invoke(
+                "s3 server" in label -> {
+                    callback(
                         newExtractorLink(
-                            "$referer S3 Server",
-                            "$referer S3 Server $labelExtras",
-                            link,
+                            "$ref [S3 Server]",
+                            "$ref [S3 Server] $labelExtras",
+                            link
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("FSLv2", ignoreCase = true) -> {
-                    callback.invoke(
+                "fslv2" in label -> {
+                    callback(
                         newExtractorLink(
-                            "$referer FSLv2",
-                            "$referer FSLv2 $labelExtras",
-                            link,
+                            "$ref [FSLv2]",
+                            "$ref [FSLv2] $labelExtras",
+                            link
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("Mega Server", ignoreCase = true) -> {
-                    callback.invoke(
+                "mega server" in label -> {
+                    callback(
                         newExtractorLink(
-                            "$referer [Mega Server]",
-                            "$referer [Mega Server] $labelExtras",
-                            link,
+                            "$ref [Mega Server]",
+                            "$ref [Mega Server] $labelExtras",
+                            link
                         ) { this.quality = quality }
                     )
                 }
 
-                text.contains("10Gbps", ignoreCase = true) -> {
-                    var currentLink = link
-                    var redirectUrl: String?
-                    var redirectCount = 0
-                    val maxRedirects = 3
+                "10gbps" in label -> {
+                    var current = link
 
-                    while (redirectCount < maxRedirects) {
-                        val response = app.get(currentLink, allowRedirects = false)
-                        redirectUrl = response.headers["location"]
+                    repeat(3) {
+                        val resp = app.get(current, allowRedirects = false)
+                        val loc = resp.headers["location"] ?: return@repeat
 
-                        if (redirectUrl == null) {
-                            Log.e(tag, "10Gbps: No redirect")
-                            return@amap
-                        }
-
-                        if ("link=" in redirectUrl) {
-                            val finalLink = redirectUrl.substringAfter("link=")
-                            callback.invoke(
+                        if ("link=" in loc) {
+                            callback(
                                 newExtractorLink(
-                                    "10Gbps [Download]",
-                                    "10Gbps [Download] $labelExtras",
-                                    finalLink
+                                    "$ref 10Gbps [Download]",
+                                    "$ref 10Gbps [Download] $labelExtras",
+                                    loc.substringAfter("link=")
                                 ) { this.quality = quality }
                             )
-                            return@amap
                         }
-
-                        currentLink = redirectUrl
-                        redirectCount++
+                        current = loc
                     }
 
-                    Log.e(tag, "10Gbps: Redirect limit reached ($maxRedirects)")
-                    return@amap
+                    Log.e(tag, "10Gbps: Redirect limit reached")
                 }
 
                 else -> {
@@ -257,55 +251,51 @@ class HubCloud : ExtractorApi() {
     }
 
     private fun getIndexQuality(str: String?): Int {
-        return Regex("(\\d{3,4})[pP]").find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
+        return Regex("(\\d{3,4})[pP]")
+            .find(str.orEmpty())
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
             ?: Qualities.P2160.value
     }
 
     private fun getBaseUrl(url: String): String {
-        return try {
+        return runCatching {
             URI(url).let { "${it.scheme}://${it.host}" }
-        } catch (_: Exception) {
-            ""
-        }
+        }.getOrDefault("")
     }
 
-    fun cleanTitle(title: String): String {
+    private fun cleanTitle(title: String): String {
         val parts = title.split(".", "-", "_")
 
         val qualityTags = listOf(
             "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
-            "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
-            "HD"
+            "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV", "HD"
         )
 
-        val audioTags = listOf(
-            "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
-        )
-
-        val subTags = listOf(
-            "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
-        )
-
-        val codecTags = listOf(
-            "x264", "x265", "H264", "HEVC", "AVC"
-        )
+        val audioTags = listOf("AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos")
+        val subTags = listOf("ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub")
+        val codecTags = listOf("x264", "x265", "H264", "HEVC", "AVC")
 
         val startIndex = parts.indexOfFirst { part ->
-            qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
+            qualityTags.any { part.contains(it, true) }
         }
 
         val endIndex = parts.indexOfLast { part ->
-            subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
-                    audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
-                    codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
+            subTags.any { part.contains(it, true) } ||
+                    audioTags.any { part.contains(it, true) } ||
+                    codecTags.any { part.contains(it, true) }
         }
 
-        return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
-            parts.subList(startIndex, endIndex + 1).joinToString(".")
-        } else if (startIndex != -1) {
-            parts.subList(startIndex, parts.size).joinToString(".")
-        } else {
-            parts.takeLast(3).joinToString(".")
+        return when {
+            startIndex != -1 && endIndex != -1 && endIndex >= startIndex ->
+                parts.subList(startIndex, endIndex + 1).joinToString(".")
+
+            startIndex != -1 ->
+                parts.subList(startIndex, parts.size).joinToString(".")
+
+            else ->
+                parts.takeLast(3).joinToString(".")
         }
     }
 }

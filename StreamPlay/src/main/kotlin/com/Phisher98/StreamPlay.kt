@@ -488,9 +488,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 return newAnimeLoadResponse(title, url, TvType.Anime) {
                     addEpisodes(DubStatus.Subbed, buildEpisodeList(isDub = false))
                     addEpisodes(DubStatus.Dubbed, buildEpisodeList(isDub = true))
-
                     this.posterUrl = poster
                     this.backgroundPosterUrl = bgPoster
+                    try { this.logoUrl = logoUrl } catch(_:Throwable){}
                     this.year = year
                     this.plot = res.overview
                     this.tags = keywords?.map { it.replaceFirstChar { c -> c.titlecase() } }
