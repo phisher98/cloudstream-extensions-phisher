@@ -24,7 +24,6 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.runAllAsync
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -4343,9 +4342,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             seasonLink.amap { seasonUrl ->
                 val rawseasonUrl =
-                    if (seasonUrl.contains("modpro")) seasonUrl else cinematickitloadBypass(
-                        seasonUrl
-                    ) ?: ""
+                    if (seasonUrl.contains("modpro")) seasonUrl else seasonUrl
                 val episodeDoc = app.get(rawseasonUrl).documentLarge
 
                 val episodeHref = episodeDoc.select("h3 > a,div.wp-block-button a")

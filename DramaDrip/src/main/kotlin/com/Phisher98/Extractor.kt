@@ -5,15 +5,12 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.FormBody
 import org.json.JSONObject
-import java.net.URI
-import kotlin.text.Regex
 
-class Driveseed : ExtractorApi() {
+open class Driveseed : ExtractorApi() {
     override val name: String = "Driveseed"
     override val mainUrl: String = "https://driveseed.org"
     override val requiresReferer = false
@@ -45,8 +42,6 @@ class Driveseed : ExtractorApi() {
         }
     }
 
-
-
     private suspend fun resumeBot(url: String): String? {
         return runCatching {
             val response = app.get(url)
@@ -73,28 +68,20 @@ class Driveseed : ExtractorApi() {
         }
     }
 
-    private suspend fun instantLink(finallink: String): String? {
+    private suspend fun instantLink(finalLink: String): String? {
         return runCatching {
-            val uri = URI(finallink)
-            val host = uri.host ?: if (finallink.contains("video-leech")) "video-leech.pro" else "video-seed.pro"
-
-            val token = finallink.substringAfter("url=")
-            val response = app.post(
-                "https://$host/api",
-                data = mapOf("keys" to token),
-                referer = finallink,
-                headers = mapOf("x-token" to host)
-            ).text
-
-            response.substringAfter("url\":\"")
-                .substringBefore("\",\"name")
-                .replace("\\/", "/")
-                .takeIf { it.startsWith("http") }
+            val response = app.get(finalLink)
+            val resolvedUrl = response.url
+            val extracted = resolvedUrl
+                .substringAfter("url=", missingDelimiterValue = "")
+                .takeIf { it.isNotBlank() }
+            extracted
         }.getOrElse {
             Log.e("Driveseed", "InstantLink error: ${it.message}")
             null
         }
     }
+
 
 
     override suspend fun getUrl(
@@ -134,6 +121,7 @@ class Driveseed : ExtractorApi() {
         document.select("div.text-center > a").forEach { element ->
             val text = element.text()
             val href = element.attr("href")
+            Log.d("Driveseed", "Link: $href")
 
             if (href.isNotBlank()) {
                 when {
@@ -141,10 +129,9 @@ class Driveseed : ExtractorApi() {
                         instantLink(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name Instant(Download)(VLC) $labelExtras",
-                                    "$name Instant(Download)(VLC) $labelExtras",
-                                    url = link,
-                                    INFER_TYPE
+                                    "$name Instant(Download) (Use VLC)",
+                                    "$name Instant(Download) (Use VLC) $labelExtras",
+                                    url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
                                 }
@@ -156,8 +143,8 @@ class Driveseed : ExtractorApi() {
                         resumeBot(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name ResumeBot $labelExtras",
-                                    "$name ResumeBot $labelExtras",
+                                    "$name ResumeBot(VLC)",
+                                    "$name ResumeBot(VLC) $labelExtras",
                                     url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
@@ -170,7 +157,7 @@ class Driveseed : ExtractorApi() {
                         CFType1(Basedomain + href).forEach { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name CF Type1 $labelExtras",
+                                    "$name CF Type1",
                                     "$name CF Type1 $labelExtras",
                                     url = link
                                 ) {
@@ -184,7 +171,7 @@ class Driveseed : ExtractorApi() {
                         resumeCloudLink(Basedomain, href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name ResumeCloud $labelExtras",
+                                    "$name ResumeCloud",
                                     "$name ResumeCloud $labelExtras",
                                     url = link
                                 ) {
@@ -197,7 +184,7 @@ class Driveseed : ExtractorApi() {
                     text.contains("Cloud Download", ignoreCase = true) -> {
                         callback(
                             newExtractorLink(
-                                "$name Cloud Download $labelExtras",
+                                "$name Cloud Download",
                                 "$name Cloud Download $labelExtras",
                                 url = href
                             ) {
@@ -251,3 +238,4 @@ fun cleanTitle(title: String): String {
         parts.takeLast(3).joinToString(".")
     }
 }
+

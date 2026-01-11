@@ -38,7 +38,7 @@ class DramaDrip : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/page/$page").documentLarge
+        val document = app.get("$mainUrl/${request.data}/page/$page", timeout = 5000L).document
         val home = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -76,7 +76,7 @@ class DramaDrip : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").documentLarge
+        val document = app.get("$mainUrl/?s=$query", timeout = 5000L).document
         val results = document.select("article").mapNotNull {
             it.toSearchResult()
         }
@@ -85,7 +85,7 @@ class DramaDrip : MainAPI() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url, timeout = 5000L).document
 
         var imdbId: String? = null
         var tmdbId: String? = null
@@ -124,12 +124,10 @@ class DramaDrip : MainAPI() {
                 gson.fromJson(jsonResponse, ResponseData::class.java)
             } else null
         } else null
-        var cast: List<String> = emptyList()
 
+        var cast: List<String> = emptyList()
         var background: String = image
-        var description: String? = null
         if (responseData != null) {
-            description = responseData.meta?.description ?: descriptions
             cast = responseData.meta?.cast ?: emptyList()
             background = responseData.meta?.background ?: image
         }
@@ -138,8 +136,7 @@ class DramaDrip : MainAPI() {
         val hrefs: List<String> = document.select("div.wp-block-button > a")
             .mapNotNull { linkElement ->
                 val link = linkElement.attr("href")
-                val actual=cinematickitloadBypass(link) ?: return@mapNotNull null
-                val page = app.get(actual).documentLarge
+                val page = app.get(link, timeout = 5000L).document
                 page.select("div.wp-block-button.movie_btn a")
                     .eachAttr("href")
             }.flatten()
@@ -187,7 +184,7 @@ class DramaDrip : MainAPI() {
 
                         for (qualityPageLink in qualityLinks) {
                             try {
-                                val rawqualityPageLink=if (qualityPageLink.contains("modpro")) qualityPageLink else cinematickitloadBypass(qualityPageLink) ?: ""
+                                val rawqualityPageLink=if (qualityPageLink.contains("modpro")) qualityPageLink else qualityPageLink
                                 val response = app.get(rawqualityPageLink)
                                 val episodeDoc = response.documentLarge
 
@@ -250,7 +247,7 @@ class DramaDrip : MainAPI() {
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
                 this.backgroundPosterUrl = background
                 this.year = year
-                this.plot = description
+                this.plot = responseData?.meta?.description ?: descriptions
                 this.tags = tags
                 this.recommendations = recommendations
                 addTrailer(trailer)
@@ -262,7 +259,7 @@ class DramaDrip : MainAPI() {
             return newMovieLoadResponse(title, url, TvType.Movie, hrefs) {
                 this.backgroundPosterUrl = background
                 this.year = year
-                this.plot = description
+                this.plot = responseData?.meta?.description ?: descriptions
                 this.tags = tags
                 this.recommendations = recommendations
                 addTrailer(trailer)

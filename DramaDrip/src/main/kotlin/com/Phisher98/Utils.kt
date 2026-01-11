@@ -8,7 +8,6 @@ import org.jsoup.nodes.Document
 import java.net.URI
 import java.util.Base64
 
-
 data class Meta(
     val id: String?,
     val imdb_id: String?,
@@ -19,7 +18,7 @@ data class Meta(
     val moviedb_id: Int?,
     val name: String?,
     val description: String?,
-    val genre: List<String>?,
+    val genres: List<String>?,
     val releaseInfo: String?,
     val status: String?,
     val runtime: String?,
@@ -38,6 +37,7 @@ data class EpisodeDetails(
     val title: String?,
     val season: Int?,
     val episode: Int?,
+    val number: Int?,
     val released: String?,
     val overview: String?,
     val thumbnail: String?,
@@ -109,8 +109,13 @@ fun fixUrl(url: String, domain: String): String {
 @RequiresApi(Build.VERSION_CODES.O)
 suspend fun cinematickitBypass(url: String): String? {
     return try {
+        Log.d("Phisher",url)
+
         val cleanedUrl = url.replace("&#038;", "&")
+        Log.d("Phisher",cleanedUrl)
+
         val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
+        Log.d("Phisher",encodedLink)
         if (encodedLink.isEmpty()) return null
         val decodedUrl = base64Decode(encodedLink)
         val doc = app.get(decodedUrl).documentLarge
