@@ -1245,22 +1245,14 @@ open class Driveseed : ExtractorApi() {
         }
     }
 
-    private suspend fun instantLink(finallink: String): String? {
+    private suspend fun instantLink(finalLink: String): String? {
         return runCatching {
-            val uri = URI(finallink)
-            val host = uri.host ?: if (finallink.contains("video-leech")) "video-leech.pro" else "video-seed.pro"
-            val token = finallink.substringAfter("url=")
-            val response = app.post(
-                "https://$host/api",
-                data = mapOf("keys" to token),
-                referer = finallink,
-                headers = mapOf("x-token" to host)
-            ).text
-
-            response.substringAfter("url\":\"")
-                .substringBefore("\",\"name")
-                .replace("\\/", "/")
-                .takeIf { it.startsWith("http") }
+            val response = app.get(finalLink)
+            val resolvedUrl = response.url
+            val extracted = resolvedUrl
+                .substringAfter("url=", missingDelimiterValue = "")
+                .takeIf { it.isNotBlank() }
+            extracted
         }.getOrElse {
             Log.e("Driveseed", "InstantLink error: ${it.message}")
             null

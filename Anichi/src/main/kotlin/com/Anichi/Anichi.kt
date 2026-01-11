@@ -1,8 +1,6 @@
 package com.Anichi
 
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.Anichi.AnichiExtractors.invokeInternalSources
 import com.Anichi.AnichiParser.AnichiLoadData
 import com.Anichi.AnichiParser.AnichiQuery
@@ -53,7 +51,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import java.time.LocalDate
+import java.util.Calendar
 
 open class Anichi : MainAPI() {
     override var name = "Anichi"
@@ -76,11 +74,20 @@ open class Anichi : MainAPI() {
     private val animeRecentTitle = "Latest Anime"
     private val donghuaRecentTitle = "Latest Donghua"
     private val movieTitle = "Movie"
-    @RequiresApi(Build.VERSION_CODES.O)
-    val currentYear = LocalDate.now().year  // Get the current year
+    val calendar: Calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH) + 1
+
+    val season = when (month) {
+        in 1..3 -> "Winter"
+        in 4..6 -> "Spring"
+        in 7..9 -> "Summer"
+        else -> "Fall"
+    }
+
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
-        """$apiUrl?variables={"search":{"season":"Spring","year":$currentYear},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to "New Series",
+        """$apiUrl?variables={"search":{"season":"$season","year":$year},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to "New Series",
         """$apiUrl?variables={"search":{},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to animeRecentTitle,
         """$apiUrl?variables={"search":{},"limit":26,"page":1,"translationType":"sub","countryOrigin":"CN"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to donghuaRecentTitle,
         """$apiUrl?variables={"type":"anime","size":30,"dateRange":1,"page":%d,"allowAdult":${settingsForProvider.enableAdult},"allowUnknown":false}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$popularHash"}}""" to popularTitle,
@@ -198,6 +205,7 @@ open class Anichi : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse? {
         val id = url.substringAfterLast("/")
+
         // lazy to format
         val body =
                 """
@@ -224,10 +232,29 @@ open class Anichi : MainAPI() {
                         showData.season?.quarter,
                         showData.type
                 )
+        val data = anilistAPICall(
+            "query (\$id: Int = ${trackers?.id}) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+        ).data.media ?: throw Exception("Unable to fetch media details")
+
+
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=${trackers?.idMal}").toString()
         val animeMetadata = parseAnimeData(syncData)
 
-        val poster = animeMetadata?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: showData.thumbnail
+        val backgroundposter = data.bannerImage ?: trackers?.coverImage?.large
+
+        val logotvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
+
+        val tmdbid = animeMetadata?.mappings?.themoviedbId?.toIntOrNull()
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = logotvType,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
+
+        val poster = showData.thumbnail
         val episodes = showData.availableEpisodesDetail?.let { detail ->
             val id = showData.Id ?: return@let null
 
@@ -286,13 +313,17 @@ open class Anichi : MainAPI() {
                     Pair(Actor(name, image), role)
                 }
 
-        return newAnimeLoadResponse(title ?: "", url, TvType.Anime) {
-            engName = showData.altNames?.firstOrNull()
-            posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
-            score = Score.from100(showData.averageScore)
-            tags = showData.genres
-            year = showData.airedStart?.year
-            duration = showData.episodeDuration?.div(60_000)
+        val tvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
+
+        return newAnimeLoadResponse(title ?: "", url, tvType) {
+            this.engName = showData.altNames?.firstOrNull()
+            this.posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
+            this.backgroundPosterUrl = backgroundposter ?: trackers?.coverImage?.extraLarge
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
+            this.score = Score.from100(showData.averageScore)
+            this.tags = showData.genres
+            this.year = showData.airedStart?.year
+            this.duration = showData.episodeDuration?.div(60_000)
             addTrailer(
                     showData.prevideos.filter { it.isNotBlank() }.map {
                         "https://www.youtube.com/watch?v=$it"

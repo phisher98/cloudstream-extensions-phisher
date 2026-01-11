@@ -205,6 +205,16 @@ object AnichiParser {
 
 }
 
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @JsonProperty("themoviedb_id") val themoviedbId: String? = null,
+    @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+    @JsonProperty("imdb_id") val imdbId: String? = null,
+    @JsonProperty("mal_id") val malId: Int? = null,
+    @JsonProperty("anilist_id") val anilistId: Int? = null,
+)
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Image(
     @JsonProperty("coverType") val coverType: String?,
@@ -227,7 +237,8 @@ data class EpisodeInfo(
 data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>?,
     @JsonProperty("images") val images: List<Image>?,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeInfo>?
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeInfo>?,
+    @JsonProperty("mappings") val mappings: MetaMappings? = null
 )
 
 data class AnichiDownload(

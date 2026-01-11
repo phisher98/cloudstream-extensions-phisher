@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 import okhttp3.FormBody
 import com.lagradost.api.Log
-import java.net.URI
 
 class Driveleech : Driveseed() {
     override val name: String = "Driveleech"
@@ -80,28 +79,20 @@ open class Driveseed : ExtractorApi() {
         }
     }
 
-    private suspend fun instantLink(finallink: String): String? {
+    private suspend fun instantLink(finalLink: String): String? {
         return runCatching {
-            val uri = URI(finallink)
-            val host = uri.host ?: if (finallink.contains("video-leech")) "video-leech.pro" else "video-seed.pro"
-
-            val token = finallink.substringAfter("url=")
-            val response = app.post(
-                "https://$host/api",
-                data = mapOf("keys" to token),
-                referer = finallink,
-                headers = mapOf("x-token" to host)
-            ).text
-
-            response.substringAfter("url\":\"")
-                .substringBefore("\",\"name")
-                .replace("\\/", "/")
-                .takeIf { it.startsWith("http") }
+            val response = app.get(finalLink)
+            val resolvedUrl = response.url
+            val extracted = resolvedUrl
+                .substringAfter("url=", missingDelimiterValue = "")
+                .takeIf { it.isNotBlank() }
+            extracted
         }.getOrElse {
             Log.e("Driveseed", "InstantLink error: ${it.message}")
             null
         }
     }
+
 
 
     override suspend fun getUrl(
@@ -149,8 +140,8 @@ open class Driveseed : ExtractorApi() {
                         instantLink(href)?.let { link ->
                             callback(
                                 newExtractorLink(
-                                    "$name Instant(Download)",
-                                    "$name Instant(Download) $labelExtras",
+                                    "$name Instant(Download) (Use VLC)",
+                                    "$name Instant(Download) (Use VLC) $labelExtras",
                                     url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
