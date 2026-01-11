@@ -125,7 +125,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val Background = meta?.get("background")?.asText() ?: poster
         val Description = meta?.get("description")?.asText() ?: ""
         val IMDBRating = meta?.get("imdbRating")?.asText()
-        val trailer=doc.select("p iframe").attr("src")
+        val trailer = doc.select("p iframe").attr("src")
 
 
         val simklId = ids.imdbId?.let {
@@ -139,68 +139,83 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
             {
                 pTags = doc.select("div:has(a:contains(Episode))")
             }
-            val seasonList = mutableListOf<Pair<String, Int>>()
-            var season = 1
+
+            val tvSeriesEpisodes = mutableListOf<Episode>()
+            val episodesMap: MutableMap<Pair<Int, Int>, List<String>> = mutableMapOf()
+
             pTags.mapNotNull { pTag ->
                 val prevPtag = pTag.previousElementSibling()
                 val details = prevPtag ?. text() ?: ""
                 val realSeason = Regex("""(?:Season |S0)(\d+)""").find(details) ?. groupValues
-                    ?. get(1) ?: ""
-                val qualityRegex = """(1080p|720p|480p|2160p|4K|[0-9]*0p)""".toRegex(RegexOption.IGNORE_CASE)
-                val quality = qualityRegex.find(details) ?. groupValues ?. get(1) ?: ""
-                if(realSeason.isNotEmpty() && quality.isNotEmpty()) {
-                    val sizeRegex = Regex("""\d+(?:\.\d+)?\s*(?:MB|GB)\b""")
-                    val size = sizeRegex.find(details) ?. value ?: ""
-                    seasonList.add("S$realSeason $quality $size" to season)
-                }
-                else {
-                    seasonList.add(details to season)
-                }
-
-
+                    ?. get(1) ?.toIntOrNull() ?: 0
                 val aTags = pTag.select("a:contains(Episode)")
+
                 aTags.mapNotNull { aTag ->
-                    val link = aTag.attr("href")
-                    val epMeta = metaVideos.firstOrNull {
-                        it["season"]?.asInt() == season &&
-                                it["episode"]?.asInt() == aTags.indexOf(aTag) + 1
+                    val realEp = Regex("""Episode\s+(\d+)""").find(aTag.toString()) ?. groupValues ?. get(1) ?.toIntOrNull() ?: 0
+                    val epUrl = aTag.attr("href")
+                    val key = Pair(realSeason, realEp)
+
+                    if(!epUrl.isEmpty()) {
+                        if (episodesMap.containsKey(key)) {
+                            val currentList = episodesMap[key] ?: emptyList()
+                            val newList = currentList.toMutableList()
+                            newList.add(epUrl)
+                            episodesMap[key] = newList
+                        } else {
+                            episodesMap[key] = mutableListOf(epUrl)
+                        }
                     }
 
-                    val epName =
-                        epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() }
-                            ?: aTag.text()
+                }
+            }
 
-                    val epDesc =
-                        epMeta?.get("overview")?.asText()
-                            ?: epMeta?.get("description")?.asText()
-                            ?: ""
+            for ((key, value) in episodesMap) {
+                if(key.first == 0 || key.second == 0) continue
 
-                    val epThumb =
-                        epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() }
-                            ?: ""
+                val epMeta = metaVideos.firstOrNull {
+                    it["season"]?.asInt() == key.first &&
+                        it["episode"]?.asInt() == key.second
+                }
 
-                    val aired =
-                        epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() }
-                            ?: ""
-                    episodes.add(
-                        newEpisode(link)
-                        {
-                            this.name= epName
-                            this.season=season
-                            this.episode=aTags.indexOf(aTag) + 1
-                            this.posterUrl = epThumb
-                            this.description = epDesc
-                            addDate(aired)
-                        }
+                val data = value.map { source->
+                    UHDLinks(
+                        "UHD",
+                        source
                     )
                 }
-                season++
+
+                val epName =
+                    epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: "Episode ${key.second}"
+
+                val epDesc =
+                    epMeta?.get("overview")?.asText()
+                        ?: epMeta?.get("description")?.asText()
+                        ?: ""
+
+                val epThumb =
+                    epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: ""
+
+                val aired =
+                    epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: ""
+                tvSeriesEpisodes.add(
+                    newEpisode(data) {
+                        this.name = epName
+                        this.season = key.first
+                        this.episode = key.second
+                        this.posterUrl = epThumb
+                        this.description = epDesc
+                        addDate(aired)
+                    }
+                )
             }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, tvSeriesEpisodes) {
                 this.posterUrl = poster ?. trim()
                 this.year = year
                 this.tags = tags
-                this.seasonNames = seasonList.map {(name, int) -> SeasonData(int, name)}
                 addTrailer(trailer)
                 addImdbId(ids.imdbId)
                 addTMDbId(ids.tmdbId.toString())
