@@ -14,5 +14,6 @@ class AnimesaltProvider : BasePlugin() {
         registerExtractorAPI(betaAwstream())
         registerExtractorAPI(MegaPlay())
         registerExtractorAPI(Rapid())
+        registerExtractorAPI(ascdn21())
     }
 }

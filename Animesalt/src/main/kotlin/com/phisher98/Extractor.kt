@@ -25,6 +25,12 @@ class Ghbrisk : Filesim() {
     override val requiresReferer = true
 }
 
+class ascdn21 : AWSStream() {
+    override val name = "Zephyrflick"
+    override val mainUrl = "https://as-cdn21.top"
+    override val requiresReferer = true
+}
+
 class Zephyrflick : AWSStream() {
     override val name = "Zephyrflick"
     override val mainUrl = "https://play.zephyrflick.top"
