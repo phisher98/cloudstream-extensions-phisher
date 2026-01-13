@@ -800,7 +800,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 server.hls == null -> {
                                     callback.invoke(
                                         newExtractorLink(
-                                            "Allanime [${lang.uppercase()}] ${host.capitalize()}",
+                                            "Allanime",
                                             "Allanime [${lang.uppercase()}] ${host.capitalize()}",
                                             server.link,
                                             INFER_TYPE
