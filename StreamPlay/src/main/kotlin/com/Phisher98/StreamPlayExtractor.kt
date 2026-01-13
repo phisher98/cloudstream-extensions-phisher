@@ -102,7 +102,7 @@ object StreamPlayExtractor : StreamPlay() {
         };
         """.trimIndent()
             val rhino = Context.enter()
-            rhino.setInterpretedMode(true)
+            rhino.isInterpretedMode = true
             val scope: Scriptable = rhino.initSafeStandardObjects()
             rhino.evaluateString(scope, firstJS + script, "JavaScript", 1, null)
             val file =
@@ -170,7 +170,8 @@ object StreamPlayExtractor : StreamPlay() {
                     val embedUrl = responseData.embed_url
                     val link = embedUrl.substringAfter("\"").substringBefore("\"")
                     if (!link.contains("youtube", ignoreCase = true)) {
-                        loadCustomExtractor(
+                        loadSourceNameExtractor(
+                            "Multimovies",
                             "Multimovies",
                             link,
                             "$multimoviesApi/",
@@ -260,7 +261,8 @@ object StreamPlayExtractor : StreamPlay() {
             } ?: return@amap
             when {
                 !source.contains("youtube") -> {
-                    loadCustomExtractor(
+                    loadSourceNameExtractor(
+                        name,
                         name,
                         source,
                         "$referer/",
@@ -760,7 +762,8 @@ object StreamPlayExtractor : StreamPlay() {
 
                         if (sourceUrl.startsWith("http")) {
                             val host = sourceUrl.getHost()
-                            loadCustomExtractor(
+                            loadSourceNameExtractor(
+                                "Allanime",
                                 "Allanime [${lang.uppercase()}] [$host]",
                                 sourceUrl,
                                 "",
@@ -818,8 +821,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         server.link,
                                         server.headers?.referer ?: endpoint,
                                         host
-                                    )
-                                        .forEach(callback)
+                                    ).forEach(callback)
                                 }
 
                                 else -> {
@@ -887,7 +889,8 @@ object StreamPlayExtractor : StreamPlay() {
             val href = it.attr("data-src")
             if ("kwik" in href && (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))))
             {
-                loadCustomExtractor(
+                loadSourceNameExtractor(
+                    "Animepahe",
                     "Animepahe $source [$type]",
                     href,
                     "",
@@ -911,7 +914,8 @@ object StreamPlayExtractor : StreamPlay() {
             val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
             val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
             if (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))) {
-                loadCustomExtractor(
+                loadSourceNameExtractor(
+                    "Animepahe",
                     "Animepahe Pahe $source [$type]",
                     href,
                     "",
@@ -1115,7 +1119,15 @@ object StreamPlayExtractor : StreamPlay() {
 
                             if (allow) {
                                 val name = "⌜ AnimeKai ⌟ | $serverName | $nameSuffix"
-                                loadExtractor(iframe, name, subtitleCallback, callback)
+                                loadSourceNameExtractor(
+                                    "AnimeKai",
+                                    name,
+                                    iframe,
+                                    "",
+                                    subtitleCallback,
+                                    callback,
+                                )
+                                //loadExtractor(iframe, name, subtitleCallback, callback)
                             }
                         }
                     }
@@ -1233,7 +1245,8 @@ object StreamPlayExtractor : StreamPlay() {
                                     ?.link
 
                                 if (!sourceUrl.isNullOrBlank()) {
-                                    loadCustomExtractor(
+                                    loadSourceNameExtractor(
+                                        "HiAnime",
                                         "⌜ HiAnime ⌟ | ${label.uppercase()} | ${resolvedType.uppercase()}",
                                         sourceUrl,
                                         "",
@@ -3950,7 +3963,8 @@ object StreamPlayExtractor : StreamPlay() {
             val source = it.mapValue.fields.source.stringValue
             val href = it.mapValue.fields.href.stringValue
             val quality = it.mapValue.fields.quality.stringValue
-            loadCustomExtractor(
+            loadSourceNameExtractor(
+                "StreamPlay",
                 "StreamPlay $source",
                 href,
                 "",

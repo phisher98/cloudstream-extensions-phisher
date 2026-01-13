@@ -1520,7 +1520,7 @@ open class Embtaku : ExtractorApi() {
         val serverRes = responsecode.documentLarge
         serverRes.select("ul.list-server-items").amap {
             val href=it.attr("data-video")
-            loadCustomExtractor("Anichi [Embtaku]",href,"",subtitleCallback,callback)
+            loadSourceNameExtractor("Anichi","Anichi [Embtaku]",href,"",subtitleCallback,callback)
         }
     }
 }
@@ -1642,7 +1642,6 @@ open class MegaUp : ExtractorApi() {
     ) {
 
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
-        val displayName = referer ?: this.name
         val encodedResult = app.get(mediaUrl, headers = HEADERS)
         .parsedSafe<AnimeKaiResponse>()
         ?.result
@@ -1683,7 +1682,7 @@ open class MegaUp : ExtractorApi() {
                     }
                 }
                 if (m3u8File != null) {
-                    generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
+                    generateM3u8(name, m3u8File, mainUrl).forEach(callback)
                 } else {
                     Log.d("Error:", "No 'file' found in first source")
                 }

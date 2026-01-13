@@ -280,7 +280,7 @@ suspend fun loadSourceNameExtractor(
         CoroutineScope(Dispatchers.IO).launch {
             callback.invoke(
                 newExtractorLink(
-                    "$source[${link.source}$fixSize]",
+                    source,
                     "$source[${link.source}$fixSize]",
                     link.url,
                 ) {
@@ -295,8 +295,10 @@ suspend fun loadSourceNameExtractor(
     }
 }
 
-suspend fun loadCustomExtractor(
-    name: String? = null,
+
+suspend fun loadSourceNameExtractor(
+    sourceName: String?,
+    displayName: String?,
     url: String,
     referer: String? = null,
     subtitleCallback: (SubtitleFile) -> Unit,
@@ -307,13 +309,11 @@ suspend fun loadCustomExtractor(
         CoroutineScope(Dispatchers.IO).launch {
             callback.invoke(
                 newExtractorLink(
-                    name ?: link.source,
-                    name ?: link.name,
+                    sourceName ?: "",
+                    displayName ?: "",
                     link.url,
                 ) {
-                    this.quality = when {
-                        else -> quality ?: link.quality
-                    }
+                    this.quality = quality ?: link.quality
                     this.type = link.type
                     this.referer = link.referer
                     this.headers = link.headers
