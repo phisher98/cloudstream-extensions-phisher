@@ -302,9 +302,10 @@ object StreamPlayExtractor : StreamPlay() {
         title: String? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        dubtype: String
+        dubtype: String? = null
     ) {
-        if (!dubtype.equals("SUB", ignoreCase = true)) return
+        if (dubtype == null || (!dubtype.equals("SUB", ignoreCase = true) && !dubtype.equals("Movie", ignoreCase = true))) return
+
         fun formatString(input: String?) = input?.replace(" ", "_").orEmpty()
 
         val jpFixTitle = formatString(jptitle)
@@ -347,8 +348,8 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
-        Log.d("Phisher","$jptitle $engtitle")
-        if (dubtype?.equals("SUB", ignoreCase = true) != true) return
+        if (dubtype == null || (!dubtype.equals("SUB", ignoreCase = true) && !dubtype.equals("Movie", ignoreCase = true))) return
+
         val searchResponse = app.get("https://anizone.to/anime?search=${jptitle}")
         if (searchResponse.code != 200) return
 
@@ -526,7 +527,11 @@ object StreamPlayExtractor : StreamPlay() {
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
         val tmdbYear = date?.substringBefore("-")?.toIntOrNull()
-        val dubStatus = if (dubtype) "DUB" else "SUB"
+
+        val dubStatus: String? =
+            if (episode == null) "Movie"
+            else if (dubtype) "DUB"
+            else "SUB"
 
         runAllAsync(
             {
@@ -656,7 +661,10 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
 
-        if (dubtype == null || dubtype.equals("DUB", ignoreCase = true)) {
+        if (dubtype != null &&
+            (dubtype.equals("Movie", ignoreCase = true) ||
+                    dubtype.equals("DUB", ignoreCase = true))
+        ) {
             dubUrl?.let {
                 callback.invoke(
                     newExtractorLink(
@@ -671,7 +679,10 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
 
-        if (dubtype == null || dubtype.equals("SUB", ignoreCase = true)) {
+        if (dubtype != null &&
+            (dubtype.equals("Movie", ignoreCase = true) ||
+                    dubtype.equals("SUB", ignoreCase = true))
+        ) {
             rawUrl?.let {
                 callback.invoke(
                     newExtractorLink(
@@ -685,6 +696,7 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             }
         }
+
     }
 
 
@@ -697,6 +709,8 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
+
+        val isMovie = episode == null
         val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
@@ -728,7 +742,7 @@ object StreamPlayExtractor : StreamPlay() {
         val langTypes = listOf("sub", "dub")
 
         langTypes.forEach { lang ->
-            if (dubtype == null || lang.contains(dubtype, ignoreCase = true)) {
+            if (isMovie || (dubtype != null && lang.contains(dubtype, ignoreCase = true))) {
                 val epQuery =
                     """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$lang","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
                 val episodeLinks = app.get(epQuery, referer = privatereferer)
@@ -796,7 +810,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     )
                                 }
 
-                                server.hls == true -> {
+                                server.hls -> {
                                     val endpoint = "https://allanime.day/player?uri=" +
                                             if (URI(server.link).host.isNotEmpty()) server.link
                                             else "https://allanime.day${URI(server.link).path}"
@@ -835,6 +849,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
+        val isMovie = episode == null
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
 
         val id = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$url", headers)
@@ -870,7 +885,8 @@ object StreamPlayExtractor : StreamPlay() {
                 ?: Qualities.Unknown.value
 
             val href = it.attr("data-src")
-            if ("kwik" in href && (dubtype == null || type.contains(dubtype, ignoreCase = true))) {
+            if ("kwik" in href && (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))))
+            {
                 loadCustomExtractor(
                     "Animepahe $source [$type]",
                     href,
@@ -894,7 +910,7 @@ object StreamPlayExtractor : StreamPlay() {
             val match = qualityRegex.find(text)
             val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
             val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
-            if (dubtype == null || type.contains(dubtype, ignoreCase = true)) {
+            if (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))) {
                 loadCustomExtractor(
                     "Animepahe Pahe $source [$type]",
                     href,
@@ -916,7 +932,10 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?
     ) {
-        if (dubtype?.equals("SUB", ignoreCase = true) != true) return
+        val isMovie = episode == null
+
+        if (!isMovie && dubtype?.equals("SUB", ignoreCase = true) != true) return
+
         fun Elements.getLinks(): List<Triple<String, String, Int>> {
             return this.flatMap { ele ->
                 ele.select("div.links a:matches(KrakenFiles|GoFile|Akirabox|BuzzHeavier)").map {
@@ -969,6 +988,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?
     ) {
+        val isMovie = episode == null
 
         suspend fun decode(text: String?): String {
             return try {
@@ -1046,46 +1066,56 @@ object StreamPlayExtractor : StreamPlay() {
                             .parsedSafe<AnimeKaiResponse>()?.getDocument()
 
                     epRes?.select("div.eplist a")?.forEach { ep ->
-                        val epNum = ep.attr("num").toIntOrNull()
-                        if (epNum == episode) {
-                            val token = ep.attr("token")
-                            val decodedtoken = decode(token)
-                            val document =
-                                app.get("$animeKaiUrl/ajax/links/list?token=$token&_=$decodedtoken")
-                                    .parsed<AnimeKaiResponse>()
-                                    .getDocument()
 
-                            val types = listOf("sub", "softsub", "dub")
-                            val servers = types.flatMap { type ->
-                                document.select("div.server-items[data-id=$type] span.server[data-lid]")
-                                    .map { server ->
-                                        Triple(type, server.attr("data-lid"), server.text())
-                                    }
+                        val epNum = ep.attr("num").toIntOrNull()
+                        if (!isMovie) {
+                            if (epNum != episode) return@forEach
+                        } else {
+                            if (epNum != 1) return@forEach
+                        }
+
+                        val token = ep.attr("token")
+                        val decodedtoken = decode(token)
+
+                        val document =
+                            app.get("$animeKaiUrl/ajax/links/list?token=$token&_=$decodedtoken")
+                                .parsed<AnimeKaiResponse>()
+                                .getDocument()
+
+                        val types = listOf("sub", "softsub", "dub")
+                        val servers = types.flatMap { type ->
+                            document.select("div.server-items[data-id=$type] span.server[data-lid]")
+                                .map { server ->
+                                    Triple(type, server.attr("data-lid"), server.text())
+                                }
+                        }
+
+                        for ((type, lid, serverName) in servers) {
+                            val decodelid = decode(lid)
+                            val result =
+                                app.get("$animeKaiUrl/ajax/links/view?id=$lid&_=$decodelid")
+                                    .parsed<AnimeKaiResponse>().result
+
+                            val decodeiframe = decodeReverse(result)
+                            val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
+
+                            val nameSuffix = when {
+                                type.contains("soft", ignoreCase = true) -> " [Soft Sub]"
+                                type.contains("sub", ignoreCase = true) -> " [SUB]"
+                                type.contains("dub", ignoreCase = true) -> " [DUB]"
+                                else -> ""
                             }
 
-                            for ((type, lid, serverName) in servers) {
-                                val decodelid = decode(lid)
-                                val result =
-                                    app.get("$animeKaiUrl/ajax/links/view?id=$lid&_=$decodelid")
-                                        .parsed<AnimeKaiResponse>().result
-                                val decodeiframe = decodeReverse(result)
-                                val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
-
-                                val nameSuffix = when {
-                                    type.contains("soft", ignoreCase = true) -> " [Soft Sub]"
-                                    type.contains("sub", ignoreCase = true) -> " [Sub]"
-                                    type.contains("dub", ignoreCase = true) -> " [Dub]"
-                                    else -> ""
+                            val allow =
+                                when {
+                                    isMovie -> true
+                                    dubtype == null -> false
+                                    else -> nameSuffix.contains(dubtype, ignoreCase = true)
                                 }
 
-                                if (dubtype == null || nameSuffix.contains(
-                                        dubtype,
-                                        ignoreCase = true
-                                    )
-                                ) {
-                                    val name = "⌜ AnimeKai ⌟ | $serverName | $nameSuffix"
-                                    loadExtractor(iframe, name, subtitleCallback, callback)
-                                }
+                            if (allow) {
+                                val name = "⌜ AnimeKai ⌟ | $serverName | $nameSuffix"
+                                loadExtractor(iframe, name, subtitleCallback, callback)
                             }
                         }
                     }
@@ -1143,6 +1173,7 @@ object StreamPlayExtractor : StreamPlay() {
         val shuffledApis = hianimeAPIs.shuffled().toMutableList()
         val episodeNumber = (episode ?: 1).toString()
         val timeoutMillis = 10_000L
+        val isMovie = episode == null
 
         while (shuffledApis.isNotEmpty()) {
             val api = shuffledApis.removeAt(0)
@@ -1180,23 +1211,30 @@ object StreamPlayExtractor : StreamPlay() {
                             }
 
                         servers?.forEach { (label, serverId, effectiveType) ->
-                            if (dubtype == null ||
-                                (if (effectiveType.equals(
-                                        "raw",
-                                        ignoreCase = true
-                                    )
-                                ) "SUB" else effectiveType).contains(dubtype, ignoreCase = true)
-                            ) {
+                            Log.d("Phisher","$label $isMovie $effectiveType")
+                            val resolvedType =
+                                if (effectiveType.equals("raw", ignoreCase = true)) "SUB"
+                                else effectiveType
+
+                            val allow =
+                                when {
+                                    isMovie -> true                  // 🎬 movie → BOTH
+                                    dubtype == null -> false         // block
+                                    else -> resolvedType.contains(dubtype, ignoreCase = true)
+                                }
+
+                            if (allow) {
                                 val sourceUrl = app.get(
                                     "$api/ajax/v2/episode/sources?id=$serverId",
                                     headers = headers
                                 )
                                     .takeIf { it.isSuccessful }
-                                    ?.parsedSafe<EpisodeServers>()?.link
+                                    ?.parsedSafe<EpisodeServers>()
+                                    ?.link
 
                                 if (!sourceUrl.isNullOrBlank()) {
                                     loadCustomExtractor(
-                                        "⌜ HiAnime ⌟ | ${label.uppercase()} | ${effectiveType.uppercase()}",
+                                        "⌜ HiAnime ⌟ | ${label.uppercase()} | ${resolvedType.uppercase()}",
                                         sourceUrl,
                                         "",
                                         subtitleCallback,
@@ -1227,6 +1265,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
+        val isMovie = episode == null
         var slug = slugid
         if (slug.isNullOrBlank()) {
             if (engtitle.isNullOrBlank()) return
@@ -1266,38 +1305,92 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
 
-        val locale = if (dubtype?.equals("DUB", ignoreCase = true) == true) {
-            "en-US"
-        } else {
-            "ja-JP"
+        val locales: List<String> = when {
+            isMovie -> listOf("en-US", "ja-JP") // BOTH
+            dubtype.equals("DUB", ignoreCase = true) -> listOf("en-US")
+            dubtype.equals("SUB", ignoreCase = true) -> listOf("ja-JP")
+            else -> return // null or invalid → block
         }
-        val json = app.get("$KickassAPI/api/show/$slug/episodes?ep=1&lang=$locale", timeout = 5000L).toString()
-        val jsonresponse = parseJsonToEpisodes(json)
 
-        val matchedSlug = jsonresponse.firstOrNull {
-            it.episode_number.toString().substringBefore(".").toIntOrNull() == episode
-        }?.slug ?: return
+        locales.forEach { locale ->
 
-        val href = "$KickassAPI/api/show/$slug/episode/ep-$episode-$matchedSlug"
-        val servers = app.get(href).parsedSafe<ServersResKAA>()?.servers ?: return
+            val json = app.get(
+                "$KickassAPI/api/show/$slug/episodes?ep=1&lang=$locale",
+                timeout = 5000L
+            ).toString()
 
-        servers.forEach { server ->
-            if (server.name.contains("VidStreaming")) {
-                val host = getBaseUrl(server.src)
-                val headers = mapOf(
-                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-                )
+            val jsonresponse = parseJsonToEpisodes(json)
 
-                val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
-                val query = server.src.substringAfter("?id=").substringBefore("&")
-                val html = app.get(server.src).toString()
+            val matchedSlug = jsonresponse.firstOrNull {
+                it.episode_number.toString()
+                    .substringBefore(".")
+                    .toIntOrNull() == episode
+            }?.slug ?: return@forEach
 
-                //If HTML have m3u8
-                if (html.contains(".m3u8", ignoreCase = true)) {
-                    val match = Regex("""(https?:)?//[^\s"'<>]+\.m3u8""", RegexOption.IGNORE_CASE)
-                        .find(html)
+            val href = "$KickassAPI/api/show/$slug/episode/ep-$episode-$matchedSlug"
+            val servers = app.get(href).parsedSafe<ServersResKAA>()?.servers ?: return@forEach
 
-                    val videoheaders = mapOf(
+            servers.forEach { server ->
+                if (server.name.contains("VidStreaming")) {
+                    val host = getBaseUrl(server.src)
+                    val headers = mapOf(
+                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                    )
+
+                    val key = "e13d38099bf562e8b9851a652d2043d3".toByteArray()
+                    val query = server.src.substringAfter("?id=").substringBefore("&")
+                    val html = app.get(server.src).toString()
+
+                    //If HTML have m3u8
+                    if (html.contains(".m3u8", ignoreCase = true)) {
+                        val match =
+                            Regex("""(https?:)?//[^\s"'<>]+\.m3u8""", RegexOption.IGNORE_CASE)
+                                .find(html)
+
+                        val videoheaders = mapOf(
+                            "Accept" to "*/*",
+                            "Accept-Language" to "en-US,en;q=0.5",
+                            "Origin" to host,
+                            "Sec-Fetch-Dest" to "empty",
+                            "Sec-Fetch-Mode" to "cors",
+                            "Sec-Fetch-Site" to "cross-site"
+                        )
+
+                        match?.value?.let { url ->
+                            val m3u8Url = if (url.startsWith("//")) "https:$url" else url
+                            callback.invoke(
+                                newExtractorLink(
+                                    "VidStreaming",
+                                    "VidStreaming",
+                                    m3u8Url,
+                                    ExtractorLinkType.M3U8
+                                )
+                                {
+                                    this.quality = Qualities.P1080.value
+                                    this.headers = videoheaders
+                                }
+                            )
+                        }
+                    }
+
+                    val (sig, timeStamp, route) = getSignature(html, server.name, query, key)
+                        ?: return@forEach
+                    val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
+
+                    val encJson =
+                        app.get(sourceUrl, headers = headers).parsedSafe<EncryptedKAA>()?.data
+                            ?: return@forEach
+
+                    val (encryptedData, ivHex) = encJson
+                        .substringAfter(":\"")
+                        .substringBefore('"')
+                        .split(":")
+                    val decrypted = tryParseJson<m3u8KAA>(
+                        CryptoAES.decrypt(encryptedData, key, ivHex.decodeHex()).toJson()
+                    ) ?: return@forEach
+
+                    val m3u8 = httpsify(decrypted.hls)
+                    val videoHeaders = mapOf(
                         "Accept" to "*/*",
                         "Accept-Language" to "en-US,en;q=0.5",
                         "Origin" to host,
@@ -1306,115 +1399,74 @@ object StreamPlayExtractor : StreamPlay() {
                         "Sec-Fetch-Site" to "cross-site"
                     )
 
-                    match?.value?.let { url ->
-                        val m3u8Url = if (url.startsWith("//")) "https:$url" else url
-                        callback.invoke(
-                            newExtractorLink(
-                                "VidStreaming",
-                                "VidStreaming",
-                                m3u8Url,
-                                ExtractorLinkType.M3U8
-                            )
-                            {
-                                this.quality = Qualities.P1080.value
-                                this.headers = videoheaders
-                            }
-                        )
-                    }
-                }
-
-                val (sig, timeStamp, route) = getSignature(html, server.name, query, key)
-                    ?: return@forEach
-                val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
-
-                val encJson = app.get(sourceUrl, headers = headers).parsedSafe<EncryptedKAA>()?.data
-                    ?: return@forEach
-
-                val (encryptedData, ivHex) = encJson
-                    .substringAfter(":\"")
-                    .substringBefore('"')
-                    .split(":")
-                val decrypted = tryParseJson<m3u8KAA>(
-                    CryptoAES.decrypt(encryptedData, key, ivHex.decodeHex()).toJson()
-                ) ?: return@forEach
-
-                val m3u8 = httpsify(decrypted.hls)
-                val videoHeaders = mapOf(
-                    "Accept" to "*/*",
-                    "Accept-Language" to "en-US,en;q=0.5",
-                    "Origin" to host,
-                    "Sec-Fetch-Dest" to "empty",
-                    "Sec-Fetch-Mode" to "cors",
-                    "Sec-Fetch-Site" to "cross-site"
-                )
-
-                callback.invoke(
-                    newExtractorLink(
-                        server.name,
-                        server.name,
-                        m3u8,
-                        ExtractorLinkType.M3U8
-                    )
-                    {
-                        this.quality = Qualities.P1080.value
-                        this.headers = videoHeaders
-                    }
-                )
-
-                decrypted.subtitles.forEach { subtitle ->
-                    subtitleCallback(newSubtitleFile(subtitle.name, httpsify(subtitle.src)))
-                }
-            } else if (server.name.contains("CatStream")) {
-                val baseurl = getBaseUrl(server.src)
-                val headers = mapOf(
-                    "Origin" to baseurl,
-                    "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
-                )
-
-                val res = app.get(
-                    server.src,
-                    headers = headers
-                ).text
-
-                val regex = Regex("""props="(.*?)"""")
-                val match = regex.find(res)
-                val encodedJson = match?.groupValues?.get(1)
-
-                if (encodedJson != null) {
-                    val unescapedJson = Parser.unescapeEntities(encodedJson, false)
-                    val json = JSONObject(unescapedJson)
-
-                    val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
                     callback.invoke(
                         newExtractorLink(
-                            "CatStream",
-                            "CatStream HLS",
-                            videoUrl,
+                            server.name,
+                            server.name,
+                            m3u8,
                             ExtractorLinkType.M3U8
                         )
                         {
                             this.quality = Qualities.P1080.value
-                            this.headers = headers
+                            this.headers = videoHeaders
                         }
                     )
 
-                    val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
-
-                    for (i in 0 until subtitleArray.length()) {
-                        val sub = subtitleArray.getJSONArray(i).getJSONObject(1)
-
-                        val src = sub.getJSONArray("src").getString(1)
-                        val name = sub.getJSONArray("name").getString(1)
-                        subtitleCallback.invoke(
-                            newSubtitleFile(
-                                name,  // Use label for the name
-                                httpsify(src)    // Use extracted URL
-                            )
-                        )
+                    decrypted.subtitles.forEach { subtitle ->
+                        subtitleCallback(newSubtitleFile(subtitle.name, httpsify(subtitle.src)))
                     }
+                } else if (server.name.contains("CatStream")) {
+                    val baseurl = getBaseUrl(server.src)
+                    val headers = mapOf(
+                        "Origin" to baseurl,
+                        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+                    )
 
-                } else {
-                    println("Could not find embedded JSON in props attribute")
+                    val res = app.get(
+                        server.src,
+                        headers = headers
+                    ).text
+
+                    val regex = Regex("""props="(.*?)"""")
+                    val match = regex.find(res)
+                    val encodedJson = match?.groupValues?.get(1)
+
+                    if (encodedJson != null) {
+                        val unescapedJson = Parser.unescapeEntities(encodedJson, false)
+                        val json = JSONObject(unescapedJson)
+
+                        val videoUrl = "https:" + json.getJSONArray("manifest").getString(1)
+                        callback.invoke(
+                            newExtractorLink(
+                                "CatStream",
+                                "CatStream HLS",
+                                videoUrl,
+                                ExtractorLinkType.M3U8
+                            )
+                            {
+                                this.quality = Qualities.P1080.value
+                                this.headers = headers
+                            }
+                        )
+
+                        val subtitleArray = json.getJSONArray("subtitles").getJSONArray(1)
+
+                        for (i in 0 until subtitleArray.length()) {
+                            val sub = subtitleArray.getJSONArray(i).getJSONObject(1)
+
+                            val src = sub.getJSONArray("src").getString(1)
+                            val name = sub.getJSONArray("name").getString(1)
+                            subtitleCallback.invoke(
+                                newSubtitleFile(
+                                    name,  // Use label for the name
+                                    httpsify(src)    // Use extracted URL
+                                )
+                            )
+                        }
+
+                    } else {
+                        println("Could not find embedded JSON in props attribute")
+                    }
                 }
             }
         }

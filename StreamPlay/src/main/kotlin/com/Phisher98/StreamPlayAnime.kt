@@ -296,7 +296,11 @@ class StreamPlayAnime : MainAPI() {
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
-        val dubStatus = if (mediaData.isDub) "DUB" else "SUB"
+
+        val dubStatus: String? =
+            if (mediaData.episode == null) "Movie"
+            else if (mediaData.isDub) "DUB"
+            else "SUB"
 
         runAllAsync(
             { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback, dubStatus) },
