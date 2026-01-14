@@ -18,6 +18,8 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
+import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -57,8 +59,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
-import org.mozilla.javascript.Context
-import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -77,50 +77,130 @@ val session = Session(Requests().baseClient)
 
 object StreamPlayExtractor : StreamPlay() {
 
-    //Need Fix
-    @Suppress("NewApi")
     suspend fun invokeMultiEmbed(
-        imdbId: String? = null,
+        imdbId: String?,
         season: Int? = null,
         episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val url = if (season == null) {
-            "$MultiEmbedAPI/directstream.php?video_id=$imdbId"
-        } else {
-            "$MultiEmbedAPI/directstream.php?video_id=$imdbId&s=$season&e=$episode"
-        }
-        val res = app.get(url, referer = url).documentLarge
-        val script =
-            res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data()
-        if (script != null) {
-            val firstJS =
-                """
-        var globalArgument = null;
-        function Playerjs(arg) {
-        globalArgument = arg;
-        };
-        """.trimIndent()
-            val rhino = Context.enter()
-            rhino.isInterpretedMode = true
-            val scope: Scriptable = rhino.initSafeStandardObjects()
-            rhino.evaluateString(scope, firstJS + script, "JavaScript", 1, null)
-            val file =
-                (scope.get("globalArgument", scope).toJson()).substringAfter("file\":\"")
-                    .substringBefore("\",")
-            callback.invoke(
-                newExtractorLink(
-                    "MultiEmbeded API",
-                    "MultiEmbeded API",
-                    url = file,
-                    type = INFER_TYPE
-                ) {
-                    this.referer = ""
-                    this.quality = Qualities.P1080.value
+        if (imdbId == null) return
+
+        val userAgent = "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+
+        val headers = mapOf(
+            "User-Agent" to userAgent,
+            "Referer" to MultiEmbedAPI,
+            "X-Requested-With" to "XMLHttpRequest"
+        )
+
+        val baseUrl =
+            if (season == null)
+                "$MultiEmbedAPI/?video_id=$imdbId"
+            else
+                "$MultiEmbedAPI/?video_id=$imdbId&s=$season&e=$episode"
+
+        val resolvedUrl = app.get(baseUrl, headers = headers).url
+
+        val postData = mapOf(
+            "button-click" to "ZEhKMVpTLVF0LVBTLVF0LVAtMGs1TFMtUXpPREF0TC0wLVYzTi0wVS1RTi0wQTFORGN6TmprLTU=",
+            "button-referer" to ""
+        )
+
+        val pageHtml = app.post(resolvedUrl, data = postData, headers = headers).text
+
+        val token =
+            Regex("""load_sources\("([^"]+)"\)""")
+                .find(pageHtml)
+                ?.groupValues
+                ?.get(1)
+                ?: return
+
+        val sourcesHtml = app.post(
+            "https://streamingnow.mov/response.php",
+            data = mapOf("token" to token),
+            headers = headers
+        ).text
+
+        val sourcesDoc = Jsoup.parse(sourcesHtml)
+
+        sourcesDoc.select("li").forEach { server ->
+
+            val serverId = server.attr("data-server")
+            val videoId = server.attr("data-id")
+
+            if (serverId.isBlank() || videoId.isBlank()) return@forEach
+
+            val playUrl =
+                "https://streamingnow.mov/playvideo.php" +
+                        "?video_id=${videoId.substringBefore("=")}" +
+                        "&server_id=$serverId" +
+                        "&token=$token" +
+                        "&init=1"
+
+            runCatching {
+                val playHtml = app.get(playUrl, headers = headers).text
+                val iframeUrl = Jsoup.parse(playHtml)
+                    .selectFirst("iframe.source-frame.show")
+                    ?.attr("src")
+                    ?: return@runCatching
+
+                val iframeHtml = app.get(iframeUrl, headers = headers).text
+
+                val fileUrl =
+                    Jsoup.parse(iframeHtml)
+                        .selectFirst("iframe.source-frame.show")
+                        ?.attr("src")
+                        ?: Regex("""file:"(https?://[^"]+)"""")
+                            .find(iframeHtml)
+                            ?.groupValues
+                            ?.get(1)
+                        ?: return@runCatching
+
+
+                Log.d("Phisher Load 1",fileUrl)
+
+                when {
+                    fileUrl.contains(".m3u8", ignoreCase = true) || fileUrl.contains(".json", ignoreCase = true) -> {
+
+                        M3u8Helper.generateM3u8(
+                            "MultiEmbed VIP",
+                            fileUrl,
+                            MultiEmbedAPI
+                        ).forEach(callback)
+                    }
+
+                    else -> {
+                        val url = fileUrl.lowercase()
+                        when {
+                            "vidsrc" in url -> return
+
+                            "mixdrop" in url -> {
+                                MixDrop().getUrl(fileUrl)
+                            }
+                            "streamwish" in url -> {
+                                StreamWishExtractor().getUrl(fileUrl)
+                            }
+                            else -> {
+                                loadSourceNameExtractor(
+                                    "MultiEmbed",
+                                    fileUrl,
+                                    MultiEmbedAPI,
+                                    subtitleCallback,
+                                    callback = callback
+                                )
+                            }
+                        }
+                    }
                 }
-            )
+
+            }.onFailure {
+                // ignore broken servers
+            }
         }
+
     }
+
 
     suspend fun invokeMultimovies(
         title: String? = null,

@@ -114,8 +114,8 @@ fun buildProviders(): List<Provider> {
         Provider("allmovieland", "AllMovieland") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeAllMovieland(res.imdbId, res.season, res.episode, callback)
         },
-        Provider("multiembed", "MultiEmbed") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, callback)
+        Provider("multiembed", "MultiEmbed") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, subtitleCallback,callback)
         },
         Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback)

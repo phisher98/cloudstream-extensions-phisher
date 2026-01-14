@@ -174,6 +174,9 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Krakenfiles())
         registerExtractorAPI(MegaUpTwoTwo())
         registerExtractorAPI(Movearnpre())
+        registerExtractorAPI(StreamwishTO())
+        registerExtractorAPI(mixdrop21())
+        registerExtractorAPI(m1xdrop())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity

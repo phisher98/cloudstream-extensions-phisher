@@ -703,6 +703,14 @@ class MixDropSi : MixDrop(){
     override var mainUrl = "https://mixdrop.si"
 }
 
+class mixdrop21 : MixDrop(){
+    override var mainUrl = "https://mixdrop21.net"
+}
+
+class m1xdrop : MixDrop(){
+    override var mainUrl = "https://m1xdrop.net"
+}
+
 class MixDropPs : MixDrop(){
     override var mainUrl = "https://mixdrop.ps"
 }
@@ -2558,6 +2566,10 @@ class BuzzServer : ExtractorApi() {
 }
 class StreamwishHG : StreamWishExtractor() {
     override val mainUrl = "https://hglink.to"
+}
+
+class StreamwishTO : StreamWishExtractor() {
+    override val mainUrl = "https://streamwish.to"
 }
 
 
