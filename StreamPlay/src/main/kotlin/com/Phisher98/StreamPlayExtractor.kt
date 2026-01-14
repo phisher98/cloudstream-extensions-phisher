@@ -3297,33 +3297,38 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+
         val movieDriveAPI = getDomains()?.moviesdrive ?: return
         val cleanTitle = title.orEmpty()
-
-        val searchUrl = buildString {
-            append("$movieDriveAPI/?s=$cleanTitle")
-            if (season != null && !cleanTitle.contains(season.toString(), ignoreCase = true)) {
-                append(" $season")
-            } else if (season == null && year != null) {
-                append(" $year")
-            }
-        }
+        val searchUrl = "$movieDriveAPI/searchapi.php?q=${id}"
 
         val figures = retry {
             val resp = app.get(searchUrl, interceptor = wpRedisInterceptor)
             if (resp.code != 200) return@retry null
-            val allFigures = resp.documentLarge.select("div a")
-            if (season == null) allFigures
-            else {
-                val seasonPattern = Regex("""season\s*${season}\b""", RegexOption.IGNORE_CASE)
-                allFigures.filter { figure ->
-                    val img = figure.selectFirst("img")
-                    val alt = img?.attr("alt").orEmpty()
-                    val titleAttr = img?.attr("title").orEmpty()
-                    seasonPattern.containsMatchIn(alt) || seasonPattern.containsMatchIn(titleAttr)
+
+            val root = JSONObject(resp.text)
+            val hits = root.optJSONArray("hits") ?: return@retry null
+
+            val elements = Elements()
+
+            for (i in 0 until hits.length()) {
+                val hit = hits.optJSONObject(i) ?: continue
+                val document = hit.optJSONObject("document") ?: continue
+
+                if (document.optString("imdb_id").equals(id, ignoreCase = true)) {
+                    val permalink = document.optString("permalink")
+                    if (permalink.isBlank()) continue
+                    val a = Element("a").attr("href", "$movieDriveAPI$permalink")
+                    val wrapper = Element("div")
+                    wrapper.appendChild(a)
+                    elements.add(wrapper)
+                    break
                 }
             }
+
+            elements.takeIf { it.isNotEmpty() }
         } ?: return
+
 
         for (figure in figures) {
             val detailUrl = figure.selectFirst("a[href]")?.attr("href").orEmpty()
