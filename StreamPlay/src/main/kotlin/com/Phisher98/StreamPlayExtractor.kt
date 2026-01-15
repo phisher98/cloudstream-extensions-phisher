@@ -1199,15 +1199,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                             if (allow) {
                                 val name = "⌜ AnimeKai ⌟ | $serverName | $nameSuffix"
-                                loadSourceNameExtractor(
-                                    "AnimeKai",
-                                    name,
-                                    iframe,
-                                    "",
-                                    subtitleCallback,
-                                    callback,
-                                )
-                                //loadExtractor(iframe, name, subtitleCallback, callback)
+                                loadExtractor(iframe, name, subtitleCallback, callback)
                             }
                         }
                     }

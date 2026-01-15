@@ -1653,7 +1653,7 @@ open class MegaUp : ExtractorApi() {
         val encodedResult = app.get(mediaUrl, headers = HEADERS)
         .parsedSafe<AnimeKaiResponse>()
         ?.result
-
+        val displayName = referer ?: this.name
         if (encodedResult == null) return
 
         val body = """
@@ -1690,7 +1690,7 @@ open class MegaUp : ExtractorApi() {
                     }
                 }
                 if (m3u8File != null) {
-                    generateM3u8(name, m3u8File, mainUrl).forEach(callback)
+                    generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
                 } else {
                     Log.d("Error:", "No 'file' found in first source")
                 }
