@@ -1,6 +1,8 @@
 package com.phisher98
 
 import com.google.gson.annotations.SerializedName
+import com.lagradost.cloudstream3.SearchQuality
+import java.text.Normalizer
 
 class SearchData : ArrayList<SearchData.SearchDataItem>(){
     data class SearchDataItem(
@@ -153,3 +155,38 @@ data class GuestStar(
     val character: String? = null,
     val order: Int? = null
 )
+
+fun getSearchQuality(check: String?): SearchQuality? {
+    val s = check ?: return null
+    val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+    val patterns = listOf(
+        Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.UHD,
+
+        // CAM / THEATRE SOURCES FIRST
+        Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+        Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+        Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+
+        // WEB / RIP
+        Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+
+        // BLURAY
+        Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+
+        // RESOLUTIONS
+        Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+        Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+        Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+
+        // GENERIC HD LAST
+        Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+
+        Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+        Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+        Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+    )
+
+
+    for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
+    return null
+}

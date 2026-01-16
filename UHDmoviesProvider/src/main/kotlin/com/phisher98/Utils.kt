@@ -109,7 +109,7 @@ fun getSearchQuality(check: String?): SearchQuality? {
     val lowercaseCheck = check?.lowercase()
     if (lowercaseCheck != null) {
         return when {
-            lowercaseCheck.contains("4k") || lowercaseCheck.contains("uhd") || lowercaseCheck.contains("2160p") -> SearchQuality.UHD
+            lowercaseCheck.contains("4k") || lowercaseCheck.contains("uhd") || lowercaseCheck.contains("2160p") -> SearchQuality.FourK
             lowercaseCheck.contains("1440p") || lowercaseCheck.contains("qhd") -> SearchQuality.BlueRay
             lowercaseCheck.contains("1080p") || lowercaseCheck.contains("fullhd") -> SearchQuality.HD
             lowercaseCheck.contains("720p") -> SearchQuality.SD

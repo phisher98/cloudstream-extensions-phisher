@@ -99,8 +99,10 @@ class XDMovies : MainAPI() {
         val title = this.safeText("h3")
         val href = fixUrl(this.attr("href"))
         val posterUrl = fixUrlNull(this.safeAttr("img", "src"))
+        val quality = this.selectFirst("div.quality-badge")?.ownText()
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.quality = getSearchQuality(quality)
         }
     }
 
@@ -140,7 +142,6 @@ class XDMovies : MainAPI() {
         val rating = Score.from10(document.select("p:contains(Rating:)").text().removePrefix("Rating:").trim().substringBefore("/").trim())
         val contentType = url.substringAfter("$mainUrl/").substringBefore("/")
         val source = document.select("#source-info span").text()
-
         val tvType = when {
             contentType.equals("anime", ignoreCase = true) -> TvType.Anime
             contentType.equals("tv", ignoreCase = true) || contentType.equals("series", ignoreCase = true) -> TvType.TvSeries

@@ -137,7 +137,7 @@ fun getSearchQuality(tags: List<String>): SearchQuality {
     if (tags.isEmpty()) return SearchQuality.HD
     val text = Normalizer.normalize(tags.joinToString(" "), Normalizer.Form.NFKC).lowercase()
     val patterns = listOf(
-        Regex("\\b(4k|ds4k|uhd|2160p)\\b") to SearchQuality.UHD,
+        Regex("\\b(4k|ds4k|uhd|2160p)\\b") to SearchQuality.FourK,
         Regex("\\b(1440p|qhd)\\b") to SearchQuality.BlueRay,
         Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b") to SearchQuality.BlueRay,
         Regex("\\b(1080p|fullhd)\\b") to SearchQuality.HD,

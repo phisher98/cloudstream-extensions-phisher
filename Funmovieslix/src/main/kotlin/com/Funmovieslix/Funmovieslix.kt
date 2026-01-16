@@ -194,7 +194,7 @@ class Funmovieslix : MainAPI() {
             qualityText.contains("WEBRIP") -> SearchQuality.WebRip
             qualityText.contains("WEB-DL") -> SearchQuality.WebRip
             qualityText.contains("BLURAY") -> SearchQuality.BlueRay
-            qualityText.contains("4K") -> SearchQuality.UHD
+            qualityText.contains("4K") -> SearchQuality.FourK
             qualityText.contains("HD") -> SearchQuality.HD
             else -> SearchQuality.HD
         }

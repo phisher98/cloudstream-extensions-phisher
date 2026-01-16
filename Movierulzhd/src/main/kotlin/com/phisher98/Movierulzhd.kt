@@ -21,7 +21,6 @@ import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.fixTitle
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
-import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -449,7 +448,7 @@ open class Movierulzhd : MainAPI() {
         val s = check ?: return null
         val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
         val patterns = listOf(
-            Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.UHD,
+            Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
 
             // CAM / THEATRE SOURCES FIRST
             Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
