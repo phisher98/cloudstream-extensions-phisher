@@ -280,7 +280,7 @@ object SuperStreamExtractor : Superstream() {
                     urls.add(fileUrl)
                 }
             }
-
+            /*
             urls.forEach {
                 M3u8Helper.generateM3u8(
                     "⌜ SuperStream ⌟ External HLS [Server ${index + 1}]",
@@ -288,6 +288,7 @@ object SuperStreamExtractor : Superstream() {
                     ""
                 ).forEach(callback)
             }
+            */
         }
     }
 
