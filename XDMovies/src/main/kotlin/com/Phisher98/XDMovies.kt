@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -45,7 +44,6 @@ class XDMovies : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime)
 
     companion object {
-        private const val SIMKL = "https://api.simkl.com"
         val headers = mapOf(
             "x-auth-token" to base64Decode("NzI5N3Nra2loa2Fqd25zZ2FrbGFrc2h1d2Q="),
             "x-requested-with" to "XMLHttpRequest"
@@ -196,15 +194,6 @@ class XDMovies : MainAPI() {
             }
             ?: emptyList()
 
-        val simklid = runCatching {
-            tmdbRes?.imdbId?.takeIf { it.isNotBlank() }?.let { imdb ->
-                val path = if (tvType == TvType.Movie) "movies" else "tv"
-                val simklJson = JSONObject(app.get("$SIMKL/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-            }
-        }.getOrNull()
-
-
         val logoUrl = fetchTmdbLogoUrl(
             tmdbAPI = "https://api.themoviedb.org/3",
             apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
@@ -317,7 +306,6 @@ class XDMovies : MainAPI() {
                 this.actors=actors
                 this.tags = genres
                 addImdbId(imdbId)
-                addSimklId(simklid)
             }
         }
 
@@ -333,7 +321,6 @@ class XDMovies : MainAPI() {
             this.actors=actors
             this.tags = genres
             addImdbId(imdbId)
-            addSimklId(simklid)
         }
     }
 

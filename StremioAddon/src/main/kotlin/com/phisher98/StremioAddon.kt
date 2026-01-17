@@ -6,16 +6,13 @@ import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import org.json.JSONObject
 import java.time.LocalDate
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -58,7 +55,6 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = BuildConfig.TMDB_API
-        private const val simkl = "https://api.simkl.com"
 
         fun getType(t: String?): TvType {
             return when (t) {
@@ -181,16 +177,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val recommendations =
             res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
 
-        val trailer =
-            res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
-
-        val simklid = runCatching {
-            res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
-                val path = if (type == TvType.Movie) "movies" else "tv"
-                val resJson = JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-            }
-        }.getOrNull()
+        val trailer = res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
 
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
@@ -227,9 +214,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
-                addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
-                addSimklId(simklid)
             }
         } else {
             newMovieLoadResponse(
@@ -250,9 +235,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
-                addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
-                addSimklId(simklid)
             }
         }
     }
@@ -310,7 +293,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 res?.streams?.forEach { stream ->
                     stream.runCallback(subtitleCallback, callback)
                 }
-            }.onFailure { e ->
+            }.onFailure { _ ->
                 Log.e(name, "Error loading from $addonPref")
             }
         }

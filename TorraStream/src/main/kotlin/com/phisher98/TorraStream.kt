@@ -8,8 +8,6 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.NextAiring
@@ -70,7 +68,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
         "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
         )
-        private const val simkl = "https://api.simkl.com"
         private const val Uindex = "https://uindex.org"
         private const val Knaben = "https://knaben.org"
     }
@@ -157,14 +154,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
             )
         }
 
-        val simklid = runCatching {
-            mediaDetails?.ids?.imdb?.takeIf { it.isNotBlank() }?.let { imdb ->
-                val path = if (data.type == TvType.Movie) "movies" else "tv"
-                val resJson = JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-            }
-        }.getOrNull()
-
         val resRelated =
             getApi("$traktApiUrl/$moviesOrShows/${mediaDetails?.ids?.trakt}/related?extended=full,images&limit=20")
 
@@ -223,8 +212,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
                 this.contentRating = mediaDetails.certification
                 addTrailer(mediaDetails.trailer)
                 addImdbId(mediaDetails.ids?.imdb)
-                addTMDbId(mediaDetails.ids?.tmdb.toString())
-                addSimklId(simklid)
             }
         } else {
 
@@ -314,8 +301,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
                 this.contentRating = mediaDetails.certification
                 addTrailer(mediaDetails.trailer)
                 addImdbId(mediaDetails.ids?.imdb)
-                addTMDbId(mediaDetails.ids?.tmdb.toString())
-                addSimklId(simklid)
             }
         }
     }

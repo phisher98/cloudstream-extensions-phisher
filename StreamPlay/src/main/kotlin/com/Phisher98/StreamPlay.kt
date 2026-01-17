@@ -12,7 +12,6 @@ import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
@@ -71,7 +70,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val Cinemeta = "https://v3-cinemeta.strem.io"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
-        private const val simkl = "https://api.simkl.com"
         private var currentBaseUrl: String? = null
 
 
@@ -363,20 +361,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             .ifEmpty {
                 res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } ?: emptyList()
             }
-
-        val simklid = coroutineScope {
-            async {
-                runCatching {
-                    res.external_ids?.imdb_id?.takeIf { it.isNotBlank() }?.let { imdb ->
-                        val path = if (type == TvType.Movie) "movies" else "tv"
-                        val resJson =
-                            JSONObject(app.get("$simkl/$path/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                        resJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-                    }
-                }.getOrNull()
-            }
-        }
-
         val logoUrl = fetchTmdbLogoUrl(
             tmdbAPI = "https://api.themoviedb.org/3",
             apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
@@ -517,9 +501,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.actors = actors
                     try { this.logoUrl = logoUrl } catch(_:Throwable){}
                     addTrailer(trailer)
-                    addTMDbId(data.id.toString())
                     addImdbId(res.external_ids?.imdb_id)
-                    addSimklId(simklid.await())
                 }
             }
         } else {
@@ -558,9 +540,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
                 addTrailer(trailer)
-                addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
-                addSimklId(simklid.await())
             }
         }
     }
