@@ -160,7 +160,7 @@ fun getSearchQuality(check: String?): SearchQuality? {
     val s = check ?: return null
     val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
     val patterns = listOf(
-        Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.UHD,
+        Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
 
         // CAM / THEATRE SOURCES FIRST
         Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,

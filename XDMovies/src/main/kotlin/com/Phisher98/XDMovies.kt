@@ -106,12 +106,25 @@ class XDMovies : MainAPI() {
         }
     }
 
+
+    private fun highestQuality(qualities: List<String>): String? {
+        return qualities
+            .mapNotNull { q ->
+                q.filter { it.isDigit() }.toIntOrNull()?.let { res -> res to q }
+            }
+            .maxByOrNull { it.first }
+            ?.second
+    }
+
+
     private fun SearchData.SearchDataItem.toSearchResult(): SearchResponse {
         val isTv = type.equals("tv", ignoreCase = true) || type.equals("series", ignoreCase = true)
         val tvType = if (isTv) TvType.TvSeries else TvType.Movie
         val url = mainUrl + path
+        val bestQuality = highestQuality(qualities)
         return newMovieSearchResponse(title, url, tvType) {
             this.posterUrl = TMDBIMAGEBASEURL + poster
+            this.quality = getSearchQuality(bestQuality)
         }
     }
 
