@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokBidsrc
+import com.phisher98.StreamPlayExtractor.invokFlixindia
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
@@ -262,6 +263,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("BidSrc", "BidSrc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokBidsrc(res.id, res.season, res.episode, callback)
+        },
+        Provider("flixindia", "FlixIndia") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback,callback)
         },
     )
 }

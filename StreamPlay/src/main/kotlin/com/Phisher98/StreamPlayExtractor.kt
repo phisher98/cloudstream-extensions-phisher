@@ -6312,10 +6312,54 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             )
         }
-
-
-
     }
+
+    suspend fun invokFlixindia(
+        title: String?,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        if (title.isNullOrBlank()) return
+
+        val searchTitle = if (season == null) "${title.replace(":","")} $year" else "${title.replace(":","")} S0${season}E0$episode"
+
+        val (sessionId, csrfToken) = getSessionAndCsrfforFlixindia(flixindia) ?: return
+
+        val headers = mapOf(
+            "User-Agent" to USER_AGENT,
+            "Accept" to "*/*",
+            "Referer" to "$flixindia/",
+            "Origin" to flixindia.removeSuffix("/"),
+            "X-Requested-With" to "XMLHttpRequest",
+            "Cookie" to "PHPSESSID=$sessionId"
+        )
+
+        val body = mapOf(
+            "action" to "search",
+            "csrf_token" to csrfToken,
+            "q" to searchTitle
+        )
+
+        val results = app.post(
+            url = "$flixindia/",
+            data = body,
+            headers = headers,
+            timeout = 30
+        ).parsedSafe<Flixindia>()?.results.orEmpty()
+
+        results.forEach { item ->
+            val href = item.url
+            when {
+                "hubcloud" in href -> HubCloud().getUrl(href, "FlixIndia", subtitleCallback, callback)
+                "gdlink" in href -> GDFlix().getUrl(href, "FlixIndia", subtitleCallback, callback)
+                else -> loadExtractor(href, "", subtitleCallback, callback)
+            }
+        }
+    }
+
 }
 
 

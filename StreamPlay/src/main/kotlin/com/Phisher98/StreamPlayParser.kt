@@ -998,3 +998,18 @@ data class BidSrcHeaders(
     val origin: String,
 )
 
+data class Flixindia(
+    val results: List<FlixindiaResult>,
+    val query: String,
+    val count: Long,
+)
+
+data class FlixindiaResult(
+    val id: Long,
+    val title: String,
+    val url: String,
+    @JsonProperty("created_at")
+    val createdAt: String,
+)
+
+

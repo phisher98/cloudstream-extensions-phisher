@@ -2192,3 +2192,15 @@ fun getQualityFromName(qualityName: String?): Int {
     return lastResolvedQuality
 }
 
+suspend fun getSessionAndCsrfforFlixindia(baseUrl: String): Pair<String, String>? {
+    val res = app.get(baseUrl)
+
+    val sessionId = res.cookies["PHPSESSID"] ?: return null
+
+    val csrf = Regex(
+        """window\.CSRF_TOKEN\s*=\s*['"]([a-f0-9]{64})['"]"""
+    ).find(res.text)?.groupValues?.get(1) ?: return null
+
+    return sessionId to csrf
+}
+
