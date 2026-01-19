@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Episode
@@ -38,7 +39,8 @@ import java.net.URLEncoder
 
 
 class StreamPlayStremioCatelog(override var mainUrl: String, override var name: String) : MainAPI() {
-    override val supportedTypes = setOf(TvType.Others)
+    override val supportedTypes = setOf(TvType.Others,TvType.Movie,
+        TvType.TvSeries)
     override val hasMainPage = true
 
     companion object {
@@ -82,12 +84,6 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
             parseJson(metaJson)
         }
 
-        mainUrl =
-            if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id))
-                Companion.cinemataUrl
-            else
-                mainUrl
-
         val encodedId = URLEncoder.encode(res.id, "UTF-8")
 
         val response = app.get("${mainUrl}/meta/${res.type}/$encodedId.json")
@@ -110,6 +106,16 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LoadData>(data)
+        val imdb = res.resolveImdbId()
+        val cinemeta = imdb?.let {
+            fetchCinemetaMeta(it, res.type)
+        }
+
+        val resolved = res.copy(
+            imdbId = imdb,
+            title = cinemeta?.title
+        )
+
         val disabledProviderIds = sharedPref
             ?.getStringSet("disabled_providers", emptySet())
             ?.toSet() ?: emptySet()
@@ -118,14 +124,14 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
         runLimitedAsync( concurrency = 10,
             {
                 try {
-                    invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+                    invokeSubtitleAPI(imdb, resolved.season, resolved.episode, subtitleCallback)
                 } catch (_: Throwable) {
                     // ignore failure but do not cancel the rest
                 }
             },
             {
                 try {
-                    invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+                    invokeWyZIESUBAPI(imdb, res.season, res.episode, subtitleCallback)
                 } catch (_: Throwable) {
                     // ignore failure
                 }
@@ -134,7 +140,7 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
                 suspend {
                     try {
                         provider.invoke(
-                            res.toLinkData(),
+                            resolved.toLinkData(),
                             subtitleCallback,
                             callback,
                             authToken ?: "",
@@ -156,25 +162,36 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
         val season: Int? = null,
         val episode: Int? = null,
         val imdbId: String? = null,
-        val year: Int? = null
+        val year: Int? = null,
+        val title: String? = null
     )
+
 
     private fun LoadData.toLinkData(): StreamPlay.LinkData {
         return StreamPlay.LinkData(
-            id = id?.toIntOrNull(),
             type = type,
             season = season,
             episode = episode,
             imdbId = imdbId,
-            year = year
+            year = year,
+            title = title
         )
     }
+
+
+
+
 
 
     // check if id is imdb/tmdb cause stremio addons like torrentio works base on imdbId
     private fun isImdborTmdb(url: String?): Boolean {
         return imdbUrlToIdNullable(url) != null || url?.startsWith("tmdb:") == true
     }
+
+    private fun isImdb(url: String?): Boolean {
+        return imdbUrlToIdNullable(url) != null
+    }
+
 
     private data class Manifest(val catalogs: List<Catalog>)
     private data class Catalog(
@@ -202,19 +219,24 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
         }
 
         suspend fun toHomePageList(provider: StreamPlayStremioCatelog): HomePageList {
-            val entries = mutableListOf<SearchResponse>()
+            val entries = mutableMapOf<String, SearchResponse>()
+
             types.forEach { type ->
                 val res = app.get(
                     "${provider.mainUrl}/catalog/${type}/${id}.json",
                     timeout = 120L
                 ).parsedSafe<CatalogResponse>()
+
                 res?.metas?.forEach { entry ->
-                    entries.add(entry.toSearchResponse(provider))
+                    if (!entries.containsKey(entry.id)) {
+                        entries[entry.id] = entry.toSearchResponse(provider)
+                    }
                 }
             }
+
             return HomePageList(
                 name ?: id,
-                entries
+                entries.values.toList()
             )
         }
     }
@@ -317,5 +339,96 @@ class StreamPlayStremioCatelog(override var mainUrl: String, override var name: 
             }
         }
     }
+
+    suspend fun LoadData.resolveImdbId(): String? {
+        val source = imdbId ?: id ?: return null
+        val imdb: String? = imdbUrlToIdNullable(source)
+        if (imdb != null) return imdb
+        return when {
+            source.startsWith("tt") -> source
+            source.startsWith("tmdb:") -> tmdbToImdb(source.removePrefix("tmdb:"), type)
+            source.startsWith("kitsu:") -> kitsuToImdb(source.removePrefix("kitsu:"))
+            else -> null
+        }
+    }
+
+
+
+
+    suspend fun tmdbToImdb(tmdbId: String, type: String?): String? {
+        val mediaType = if (type == "series") "tv" else "movie"
+
+        val res = app.get(
+            "https://api.themoviedb.org/3/$mediaType/$tmdbId/external_ids",
+            params = mapOf("api_key" to "98ae14df2b8d8f8f8136499daf79f0e0")
+        ).parsedSafe<TmdbExternalIds>()
+
+        return res?.imdb_id
+    }
+
+    data class TmdbExternalIds(
+        @JsonProperty("imdb_id") val imdb_id: String?
+    )
+
+    suspend fun kitsuToImdb(kitsuId: String): String? {
+        val id = kitsuId.removePrefix("kitsu:")
+
+        val res = app.get(
+            "https://api.ani.zip/mappings",
+            params = mapOf("kitsu_id" to id)
+        ).parsedSafe<AniZipResponse>()
+
+        return res?.mappings?.imdb_id
+    }
+
+    data class AniZipResponse(
+        val mappings: AniZipMappings?
+    )
+
+    data class AniZipMappings(
+        val imdb_id: String?
+    )
+
+    suspend fun fetchCinemetaMeta(
+        imdbId: String,
+        type: String?
+    ): CinemetaMetaData? {
+        val mediaType = if (type == "series") "series" else "movie"
+
+        val res = app.get(
+            "https://v3-cinemeta.strem.io/meta/$mediaType/$imdbId.json"
+        ).parsedSafe<CinemetaResponse>()
+
+        return res?.meta?.let {
+            CinemetaMetaData(
+                title = it.name,
+                tmdbId = it.links
+                    ?.firstOrNull { link -> link.category == "tmdb" }
+                    ?.id
+                    ?.toIntOrNull()
+            )
+        }
+    }
+
+    data class CinemetaResponse(
+        val meta: CinemetaMeta?
+    )
+
+    data class CinemetaMeta(
+        val name: String?,
+        val links: List<CinemetaLink>?
+    )
+
+    data class CinemetaLink(
+        val category: String?,
+        val id: String?
+    )
+
+    data class CinemetaMetaData(
+        val title: String?,
+        val tmdbId: Int?
+    )
+
+
 
 }

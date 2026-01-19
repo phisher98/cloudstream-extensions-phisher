@@ -327,6 +327,15 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
         }
 
+        val enResUrl = if (type == TvType.Movie) {
+            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US"
+        } else {
+            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US"
+        }
+
+        val enRes = app.get(enResUrl).parsedSafe<MediaDetail>()
+        val enTitle = enRes?.title ?: enRes?.name
+
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
         val title = res.title ?: res.name ?: return null
@@ -388,7 +397,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                                         eps.seasonNumber,
                                         eps.episodeNumber,
                                         eps.id,
-                                        title = title,
+                                        title = enTitle,
                                         year = season.airDate?.split("-")?.first()?.toIntOrNull(),
                                         orgTitle = orgTitle,
                                         isAnime = isAnime,
@@ -485,7 +494,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.recommendations = recommendations
                     this.actors = actors
                     addTrailer(trailer)
-                    addTMDbId(data.id.toString())
                     addImdbId(imdbId)
                 }
             } else {
@@ -515,7 +523,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     res.external_ids?.imdb_id,
                     res.external_ids?.tvdb_id,
                     data.type,
-                    title = title,
+                    title = enTitle,
                     year = year,
                     orgTitle = orgTitle,
                     isAnime = isAnime,

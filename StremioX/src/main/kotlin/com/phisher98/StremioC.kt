@@ -95,7 +95,9 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         }
 
         mainUrl =
-            if ((res.type == "movie" || res.type == "series") && isImdborTmdb(res.id))
+            if (
+                (res.type == "movie" || res.type == "series") &&
+                isImdb(res.id) && !res.id.startsWith("kitsu"))
                 cinemataUrl
             else
                 mainUrl
@@ -207,6 +209,11 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         return imdbUrlToIdNullable(url) != null || url?.startsWith("tmdb:") == true
     }
 
+    private fun isImdb(url: String?): Boolean {
+        return imdbUrlToIdNullable(url) != null
+    }
+
+
     private data class Manifest(val catalogs: List<Catalog>)
     private data class Catalog(
         var name: String?,
@@ -233,21 +240,27 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         }
 
         suspend fun toHomePageList(provider: StremioC): HomePageList {
-            val entries = mutableListOf<SearchResponse>()
+            val entries = mutableMapOf<String, SearchResponse>()
+
             types.forEach { type ->
                 val res = app.get(
                     "${provider.mainUrl}/catalog/${type}/${id}.json",
                     timeout = 120L
                 ).parsedSafe<CatalogResponse>()
+
                 res?.metas?.forEach { entry ->
-                    entries.add(entry.toSearchResponse(provider))
+                    if (!entries.containsKey(entry.id)) {
+                        entries[entry.id] = entry.toSearchResponse(provider)
+                    }
                 }
             }
+
             return HomePageList(
                 name ?: id,
-                entries
+                entries.values.toList()
             )
         }
+
     }
 
     private data class CatalogResponse(val metas: List<CatalogEntry>?, val meta: CatalogEntry?)

@@ -156,7 +156,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Change Language"
+                android:text="Change Language (Native)"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -185,7 +185,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Stramio Catelog Addons"
+                android:text="Stramio Catelog Addons (Beta)"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
