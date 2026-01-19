@@ -91,7 +91,7 @@ open class VidStack : ExtractorApi() {
         return try {
             URI(url).let { "${it.scheme}://${it.host}" }
         } catch (e: Exception) {
-            android.util.Log.e("Vidstack", "getBaseUrl fallback: ${e.message}")
+            Log.e("Vidstack", "getBaseUrl fallback: ${e.message}")
             mainUrl
         }
     }
@@ -347,6 +347,7 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
+                /*
                 "10gbps" in label -> {
                     var current = link
 
@@ -368,7 +369,7 @@ class HubCloud : ExtractorApi() {
 
                     Log.e(tag, "10Gbps: Redirect limit reached")
                 }
-
+                 */
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
                 }

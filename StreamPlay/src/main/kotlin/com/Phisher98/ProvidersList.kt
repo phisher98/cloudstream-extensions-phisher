@@ -215,8 +215,8 @@ fun buildProviders(): List<Provider> {
         Provider("cinemaos", "CinemaOS") { res, _, callback, _, _ ->
             invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback)
         },
-        Provider("dahmermovies", "DahmerMovies") { res, _, callback, _, dahmerMoviesAPI ->
-            if (!res.isAnime) invokeDahmerMovies(dahmerMoviesAPI, res.title, res.year, res.season, res.episode, callback)
+        Provider("dahmermovies", "DahmerMovies") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeDahmerMovies(res.title, res.year, res.season, res.episode, callback)
         },
         Provider("KisskhAsia", "KissKhAsia (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeKisskhAsia(res.id, res.season, res.episode, subtitleCallback, callback)

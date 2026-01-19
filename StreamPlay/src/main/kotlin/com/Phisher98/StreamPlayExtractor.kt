@@ -2900,12 +2900,9 @@ object StreamPlayExtractor : StreamPlay() {
                 )
             )
         }
-
-
     }
 
     suspend fun invokeDahmerMovies(
-        apiurl: String? = null,
         title: String? = null,
         year: Int? = null,
         season: Int? = null,
@@ -2913,13 +2910,13 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val url = if (season == null) {
-            "$apiurl/movies/${title?.replace(":", "")} ($year)/"
+            "$dahmerMoviesAPI/movies/${title?.replace(":", "")} ($year)/"
         } else {
-            "$apiurl/tvs/${title?.replace(":", " -")}/Season $season/"
+            "$dahmerMoviesAPI/tvs/${title?.replace(":", " -")}/Season $season/"
         }
         val request = app.get(url, timeout = 60L)
         if (!request.isSuccessful) return
-        val paths = request.documentLarge.select("a").map {
+        val paths = request.document.select("a").map {
             it.text() to it.attr("href")
         }.filter {
             if (season == null) {
@@ -2933,20 +2930,19 @@ object StreamPlayExtractor : StreamPlay() {
         paths.map {
             val quality = getIndexQuality(it.first)
             val tags = getIndexQualityTags(it.first)
-            val href = if (it.second.contains(url)) it.second else (url + it.second)
+            val href = if (it.second.contains(dahmerMoviesAPI)) it.second else (dahmerMoviesAPI + it.second)
 
             callback.invoke(
                 newExtractorLink(
                     "DahmerMovies",
                     "DahmerMovies $tags",
-                    url = href.encodeUrl()
+                    url = href,
+                    ExtractorLinkType.VIDEO
                 ) {
-                    this.referer = ""
                     this.quality = quality
                 }
             )
         }
-
     }
 
     suspend fun invoke2embed(

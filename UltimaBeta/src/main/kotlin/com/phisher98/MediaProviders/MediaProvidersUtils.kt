@@ -43,7 +43,6 @@ import org.json.JSONObject
 import java.net.URI
 import java.net.URL
 import java.net.URLEncoder
-import kotlin.io.encoding.Base64
 
 abstract class MediaProvider {
     abstract val name: String
@@ -490,7 +489,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                             ) { this.quality = quality }
                         )
                     }
-
+                    /*
                     text.contains("10Gbps", ignoreCase = true) -> {
                         var currentLink = link
                         var redirectUrl: String? = null
@@ -514,6 +513,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                             ) { this.quality = quality }
                         )
                     }
+                    */
 
                     else -> {
                         loadExtractor(link, "", subtitleCallback, callback)
@@ -1385,7 +1385,7 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
                         ) { this.quality = quality }
                     )
                 }
-
+                /*
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
                     var redirectUrl: String? = null
@@ -1409,6 +1409,8 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
                         ) { this.quality = quality }
                     )
                 }
+
+                 */
 
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(

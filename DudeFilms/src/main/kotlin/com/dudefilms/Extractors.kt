@@ -221,6 +221,7 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
+                /*
                 "10gbps" in label -> {
                     var current = link
 
@@ -243,6 +244,7 @@ class HubCloud : ExtractorApi() {
                     Log.e(tag, "10Gbps: Redirect limit reached")
                 }
 
+                 */
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
                 }

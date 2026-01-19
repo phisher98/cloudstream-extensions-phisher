@@ -350,6 +350,7 @@ class VCloud : ExtractorApi() {
                     )
                 }
 
+                /*
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
                     var redirectUrl: String?
@@ -373,6 +374,7 @@ class VCloud : ExtractorApi() {
                         ) { this.quality = quality }
                     )
                 }
+                */
 
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
@@ -1063,6 +1065,7 @@ class HubCloud : ExtractorApi() {
                     )
                 }
 
+                /*
                 "10gbps" in label -> {
                     var current = link
 
@@ -1084,6 +1087,7 @@ class HubCloud : ExtractorApi() {
 
                     Log.e(tag, "10Gbps: Redirect limit reached")
                 }
+                */
 
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
