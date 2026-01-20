@@ -20,6 +20,7 @@ import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeHexa
+import com.phisher98.StreamPlayExtractor.invokeHindmoviez
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
@@ -149,7 +150,8 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, _, _ ->
-            invokeMoviesdrive(res.title, res.season, res.episode, res.year, res.imdbId, subtitleCallback, callback)
+            invokeMoviesdrive(res.title, res.season, res.episode,
+                res.imdbId, subtitleCallback, callback)
         },
         Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
@@ -264,8 +266,11 @@ fun buildProviders(): List<Provider> {
         Provider("BidSrc", "BidSrc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokBidsrc(res.id, res.season, res.episode, callback)
         },
-        Provider("flixindia", "FlixIndia") { res, subtitleCallback, callback, _, _ ->
+        Provider("flixindia", "FlixIndia (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback,callback)
+        },
+        Provider("Hindmoviez", "HindMoviez (Multi)") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode,callback)
         },
     )
 }

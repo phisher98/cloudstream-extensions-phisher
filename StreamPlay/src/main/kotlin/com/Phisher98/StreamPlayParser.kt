@@ -686,6 +686,7 @@ data class DomainsParser(
     val telugumv: String,
     val filmycab: String,
     val tellyhd: String,
+    val hindmoviez: String,
 )
 
 //OXXFile

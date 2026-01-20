@@ -3280,7 +3280,6 @@ object StreamPlayExtractor : StreamPlay() {
         title: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        year: Int? = null,
         id: String? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
@@ -6359,6 +6358,58 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokeHindmoviez(
+        id: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val api = getDomains()?.hindmoviez ?: return
+
+        if (id.isNullOrBlank()) return
+
+        val searchDoc = app.get("$api/?s=$id", timeout = 50L).document
+        val entries = searchDoc.select("h2.entry-title > a")
+
+        entries.amap { entry ->
+            val pageDoc = app.get(entry.attr("href"), timeout = 50L).document
+            val buttons = pageDoc.select("a.maxbutton")
+
+            if (episode == null) {
+                // Movie
+                buttons.amap { btn ->
+                    val intermediateDoc = app.get(btn.attr("href"), timeout = 50L).document
+                    val link = intermediateDoc.selectFirst("a.get-link-btn")
+                        ?.attr("href")
+                        ?: return@amap
+
+                    getHindMoviezLinks("Hindmoviez", link, callback)
+                }
+            } else {
+                // TV Episode
+                buttons.amap { btn ->
+                    val headerText = btn.parent()
+                        ?.parent()
+                        ?.previousElementSibling()
+                        ?.text()
+                        .orEmpty()
+
+                    if (!headerText.contains("Season $season", ignoreCase = true)) return@amap
+
+                    val episodeDoc = app.get(btn.attr("href"), timeout = 50L).document
+                    val episodeLink = episodeDoc
+                        .select("h3 > a")
+                        .getOrNull(episode - 1)
+                        ?.attr("href")
+                        ?: return@amap
+
+                    getHindMoviezLinks("Hindmoviez", episodeLink, callback)
+                }
+            }
+        }
+    }
+
 
 }
 
