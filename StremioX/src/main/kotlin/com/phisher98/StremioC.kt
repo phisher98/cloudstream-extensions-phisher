@@ -53,7 +53,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
         )
-        private const val cinemataUrl = "https://v3-cinemeta.strem.io"
         private const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
     }
 
@@ -94,17 +93,9 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             parseJson(metaJson)
         }
 
-        mainUrl =
-            if (
-                (res.type == "movie" || res.type == "series") &&
-                isImdb(res.id) && !res.id.startsWith("kitsu"))
-                cinemataUrl
-            else
-                mainUrl
-
         val encodedId = URLEncoder.encode(res.id, "UTF-8")
 
-        val response = app.get("${mainUrl}/meta/${res.type}/$encodedId.json")
+        val response = app.get("$mainUrl/meta/${res.type}/$encodedId.json")
             .parsedSafe<CatalogResponse>()
             ?: throw RuntimeException("Failed to load meta")
 
@@ -124,14 +115,18 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     ): Boolean {
         val loadData = parseJson<LoadData>(data)
         val encodedId = URLEncoder.encode(loadData.id, "UTF-8")
-
         val request = app.get(
             "${mainUrl}/stream/${loadData.type}/$encodedId.json",
             timeout = 120L
         )
-        if (request.isSuccessful) {
-            val res = request.parsedSafe<StreamsResponse>()
-            res?.streams?.forEach { stream ->
+
+        val res = if (request.isSuccessful)
+            request.parsedSafe<StreamsResponse>()
+        else
+            null
+
+        if (!res?.streams.isNullOrEmpty()) {
+            res.streams.forEach { stream ->
                 stream.runCallback(subtitleCallback, callback)
             }
         } else {
