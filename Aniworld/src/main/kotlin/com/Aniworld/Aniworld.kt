@@ -1,5 +1,6 @@
 package com.Aniworld
 
+import com.Aniworld.AniworldPlugin.ByseSX
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.DubStatus
@@ -195,6 +196,10 @@ open class Aniworld : MainAPI() {
 
             val lang = it.first.getLanguage(document)
             val name = "${it.third} [${lang}]"
+            if (redirectUrl.contains("filemoon"))
+            {
+                FileMoon().getUrl(redirectUrl,name,subtitleCallback,callback)
+            }
             loadCustomExtractor(name,redirectUrl,"",subtitleCallback,callback)
         }
 
@@ -224,6 +229,11 @@ open class Aniworld : MainAPI() {
 
 class Dooood : DoodLaExtractor() {
     override var mainUrl = "https://urochsunloath.com"
+}
+
+class FileMoon : ByseSX() {
+    override var mainUrl = "https://filemoon.to"
+    override var name = "FileMoon"
 }
 
 suspend fun loadCustomExtractor(

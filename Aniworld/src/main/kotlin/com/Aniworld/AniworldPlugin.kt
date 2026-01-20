@@ -4,7 +4,6 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.Prerelease
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64DecodeArray
@@ -28,11 +27,6 @@ class AniworldPlugin: Plugin() {
         registerExtractorAPI(Dooood())
         registerExtractorAPI(Vidmoly())
         registerExtractorAPI(FileMoon())
-    }
-
-    class FileMoon : ByseSX() {
-        override var mainUrl = "https://filemoon.to"
-        override var name = "FileMoon"
     }
 
     open class ByseSX : ExtractorApi() {
@@ -62,21 +56,29 @@ class AniworldPlugin: Plugin() {
             return app.get(url).parsedSafe<DetailsRoot>()
         }
 
-        private suspend fun getPlayback(mainUrl: String): PlaybackRoot? {
+        private suspend fun getPlayback(mainUrl: String): Pair<PlaybackRoot, String>? {
             val details = getDetails(mainUrl) ?: return null
             val embedFrameUrl = details.embedFrameUrl
             val embedBase = getBaseUrl(embedFrameUrl)
             val code = getCodeFromUrl(embedFrameUrl)
             val playbackUrl = "$embedBase/api/videos/$code/embed/playback"
+
             val headers = mapOf(
                 "accept" to "*/*",
                 "accept-language" to "en-US,en;q=0.5",
                 "priority" to "u=1, i",
                 "referer" to embedFrameUrl,
-                "x-embed-parent" to mainUrl.replace("/d/","/e/")
+                "x-embed-parent" to mainUrl.replace("/d/", "/e/")
             )
-            return app.post(playbackUrl, headers = headers).parsedSafe<PlaybackRoot>()
+
+            val root = app.post(
+                playbackUrl,
+                headers = headers
+            ).parsedSafe<PlaybackRoot>() ?: return null
+
+            return root to embedFrameUrl
         }
+
 
         private fun buildAesKey(playback: Playback): ByteArray {
             val p1 = b64UrlDecode(playback.keyParts[0])
@@ -115,16 +117,16 @@ class AniworldPlugin: Plugin() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
         ) {
-            val refererUrl = getBaseUrl(url)
-            val playbackRoot = getPlayback(url) ?: return
+            val (playbackRoot, m3u8referer) = getPlayback(url) ?: return
+
             val streamUrl  = decryptPlayback(playbackRoot.playback) ?: return
 
 
-            val headers = mapOf("Referer" to refererUrl)
+            val headers = mapOf("Referer" to m3u8referer)
             M3u8Helper.generateM3u8(
-                name,
+                "$referer",
                 streamUrl,
-                mainUrl,
+                m3u8referer,
                 headers = headers
             ).forEach(callback)
         }
