@@ -17,12 +17,15 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class TamilblastersProvider : MainAPI() {
-    override var mainUrl = "https://www.1tamilblasters.casa/"
-    private val streamhg = "https://tryzendm.com"
+    override var mainUrl: String = runBlocking {
+        TamilblastersPlugin.getDomains()?.tamilblasters ?: "https://www.1tamilblasters.business/"
+    }
+    private val streamhg = "https://cavanhabg.com"
     override var name = "Tamilblasters"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override var lang = "ta"
