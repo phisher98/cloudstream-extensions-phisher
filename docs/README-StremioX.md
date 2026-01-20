@@ -40,21 +40,24 @@ Each mode serves a different purpose and should be used accordingly.
 
 ### 2. StremioC (Catalogue Addons)
 
-**StremioC** is used for managing **Stremio catalogue addons** only.
+**StremioC** manages **Stremio catalogue addons** and retrieves both **metadata and streams directly from the addon URL**.
 
 #### Features
 
-- Add Stremio **catalogue addon** links
+- Add Stremio **catalogue addon** URLs
 - Each added addon:
-  - Appears as a separate provider in Extensions
+  - Appears as a separate provider under Extensions
   - Uses the saved **name** as the provider name
 - When adding a catalogue addon:
   - Enter a **name**
   - Paste the **addon URL**
   - Save
 - Added catalogue addons:
-  - Can be viewed in a list
-  - Can be deleted anytime
+  - Are listed for easy management
+  - Can be deleted at any time
+- **Stream handling**:
+  - Streams are fetched from the addon itself
+  - If the addon does not provide streams, the system **automatically falls back to torrent links**
 
 #### Notes
 
