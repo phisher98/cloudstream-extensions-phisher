@@ -56,23 +56,41 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         private const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
     }
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse {
         if (mainUrl.isEmpty()) {
             throw IllegalArgumentException("Configure in Extension Settings\n")
         }
         mainUrl = mainUrl.fixSourceUrl()
-        val res = app.get("${mainUrl}/manifest.json").parsedSafe<Manifest>()
+
+        val pageSize = 100
+        val skip = (page - 1) * pageSize
+
+        val manifest = app
+            .get("$mainUrl/manifest.json")
+            .parsedSafe<Manifest>()
+
         val lists = mutableListOf<HomePageList>()
-        res?.catalogs?.amap { catalog ->
-            catalog.toHomePageList(this).let {
-                if (it.list.isNotEmpty()) lists.add(it)
+
+        manifest?.catalogs?.amap { catalog ->
+            catalog.toHomePageList(
+                provider = this,
+                skip = skip
+            ).let {
+                if (it.list.isNotEmpty()) {
+                    lists.add(it)
+                }
             }
         }
+
         return newHomePageResponse(
             lists,
-            false
+            hasNext = true
         )
     }
+
 
     override suspend fun search(query: String): List<SearchResponse> {
         mainUrl = mainUrl.fixSourceUrl()
@@ -234,12 +252,21 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             return entries
         }
 
-        suspend fun toHomePageList(provider: StremioC): HomePageList {
+        suspend fun toHomePageList(
+            provider: StremioC,
+            skip: Int
+        ): HomePageList {
             val entries = mutableMapOf<String, SearchResponse>()
 
             types.forEach { type ->
+                val url = if (skip > 0) {
+                    "${provider.mainUrl}/catalog/$type/$id/skip=$skip.json"
+                } else {
+                    "${provider.mainUrl}/catalog/$type/$id.json"
+                }
+
                 val res = app.get(
-                    "${provider.mainUrl}/catalog/${type}/${id}.json",
+                    url,
                     timeout = 120L
                 ).parsedSafe<CatalogResponse>()
 
@@ -255,7 +282,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                 entries.values.toList()
             )
         }
-
     }
 
     private data class CatalogResponse(val metas: List<CatalogEntry>?, val meta: CatalogEntry?)
