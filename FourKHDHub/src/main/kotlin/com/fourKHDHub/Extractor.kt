@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.runBlocking
 import java.net.URI
 
 
@@ -154,7 +155,9 @@ class Hubdrive : ExtractorApi() {
 class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.*"
+    override var mainUrl: String = runBlocking {
+        FourKHDHubProvider.getDomains()?.hubcloud ?: "https://hubcloud.foo"
+    }
     override val requiresReferer = false
 
     override suspend fun getUrl(

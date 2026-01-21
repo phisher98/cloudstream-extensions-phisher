@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.XDMovies.Companion.TMDBIMAGEBASEURL
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.net.URI
 
@@ -37,7 +38,9 @@ class Hubdrive : ExtractorApi() {
 class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.*"
+    override var mainUrl: String = runBlocking {
+        XDMoviesProvider.getDomains()?.hubcloud ?: "https://hubcloud.foo"
+    }
     override val requiresReferer = false
 
     override suspend fun getUrl(

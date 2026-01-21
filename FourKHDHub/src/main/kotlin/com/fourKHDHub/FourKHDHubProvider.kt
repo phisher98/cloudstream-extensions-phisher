@@ -38,6 +38,8 @@ class FourKHDHubProvider: BasePlugin() {
         data class Domains(
             @JsonProperty("4khdhub")
             val n4khdhub: String,
+            @JsonProperty("hubcloud")
+            val hubcloud: String,
         )
     }
 }
