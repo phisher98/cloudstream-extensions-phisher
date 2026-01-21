@@ -8,8 +8,6 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -222,9 +220,7 @@ class Yflix : MainAPI() {
                 this.tags = genres
                 this.score = Score.from10(rating)
                 this.recommendations = recommendations
-                simklIdMovie?.let { addSimklId(it) }
                 imdbIdFromMovie?.let { addImdbId(it) }
-                tmdbMovieId?.let { addTMDbId(it.toString()) }
                 this.actors = movieCastList
             }
         }
@@ -329,9 +325,7 @@ class Yflix : MainAPI() {
             this.tags = genres
             this.score = Score.from10(rating)
             this.recommendations = recommendations
-            addSimklId(simklIdShow)
             addImdbId(imdbIdFromShow)
-            tmdbShowId?.let { addTMDbId(it.toString()) }
             this.actors = castList
         }
     }
