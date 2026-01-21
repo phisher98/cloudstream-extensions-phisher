@@ -995,7 +995,7 @@ object StreamPlayExtractor : StreamPlay() {
             val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
             if (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))) {
                 loadSourceNameExtractor(
-                    "Animepahe",
+                    "Animepahe Pahe",
                     "Animepahe Pahe $source [$type]",
                     href,
                     "",
