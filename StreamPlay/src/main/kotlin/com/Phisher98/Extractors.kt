@@ -33,6 +33,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.phisher98.StreamPlay.Companion.animepaheAPI
+import kotlinx.coroutines.runBlocking
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -925,7 +926,9 @@ open class PixelDrain : ExtractorApi() {
 class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.*"
+    override var mainUrl: String = runBlocking {
+        StreamPlay.getDomains()?.hubcloud ?: "https://hubcloud.foo"
+    }
     override val requiresReferer = false
 
     override suspend fun getUrl(

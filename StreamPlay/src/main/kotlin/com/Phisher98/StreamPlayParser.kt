@@ -687,6 +687,8 @@ data class DomainsParser(
     val filmycab: String,
     val tellyhd: String,
     val hindmoviez: String,
+    @JsonProperty("hubcloud")
+    val hubcloud: String,
 )
 
 //OXXFile

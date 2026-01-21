@@ -189,6 +189,7 @@ class StreamPlayPlugin: Plugin() {
         }
     }
 
+
     fun reload(context: Context) {
         try {
             val prefs = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)

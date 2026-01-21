@@ -79,7 +79,7 @@ class Filesdl : ExtractorApi() {
 class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
-    override val mainUrl = "https://hubcloud.*"
+    override val mainUrl = "https://hubcloud.foo"
     override val requiresReferer = false
 
     override suspend fun getUrl(
