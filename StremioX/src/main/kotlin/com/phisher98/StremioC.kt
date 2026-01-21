@@ -49,6 +49,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     override val hasMainPage = true
 
     companion object {
+        private const val cinemeta = "https://v3-cinemeta.strem.io"
         val TRACKER_LIST_URLS = listOf(
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
@@ -120,7 +121,16 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         val entry = response.meta
             ?: response.metas?.firstOrNull { it.id == res.id }
             ?: response.metas?.firstOrNull()
-            ?: throw RuntimeException("Meta not found")
+            ?: run {
+                val fallback = app.get(
+                    "$cinemeta/meta/${res.type}/$encodedId.json",
+                    timeout = 120L
+                ).parsedSafe<CatalogResponse>()
+
+                fallback?.meta
+                    ?: fallback?.metas?.firstOrNull()
+                    ?: throw RuntimeException("Meta not found (primary + fallback)")
+            }
 
         return entry.toLoadResponse(this, res.id)
     }
@@ -351,7 +361,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     tags = genre ?: genres
                     addActors(cast)
                     addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" }
-                        ?.randomOrNull())
+                        .randomOrNull())
                     addImdbId(imdbId)
                 }
             }
