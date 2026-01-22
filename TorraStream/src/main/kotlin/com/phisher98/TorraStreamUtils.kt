@@ -9,6 +9,10 @@ import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "") ?. groupValues ?. getOrNull(1) ?. toIntOrNull()
@@ -178,4 +182,29 @@ fun extractResolutionFromDescription(description: String?): String? {
     if (description.isNullOrBlank()) return null
     val regex = Regex("""\b(2160p|1440p|1080p|720p|480p|360p)\b""", RegexOption.IGNORE_CASE)
     return regex.find(description)?.value
+}
+
+fun getDate(): TmdbDate {
+    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val calendar = Calendar.getInstance()
+
+    // Today
+    val today = formatter.format(calendar.time)
+
+    // Next week
+    calendar.add(Calendar.WEEK_OF_YEAR, 1)
+    val nextWeek = formatter.format(calendar.time)
+
+    // Last week's Monday
+    calendar.time = Date()
+    calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    calendar.add(Calendar.WEEK_OF_YEAR, -1)
+    val lastWeekStart = formatter.format(calendar.time)
+
+    // Start of current month
+    calendar.time = Date()
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    val monthStart = formatter.format(calendar.time)
+
+    return TmdbDate(today, nextWeek, lastWeekStart, monthStart)
 }

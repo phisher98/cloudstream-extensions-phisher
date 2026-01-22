@@ -4,13 +4,13 @@ import android.content.SharedPreferences
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
-import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.NextAiring
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SearchResponseList
@@ -21,17 +21,16 @@ import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.metaproviders.TraktProvider
+import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
-import com.lagradost.cloudstream3.newSearchResponseList
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
+import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -44,7 +43,7 @@ import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
+class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override var name = "TorraStream"
     override var mainUrl = "https://torrentio.strem.fun"
     override var supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.AsianDrama, TvType.Torrent)
@@ -65,245 +64,198 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
         const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
         const val TorboxAPI= "https://stremio.torbox.app"
         val TRACKER_LIST_URL = listOf(
-        "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
-        "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
+            "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
+            "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
         )
         private const val Uindex = "https://uindex.org"
         private const val Knaben = "https://knaben.org"
-    }
+        private const val tmdbAPI = "https://api.themoviedb.org/3"
+        private const val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
 
-    private val traktApiUrl = "https://api.trakt.tv"
-    private val traktClientId = "d9f434f48b55683a279ffe88ddc68351cc04c9dc9372bd95af5de780b794e770"
-    override val mainPage =
-        mainPageOf(
-            "$traktApiUrl/movies/trending?extended=full,images&limit=25" to "Trending Movies",
-            "$traktApiUrl/movies/popular?extended=full,images&limit=25" to "Popular Movies",
-            "$traktApiUrl/shows/trending?extended=full,images&limit=25" to "Trending Shows",
-            "$traktApiUrl/shows/popular?extended=full,images&limit=25" to "Popular Shows",
-        )
-
-
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val apiResponse = getApi(request.data)
-        val results = parseJson<List<MediaDetails>>(apiResponse).map { element ->
-            element.toSearchResponse()
-        }
-        return newHomePageResponse(request.name, results)
-    }
-
-    override suspend fun search(query: String, page: Int): SearchResponseList {
-        val apiResponse =
-            getApi("$traktApiUrl/search/movie,show?extended=full,images&limit=20&page=$page&query=$query")
-
-        return newSearchResponseList(parseJson<List<MediaDetails>>(apiResponse).map { element ->
-            element.toSearchResponse()
-        })
-    }
-
-    private fun MediaDetails.toSearchResponse(): SearchResponse {
-
-        val media = this.media ?: this
-        val mediaType = if (media.airedEpisodes !== null) TvType.TvSeries else TvType.Movie
-        val poster = media.images?.poster?.firstOrNull()
-        return if (mediaType == TvType.Movie) {
-            newMovieSearchResponse(
-                name = media.title ?: "",
-                url = Data(
-                    type = TvType.Movie,
-                    mediaDetails = media,
-                ).toJson(),
-                type = TvType.Movie,
-            ) {
-                score = Score.from10(media.rating)
-                posterUrl = fixPath(poster)
+        fun getType(t: String?): TvType {
+            return when (t) {
+                "movie" -> TvType.Movie
+                else -> TvType.TvSeries
             }
-        } else {
-            newTvSeriesSearchResponse(
-                name = media.title ?: "",
-                url = Data(
-                    type = TvType.TvSeries,
-                    mediaDetails = media,
-                ).toJson(),
-                type = TvType.TvSeries,
-            ) {
-                score = Score.from10(media.rating)
-                this.posterUrl = fixPath(poster)
+        }
+
+        fun getStatus(t: String?): ShowStatus {
+            return when (t) {
+                "Returning Series" -> ShowStatus.Ongoing
+                else -> ShowStatus.Completed
             }
         }
     }
 
-    override suspend fun load(url: String): LoadResponse {
+    override val mainPage = mainPageOf(
+        "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending",
+        "$tmdbAPI/trending/movie/week?api_key=$apiKey&region=US&with_original_language=en" to "Popular Movies",
+        "$tmdbAPI/trending/tv/week?api_key=$apiKey&region=US&with_original_language=en" to "Popular TV Shows",
+        "$tmdbAPI/tv/airing_today?api_key=$apiKey&region=US&with_original_language=en" to "Airing Today TV Shows",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=213" to "Netflix",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=1024" to "Amazon",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2739" to "Disney+",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=453" to "Hulu",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=2552" to "Apple TV+",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=49" to "HBO",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_networks=3353" to "Peacock",
+        "$tmdbAPI/discover/movie?api_key=$apiKey&language=en-US&page=1&sort_by=popularity.desc&with_origin_country=IN&release_date.gte=${getDate().lastWeekStart}&release_date.lte=${getDate().today}" to "Trending Indian Movies",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}" to "Airing Today Anime",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}" to "On The Air Anime",
+        "$tmdbAPI/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
+        "$tmdbAPI/movie/top_rated?api_key=$apiKey&region=US" to "Top Rated Movies",
+        "$tmdbAPI/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_original_language=ko" to "Korean Shows",
+        "$tmdbAPI/discover/tv?api_key=$apiKey&with_genres=99" to "Documentary",
+    )
+
+    private fun getImageUrl(link: String?): String? {
+        if (link == null) return null
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
+    }
+
+    private fun getOriImageUrl(link: String?): String? {
+        if (link == null) return null
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
+    }
+
+    override suspend fun getMainPage(
+        page: Int, request: MainPageRequest
+    ): HomePageResponse {
+        val adultQuery =
+            if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669|190370"
+        val type = if (request.data.contains("/movie")) "movie" else "tv"
+        val home = app.get("${request.data}$adultQuery&page=$page")
+            .parsedSafe<Results>()?.results?.mapNotNull { media ->
+                media.toSearchResponse(type)
+            } ?: throw ErrorLoadingException("Invalid Json reponse")
+        return newHomePageResponse(request.name, home)
+    }
+
+    private fun Media.toSearchResponse(type: String? = null): SearchResponse? {
+        return newMovieSearchResponse(
+            title ?: name ?: originalTitle ?: return null,
+            Data(id = id, type = mediaType ?: type).toJson(),
+            TvType.Movie,
+        ) {
+            this.posterUrl = getImageUrl(posterPath)
+            this.score= Score.from10(voteAverage)
+        }
+    }
+
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
+
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        return app.get(
+            "$tmdbAPI/search/multi?api_key=$apiKey&language=en-US&query=$query&page=$page&include_adult=${settingsForProvider.enableAdult}"
+        ).parsedSafe<Results>()?.results?.mapNotNull { media ->
+            media.toSearchResponse()
+        }?.toNewSearchResponseList()
+    }
+
+
+    override suspend fun load(url: String): LoadResponse? {
         val data = parseJson<Data>(url)
-        val mediaDetails = data.mediaDetails
+        val type = getType(data.type)
+        val resUrl = if (type == TvType.Movie) {
+            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&append_to_response=keywords,credits,external_ids,videos,recommendations"
+        } else {
+            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=keywords,credits,external_ids,videos,recommendations"
+        }
+        val res = app.get(resUrl).parsedSafe<MediaDetail>()
+            ?: throw ErrorLoadingException("Invalid Json Response")
 
-        val moviesOrShows = if (data.type == TvType.Movie) "movies" else "shows"
+        val title = res.title ?: res.name ?: return null
+        val poster = getOriImageUrl(res.posterPath)
+        val bgPoster = getOriImageUrl(res.backdropPath)
+        val releaseDate = res.releaseDate ?: res.firstAirDate
+        val year = releaseDate?.split("-")?.first()?.toIntOrNull()
+        val genres = res.genres?.mapNotNull { it.name }
+        val isAnime =
+            genres?.contains("Animation") == true && (res.original_language == "zh" || res.original_language == "ja")
+        val keywords = res.keywords?.results?.mapNotNull { it.name }.orEmpty()
+            .ifEmpty { res.keywords?.keywords?.mapNotNull { it.name } }
 
-        val posterUrl = fixPath(mediaDetails?.images?.poster?.firstOrNull())
-        val backDropUrl = fixPath(mediaDetails?.images?.fanart?.firstOrNull())
-
-        val resActor =
-            getApi("$traktApiUrl/$moviesOrShows/${mediaDetails?.ids?.trakt}/people?extended=full,images")
-
-        val actors = parseJson<People>(resActor).cast?.map {
+        val actors = res.credits?.cast?.mapNotNull { cast ->
             ActorData(
                 Actor(
-                    name = it.person?.name!!,
-                    image = fixPath(it.person!!.images?.headshot?.firstOrNull())
-                ),
-                roleString = it.character
+                    cast.name ?: cast.originalName ?: return@mapNotNull null,
+                    getImageUrl(cast.profilePath)
+                ), roleString = cast.character
             )
-        }
+        } ?: return null
+        val recommendations =
+            res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
 
-        val resRelated =
-            getApi("$traktApiUrl/$moviesOrShows/${mediaDetails?.ids?.trakt}/related?extended=full,images&limit=20")
+        val trailer =
+            res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
 
-        val relatedMedia = parseJson<List<MediaDetails>>(resRelated).map { it.toSearchResponse() }
-
-        val isCartoon =
-            mediaDetails?.genres?.contains("animation") == true || mediaDetails?.genres?.contains("anime") == true
-        val isAnime =
-            isCartoon && (mediaDetails.language == "zh" || mediaDetails.language == "ja")
-        val isAsian = !isAnime && (mediaDetails?.language == "zh" || mediaDetails?.language == "ko")
-        val isBollywood = mediaDetails?.country == "in"
-        val uniqueUrl = data.mediaDetails?.ids?.trakt?.toJson() ?: data.toJson()
-
-        if (data.type == TvType.Movie) {
-
-            val linkData = LinkData(
-                id = mediaDetails?.ids?.tmdb,
-                traktId = mediaDetails?.ids?.trakt,
-                traktSlug = mediaDetails?.ids?.slug,
-                tmdbId = mediaDetails?.ids?.tmdb,
-                imdbId = mediaDetails?.ids?.imdb.toString(),
-                tvdbId = mediaDetails?.ids?.tvdb,
-                tvrageId = mediaDetails?.ids?.tvrage,
-                type = data.type.toString(),
-                title = mediaDetails?.title,
-                year = mediaDetails?.year,
-                orgTitle = mediaDetails?.title,
-                isAnime = isAnime,
-                //jpTitle = later if needed as it requires another network request,
-                airedDate = mediaDetails?.released
-                    ?: mediaDetails?.firstAired,
-                isAsian = isAsian,
-                isBollywood = isBollywood,
-            ).toJson()
-
-            return newMovieLoadResponse(
-                name = mediaDetails?.title!!,
-                url = data.toJson(),
-                dataUrl = linkData.toJson(),
-                type = if (isAnime) TvType.AnimeMovie else TvType.Movie,
+        return if (type == TvType.TvSeries) {
+            val episodes = res.seasons?.mapNotNull { season ->
+                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
+                    .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
+                        newEpisode(LoadData(
+                            res.title,
+                            year,
+                            isAnime,
+                            res.external_ids?.imdb_id,
+                            eps.seasonNumber,
+                            eps.episodeNumber
+                        ).toJson())
+                        {
+                            this.name = eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
+                            this.season = eps.seasonNumber
+                            this.episode = eps.episodeNumber
+                            this.posterUrl = getImageUrl(eps.stillPath)
+                            this.score = Score.from10(eps.voteAverage)
+                            this.description = eps.overview
+                            this.addDate(eps.airDate)
+                        }
+                    }
+            }?.flatten() ?: listOf()
+            newTvSeriesLoadResponse(
+                title, url, if (isAnime) TvType.Anime else TvType.TvSeries, episodes
             ) {
-                this.uniqueUrl = uniqueUrl
-                this.name = mediaDetails.title.toString()
-                this.type = if (isAnime) TvType.AnimeMovie else TvType.Movie
-                this.posterUrl = posterUrl
-                this.year = mediaDetails.year
-                this.plot = mediaDetails.overview
-                this.score = Score.from10(mediaDetails.rating)
-                this.tags = mediaDetails.genres
-                this.duration = mediaDetails.runtime
-                this.recommendations = relatedMedia
+                this.posterUrl = poster
+                this.backgroundPosterUrl = bgPoster
+                this.year = year
+                this.plot = res.overview
+                this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                this.score = Score.from10(res.vote_average.toString())
+                this.showStatus = getStatus(res.status)
+                this.recommendations = recommendations
                 this.actors = actors
-                this.comingSoon = isUpcoming(mediaDetails.released)
-                //posterHeaders
-                this.backgroundPosterUrl = backDropUrl
-                this.contentRating = mediaDetails.certification
-                addTrailer(mediaDetails.trailer)
-                addImdbId(mediaDetails.ids?.imdb)
+                //this.contentRating = fetchContentRating(data.id, "US")
+                addTrailer(trailer)
+                addTMDbId(data.id.toString())
+                addImdbId(res.external_ids?.imdb_id)
             }
         } else {
-
-            val resSeasons =
-                getApi("$traktApiUrl/shows/${mediaDetails?.ids?.trakt.toString()}/seasons?extended=full,images,episodes")
-            val episodes = mutableListOf<Episode>()
-            val seasons = parseJson<List<Seasons>>(resSeasons)
-            var nextAir: NextAiring? = null
-
-            seasons.forEach { season ->
-
-                season.episodes?.map { episode ->
-
-                    val linkData = LinkData(
-                        id = mediaDetails?.ids?.tmdb,
-                        traktId = mediaDetails?.ids?.trakt,
-                        traktSlug = mediaDetails?.ids?.slug,
-                        tmdbId = mediaDetails?.ids?.tmdb,
-                        imdbId = mediaDetails?.ids?.imdb.toString(),
-                        tvdbId = mediaDetails?.ids?.tvdb,
-                        tvrageId = mediaDetails?.ids?.tvrage,
-                        type = data.type.toString(),
-                        season = episode.season,
-                        episode = episode.number,
-                        title = mediaDetails?.title,
-                        year = mediaDetails?.year,
-                        orgTitle = mediaDetails?.title,
-                        isAnime = isAnime,
-                        airedYear = mediaDetails?.year,
-                        lastSeason = seasons.size,
-                        epsTitle = episode.title,
-                        //jpTitle = later if needed as it requires another network request,
-                        date = episode.firstAired,
-                        airedDate = episode.firstAired,
-                        isAsian = isAsian,
-                        isBollywood = isBollywood,
-                        isCartoon = isCartoon
-                    ).toJson()
-
-                    episodes.add(
-                        newEpisode(linkData.toJson()) {
-                            this.name = episode.title
-                            this.season = episode.season
-                            this.episode = episode.number
-                            this.description = episode.overview
-                            this.runTime = episode.runtime
-                            this.posterUrl = fixPath( episode.images?.screenshot?.firstOrNull())
-                            //this.rating = episode.rating?.times(10)?.roundToInt()
-                            this.score = Score.from10(episode.rating)
-
-                            this.addDate(episode.firstAired, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                            if (nextAir == null && this.date != null && this.date!! > unixTimeMS && this.season != 0) {
-                                nextAir = NextAiring(
-                                    episode = this.episode!!,
-                                    unixTime = this.date!!.div(1000L),
-                                    season = if (this.season == 1) null else this.season,
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-
-            return newTvSeriesLoadResponse(
-                name = mediaDetails?.title!!,
-                url = data.toJson(),
-                type = if (isAnime) TvType.Anime else TvType.TvSeries,
-                episodes = episodes
+            newMovieLoadResponse(
+                title,
+                url,
+                TvType.Movie,
+                LoadData(res.title,year,isAnime,res.external_ids?.imdb_id).toJson()
             ) {
-                this.uniqueUrl = uniqueUrl
-                this.name = mediaDetails.title.toString()
-                this.type = if (isAnime) TvType.Anime else TvType.TvSeries
-                this.episodes = episodes
-                this.posterUrl = posterUrl
-                this.year = mediaDetails.year
-                this.plot = mediaDetails.overview
-                this.showStatus = getStatus(mediaDetails.status)
-                this.score = Score.from10(mediaDetails.rating)
-                this.tags = mediaDetails.genres
-                this.duration = mediaDetails.runtime
-                this.recommendations = relatedMedia
+                this.posterUrl = poster
+                this.comingSoon = isUpcoming(releaseDate)
+                this.backgroundPosterUrl = bgPoster
+                this.year = year
+                this.plot = res.overview
+                this.duration = res.runtime
+                this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                this.score = Score.from10(res.vote_average.toString())
+                this.recommendations = recommendations
                 this.actors = actors
-                this.comingSoon = isUpcoming(mediaDetails.released)
-                //posterHeaders
-                this.nextAiring = nextAir
-                this.backgroundPosterUrl = backDropUrl
-                this.contentRating = mediaDetails.certification
-                addTrailer(mediaDetails.trailer)
-                addImdbId(mediaDetails.ids?.imdb)
+                //this.contentRating = fetchContentRating(data.id, "US")
+                addTrailer(trailer)
+                addTMDbId(data.id.toString())
+                addImdbId(res.external_ids?.imdb_id)
             }
         }
     }
+
 
     override suspend fun loadLinks(
         data: String,
@@ -313,7 +265,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
     ): Boolean {
         val provider = sharedPref.getString("debrid_provider", null)
         val key = sharedPref.getString("debrid_key", null)
-        val dataObj = parseJson<LinkData>(data)
+        val dataObj = parseJson<LoadData>(data)
         val isAnime = dataObj.isAnime
         val title = dataObj.title
         val season = dataObj.season
@@ -393,17 +345,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TraktProvider() {
             }
 
         return true
-    }
-
-    private suspend fun getApi(url: String): String {
-        return app.get(
-            url = url,
-            headers = mapOf(
-                "Content-Type" to "application/json",
-                "trakt-api-version" to "2",
-                "trakt-api-key" to traktClientId,
-            )
-        ).toString()
     }
 
 
