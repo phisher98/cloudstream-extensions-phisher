@@ -340,17 +340,19 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         val m3u8Links = parseJson<List<Extract>>(data.replace(Regex("""\[],"""), ""))
         m3u8Links.forEach {
             safeApiCall {
-                callback.invoke(
-                    newExtractorLink(
-                        "AllMovieLand-${it.title}",
-                        "AllMovieLand-${it.title}",
-                        url = getM3u8(it.file),
-                        ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = playerDomain.toString()
-                        this.quality = Qualities.Unknown.value
-                    }
+                val headers = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+                    "Accept" to "*/*",
+                    "Referer" to playerDomain.toString(),
+                    "Origin" to playerDomain.toString()
                 )
+
+                M3u8Helper.generateM3u8(
+                    "AllMovieLand-$lang",
+                    getM3u8(it.file),
+                    playerDomain.toString(),
+                    headers = headers
+                ).forEach(callback)
             }
         }
         return true

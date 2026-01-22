@@ -3256,17 +3256,19 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                     if (playlistResponse.code != 200) return@runCatching
                     val playlistUrl = playlistResponse.text
-                    callback.invoke(
-                        newExtractorLink(
-                            "AllMovieLand-$lang",
-                            "AllMovieLand-$lang",
-                            url = playlistUrl,
-                            type = ExtractorLinkType.M3U8
-                        ) {
-                            referer = allmovielandAPI
-                            quality = Qualities.Unknown.value
-                        }
+                    val headers = mapOf(
+                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+                        "Accept" to "*/*",
+                        "Referer" to allmovielandAPI,
+                        "Origin" to allmovielandAPI
                     )
+
+                    M3u8Helper.generateM3u8(
+                        "AllMovieLand-$lang",
+                        playlistUrl,
+                        allmovielandAPI,
+                        headers = headers
+                    ).forEach(callback)
                 }.onFailure { it.printStackTrace() }
             }
         }.onFailure { it.printStackTrace() }
