@@ -1943,13 +1943,13 @@ object StreamPlayExtractor : StreamPlay() {
         val topmoviesAPI = getDomains()?.topMovies ?: return
 
         val url = if (season == null) {
-            "$topmoviesAPI/search/${imdbId.orEmpty()} ${year ?: ""}"
+            "$topmoviesAPI/search/${imdbId.orEmpty()}"
         } else {
-            "$topmoviesAPI/search/${imdbId.orEmpty()} Season $season ${year ?: ""}"
+            "$topmoviesAPI/search/${imdbId.orEmpty()} Season $season"
         }
 
         val hrefpattern = runCatching {
-            app.get(url).documentLarge.select("#content_box article a")
+            app.get(url).document.select("#content_box article a")
                 .firstOrNull()?.attr("href")?.takeIf(String::isNotBlank)
         }.getOrNull() ?: return
 
@@ -1960,12 +1960,12 @@ object StreamPlayExtractor : StreamPlay() {
                     "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0"
                 ),
                 interceptor = wpRedisInterceptor
-            ).documentLarge
+            ).document
         }.getOrNull() ?: return
 
         if (season == null) {
             val detailPageUrls = res.select("a.maxbutton-download-links")
-                .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
+                .mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
 
             for (detailPageUrl in detailPageUrls) {
                 val detailPageDocument =
@@ -2024,6 +2024,7 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeMoviesmod(
+        title: String?=null,
         imdbId: String? = null,
         year: Int? = null,
         season: Int? = null,
@@ -2033,6 +2034,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val MoviesmodAPI = getDomains()?.moviesmod ?: return
         invokeModflix(
+            title = title,
             imdbId = imdbId,
             year = year,
             season = season,
@@ -2045,6 +2047,7 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     private suspend fun invokeModflix(
+        title: String?,
         imdbId: String? = null,
         year: Int? = null,
         season: Int? = null,
@@ -2054,16 +2057,29 @@ object StreamPlayExtractor : StreamPlay() {
         api: String
     ) {
         val searchUrl = if (season == null) {
-            "$api/search/$imdbId $year"
+            "$api/search/$imdbId"
         } else {
-            "$api/search/$imdbId Season $season $year"
+            "$api/search/$imdbId Season $season"
         }
 
-        val hrefpattern = app.get(searchUrl).documentLarge
+        val doc = app.get(searchUrl).documentLarge
+
+        val hrefpattern = doc
             .selectFirst("#content_box article a")
             ?.attr("href")
             ?.takeIf { it.isNotBlank() }
-            ?: return Log.e("Modflix", "No valid result for $searchUrl")
+            ?: run {
+                val titleSearchUrl = if (season == null) { "$api/search/$title"
+                } else {
+                    "$api/search/$title Season $season"
+                }
+                app.get(titleSearchUrl).documentLarge
+                    .selectFirst("#content_box article a")
+                    ?.attr("href")
+                    ?.takeIf { it.isNotBlank() }
+            }
+            ?: return Log.e("Modflix", "No valid result for ID or title search")
+
 
         val document = runCatching {
             app.get(
@@ -2079,15 +2095,14 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
         if (season == null) {
-            val detailLinks = document.select("a.maxbutton-download-links")
+            val detailLinks = document
+                .select("a[class*=maxbutton][href]")
                 .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
 
-            for (url in detailLinks) {
-                val decodedUrl = base64Decode(url.substringAfter("="))
-                if (decodedUrl.isBlank()) continue
 
+            for (url in detailLinks) {
                 val detailDoc =
-                    runCatching { app.get(decodedUrl).documentLarge }.getOrNull() ?: continue
+                    runCatching { app.get(url).documentLarge }.getOrNull() ?: continue
 
                 val driveLinks = detailDoc.select("a.maxbutton-fast-server-gdrive")
                     .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
@@ -2107,40 +2122,50 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
         } else {
-            val seasonPattern = Regex("Season\\s+$season\\b", RegexOption.IGNORE_CASE)
+        val seasonPattern = Regex("Season\\s+$season\\b", RegexOption.IGNORE_CASE)
+            for (content in document.select("div.thecontent")) {
+                val seasonH3 = content.select("h3")
+                    .firstOrNull { seasonPattern.containsMatchIn(it.text()) }
+                    ?: continue
 
-            for (modDiv in document.select("div.mod")) {
-                for (h3 in modDiv.select("h3")) {
-                    if (!seasonPattern.containsMatchIn(h3.text())) continue
+                Log.d("Phisher seasonH3", seasonH3.toString())
 
-                    val episodeLinks = h3.nextElementSibling()
-                        ?.select("a.maxbutton-episode-links")
-                        ?.mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
-                        ?: emptyList()
+                val episodeLinks = mutableListOf<String>()
+                var node = seasonH3.nextElementSibling()
 
-                    for (url in episodeLinks) {
-                        val decodedUrl = base64Decode(url.substringAfter("="))
-                        val detailDoc =
-                            runCatching { app.get(decodedUrl).documentLarge }.getOrNull()
-                                ?: continue
+                while (node != null) {
+                    node.select("a.maxbutton-episode-links")
+                        .mapNotNullTo(episodeLinks) {
+                            it.attr("href").takeIf(String::isNotBlank)
+                        }
+                    node = node.nextElementSibling()
+                }
 
-                        val link = detailDoc.select("span strong")
-                            .firstOrNull { it.text().contains("Episode $episode", true) }
-                            ?.parent()?.closest("a")?.attr("href")
-                            ?.takeIf { it.isNotBlank() } ?: continue
+                for (url in episodeLinks) {
+                    val detailDoc = runCatching {
+                        app.get(url).documentLarge
+                    }.getOrNull() ?: continue
+                    Log.d("Phisher episodeLinks", episodeLinks.toString())
 
-                        val driveLink = if (link.startsWith("unblockedgames")) {
-                            bypassHrefli(link) ?: continue
-                        } else link
+                    val link = detailDoc.select("span strong")
+                        .firstOrNull { it.text().contains("Episode $episode", true) }
+                        ?.parent()
+                        ?.closest("a")
+                        ?.attr("href")
+                        ?.takeIf { it.isNotBlank() }
+                        ?: continue
 
-                        loadSourceNameExtractor(
-                            "MoviesMod",
-                            driveLink,
-                            "$api/",
-                            subtitleCallback,
-                            callback
-                        )
-                    }
+                    val finalLink = if (link.contains("unblockedgames")) {
+                        bypassHrefli(link) ?: continue
+                    } else link
+
+                    loadSourceNameExtractor(
+                        "MoviesMod",
+                        finalLink,
+                        "$api/",
+                        subtitleCallback,
+                        callback
+                    )
                 }
             }
         }
@@ -4452,74 +4477,6 @@ object StreamPlayExtractor : StreamPlay() {
                 subtitleCallback,
                 callback
             )
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    suspend fun invokeDramadrip(
-        imdbId: String? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val dramadripAPI = getDomains()?.dramadrip ?: return
-        val link =
-            app.get("$dramadripAPI/?s=$imdbId").documentLarge.selectFirst("article > a")
-                ?.attr("href")
-                ?: return
-        val document = app.get(link).documentLarge
-        if (season != null && episode != null) {
-            val seasonLink = document.select("div.file-spoiler h2").filter { element ->
-                val text = element.text().trim().lowercase()
-                "season $season ".lowercase() in text && "zip" !in text
-            }.flatMap { h2 ->
-                val sibling = h2.nextElementSibling()
-                sibling?.select("a")?.mapNotNull { it.attr("href") } ?: emptyList()
-            }
-
-            seasonLink.amap { seasonUrl ->
-                val rawseasonUrl =
-                    if (seasonUrl.contains("modpro")) seasonUrl else seasonUrl
-                val episodeDoc = app.get(rawseasonUrl).documentLarge
-
-                val episodeHref = episodeDoc.select("h3 > a,div.wp-block-button a")
-                    .firstOrNull { it.text().contains("Episode $episode") }
-                    ?.attr("href")
-                    ?: return@amap
-                val finalUrl =
-                    if ("unblockedgames" in episodeHref || "examzculture" in episodeHref) {
-                        bypassHrefli(episodeHref)
-                    } else {
-                        episodeHref
-                    }
-                if (finalUrl != null) {
-                    loadSourceNameExtractor("DramaDrip", finalUrl, "", subtitleCallback, callback)
-                }
-            }
-        } else {
-            document.select("div.file-spoiler a").amap {
-                val doc = app.get(it.attr("href")).documentLarge
-                doc.select("a.wp-element-button").amap { source ->
-                    val rawHref = source.attr("href")
-                    val finalUrl = when {
-                        "safelink=" in rawHref -> cinematickitBypass(rawHref)
-                        "unblockedgames" in rawHref -> bypassHrefli(rawHref)
-                        "examzculture" in link -> bypassHrefli(link)
-                        else -> rawHref
-                    }
-                    if (finalUrl != null) {
-                        loadSourceNameExtractor(
-                            "DramaDrip",
-                            finalUrl,
-                            "",
-                            subtitleCallback,
-                            callback
-                        )
-                    }
-
-                }
-            }
         }
     }
 

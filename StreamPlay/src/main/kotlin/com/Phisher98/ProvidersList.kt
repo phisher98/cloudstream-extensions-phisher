@@ -14,7 +14,6 @@ import com.phisher98.StreamPlayExtractor.invokeBollyflix
 import com.phisher98.StreamPlayExtractor.invokeCinemaOS
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.phisher98.StreamPlayExtractor.invokeDotmovies
-import com.phisher98.StreamPlayExtractor.invokeDramadrip
 import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
 import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
@@ -96,7 +95,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeTopMovies(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesmod", "MoviesMod") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMoviesmod(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeMoviesmod(res.title,res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("bollyflix", "Bollyflix") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeBollyflix(res.imdbId, res.season, res.episode, subtitleCallback, callback)
@@ -181,9 +180,6 @@ fun buildProviders(): List<Provider> {
         Provider("hdmovie2", "Hdmovie2") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeHdmovie2(res.title, res.year,
                 res.episode, subtitleCallback, callback)
-        },
-        Provider("dramadrip", "Dramadrip (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime)invokeDramadrip(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("rivestream", "RiveStream") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeRiveStream(res.id, res.season, res.episode, callback)
