@@ -10,6 +10,8 @@ If you find this project helpful, consider supporting its development!
 
 <a href="https://buymeacoffee.com/phisher98" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
+[![Support me on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Me-red?logo=ko-fi)](https://ko-fi.com/phisher98)
+
 ## 🌐 Plugin Servers
 
 ### 🔹 Phisher Cloudstream Plugin Server
