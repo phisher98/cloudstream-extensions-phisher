@@ -138,6 +138,25 @@ open class AnimeDekhoProvider : MainAPI() {
             return false
         }
 
+        //VidStream
+        val headers = mapOf("Cookie" to "toronites_server=vidstream")
+        val doc = app.get(media.url, headers = headers).document
+        doc.select("iframe.serversel[src]").forEach { iframe ->
+            val serverUrl = iframe.attr("src")
+            if (serverUrl.isBlank()) return@forEach
+
+            val innerIframeUrl = runCatching {
+                app.get(serverUrl).document
+                    .selectFirst("iframe[src]")
+                    ?.attr("src")
+            }.getOrNull()
+
+            if (!innerIframeUrl.isNullOrBlank()) {
+                loadExtractor(innerIframeUrl, subtitleCallback, callback)
+            }
+        }
+        //
+
         val bodyClass = runCatching {
             app.get(media.url).documentLarge.selectFirst("body")?.attr("class")
         }.getOrNull()

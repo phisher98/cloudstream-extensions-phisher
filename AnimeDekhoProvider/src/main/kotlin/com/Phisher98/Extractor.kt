@@ -7,9 +7,12 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.extractors.Vidmoly
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
@@ -17,6 +20,72 @@ import org.jsoup.nodes.Document
 
 class vidcloudupns : VidStack() {
     override var mainUrl = "https://vidcloud.upns.ink"
+}
+
+class ascdn21 : AWSStream() {
+    override val name = "Zephyrflick"
+    override val mainUrl = "https://as-cdn21.top"
+    override val requiresReferer = true
+}
+
+
+open class AWSStream : ExtractorApi() {
+    override val name = "AWSStream"
+    override val mainUrl = "https://z.awstream.net"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val extractedHash = url.substringAfterLast("/")
+        val doc = app.get(url).documentLarge
+        val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
+        val header = mapOf("x-requested-with" to "XMLHttpRequest")
+        val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)
+        val response = app.post(m3u8Url, headers = header, data = formdata).parsedSafe<Response>()
+        response?.videoSource?.let { m3u8 ->
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    url = m3u8,
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.P1080.value
+                }
+            )
+            val extractedPack = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().orEmpty()
+
+            JsUnpacker(extractedPack).unpack()?.let { unpacked ->
+                Regex(""""kind":\s*"captions"\s*,\s*"file":\s*"(https.*?\.srt)""")
+                    .find(unpacked)
+                    ?.groupValues
+                    ?.get(1)
+                    ?.let { subtitleUrl ->
+                        subtitleCallback.invoke(
+                            newSubtitleFile(
+                                "English",
+                                subtitleUrl
+                            )
+                        )
+                    }
+            }
+        }
+    }
+
+    data class Response(
+        val hls: Boolean,
+        val videoImage: String,
+        val videoSource: String,
+        val securedLink: String,
+        val downloadLinks: List<Any?>,
+        val attachmentLinks: List<Any?>,
+        val ck: String,
+    )
 }
 
 class Multimovies: StreamWishExtractor() {

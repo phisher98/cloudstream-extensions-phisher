@@ -31,5 +31,6 @@ class AnimeDekhoPlugin: BasePlugin() {
         registerExtractorAPI(vidcloudupns())
         registerExtractorAPI(Animedekhoco())
         registerExtractorAPI(Blakiteapi())
+        registerExtractorAPI(ascdn21())
     }
 }
