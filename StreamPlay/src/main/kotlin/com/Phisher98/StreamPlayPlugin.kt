@@ -40,7 +40,7 @@ class StreamPlayPlugin: Plugin() {
         val sharedPref = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
         val mainApis = listOf(
             StreamPlay(sharedPref),
-            StreamPlayAnime(), StreamPlayStremioCatelog("","StreamPlay StremioC")
+            StreamPlayAnime(), StreamPlayStremioCatelog("","StreamPlay StremioC",sharedPref)
         )
         val savedSet = sharedPref.getStringSet("enabled_plugins_saved", null)
         val defaultEnabled = mainApis.map { it.name }.toSet()
@@ -227,13 +227,25 @@ class StreamPlayPlugin: Plugin() {
                         when (item.type) {
                             "StremioC" -> {
                                 try {
-                                    registerMainAPI(StreamPlayStremioCatelog(item.link, item.name))
+                                    registerMainAPI(StreamPlayStremioCatelog(
+                                        item.link,
+                                        item.name,
+                                        sharedPref = prefs
+                                    ))
                                 } catch (_: Throwable) {
-                                    try { registerMainAPI(StreamPlayStremioCatelog("", item.name)) } catch (_: Throwable) {}
+                                    try { registerMainAPI(StreamPlayStremioCatelog(
+                                        "",
+                                        item.name,
+                                        sharedPref = prefs
+                                    )) } catch (_: Throwable) {}
                                 }
                             }
                             else -> {
-                                try { registerMainAPI(StreamPlayStremioCatelog(item.link, item.name)) } catch (_: Throwable) {}
+                                try { registerMainAPI(StreamPlayStremioCatelog(
+                                    item.link,
+                                    item.name,
+                                    sharedPref = prefs
+                                )) } catch (_: Throwable) {}
                             }
                         }
                     } catch (e: Throwable) {

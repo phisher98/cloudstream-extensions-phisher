@@ -64,7 +64,7 @@ class ToggleFragment(
             //StreamPlayLite(),
             //StreamPlayTorrent(),
             StreamPlayAnime(),
-            StreamPlayStremioCatelog("","")
+            StreamPlayStremioCatelog("", "", sharedPref)
             //StreamplayTorrentAnime()
         )
 

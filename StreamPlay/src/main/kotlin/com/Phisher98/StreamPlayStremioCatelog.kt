@@ -1,7 +1,7 @@
 package com.phisher98
 
+import android.content.SharedPreferences
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.Episode
@@ -32,13 +32,16 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlay.Companion.dahmerMoviesAPI
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.phisher98.StreamPlayExtractor.sharedPref
 import com.phisher98.StreamPlayExtractor.token
 import org.json.JSONObject
 import java.net.URLEncoder
 
 
-class StreamPlayStremioCatelog(override var mainUrl: String, override var name: String) : MainAPI() {
+class StreamPlayStremioCatelog(
+    override var mainUrl: String,
+    override var name: String,
+    val sharedPref: SharedPreferences? = null
+) : MainAPI() {
     override val supportedTypes = setOf(TvType.Others,TvType.Movie,
         TvType.TvSeries)
     override val hasMainPage = true
