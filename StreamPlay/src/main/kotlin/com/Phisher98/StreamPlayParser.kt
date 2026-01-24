@@ -930,7 +930,6 @@ data class NuvioStreamsBehaviorHints(
 )
 
 data class YflixResponse(
-    @get:JsonProperty("status") val status: Boolean,
     @get:JsonProperty("result") val result: String
 ) {
     fun getDocument(): Document {

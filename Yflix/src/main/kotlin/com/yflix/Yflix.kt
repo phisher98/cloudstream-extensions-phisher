@@ -414,7 +414,6 @@ class Yflix : MainAPI() {
 
 
     data class Response(
-        @get:JsonProperty("status") val status: Boolean,
         @get:JsonProperty("result") val result: String
     ) {
         fun getDocument(): Document {
