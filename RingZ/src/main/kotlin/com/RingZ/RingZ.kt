@@ -37,7 +37,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class RingZ : MainAPI() {
-    override var mainUrl = base64Decode("aHR0cHM6Ly9wcml2YXRlYXBpZGF0YS5wYWdlcy5kZXY=")
+    override var mainUrl = base64Decode("aHR0cHM6Ly9kYXRhYXBpLnlvbW92aWVzYXBrLmNvbS8=")
     override var name = "RingZ"
     override val hasMainPage = true
     override var lang = "hi"
@@ -46,8 +46,8 @@ class RingZ : MainAPI() {
 
     companion object {
         val headers = mapOf(
-            "cf-access-client-id" to base64Decode("ODMzMDQ5YjA4N2FjZjZlNzg3Y2VkZmQ4NWQxY2NkYjguYWNjZXNz"),
-            "cf-access-client-secret" to base64Decode("MDJkYjI5NmE5NjFkNzUxM2MzMTAyZDc3ODVkZjQxMTNlZmYwMzZiMmQ1N2QwNjBmZmNjMmJhM2JhODIwYzZhYQ=="),
+            "cf-access-client-id" to base64Decode("ZTNhMTVhZDk5OWRhYjdmMzU5MmYzZDg1NWUwZWM2ZWQuYWNjZXNz"),
+            "cf-access-client-secret" to base64Decode("OGEyMjUzNmUyZGFjODYzNjlhMmNhYTkxMWQ1NWE4OWExMDk5MzljYzY5ZTY2NDZlNTFiZjVkODUyN2ExZGNhNQ0K"),
             "user-agent" to "Dart/3.8 (dart:io)"
         )
 
