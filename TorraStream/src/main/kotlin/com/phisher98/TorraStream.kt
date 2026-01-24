@@ -8,7 +8,6 @@ import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -228,7 +227,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
-                addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
             }
         } else {
@@ -250,7 +248,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.actors = actors
                 //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
-                addTMDbId(data.id.toString())
                 addImdbId(res.external_ids?.imdb_id)
             }
         }
