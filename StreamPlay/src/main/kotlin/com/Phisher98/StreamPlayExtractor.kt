@@ -849,7 +849,7 @@ object StreamPlayExtractor : StreamPlay() {
                             val host = sourceUrl.getHost()
                             loadDisplaySourceNameExtractor(
                                 "Allanime",
-                                "Allanime [${lang.uppercase()}] [$host]",
+                                "⌜ Allanime ⌟ | $host | [${lang.uppercase()}]",
                                 sourceUrl,
                                 "",
                                 subtitleCallback,
@@ -889,7 +889,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     callback.invoke(
                                         newExtractorLink(
                                             "Allanime",
-                                            "Allanime [${lang.uppercase()}] ${host.capitalize()}",
+                                            "⌜ Allanime ⌟ | ${host.capitalize()} | [${lang.uppercase()}]",
                                             server.link,
                                             INFER_TYPE
                                         ) {
@@ -976,7 +976,7 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 loadDisplaySourceNameExtractor(
                     "Animepahe",
-                    "Animepahe $source [$type]",
+                    "⌜ Animepahe ⌟ $source | [$type]",
                     href,
                     "",
                     subtitleCallback,
@@ -1001,7 +1001,7 @@ object StreamPlayExtractor : StreamPlay() {
             if (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))) {
                 loadDisplaySourceNameExtractor(
                     "Animepahe Pahe",
-                    "Animepahe Pahe $source [$type]",
+                    "⌜ Animepahe ⌟ Pahe $source | [$type]",
                     href,
                     "",
                     subtitleCallback,
@@ -1025,28 +1025,51 @@ object StreamPlayExtractor : StreamPlay() {
         val group: String,
         val resolution: Int?,
         val codec: String?,
+        val platform: String?,
         val source: String?,
         val audio: String?,
-        val subtitles: String?
+        val subtitles: String?,
+        val bitDepth: Int? = null,
+        val audioCodec: String? = null
     )
 
     fun parseReleaseMeta(title: String): ReleaseMeta =
         ReleaseMeta(
             group = GROUP_REGEX.find(title)?.groupValues?.get(1).orEmpty(),
-            resolution = RES_REGEX.find(title)?.groupValues?.get(1)?.toInt(),
-            codec = CODEC_REGEX.find(title)?.value,
-            source = SOURCE_REGEX.find(title)?.value,
+            resolution = RES_REGEX.find(title)?.groupValues?.get(1)?.toIntOrNull(),
+            codec = CODEC_REGEX.find(title)?.value?.uppercase(),
+            platform = PLATFORM_REGEX.find(title)?.value?.uppercase(),
+            source = SOURCE_REGEX.find(title)?.value?.replace(" ", "-")?.uppercase(),
             audio = AUDIO_REGEX.find(title)?.value,
-            subtitles = SUB_REGEX.find(title)?.value
+            subtitles = SUB_REGEX.find(title)?.value,
+            bitDepth = BIT_DEPTH_REGEX.find(title)
+                ?.value
+                ?.filter { it.isDigit() }
+                ?.toIntOrNull(),
+            audioCodec = AUDIO_CODEC_REGEX.find(title)?.value?.uppercase()
         )
 
+
     private val GROUP_REGEX = Regex("""^\[(.*?)]""")
-    private val HOST_REGEX = Regex("""KrakenFiles|GoFile|Akirabox|BuzzHeavier""")
-    private val RES_REGEX = Regex("""(2160|1080|720|480)p""")
-    private val CODEC_REGEX = Regex("""AV1|HEVC|x265|x264|H\.264""", RegexOption.IGNORE_CASE)
-    private val SOURCE_REGEX = Regex("""AMZN|NF|CR|BILI|WEB[- .]?(DL|Rip)|WEBRIP""", RegexOption.IGNORE_CASE)
-    private val AUDIO_REGEX = Regex("""Dual[- ]?Audio|English Dub""", RegexOption.IGNORE_CASE)
-    private val SUB_REGEX = Regex("""Multi[- ]?Subs?|MultiSub|Multiple Subtitles|English-Sub|ESub""", RegexOption.IGNORE_CASE)
+
+    private val HOST_REGEX = Regex("""KrakenFiles|GoFile|AkiraBox|BuzzHeavier""", RegexOption.IGNORE_CASE)
+
+    private val RES_REGEX = Regex("""(4320|2160|1440|1080|720|480)p""", RegexOption.IGNORE_CASE)
+
+    private val CODEC_REGEX = Regex("""AV1|HEVC|H\.?265|x265|H\.?264|x264""", RegexOption.IGNORE_CASE)
+
+    private val PLATFORM_REGEX = Regex("""AMZN|NF|CR|BILI|IQIYI""", RegexOption.IGNORE_CASE)
+
+    private val SOURCE_REGEX = Regex("""WEB[- .]?DL|WEB[- .]?Rip""", RegexOption.IGNORE_CASE)
+
+    private val AUDIO_REGEX = Regex("""Dual[- ]?Audio|Eng(lish)?[- ]?Dub|Japanese""", RegexOption.IGNORE_CASE)
+
+    private val AUDIO_CODEC_REGEX = Regex("""AAC(\d\.\d)?|DDP(\d\.\d)?|OPUS|FLAC""", RegexOption.IGNORE_CASE)
+
+    private val BIT_DEPTH_REGEX = Regex("""10[- ]?bit|10bits|8[- ]?bit""", RegexOption.IGNORE_CASE)
+
+    private val SUB_REGEX = Regex("""Multi[- ]?Subs?|MultiSub|Multiple Subtitles|Eng(lish)?[- ]?Sub|ESub|Subbed""", RegexOption.IGNORE_CASE)
+
 
     private fun Elements.getLinks(): List<ServerLink> =
         flatMap { ele ->
@@ -1095,27 +1118,31 @@ object StreamPlayExtractor : StreamPlay() {
                 it.qualityIndex == Qualities.P1080.value ||
                         it.qualityIndex == Qualities.P720.value
             }
-            .forEach {
+            .forEach { it ->
                 val displayName = buildString {
-                    append("Animetosho")
+                    append("⌜ Animetosho ⌟")
 
                     if (it.meta.group.isNotBlank())
-                        append(" [${it.meta.group}]")
+                        append(" ${it.meta.group}")
 
-                    if (!it.meta.audio.isNullOrBlank())
-                        append(" [${it.meta.audio}]")
+                    val sourceBlock = listOfNotNull(
+                        it.meta.platform,
+                        it.meta.source
+                    ).joinToString(" ")
 
-                    if (!it.meta.subtitles.isNullOrBlank())
-                        append(" [${it.meta.subtitles}]")
-
-                    if (!it.meta.codec.isNullOrBlank())
-                        append(" [${it.meta.codec}]")
-
-                    if (it.size.isNotBlank())
-                        append(" [${it.size}]")
+                    listOfNotNull(
+                        sourceBlock.takeIf { it.isNotBlank() },
+                        it.meta.audio,
+                        it.meta.subtitles,
+                        it.meta.codec,
+                        it.size.takeIf { it.isNotBlank() }
+                    ).joinToString(" | ").let {
+                        if (it.isNotBlank()) append(" | $it")
+                    }
                 }
 
-                loadSourceNameExtractor(
+                loadDisplaySourceNameExtractor(
+                    "Animetosho ${it.meta.group}",
                     displayName,
                     it.url,
                     "$animetoshoAPI/",
@@ -1359,7 +1386,6 @@ object StreamPlayExtractor : StreamPlay() {
                             }
 
                         servers?.forEach { (label, serverId, effectiveType) ->
-                            Log.d("Phisher","$label $isMovie $effectiveType")
                             val resolvedType =
                                 if (effectiveType.equals("raw", ignoreCase = true)) "SUB"
                                 else effectiveType

@@ -282,7 +282,7 @@ suspend fun loadSourceNameExtractor(
             callback.invoke(
                 newExtractorLink(
                     source,
-                    "$source[${link.source}$fixSize]",
+                    "$source [${link.source} $fixSize]",
                     link.url,
                 ) {
                     this.quality = quality ?: link.quality
