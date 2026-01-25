@@ -1044,7 +1044,7 @@ object StreamPlayExtractor : StreamPlay() {
     private val HOST_REGEX = Regex("""KrakenFiles|GoFile|Akirabox|BuzzHeavier""")
     private val RES_REGEX = Regex("""(2160|1080|720|480)p""")
     private val CODEC_REGEX = Regex("""AV1|HEVC|x265|x264|H\.264""", RegexOption.IGNORE_CASE)
-    private val SOURCE_REGEX = Regex("""AMZN|NF|CR|BILI|WEB[- ]DL|WEBRip""", RegexOption.IGNORE_CASE)
+    private val SOURCE_REGEX = Regex("""AMZN|NF|CR|BILI|WEB[- .]?(DL|Rip)|WEBRIP""", RegexOption.IGNORE_CASE)
     private val AUDIO_REGEX = Regex("""Dual[- ]?Audio|English Dub""", RegexOption.IGNORE_CASE)
     private val SUB_REGEX = Regex("""Multi[- ]?Subs?|MultiSub|Multiple Subtitles|English-Sub|ESub""", RegexOption.IGNORE_CASE)
 
@@ -4123,7 +4123,6 @@ object StreamPlayExtractor : StreamPlay() {
         val url =
             if (season == null) "${BuildConfig.StreamPlayAPI}/$tmdbId" else "${BuildConfig.StreamPlayAPI}/$tmdbId/seasons/$season/episodes/$episode"
         app.get(url).parsedSafe<StremplayAPI>()?.fields?.links?.arrayValue?.values?.amap {
-            val source = it.mapValue.fields.source.stringValue
             val href = it.mapValue.fields.href.stringValue
             val quality = it.mapValue.fields.quality.stringValue
             loadSourceNameExtractor(
