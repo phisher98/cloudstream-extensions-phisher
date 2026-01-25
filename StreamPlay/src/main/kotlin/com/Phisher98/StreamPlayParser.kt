@@ -199,8 +199,8 @@ data class JikanExternal(
 
 data class JikanData(
     @JsonProperty("title") val title: String? = null,
-    @JsonProperty("external") val external: ArrayList<JikanExternal>? = arrayListOf(),
-    val season: String,
+    @JsonProperty("external") val external: List<JikanExternal>? = null,
+    @JsonProperty("season") val season: String? = null,
 )
 
 data class JikanResponse(

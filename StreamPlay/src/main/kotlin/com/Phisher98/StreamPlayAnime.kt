@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -181,14 +182,16 @@ class StreamPlayAnime : MainAPI() {
             tmdbId = tmdbid,
             appLangCode = "en"
         )
-
+        val anidbEid = getAnidbEid(syncMetaData, 1) ?: 0
         val href = LinkData(
             malId = ids.idMal,
             aniId = ids.id,
             title = data.getTitle(),
             jpTitle = jpTitle,
             year = data.startDate.year,
-            isAnime = true
+            isAnime = true,
+            anidbEid = anidbEid,
+            episode = 1
         ).toStringData()
 
         // --- Helper to get best episode title ---
@@ -292,7 +295,6 @@ class StreamPlayAnime : MainAPI() {
         val jpTitle = mediaData.jpTitle
         val anititle = mediaData.title
         val anidbEid = mediaData.anidbEid
-
         val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites

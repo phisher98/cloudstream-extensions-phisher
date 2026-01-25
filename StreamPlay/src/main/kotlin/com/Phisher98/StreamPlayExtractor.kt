@@ -591,12 +591,12 @@ object StreamPlayExtractor : StreamPlay() {
         )
         var anijson: String? = null
         try {
-            anijson = app.get("https://api.ani.zip/mappings?malI_d=$malId").toString()
+            anijson = app.get("https://api.ani.zip/mappings?mal_id=$malId").toString()
         } catch (e: Exception) {
             println("Error fetching or parsing mapping: ${e.message}")
         }
 
-        val anidbEid = getAnidbEid(anijson ?: "{}", episode) ?: 0
+        val anidbEid = getAnidbEid(anijson ?: "{}", episode ?: 1) ?: 0
 
         val malsync = malId?.let {
             runCatching {
@@ -1075,8 +1075,7 @@ object StreamPlayExtractor : StreamPlay() {
         dubtype: String?,
         anidbEid: Int?
     ) {
-        val isMovie = episode == null
-        if (!isMovie && !dubtype.equals("SUB", ignoreCase = true)) return
+        if (dubtype !in setOf("SUB", "Movie")) return
 
         val jikan = app
             .get("$jikanAPI/anime/$malId/full")
@@ -1115,7 +1114,6 @@ object StreamPlayExtractor : StreamPlay() {
                     if (it.size.isNotBlank())
                         append(" [${it.size}]")
                 }
-
 
                 loadSourceNameExtractor(
                     displayName,
