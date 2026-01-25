@@ -213,6 +213,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                         }
                     }
             }?.flatten() ?: listOf()
+
             newTvSeriesLoadResponse(
                 title, url, if (isAnime) TvType.Anime else TvType.TvSeries, episodes
             ) {
@@ -225,6 +226,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.showStatus = getStatus(res.status)
                 this.recommendations = recommendations
                 this.actors = actors
+                this.episodes = episodes
                 //this.contentRating = fetchContentRating(data.id, "US")
                 addTrailer(trailer)
                 addImdbId(res.external_ids?.imdb_id)

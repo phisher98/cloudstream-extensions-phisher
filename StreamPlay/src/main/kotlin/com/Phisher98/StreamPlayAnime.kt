@@ -204,6 +204,7 @@ class StreamPlayAnime : MainAPI() {
         }
 
         fun createEpisode(i: Int, isDub: Boolean): Episode {
+            val anidbEid = getAnidbEid(syncMetaData, i) ?: 0
             val epData = animeMetaData?.episodes?.get(i.toString())
             val linkData = LinkData(
                 malId = ids.idMal,
@@ -214,7 +215,8 @@ class StreamPlayAnime : MainAPI() {
                 season = 1,
                 episode = i,
                 isAnime = true,
-                isDub = isDub
+                isDub = isDub,
+                anidbEid = anidbEid
             ).toStringData()
 
             return newEpisode(linkData) {
@@ -289,6 +291,8 @@ class StreamPlayAnime : MainAPI() {
         val episode = mediaData.episode
         val jpTitle = mediaData.jpTitle
         val anititle = mediaData.title
+        val anidbEid = mediaData.anidbEid
+
         val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
@@ -314,15 +318,17 @@ class StreamPlayAnime : MainAPI() {
             { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
             { invokeKickAssAnime(zorotitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback, dubStatus) },
+
             {
+
                 malId?.let {
                     invokeAnimetosho(
                         it,
-                        season,
                         episode,
                         subtitleCallback,
                         callback,
-                        dubStatus
+                        dubStatus,
+                        anidbEid
                     )
                 }
             },
@@ -422,6 +428,7 @@ class StreamPlayAnime : MainAPI() {
         @JsonProperty("isBollywood") val isBollywood: Boolean = false,
         @JsonProperty("isCartoon") val isCartoon: Boolean = false,
         @JsonProperty("isDub") val isDub: Boolean = false,
+        @JsonProperty("anidbEid") val anidbEid: Int? = null,
         )
 
     data class Media(

@@ -285,7 +285,7 @@ suspend fun loadSourceNameExtractor(
                     "$source[${link.source}$fixSize]",
                     link.url,
                 ) {
-                    this.quality = link.quality
+                    this.quality = quality ?: link.quality
                     this.type = link.type
                     this.referer = link.referer
                     this.headers = link.headers
@@ -297,7 +297,7 @@ suspend fun loadSourceNameExtractor(
 }
 
 
-suspend fun loadSourceNameExtractor(
+suspend fun loadDisplaySourceNameExtractor(
     sourceName: String?,
     displayName: String?,
     url: String,
@@ -455,7 +455,7 @@ fun getIndexQualityTags(str: String?, fullTag: Boolean = false): String {
 }
 
 fun getIndexQuality(str: String?): Int {
-    return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
+    return Regex("""\b(2160|1440|1080|720|576|540|480)\s*[pP]\b""").find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
         ?: Qualities.Unknown.value
 }
 
@@ -2178,21 +2178,6 @@ private val QUALITY_REGEX_MAP = listOf(
     Regex("""\b720p?|720\b""", RegexOption.IGNORE_CASE)      to Qualities.P720.value,
     Regex("""\b480p?|480\b""", RegexOption.IGNORE_CASE)      to Qualities.P480.value
 )
-private var lastResolvedQuality: Int = Qualities.Unknown.value
-
-fun getQualityFromName(qualityName: String?): Int {
-    if (qualityName.isNullOrBlank())
-        return lastResolvedQuality
-
-    for ((regex, quality) in QUALITY_REGEX_MAP) {
-        if (regex.containsMatchIn(qualityName)) {
-            lastResolvedQuality = maxOf(lastResolvedQuality, quality)
-            return lastResolvedQuality
-        }
-    }
-    return lastResolvedQuality
-}
-
 suspend fun getSessionAndCsrfforFlixindia(baseUrl: String): Pair<String, String>? {
     val res = app.get(baseUrl)
 

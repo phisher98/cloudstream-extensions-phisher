@@ -462,7 +462,7 @@ suspend fun invokeAnimetosho(
     id: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val url = "$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22|%22TrueHD%22|%22[EMBER]%22)((e*|a*|r*|i*|o*|%221080%22)%20!%22720%22%20!%22540%22%20!%22480%22)"
+    val url = "$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22%7C%22TrueHD%22)((e*%7Ca*%7Cr*%7Ci*%7Co*%7C%221080%22)%20!%22540%22%20!%22480%22)%22%0D%0A"
     val jsonResponse = app.get(url).toString()
     val parsedList = Gson().fromJson(jsonResponse, Array<AnimetoshoItem>::class.java)?.toList() ?: emptyList()
     parsedList.sortedByDescending { it.seeders }.forEach { item ->

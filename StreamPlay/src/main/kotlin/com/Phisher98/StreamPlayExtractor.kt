@@ -252,7 +252,6 @@ object StreamPlayExtractor : StreamPlay() {
                     if (!link.contains("youtube", ignoreCase = true)) {
                         loadSourceNameExtractor(
                             "Multimovies",
-                            "Multimovies",
                             link,
                             "$multimoviesApi/",
                             subtitleCallback,
@@ -341,7 +340,7 @@ object StreamPlayExtractor : StreamPlay() {
             } ?: return@amap
             when {
                 !source.contains("youtube") -> {
-                    loadSourceNameExtractor(
+                    loadDisplaySourceNameExtractor(
                         name,
                         name,
                         source,
@@ -590,6 +589,14 @@ object StreamPlayExtractor : StreamPlay() {
         val (_, malId) = convertTmdbToAnimeId(
             title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
         )
+        var anijson: String? = null
+        try {
+            anijson = app.get("https://api.ani.zip/mappings?malI_d=$malId").toString()
+        } catch (e: Exception) {
+            println("Error fetching or parsing mapping: ${e.message}")
+        }
+
+        val anidbEid = getAnidbEid(anijson ?: "{}", episode) ?: 0
 
         val malsync = malId?.let {
             runCatching {
@@ -600,8 +607,6 @@ object StreamPlayExtractor : StreamPlay() {
 
         val zoro = malsync?.zoro
         val zoroIds = zoro?.keys?.toList().orEmpty()
-        println("Zoro entries: ${malsync?.zoro}")
-        println("Zoro IDs: $zoroIds")
 
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val anititle = title
@@ -620,11 +625,11 @@ object StreamPlayExtractor : StreamPlay() {
                 malId?.let {
                     invokeAnimetosho(
                         it,
-                        season,
                         episode,
                         subtitleCallback,
                         callback,
-                        dubStatus
+                        dubStatus,
+                        anidbEid
                     )
                 }
             },
@@ -842,7 +847,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                         if (sourceUrl.startsWith("http")) {
                             val host = sourceUrl.getHost()
-                            loadSourceNameExtractor(
+                            loadDisplaySourceNameExtractor(
                                 "Allanime",
                                 "Allanime [${lang.uppercase()}] [$host]",
                                 sourceUrl,
@@ -969,7 +974,7 @@ object StreamPlayExtractor : StreamPlay() {
             val href = it.attr("data-src")
             if ("kwik" in href && (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))))
             {
-                loadSourceNameExtractor(
+                loadDisplaySourceNameExtractor(
                     "Animepahe",
                     "Animepahe $source [$type]",
                     href,
@@ -994,7 +999,7 @@ object StreamPlayExtractor : StreamPlay() {
             val source = match?.groupValues?.getOrNull(1) ?: "Unknown"
             val quality = match?.groupValues?.getOrNull(2)?.substringBefore("p") ?: "Unknown"
             if (isMovie || (dubtype != null && type.contains(dubtype, ignoreCase = true))) {
-                loadSourceNameExtractor(
+                loadDisplaySourceNameExtractor(
                     "Animepahe Pahe",
                     "Animepahe Pahe $source [$type]",
                     href,
@@ -1007,61 +1012,122 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    //AnimetoSho
+    private data class ServerLink(
+        val url: String,
+        val size: String,
+        val qualityIndex: Int,
+        val group: String,
+        val meta: ReleaseMeta
+    )
+
+    data class ReleaseMeta(
+        val group: String,
+        val resolution: Int?,
+        val codec: String?,
+        val source: String?,
+        val audio: String?,
+        val subtitles: String?
+    )
+
+    fun parseReleaseMeta(title: String): ReleaseMeta =
+        ReleaseMeta(
+            group = GROUP_REGEX.find(title)?.groupValues?.get(1).orEmpty(),
+            resolution = RES_REGEX.find(title)?.groupValues?.get(1)?.toInt(),
+            codec = CODEC_REGEX.find(title)?.value,
+            source = SOURCE_REGEX.find(title)?.value,
+            audio = AUDIO_REGEX.find(title)?.value,
+            subtitles = SUB_REGEX.find(title)?.value
+        )
+
+    private val GROUP_REGEX = Regex("""^\[(.*?)]""")
+    private val HOST_REGEX = Regex("""KrakenFiles|GoFile|Akirabox|BuzzHeavier""")
+    private val RES_REGEX = Regex("""(2160|1080|720|480)p""")
+    private val CODEC_REGEX = Regex("""AV1|HEVC|x265|x264|H\.264""", RegexOption.IGNORE_CASE)
+    private val SOURCE_REGEX = Regex("""AMZN|NF|CR|BILI|WEB[- ]DL|WEBRip""", RegexOption.IGNORE_CASE)
+    private val AUDIO_REGEX = Regex("""Dual[- ]?Audio|English Dub""", RegexOption.IGNORE_CASE)
+    private val SUB_REGEX = Regex("""Multi[- ]?Subs?|MultiSub|Multiple Subtitles|English-Sub|ESub""", RegexOption.IGNORE_CASE)
+
+    private fun Elements.getLinks(): List<ServerLink> =
+        flatMap { ele ->
+            val title = ele.select("div.link a").text()
+            val meta = parseReleaseMeta(title)
+
+            val size = ele.select("div.size").text()
+            val quality = meta.resolution ?: Qualities.Unknown.value
+
+            ele.select("div.links a:matches(${HOST_REGEX.pattern})").map { a ->
+                ServerLink(
+                    url = a.attr("href"),
+                    size = size,
+                    qualityIndex = quality,
+                    group = meta.group,
+                    meta = meta
+                )
+            }
+        }
 
     suspend fun invokeAnimetosho(
         malId: Int? = null,
-        season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
-        dubtype: String?
+        dubtype: String?,
+        anidbEid: Int?
     ) {
         val isMovie = episode == null
+        if (!isMovie && !dubtype.equals("SUB", ignoreCase = true)) return
 
-        if (!isMovie && dubtype?.equals("SUB", ignoreCase = true) != true) return
+        val jikan = app
+            .get("$jikanAPI/anime/$malId/full")
+            .parsedSafe<JikanResponse>()
+            ?.data
+            ?: return
 
-        fun Elements.getLinks(): List<Triple<String, String, Int>> {
-            return this.flatMap { ele ->
-                ele.select("div.links a:matches(KrakenFiles|GoFile|Akirabox|BuzzHeavier)").map {
-                    Triple(
-                        it.attr("href"),
-                        ele.select("div.size").text(),
-                        getIndexQuality(ele.select("div.link a").text())
-                    )
+        val slug = jikan.title.createSlug()
+        val url = "$animetoshoAPI/episode/$slug-$episode.$anidbEid"
+
+        val res = app.get(url).documentLarge
+
+        res.select("div.home_list_entry:has(div.links)")
+            .getLinks()
+            .asSequence()
+            .filter {
+                it.qualityIndex == Qualities.P1080.value ||
+                        it.qualityIndex == Qualities.P720.value
+            }
+            .forEach {
+                val displayName = buildString {
+                    append("Animetosho")
+
+                    if (it.meta.group.isNotBlank())
+                        append(" [${it.meta.group}]")
+
+                    if (!it.meta.audio.isNullOrBlank())
+                        append(" [${it.meta.audio}]")
+
+                    if (!it.meta.subtitles.isNullOrBlank())
+                        append(" [${it.meta.subtitles}]")
+
+                    if (!it.meta.codec.isNullOrBlank())
+                        append(" [${it.meta.codec}]")
+
+                    if (it.size.isNotBlank())
+                        append(" [${it.size}]")
                 }
-            }
-        }
-        val (seasonSLug, episodeSlug) = getEpisodeSlug(season, episode)
-        val jikan =
-            app.get("$jikanAPI/anime/$malId/full").parsedSafe<JikanResponse>()?.data
-        val aniId =
-            jikan?.external?.find { it.name == "AniDB" }?.url?.substringAfterLast("=")
-        for (i in 1..3) {
-            val res =
-                app.get("$animetoshoAPI/series/${jikan?.title?.createSlug()}.$aniId?filter[0][t]=nyaa_class&filter[0][v]=trusted&page=$i").documentLarge
-            val servers = if (season == null) {
-                res.select("div.home_list_entry:has(div.links)").getLinks()
-            } else {
-                res.select("div.home_list_entry:has(div.link a:matches([\\.\\s]$episodeSlug[\\.\\s]|S${seasonSLug}E$episodeSlug))")
-                    .getLinks()
-            }
-            servers.filter {
-                it.third in arrayOf(
-                    Qualities.P1080.value,
-                    Qualities.P720.value
-                )
-            }.map {
+
+
                 loadSourceNameExtractor(
-                    "Animetosho ",
-                    it.first,
+                    displayName,
+                    it.url,
                     "$animetoshoAPI/",
                     subtitleCallback,
                     callback,
-                    it.third
-                ).apply { Log.d("Phisher", it.third.toString()) }
+                    "${it.meta.resolution}".toIntOrNull()
+                )
             }
-        }
     }
+
 
     @SuppressLint("NewApi")
     internal suspend fun invokeAnimeKai(
@@ -1317,7 +1383,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     ?.link
 
                                 if (!sourceUrl.isNullOrBlank()) {
-                                    loadSourceNameExtractor(
+                                    loadDisplaySourceNameExtractor(
                                         "HiAnime",
                                         "⌜ HiAnime ⌟ | ${label.uppercase()} | ${resolvedType.uppercase()}",
                                         sourceUrl,
@@ -4064,7 +4130,6 @@ object StreamPlayExtractor : StreamPlay() {
             val quality = it.mapValue.fields.quality.stringValue
             loadSourceNameExtractor(
                 "StreamPlay",
-                "StreamPlay $source",
                 href,
                 "",
                 subtitleCallback,

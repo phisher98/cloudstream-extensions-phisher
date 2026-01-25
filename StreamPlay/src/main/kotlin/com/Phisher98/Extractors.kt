@@ -1535,7 +1535,7 @@ open class Embtaku : ExtractorApi() {
         val serverRes = responsecode.documentLarge
         serverRes.select("ul.list-server-items").amap {
             val href=it.attr("data-video")
-            loadSourceNameExtractor("Anichi","Anichi [Embtaku]",href,"",subtitleCallback,callback)
+            loadSourceNameExtractor("Anichi",href,"",subtitleCallback,callback)
         }
     }
 }
@@ -2549,7 +2549,7 @@ class BuzzServer : ExtractorApi() {
     ) {
         try {
             val qualityText = app.get(url).documentLarge.selectFirst("div.max-w-2xl > span")?.text()
-            val quality = getQualityFromName(qualityText)
+            val quality = getIndexQuality(qualityText)
             val response = app.get("$url/download", referer = url, allowRedirects = false)
             val redirectUrl = response.headers["hx-redirect"] ?: ""
 
@@ -2906,7 +2906,7 @@ open class Krakenfiles : ExtractorApi() {
         val doc = app.get("$mainUrl/embed-video/$id").document
         val title = doc.select("span.coin-name").text()
         val link = doc.selectFirst("source")?.attr("src") ?: return
-        val quality = getQualityFromName(title)
+        val quality = getIndexQuality(title)
 
 
         callback.invoke(
