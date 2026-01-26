@@ -244,7 +244,7 @@ class Cinemacity : MainAPI() {
         )
 
 
-        /* ---------------- SAFE file parsing (FIX) ---------------- */
+        /* ---------------- SAFE file parsing ---------------- */
 
         val rawFile = playerJson.opt("file")
             ?: error("PlayerJS: missing file field")
@@ -320,8 +320,22 @@ class Cinemacity : MainAPI() {
                         ?.groupValues?.get(1)?.toIntOrNull()
                         ?: continue
 
-                    val fileUrl = epJson.optString("file")
-                    if (fileUrl.isBlank()) continue
+                    val streamUrls = mutableListOf<String>()
+
+                    epJson.optString("file")
+                        .takeIf { it.isNotBlank() }
+                        ?.let { streamUrls += it }
+
+                    epJson.optJSONArray("folder")?.let { sources ->
+                        for (k in 0 until sources.length()) {
+                            sources.optJSONObject(k)
+                                ?.optString("file")
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { streamUrls += it }
+                        }
+                    }
+
+                    if (streamUrls.isEmpty()) continue
 
                     val metaKey = "$seasonNumber:$episodeNumber"
                     val epMeta = epMetaMap[metaKey]
@@ -330,7 +344,7 @@ class Cinemacity : MainAPI() {
                         parseSubtitles(epJson.optString("subtitle"))
 
                     val epjson = JSONObject().apply {
-                        put("streamUrl", fileUrl)
+                        put("streams", JSONArray(streamUrls))
                         put("subtitleTracks", epSubtitleTracks)
                     }.toString()
 
@@ -406,8 +420,8 @@ class Cinemacity : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+
         val obj = JSONObject(data)
-        val streamUrl = obj.getString("streamUrl")
 
         obj.optJSONArray("subtitleTracks")?.let { subs ->
             for (i in 0 until subs.length()) {
@@ -421,20 +435,41 @@ class Cinemacity : MainAPI() {
             }
         }
 
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                streamUrl,
-                INFER_TYPE
-            ) {
-                referer = mainUrl
-                quality = extractQuality(streamUrl)
+        val streamUrls = mutableListOf<String>()
+
+        obj.optJSONArray("streams")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                arr.optString(i)
+                    .takeIf { it.isNotBlank() }
+                    ?.let { streamUrls += it }
             }
-        )
+        }
+
+        if (streamUrls.isEmpty()) {
+            obj.optString("streamUrl")
+                .takeIf { it.isNotBlank() }
+                ?.let { streamUrls += it }
+        }
+
+        if (streamUrls.isEmpty()) return false
+
+        streamUrls.forEach { url ->
+            callback(
+                newExtractorLink(
+                    name,
+                    name,
+                    url,
+                    INFER_TYPE
+                ) {
+                    referer = mainUrl
+                    quality = extractQuality(url)
+                }
+            )
+        }
 
         return true
     }
+
 
     fun extractQuality(url: String): Int {
         return when {
