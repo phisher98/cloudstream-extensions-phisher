@@ -1,6 +1,5 @@
 package com.phisher98
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -9,6 +8,7 @@ import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -173,6 +173,8 @@ class StreamPlayAnime : MainAPI() {
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
         val tmdbid = animeMetaData?.mappings?.themoviedbId?.toIntOrNull()
+        val kitsuid = animeMetaData?.mappings?.kitsuid
+
         val type = if (data.format.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
 
         val logoUrl = fetchTmdbLogoUrl(
@@ -241,6 +243,7 @@ class StreamPlayAnime : MainAPI() {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
+                addKitsuId(kitsuid)
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = backgroundUrl ?: animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
@@ -255,6 +258,7 @@ class StreamPlayAnime : MainAPI() {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
+                addKitsuId(kitsuid)
                 addEpisodes(DubStatus.Subbed, episodes)
                 addEpisodes(DubStatus.Dubbed, episodesDub)
                 try { this.logoUrl = logoUrl } catch(_:Throwable){}

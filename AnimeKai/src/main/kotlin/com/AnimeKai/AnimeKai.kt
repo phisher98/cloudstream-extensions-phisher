@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -167,6 +168,8 @@ class AnimeKai : MainAPI() {
         val poster = document.select("div.poster img").attr("src")
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
+        val kitsuid = animeMetaData?.mappings?.kitsuid
+
         val data = anilistAPICall(
             "query (\$id: Int = ${aniid}) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
         ).data.media ?: throw Exception("Unable to fetch media details")
@@ -258,6 +261,7 @@ class AnimeKai : MainAPI() {
             showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
             addAniListId(aniid.toIntOrNull())
+            addKitsuId(kitsuid)
         }
     }
 

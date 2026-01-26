@@ -1396,6 +1396,7 @@ data class MetaMappings(
     @JsonProperty("imdb_id") val imdbId: String? = null,
     @JsonProperty("mal_id") val malId: Int? = null,
     @JsonProperty("anilist_id") val anilistId: Int? = null,
+    @JsonProperty("kitsu_id") val kitsuid: String? = null,
 )
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ImageData(

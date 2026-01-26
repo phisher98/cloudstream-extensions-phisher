@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -49,7 +50,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
 import okhttp3.OkHttpClient
-import okhttp3.Request
 
 class HiAnime : MainAPI() {
     override var mainUrl = HiAnimeProviderPlugin.currentHiAnimeServer
@@ -128,7 +128,7 @@ class HiAnime : MainAPI() {
                     "$mainUrl/completed?page=" to "Latest Completed",
             )
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/search?keyword=$query&page=$page"
         val res = app.get(link).documentLarge
 
@@ -136,46 +136,26 @@ class HiAnime : MainAPI() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "${request.data}$page"
-        val httpRequest = Request.Builder()
-            .url(url)
-            .header("User-Agent", userAgent)
-            .get()
-            .build()
-        val response = client.newCall(httpRequest).execute()
-        val html = response.body.string()
-        response.close()
-        val document = Jsoup.parse(html)
+        val document = app.get("${request.data}$page").document
         val items = document.select("div.flw-item").map { it.toSearchResult() }
-
         return newHomePageResponse(request.name, items)
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val url1 = url.replace("watch/", "")
-        val request1 = Request.Builder().url(url1).header("User-Agent", userAgent).get().build()
-        val response1 = client.newCall(request1).execute()
-        val html1 = response1.body.string()
-        response1.close()
-        val doc = Jsoup.parse(html1)
-
-        val request2 = Request.Builder().url(url).header("User-Agent", userAgent).get().build()
-        val response2 = client.newCall(request2).execute()
-        val html2 = response2.body.string()
-        response2.close()
-        val document = Jsoup.parse(html2)
-
+        val document = app.get(url.replace("watch/", "")).document
 
         val syncData = tryParseJson<ZoroSyncData>(document.selectFirst("#syncData")?.data())
         val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
-        val description = document.select("div.film-description > div").text().ifEmpty { doc.select("div.film-description div").text() }
+        val description = document.select("div.film-description > div").text().ifEmpty { document.select("div.film-description div").text() }
         val poster = document.select("#ani_detail div.film-poster img").attr("src")
-        val genres = doc.select("div.item.item-list:has(> span.item-head:contains(Genres)) a").map { it.text() }
+        val genres = document.select("div.item.item-list:has(> span.item-head:contains(Genres)) a").map { it.text() }
         val backgroundposter = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
+        val kitsuid = animeMetaData?.mappings?.kitsuid
+
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
@@ -241,6 +221,7 @@ class HiAnime : MainAPI() {
             this.actors = actors
             addMalId(malId.toIntOrNull())
             addAniListId(anilistId.toIntOrNull())
+            addKitsuId(kitsuid)
             // adding info
             document.select(".anisc-info > .item").forEach { info ->
                 val infoType = info.select("span.item-head").text().removeSuffix(":")
@@ -403,7 +384,19 @@ class HiAnime : MainAPI() {
     data class MetaAnimeData(
         @JsonProperty("titles") val titles: Map<String, String>?,
         @JsonProperty("images") val images: List<MetaImage>?,
-        @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?
+        @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?,
+        @JsonProperty("mappings") val mappings: MetaMappings? = null
+    )
+
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class MetaMappings(
+        @JsonProperty("themoviedb_id") val themoviedbId: String? = null,
+        @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+        @JsonProperty("imdb_id") val imdbId: String? = null,
+        @JsonProperty("mal_id") val malId: Int? = null,
+        @JsonProperty("anilist_id") val anilistId: Int? = null,
+        @JsonProperty("kitsu_id") val kitsuid: String? = null,
     )
 
     private fun parseAnimeData(jsonString: String): MetaAnimeData? {

@@ -31,10 +31,21 @@ data class Episode(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @JsonProperty("themoviedb_id") val themoviedbId: String? = null,
+    @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+    @JsonProperty("imdb_id") val imdbId: String? = null,
+    @JsonProperty("mal_id") val malId: Int? = null,
+    @JsonProperty("anilist_id") val anilistId: Int? = null,
+    @JsonProperty("kitsu_id") val kitsuid: String? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>?,
     @JsonProperty("images") val images: List<Image>?,
-    @JsonProperty("episodes") val episodes: Map<String, Episode>?
+    @JsonProperty("episodes") val episodes: Map<String, Episode>?,
+    @JsonProperty("mappings") val mappings: MetaMappings? = null
 )
 
 fun parseAnimeData(jsonString: String): MetaAnimeData? {

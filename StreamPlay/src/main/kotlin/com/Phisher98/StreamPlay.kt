@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -171,7 +172,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val MOVIE_API = BuildConfig.MOVIE_API
         val hianimeAPIs = listOf(
             "https://hianimez.is",
-            "https://hianimez.to",
+            "https://hianime.to",
             "https://hianime.nz",
             "https://hianime.bz",
             "https://hianime.pe"
@@ -433,7 +434,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
                 val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
                     ?: cineRes?.meta?.name
-
+                val syncMetaData = app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").toString()
+                val animeMetaData = parseAnimeData(syncMetaData)
+                val kitsuid = animeMetaData?.mappings?.kitsuid
                 fun buildEpisodeList(isDub: Boolean) = animeVideos.map { video ->
                     val videoYear = video.released?.split("-")?.firstOrNull()?.toIntOrNull()
                         ?: cineRes?.meta?.year?.toIntOrNull() ?: 0
@@ -492,6 +495,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.recommendations = recommendations
                     this.actors = actors
                     addTrailer(trailer)
+                    addKitsuId(kitsuid)
                     addImdbId(imdbId)
                 }
             } else {
