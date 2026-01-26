@@ -495,7 +495,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.recommendations = recommendations
                     this.actors = actors
                     addTrailer(trailer)
-                    addKitsuId(kitsuid)
+                    try { addKitsuId(kitsuid) } catch(_:Throwable){}
                     addImdbId(imdbId)
                 }
             } else {

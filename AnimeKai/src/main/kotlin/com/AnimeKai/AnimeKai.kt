@@ -261,7 +261,7 @@ class AnimeKai : MainAPI() {
             showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
             addAniListId(aniid.toIntOrNull())
-            addKitsuId(kitsuid)
+            try { addKitsuId(kitsuid) } catch(_:Throwable){}
         }
     }
 

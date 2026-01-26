@@ -243,7 +243,7 @@ class StreamPlayAnime : MainAPI() {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
-                addKitsuId(kitsuid)
+                try { addKitsuId(kitsuid) } catch(_:Throwable){}
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = backgroundUrl ?: animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
@@ -258,7 +258,7 @@ class StreamPlayAnime : MainAPI() {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
-                addKitsuId(kitsuid)
+                try { addKitsuId(kitsuid) } catch(_:Throwable){}
                 addEpisodes(DubStatus.Subbed, episodes)
                 addEpisodes(DubStatus.Dubbed, episodesDub)
                 try { this.logoUrl = logoUrl } catch(_:Throwable){}

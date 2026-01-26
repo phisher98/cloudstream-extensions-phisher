@@ -221,7 +221,7 @@ class HiAnime : MainAPI() {
             this.actors = actors
             addMalId(malId.toIntOrNull())
             addAniListId(anilistId.toIntOrNull())
-            addKitsuId(kitsuid)
+            try { addKitsuId(kitsuid) } catch(_:Throwable){}
             // adding info
             document.select(".anisc-info > .item").forEach { info ->
                 val infoType = info.select("span.item-head").text().removeSuffix(":")
