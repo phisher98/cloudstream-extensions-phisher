@@ -211,16 +211,16 @@ open class Driveseed : ExtractorApi() {
 
 
 fun cleanTitle(title: String): String {
-    val parts = title.split(".", "-", "_")
+    val parts = title.split(" ", "-", "_")
 
     val qualityTags = listOf(
-        "WEBRip", "WEB-DL", "WEB", "BluRay", "HDRip", "DVDRip", "HDTV",
-        "CAM", "TS", "R5", "DVDScr", "BRRip", "BDRip", "DVD", "PDTV",
-        "HD"
+        "480p", "720p", "1080p", "2160p", "4K",
+        "WEBRip", "WEB-DL", "BluRay", "HDRip", "DVDRip",
+        "HDTV", "CAM", "TS", "BRRip", "BDRip"
     )
 
     val audioTags = listOf(
-        "AAC", "AC3", "DTS", "MP3", "FLAC", "DD5", "EAC3", "Atmos"
+        "AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3", "Atmos"
     )
 
     val subTags = listOf(
@@ -231,21 +231,31 @@ fun cleanTitle(title: String): String {
         "x264", "x265", "H264", "HEVC", "AVC"
     )
 
+    // start from first quality token
     val startIndex = parts.indexOfFirst { part ->
-        qualityTags.any { tag -> part.contains(tag, ignoreCase = true) }
+        qualityTags.any { tag -> part.equals(tag, ignoreCase = true) }
     }
 
-    val endIndex = parts.indexOfLast { part ->
-        subTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
-                audioTags.any { tag -> part.contains(tag, ignoreCase = true) } ||
-                codecTags.any { tag -> part.contains(tag, ignoreCase = true) }
-    }
+    if (startIndex == -1) return ""
 
-    return if (startIndex != -1 && endIndex != -1 && endIndex >= startIndex) {
-        parts.subList(startIndex, endIndex + 1).joinToString(".")
-    } else if (startIndex != -1) {
-        parts.subList(startIndex, parts.size).joinToString(".")
-    } else {
-        parts.takeLast(3).joinToString(".")
-    }
+    // actively USE audio / sub / codec tags
+    val filtered = parts
+        .drop(startIndex)
+        .filter { part ->
+            qualityTags.any { part.equals(it, true) } ||
+                    audioTags.any { part.contains(it, true) } ||
+                    subTags.any { part.contains(it, true) } ||
+                    codecTags.any { part.contains(it, true) } ||
+                    part.any { it.isDigit() } // keeps 5.1 / 2.0 / 1080p
+        }
+
+    return filtered
+        .joinToString(" ")
+        .replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
+        .replace("[", "")
+        .replace("]", "")
+        .replace("(", "")
+        .replace(")", "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
 }
