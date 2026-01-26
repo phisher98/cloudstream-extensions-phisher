@@ -266,53 +266,50 @@ class HubCloud : ExtractorApi() {
     }
 
     private fun cleanTitle(title: String): String {
-        val parts = title.split(" ", "-", "_")
 
-        val qualityTags = listOf(
-            "480p", "720p", "1080p", "2160p", "4K",
-            "WEBRip", "WEB-DL", "BluRay", "HDRip", "DVDRip",
-            "HDTV", "CAM", "TS", "BRRip", "BDRip"
+        val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
+
+        val normalized = name
+            .replace(Regex("WEB[-_. ]?DL", RegexOption.IGNORE_CASE), "WEB-DL")
+            .replace(Regex("WEB[-_. ]?RIP", RegexOption.IGNORE_CASE), "WEBRip")
+            .replace(Regex("H[ .]?265", RegexOption.IGNORE_CASE), "H265")
+            .replace(Regex("H[ .]?264", RegexOption.IGNORE_CASE), "H264")
+            .replace(Regex("DDP[ .]?([0-9]\\.[0-9])", RegexOption.IGNORE_CASE), "DDP$1")
+
+        val parts = normalized.split(" ", "_", ".")
+
+        val qualityTags = setOf(
+            "WEB-DL", "WEBRIP", "BLURAY", "HDRIP",
+            "DVDRIP", "HDTV", "CAM", "TS", "BRRIP", "BDRIP"
         )
 
-        val audioTags = listOf(
-            "AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3", "Atmos"
+        val audioTags = setOf(
+            "AAC", "AC3", "DTS", "MP3", "FLAC",
+            "DD", "DDP", "EAC3", "ATMOS"
         )
 
-        val subTags = listOf(
-            "ESub", "ESubs", "Subs", "MultiSub", "NoSub", "EnglishSub", "HindiSub"
+        val codecTags = setOf(
+            "X264", "X265", "H264", "H265", "HEVC", "AVC"
         )
 
-        val codecTags = listOf(
-            "x264", "x265", "H264", "HEVC", "AVC"
-        )
-
-        // start from first quality token
         val startIndex = parts.indexOfFirst { part ->
-            qualityTags.any { tag -> part.equals(tag, ignoreCase = true) }
+            qualityTags.any { part.equals(it, true) }
         }
 
         if (startIndex == -1) return ""
 
-        // actively USE audio / sub / codec tags
         val filtered = parts
             .drop(startIndex)
             .filter { part ->
-                qualityTags.any { part.equals(it, true) } ||
-                        audioTags.any { part.contains(it, true) } ||
-                        subTags.any { part.contains(it, true) } ||
-                        codecTags.any { part.contains(it, true) } ||
-                        part.any { it.isDigit() } // keeps 5.1 / 2.0 / 1080p
+                val p = part.uppercase()
+
+                qualityTags.contains(p) ||
+                        codecTags.contains(p) ||
+                        audioTags.any { p.startsWith(it) } ||
+                        p.matches(Regex("\\d+\\.\\d+"))
             }
 
-        return filtered
-            .joinToString(" ")
-            .replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
-            .replace("[", "")
-            .replace("]", "")
-            .replace("(", "")
-            .replace(")", "")
-            .replace(Regex("\\s+"), " ")
-            .trim()
+        return filtered.joinToString(" ")
     }
 }
 
