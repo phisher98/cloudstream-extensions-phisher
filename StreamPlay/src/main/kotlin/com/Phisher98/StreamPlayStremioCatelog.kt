@@ -172,12 +172,12 @@ class StreamPlayStremioCatelog(
 
     private fun LoadData.toLinkData(): StreamPlay.LinkData {
         return StreamPlay.LinkData(
+            imdbId = imdbId,
             type = type,
             season = season,
             episode = episode,
-            imdbId = imdbId,
+            title = title,
             year = year,
-            title = title
         )
     }
 

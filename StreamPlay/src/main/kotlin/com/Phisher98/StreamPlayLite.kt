@@ -75,7 +75,8 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
                     res.episode,
                     subtitleCallback,
                     callback,
-                    res.isDub
+                    res.isDub,
+                    res.isMovie
                 )
             },
             {

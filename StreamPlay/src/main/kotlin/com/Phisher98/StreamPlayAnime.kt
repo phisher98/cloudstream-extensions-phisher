@@ -308,7 +308,7 @@ class StreamPlayAnime : MainAPI() {
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
 
         val dubStatus: String? =
-            if (mediaData.episode == null) "Movie"
+            if (mediaData.season == null) "Movie"
             else if (mediaData.isDub) "DUB"
             else "SUB"
 

@@ -86,7 +86,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
         Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, _, _ ->
-            if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub)
+            if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub,res.isMovie)
         },
         Provider("vidsrccc", "Vidsrccc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)

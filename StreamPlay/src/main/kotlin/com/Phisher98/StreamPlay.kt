@@ -449,15 +449,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             type = data.type,
                             season = video.season,
                             episode = video.number,
-                            epid = null,
-                            aniId = null,
-                            animeId = null,
                             title = title,
                             year = videoYear,
                             orgTitle = orgTitle,
                             isAnime = true,
                             airedYear = year,
-                            lastSeason = null,
                             epsTitle = video.name,
                             jpTitle = jpTitle,
                             date = video.released,
@@ -534,7 +530,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     isAsian = isAsian,
                     isBollywood = isBollywood,
                     alttitle = res.title,
-                    nametitle = res.name
+                    nametitle = res.name,
+                    isMovie = true
                 ).toJson(),
             ) {
                 this.posterUrl = poster
@@ -636,6 +633,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val alttitle: String? = null,
         val nametitle: String? = null,
         val isDub: Boolean = false,
+        val isMovie: Boolean? = false,
     )
 
     data class Data(

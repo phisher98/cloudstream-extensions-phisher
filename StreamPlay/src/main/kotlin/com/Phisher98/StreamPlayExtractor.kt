@@ -585,6 +585,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
         dubtype: Boolean,
+        isMovie: Boolean?,
     ) {
         val (_, malId) = convertTmdbToAnimeId(
             title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
@@ -609,14 +610,13 @@ object StreamPlayExtractor : StreamPlay() {
         val zoroIds = zoro?.keys?.toList().orEmpty()
 
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
-        val anititle = title
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
         val animepaheUrl = malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }
         val tmdbYear = date?.substringBefore("-")?.toIntOrNull()
 
-        val dubStatus: String? =
-            if (episode == null) "Movie"
+        val dubStatus: String =
+            if (isMovie == true) "Movie"
             else if (dubtype) "DUB"
             else "SUB"
 
@@ -672,7 +672,7 @@ object StreamPlayExtractor : StreamPlay() {
             {
                 invokeAnichi(
                     zorotitle,
-                    anititle,
+                    title,
                     tmdbYear,
                     episode,
                     subtitleCallback,
@@ -797,7 +797,7 @@ object StreamPlayExtractor : StreamPlay() {
         dubtype: String?,
     ) {
 
-        val isMovie = episode == null
+        val isMovie = dubtype == "Movie"
         val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
@@ -936,7 +936,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
-        val isMovie = episode == null
+        val isMovie = dubtype == "Movie"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
 
         val id = app.get("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$url", headers)
@@ -1163,7 +1163,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?
     ) {
-        val isMovie = episode == null
+        val isMovie = dubtype == "Movie"
 
         suspend fun decode(text: String?): String {
             return try {
@@ -1348,7 +1348,7 @@ object StreamPlayExtractor : StreamPlay() {
         val shuffledApis = hianimeAPIs.shuffled().toMutableList()
         val episodeNumber = (episode ?: 1).toString()
         val timeoutMillis = 10_000L
-        val isMovie = episode == null
+        val isMovie = dubtype == "Movie"
 
         while (shuffledApis.isNotEmpty()) {
             val api = shuffledApis.removeAt(0)
@@ -1440,7 +1440,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
-        val isMovie = episode == null
+        val isMovie = dubtype == "Movie"
         var slug = slugid
         if (slug.isNullOrBlank()) {
             if (engtitle.isNullOrBlank()) return
