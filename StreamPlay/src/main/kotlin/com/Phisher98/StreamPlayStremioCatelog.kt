@@ -58,7 +58,7 @@ class StreamPlayStremioCatelog(
         val res = app.get("${mainUrl}/manifest.json").parsedSafe<Manifest>()
         val lists = mutableListOf<HomePageList>()
         res?.catalogs?.amap { catalog ->
-            catalog.toHomePageList(this).let {
+            catalog.toHomePageList(this,page).let {
                 if (it.list.isNotEmpty()) lists.add(it)
             }
         }
@@ -221,12 +221,18 @@ class StreamPlayStremioCatelog(
             return entries
         }
 
-        suspend fun toHomePageList(provider: StreamPlayStremioCatelog): HomePageList {
+        suspend fun toHomePageList(provider: StreamPlayStremioCatelog, skip: Int): HomePageList {
             val entries = mutableMapOf<String, SearchResponse>()
 
             types.forEach { type ->
+                val url = if (skip > 0) {
+                    "${provider.mainUrl}/catalog/$type/$id/skip=$skip.json"
+                } else {
+                    "${provider.mainUrl}/catalog/$type/$id.json"
+                }
+
                 val res = app.get(
-                    "${provider.mainUrl}/catalog/${type}/${id}.json",
+                    url,
                     timeout = 120L
                 ).parsedSafe<CatalogResponse>()
 
