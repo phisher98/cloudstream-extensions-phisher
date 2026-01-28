@@ -50,21 +50,38 @@ class StreamPlayStremioCatelog(
         private const val cinemataUrl = "https://v3-cinemeta.strem.io"
     }
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse {
         if (mainUrl.isEmpty()) {
             throw IllegalArgumentException("Configure in StreamPlay Catalogs Addon in Extension Settings\n")
         }
         mainUrl = mainUrl.fixSourceUrl()
-        val res = app.get("${mainUrl}/manifest.json").parsedSafe<Manifest>()
+
+        val pageSize = 100
+        val skip = (page - 1) * pageSize
+
+        val manifest = app
+            .get("$mainUrl/manifest.json")
+            .parsedSafe<Manifest>()
+
         val lists = mutableListOf<HomePageList>()
-        res?.catalogs?.amap { catalog ->
-            catalog.toHomePageList(this,page).let {
-                if (it.list.isNotEmpty()) lists.add(it)
+
+        manifest?.catalogs?.amap { catalog ->
+            catalog.toHomePageList(
+                provider = this,
+                skip = skip
+            ).let {
+                if (it.list.isNotEmpty()) {
+                    lists.add(it)
+                }
             }
         }
+
         return newHomePageResponse(
             lists,
-            false
+            hasNext = true
         )
     }
 

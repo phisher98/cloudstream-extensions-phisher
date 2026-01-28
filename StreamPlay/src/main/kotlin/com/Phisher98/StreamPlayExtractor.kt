@@ -3717,13 +3717,13 @@ object StreamPlayExtractor : StreamPlay() {
                     app.get("$Watch32/ajax/episode/sources/$sourceId")
                         .parsedSafe<Watch32>()?.link
                 }.getOrNull() ?: continue
-                loadSourceNameExtractor(
-                    "Watch32 ",
+                loadDisplaySourceNameExtractor(
+                    "Watch32",
+                    "Watch32",
                     iframeUrl,
                     "",
                     subtitleCallback,
-                    callback,
-                    Qualities.Unknown.value
+                    callback
                 )
             }
         } else {
@@ -3736,13 +3736,13 @@ object StreamPlayExtractor : StreamPlay() {
                     app.get("$Watch32/ajax/episode/sources/$dataId")
                         .parsedSafe<Watch32>()?.link
                 }.getOrNull() ?: return@forEach
-                loadSourceNameExtractor(
-                    "Watch32 ",
+                loadDisplaySourceNameExtractor(
+                    "Watch32",
+                    "Watch32",
                     iframeUrl,
                     "",
                     subtitleCallback,
-                    callback,
-                    Qualities.Unknown.value
+                    callback
                 )
             }
         }
