@@ -271,45 +271,46 @@ class HubCloud : ExtractorApi() {
 
         val normalized = name
             .replace(Regex("WEB[-_. ]?DL", RegexOption.IGNORE_CASE), "WEB-DL")
-            .replace(Regex("WEB[-_. ]?RIP", RegexOption.IGNORE_CASE), "WEBRip")
+            .replace(Regex("WEB[-_. ]?RIP", RegexOption.IGNORE_CASE), "WEBRIP")
             .replace(Regex("H[ .]?265", RegexOption.IGNORE_CASE), "H265")
             .replace(Regex("H[ .]?264", RegexOption.IGNORE_CASE), "H264")
             .replace(Regex("DDP[ .]?([0-9]\\.[0-9])", RegexOption.IGNORE_CASE), "DDP$1")
 
         val parts = normalized.split(" ", "_", ".")
 
-        val qualityTags = setOf(
+        val sourceTags = setOf(
             "WEB-DL", "WEBRIP", "BLURAY", "HDRIP",
             "DVDRIP", "HDTV", "CAM", "TS", "BRRIP", "BDRIP"
         )
 
-        val audioTags = setOf(
-            "AAC", "AC3", "DTS", "MP3", "FLAC",
-            "DD", "DDP", "EAC3", "ATMOS"
-        )
+        val codecTags = setOf("H264", "H265", "X264", "X265", "HEVC", "AVC")
 
-        val codecTags = setOf(
-            "X264", "X265", "H264", "H265", "HEVC", "AVC"
-        )
+        val audioTags = setOf("AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3")
 
-        val startIndex = parts.indexOfFirst { part ->
-            qualityTags.any { part.equals(it, true) }
+        val audioExtras = setOf("ATMOS")
+
+        val hdrTags = setOf("SDR","HDR", "HDR10", "HDR10+", "DV", "DOLBYVISION")
+
+        val filtered = parts.mapNotNull { part ->
+            val p = part.uppercase()
+
+            when {
+                sourceTags.contains(p) -> p
+                codecTags.contains(p) -> p
+                audioTags.any { p.startsWith(it) } -> p
+                audioExtras.contains(p) -> p
+                hdrTags.contains(p) -> {
+                    when (p) {
+                        "DV", "DOLBYVISION" -> "DOLBYVISION"
+                        else -> p
+                    }
+                }
+                p == "NF" || p == "CR" -> p
+                else -> null
+            }
         }
 
-        if (startIndex == -1) return ""
-
-        val filtered = parts
-            .drop(startIndex)
-            .filter { part ->
-                val p = part.uppercase()
-
-                qualityTags.contains(p) ||
-                        codecTags.contains(p) ||
-                        audioTags.any { p.startsWith(it) } ||
-                        p.matches(Regex("\\d+\\.\\d+"))
-            }
-
-        return filtered.joinToString(" ")
+        return filtered.distinct().joinToString(" ")
     }
 }
 
