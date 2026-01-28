@@ -121,7 +121,8 @@ open class Driveseed : ExtractorApi() {
 
         val qualityText = document.selectFirst("li.list-group-item")?.text().orEmpty()
         val rawFileName = qualityText.replace("Name : ", "").trim()
-        val fileName = cleanTitle(rawFileName)
+        val cleaned = removeLeadingIndex(rawFileName)
+        val fileName = cleanTitle(cleaned)
         val size = document.selectFirst("li:nth-child(3)")?.text().orEmpty().replace("Size : ", "").trim()
 
         val labelExtras = buildString {
@@ -209,6 +210,12 @@ open class Driveseed : ExtractorApi() {
     }
 }
 
+private fun removeLeadingIndex(title: String): String {
+    return title.replace(
+        Regex("^[\\[(]?\\s*\\d+\\s*[])\\-_.]*\\s*"),
+        ""
+    )
+}
 
 private fun cleanTitle(title: String): String {
 
@@ -229,31 +236,36 @@ private fun cleanTitle(title: String): String {
     )
 
     val codecTags = setOf("H264", "H265", "X264", "X265", "HEVC", "AVC")
-
     val audioTags = setOf("AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3")
-
     val audioExtras = setOf("ATMOS")
+    val hdrTags = setOf("SDR", "HDR", "HDR10", "HDR10+", "DV", "DOLBYVISION")
 
-    val hdrTags = setOf("SDR","HDR", "HDR10", "HDR10+", "DV", "DOLBYVISION")
+    val tags = mutableListOf<String>()
+    val titleParts = mutableListOf<String>()
 
-    val filtered = parts.mapNotNull { part ->
+    for (part in parts) {
         val p = part.uppercase()
 
         when {
-            sourceTags.contains(p) -> p
-            codecTags.contains(p) -> p
-            audioTags.any { p.startsWith(it) } -> p
-            audioExtras.contains(p) -> p
-            hdrTags.contains(p) -> {
-                when (p) {
-                    "DV", "DOLBYVISION" -> "DOLBYVISION"
-                    else -> p
-                }
-            }
-            p == "NF" || p == "CR" -> p
-            else -> null
+            sourceTags.contains(p) -> tags += p
+            codecTags.contains(p) -> tags += p
+            audioTags.any { p.startsWith(it) } -> tags += p
+            audioExtras.contains(p) -> tags += p
+            hdrTags.contains(p) -> tags += if (p == "DV" || p == "DOLBYVISION") "DOLBYVISION" else p
+            p == "NF" || p == "CR" -> tags += p
+            else -> titleParts += part
         }
     }
 
-    return filtered.distinct().joinToString(" ")
+    val cleanTitle = titleParts
+        .joinToString(" ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    val cleanTags = tags.distinct().joinToString(" ")
+
+    return listOf(cleanTitle, cleanTags)
+        .filter { it.isNotBlank() }
+        .joinToString(" ")
 }
+
