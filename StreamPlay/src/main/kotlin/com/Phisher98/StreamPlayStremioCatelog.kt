@@ -291,7 +291,7 @@ class StreamPlayStremioCatelog(
     ) {
         fun toSearchResponse(provider: StreamPlayStremioCatelog): SearchResponse {
             return provider.newMovieSearchResponse(
-                fixTitle(name),
+                name,
                 this.toJson(),
                 TvType.Others
             ) {

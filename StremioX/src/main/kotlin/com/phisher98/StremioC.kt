@@ -318,7 +318,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     ) {
         fun toSearchResponse(provider: StremioC): SearchResponse {
             return provider.newMovieSearchResponse(
-                fixTitle(name),
+                name,
                 this.toJson(),
                 TvType.Others
             ) {
