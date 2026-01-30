@@ -279,7 +279,7 @@ class HubCloud : ExtractorApi() {
 class XdMoviesExtractor : ExtractorApi() {
 
     override val name = "XdMoviesExtractor"
-    override val mainUrl = "https://link.xdmovies.site"
+    override val mainUrl = "https://link.xdmovies.wtf"
     override val requiresReferer = false
 
     override suspend fun getUrl(

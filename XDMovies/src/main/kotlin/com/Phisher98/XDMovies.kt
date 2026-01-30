@@ -34,7 +34,7 @@ import org.json.JSONObject
 import org.jsoup.nodes.Element
 
 class XDMovies : MainAPI() {
-    override var mainUrl = "https://xdmovies.site"
+    override var mainUrl = "https://new.xdmovies.wtf"
     override var name = "XD Movies"
     override val hasMainPage = true
     override var lang = "en"
