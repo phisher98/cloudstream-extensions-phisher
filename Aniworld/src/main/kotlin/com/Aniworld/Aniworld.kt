@@ -265,9 +265,10 @@ open class Aniworld : MainAPI() {
         return true
     }
 
-    private fun Element.toSearchResult(): AnimeSearchResponse? {
+    fun Element.toSearchResult(): AnimeSearchResponse? {
         val href = fixUrlNull(this.selectFirst("a")?.attr("href")) ?: return null
-        val title = this.selectFirst("h3")?.text() ?: ""
+        val title = this.selectFirst("h3")?.text()?.takeIf { it.isNotBlank() }
+            ?: this.selectFirst("img")?.attr("alt").orEmpty()
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("data-src")?.takeIf { it.isNotBlank() } ?: this.selectFirst("img")?.attr("src"))
         return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
