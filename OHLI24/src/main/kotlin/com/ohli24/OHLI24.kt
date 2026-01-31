@@ -1,5 +1,6 @@
 package com.ohli24
 
+import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -9,15 +10,16 @@ import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
-import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
@@ -90,19 +92,22 @@ class OHLI24 : MainAPI() {
         val genres = doc.select("p:contains(장르)").first()?.select("span:nth-of-type(2)")?.text()?.split(",")?.map { it.trim() } ?: emptyList()
         val year = title.substringAfterLast("(").substringBefore(")").toIntOrNull()
         val descript = doc.select("div.view-stocon,div.view-cont").html().split("<br>").map { Jsoup.parse(it).text().trim() }.filter { it.isNotEmpty() }.joinToString("\n")
-        val type = if (doc.select("p").any { it.text().contains("분") }) TvType.Movie else TvType.TvSeries
-        val href= fixUrl(doc.selectFirst("li.list-item a")?.absUrl("href").orEmpty())
 
-        val recs = doc.select("div.film_list-wrap div.flw-item").mapNotNull {
-            val a = it.select("img")
-            val title = a.attr("alt")
-            val aImg = a.attr("data-src")
-            val href = it.select("a").attr("href")
-            newMovieSearchResponse(title, href, TvType.Movie)
-            {
-                this.posterUrl = aImg
-            }
+        val items = doc.select("li.list-item a")
+
+        val hasEpisodeText = items.any {
+            it.text().contains("episode", ignoreCase = true) ||
+                    it.text().contains("회") ||
+                    it.text().contains("화")
         }
+
+        val type = when {
+            items.size > 1 -> TvType.TvSeries
+            hasEpisodeText -> TvType.TvSeries
+            else -> TvType.Movie
+        }
+
+        val href= fixUrl(doc.selectFirst("li.list-item a")?.absUrl("href").orEmpty())
 
 
         if (type == TvType.TvSeries)
@@ -118,24 +123,23 @@ class OHLI24 : MainAPI() {
                 }
 
             }
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed())
+            return newAnimeLoadResponse(title, url, TvType.Anime)
             {
+                addEpisodes(DubStatus.Subbed, episodes.reversed())
                 this.year = year
                 this.tags = genres
                 this.posterUrl = poster
                 this.plot = descript
-                this.recommendations = recs
             }
         }
         else
         {
-            return newMovieLoadResponse(title, url, TvType.Movie, href)
+            return newMovieLoadResponse(title, url, TvType.AnimeMovie, href)
             {
                 this.year = year
                 this.tags = genres
                 this.posterUrl = poster
                 this.plot = descript
-                this.recommendations = recs
             }
         }
     }
