@@ -23,7 +23,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-open class OHLI24 : MainAPI() {
+class OHLI24 : MainAPI() {
     override var mainUrl = "https://ani.ohli24.com"
     override var name = "OHLI24"
     override val hasMainPage = true
