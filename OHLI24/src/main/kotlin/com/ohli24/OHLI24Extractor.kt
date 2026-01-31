@@ -2,6 +2,7 @@ package com.ohli24
 
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
@@ -27,6 +28,13 @@ open class Cdndania : ExtractorApi() {
     ) {
         val host= getBaseUrl(url)
         if (url.contains("/video/")) {
+            val doc = app.get(url, referer = referer).document.selectFirst("script:containsData(playerjsSubtitle)")?.data().orEmpty()
+            val srtRegex = Regex("""playerjsSubtitle\s*=\s*"[^"]*(https?://[^"]+\.srt)"""")
+            val titleRegex = Regex("""playerjsDefaultSubtitle\s*=\s*"([^"]+)"""")
+
+            val srtUrl = srtRegex.find(doc)?.groupValues?.get(1) ?: ""
+            val subtitleTitle = titleRegex.find(doc)?.groupValues?.get(1) ?: ""
+
             val extractedHash = url.substringAfterLast("/")
             val m3u8Url = "$host/player/index.php?data=$extractedHash&do=getVideo"
             val header= mapOf("x-requested-with" to "XMLHttpRequest")
@@ -45,14 +53,12 @@ open class Cdndania : ExtractorApi() {
                     }
                 )
 
-                /*
                 subtitleCallback.invoke(
                     newSubtitleFile(
-                        "English",
-                        "$host/subs/m3u8/$extractedHash/subtitles-eng.vtt"
+                        subtitleTitle,
+                        srtUrl
                     )
                 )
-                 */
             }
         }
     }
