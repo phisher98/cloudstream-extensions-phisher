@@ -49,7 +49,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     override val hasMainPage = true
 
     companion object {
-        private const val cinemeta = "https://v3-cinemeta.strem.io"
+        private const val cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         val TRACKER_LIST_URLS = listOf(
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best.txt",
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",

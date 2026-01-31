@@ -67,7 +67,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     companion object {
         /** TOOLS */
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
-        private const val Cinemeta = "https://v3-cinemeta.strem.io"
+        private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
         private var currentBaseUrl: String? = null
@@ -377,6 +377,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             tmdbId = res.id,
             appLangCode = langCode ?: "en"
         )
+        val cinetype = if (type == TvType.TvSeries) "series" else "movie"
+        val cineRes = app.get("$Cinemeta/meta/$cinetype/${res.external_ids?.imdb_id}.json").parsedSafe<CinemetaRes>()
 
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
@@ -448,13 +450,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             tvdbId = res.external_ids?.tvdb_id,
                             type = data.type,
                             season = video.season,
-                            episode = video.number,
+                            episode = video.episode,
                             title = title,
                             year = videoYear,
                             orgTitle = orgTitle,
                             isAnime = true,
                             airedYear = year,
-                            epsTitle = video.name,
+                            epsTitle = video.title,
                             jpTitle = jpTitle,
                             date = video.released,
                             airedDate = res.releaseDate ?: res.firstAirDate,
@@ -466,12 +468,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                             isDub = isDub
                         ).toJson()
                     ) {
-                        this.name = video.name + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
+                        this.name = video.title + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
                         this.season = video.season
-                        this.episode = video.number
+                        this.episode = video.episode
                         this.posterUrl = video.thumbnail
-                        this.score = Score.from10(video.rating)
-                        this.description = video.description
+                        this.description = video.overview
                         addDate(video.released)
                     }
                 }
@@ -492,6 +493,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.actors = actors
                     addTrailer(trailer)
                     try { addKitsuId(kitsuid) } catch(_:Throwable){}
+                    this.contentRating = cineRes?.meta?.appExtras?.certification
                     addImdbId(imdbId)
                 }
             } else {
@@ -507,6 +509,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     this.recommendations = recommendations
                     this.actors = actors
                     try { this.logoUrl = logoUrl } catch(_:Throwable){}
+                    this.contentRating = cineRes?.meta?.appExtras?.certification
                     addTrailer(trailer)
                     addImdbId(res.external_ids?.imdb_id)
                 }
@@ -546,7 +549,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 this.score = Score.from10(res.vote_average.toString())
                 this.recommendations = recommendations
                 this.actors = actors
-                //this.contentRating = fetchContentRating(data.id, "US") ?: "Not Rated"
+                this.contentRating = cineRes?.meta?.appExtras?.certification
                 addTrailer(trailer)
                 addImdbId(res.external_ids?.imdb_id)
             }

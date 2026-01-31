@@ -43,7 +43,7 @@ class Dudefilms : MainAPI() {
     )
     companion object
     {
-        private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
+        private val cinemeta_url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta"
     }
 
     override val mainPage = mainPageOf(
@@ -131,9 +131,9 @@ class Dudefilms : MainAPI() {
 
         if (responseData != null) {
             description = responseData.meta?.description ?: descriptions
-            cast = responseData.meta?.cast ?: emptyList()
+            cast = responseData.meta?.appExtras?.cast?.mapNotNull { it.name } ?: emptyList()
             background = responseData.meta?.background ?: poster
-            genre = responseData.meta?.genre
+            genre = responseData.meta?.genres
             year = responseData.meta?.year?.substringBefore("-")?.toIntOrNull()
         }
 
@@ -196,7 +196,7 @@ class Dudefilms : MainAPI() {
                     }
 
                 newEpisode(urls.toJson()) {
-                    this.name = metaEpisode?.title ?: metaEpisode?.name
+                    this.name = metaEpisode?.title
                     this.season = seasonNumber
                     this.episode = episodeNumber
                     this.posterUrl = metaEpisode?.thumbnail

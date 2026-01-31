@@ -912,7 +912,7 @@ private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
     if (imdbId.isNullOrBlank()) return null
 
     val metaType = if (type == TvType.TvSeries) "series" else "movie"
-    val url = "https://v3-cinemeta.strem.io/meta/$metaType/$imdbId.json"
+    val url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta/$metaType/$imdbId.json"
 
     return try {
         val resp = app.get(url).text

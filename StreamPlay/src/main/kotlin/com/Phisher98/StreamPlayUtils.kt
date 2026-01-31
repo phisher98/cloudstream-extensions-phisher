@@ -1766,10 +1766,10 @@ fun cinemaOSGenerateHash(t: CinemaOsSecretKeyRequest,isSeries: Boolean): String 
 private fun createContentString(info: CinemaOsSecretKeyRequest): String {
     val parts = mutableListOf<String>()
 
-    info.tmdbId?.let { parts.add("tmdbId:$it") }
-    info.imdbId?.let { parts.add("imdbId:$it") }
-    info.seasonId?.takeIf { it.isNotEmpty() }?.let { parts.add("seasonId:$it") }
-    info.episodeId?.takeIf { it.isNotEmpty() }?.let { parts.add("episodeId:$it") }
+    info.tmdbId.let { parts.add("tmdbId:$it") }
+    info.imdbId.let { parts.add("imdbId:$it") }
+    info.seasonId.takeIf { it.isNotEmpty() }?.let { parts.add("seasonId:$it") }
+    info.episodeId.takeIf { it.isNotEmpty() }?.let { parts.add("episodeId:$it") }
 
     return parts.joinToString("|")
 }

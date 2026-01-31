@@ -151,7 +151,7 @@ class Goojara : MainAPI() {
         val metatype = if (type == TvType.TvSeries) "series" else "movie"
         val tmdbmetatype = if (type == TvType.TvSeries) "tv" else "movie"
 
-        val metares = app.get("https://v3-cinemeta.strem.io/meta/$metatype/$imdbid.json").textLarge
+        val metares = app.get("https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta/$metatype/$imdbid.json").textLarge
         val tmdbId: String? = imdbid?.let { id ->
             runCatching {
                 val json = app.get(

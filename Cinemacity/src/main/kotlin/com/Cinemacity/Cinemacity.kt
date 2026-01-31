@@ -1,5 +1,6 @@
 package com.Cinemacity
 
+import android.util.Log
 import com.google.gson.Gson
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -55,7 +56,7 @@ class Cinemacity : MainAPI() {
             "Cookie" to base64Decode("ZGxlX3VzZXJfaWQ9MzI3Mjk7IGRsZV9wYXNzd29yZD04OTQxNzFjNmE4ZGFiMThlZTU5NGQ1YzY1MjAwOWEzNTs=")
         )
         private const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
-        private const val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
+        private const val cinemeta_url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta"
     }
 
     fun parseCredits(jsonText: String?): List<ActorData> {
@@ -161,7 +162,7 @@ class Cinemacity : MainAPI() {
         }
 
         val year = ogTitle.substringAfter("(", "").substringBefore(")").toIntOrNull()
-        val contenttype = doc.select("div.dar-full_meta > span:nth-child(5) > a").text()
+        var contenttype = doc.select("div.dar-full_meta > span:nth-child(5) > a").text()
 
         val tvtype = if (url.contains("/movies/", true)) TvType.Movie else TvType.TvSeries
         val tmdbmetatype = if (tvtype == TvType.TvSeries) "tv" else "movie"
@@ -215,10 +216,10 @@ class Cinemacity : MainAPI() {
         responseData?.meta?.let {
             description = it.description ?: descriptions
             background = it.background ?: poster
-            genre = it.genre
+            genre = it.genres
         }
 
-        val epMetaMap: Map<String, EpisodeDetails> =
+        val epMetaMap: Map<String, ResponseData.Meta.EpisodeDetails> =
             responseData?.meta?.videos
                 ?.filter { it.season != null && it.episode != null }
                 ?.associateBy { "${it.season}:${it.episode}" }
@@ -351,7 +352,7 @@ class Cinemacity : MainAPI() {
                     episodeList += newEpisode(epjson) {
                         this.season = seasonNumber
                         this.episode = episodeNumber
-                        this.name = epMeta?.title ?: epMeta?.name ?: "S${seasonNumber}E${episodeNumber}"
+                        this.name = epMeta?.title ?: "S${seasonNumber}E${episodeNumber}"
                         this.description = epMeta?.overview
                         this.posterUrl = epMeta?.thumbnail
                         addDate(epMeta?.released)
@@ -378,13 +379,15 @@ class Cinemacity : MainAPI() {
                 this.recommendations = recommendation
                 this.tags = genre
                 this.actors = castList
-                this.contentRating = contenttype
                 this.score = Score.from10(responseData?.meta?.imdbRating)
+                this.contentRating = responseData?.meta?.appExtras?.certification
                 addImdbId(imdbId)
                 addTMDbId(tmdbId)
                 addTrailer(trailer)
             }
         }
+
+        responseData?.meta?.appExtras?.certification?.let { Log.d("Phisher", it) }
 
         return newMovieLoadResponse(
             responseData?.meta?.name ?: title,
@@ -406,7 +409,7 @@ class Cinemacity : MainAPI() {
             this.recommendations = recommendation
             this.tags = genre
             this.actors = castList
-            this.contentRating = contenttype
+            this.contentRating = responseData?.meta?.appExtras?.certification
             this.score = Score.from10(responseData?.meta?.imdbRating)
             addImdbId(imdbId)
             addTMDbId(tmdbId)
