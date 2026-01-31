@@ -30,10 +30,7 @@ open class Cdndania : ExtractorApi() {
         if (url.contains("/video/")) {
             val doc = app.get(url, referer = referer).document.selectFirst("script:containsData(playerjsSubtitle)")?.data().orEmpty()
             val srtRegex = Regex("""playerjsSubtitle\s*=\s*"[^"]*(https?://[^"]+\.srt)"""")
-            val titleRegex = Regex("""playerjsDefaultSubtitle\s*=\s*"([^"]+)"""")
-
             val srtUrl = srtRegex.find(doc)?.groupValues?.get(1) ?: ""
-            val subtitleTitle = titleRegex.find(doc)?.groupValues?.get(1) ?: ""
 
             val extractedHash = url.substringAfterLast("/")
             val m3u8Url = "$host/player/index.php?data=$extractedHash&do=getVideo"
@@ -55,7 +52,7 @@ open class Cdndania : ExtractorApi() {
 
                 subtitleCallback.invoke(
                     newSubtitleFile(
-                        subtitleTitle,
+                        "Korean",
                         srtUrl
                     )
                 )
