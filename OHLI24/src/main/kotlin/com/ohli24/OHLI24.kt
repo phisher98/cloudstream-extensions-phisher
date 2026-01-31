@@ -77,7 +77,7 @@ class OHLI24 : MainAPI() {
 
     }
 
-    override suspend fun search(query: String): List<SearchResponse>? {
+    override suspend fun search(query: String): List<SearchResponse> {
         return app.get("$mainUrl/bbs/search.php?srows=24&gr_id=&sfl=wr_subject&stx=$query", timeout = 100).document
             .select("div.list-row").mapNotNull { it.toSearchResult() }
     }
