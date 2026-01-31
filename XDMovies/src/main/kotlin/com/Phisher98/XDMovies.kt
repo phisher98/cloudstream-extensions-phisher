@@ -146,7 +146,8 @@ class XDMovies : MainAPI() {
         val title = infoDiv?.safeText("h2").orEmpty()
         val poster = detailsWrapper?.selectFirst("img")?.attr("src").orEmpty()
         val backgroundPoster = headerStyle.substringAfter("url('").substringBefore("');")
-        val tags = document.select("p:contains(Genres:) a").map { it.text().trim() }
+        val audios = document.select("span.neon-audio").text().split(",").map { it.trim() }
+        val tags = (document.select("p:contains(Genres:)").first()?.ownText()?.split(",")?.map { it.trim() } ?: emptyList()) + audios
         val firstAirDate = document.select("p:contains(First Air Date:)").text().removePrefix("First Air Date:").trim()
         val year = firstAirDate.substringBefore("-").toIntOrNull()
         val description = document.select("p.overview").text()
@@ -300,11 +301,10 @@ class XDMovies : MainAPI() {
                 try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = description
-                this.tags = tags
+                this.tags = tags.ifEmpty { genres }
                 this.score = rating
                 this.contentRating = source
                 this.actors=actors
-                this.tags = genres
                 addImdbId(imdbId)
             }
         }
@@ -315,11 +315,10 @@ class XDMovies : MainAPI() {
             try { this.logoUrl = logoUrl } catch(_:Throwable){}
             this.year = year
             this.plot = description
-            this.tags = tags
+            this.tags = tags.ifEmpty { genres }
             this.score = rating
             this.contentRating = source
             this.actors=actors
-            this.tags = genres
             addImdbId(imdbId)
         }
     }
