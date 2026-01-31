@@ -4,7 +4,7 @@ version = 1
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Anime and movies with Korean subtitles only (no Korean audio), including movie and series formats like Korebishi."
+    description = "Anime and movies with Korean subtitles only (no Korean audio)"
     authors = listOf("Phisher98")
 
     /**
