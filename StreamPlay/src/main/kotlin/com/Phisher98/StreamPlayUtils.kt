@@ -279,10 +279,16 @@ suspend fun loadSourceNameExtractor(
     val fixSize = if(size.isNotEmpty()) " $size" else ""
     loadExtractor(url, referer, subtitleCallback) { link ->
         CoroutineScope(Dispatchers.IO).launch {
+            val label = if (fixSize.isBlank()) {
+                "$source [${link.source}]"
+            } else {
+                "$source [${link.source} $fixSize]"
+            }
+
             callback.invoke(
                 newExtractorLink(
                     source,
-                    "$source [${link.source} $fixSize]",
+                    label,
                     link.url,
                 ) {
                     this.quality = quality ?: link.quality

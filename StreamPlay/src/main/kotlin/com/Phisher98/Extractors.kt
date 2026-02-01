@@ -258,7 +258,7 @@ class VCloudGDirect : ExtractorApi() {
 
 class VCloud : ExtractorApi() {
     override val name: String = "V-Cloud"
-    override val mainUrl: String = "https://vcloud.*"
+    override val mainUrl: String = "https://vcloud.zip"
     override val requiresReferer = false
 
     override suspend fun getUrl(

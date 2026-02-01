@@ -13,9 +13,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnimes
 import com.phisher98.StreamPlayExtractor.invokeBollyflix
 import com.phisher98.StreamPlayExtractor.invokeCinemaOS
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
-import com.phisher98.StreamPlayExtractor.invokeDotmovies
 import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
-import com.phisher98.StreamPlayExtractor.invokeExtramovies
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeHexa
@@ -23,7 +21,6 @@ import com.phisher98.StreamPlayExtractor.invokeHindmoviez
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
-import com.phisher98.StreamPlayExtractor.invokeMappleTv
 import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
@@ -39,7 +36,6 @@ import com.phisher98.StreamPlayExtractor.invokePlaydesi
 import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
-import com.phisher98.StreamPlayExtractor.invokeRogmovies
 import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
@@ -119,10 +115,10 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, subtitleCallback,callback)
         },
         Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeVegamovies(res.title, res.year, res.season, res.episode, res.imdbId, subtitleCallback, callback)
+            if (!res.isBollywood) invokeVegamovies("VegaMovies",res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("extramovies", "ExtraMovies") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeExtramovies(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+        Provider("Rogmovies", "RogMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
+            if (res.isBollywood) invokeVegamovies("RogMovies",res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("multimovies", "MultiMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback)
@@ -198,15 +194,6 @@ fun buildProviders(): List<Provider> {
         },
         Provider("vidlink", "Vidlink") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVidlink(res.id, res.season, res.episode, subtitleCallback, callback)
-        },
-        Provider("mappletv", "MappleTV") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeMappleTv(res.id, res.season, res.episode, callback)
-        },
-        Provider("dotmovies", "DotMovies") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeDotmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback)
-        },
-        Provider("rogmovies", "RogMovies") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeRogmovies(res.imdbId, res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("kisskh", "KissKH (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback)
