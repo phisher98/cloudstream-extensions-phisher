@@ -404,6 +404,54 @@ class VCloud : ExtractorApi() {
         }
     }
 
+    private fun cleanTitle(title: String): String {
+
+        val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
+
+        val normalized = name
+            .replace(Regex("WEB[-_. ]?DL", RegexOption.IGNORE_CASE), "WEB-DL")
+            .replace(Regex("WEB[-_. ]?RIP", RegexOption.IGNORE_CASE), "WEBRIP")
+            .replace(Regex("H[ .]?265", RegexOption.IGNORE_CASE), "H265")
+            .replace(Regex("H[ .]?264", RegexOption.IGNORE_CASE), "H264")
+            .replace(Regex("DDP[ .]?([0-9]\\.[0-9])", RegexOption.IGNORE_CASE), "DDP$1")
+
+        val parts = normalized.split(" ", "_", ".")
+
+        val sourceTags = setOf(
+            "WEB-DL", "WEBRIP", "BLURAY", "HDRIP",
+            "DVDRIP", "HDTV", "CAM", "TS", "BRRIP", "BDRIP"
+        )
+
+        val codecTags = setOf("H264", "H265", "X264", "X265", "HEVC", "AVC")
+
+        val audioTags = setOf("AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3")
+
+        val audioExtras = setOf("ATMOS")
+
+        val hdrTags = setOf("SDR","HDR", "HDR10", "HDR10+", "DV", "DOLBYVISION")
+
+        val filtered = parts.mapNotNull { part ->
+            val p = part.uppercase()
+
+            when {
+                sourceTags.contains(p) -> p
+                codecTags.contains(p) -> p
+                audioTags.any { p.startsWith(it) } -> p
+                audioExtras.contains(p) -> p
+                hdrTags.contains(p) -> {
+                    when (p) {
+                        "DV", "DOLBYVISION" -> "DOLBYVISION"
+                        else -> p
+                    }
+                }
+                p == "NF" || p == "CR" -> p
+                else -> null
+            }
+        }
+
+        return filtered.distinct().joinToString(" ")
+    }
+
     private fun getIndexQuality(str: String?): Int {
         return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.Unknown.value
