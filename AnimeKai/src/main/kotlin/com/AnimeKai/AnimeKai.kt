@@ -179,7 +179,7 @@ class AnimeKai : MainAPI() {
         val title = document.selectFirst("h1.title")?.text().orEmpty()
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
         val plot= document.selectFirst("div.desc")?.text()
-        val logoposter = animeMetaData?.images?.find { it.coverType == "Clearlogo" }?.url
+
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
@@ -252,7 +252,6 @@ class AnimeKai : MainAPI() {
             japName = jptitle
             posterUrl = poster
             backgroundPosterUrl = backgroundposter
-            try { this.logoUrl = logoposter } catch(_:Throwable){}
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
             this.recommendations = recommendations
