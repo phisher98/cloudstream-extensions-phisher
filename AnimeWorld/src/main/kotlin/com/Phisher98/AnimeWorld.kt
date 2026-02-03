@@ -37,13 +37,12 @@ class AnimeWorld : MainAPI() {
     }
 
     override val mainPage =
-            mainPageOf(
-                "series" to "Series",
-                "movies" to "Movies",
-                "platform/netflix" to "Netflix",
-                "platform/crunchyroll" to "Crunchyroll",
-                "genre/kids" to "Cartoon Network"
-            )
+        mainPageOf(
+            "category/series" to "Series",
+            "category/movies" to "Movies",
+            "category/anime" to "Anime",
+            "category/cartoon" to "Cartoon"
+        )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val currentPageUrl = "$mainUrl/${request.data}?page=$page"
@@ -70,13 +69,13 @@ class AnimeWorld : MainAPI() {
     }
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val document = app.get("$mainUrl/search?q=$query&page=$page").documentLarge
+        val document = app.get("$mainUrl/?s=$query&page=$page").documentLarge
         return document.select("#movies-a ul li").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).documentLarge
-        val title =document.selectFirst("div.dfxb  h2.entry-title")?.text() ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: throw NotImplementedError("Unable to find title")
+        val title =document.selectFirst("div.dfxb  h1.entry-title")?.text() ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: throw NotImplementedError("Unable to find title")
         val poster = fixUrlNull(document.selectFirst("div.bghd img")?.attr("src"))
         val tags = document.select("header.entry-header ul li:contains(Genres) p a").map { it.text() }
         val year = document.select("span.year span").text().trim().toIntOrNull()
@@ -85,13 +84,16 @@ class AnimeWorld : MainAPI() {
         val recommendations = document.select("section.section.episodes div.owl-carousel article").mapNotNull { it.toSearchResult() }
         return if (tvType == TvType.TvSeries) {
             val episodes = mutableListOf<Episode>()
-            val seasonLinks = document.select("ul.aa-cnt li a").map { it.attr("href") }
+            val seasonLinks = document.select("div.season-swiper a.season-btn").map { it.attr("href") }
             for (seasonUrl in seasonLinks) {
                 val seasonDoc = app.get(mainUrl+seasonUrl).documentLarge
                 seasonDoc.select("#episode_by_temp li").forEach { ep ->
-                    val href = ep.select("a").attr("href")
-                    val name = "Episode " + ep.select("header.entry-header h2").text().substringAfter("EP").trim()
-                    val image = ep.select("div.post-thumbnail img").attr("data-src")
+                    val num = ep.selectFirst("span.num-epi")?.text()?.trim()
+                    val rawTitle = ep.selectFirst("h2.entry-title")?.text()?.trim()
+                    val name = rawTitle?.removeSuffix(num ?: "")?.trim()?: rawTitle
+                    val href = ep.selectFirst("a.lnk-blk")?.attr("href")
+                    val image = ep.selectFirst("div.post-thumbnail img")?.attr("src")
+
                     val episode = ep.select("header.entry-header span").text().substringAfter("x").toIntOrNull()
                     val season = ep.select("header.entry-header span").text().substringBefore("x").toIntOrNull()
 
