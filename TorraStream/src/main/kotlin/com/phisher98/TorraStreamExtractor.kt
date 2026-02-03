@@ -462,7 +462,7 @@ suspend fun invokeAnimetosho(
     id: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val url = "$AnimetoshoAPI/json?eid=$id&qx=1&q=!(%22DTS%22%7C%22TrueHD%22)((e*%7Ca*%7Cr*%7Ci*%7Co*%7C%221080%22)%20!%22540%22%20!%22480%22)%22%0D%0A"
+    val url = "$AnimetoshoAPI/json?eid=$id"
     val jsonResponse = app.get(url).toString()
     val parsedList = Gson().fromJson(jsonResponse, Array<AnimetoshoItem>::class.java)?.toList() ?: emptyList()
     parsedList.sortedByDescending { it.seeders }.forEach { item ->
@@ -492,17 +492,18 @@ suspend fun invokeAnimetosho(
 
 suspend fun invokeTorrentioAnime(
     mainUrl:String,
-    id: String? = null,
+    id: Int? = null,
     season: Int? = null,
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
+
     val torrentioAPI:String = mainUrl
     val url = if(season == null) {
-        "$torrentioAPI/stream/movie/$id.json"
+        "$torrentioAPI/stream/movie/kitsu:$id.json"
     }
     else {
-        "$torrentioAPI/stream/series/$id:$season:$episode.json"
+        "$torrentioAPI/stream/series/kitsu:$id:$episode.json"
     }
     val headers = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",

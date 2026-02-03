@@ -276,6 +276,11 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             val response = app.get("https://api.ani.zip/mappings?imdb_id=$id")
             JSONObject(response.text).optJSONObject("mappings")
         }.getOrNull()
+        val kitsuId = runCatching {
+            val response = app.get("https://api.ani.zip/mappings?imdb_id=$id")
+            val json = JSONObject(response.text)
+            json.optJSONObject("mappings")?.optInt("kitsu_id")
+        }.getOrNull()
 
         val isMovie = mappings
             ?.optString("type", "")
@@ -310,16 +315,15 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             )
         } else {
             runAllAsync(
-                { invokeTorrentio(apiUrl, id, season, episode, callback) },
-                { invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
+                { if (!dataObj.isAnime) invokeTorrentio(apiUrl, id, season, episode, callback) },
+                { if (!dataObj.isAnime) invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
                 { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
-                { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, id, season, episode, callback) },
-                { invokeUindex(Uindex, title, year, season, episode, callback) },
+                { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, kitsuId, season, episode, callback) },
+                { if (!dataObj.isAnime) invokeUindex(Uindex, title, year, season, episode, callback) },
                 { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback) },
                 { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
             )
         }
-
 
 
         // Subtitles
