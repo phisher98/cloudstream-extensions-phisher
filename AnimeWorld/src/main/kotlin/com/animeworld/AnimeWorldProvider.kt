@@ -1,4 +1,4 @@
-package com.phisher98
+package com.animeworld
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -11,5 +11,7 @@ class AnimeWorldPlugin : BasePlugin() {
         registerExtractorAPI(Pixdrive())
         registerExtractorAPI(Ghbrisk())
         registerExtractorAPI(AWSStream())
+        registerExtractorAPI(MyAnimeworld())
+        registerExtractorAPI(ascdn21())
     }
 }

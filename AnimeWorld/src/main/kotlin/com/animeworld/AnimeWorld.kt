@@ -1,7 +1,5 @@
-package com.phisher98
+package com.animeworld
 
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
@@ -30,36 +28,31 @@ class AnimeWorld : MainAPI() {
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
-    override val supportedTypes = setOf(TvType.Movie, TvType.Anime, TvType.Cartoon)
-    companion object
-    {
-        const val API="https://z.awstream.net"
-    }
+    override val supportedTypes = setOf(TvType.AnimeMovie, TvType.Anime, TvType.Cartoon)
 
     override val mainPage =
-            mainPageOf(
-                "series" to "Series",
-                "movies" to "Movies",
-                "platform/netflix" to "Netflix",
-                "platform/crunchyroll" to "Crunchyroll",
-                "genre/kids" to "Cartoon Network"
-            )
+        mainPageOf(
+            "category/popular" to "Popular",
+            "category/top-airing" to "Top Airing",
+            "category/ongoing" to "OnGoing",
+            "category/series" to "Series",
+            "category/movies" to "Movies",
+            "category/anime" to "Anime",
+            "category/cartoon" to "Cartoon"
+        )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val currentPageUrl = "$mainUrl/${request.data}?page=$page"
-        val nextPageUrl = "$mainUrl/${request.data}?page=${page + 1}"
-
-        val currentPageDocument = app.get(currentPageUrl).documentLarge
-        val nextPageDocument = app.get(nextPageUrl).documentLarge
-
-        val currentResults = currentPageDocument.select("#movies-a ul li").mapNotNull { it.toSearchResult() }
-        val nextResults = nextPageDocument.select("#movies-a ul li").mapNotNull { it.toSearchResult() }
-
-        val combinedResults = currentResults + nextResults
-
-        return newHomePageResponse(request.name, combinedResults)
-    }
-
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse = newHomePageResponse(
+        request.name,
+        listOf(page, page + 1).flatMap { p ->
+            app.get("$mainUrl/${request.data}?page=$p")
+                .documentLarge
+                .select("#movies-a ul li")
+                .mapNotNull { it.toSearchResult() }
+        }
+    )
 
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.selectFirst("header h2")?.text()?.trim() ?: return null
@@ -69,42 +62,51 @@ class AnimeWorld : MainAPI() {
         return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val document = app.get("$mainUrl/search?q=$query&page=$page").documentLarge
+    override suspend fun search(query: String,page: Int): SearchResponseList {
+        val document = app.get("$mainUrl/?s=$query&page=$page").documentLarge
         return document.select("#movies-a ul li").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).documentLarge
-        val title =document.selectFirst("div.dfxb  h2.entry-title")?.text() ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: throw NotImplementedError("Unable to find title")
-        val poster = fixUrlNull(document.selectFirst("div.bghd img")?.attr("src"))
+        val title =document.selectFirst("div.dfxb  h1.entry-title")?.text() ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: throw NotImplementedError("Unable to find title")
+        val poster = fixUrlNull(document.selectFirst("div.dfxb img")?.attr("src"))
+        val backgroundposter = fixUrlNull(document.selectFirst("div.bghd img")?.attr("src"))
         val tags = document.select("header.entry-header ul li:contains(Genres) p a").map { it.text() }
         val year = document.select("span.year span").text().trim().toIntOrNull()
         val tvType = if (url.contains("movie")) TvType.Movie else TvType.TvSeries
         val description = document.selectFirst("div.description p")?.text()?.trim()
         val recommendations = document.select("section.section.episodes div.owl-carousel article").mapNotNull { it.toSearchResult() }
         return if (tvType == TvType.TvSeries) {
-            val episodes = mutableListOf<Episode>()
-            val seasonLinks = document.select("ul.aa-cnt li a").map { it.attr("href") }
-            for (seasonUrl in seasonLinks) {
-                val seasonDoc = app.get(mainUrl+seasonUrl).documentLarge
-                seasonDoc.select("#episode_by_temp li").forEach { ep ->
-                    val href = ep.select("a").attr("href")
-                    val name = "Episode " + ep.select("header.entry-header h2").text().substringAfter("EP").trim()
-                    val image = ep.select("div.post-thumbnail img").attr("data-src")
-                    val episode = ep.select("header.entry-header span").text().substringAfter("x").toIntOrNull()
-                    val season = ep.select("header.entry-header span").text().substringBefore("x").toIntOrNull()
 
-                    episodes.add(newEpisode(href) {
+            val seasonLinks = document
+                .select("div.season-swiper a.season-btn")
+                .map { it.attr("href") }
+
+            val episodes = seasonLinks.flatMap { seasonUrl ->
+                val seasonDoc = app.get(mainUrl + seasonUrl).documentLarge
+
+                seasonDoc.select("#episode_by_temp li").map { ep ->
+                    val headerSpan = ep.selectFirst("header.entry-header span")?.text().orEmpty()
+                    val (season, episode) = headerSpan
+                        .split("x", limit = 2)
+                        .map { it.toIntOrNull() }
+                        .let { it.getOrNull(0) to it.getOrNull(1) }
+
+                    val episodeNumber = episode?.toString().orEmpty()
+                    val name = "Episode $episodeNumber"
+
+                    newEpisode(ep.selectFirst("a")?.attr("href").orEmpty()) {
                         this.name = name
                         this.season = season
                         this.episode = episode
-                        this.posterUrl = image
-                    })
+                        this.posterUrl = ep.selectFirst("div.post-thumbnail img")?.getImageAttr()
+                    }
                 }
             }
 
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.backgroundPosterUrl = backgroundposter
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
@@ -113,6 +115,7 @@ class AnimeWorld : MainAPI() {
             }
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.backgroundPosterUrl = backgroundposter
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
@@ -127,29 +130,19 @@ class AnimeWorld : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
-        val scriptWithServerData = document.select("script")
-            .firstOrNull { it.data().contains("serverData") }?.data() ?: return false
-        val regex = Regex("""https:\\/\\/[^\s"']+""")
-        val urls = regex.findAll(scriptWithServerData).map { it.value.replace("\\/", "/") }.toList()
-        urls.forEach { url ->
-            Log.d("Phisher",url)
-            loadExtractor(url, mainUrl, subtitleCallback, callback)
-        }
-        document.select("tr > td a").forEach {
-            val link=it.attr("href").replace("files","embed")
+        val document = app.get(data).document
+        document.select("div.video iframe").forEach {
+            val link=it.attr("src").ifBlank { it.attr("data-src") }
             loadExtractor(link, mainUrl, subtitleCallback, callback)
         }
-
         return true
     }
 
     private fun Element.getImageAttr(): String {
         return when {
-            this.hasAttr("data-src") -> this.attr("abs:data-src")
-            this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")
-            this.hasAttr("srcset") -> this.attr("abs:srcset").substringBefore(" ")
-            else -> this.attr("abs:src")
+            this.hasAttr("src") -> this.attr("src")
+            this.hasAttr("data-src") -> this.attr("data-src")
+            else -> this.attr("src")
         }
     }
 

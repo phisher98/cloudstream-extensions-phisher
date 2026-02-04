@@ -1,4 +1,4 @@
-package com.phisher98
+package com.animeworld
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
@@ -9,7 +9,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.phisher98.AnimeWorld.Companion.API
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.lagradost.cloudstream3.base64Decode
@@ -17,6 +16,7 @@ import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
 
@@ -126,58 +126,63 @@ open class AWSStream : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        if (url.contains("/video/")) {
-            val extractedHash = url.substringAfterLast("/")
-            val m3u8Url = "$API/player/index.php?data=$extractedHash&do=getVideo"
-            Log.d("Phisher",m3u8Url)
-            val header= mapOf("x-requested-with" to "XMLHttpRequest")
-            val formdata= mapOf("hash" to extractedHash,"r" to "https://anime-world.co/")
-            val response = app.post(m3u8Url, headers=header, data = formdata).parsedSafe<Response>()
-            response?.videoSource?.let { m3u8 ->
-                callback(
-                    newExtractorLink(
-                        name,
-                        name,
-                        url = m3u8,
-                        type = ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = ""
-                        this.quality = Qualities.P1080.value
-                    }
-                )
+        val extractedHash = url.substringAfterLast("/")
+        val doc = app.get(url).documentLarge
+        val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
+        val header = mapOf("x-requested-with" to "XMLHttpRequest")
+        val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)
+        val response = app.post(m3u8Url, headers = header, data = formdata).parsedSafe<Response>()
+        response?.videoSource?.let { m3u8 ->
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    url = m3u8,
+                    type = ExtractorLinkType.M3U8
+                ) {
+                    this.referer = ""
+                    this.quality = Qualities.P1080.value
+                }
+            )
+            val extractedPack = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().orEmpty()
 
-                subtitleCallback.invoke(
-                    newSubtitleFile(
-                        "English",
-                        "$API/subs/m3u8/$extractedHash/subtitles-eng.vtt"
-                    )
-                )
+            JsUnpacker(extractedPack).unpack()?.let { unpacked ->
+                Regex(""""kind":\s*"captions"\s*,\s*"file":\s*"(https.*?\.srt)""")
+                    .find(unpacked)
+                    ?.groupValues
+                    ?.get(1)
+                    ?.let { subtitleUrl ->
+                        subtitleCallback.invoke(
+                            newSubtitleFile(
+                                "English",
+                                subtitleUrl
+                            )
+                        )
+                    }
             }
         }
     }
+
+    data class Response(
+        val hls: Boolean,
+        val videoImage: String,
+        val videoSource: String,
+        val securedLink: String,
+        val downloadLinks: List<Any?>,
+        val attachmentLinks: List<Any?>,
+        val ck: String,
+    )
 }
 
-data class Response(
-    val hls: Boolean,
-    val videoImage: String,
-    val videoSource: String,
-    val securedLink: String,
-    val downloadLinks: List<Any?>,
-    val attachmentLinks: List<Any?>,
-    val ck: String,
-)
+class ascdn21 : AWSStream() {
+    override val name = "Zephyrflick"
+    override val mainUrl = "https://as-cdn21.top"
+    override val requiresReferer = true
+}
 
-
-
-
-
-
-
-/*
-
-class GDMirrorbot : ExtractorApi() {
-    override var name = "GDMirrorbot"
-    override var mainUrl = "https://gdmirrorbot.nl"
+class MyAnimeworld : ExtractorApi() {
+    override val name = "MyAnimeworld"
+    override val mainUrl = "https://myanimeworld.in"
     override val requiresReferer = true
 
     override suspend fun getUrl(
@@ -186,46 +191,7 @@ class GDMirrorbot : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        Log.d("Phisher",url)
-        val host = getBaseUrl(app.get(url).url)
-        val embed = url.substringAfterLast("/")
-        val data = mapOf("sid" to embed)
-        val jsonString = app.post("$host/embedhelper.php", data = data).toString()
-        val jsonElement: JsonElement = JsonParser.parseString(jsonString)
-        if (!jsonElement.isJsonObject) {
-            Log.e("Error:", "Unexpected JSON format: Response is not a JSON object")
-            return
-        }
-        val jsonObject = jsonElement.asJsonObject
-        val siteUrls = jsonObject["siteUrls"]?.takeIf { it.isJsonObject }?.asJsonObject
-        val mresult = jsonObject["mresult"]?.takeIf { it.isJsonObject }?.asJsonObject
-        val siteFriendlyNames = jsonObject["siteFriendlyNames"]?.takeIf { it.isJsonObject }?.asJsonObject
-        if (siteUrls == null || siteFriendlyNames == null || mresult == null) {
-            return
-        }
-        val commonKeys = siteUrls.keySet().intersect(mresult.keySet())
-        commonKeys.forEach { key ->
-            val siteName = siteFriendlyNames[key]?.asString
-            if (siteName == null) {
-                Log.e("Error:", "Skipping key: $key because siteName is null")
-                return@forEach
-            }
-            val siteUrl = siteUrls[key]?.asString
-            val resultUrl = mresult[key]?.asString
-            if (siteUrl == null || resultUrl == null) {
-                Log.e("Error:", "Skipping key: $key because siteUrl or resultUrl is null")
-                return@forEach
-            }
-            val href = siteUrl + resultUrl
-            loadExtractor(href, subtitleCallback, callback)
-        }
-
-    }
-
-    private fun getBaseUrl(url: String): String {
-        return URI(url).let {
-            "${it.scheme}://${it.host}"
-        }
+        val iframe = app.get(url).document.select("iframe").attr("src")
+        loadExtractor(iframe,"",subtitleCallback,callback)
     }
 }
- */
