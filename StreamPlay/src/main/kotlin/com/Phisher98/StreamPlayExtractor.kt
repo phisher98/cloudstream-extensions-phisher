@@ -5162,7 +5162,6 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         if (imdbId.isNullOrBlank()) return
-        Log.d("Phisher",token)
         val api = buildString {
             append(BuildConfig.Nuviostreams)
             token.substringAfter("ui=")
@@ -5182,8 +5181,8 @@ object StreamPlayExtractor : StreamPlay() {
         response.streams.forEach { stream ->
             callback.invoke(
                 newExtractorLink(
-                    name = "NuvioStreams ${stream.name.substringBefore("-")}",
-                    source = "NuvioStreams",
+                    name = stream.name.substringBefore("-"),
+                    source = stream.name,
                     url = stream.url,
                     type = INFER_TYPE
                 )
