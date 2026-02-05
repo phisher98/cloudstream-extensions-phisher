@@ -219,8 +219,8 @@ fun buildProviders(): List<Provider> {
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime || res.isCartoon) invokeToonstream(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("NuvioStreams", "NuvioStreams") { res, _, callback, _, _ ->
-            invokeNuvioStreams(res.imdbId, res.season,res.episode,  callback)
+        Provider("NuvioStreams", "NuvioStreams") { res, _, callback, token, _ ->
+            invokeNuvioStreams(res.imdbId, res.season,res.episode,token, callback)
         },
         Provider("VidEasy", "VidEasy") { res, subtitleCallback, callback, _, _ ->
             invokeVideasy(res.id, res.imdbId, res.title, res.year, res.season,res.episode,  callback, subtitleCallback)

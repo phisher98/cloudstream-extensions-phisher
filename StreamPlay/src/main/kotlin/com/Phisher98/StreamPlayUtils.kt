@@ -1279,7 +1279,7 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
 @RequiresApi(Build.VERSION_CODES.O)
 fun generateVrfAES(movieId: String, userId: String): String {
     // Step 1: Derive key = SHA-256("hack_" + userId)
-    val driveKey = base64Decode("MmpFWUwzSlJ4Qg==")
+    val driveKey = base64Decode("emgmNzJjaU8zOXRnSDU=")
     val keyData = "${driveKey}_$userId".toByteArray(Charsets.UTF_8)
     val keyBytes = MessageDigest.getInstance("SHA-256").digest(keyData)
     val keySpec = SecretKeySpec(keyBytes, "AES")

@@ -44,7 +44,6 @@ import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.FormBody
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -55,7 +54,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
@@ -5164,18 +5162,23 @@ object StreamPlayExtractor : StreamPlay() {
         imdbId: String?,
         season: Int? = null,
         episode: Int? = null,
+        token: String,
         callback: (ExtractorLink) -> Unit,
     ) {
         if (imdbId.isNullOrBlank()) return
-
+        Log.d("Phisher",token)
         val api = buildString {
             append(BuildConfig.Nuviostreams)
+            token.substringAfter("ui=")
+                .takeIf(String::isNotBlank)
+                ?.let {
+                    append("/cookie=${URLEncoder.encode("[$it]", "UTF-8")}/region=USA7")
+                }
             append("/stream/")
-            if (season == null) {
-                append("movie/$imdbId.json")
-            } else {
-                append("series/$imdbId:$season:$episode.json")
-            }
+            append(if (season == null)
+                "movie/$imdbId.json"
+            else
+                "series/$imdbId:$season:$episode.json")
         }
 
         val response = app.get(api).parsedSafe<NuvioStreams>() ?: return
