@@ -60,7 +60,7 @@ class FourKHDHub : MainAPI() {
         val results = document.select("div.card-grid a").mapNotNull {
                 it.toSearchResult()
         }
-        return newHomePageResponse(request.name, results)
+        return newHomePageResponse(request.name, results, true)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {

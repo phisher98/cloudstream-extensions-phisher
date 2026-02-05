@@ -86,9 +86,8 @@ class XDMovies : MainAPI() {
         return newHomePageResponse(
             list = HomePageList(
                 name = request.name,
-                list = home,
-                isHorizontalImages = false
-            ),
+                list = home
+                ),
             hasNext = true
         )
     }
