@@ -2022,7 +2022,6 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeTopMovies(
         imdbId: String? = null,
-        year: Int? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -2114,7 +2113,6 @@ object StreamPlayExtractor : StreamPlay() {
     suspend fun invokeMoviesmod(
         title: String?=null,
         imdbId: String? = null,
-        year: Int? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -2124,7 +2122,6 @@ object StreamPlayExtractor : StreamPlay() {
         invokeModflix(
             title = title,
             imdbId = imdbId,
-            year = year,
             season = season,
             episode = episode,
             subtitleCallback = subtitleCallback,
@@ -2137,7 +2134,6 @@ object StreamPlayExtractor : StreamPlay() {
     private suspend fun invokeModflix(
         title: String?,
         imdbId: String? = null,
-        year: Int? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -5186,13 +5182,13 @@ object StreamPlayExtractor : StreamPlay() {
         response.streams.forEach { stream ->
             callback.invoke(
                 newExtractorLink(
-                    name = "NuvioStreams ${stream.name}",
+                    name = "NuvioStreams ${stream.name.substringBefore("-")}",
                     source = "NuvioStreams",
                     url = stream.url,
                     type = INFER_TYPE
                 )
                 {
-                    this.quality = getQualityFromName(stream.name)
+                    this.quality = getIndexQuality(stream.name)
                 }
             )
         }

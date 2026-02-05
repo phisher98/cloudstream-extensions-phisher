@@ -88,10 +88,12 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
         },
         Provider("topmovies", "Top Movies") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeTopMovies(res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeTopMovies(res.imdbId,
+                res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesmod", "MoviesMod") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMoviesmod(res.title,res.imdbId, res.year, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isAnime) invokeMoviesmod(res.title,res.imdbId,
+                res.season, res.episode, subtitleCallback, callback)
         },
         Provider("bollyflix", "Bollyflix") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeBollyflix(res.imdbId, res.season, res.episode, subtitleCallback, callback)
