@@ -97,7 +97,8 @@ class Animesalt : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).documentLarge
         val title =document.selectFirst("h1")?.text()?: throw NotImplementedError("Unable to find title")
-        val poster = fixUrlNull(document.selectFirst("div.bgft img")?.attr("data-src"))
+        val poster = fixUrlNull(document.selectFirst("div.bd > div:nth-child(1) > img")?.attr("src"))
+        val backgroundposter = fixUrlNull(document.selectFirst("div.bgft img")?.attr("data-src"))
         val sections = listOf("Genres", "Languages")
         val tags: List<String> = sections.flatMap { label ->
             document.select("h4:contains($label)")
@@ -149,6 +150,7 @@ class Animesalt : MainAPI() {
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -157,6 +159,7 @@ class Animesalt : MainAPI() {
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
                 this.year = year
                 this.plot = description
                 this.tags = tags
