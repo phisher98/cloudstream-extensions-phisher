@@ -11,13 +11,18 @@ import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
 import com.phisher98.BuildConfig.SUPERSTREAM_THIRD_API
+import com.phisher98.BuildConfig.NuvFeb
+
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.net.URLEncoder
 import java.util.Locale
 
 object SuperStreamExtractor : SuperStream() {
@@ -219,6 +224,56 @@ object SuperStreamExtractor : SuperStream() {
                     suburl     // Use extracted URL
                 )
             )
+        }
+    }
+
+
+    suspend fun invokeSuperstreamFeb(
+        token: String? = null,
+        id: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (token.isNullOrEmpty()) return
+
+        val url = if (season == null) {
+            "$NuvFeb/api/media/movie/$id?cookie=${URLEncoder.encode(token, "UTF-8")}"
+        } else {
+            "$NuvFeb/api/media/tv/$id/$season/$episode?cookie=${URLEncoder.encode(token, "UTF-8")}"
+        }
+
+        val json = app.get(url).text
+        val parsed = Gson().fromJson(json, FebResponse::class.java)
+
+        parsed.versions.orEmpty().forEach { version ->
+            version.links.orEmpty().forEach { link ->
+                val streamUrl = link.url ?: return@forEach
+
+                val title = version.name
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(::cleanTitle)
+                    ?: "Stream"
+
+                val qualityName = link.quality.orEmpty()
+
+                callback.invoke(
+                    newExtractorLink(
+                        source = "SuperStream",
+                        name = buildString {
+                            append("SuperStream • ")
+                            append(title)
+                            if (qualityName.equals("ORG", ignoreCase = true)) {
+                                append(" • ORG")
+                            }
+                        },
+                        url = streamUrl,
+                        type = INFER_TYPE
+                    ) {
+                        quality = getQualityFromName(qualityName)
+                    }
+                )
+            }
         }
     }
 }

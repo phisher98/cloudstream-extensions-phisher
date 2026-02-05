@@ -45,6 +45,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.SuperStreamExtractor.invokeSubtitleAPI
 import com.phisher98.SuperStreamExtractor.invokeSuperstream
+import com.phisher98.SuperStreamExtractor.invokeSuperstreamFeb
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -554,6 +555,18 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                         invokeSuperstream(
                             token,
                             res.imdbId,
+                            res.season,
+                            res.episode,
+                            callback
+                        )
+                    }
+                },
+                {
+                    if (res.id!==null)
+                    {
+                        invokeSuperstreamFeb(
+                            token,
+                            res.id,
                             res.season,
                             res.episode,
                             callback

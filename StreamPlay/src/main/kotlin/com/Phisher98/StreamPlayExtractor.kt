@@ -5172,7 +5172,7 @@ object StreamPlayExtractor : StreamPlay() {
             token.substringAfter("ui=")
                 .takeIf(String::isNotBlank)
                 ?.let {
-                    append("/cookie=${URLEncoder.encode("[$it]", "UTF-8")}/region=USA7")
+                    append("/cookie=${URLEncoder.encode(it, "UTF-8")}/region=USA7")
                 }
             append("/stream/")
             append(if (season == null)
@@ -5191,6 +5191,9 @@ object StreamPlayExtractor : StreamPlay() {
                     url = stream.url,
                     type = INFER_TYPE
                 )
+                {
+                    this.quality = getQualityFromName(stream.name)
+                }
             )
         }
     }
