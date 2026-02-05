@@ -95,6 +95,7 @@ jobs:
           YFXENC: ${{ secrets.YFXENC }}
           YFXDEC: ${{ secrets.YFXDEC }}
           VideasyDEC: ${{ secrets.VideasyDEC }}
+          NuvFeb: ${{ secrets.NuvFeb }}
         run: |
           cd $GITHUB_WORKSPACE/src
           echo TMDB_API=$TMDB_API >> local.properties
@@ -145,6 +146,7 @@ jobs:
           echo YFXDEC=$YFXDEC >> local.properties
           echo YFXENC=$YFXENC >> local.properties
           echo VideasyDEC=$VideasyDEC >> local.properties
+          echo NuvFeb=$NuvFeb >> local.properties
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src
