@@ -111,7 +111,17 @@ class KisskhProvider : MainAPI() {
             ?.trim()
             ?: return null
 
-        val tmdbId = runCatching { fetchtmdb(cleanTitle.trim(),res.type == "Movie") }.getOrNull()
+        val year = res.releaseDate
+            ?.take(4)
+            ?.toIntOrNull()
+
+        val tmdbId = runCatching {
+            fetchtmdb(
+                title = cleanTitle,
+                year =  year,
+                isMovie = res.type == "Movie"
+            )
+        }.getOrNull()
 
         var tmdbTitle: String? = null
         var tmdbOverview: String? = null
@@ -140,8 +150,6 @@ class KisskhProvider : MainAPI() {
             var epAir: String? = null
             var epRating: Double? = null
             val season = Regex("""(?i)\bseason\s*(\d+)""").find(res.title.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
-            Log.d("Phisher",res.title.toString())
-            Log.d("Phisher",season.toString())
 
             tmdbSeasonCache[season]?.optJSONArray("episodes")?.let { arr ->
             for (i in 0 until arr.length()) {
