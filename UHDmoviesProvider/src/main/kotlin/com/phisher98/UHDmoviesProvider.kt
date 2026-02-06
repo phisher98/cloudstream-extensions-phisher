@@ -109,18 +109,8 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groupValues?.get(1)?.trim()?.substringBefore("(")?.substringBefore("Season")?.substringBefore("S0") ?: titleRaw.substringBefore("(").substringBefore("Season").substringBefore("S0")
-        val img = doc.selectFirst("div.entry-content p img")
-
-        val poster = img?.attr("srcset")
-            ?.split(",")
-            ?.map { it.trim() }
-            ?.maxByOrNull {
-                it.substringAfterLast(" ")
-                    .removeSuffix("w")
-                    .toIntOrNull() ?: 0
-            }
-            ?.substringBefore(" ")
-            ?: img?.attr("src")
+        val img = doc.selectFirst("div.entry-content > p img")
+        val poster = img?.attr("src")
         val collectionposter = doc.select("meta[property=og:image]").attr("content")
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
         val year = yearRegex.find(titleRaw)?.value?.toIntOrNull()
@@ -146,7 +136,6 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         }
 
         return if (type == TvType.TvSeries) {
-            val episodes = mutableListOf<Episode>()
             var pTags = doc.select("p:has(a:contains(Episode))")
             if (pTags.isEmpty())
             {
