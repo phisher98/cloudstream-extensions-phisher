@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -15,6 +16,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.Interceptor
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.json.JSONObject
 import java.util.ArrayList
 
 class KisskhProvider : MainAPI() {
@@ -26,6 +28,10 @@ class KisskhProvider : MainAPI() {
         TvType.AsianDrama,
         TvType.Anime
     )
+    companion object
+    {
+        const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
+    }
 
     override val mainPage = mainPageOf(
         "&type=0&sub=0&country=0&status=0&order=2" to "Latest",
@@ -100,17 +106,109 @@ class KisskhProvider : MainAPI() {
         ).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json reponse")
 
+        val cleanTitle = res.title
+            ?.replace(Regex("""(?i)\bseason\s*\d+.*"""), "")
+            ?.trim()
+            ?: return null
+
+        val tmdbId = runCatching { fetchtmdb(cleanTitle.trim(),res.type == "Movie") }.getOrNull()
+
+        var tmdbTitle: String? = null
+        var tmdbOverview: String? = null
+        var tmdbYear: Int? = null
+        var tmdbRating: Double? = null
+        var tmdbPoster: String? = null
+        var tmdbBackdrop: String? = null
+        var tmdbActors: List<ActorData> = emptyList()
+
+        val tmdbSeasonCache = mutableMapOf<Int, JSONObject?>()
+
+        if (tmdbId != null) {
+            val seasonsToFetch = listOf(1)
+            for (s in seasonsToFetch) {
+                tmdbSeasonCache[s] = runCatching {
+                    JSONObject(app.get("${TMDBAPI}/tv/$tmdbId/season/$s?api_key=1865f43a0549ca50d341dd9ab8b29f49").text)
+                }.getOrNull()
+            }
+        }
+
         val episodes = res.episodes?.map { eps ->
+
+            var epName: String? = null
+            var epOverview: String? = null
+            var epThumb: String? = null
+            var epAir: String? = null
+            var epRating: Double? = null
+            val season = Regex("""(?i)\bseason\s*(\d+)""").find(res.title.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
+            Log.d("Phisher",res.title.toString())
+            Log.d("Phisher",season.toString())
+
+            tmdbSeasonCache[season]?.optJSONArray("episodes")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                    val epObj = arr.optJSONObject(i) ?: continue
+                    val targetEp = eps.number?.toInt()
+                    if (targetEp != null && epObj.optInt("episode_number") == targetEp) {
+                        epName = epObj.optString("name").takeIf { it.isNotBlank() }
+                        epOverview = epObj.optString("overview").takeIf { it.isNotBlank() }
+                        epThumb = epObj.optString("still_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
+                        epAir = epObj.optString("air_date").takeIf { it.isNotBlank() }
+                        epRating = epObj.optDouble("vote_average").takeIf { !it.isNaN() && it > 0.0 }
+                        break
+                    }
+                }
+            }
 
             val displayNumber = eps.number?.let { num ->
                 if (num % 1.0 == 0.0) num.toInt().toString() else num.toString()
             } ?: ""
 
             newEpisode(Data(res.title, eps.number?.toInt(), res.id, eps.id).toJson()) {
-                this.name = "Episode $displayNumber"
+                this.name = epName ?: "Episode $displayNumber"
+                this.episode = eps.number?.toInt()
+                this.description = epOverview
+                this.posterUrl = epThumb
+                this.score = Score.from10(epRating)
+                addDate(epAir)
             }
 
         } ?: throw ErrorLoadingException("No Episode")
+
+
+        if (tmdbId != null) {
+            val type = if (res.type == "Movie" ) "movie" else "tv"
+            val tmdbJson = runCatching {
+                JSONObject(
+                    app.get("${TMDBAPI}/$type/$tmdbId?api_key=1865f43a0549ca50d341dd9ab8b29f49&append_to_response=credits")
+                        .textLarge
+                )
+            }.getOrNull()
+
+
+            if (tmdbJson != null) {
+                tmdbTitle = tmdbJson.optString("title").ifBlank { tmdbJson.optString("name").ifBlank { null } }
+                tmdbOverview = tmdbJson.optString("overview").takeIf { it.isNotBlank() }
+                val date = tmdbJson.optString("release_date").ifBlank { tmdbJson.optString("first_air_date") }
+                tmdbYear = date.takeIf { it.isNotBlank() }?.substringBefore("-")?.toIntOrNull()
+                tmdbRating = tmdbJson.optDouble("vote_average").takeIf { it != 0.0 }
+                tmdbPoster = tmdbJson.optString("poster_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
+                tmdbBackdrop = tmdbJson.optString("backdrop_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
+
+                tmdbActors = buildList {
+                    tmdbJson.optJSONObject("credits")
+                        ?.optJSONArray("cast")
+                        ?.let { arr ->
+                            for (i in 0 until arr.length()) {
+                                val obj = arr.optJSONObject(i) ?: continue
+                                val name = obj.optString("name").takeIf { it.isNotBlank() } ?: obj.optString("original_name").takeIf { it.isNotBlank() }
+                                if (name.isNullOrBlank()) continue
+                                val profile = obj.optString("profile_path").takeIf { it.isNotBlank() }?.let { TMDBIMAGEBASEURL + it }
+                                val character = obj.optString("character").takeIf { it.isNotBlank() }
+                                add(ActorData(Actor(name, profile), roleString = character))
+                            }
+                        }
+                }
+            }
+        }
 
 
         return newTvSeriesLoadResponse(
@@ -119,10 +217,12 @@ class KisskhProvider : MainAPI() {
             if (res.type == "Movie" || episodes.size == 1) TvType.Movie else TvType.TvSeries,
             episodes.reversed()
         ) {
-            this.posterUrl = res.thumbnail
+            this.posterUrl = tmdbPoster ?: res.thumbnail
+            this.backgroundPosterUrl = tmdbBackdrop ?: tmdbPoster ?: res.thumbnail
             this.year = res.releaseDate?.split("-")?.first()?.toIntOrNull()
-            this.plot = res.description
+            this.plot = res.description ?: tmdbOverview
             this.tags = listOf("${res.country}", "${res.status}", "${res.type}")
+            this.actors = tmdbActors
             this.showStatus = when (res.status) {
                 "Completed" -> ShowStatus.Completed
                 "Ongoing" -> ShowStatus.Ongoing
