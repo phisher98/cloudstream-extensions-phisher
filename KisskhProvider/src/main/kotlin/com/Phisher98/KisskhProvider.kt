@@ -115,13 +115,26 @@ class KisskhProvider : MainAPI() {
             ?.take(4)
             ?.toIntOrNull()
 
-        val tmdbId = runCatching {
-            fetchtmdb(
-                title = cleanTitle,
-                year =  year,
-                isMovie = res.type == "Movie"
-            )
-        }.getOrNull()
+        val type = res.type?.lowercase()
+
+        val tmdbId =
+            if (type == "anime") {
+                null
+            } else {
+                val isMovie = type in setOf(
+                    "movie",
+                    "hollywood",
+                    "bollywood"
+                )
+
+                runCatching {
+                    fetchtmdb(
+                        title = cleanTitle,
+                        year = year,
+                        isMovie = isMovie
+                    )
+                }.getOrNull()
+            }
 
         var tmdbTitle: String? = null
         var tmdbOverview: String? = null
