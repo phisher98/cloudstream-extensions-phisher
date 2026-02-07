@@ -380,6 +380,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val cinetype = if (type == TvType.TvSeries) "series" else "movie"
         val cineRes = app.get("$Cinemeta/meta/$cinetype/${res.external_ids?.imdb_id}.json").parsedSafe<CinemetaRes>()
 
+
+        val comingSoonFlag = when (res.status?.lowercase()) {
+            "released" -> false
+            "post production", "in production", "planned" -> true
+            else -> isUpcoming(releaseDate)
+        }
+
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = coroutineScope {
@@ -539,7 +546,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgPoster
-                this.comingSoon = isUpcoming(releaseDate)
+                this.comingSoon = comingSoonFlag
                 this.year = year
                 this.plot = res.overview
                 this.duration = res.runtime

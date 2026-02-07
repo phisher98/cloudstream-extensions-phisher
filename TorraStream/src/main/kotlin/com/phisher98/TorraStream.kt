@@ -190,6 +190,12 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val trailer =
             res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
 
+        val comingSoonFlag = when (res.status?.lowercase()) {
+            "released" -> false
+            "post production", "in production", "planned" -> true
+            else -> isUpcoming(releaseDate) // fallback
+        }
+
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
@@ -239,7 +245,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 LoadData(res.title,year,isAnime,res.external_ids?.imdb_id).toJson()
             ) {
                 this.posterUrl = poster
-                this.comingSoon = isUpcoming(releaseDate)
+                this.comingSoon = comingSoonFlag
                 this.backgroundPosterUrl = bgPoster
                 this.year = year
                 this.plot = res.overview
