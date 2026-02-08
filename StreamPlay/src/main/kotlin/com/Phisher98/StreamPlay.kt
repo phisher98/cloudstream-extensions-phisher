@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -217,7 +218,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val soapy = "https://soapy.to"
         const val vidlink = "https://vidlink.pro"
         const val cinemaOSApi = "https://cinemaos.tech"
-        const val mappleTvApi = "https://mapple.uk"
         const val mp4hydra = "https://mp4hydra.org"
         const val vidfastProApi = "https://vidfast.pro"
         const val vidPlusApi = "https://player.vidplus.to"
@@ -231,6 +231,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val hexaSU = "https://themoviedb.hexa.su"
         const val bidSrc = "https://bidsrc.pro"
         const val flixindia = "https://m.flixindia.xyz"
+        val succcbots = base64Decode("aHR0cHM6Ly91c2VuZXQuc3VjY2Nib3RzLndvcmtlcnMuZGV2")
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

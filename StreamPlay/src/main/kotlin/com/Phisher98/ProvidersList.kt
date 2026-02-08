@@ -38,6 +38,7 @@ import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
+import com.phisher98.StreamPlayExtractor.invokeSucccbots
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeToonstream
 import com.phisher98.StreamPlayExtractor.invokeTopMovies
@@ -147,8 +148,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, _, _ ->
-            invokeMoviesdrive(res.title, res.season, res.episode,
-                res.imdbId, subtitleCallback, callback)
+            invokeMoviesdrive(res.title, res.season, res.episode, res.imdbId, subtitleCallback, callback)
         },
         Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
@@ -252,10 +252,13 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokBidsrc(res.id, res.season, res.episode, callback)
         },
         Provider("flixindia", "FlixIndia (Multi)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback,callback)
+            if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("Hindmoviez", "HindMoviez (Multi)") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode,callback)
+            if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, callback)
+        },
+        Provider("Succcbots", "Succcbots (Multi)") { res, _, callback, _, _ ->
+            invokeSucccbots(res.title, res.season, res.episode, callback)
         },
     )
 }
