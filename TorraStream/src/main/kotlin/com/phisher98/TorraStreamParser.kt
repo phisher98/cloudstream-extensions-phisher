@@ -374,3 +374,126 @@ data class TmdbDate(
     val lastWeekStart: String,
     val monthStart: String
 )
+
+data class CinemetaRes(
+    val meta: Meta? = null
+) {
+
+    data class Meta(
+        val id: String? = null,
+        val type: String? = null,
+        val name: String? = null,
+
+        @JsonProperty("imdb_id")
+        val imdbId: String? = null,
+
+        val slug: String? = null,
+
+        val director: String? = null,
+        val writer: String? = null,
+
+        val description: String? = null,
+        val year: String? = null,
+        val releaseInfo: String? = null,
+        val released: String? = null,
+        val runtime: String? = null,
+        val status: String? = null,
+        val country: String? = null,
+        val imdbRating: String? = null,
+        val genres: List<String>? = null,
+        val poster: String? = null,
+        @JsonProperty("_rawPosterUrl")
+        val rawPosterUrl: String? = null,
+
+        val background: String? = null,
+        val logo: String? = null,
+
+        val videos: List<Video>? = null,
+        val trailers: List<Trailer>? = null,
+        val trailerStreams: List<TrailerStream>? = null,
+        val links: List<Link>? = null,
+
+        val behaviorHints: BehaviorHints? = null,
+
+        @JsonProperty("app_extras")
+        val appExtras: AppExtras? = null,
+    ) {
+
+        data class BehaviorHints(
+            val defaultVideoId: Any? = null,
+            val hasScheduledVideos: Boolean? = null
+        )
+
+        data class Link(
+            val name: String? = null,
+            val category: String? = null,
+            val url: String? = null
+        )
+
+        data class Trailer(
+            val source: String? = null,
+            val type: String? = null,
+            val name: String? = null
+        )
+
+        data class TrailerStream(
+            val ytId: String? = null,
+            val title: String? = null
+        )
+
+        data class Video(
+            val id: String? = null,
+            val title: String? = null,
+            val season: Int? = null,
+            val episode: Int? = null,
+            val thumbnail: String? = null,
+            val overview: String? = null,
+            val released: String? = null,
+            val available: Boolean? = null,
+            val runtime: String? = null
+        )
+
+        data class AppExtras(
+            val cast: List<Cast>? = null,
+            val directors: List<Any?>? = null,
+            val writers: List<Any?>? = null,
+            val seasonPosters: List<String?>? = null,
+            val certification: String? = null
+        )
+
+        data class Cast(
+            val name: String? = null,
+            val character: String? = null,
+            val photo: String? = null
+        )
+    }
+}
+
+data class LinkData(
+    val id: Int? = null,
+    val imdbId: String? = null,
+    val tvdbId: Int? = null,
+    val type: String? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    val epid: Int? = null,
+    val aniId: String? = null,
+    val animeId: String? = null,
+    val title: String? = null,
+    val year: Int? = null,
+    val orgTitle: String? = null,
+    val isAnime: Boolean = false,
+    val airedYear: Int? = null,
+    val lastSeason: Int? = null,
+    val epsTitle: String? = null,
+    val jpTitle: String? = null,
+    val date: String? = null,
+    val airedDate: String? = null,
+    val isAsian: Boolean = false,
+    val isBollywood: Boolean = false,
+    val isCartoon: Boolean = false,
+    val alttitle: String? = null,
+    val nametitle: String? = null,
+    val isDub: Boolean = false,
+    val isMovie: Boolean? = false,
+)

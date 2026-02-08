@@ -4,10 +4,12 @@ import android.content.SharedPreferences
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -17,11 +19,13 @@ import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -54,6 +58,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
     companion object {
         const val OnethreethreesevenxAPI = "https://proxy.phisher2.workers.dev/?url=https://1337x.to"
         const val MediafusionApi = "https://mediafusion.elfhosted.com/D-_ru4-xVDOkpYNgdQZ-gA6whxWtMNeLLsnAyhb82mkks4eJf4QTlrAksSeBnwFAbIGWQLaokCGFxxsHupxSVxZO8xhhB2UYnyc5nnLeDnIqiLajtkmaGJMB_ZHqMqSYIU2wcGhrw0s4hlXeRAfnnbDywHCW8DLF_ZZfOXYUGPzWS-91cvu7kA2xPs0lJtcqZO"
+        private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         const val ThePirateBayApi = "https://thepiratebay-plus.strem.fun"
         const val AIOStreams = "https://aiostreams.elfhosted.com/E2-xLzptGhmwLnA9L%2FOUHyZJg%3D%3D-Io2cJBStOrbqlmGwGz2ZwBbMGBj5enyJFgN5XcslkuiUS5KSjJrv90yd4HHLj1fyq6hJm7QpnCxDiPqbeOwdGA2yySllUQh2T%2B5qPqgtPt2sWBN5zdeetbiFFLHvVqq0PZOhKGM7pv2LzCoMLAk%2BSo86mcrzWIeszmvHuRMoKX3zBO6hUDvH6oqK2hFfbUF7ZONMdm9jE7lHp0LuXKPzHSwKUvDZroJ9iRgBkvHIGjJL65oBv2PxfQK%2Fu4gYEuLVhH3dQ7Xu6i1AshdxycCPRQOO2LcDDZkBC84zLXoy3DDPkvDkWBv2icVZIs2dnQlwvtfu7fFiXaGxWJxtYvbBALIhey8SaaeCKts8xMEyuJvSZiKBbkiTblb0NbqfRyGoJz5rJkiCPzlnX6S%2BpNHKNXVYRj2QZmmvN47fdteAZfhvCuNRW1XBP%2FhTr5ufzCQ9tC8ao%2F4ZhoVXPje45mgPpeJy%2FqYGkX36%2BDgjUMGM1SIvm416pHFL1fVG9MQlIdTn2T4VaUHA0dZHXxznaSQDB%2F1GIkDCHOp2iWUl8zceINOE08AI%2BUwmWCnVXsvsXYaTbFnsE%2F0n1zQwN19ULRCnO4AN2KKLfWKHCz9q5YwQG6y9r%2BXTkjtAXoju764x1f2UlFZT8aavjX1oAcPiTC5vA%3D%3D"
         const val PeerflixApi = "https://peerflix.mov"
@@ -171,8 +176,12 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
         val genres = res.genres?.mapNotNull { it.name }
-        val isAnime =
-            genres?.contains("Animation") == true && (res.original_language == "zh" || res.original_language == "ja")
+        val isCartoon = genres?.contains("Animation") ?: false
+        val isAnime = isCartoon && (res.original_language == "zh" || res.original_language == "ja")
+        val isAsian = !isAnime && (res.original_language == "zh" || res.original_language == "ko")
+        val isBollywood = res.production_countries?.any { it.name == "India" } ?: false
+
+
         val keywords = res.keywords?.results?.mapNotNull { it.name }.orEmpty()
             .ifEmpty { res.keywords?.keywords?.mapNotNull { it.name } }
 
@@ -184,17 +193,24 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 ), roleString = cast.character
             )
         } ?: return null
-        val recommendations =
-            res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
 
-        val trailer =
-            res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
+        val recommendations = res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
+
+        val trailer = res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
 
         val comingSoonFlag = when (res.status?.lowercase()) {
             "released" -> false
             "post production", "in production", "planned" -> true
             else -> isUpcoming(releaseDate) // fallback
         }
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = res.id,
+            appLangCode = "en"
+        )
 
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
@@ -220,8 +236,76 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                     }
             }?.flatten() ?: listOf()
 
+            if (isAnime) {
+                val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
+                val imdbId = res.external_ids?.imdb_id.orEmpty()
+                val cineRes = app.get("$Cinemeta/meta/$animeType/$imdbId.json").parsedSafe<CinemetaRes>()
+                val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
+                val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
+                    ?: cineRes?.meta?.name
+                val syncMetaData = app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").toString()
+                val animeMetaData = parseAnimeData(syncMetaData)
+                val kitsuid = animeMetaData?.mappings?.kitsuid
+                fun buildEpisodeList(isDub: Boolean) = animeVideos.map { video ->
+                    val videoYear = video.released?.split("-")?.firstOrNull()?.toIntOrNull()
+                        ?: cineRes?.meta?.year?.toIntOrNull() ?: 0
+
+                    newEpisode(
+                        LinkData(
+                            id = data.id,
+                            imdbId = imdbId,
+                            tvdbId = res.external_ids?.tvdb_id,
+                            type = data.type,
+                            season = video.season,
+                            episode = video.episode,
+                            title = title,
+                            year = videoYear,
+                            orgTitle = "",
+                            isAnime = true,
+                            airedYear = year,
+                            epsTitle = video.title,
+                            jpTitle = jpTitle,
+                            date = video.released,
+                            airedDate = res.releaseDate ?: res.firstAirDate,
+                            isAsian = isAsian,
+                            isBollywood = isBollywood,
+                            isCartoon = isCartoon,
+                            alttitle = res.title,
+                            nametitle = res.name,
+                            isDub = isDub
+                        ).toJson()
+                    ) {
+                        this.name = video.title + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
+                        this.season = video.season
+                        this.episode = video.episode
+                        this.posterUrl = video.thumbnail
+                        this.description = video.overview
+                        addDate(video.released)
+                    }
+                }
+
+                return newAnimeLoadResponse(title, url, TvType.Anime) {
+                    addEpisodes(DubStatus.Subbed, buildEpisodeList(isDub = false))
+                    this.posterUrl = poster
+                    this.backgroundPosterUrl = bgPoster
+                    try { this.logoUrl = logoUrl } catch(_:Throwable){}
+                    this.year = year
+                    this.plot = res.overview
+                    this.tags = keywords?.map { it.replaceFirstChar { c -> c.titlecase() } }
+                        ?.takeIf { it.isNotEmpty() } ?: genres
+                    this.score = Score.from10(res.vote_average.toString())
+                    this.showStatus = getStatus(res.status)
+                    this.recommendations = recommendations
+                    this.actors = actors
+                    addTrailer(trailer)
+                    try { addKitsuId(kitsuid) } catch(_:Throwable){}
+                    this.contentRating = cineRes?.meta?.appExtras?.certification
+                    addImdbId(imdbId)
+                }
+            }
+
             newTvSeriesLoadResponse(
-                title, url, if (isAnime) TvType.Anime else TvType.TvSeries, episodes
+                title, url, TvType.TvSeries, episodes
             ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgPoster
@@ -238,7 +322,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 addImdbId(res.external_ids?.imdb_id)
             }
         } else {
-            newMovieLoadResponse(
+            return newMovieLoadResponse(
                 title,
                 url,
                 TvType.Movie,
