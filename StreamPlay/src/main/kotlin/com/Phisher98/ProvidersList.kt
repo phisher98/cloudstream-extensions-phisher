@@ -256,9 +256,6 @@ fun buildProviders(): List<Provider> {
         },
         Provider("Hindmoviez", "HindMoviez (Multi)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, callback)
-        },
-        Provider("Succcbots", "Succcbots (Multi)") { res, _, callback, _, _ ->
-            invokeSucccbots(res.title, res.season, res.episode, callback)
-        },
+        }
     )
 }
