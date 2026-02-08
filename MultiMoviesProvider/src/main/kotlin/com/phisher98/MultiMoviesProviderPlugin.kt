@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.extractors.VidHidePro5
 import com.lagradost.cloudstream3.extractors.VidHidePro6
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.GDMirrorbot
 
 
 @CloudstreamPlugin
