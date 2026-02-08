@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
 class Toonstream : MainAPI() {
-    override var mainUrl              = "https://toonstream.one"
+    override var mainUrl              = "https://toonstream.dad"
     override var name                 = "Toonstream"
     override val hasMainPage          = true
     override var lang                 = "hi"
