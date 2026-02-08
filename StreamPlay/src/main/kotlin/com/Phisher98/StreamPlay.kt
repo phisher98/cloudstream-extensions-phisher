@@ -232,6 +232,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val bidSrc = "https://bidsrc.pro"
         const val flixindia = "https://m.flixindia.xyz"
         val succcbots = base64Decode("aHR0cHM6Ly91c2VuZXQuc3VjY2Nib3RzLndvcmtlcnMuZGV2")
+        const val sudatchi = "https://sudatchi.com"
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

@@ -684,8 +684,7 @@ object StreamPlayExtractor : StreamPlay() {
                 if (aniXL != null) {
                     invokeAniXL(aniXL, episode, callback, dubStatus)
                 }
-            }
-
+            },
             )
     }
 
@@ -1644,6 +1643,82 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+
+    internal suspend fun invokeSudatchi(
+        animeId: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (animeId == null) return
+        val ep = episode ?: 1
+        try {
+            val meta = JSONObject(app.get("$sudatchi/api/anime/$animeId").text)
+
+            val episodes = meta.optJSONArray("episodes")
+                ?: run {
+                Log.d("Sudatchi", "No episodes array")
+                    return
+                }
+
+            if (episodes.length() == 0) {
+                Log.d("Sudatchi", "No episodes array")
+                return
+            }
+
+            val epObj = episodes.optJSONObject(ep - 1)
+                ?: run {
+                    Log.d("Sudatchi", "Episode not found: $ep")
+                    return
+                }
+
+            val episodeId = epObj.optInt("id")
+            if (episodeId == 0) {
+                Log.d("Sudatchi", "Invalid episodeId")
+                return
+            }
+
+            callback(
+                newExtractorLink(
+                    "Sudatchi",
+                    "Sudatchi",
+                    "$sudatchi/api/streams?episodeId=$episodeId",
+                    ExtractorLinkType.M3U8
+                ) {
+                    this.quality = Qualities.P1080.value
+                }
+            )
+
+            epObj.optJSONArray("Subtitles")?.let { subs ->
+                for (i in 0 until subs.length()) {
+                    subs.optJSONObject(i)?.let { s ->
+
+                        val url = s.optString("url")
+                        if (url.isBlank()) return@let
+
+                        val name = s
+                            .optJSONObject("SubtitlesName")
+                            ?.optString("name")
+                            ?.ifBlank { null }
+                            ?: ""
+
+                        subtitleCallback(
+                            newSubtitleFile(
+                                name.capitalize(),
+                                "$sudatchi$url"
+                            )
+                        )
+                    }
+                }
+            }
+
+
+        } catch (_: Exception) {
+            Log.e("Sudatchi", "Failed")
+        }
+    }
+
 
     suspend fun invokeUhdmovies(
         title: String? = null,
