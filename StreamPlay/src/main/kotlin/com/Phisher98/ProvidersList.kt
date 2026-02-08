@@ -38,7 +38,6 @@ import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
-import com.phisher98.StreamPlayExtractor.invokeSucccbots
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeToonstream
 import com.phisher98.StreamPlayExtractor.invokeTopMovies
