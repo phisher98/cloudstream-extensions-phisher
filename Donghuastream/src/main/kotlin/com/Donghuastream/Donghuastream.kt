@@ -57,12 +57,20 @@ open class Donghuastream : MainAPI() {
         )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
+    fun Element.toSearchResult(): SearchResponse {
         val title     = this.select("div.bsx > a").attr("title")
         val href      = fixUrl(this.select("div.bsx > a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.bsx a img").attr("data-src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.bsx a img")?.getImageAttr())
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+        }
+    }
+
+    private fun Element.getImageAttr(): String {
+        return when {
+            this.hasAttr("data-src") -> this.attr("data-src")
+            this.hasAttr("src") -> this.attr("src")
+            else -> this.attr("src")
         }
     }
 
@@ -71,7 +79,7 @@ open class Donghuastream : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
+            val document = app.get("${mainUrl}/pagg/$i/?s=$query").documentLarge
 
             val results = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
 

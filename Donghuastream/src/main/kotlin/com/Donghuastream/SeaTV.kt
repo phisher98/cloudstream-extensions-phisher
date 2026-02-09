@@ -1,5 +1,6 @@
 package com.Donghuastream
 
+import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
@@ -28,6 +29,26 @@ open class SeaTV : Donghuastream() {
         "anime/?status=completed&type=&order=update" to "Completed",
         "anime/?status=upcoming&type=&sub=&order=" to "Upcoming",
     )
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchResponse = mutableListOf<SearchResponse>()
+
+        for (i in 1..3) {
+            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
+
+            val results = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
+
+            if (!searchResponse.containsAll(results)) {
+                searchResponse.addAll(results)
+            } else {
+                break
+            }
+
+            if (results.isEmpty()) break
+        }
+
+        return searchResponse
+    }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).documentLarge
