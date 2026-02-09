@@ -276,7 +276,12 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                val link = source.substringAfter("\"").substringBefore("\"").trim()
+                val link = Regex("""SRC="(https?:[^"]+)""" , RegexOption.IGNORE_CASE)
+                    .find(source)
+                    ?.groupValues?.getOrNull(1)
+                    ?.replace("\t", "")
+                    ?.trim()
+                    ?: source.substringAfter("\"").substringBefore("\"").trim()
                 when {
                     !link.contains("youtube") -> {
                         if (link.contains("deaddrive.xyz")) {
