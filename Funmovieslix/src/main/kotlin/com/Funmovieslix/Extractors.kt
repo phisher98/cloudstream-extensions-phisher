@@ -80,7 +80,7 @@ class VideyV2 : ExtractorApi() {
                 this.name,
                 this.name,
                 decrypted,
-                if (decrypted.endsWith(".mp4")) ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                if (decrypted.contains(".mp4")) ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
             )
             {
                 this.referer = url
