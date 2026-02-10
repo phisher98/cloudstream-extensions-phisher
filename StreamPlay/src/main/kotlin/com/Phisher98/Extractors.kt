@@ -5,7 +5,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
@@ -284,12 +283,11 @@ class VCloud : ExtractorApi() {
         val document = runCatching { app.get(urlValue).documentLarge }.getOrNull() ?: return
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
-
         val headerdetails = cleanTitle(header)
 
         val labelExtras = buildString {
-            if (headerdetails.isNotEmpty()) append("[$headerdetails]")
-            if (size.isNotEmpty()) append("[$size]")
+            if (headerdetails.isNotEmpty()) append(headerdetails)
+            if (size.isNotEmpty()) append(" [$size]")
         }
 
         val div = document.selectFirst("div.card-body") ?: return
@@ -305,7 +303,7 @@ class VCloud : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             "FSL Server",
-                            "FSL Server",
+                            "FSL Server $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -1024,7 +1022,7 @@ class HubCloud : ExtractorApi() {
 
         val labelExtras = buildString {
             if (headerDetails.isNotEmpty()) append("[$headerDetails]")
-            if (size.isNotEmpty()) append("[$size]")
+            if (size.isNotEmpty()) append(" [$size]")
         }
 
         document.select("a.btn").forEach { element ->
@@ -1361,13 +1359,18 @@ open class Driveseed : ExtractorApi() {
         }
 
         val qualityText = document.selectFirst("li.list-group-item")?.text().orEmpty()
-        val rawFileName = qualityText.replace("Name : ", "").trim()
-        val fileName = cleanTitle(rawFileName)
-        val size = document.selectFirst("li:nth-child(3)")?.text().orEmpty().replace("Size : ", "").trim()
+        val parsed = cleanTitle(qualityText.substringAfter(":").trim())
+        val size = document
+            .selectFirst("li:nth-child(3)")
+            ?.text()
+            ?.substringAfter(":")?.substringBefore("\n")
+            ?.trim()
+            .orEmpty()
+
 
         val labelExtras = buildString {
-            if (fileName.isNotEmpty()) append("[$fileName]")
-            if (size.isNotEmpty()) append("[$size]")
+            if (parsed.isNotEmpty()) append(parsed)
+            if (size.isNotEmpty()) append(" [$size]")
         }
 
         document.select("div.text-center > a").forEach { element ->
@@ -1436,7 +1439,7 @@ open class Driveseed : ExtractorApi() {
                     text.contains("Cloud Download", ignoreCase = true) -> {
                         callback(
                             newExtractorLink(
-                                "$name Cloud Download",
+                                "$name Cloud Download $labelExtras",
                                 "$name Cloud Download $labelExtras",
                                 url = href
                             ) {
@@ -1447,6 +1450,54 @@ open class Driveseed : ExtractorApi() {
                 }
             }
         }
+    }
+
+    private fun cleanTitle(title: String): String {
+
+        val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
+
+        val normalized = name
+            .replace(Regex("WEB[-_. ]?DL", RegexOption.IGNORE_CASE), "WEB-DL")
+            .replace(Regex("WEB[-_. ]?RIP", RegexOption.IGNORE_CASE), "WEBRIP")
+            .replace(Regex("H[ .]?265", RegexOption.IGNORE_CASE), "H265")
+            .replace(Regex("H[ .]?264", RegexOption.IGNORE_CASE), "H264")
+            .replace(Regex("DDP[ .]?([0-9]\\.[0-9])", RegexOption.IGNORE_CASE), "DDP$1")
+
+        val parts = normalized.split(" ", "_", ".")
+
+        val sourceTags = setOf(
+            "WEB-DL", "WEBRIP", "BLURAY", "HDRIP",
+            "DVDRIP", "HDTV", "CAM", "TS", "BRRIP", "BDRIP"
+        )
+
+        val codecTags = setOf("H264", "H265", "X264", "X265", "HEVC", "AVC")
+
+        val audioTags = setOf("AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3")
+
+        val audioExtras = setOf("ATMOS")
+
+        val hdrTags = setOf("SDR","HDR", "HDR10", "HDR10+", "DV", "DOLBYVISION")
+
+        val filtered = parts.mapNotNull { part ->
+            val p = part.uppercase()
+
+            when {
+                sourceTags.contains(p) -> p
+                codecTags.contains(p) -> p
+                audioTags.any { p.startsWith(it) } -> p
+                audioExtras.contains(p) -> p
+                hdrTags.contains(p) -> {
+                    when (p) {
+                        "DV", "DOLBYVISION" -> "DOLBYVISION"
+                        else -> p
+                    }
+                }
+                p == "NF" || p == "CR" -> p
+                else -> null
+            }
+        }
+
+        return filtered.distinct().joinToString(" ")
     }
 }
 
@@ -2028,7 +2079,7 @@ class Gofile : ExtractorApi() {
             callback.invoke(
                 newExtractorLink(
                     "Gofile",
-                    "Gofile [$sizeFormatted]",
+                    "Gofile [ $sizeFormatted]",
                     link
                 ) {
                     this.quality = getQuality(fileName)

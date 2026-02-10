@@ -1726,100 +1726,71 @@ object StreamPlayExtractor : StreamPlay() {
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit,
+        subtitleCallback: (SubtitleFile) -> Unit
     ) {
         val uhdmoviesAPI = getDomains()?.uhdmovies ?: return
-        val searchTitle = title?.replace("-", " ")?.replace(":", " ") ?: return
 
-        val searchUrl = if (season != null) {
-            "$uhdmoviesAPI/search/$searchTitle $year"
-        } else {
-            "$uhdmoviesAPI/search/$searchTitle"
-        }
+        val redirectRegex = Regex("""window\.location\.replace\(["'](.*?)["']\)""")
 
-        // Fetch search page
-        val url = try {
-            val response = app.get(searchUrl)
-            if (response.code != 200) {
-                Log.e("UHDMovies", "Search page returned ${response.code}")
-                return
-            }
+        val searchTitle = title
+            ?.replace("-", " ")
+            ?.replace(":", " ")
+            ?: return
 
-            response.documentLarge
-                .select("article div.entry-image a")
-                .firstOrNull()
-                ?.attr("href")
-                ?.takeIf(String::isNotBlank)
-                ?: return
-        } catch (e: Exception) {
-            Log.e("UHDMovies", "Search error: ${e.localizedMessage}")
-            return
-        }
+        val url = app.get("$uhdmoviesAPI/search/$searchTitle $year")
+            .document
+            .selectFirst("article div.entry-image a")
+            ?.attr("href")
+            ?: return
 
-        // Fetch main page
-        val doc = try {
-            val response = app.get(url)
-            if (response.code != 200) {
-                Log.e("UHDMovies", "Main page returned ${response.code}")
-                return
-            }
-            response.documentLarge
-        } catch (e: Exception) {
-            Log.e("UHDMovies", "Main page load failed: ${e.localizedMessage}")
-            return
-        }
-
-        val seasonPattern = season?.let { "(?i)(S0?$it|Season 0?$it)" }
-        val episodePattern = episode?.let { "(?i)(Episode $it)" }
+        val doc = app.get(url).document
 
         val selector = if (season == null) {
             "div.entry-content p:matches($year)"
         } else {
-            "div.entry-content p:matches($seasonPattern)"
+            "div.entry-content p:matches((?i)(S0?$season|Season 0?$season))"
         }
 
         val epSelector = if (season == null) {
             "a:matches((?i)(Download))"
         } else {
-            "a:matches($episodePattern)"
+            "a:matches((?i)(Episode $episode))"
         }
 
         val links = doc.select(selector).mapNotNull {
-            it.nextElementSibling()?.select(epSelector)?.attr("href")
+            it.nextElementSibling()
+                ?.select(epSelector)
+                ?.attr("href")
+                ?.takeIf(String::isNotBlank)
         }
-        try {
-            for (link in links) {
-                if (link.isBlank()) {
-                    continue
-                }
-                val finalLink = if (link.contains("unblockedgames")) {
-                    bypassHrefli(link)
-                } else {
-                    link
+
+        links.amap { link ->
+            val lower = link.lowercase()
+
+            val driveLink = when {
+                "driveleech" in lower || "driveseed" in lower -> {
+                    val baseUrl = getBaseUrl(link)
+                    val text = app.get(link).text
+                    val fileId = redirectRegex
+                        .find(text)
+                        ?.groupValues
+                        ?.getOrNull(1)
+                        ?: return@amap
+                    baseUrl + fileId
                 }
 
-                if (!finalLink.isNullOrBlank()) {
-                    val response = app.get(finalLink)
-                    if (response.code == 200) {
-                        loadSourceNameExtractor(
-                            "UHDMovies",
-                            finalLink,
-                            "",
-                            subtitleCallback,
-                            callback
-                        )
-                    } else {
-                        Log.e("UHDMovies", "Link returned ${response.code}: $finalLink")
-                        continue
-                    }
-                }
+                else -> bypassHrefli(link) ?: return@amap
             }
-        } catch (e: Exception) {
-            Log.e("UHDMovies", "Link processing error: ${e.localizedMessage}")
-            return
+
+            loadSourceNameExtractor(
+                "UHDMovies",
+                driveLink,
+                "",
+                subtitleCallback,
+                callback
+            )
         }
     }
-
 
     suspend fun invokeSubtitleAPI(
         id: String? = null,
