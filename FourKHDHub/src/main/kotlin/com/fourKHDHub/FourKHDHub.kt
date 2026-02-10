@@ -36,8 +36,6 @@ class FourKHDHub : MainAPI() {
     override val mainPage = mainPageOf(
         "" to "Home",
         "category/movies" to "Latest Movies",
-        "category/hindi-movies" to "Hindi Movies",
-        "category/english-movies" to "English Movies",
         "category/series" to "Latest Episodes",
         "category/korean-series" to "Korean Series",
         "category/netflix" to "Netflix",
@@ -47,7 +45,9 @@ class FourKHDHub : MainAPI() {
         "category/Apple_TV" to "Apple TV+",
         "category/anime" to "Anime",
         "category/2160p-HDR" to "4K HDR",
-        "category/imdb" to "Top IMDb"
+        "category/imdb" to "Top IMDb",
+        "category/hindi-movies" to "Hindi Movies",
+        "category/english-movies" to "English Movies",
     )
 
 
@@ -351,9 +351,6 @@ class FourKHDHub : MainAPI() {
         }
     }
 
-    private val LINK_REGEX =
-        Regex("""https?://[^\s'",\]\[]+""", RegexOption.IGNORE_CASE)
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -362,71 +359,27 @@ class FourKHDHub : MainAPI() {
     ): Boolean {
 
         if (data.isBlank()) return false
-
-        val hubCloud = HubCloud()
-        val hubDrive = Hubdrive()
-        val hubCdn = Hubcdnn()
-
-        LINK_REGEX.findAll(data)
-            .map { it.value }
-            .forEach { rawLink ->
-
-                val resolvedLink = try {
-                    if ("id=" in rawLink.lowercase())
-                        getRedirectLinks(rawLink)
-                    else
-                        rawLink
-                } catch (e: Exception) {
-                    Log.e("Phisher", "Redirect failed for $rawLink — ${e.message}")
-                    return@forEach
-                }
-
-                if (resolvedLink.isBlank()) {
-                    Log.e("Extractor", "Resolved link is empty for $rawLink")
-                    return@forEach
-                }
-
-                val lower = resolvedLink.lowercase()
-
-                when {
-                    "hubcloud" in lower -> {
-                        hubCloud.getUrl(
-                            resolvedLink,
-                            name,
-                            subtitleCallback,
-                            callback
-                        )
-                    }
-
-                    "hubdrive" in lower -> {
-                        hubDrive.getUrl(
-                            resolvedLink,
-                            name,
-                            subtitleCallback,
-                            callback
-                        )
-                    }
-
-                    "hubcdn" in lower -> {
-                        hubCdn.getUrl(
-                            resolvedLink,
-                            name,
-                            subtitleCallback,
-                            callback
-                        )
-                    }
-
-                    else -> {
-                        loadExtractor(
-                            resolvedLink,
-                            name,
-                            subtitleCallback,
-                            callback
-                        )
-                    }
-                }
+        val links: List<String> = AppUtils.tryParseJson<List<String>>(data)?.distinct() ?: return false
+        for (raw in links) {
+            val resolved = runCatching {
+                if ("id=" in raw) getRedirectLinks(raw) else raw
+            }.getOrElse {
+                Log.e("Extractor", "Redirect failed: $raw — ${it.message}")
+                continue
             }
-
+            if (resolved.isBlank()) continue
+            try {
+                loadExtractor(
+                    resolved,
+                    name,
+                    subtitleCallback,
+                    callback
+                )
+            } catch (e: Throwable) {
+                Log.e("Extractor", "Extractor failed: $resolved — ${e.message}")
+            }
+        }
         return true
     }
+
 }
