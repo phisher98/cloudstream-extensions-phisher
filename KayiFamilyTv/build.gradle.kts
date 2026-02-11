@@ -18,5 +18,5 @@ cloudstream {
     status = 1 // will be 3 if unspecified
     tvTypes = listOf("Movie", "TvSeries", "Documentary")
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
