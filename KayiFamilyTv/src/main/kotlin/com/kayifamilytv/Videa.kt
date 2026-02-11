@@ -5,7 +5,7 @@ package com.kayifamilytv
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.*
-import android.util.Base64
+import com.lagradost.cloudstream3.base64DecodeArray
 
 /**
  * Extractor for Videa.hu video hosting service
@@ -175,7 +175,7 @@ class Videa : ExtractorApi() {
                 .replace("\n", "")
                 .replace(" ", "")
                 .trim()
-            Base64.decode(base64String, Base64.DEFAULT)
+            base64DecodeArray(base64String)
         } else {
             encryptedBytes
         }
