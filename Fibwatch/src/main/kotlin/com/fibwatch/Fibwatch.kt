@@ -301,7 +301,7 @@ open class Fibwatch : MainAPI() {
                 runCatching {
                     val doc = app.get(fixUrl(url)).document
                     val onclick = doc.selectFirst("a.hidden-button.buttonDownloadnew")
-                        ?.attr("onclick") ?: return@runCatching null
+                        ?.attr("href") ?: return@runCatching null
 
                     onclick.substringAfter("url=")
                         .substringBefore("',")

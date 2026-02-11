@@ -405,6 +405,7 @@ class MovieBoxProvider : MainAPI() {
         val type = when (subjectType) {
             1 -> TvType.Movie
             2 -> TvType.TvSeries
+            7 -> TvType.TvSeries
             else -> TvType.Movie
         }
 
@@ -456,23 +457,11 @@ class MovieBoxProvider : MainAPI() {
                             it["season"]?.asInt() == seasonNumber &&
                                     it["episode"]?.asInt() == episodeNumber
                         }
+                        val epName = epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() } ?: "S${seasonNumber}E${episodeNumber}"
+                        val epDesc = epMeta?.get("overview")?.asText() ?: epMeta?.get("description")?.asText() ?: "Season $seasonNumber Episode $episodeNumber"
+                        val epThumb = epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() } ?: coverUrl
 
-                        val epName =
-                            epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() }
-                                ?: "S${seasonNumber}E${episodeNumber}"
-
-                        val epDesc =
-                            epMeta?.get("overview")?.asText()
-                                ?: epMeta?.get("description")?.asText()
-                                ?: "Season $seasonNumber Episode $episodeNumber"
-
-                        val epThumb =
-                            epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() }
-                                ?: coverUrl
-
-                        val aired =
-                        epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() }
-                            ?: ""
+                        val aired = epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() } ?: ""
 
                         episodes.add(
                             newEpisode("$id|$seasonNumber|$episodeNumber") {
