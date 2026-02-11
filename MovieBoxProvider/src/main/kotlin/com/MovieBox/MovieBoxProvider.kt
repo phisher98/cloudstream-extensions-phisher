@@ -47,7 +47,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
 
 class MovieBoxProvider : MainAPI() {
-    override var mainUrl = "https://api.inmoviebox.com"
+    override var mainUrl = "https://api3.aoneroom.com"
     override var name = "MovieBox"
     override val hasMainPage = true
     override var lang = "hi"
