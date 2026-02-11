@@ -94,6 +94,13 @@ class TokuZilla : MainAPI() {
         }
     }
 
+    override suspend fun search(query: String): List<SearchResponse> {
+        val document = app.get("$mainUrl?s=$query").document
+        return document.select("div.col-sm-4").mapNotNull {
+            it.toSearchResult()
+        }
+    }
+
     private fun Element.toSearchResult(): SearchResponse? {
         val titleElement = this.selectFirst("h3 a")
 
