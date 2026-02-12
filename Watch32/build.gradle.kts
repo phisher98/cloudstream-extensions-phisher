@@ -23,6 +23,6 @@ cloudstream {
 
     iconUrl = "https://img.watch32.sx/xxrz/400x400/100/a9/5e/a95e15a880a9df3c045f6a5224daf576/a95e15a880a9df3c045f6a5224daf576.png"
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }
 
