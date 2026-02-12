@@ -70,7 +70,7 @@ class Watch32Provider : MediaProvider() {
 
             val sourceButtons = serverDoc.select("li.nav-item a")
             for (source in sourceButtons) {
-                val sourceId = source.attr("data-id") ?: continue
+                val sourceId = source.attr("data-id")
 
                 val iframeUrl = runCatching {
                     app.get("$domain/ajax/episode/sources/$sourceId")
