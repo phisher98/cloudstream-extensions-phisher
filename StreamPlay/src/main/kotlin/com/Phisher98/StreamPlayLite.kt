@@ -178,7 +178,7 @@ class StreamPlayLite() : StreamPlay(sharedPref) {
             {
                 invokeSuperstream(
                     token,
-                    res.imdbId,
+                    res.id,
                     res.season,
                     res.episode,
                     callback

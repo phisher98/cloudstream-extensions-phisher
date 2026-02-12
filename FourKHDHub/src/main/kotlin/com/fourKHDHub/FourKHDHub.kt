@@ -94,7 +94,6 @@ class FourKHDHub : MainAPI() {
         val tvType = if ("Movies" in tags) TvType.Movie else TvType.TvSeries
         val isMovie = tvType == TvType.Movie
         val tmdbId = runCatching { fetchtmdb(title,isMovie) }.getOrNull()
-
         val hrefs: List<String> = document.select("div.download-item a").eachAttr("href")
 
         val description = document.selectFirst("div.content-section p.mt-4")?.text()?.trim()

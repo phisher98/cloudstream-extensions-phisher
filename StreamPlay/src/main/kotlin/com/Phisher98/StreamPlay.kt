@@ -209,6 +209,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val Film1kApi = "https://www.film1k.com"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
+        const val NuvFeb = BuildConfig.NuvFeb
         const val KickassAPI = "https://kaa.to"
         const val Vidsrcxyz = "https://vidsrc-embed.su"
         const val Elevenmovies = "https://111movies.com"

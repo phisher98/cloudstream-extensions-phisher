@@ -98,18 +98,13 @@ suspend fun fetchtmdb(title: String, isMovie: Boolean): Int? {
     val results = json.optJSONArray("results") ?: return null
 
     val targetType = if (isMovie) "movie" else "tv"
+    fun normalize(s: String) = s.lowercase().replace("[^a-z0-9]".toRegex(), "")
 
     for (i in 0 until results.length()) {
         val item = results.optJSONObject(i) ?: continue
-
         if (item.optString("media_type") != targetType) continue
-
-        val resultTitle = if (isMovie)
-            item.optString("title")
-        else
-            item.optString("name")
-
-        if (resultTitle.equals(title, ignoreCase = true)) {
+        val resultTitle = if (isMovie) item.optString("title") else item.optString("name")
+        if (normalize(resultTitle) == normalize(title)) {
             return item.optInt("id")
         }
     }

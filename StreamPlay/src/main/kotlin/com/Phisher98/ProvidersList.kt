@@ -160,7 +160,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeFilm1k(res.title, res.season, res.year, subtitleCallback, callback)
         },
         Provider("superstream", "SuperStream") { res, _, callback, token, _ ->
-            if (!res.isAnime && res.imdbId != null) invokeSuperstream(token, res.imdbId, res.season, res.episode, callback)
+            if (!res.isAnime && res.imdbId != null) invokeSuperstream(token, res.id, res.season, res.episode, callback)
         },
         Provider("vidsrcxyz", "VidSrcXyz (English)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)

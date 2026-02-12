@@ -437,6 +437,24 @@ data class KisskhKey(
 
 //SuperStream
 
+
+data class FebResponse(
+    val success: Boolean?,
+    val versions: List<Version>?
+)
+
+data class Version(
+    val name: String?,
+    val links: List<Link>?
+)
+
+data class Link(
+    val url: String?,
+    val quality: String?,
+    val name: String?,
+    val size: String?
+)
+
 data class ER(
     @JsonProperty("code") val code: Int? = null,
     @JsonProperty("msg") val msg: String? = null,

@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
@@ -13,6 +14,7 @@ import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
@@ -23,6 +25,7 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 
 class Watch32 : MainAPI() {
@@ -78,8 +81,43 @@ class Watch32 : MainAPI() {
             .map { it.text().trim() }
 
         if (type.contains("movie")) {
+            val tmdbMovieId = runCatching { fetchtmdb(name,true) }.getOrNull()
+            val imdbIdFromMovie = tmdbMovieId?.let { id ->
+                runCatching {
+                    val url = "$TMDBAPI/movie/$id/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
+                    val jsonText = app.get(url).textLarge
+                    JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
+                }.getOrNull()
+            }
+
+            val movieCreditsJsonText = tmdbMovieId?.let { id ->
+                runCatching {
+                    app.get("$TMDBAPI}/movie/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
+                }.getOrNull()
+            }
+
+            val bgurl = runCatching {
+                val json = app.get(
+                    "$TMDBAPI/movie/$tmdbMovieId/images?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US&include_image_language=en,null"
+                ).textLarge
+
+                val backdrops = JSONObject(json).optJSONArray("backdrops")
+                val bestBackdrop = backdrops?.optJSONObject(0)?.optString("file_path")?.takeIf { it.isNotBlank() }
+
+                bestBackdrop?.let { "https://image.tmdb.org/t/p/original$it" }
+            }.getOrNull()
+
+            val movieCastList = parseCredits(movieCreditsJsonText)
+
+            val logoPath = imdbIdFromMovie?.let {
+                "https://live.metahub.space/logo/medium/$it/img"
+            }
+
+
             return newMovieLoadResponse(name, url, TvType.Movie, "list/$contentId") {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
+                this.backgroundPosterUrl = bgurl ?: posterUrl
+                try { this.logoUrl = logoPath } catch(_:Throwable){}
                 this.plot = details.select("div.description").text()
                 this.year = year
                 this.score = Score.from10(
@@ -87,10 +125,42 @@ class Watch32 : MainAPI() {
                                 .text()
                                 .replace("N/A", "").substringAfter(":").trim())
                 this.tags = genres
-                addActors(actors)
+                this.actors = movieCastList
                 addTrailer(res.documentLarge.select("iframe#iframe-trailer").attr("data-src"))
             }
         } else {
+
+            val tmdbShowId = runCatching { fetchtmdb(name,false) }.getOrNull()
+            val imdbIdFromShow = tmdbShowId?.let { id ->
+                runCatching {
+                    val url = "${TMDBAPI}/tv/$id/external_ids?api_key=$TMDB_API_KEY"
+                    val jsonText = app.get(url).textLarge
+                    JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
+                }.getOrNull()
+            }
+
+            val logoPath = imdbIdFromShow?.let {
+                "https://live.metahub.space/logo/medium/$it/img"
+            }
+
+            val showCreditsJsonText = tmdbShowId?.let { id ->
+                runCatching {
+                    app.get("${TMDBAPI}/tv/$id/credits?api_key=${TMDB_API_KEY}&language=en-US").textLarge
+                }.getOrNull()
+            }
+            val castList: List<ActorData> = parseCredits(showCreditsJsonText)
+
+            val bgurl = runCatching {
+                val json = app.get(
+                    "${TMDBAPI}/tv/$imdbIdFromShow/images?api_key=${TMDB_API_KEY}&language=en-US&include_image_language=en,null"
+                ).textLarge
+
+                val backdrops = JSONObject(json).optJSONArray("backdrops")
+                val bestBackdrop = backdrops?.optJSONObject(0)?.optString("file_path")?.takeIf { it.isNotBlank() }
+
+                bestBackdrop?.let { "https://image.tmdb.org/t/p/original$it" }
+            }.getOrNull()
+
             val episodes = ArrayList<Episode>()
             val seasonsRes =
                     app.get("$mainUrl/ajax/season/list/$contentId").documentLarge.select("a.ss-item")
@@ -98,6 +168,23 @@ class Watch32 : MainAPI() {
             seasonsRes.forEach { season ->
                 val seasonId = season.attr("data-id")
                 val seasonNum = season.text().replace("Season ", "")
+
+                val tmdbSeasonJson = tmdbShowId?.let { id ->
+                    runCatching {
+                        app.get("${TMDBAPI}/tv/$id/season/$seasonNum?api_key=${TMDB_API_KEY}&language=en-US").textLarge
+                    }.getOrNull()?.let { JSONObject(it) }
+                }
+
+                val tmdbEpisodeMap = tmdbSeasonJson?.optJSONArray("episodes")?.let { arr ->
+                    val map = HashMap<Int, JSONObject>(arr.length())
+                    for (i in 0 until arr.length()) {
+                        val o = arr.optJSONObject(i) ?: continue
+                        val epNum = o.optInt("episode_number", -1)
+                        if (epNum >= 0) map[epNum] = o
+                    }
+                    map
+                }
+
                 app.get("$mainUrl/ajax/season/episodes/$seasonId")
                         .documentLarge
                         .select("a.eps-item")
@@ -106,19 +193,25 @@ class Watch32 : MainAPI() {
                             val (epNum, epName) =
                                     Regex("Eps (\\d+): (.+)").find(episode.attr("title"))!!
                                             .destructured
-
+                            val tmdbEpJson = tmdbEpisodeMap?.get(epNum.toInt())
                             episodes.add(
                                     newEpisode(epId) {
-                                        this.name = epName
+                                        this.name = tmdbEpJson?.optString("name")?.takeIf { it.isNotBlank() } ?: epName
                                         this.episode = epNum.toInt()
                                         this.season = seasonNum.replace("Series", "").trim().toInt()
                                         this.data = "servers/$epId"
+                                        this.description = tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() }
+                                        this.posterUrl = tmdbEpJson?.optString("still_path")?.takeIf { it.isNotBlank() }?.let { "${TMDBIMAGEBASEURL}$it" }
+                                        this.score = tmdbEpJson?.optDouble("vote_average")?.let { Score.from10(it.toString()) }
+                                        addDate(tmdbEpJson?.optString("air_date")?.takeIf { it.isNotBlank() })
                                     }
                             )
                         }
             }
             return newTvSeriesLoadResponse(name, url, TvType.TvSeries, episodes) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
+                this.backgroundPosterUrl = bgurl ?: posterUrl
+                try { this.logoUrl = logoPath } catch(_:Throwable){}
                 this.plot = details.select("div.description").text()
                 this.year = year
                 this.score = Score.from10(
@@ -126,6 +219,7 @@ class Watch32 : MainAPI() {
                                 .text()
                                 .replace("N/A", "").substringAfter(":").trim())
                 this.tags = genres
+                this.actors = castList
                 addActors(actors)
                 addTrailer(res.documentLarge.select("iframe#iframe-trailer").attr("data-src"))
             }

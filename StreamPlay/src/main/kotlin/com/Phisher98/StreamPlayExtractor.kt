@@ -67,7 +67,9 @@ import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.collections.forEach
 import kotlin.collections.mapOf
+import kotlin.collections.orEmpty
 import kotlin.math.max
 
 
@@ -3723,33 +3725,50 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeSuperstream(
         token: String? = null,
-        imdbId: String? = null,
+        id: Int? = null,
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit
     ) {
-        if (imdbId.isNullOrBlank()) return
+        if (token.isNullOrEmpty()) return
 
-        val searchUrl = "$fourthAPI/search?keyword=$imdbId"
-
-        val href: String? = app.get(searchUrl)
-            .documentLarge
-            .selectFirst("h2.film-name a")
-            ?.attr("href")
-            ?.let { fourthAPI + it }
-
-        val mediaId: Int? = href?.let { url ->
-            app.get(url)
-                .documentLarge
-                .selectFirst("h2.heading-name a")
-                ?.attr("href")
-                ?.substringAfterLast("/")
-                ?.toIntOrNull()
+        val url = if (season == null) {
+            "$NuvFeb/api/media/movie/$id?cookie=${URLEncoder.encode(token, "UTF-8")}"
+        } else {
+            "$NuvFeb/api/media/tv/$id/$season/$episode?cookie=${URLEncoder.encode(token, "UTF-8")}"
         }
 
-        mediaId?.let { id ->
-            val seasonNumber = season ?: 1
-            invokeExternalSource(id, seasonNumber, season, episode, callback, token)
+        val json = app.get(url).text
+        val parsed = Gson().fromJson(json, FebResponse::class.java)
+
+        parsed.versions.orEmpty().forEach { version ->
+            version.links.orEmpty().forEach { link ->
+                val streamUrl = link.url ?: return@forEach
+
+                val title = version.name
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(::cleanTitle)
+                    ?: "Stream"
+
+                val qualityName = link.quality.orEmpty()
+
+                callback.invoke(
+                    newExtractorLink(
+                        source = "SuperStream",
+                        name = buildString {
+                            append("SuperStream • ")
+                            append(title)
+                            if (qualityName.equals("ORG", ignoreCase = true)) {
+                                append(" • ORG")
+                            }
+                        },
+                        url = streamUrl,
+                        type = INFER_TYPE
+                    ) {
+                        quality = getQualityFromName(qualityName)
+                    }
+                )
+            }
         }
     }
 
