@@ -92,7 +92,7 @@ class Watch32 : MainAPI() {
 
             val movieCreditsJsonText = tmdbMovieId?.let { id ->
                 runCatching {
-                    app.get("$TMDBAPI}/movie/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
+                    app.get("$TMDBAPI/movie/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
                 }.getOrNull()
             }
 
@@ -152,7 +152,7 @@ class Watch32 : MainAPI() {
 
             val bgurl = runCatching {
                 val json = app.get(
-                    "${TMDBAPI}/tv/$imdbIdFromShow/images?api_key=${TMDB_API_KEY}&language=en-US&include_image_language=en,null"
+                    "${TMDBAPI}/tv/$tmdbShowId/images?api_key=${TMDB_API_KEY}&language=en-US&include_image_language=en,null"
                 ).textLarge
 
                 val backdrops = JSONObject(json).optJSONArray("backdrops")
@@ -190,9 +190,10 @@ class Watch32 : MainAPI() {
                         .select("a.eps-item")
                         .forEach { episode ->
                             val epId = episode.attr("data-id")
-                            val (epNum, epName) =
-                                    Regex("Eps (\\d+): (.+)").find(episode.attr("title"))!!
-                                            .destructured
+                            val match = Regex("Eps (\\d+): (.+)").find(episode.attr("title"))
+                                ?: return@forEach
+
+                            val (epNum, epName) = match.destructured
                             val tmdbEpJson = tmdbEpisodeMap?.get(epNum.toInt())
                             episodes.add(
                                     newEpisode(epId) {
