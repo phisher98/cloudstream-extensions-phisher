@@ -334,68 +334,46 @@ suspend fun fetchTmdbLogoUrl(
     appLangCode: String?
 ): String? {
     if (tmdbId == null) return null
+
     val appLang = appLangCode?.substringBefore("-")?.lowercase()
-    val base = if (type == TvType.Movie) "movie" else "tv"
-    val includeLangs = buildString {
-        if (!appLang.isNullOrBlank()) {
-            append(appLang)
-            append(",")
-        }
-        append("en,null")
+    val url = if (type == TvType.Movie) {
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+    } else {
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
     }
-    val url = "$tmdbAPI/$base/$tmdbId/images?api_key=$apiKey&include_image_language=$includeLangs"
+
     val json = runCatching { JSONObject(app.get(url).text) }.getOrNull() ?: return null
     val logos = json.optJSONArray("logos") ?: return null
     if (logos.length() == 0) return null
 
-    fun isSvg(i: Int): Boolean {
-        val p = logos.optJSONObject(i)?.optString("file_path").orEmpty()
-        return p.endsWith(".svg", ignoreCase = true)
-    }
-    fun logoUrlAt(i: Int): String {
-        val p = logos.getJSONObject(i).optString("file_path")
-        val size = if (p.endsWith(".svg", ignoreCase = true)) "original" else "w500"
-        return "https://image.tmdb.org/t/p/$size$p"
-    }
+    fun logoUrlAt(i: Int): String = "https://image.tmdb.org/t/p/w500${logos.getJSONObject(i).optString("file_path")}"
+    fun isSvg(i: Int): Boolean = logos.getJSONObject(i).optString("file_path").endsWith(".svg", ignoreCase = true)
 
     if (!appLang.isNullOrBlank()) {
         var svgFallback: String? = null
         for (i in 0 until logos.length()) {
-            val o = logos.optJSONObject(i) ?: continue
-            if (o.optString("iso_639_1") == appLang) {
-                val u = logoUrlAt(i)
-                if (!isSvg(i)) return u else if (svgFallback == null) svgFallback = u
+            val logo = logos.optJSONObject(i) ?: continue
+            if (logo.optString("iso_639_1") == appLang) {
+                if (isSvg(i)) {
+                    if (svgFallback == null) svgFallback = logoUrlAt(i)
+                } else {
+                    return logoUrlAt(i)
+                }
             }
         }
         if (svgFallback != null) return svgFallback
     }
 
-    run {
-        var svgFallback: String? = null
-        for (i in 0 until logos.length()) {
-            val o = logos.optJSONObject(i) ?: continue
-            if (o.optString("iso_639_1") == "en") {
-                val u = logoUrlAt(i)
-                if (!isSvg(i)) return u else if (svgFallback == null) svgFallback = u
+    var enSvgFallback: String? = null
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        if (logo.optString("iso_639_1") == "en") {
+            if (isSvg(i)) {
+                if (enSvgFallback == null) enSvgFallback = logoUrlAt(i)
+            } else {
+                return logoUrlAt(i)
             }
         }
-        if (svgFallback != null) return svgFallback
     }
-
-    run {
-        var svgFallback: String? = null
-        for (i in 0 until logos.length()) {
-            val o = logos.optJSONObject(i) ?: continue
-            val lang = o.opt("iso_639_1")
-            val noLang = lang == null || (lang is String && lang.isBlank())
-            if (noLang) {
-                val u = logoUrlAt(i)
-                if (!isSvg(i)) return u else if (svgFallback == null) svgFallback = u
-            }
-        }
-        if (svgFallback != null) return svgFallback
-    }
-
-    for (i in 0 until logos.length()) if (!isSvg(i)) return logoUrlAt(i)
-    return logoUrlAt(0)
+    return enSvgFallback
 }
