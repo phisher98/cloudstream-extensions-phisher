@@ -17,8 +17,8 @@ import java.net.URLEncoder
 import java.util.Calendar
 
 class Kickassanime : MainAPI() {
-    override var mainUrl = "https://kaa.to"
-    override var name = "Kickassanime"
+    override var mainUrl = "https://kaa.lt"
+    override var name = "KickassAnime"
     override val hasMainPage = true
     override var lang = "en"
     override val hasQuickSearch =  true
@@ -36,7 +36,7 @@ class Kickassanime : MainAPI() {
     )
 
     companion object {
-        var mainUrl = "https://kaa.to"
+        var mainUrl = "https://kaa.lt"
         fun getStatus(t: String): ShowStatus {
             return when (t) {
                 "finished_airing" -> ShowStatus.Completed
