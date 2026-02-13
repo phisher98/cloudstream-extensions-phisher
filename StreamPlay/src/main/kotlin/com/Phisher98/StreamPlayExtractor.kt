@@ -3170,107 +3170,29 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val bollyflixAPI = getDomains()?.bollyflix ?: return
-        val searchQuery = id ?: return
-        val fullQuery = if (season != null) "$searchQuery $season" else searchQuery
-        val searchUrl = "$bollyflixAPI/search/$fullQuery"
-
-        fun log(message: String) {
-            println("BollyflixExtractor: $message")
-        }
-
-        val searchDoc = try {
-            retryIO { app.get(searchUrl, interceptor = wpRedisInterceptor).documentLarge }
-        } catch (e: Exception) {
-            log("Failed to fetch searchDoc: ${e.message}")
-            return
-        }
-
-        val contentUrl = searchDoc.selectFirst("div > article > a")?.attr("href")
-        if (contentUrl.isNullOrEmpty()) {
-            log("Content URL not found for id=$id")
-            return
-        }
-
-        val contentDoc = try {
-            retryIO { app.get(contentUrl).documentLarge }
-        } catch (e: Exception) {
-            log("Failed to fetch contentDoc: ${e.message}")
-            return
-        }
-
+        val res1 = app.get("""$bollyflixAPI/search/${id ?: return} ${season ?: ""}""", interceptor = wpRedisInterceptor).document
+        val url = res1.selectFirst("div > article > a")?.attr("href") ?: return
+        val res = app.get(url, interceptor = wpRedisInterceptor).document
         val hTag = if (season == null) "h5" else "h4"
-        val sTag = if (season != null) "Season $season" else ""
-
-        val entries = contentDoc
-            .select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
-            .filterNot { it.text().contains("Download", ignoreCase = true) }
-            .takeLast(4)
-
-        suspend fun processUrl(url: String) {
-            val redirectUrl = try {
-                retryIO { app.get(url, allowRedirects = false).headers["location"].orEmpty() }
-            } catch (e: Exception) {
-                log("Failed to get redirect for $url: ${e.message}")
-                return
-            }
-
-            if (redirectUrl.isEmpty()) {
-                log("Redirect URL empty for $url")
-                return
-            }
-
-            if ("gdflix" in redirectUrl.lowercase()) {
-                GDFlix().getUrl(redirectUrl, "BollyFlix", subtitleCallback, callback)
-            } else {
-                loadSourceNameExtractor("Bollyflix", url, "", subtitleCallback, callback)
-            }
-        }
-
-        for (entry in entries) {
-            val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: continue
-            val token = href.substringAfter("id=", "")
-            if (token.isEmpty()) continue
-
-            val encodedUrl = try {
-                retryIO {
-                    app.get("https://blog.finzoox.com/?id=$token").text
-                        .substringAfter("link\":\"")
-                        .substringBefore("\"};")
-                }
-            } catch (e: Exception) {
-                log("Failed to fetch encoded URL for token=$token: ${e.message}")
-                continue
-            }
-
-            val decodedUrl = try {
-                base64Decode(encodedUrl)
-            } catch (e: Exception) {
-                log("Failed to decode URL for token=$token: ${e.message}")
-                continue
-            }
+        val sTag = if (season == null) "" else "Season $season"
+        val entries =
+            res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(480p|720p|1080p|2160p))")
+                .filter { element -> !element.text().contains("Download", true) }.takeLast(4)
+        entries.amap {
+            val href = it.nextElementSibling()?.select("a")?.attr("href") ?: return@amap
 
             if (season == null) {
-                processUrl(decodedUrl)
+                loadSourceNameExtractor("Bollyflix", href , "", subtitleCallback, callback)
             } else {
-                val episodeSelector = "article h3 a:contains(Episode 0$episode)"
-                val episodeLink = try {
-                    retryIO {
-                        app.get(decodedUrl).documentLarge.selectFirst(episodeSelector)?.attr("href")
-                    }
-                } catch (e: Exception) {
-                    log("Failed to fetch episode document: ${e.message}")
-                    continue
-                }
-
-                if (episodeLink.isNullOrEmpty()) {
-                    log("Episode link not found for episode=$episode")
-                    continue
-                }
-
-                processUrl(episodeLink)
+                val episodeText = "Episode " + episode.toString().padStart(2, '0')
+                val link =
+                    app.get(href).document.selectFirst("article h3 a:contains($episodeText)")!!
+                        .attr("href")
+                loadSourceNameExtractor("Bollyflix", link , "", subtitleCallback, callback)
             }
         }
     }
+
 
     suspend fun invokeWatch32APIHQ(
         title: String?,
