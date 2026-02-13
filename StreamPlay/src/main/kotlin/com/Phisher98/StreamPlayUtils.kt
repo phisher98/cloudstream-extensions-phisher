@@ -2160,7 +2160,7 @@ suspend fun fetchTmdbLogoUrl(
     val logos = json.optJSONArray("logos") ?: return null
     if (logos.length() == 0) return null
 
-    val lang = appLangCode?.trim()?.lowercase()
+    val lang = appLangCode?.trim()?.lowercase()?.substringBefore("-")
 
     fun path(o: JSONObject) = o.optString("file_path")
     fun isSvg(o: JSONObject) = path(o).endsWith(".svg", true)
