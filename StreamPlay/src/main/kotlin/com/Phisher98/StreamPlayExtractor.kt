@@ -3170,24 +3170,104 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val bollyflixAPI = getDomains()?.bollyflix ?: return
-        val res1 = app.get("""$bollyflixAPI/search/${id ?: return} ${season ?: ""}""", interceptor = wpRedisInterceptor).document
-        val url = res1.selectFirst("div > article > a")?.attr("href") ?: return
-        val res = app.get(url, interceptor = wpRedisInterceptor).document
+        val searchQuery = id ?: return
+        val fullQuery = if (season != null) "$searchQuery $season" else searchQuery
+        val searchUrl = "$bollyflixAPI/search/$fullQuery"
+
+        fun log(message: String) {
+            println("BollyflixExtractor: $message")
+        }
+
+        val searchDoc = try {
+            retryIO { app.get(searchUrl, interceptor = wpRedisInterceptor).documentLarge }
+        } catch (e: Exception) {
+            log("Failed to fetch searchDoc: ${e.message}")
+            return
+        }
+
+        val contentUrl = searchDoc.selectFirst("div > article > a")?.attr("href")
+        if (contentUrl.isNullOrEmpty()) {
+            log("Content URL not found for id=$id")
+            return
+        }
+
+        val contentDoc = try {
+            retryIO { app.get(contentUrl).documentLarge }
+        } catch (e: Exception) {
+            log("Failed to fetch contentDoc: ${e.message}")
+            return
+        }
+
         val hTag = if (season == null) "h5" else "h4"
-        val sTag = if (season == null) "" else "Season $season"
-        val entries =
-            res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(480p|720p|1080p|2160p))")
-                .filter { element -> !element.text().contains("Download", true) }.takeLast(4)
-        entries.amap {
-            val href = it.nextElementSibling()?.select("a")?.attr("href") ?: return@amap
-            if (season == null) {
-                loadSourceNameExtractor("Bollyflix", href , "", subtitleCallback, callback)
+        val sTag = if (season != null) "Season $season" else ""
+
+        val entries = contentDoc
+            .select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(720p|1080p|2160p))")
+            .filterNot { it.text().contains("Download", ignoreCase = true) }
+            .takeLast(4)
+
+        suspend fun processUrl(url: String) {
+            val redirectUrl = try {
+                retryIO { app.get(url, allowRedirects = false).headers["location"].orEmpty() }
+            } catch (e: Exception) {
+                log("Failed to get redirect for $url: ${e.message}")
+                return
+            }
+
+            if (redirectUrl.isEmpty()) {
+                log("Redirect URL empty for $url")
+                return
+            }
+
+            if ("gdflix" in redirectUrl.lowercase()) {
+                GDFlix().getUrl(redirectUrl, "BollyFlix", subtitleCallback, callback)
             } else {
-                val episodeText = "Episode " + episode.toString().padStart(2, '0')
-                val link =
-                    app.get(href).document.selectFirst("article h3 a:contains($episodeText)")!!
-                        .attr("href")
-                loadSourceNameExtractor("Bollyflix", link , "", subtitleCallback, callback)
+                loadSourceNameExtractor("Bollyflix", url, "", subtitleCallback, callback)
+            }
+        }
+
+        for (entry in entries) {
+            val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: continue
+            val token = href.substringAfter("id=", "")
+            if (token.isEmpty()) continue
+
+            val encodedUrl = try {
+                retryIO {
+                    app.get("https://blog.finzoox.com/?id=$token").text
+                        .substringAfter("link\":\"")
+                        .substringBefore("\"};")
+                }
+            } catch (e: Exception) {
+                log("Failed to fetch encoded URL for token=$token: ${e.message}")
+                continue
+            }
+
+            val decodedUrl = try {
+                base64Decode(encodedUrl)
+            } catch (e: Exception) {
+                log("Failed to decode URL for token=$token: ${e.message}")
+                continue
+            }
+
+            if (season == null) {
+                processUrl(decodedUrl)
+            } else {
+                val episodeSelector = "article h3 a:contains(Episode 0$episode)"
+                val episodeLink = try {
+                    retryIO {
+                        app.get(decodedUrl).documentLarge.selectFirst(episodeSelector)?.attr("href")
+                    }
+                } catch (e: Exception) {
+                    log("Failed to fetch episode document: ${e.message}")
+                    continue
+                }
+
+                if (episodeLink.isNullOrEmpty()) {
+                    log("Episode link not found for episode=$episode")
+                    continue
+                }
+
+                processUrl(episodeLink)
             }
         }
     }
@@ -4569,49 +4649,56 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         year: Int? = null,
         callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit,
     ) {
-        val sourceHeaders = mapOf(
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.9",
-            "Connection" to "keep-alive",
-            "Referer" to cinemaOSApi,
-            "Host" to "cinemaos.tech",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-            "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
-            "sec-ch-ua-mobile" to "?0",
-            "sec-ch-ua-platform" to "\"Windows\"",
-            "Content-Type" to "application/json"
-        )
-
-        val fixTitle = title?.replace(" ", "+")
-        val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(),imdbId= imdbId?.toString() ?: "", seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
-        val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,season != null)
-        val type = if(season == null) {"movie"}  else {"tv"}
-        val sourceUrl = if(season == null) {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
-        val sourceResponse = app.get(sourceUrl, headers = sourceHeaders,timeout = 60).parsedSafe<CinemaOSReponse>()
-        val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data,)
-        val json = parseCinemaOSSources(decryptedJson.toString())
-
-        json.forEach {
-            val extractorLinkType = if(it["type"]?.contains("hls",true) ?: false) { ExtractorLinkType.M3U8} else if(it["type"]?.contains("dash",true) ?: false){ ExtractorLinkType.DASH} else if(it["type"]?.contains("mp4",true) ?: false){ ExtractorLinkType.VIDEO} else { INFER_TYPE}
-            val bitrateQuality = if(it["bitrate"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["bitrate"]?.contains("hd",true) ?: false){ Qualities.P720.value} else if(it["bitrate"]?.contains("4K",true) ?: false){ Qualities.P2160.value} else { Qualities.P1080.value}
-            val quality =  if(it["quality"]?.isNotEmpty() == true && it["quality"]?.toIntOrNull() !=null) getQualityFromName(it["quality"]) else if (it["quality"]?.isNotEmpty() == true)  if(it["quality"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["quality"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value} else bitrateQuality
-            callback.invoke(
-                newExtractorLink(
-                    "CinemaOS [${it["server"]}] ${it["bitrate"]}  ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
-                    "CinemaOS [${it["server"]}] ${it["bitrate"]} ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
-                    url = it["url"].toString(),
-                    type = extractorLinkType
-                )
-                {
-                    this.headers = mapOf("Referer" to cinemaOSApi)
-                    this.quality = quality
-                }
+        try {
+            val sourceHeaders = mapOf(
+                "Accept" to "*/*",
+                "Accept-Language" to "en-US,en;q=0.9",
+                "Connection" to "keep-alive",
+                "Referer" to cinemaOSApi,
+                "Host" to "cinemaos.tech",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "same-origin",
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+                "sec-ch-ua" to "\"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
+                "sec-ch-ua-mobile" to "?0",
+                "sec-ch-ua-platform" to "\"Windows\"",
+                "Content-Type" to "application/json"
             )
+
+            val fixTitle = title?.replace(" ", "+")
+            val cinemaOsSecretKeyRequest = CinemaOsSecretKeyRequest(tmdbId = tmdbId.toString(),imdbId= imdbId
+                ?: "", seasonId = season?.toString() ?: "", episodeId = episode?.toString() ?: "")
+            val secretHash = cinemaOSGenerateHash(cinemaOsSecretKeyRequest,season != null)
+            val type = if(season == null) {"movie"}  else {"tv"}
+            val sourceUrl = if(season == null) {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=$fixTitle&ry=$year&secret=$secretHash"} else {"$cinemaOSApi/api/provider?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=$fixTitle&ry=$year&secret=$secretHash"}
+            val sourceResponse = app.get(sourceUrl, headers = sourceHeaders,timeout = 60).parsedSafe<CinemaOSReponse>()
+            val decryptedJson = cinemaOSDecryptResponse(sourceResponse?.data,)
+            val json = parseCinemaOSSources(decryptedJson.toString())
+            json.forEach {
+                try {
+                    val extractorLinkType = if(it["type"]?.contains("hls",true) ?: false) { ExtractorLinkType.M3U8} else if(it["type"]?.contains("dash",true) ?: false){ ExtractorLinkType.DASH} else if(it["type"]?.contains("mp4",true) ?: false){ ExtractorLinkType.VIDEO} else { INFER_TYPE}
+                    val bitrateQuality = if(it["bitrate"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["bitrate"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value}
+                    val quality =  if(it["quality"]?.isNotEmpty() == true && it["quality"]?.toIntOrNull() !=null) getQualityFromName(it["quality"]) else if (it["quality"]?.isNotEmpty() == true)  if(it["quality"]?.contains("fhd",true) ?: false) { Qualities.P1080.value } else if(it["quality"]?.contains("hd",true) ?: false){ Qualities.P720.value} else { Qualities.P1080.value} else bitrateQuality
+                    callback.invoke(
+                        newExtractorLink(
+                            "CinemaOS [${it["server"]}] ${it["bitrate"]}  ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
+                            "CinemaOS [${it["server"]}] ${it["bitrate"]} ${it["speed"]}".replace("\\s{2,}".toRegex(), " ").trim(),
+                            url = it["url"].toString(),
+                            type = extractorLinkType
+                        )
+                        {
+                            this.headers = mapOf("Referer" to cinemaOSApi) + M3U8_HEADERS
+                            this.quality = quality
+                        }
+                    )
+                } catch (_: Exception) {
+                    TODO("Not yet implemented")
+                }
+            }
+        } catch (_: Exception) {
+            TODO("Not yet implemented")
         }
     }
 
