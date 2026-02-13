@@ -90,26 +90,40 @@ fun pen(value: String): String {
 
 
 suspend fun fetchtmdb(title: String, isMovie: Boolean): Int? {
-    val url =
-        "${TMDBAPI}/search/multi?api_key=${TMDB_API_KEY}&query=" +
-                URLEncoder.encode(title, "UTF-8")
-
+    val url = "${TMDBAPI}/search/multi?api_key=${TMDB_API_KEY}&query=" + URLEncoder.encode(title.trim(), "UTF-8")
     val json = JSONObject(app.get(url).text)
     val results = json.optJSONArray("results") ?: return null
 
     val targetType = if (isMovie) "movie" else "tv"
-    fun normalize(s: String) = s.lowercase().replace("[^a-z0-9]".toRegex(), "")
+
+    fun normalize(s: String?): String = s?.lowercase()?.replace("[^a-z0-9]".toRegex(), "")?.trim() ?: ""
+
+    val inputNorm = normalize(title)
+    var fallback: Int? = null
 
     for (i in 0 until results.length()) {
         val item = results.optJSONObject(i) ?: continue
         if (item.optString("media_type") != targetType) continue
         val resultTitle = if (isMovie) item.optString("title") else item.optString("name")
-        if (normalize(resultTitle) == normalize(title)) {
+        val resultNorm = normalize(resultTitle)
+        if (resultNorm.isEmpty()) continue
+
+        if (fallback == null) {
+            fallback = item.optInt("id")
+        }
+
+        if (resultNorm == inputNorm) {
+            return item.optInt("id")
+        }
+
+        if (resultNorm.contains(inputNorm) || inputNorm.contains(resultNorm)) {
             return item.optInt("id")
         }
     }
-    return null
+
+    return fallback
 }
+
 
 
 fun parseCredits(jsonText: String?): List<ActorData> {
