@@ -17,7 +17,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.fixTitle
 import com.lagradost.cloudstream3.imdbUrlToIdNullable
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -57,6 +56,22 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         private const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
     }
 
+
+    private fun baseUrl(): String {
+        return mainUrl.substringBefore("?").trimEnd('/')
+    }
+
+    private fun querySuffix(): String {
+        return mainUrl.substringAfter("?", "")
+            .takeIf { it.isNotEmpty() }
+            ?.let { "?$it" }
+            ?: ""
+    }
+
+    private fun buildUrl(path: String): String {
+        return "${baseUrl()}$path${querySuffix()}"
+    }
+
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -70,7 +85,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         val skip = (page - 1) * pageSize
 
         val manifest = app
-            .get("$mainUrl/manifest.json")
+            .get(buildUrl("/manifest.json"))
             .parsedSafe<Manifest>()
 
         val lists = mutableListOf<HomePageList>()
@@ -95,7 +110,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
 
     override suspend fun search(query: String): List<SearchResponse> {
         mainUrl = mainUrl.fixSourceUrl()
-        val res = app.get("${mainUrl}/manifest.json").parsedSafe<Manifest>()
+        val res = app.get(buildUrl("/manifest.json")).parsedSafe<Manifest>()
         val list = mutableListOf<SearchResponse>()
         res?.catalogs?.amap { catalog ->
             list.addAll(catalog.search(query, this))
@@ -114,7 +129,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
 
         val encodedId = URLEncoder.encode(res.id, "UTF-8")
 
-        val response = app.get("$mainUrl/meta/${res.type}/$encodedId.json")
+        val response = app.get(buildUrl("/meta/${res.type}/$encodedId.json"))
             .parsedSafe<CatalogResponse>()
             ?: throw RuntimeException("Failed to load meta")
 
@@ -143,10 +158,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     ): Boolean {
         val loadData = parseJson<LoadData>(data)
         val encodedId = URLEncoder.encode(loadData.id, "UTF-8")
-        val request = app.get(
-            "${mainUrl}/stream/${loadData.type}/$encodedId.json",
-            timeout = 120L
-        )
+        val request = app.get(buildUrl("/stream/${loadData.type}/$encodedId.json"))
 
         val res = if (request.isSuccessful)
             request.parsedSafe<StreamsResponse>()
@@ -252,7 +264,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             val entries = mutableListOf<SearchResponse>()
             types.forEach { type ->
                 val res = app.get(
-                    "${provider.mainUrl}/catalog/${type}/${id}/search=${query}.json",
+                    provider.buildUrl("/catalog/${type}/${id}/search=${query}.json"),
                     timeout = 120L
                 ).parsedSafe<CatalogResponse>()
                 res?.metas?.forEach { entry ->
@@ -269,11 +281,13 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             val entries = mutableMapOf<String, SearchResponse>()
 
             types.forEach { type ->
-                val url = if (skip > 0) {
-                    "${provider.mainUrl}/catalog/$type/$id/skip=$skip.json"
+                val path = if (skip > 0) {
+                    "/catalog/$type/$id/skip=$skip.json"
                 } else {
-                    "${provider.mainUrl}/catalog/$type/$id.json"
+                    "/catalog/$type/$id.json"
                 }
+
+                val url = provider.buildUrl(path)
 
                 val res = app.get(
                     url,
