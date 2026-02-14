@@ -1,6 +1,7 @@
 package com.AnimeKai
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -164,35 +165,56 @@ class AnimeKai : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).documentLarge
         val malid = document.select("div.watch-section").attr("data-mal-id")
-        val aniid = document.select("div.watch-section").attr("data-al-id")
+        val aniidRaw = document.select("div.watch-section").attr("data-al-id")
+        val aniid = aniidRaw.toIntOrNull()?.takeIf { it > 0 }
         val poster = document.select("div.poster img").attr("src")
-        val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
-        val animeMetaData = parseAnimeData(syncMetaData)
+        val animeMetaData = aniid?.let {
+            val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=$it").text
+            parseAnimeData(syncMetaData)
+        }
         val kitsuid = animeMetaData?.mappings?.kitsuid
+        val tmdbid = animeMetaData?.mappings?.themoviedbId
 
-        val data = anilistAPICall(
-            "query (\$id: Int = ${aniid}) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
-        ).data.media ?: throw Exception("Unable to fetch media details")
+        val data = if (aniid != null) {
+            anilistAPICall(
+                "query (\$id: Int = ${aniid}) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+            ).data.media ?: throw Exception("Unable to fetch media details")
+        } else {
+            null
+        }
 
-        val backgroundposter = data.bannerImage ?: animeMetaData?.images?.find { it.coverType == "Fanart" }?.url ?: data.coverImage.extraLarge
+        val typeraw = document.select("div.entity-scroll div.info").text()
+
+        val type = if (typeraw.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.Anime
+
+        val backgroundposter = data?.bannerImage ?: animeMetaData?.images?.find { it.coverType == "Fanart" }?.url ?: data?.coverImage?.extraLarge
         ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val title = document.selectFirst("h1.title")?.text().orEmpty()
+
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
         val plot= document.selectFirst("div.desc")?.text()
 
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
-
         val subEpisodes = mutableListOf<Episode>()
         val dubEpisodes = mutableListOf<Episode>()
 
         val decoded = decode(animeId)
 
-        val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded")
-            .parsedSafe<Response>()?.getDocument()
+        val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded").parsedSafe<Response>()?.getDocument()
+
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
 
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
+            val episodeNum = ep.ownText().toIntOrNull() ?: return@forEachIndexed
             // --- Helper to get best episode title ---
             fun resolveTitle(ep: Element, episodeKey: String): String {
                 val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
@@ -207,12 +229,11 @@ class AnimeKai : MainAPI() {
                 return jsonTitle.ifBlank { attrTitle }
             }
 
-            val episodeNum = index + 1
-            fun createEpisode(source: String, ep: Element, episodeNum: Int): Episode {
+            fun createEpisode(source: String, ep: Element): Episode {
                 val episodeKey = episodeNum.toString()
                 val metaEp = animeMetaData?.episodes?.get(episodeKey)
                 return newEpisode("$source|${ep.attr("token")}") {
-                    this.name = resolveTitle(ep, episodeKey)
+                    this.name = if (type == TvType.AnimeMovie) title else resolveTitle(ep, episodeKey)
                     this.episode = episodeNum
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
@@ -221,18 +242,18 @@ class AnimeKai : MainAPI() {
                     this.runTime = metaEp?.runtime
                 }
             }
+
             // Sub episodes
             subCount?.let { subTotal ->
                 if (index < subTotal) {
-                    subEpisodes += createEpisode("sub", ep, episodeNum)
+                    subEpisodes += createEpisode("sub", ep)
                 }
             }
 
             // Dub episodes
             dubCount?.let { dubTotal ->
                 if (index < dubTotal) {
-                    val dubEpisodeNum = ep.attr("num").toIntOrNull() ?: episodeNum
-                    dubEpisodes += createEpisode("dub", ep, dubEpisodeNum)
+                    dubEpisodes += createEpisode("dub", ep)
                 }
             }
         }
@@ -251,6 +272,7 @@ class AnimeKai : MainAPI() {
             engName = title
             japName = jptitle
             posterUrl = poster
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             backgroundPosterUrl = backgroundposter
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
@@ -259,7 +281,7 @@ class AnimeKai : MainAPI() {
             this.plot = plot
             showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
-            addAniListId(aniid.toIntOrNull())
+            addAniListId(aniid)
             try { addKitsuId(kitsuid) } catch(_:Throwable){}
         }
     }

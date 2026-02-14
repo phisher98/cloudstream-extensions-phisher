@@ -50,6 +50,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
 import okhttp3.OkHttpClient
+import org.json.JSONObject
 
 class HiAnime : MainAPI() {
     override var mainUrl = HiAnimeProviderPlugin.currentHiAnimeServer
@@ -155,6 +156,11 @@ class HiAnime : MainAPI() {
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
         val kitsuid = animeMetaData?.mappings?.kitsuid
+        val tmdbid = animeMetaData?.mappings?.themoviedbId
+
+        val typeraw = document.select("div.film-stats div.tick").text()
+        val type = if (typeraw.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.Anime
+
 
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
@@ -164,6 +170,14 @@ class HiAnime : MainAPI() {
         val epRes = responseBody.stringParse<Response>()?.getDocument()
         val malId = syncData?.malId ?: "0"
         val anilistId = syncData?.aniListId ?: "0"
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
 
 
         epRes?.select(".ss-list > a[href].ssl-item.ep-item")?.forEachIndexed { index, ep ->
@@ -188,7 +202,7 @@ class HiAnime : MainAPI() {
             fun createEpisode(source: String): Episode {
                 val metaEp = animeMetaData?.episodes?.get(episodeKey)
                 return newEpisode("$source|$malId|$href") {
-                    this.name = resolveTitle(ep, episodeKey)
+                    this.name = if (type == TvType.AnimeMovie) title else resolveTitle(ep, episodeKey)
                     this.episode = episodeNum
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
@@ -201,18 +215,13 @@ class HiAnime : MainAPI() {
             subCount?.let { if (index < it) subEpisodes += createEpisode("sub") }
             dubCount?.let { if (index < it) dubEpisodes += createEpisode("dub") }
         }
-        val actors =
-                document.select("div.block-actors-content div.bac-item").mapNotNull {
-                    it.getActorData()
-                }
-
-        val recommendations =
-                document.select("div.block_area_category div.flw-item").map { it.toSearchResult() }
-
+        val actors = document.select("div.block-actors-content div.bac-item").mapNotNull { it.getActorData() }
+        val recommendations = document.select("div.block_area_category div.flw-item").map { it.toSearchResult() }
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
             posterUrl = poster
             backgroundPosterUrl = backgroundposter
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             this.tags = genres
             this.plot = description
             addEpisodes(DubStatus.Subbed, subEpisodes)
@@ -391,7 +400,7 @@ class HiAnime : MainAPI() {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class MetaMappings(
-        @JsonProperty("themoviedb_id") val themoviedbId: String? = null,
+        @JsonProperty("themoviedb_id") val themoviedbId: Int? = null,
         @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
         @JsonProperty("imdb_id") val imdbId: String? = null,
         @JsonProperty("mal_id") val malId: Int? = null,
@@ -447,5 +456,78 @@ class HiAnime : MainAPI() {
             }
         }
     }
+}
 
+suspend fun fetchTmdbLogoUrl(
+    tmdbAPI: String,
+    apiKey: String,
+    type: TvType,
+    tmdbId: Int?,
+    appLangCode: String?
+): String? {
+
+    if (tmdbId == null) return null
+
+    val url = if (type == TvType.AnimeMovie)
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+    else
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
+
+    val json = runCatching { JSONObject(app.get(url).text) }.getOrNull() ?: return null
+    val logos = json.optJSONArray("logos") ?: return null
+    if (logos.length() == 0) return null
+
+    val lang = appLangCode?.trim()?.lowercase()
+
+    fun path(o: JSONObject) = o.optString("file_path")
+    fun isSvg(o: JSONObject) = path(o).endsWith(".svg", true)
+    fun urlOf(o: JSONObject) = "https://image.tmdb.org/t/p/w500${path(o)}"
+
+    // Language match
+    var svgFallback: JSONObject? = null
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        val p = path(logo)
+        if (p.isBlank()) continue
+
+        val l = logo.optString("iso_639_1").trim().lowercase()
+        if (l == lang) {
+            if (!isSvg(logo)) return urlOf(logo)
+            if (svgFallback == null) svgFallback = logo
+        }
+    }
+    svgFallback?.let { return urlOf(it) }
+
+    // Highest voted fallback
+    var best: JSONObject? = null
+    var bestSvg: JSONObject? = null
+
+    fun voted(o: JSONObject) = o.optDouble("vote_average", 0.0) > 0 && o.optInt("vote_count", 0) > 0
+
+    fun better(a: JSONObject?, b: JSONObject): Boolean {
+        if (a == null) return true
+        val aAvg = a.optDouble("vote_average", 0.0)
+        val aCnt = a.optInt("vote_count", 0)
+        val bAvg = b.optDouble("vote_average", 0.0)
+        val bCnt = b.optInt("vote_count", 0)
+        return bAvg > aAvg || (bAvg == aAvg && bCnt > aCnt)
+    }
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        if (!voted(logo)) continue
+
+        if (isSvg(logo)) {
+            if (better(bestSvg, logo)) bestSvg = logo
+        } else {
+            if (better(best, logo)) best = logo
+        }
+    }
+
+    best?.let { return urlOf(it) }
+    bestSvg?.let { return urlOf(it) }
+
+    // No language match & no voted logos
+    return null
 }
