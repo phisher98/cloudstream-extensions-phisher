@@ -157,6 +157,24 @@ jobs:
           cp **/build/*.jar $GITHUB_WORKSPACE/builds
           cp build/plugins.json $GITHUB_WORKSPACE/builds
 
+      - name: Add external Kartoons.cs3
+        run: |
+          cd $GITHUB_WORKSPACE/builds
+          wget -O Kartoons.cs3 https://github.com/phisher98/TVVVV/raw/refs/heads/main/Kartoons.cs3
+
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+          jq --arg file "Kartoons.cs3" \
+             --arg name "Kartoons" \
+             '. + [{
+                "name": $name,
+                "file": $file,
+                "version": 1
+             }]' \
+             plugins.json > plugins_new.json
+          mv plugins_new.json plugins.json
+
       - name: Push builds
         run: |
           cd $GITHUB_WORKSPACE/builds
