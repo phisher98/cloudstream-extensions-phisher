@@ -157,31 +157,6 @@ jobs:
           cp **/build/*.jar $GITHUB_WORKSPACE/builds
           cp build/plugins.json $GITHUB_WORKSPACE/builds
 
-      - name: Add external Kartoons.cs3
-        run: |
-          cd $GITHUB_WORKSPACE/builds
-          wget -O Kartoons.cs3 https://github.com/phisher98/TVVVV/raw/refs/heads/main/Kartoons.cs3
-          sudo apt-get update
-          sudo apt-get install -y jq
-          REPO_URL="https://raw.githubusercontent.com/${{ github.repository }}/builds"
-          jq --arg url "$REPO_URL/Kartoons.cs3" \
-             '. + [{
-                "name": "Kartoons",
-                "internalName": "Kartoons",
-                "version": 1,
-                "apiVersion": 1,
-                "language": "hi",
-                "authors": ["Phisher98"],
-                "tvTypes": ["Cartoon","Anime"],
-                "url": $url,
-                "iconUrl": "https://kartoons.fun/logo.png",
-                "description": "Hindi Anime & Cartoons",
-                "repositoryUrl": "https://github.com/phisher98/cloudstream-extensions-phisher",
-                "status": 1
-             }]' plugins.json > plugins_new.json
-
-          mv plugins_new.json plugins.json
-
       - name: Push builds
         run: |
           cd $GITHUB_WORKSPACE/builds
