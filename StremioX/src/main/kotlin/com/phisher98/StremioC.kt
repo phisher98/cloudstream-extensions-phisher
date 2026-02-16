@@ -128,7 +128,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         }
 
         val encodedId = URLEncoder.encode(res.id, "UTF-8")
-
         val response = app.get(buildUrl("/meta/${res.type}/$encodedId.json"))
             .parsedSafe<CatalogResponse>()
             ?: throw RuntimeException("Failed to load meta")
@@ -315,6 +314,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         val type: String?
     )
 
+
     private data class CatalogEntry(
         @JsonProperty("name") val name: String,
         @JsonProperty("id") val id: String,
@@ -339,6 +339,8 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                 posterUrl = poster
             }
         }
+
+
 
         suspend fun toLoadResponse(provider: StremioC, imdbId: String?): LoadResponse {
             if (videos.isNullOrEmpty()) {

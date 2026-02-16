@@ -179,6 +179,14 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
         val trailer = res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
 
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = res.id,
+            appLangCode = "en"
+        )
+
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
@@ -205,6 +213,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
             ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgPoster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = res.overview
                 this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
@@ -224,6 +233,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 LoadData(res.external_ids?.imdb_id).toJson()
             ) {
                 this.posterUrl = poster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.comingSoon = isUpcoming(releaseDate)
                 this.backgroundPosterUrl = bgPoster
                 this.year = year

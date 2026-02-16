@@ -162,6 +162,15 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
         val trailer =
             res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
 
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = res.id,
+            appLangCode = "en"
+        )
+
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
@@ -187,6 +196,7 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
             ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgPoster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = res.overview
                 this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
@@ -208,6 +218,7 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
             ) {
                 this.posterUrl = poster
                 this.comingSoon = isUpcoming(releaseDate)
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.backgroundPosterUrl = bgPoster
                 this.year = year
                 this.plot = res.overview
