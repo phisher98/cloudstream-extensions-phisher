@@ -13,7 +13,15 @@ enum class ServerList(val link: Pair<String, Boolean>) {
     SOLARMovie("https://solarmovie.fi" to true),
     Sfix("https://sflix.fi" to true),
     Movhub("https://movhub.ws" to true),
+    FlixTor("https://flixtor.mov" to true),
+    LookMovie("https://lookmovie.fi" to true),
+    Bflix("https://bflix.la" to true),
+    MyFlixer("https://myflixer.fi" to true),
+    Movies123Free("https://123moviesfree.bz" to true),
+    HuraWatch("https://hurawatch.la" to true),
+    Soap2Day("https://soap2day.fi" to true),
 }
+
 
 @CloudstreamPlugin
 class YflixPlugin : Plugin() {
@@ -38,8 +46,14 @@ class YflixPlugin : Plugin() {
             ServerList.SOLARMovie.link.first to "SolarMovie",
             ServerList.Sfix.link.first to "SFlix",
             ServerList.Movhub.link.first to "Movhub",
+            ServerList.FlixTor.link.first to "FlixTor",
+            ServerList.LookMovie.link.first to "LookMovie",
+            ServerList.Bflix.link.first to "BFlix",
+            ServerList.MyFlixer.link.first to "MyFlixer",
+            ServerList.Movies123Free.link.first to "123MoviesFree",
+            ServerList.HuraWatch.link.first to "HuraWatch",
+            ServerList.Soap2Day.link.first to "Soap2Day",
         )
-
         var currentYflixServer: String
             get() = getKey("Yflix_CURRENT_SERVER") ?: ServerList.Yflix.link.first
             set(value) {
