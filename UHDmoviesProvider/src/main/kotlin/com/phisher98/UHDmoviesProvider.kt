@@ -39,12 +39,12 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         "" to "Home",
         "movies/" to "Movies",
         "tv-series/" to "TV Series",
-        "tv-shows/" to "TV Shows",
-        "movies/dual-audio-movies/" to "Dual Audio Movies",
         "movies/collection-movies/" to "Hollywood",
-        "tv-shows/netflix/" to "Netflix",
         "web-series/" to "Web Series",
+        "tv-shows/netflix/" to "Netflix",
         "amazon-prime/" to "Amazon Prime",
+        "4k-hdr/" to "4K HDR",
+        "imax/" to "IMAX",
     )
 
     private suspend fun cfKiller(url: String): NiceResponse {
@@ -129,7 +129,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         val Description = meta?.get("description")?.asText() ?: ""
         val IMDBRating = meta?.get("imdbRating")?.asText()
         val trailer = doc.select("p iframe").attr("src")
-
+        val logoUrl = meta?.get("logo")?.asText()
 
         val simklId = ids.imdbId?.let {
             fetchSimklId(it, isSeries = type == TvType.TvSeries)
@@ -216,6 +216,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, tvSeriesEpisodes) {
                 this.posterUrl = poster?.trim() ?: collectionposter
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.tags = tags
                 addTrailer(trailer)
@@ -239,9 +240,9 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     it.nextElementSibling()?.select("a.maxbutton-1")?.attr("href") ?: ""
                 )
             }
-            Log.d("Phisher","$poster $collectionposter $Background")
             newMovieLoadResponse(title, url, TvType.Movie, data) {
                 this.posterUrl = poster?.trim() ?: collectionposter
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.tags = tags
                 addTrailer(trailer)
@@ -339,7 +340,7 @@ private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
     if (imdbId.isNullOrBlank()) return null
 
     val metaType = if (type == TvType.TvSeries) "series" else "movie"
-    val url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta/$metaType/$imdbId.json"
+    val url = "https://v3-cinemeta.strem.io/meta/$metaType/$imdbId.json"
 
     return try {
         val resp = app.get(url).text

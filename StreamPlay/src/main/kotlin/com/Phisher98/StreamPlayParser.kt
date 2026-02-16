@@ -1042,3 +1042,21 @@ data class FlixindiaResult(
 )
 
 
+//Vegamovies
+
+data class VegamoviesResponse(
+    val found: Int?,
+    val hits: List<VegamoviesHit>?
+)
+
+data class VegamoviesHit(
+    val document: VegamoviesDocument?
+)
+
+data class VegamoviesDocument(
+    val id: String?,
+    val imdb_id: String?,
+    val permalink: String?,
+    val post_title: String?,
+    val post_thumbnail: String?
+)

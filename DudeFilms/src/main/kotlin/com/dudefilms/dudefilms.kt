@@ -43,7 +43,7 @@ class Dudefilms : MainAPI() {
     )
     companion object
     {
-        private val cinemeta_url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta"
+        private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
     }
 
     override val mainPage = mainPageOf(
@@ -196,7 +196,7 @@ class Dudefilms : MainAPI() {
                     }
 
                 newEpisode(urls.toJson()) {
-                    this.name = metaEpisode?.title
+                    this.name = metaEpisode?.name
                     this.season = seasonNumber
                     this.episode = episodeNumber
                     this.posterUrl = metaEpisode?.thumbnail

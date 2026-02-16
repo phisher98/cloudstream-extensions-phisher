@@ -2303,11 +2303,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
-
-
     suspend fun invokeVegamovies(
-        sourceName: String,
         id: String? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -2329,7 +2325,78 @@ object StreamPlayExtractor : StreamPlay() {
             "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
         )
 
-        val api = if(sourceName == "VegaMovies") getDomains()?.vegamovies else getDomains()?.rogmovies
+        val api = getDomains()?.vegamovies
+        val url = "$api/search.php?q=${id ?: return}"
+
+        app.get(
+            url,
+            referer = api,
+            headers = headers
+        ).parsedSafe<VegamoviesResponse>()?.hits
+            ?.mapNotNull { it.document }
+            ?.filter { it.imdb_id.equals(id, ignoreCase = true) }
+            ?.amap { doc ->
+                val permalink = doc.permalink ?: return@amap
+                val fullUrl = api + permalink
+                val res = app.get(
+                    fullUrl,
+                    referer = api,
+                    headers = headers
+                ).document
+            if(season == null) {
+                res.select("button.dwd-button").amap {
+                    val link = it.parent()?.attr("href") ?: return@amap
+                    val doc = app.get(link, referer = api, headers = headers).document
+                    val source = doc.selectFirst("button.btn:matches((?i)(V-Cloud))")
+                        ?.parent()
+                        ?.attr("href")
+                        ?: return@amap
+                    loadSourceNameExtractor("VegaMovies", source, referer = "", subtitleCallback, callback)
+                }
+            }
+            else {
+                res.select("h5:matches((?i)Season $season), h3:matches((?i)Season $season)").amap { header ->
+                    val links = header.nextElementSiblings().select("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
+                    links.amap { link ->
+                        val targetHref = link.attr("href")
+                        val doc = app.get(targetHref, referer = api, headers = headers).document
+                        val epElement = doc.selectFirst("h4:contains(Episodes):contains($episode)") ?: return@amap
+                        val epLink = epElement.nextElementSibling()?.selectFirst("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")?.attr("href")
+                        if (epLink != null) { loadSourceNameExtractor("VegaMovies", epLink, referer = "", subtitleCallback, callback)
+                        } else
+                        {
+                            Log.e("VegaMovies", "V-Cloud link missing for episode $episode")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    suspend fun invokeRogmovies(
+        id: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "cookie" to "xla=s4t",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "sec-ch-ua" to "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Microsoft Edge\";v=\"120\"",
+            "sec-ch-ua-mobile" to "?0",
+            "sec-ch-ua-platform" to "\"Linux\"",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Sec-Fetch-User" to "?1",
+            "Upgrade-Insecure-Requests" to "1",
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+        )
+
+        val api = getDomains()?.rogmovies
 
         val url = "$api/?s=${id ?: return}"
         app.get(
@@ -2350,7 +2417,7 @@ object StreamPlayExtractor : StreamPlay() {
                         ?.parent()
                         ?.attr("href")
                         ?: return@amap
-                    loadSourceNameExtractor(sourceName, source, referer = "", subtitleCallback, callback)
+                    loadSourceNameExtractor("RogMovies", source, referer = "", subtitleCallback, callback)
                 }
             }
             else {
@@ -2361,10 +2428,10 @@ object StreamPlayExtractor : StreamPlay() {
                             val doc = app.get(targetHref, referer = api, headers = headers).document
                             val epElement = doc.selectFirst("h4:contains(Episodes):contains($episode)") ?: return@amap
                             val epLink = epElement.nextElementSibling()?.selectFirst("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")?.attr("href")
-                            if (epLink != null) { loadSourceNameExtractor(sourceName, epLink, referer = "", subtitleCallback, callback)
+                            if (epLink != null) { loadSourceNameExtractor("RogMovies", epLink, referer = "", subtitleCallback, callback)
                            } else
                         {
-                            Log.e(sourceName, "V-Cloud link missing for episode $episode")
+                            Log.e("RogMovies", "V-Cloud link missing for episode $episode")
                         }
                     }
                 }

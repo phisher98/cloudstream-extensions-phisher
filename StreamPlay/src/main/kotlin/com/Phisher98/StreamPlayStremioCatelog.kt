@@ -46,10 +46,6 @@ class StreamPlayStremioCatelog(
         TvType.TvSeries)
     override val hasMainPage = true
 
-    companion object {
-        private const val cinemataUrl = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
-    }
-
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -422,7 +418,7 @@ class StreamPlayStremioCatelog(
         val mediaType = if (type == "series") "series" else "movie"
 
         val res = app.get(
-            "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta/$mediaType/$imdbId.json"
+            "https://v3-cinemeta.strem.io/meta/$mediaType/$imdbId.json"
         ).parsedSafe<CinemetaResponse>()
 
         return res?.meta?.let {

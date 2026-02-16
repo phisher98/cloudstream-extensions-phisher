@@ -36,6 +36,7 @@ import com.phisher98.StreamPlayExtractor.invokePlaydesi
 import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
+import com.phisher98.StreamPlayExtractor.invokeRogmovies
 import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
@@ -117,10 +118,10 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, subtitleCallback,callback)
         },
         Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isBollywood) invokeVegamovies("VegaMovies",res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isBollywood) invokeVegamovies(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("Rogmovies", "RogMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
-            if (res.isBollywood) invokeVegamovies("RogMovies",res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            if (res.isBollywood) invokeRogmovies(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("multimovies", "MultiMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback)

@@ -428,7 +428,7 @@ class MovieBoxProvider : MainAPI() {
 
         val Poster = meta?.get("poster")?.asText() ?: coverUrl
         val Background = meta?.get("background")?.asText() ?: backgroundUrl
-        val Description = meta?.get("description")?.asText() ?: description
+        val Description = meta?.get("overview")?.asText() ?: description
         val IMDBRating = meta?.get("imdbRating")?.asText()
 
         if (type == TvType.TvSeries) {
@@ -457,7 +457,7 @@ class MovieBoxProvider : MainAPI() {
                             it["season"]?.asInt() == seasonNumber &&
                                     it["episode"]?.asInt() == episodeNumber
                         }
-                        val epName = epMeta?.get("title")?.asText()?.takeIf { it.isNotBlank() } ?: "S${seasonNumber}E${episodeNumber}"
+                        val epName = epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() } ?: "S${seasonNumber}E${episodeNumber}"
                         val epDesc = epMeta?.get("overview")?.asText() ?: epMeta?.get("description")?.asText() ?: "Season $seasonNumber Episode $episodeNumber"
                         val epThumb = epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() } ?: coverUrl
                         val runtime = epMeta?.get("runtime")?.asText()?.filter { it.isDigit() }?.toIntOrNull()
@@ -893,7 +893,7 @@ private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
     if (imdbId.isNullOrBlank()) return null
 
     val metaType = if (type == TvType.TvSeries) "series" else "movie"
-    val url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta/$metaType/$imdbId.json"
+    val url = "https://v3-cinemeta.strem.io/meta/$metaType/$imdbId.json"
 
     return try {
         val resp = app.get(url).text

@@ -122,7 +122,7 @@ open class Superstream(sharedPref: SharedPreferences?=null) : MainAPI() {
     }
 
     private val token = randomToken()
-    private val cinemeta_url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta"
+    private val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
     private object CipherUtils {
         private const val ALGORITHM = "DESede"
         private const val TRANSFORMATION = "DESede/CBC/PKCS5Padding"

@@ -56,7 +56,7 @@ class Cinemacity : MainAPI() {
             "Cookie" to base64Decode("ZGxlX3VzZXJfaWQ9MzI3Mjk7IGRsZV9wYXNzd29yZD04OTQxNzFjNmE4ZGFiMThlZTU5NGQ1YzY1MjAwOWEzNTs=")
         )
         private const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
-        private const val cinemeta_url = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb/meta"
+        private const val cinemeta_url = "https://v3-cinemeta.strem.io/meta"
     }
 
     fun parseCredits(jsonText: String?): List<ActorData> {
@@ -352,7 +352,7 @@ class Cinemacity : MainAPI() {
                     episodeList += newEpisode(epjson) {
                         this.season = seasonNumber
                         this.episode = episodeNumber
-                        this.name = epMeta?.title ?: "S${seasonNumber}E${episodeNumber}"
+                        this.name = epMeta?.name ?: "S${seasonNumber}E${episodeNumber}"
                         this.description = epMeta?.overview
                         this.posterUrl = epMeta?.thumbnail
                         addDate(epMeta?.released)

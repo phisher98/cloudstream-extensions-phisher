@@ -55,8 +55,8 @@ data class ResponseData(
 
         val slug: String? = null,
 
-        val director: String? = null,
-        val writer: String? = null,
+        val director: List<String>? = null,
+        val writer: List<String>? = null,
 
         val description: String? = null,
         val year: String? = null,
@@ -107,7 +107,7 @@ data class ResponseData(
 
         data class EpisodeDetails(
             val id: String? = null,
-            val title: String? = null,
+            val name: String? = null,
             val season: Int? = null,
             val episode: Int? = null,
             val thumbnail: String? = null,
