@@ -14,16 +14,22 @@ fun String.fixSourceUrl(): String {
 }
 
 fun fixSourceName(name: String?, title: String?, description: String?): String {
+    val pName = name?.replace("\n", " ")
+    val pTitle = title?.replace("\n", " ")
+
     return when {
-        !name.isNullOrEmpty() && !title.isNullOrEmpty() -> "$name\n$title"
-        !name.isNullOrEmpty() && !description.isNullOrEmpty() -> "$name\n$description"
-        else -> title ?: description ?: name ?: ""
+        !pName.isNullOrEmpty() && !pTitle.isNullOrEmpty() -> "$pName\n$pTitle"
+        !pName.isNullOrEmpty() && !description.isNullOrEmpty() -> "$pName\n$description"
+        else -> pTitle ?: description ?: pName ?: ""
     }
 }
 
 fun getQuality(qualities: List<String?>): Int {
     fun String.getQuality(): String? {
-        return Regex("(\\d{3,4}[pP])").find(this)?.groupValues?.getOrNull(1)
+        val has = Regex("(\\d{3,4}[pP])").find(this)?.groupValues?.getOrNull(1)
+        if (has != null) return has
+        if (contains("4k", ignoreCase = true)) return "2160p"
+        return null
     }
     val quality = qualities.firstNotNullOfOrNull { it?.getQuality() }
     return getQualityFromName(quality)
