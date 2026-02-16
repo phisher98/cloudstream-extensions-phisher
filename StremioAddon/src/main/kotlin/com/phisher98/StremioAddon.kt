@@ -341,7 +341,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
                         INFER_TYPE,
                     )
                     {
-                        this.quality=getQuality(listOf(description,title,name))
+                        this.quality=getQuality(listOf(name,title,description))
                         this.headers=behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers ?: mapOf()
                     }
                 )
