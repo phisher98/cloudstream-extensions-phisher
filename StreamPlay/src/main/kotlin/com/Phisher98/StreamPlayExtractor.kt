@@ -6212,6 +6212,74 @@ object StreamPlayExtractor : StreamPlay() {
         } while (token != null)
     }
 
+    suspend fun invokeMovies4u(
+        id: String? = null,
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val searchQuery = "$title $year".trim()
+        val movies4uAPI = getDomains()?.movies4u ?: return
+        val searchUrl = "$movies4uAPI/?s=$searchQuery"
+
+        val searchDoc = app.get(searchUrl).document
+        val links = searchDoc.select("article h3 a")
+
+        links.amap { element ->
+            val postUrl = element.attr("href")
+            val postDoc = app.get(postUrl).document
+            val imdbId = postDoc.select("p a:contains(IMDb Rating)").attr("href")
+                .substringAfter("title/").substringBefore("/")
+
+            if(imdbId != id.toString()) { return@amap }
+
+            if (season == null) {
+                val innerUrl = postDoc.select("div.download-links-div a.btn").attr("href")
+                val innerDoc = app.get(innerUrl).document
+                val sourceButtons = innerDoc.select("div.downloads-btns-div a.btn")
+                sourceButtons.amap { sourceButton ->
+                    val sourceLink = sourceButton.attr("href")
+                    loadSourceNameExtractor(
+                        "Movies4u",
+                        sourceLink,
+                        "",
+                        subtitleCallback,
+                        callback
+                    )
+                }
+            } else {
+                val seasonBlocks = postDoc.select("div.downloads-btns-div")
+                seasonBlocks.amap { block ->
+                    val headerText = block.previousElementSibling()?.text().orEmpty()
+                    if (headerText.contains("Season $season", ignoreCase = true)) {
+                        val seasonLink = block.selectFirst("a.btn")?.attr("href") ?: return@amap
+
+                        val episodeDoc = app.get(seasonLink).document
+                        val episodeBlocks = episodeDoc.select("div.downloads-btns-div")
+
+                        if (episode != null && episode in 1..episodeBlocks.size) {
+                            val episodeBlock = episodeBlocks[episode - 1]
+                            val episodeLinks = episodeBlock.select("a.btn")
+
+                            episodeLinks.amap { epLink ->
+                                val sourceLink = epLink.attr("href")
+                                loadSourceNameExtractor(
+                                    "Movies4u",
+                                    sourceLink,
+                                    "",
+                                    subtitleCallback,
+                                    callback
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 }
 

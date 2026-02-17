@@ -24,6 +24,7 @@ import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
 import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
+import com.phisher98.StreamPlayExtractor.invokeMovies4u
 import com.phisher98.StreamPlayExtractor.invokeMoviesApi
 import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
 import com.phisher98.StreamPlayExtractor.invokeMoviesmod
@@ -256,6 +257,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("Hindmoviez", "HindMoviez (Multi)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, callback)
+        },
+        Provider("Movies4u", "Movies4u (Multi)") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
         }
     )
 }
