@@ -24,6 +24,6 @@ cloudstream {
         "Movie",
         "TvSeries",
     )
-    iconUrl = "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/master/Movies4u/src/main/icon.png"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/master/Movies4u/src/main/movies4u.png"
     isCrossPlatform = true
 }
