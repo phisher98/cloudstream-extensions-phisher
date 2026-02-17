@@ -59,6 +59,8 @@ class Movies4u : MainAPI() {
         "category/anime/" to "Anime / Animation",
         "category/k-drama/" to "K-Drama",
         "category/south-hindi-movies/" to "South Hindi Movies"
+        "category/telugu/" to Telugu
+        "category/tamil/" to Tamil
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
