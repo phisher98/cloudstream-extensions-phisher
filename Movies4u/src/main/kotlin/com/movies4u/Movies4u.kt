@@ -53,6 +53,7 @@ class Movies4u : MainAPI() {
 
     override val mainPage = mainPageOf(
         "" to "Home",
+        "category/telugu/" to "Telugu",
         "category/bollywood/" to "BollyWood",
         "category/hollywood/" to "HollyWood",
         "category/web-series/" to "WEB-Series",
