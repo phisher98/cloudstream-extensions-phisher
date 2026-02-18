@@ -1854,127 +1854,201 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeVideasy(
-        id: Int? = null,
-        imdbid: String? = null,
         title: String? = null,
+        tmdbId: Int? = null,
+        imdbId: String? = null,
         year: Int? = null,
         season: Int? = null,
         episode: Int? = null,
-        callback: (ExtractorLink) -> Unit,
-        subtitleCallback: (SubtitleFile) -> Unit
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
     ) {
-        if (imdbid.isNullOrBlank()) return
 
-        val isMovie = season == null
-
-        val apiPath = if (isMovie) {
-            "sources-with-title?title=$title&mediaType=movie&year=$year&episodeId=1&seasonId=1&tmdbId=$id&imdbId=$imdbid"
-        } else {
-            "sources-with-title?title=$title&mediaType=tv&year=$year&episodeId=$episode&seasonId=$season&tmdbId=$id&imdbId=$imdbid"
+        fun quote(text: String): String {
+            return URLEncoder.encode(text, StandardCharsets.UTF_8.toString())
+                .replace("+", "%20")
         }
 
-        val videasySources = listOf(
-            VideasySource("myflixerzupcloud", "Neon", "Original"),
-            VideasySource("1movies", "Sage", "Original"),
-            VideasySource("moviebox", "Cypher", "Original"),
-            VideasySource("cdn", "Yoru", "Original", movieOnly = true),
-            VideasySource("primewire", "Reyna", "Original"),
-            VideasySource("onionplay", "Omen", "Original"),
-            VideasySource("m4uhd", "Breach", "Original"),
-
-            // hdmovie variants
-            VideasySource("hdmovie", "Vyse", "Original"),
-            VideasySource("hdmovie", "Fade", "Hindi"),
-
-            // meine (language-based)
-            VideasySource("meine?language=german", "Killjoy", "German"),
-            VideasySource("meine?language=italian", "Harbor", "Italian"),
-            VideasySource("meine?language=french", "Chamber", "French", movieOnly = true),
-
-            // latin / spanish
-            VideasySource("cuevana-latino", "Gekko", "Latin"),
-            VideasySource("cuevana-spanish", "Kayo", "Spanish"),
-
-            // portuguese
-            VideasySource("superflix", "Raze", "Portuguese"),
-            VideasySource("overflix", "Phoenix", "Portuguese"),
-            VideasySource("visioncine", "Astra", "Portuguese")
+        var headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "Connection" to "keep-alive",
+            "Origin" to "https://player.videasy.net",
         )
 
+        val servers = listOf(
+            "myflixerzupcloud",
+            "1movies",
+            "moviebox",
+            "primewire",
+            "m4uhd",
+            "hdmovie",
+            "cdn",
+            "primesrcme"
+        )
 
+        if(title == null) return
 
-        for (source in videasySources) {
-            if (!isMovie && source.movieOnly) continue
-            val videasyheaders = mapOf(
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-                "Accept" to "*/*",
-                "Accept-Language" to "en-US,en;q=0.9",
-                "Origin" to "https://player.videasy.net",
-                "Referer" to "https://player.videasy.net/",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-site"
+        val firstPass = quote(title)
+        val encTitle = quote(firstPass)
+
+        servers.amap { server ->
+            val url = if (season == null) {
+                "$videasyAPI/$server/sources-with-title?title=$encTitle&mediaType=movie&year=$year&tmdbId=$tmdbId&imdbId=$imdbId"
+            } else {
+                "$videasyAPI/$server/sources-with-title?title=$encTitle&mediaType=tv&year=$year&tmdbId=$tmdbId&episodeId=$episode&seasonId=$season&imdbId=$imdbId"
+            }
+
+            val enc_data = app.get(url, headers = headers).text
+
+            val jsonBody = """{"text":"$enc_data","id":"$tmdbId"}"""
+            val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
+            val response = app.post(
+                "https://enc-dec.app/api/dec-videasy",
+                requestBody = requestBody
             )
 
-            runCatching {
-                val url = "$Videasy/${source.key}/$apiPath"
-                val res = app.get(url)
-                if (res.code != 200) return@runCatching
+            if(response.isSuccessful) {
+                val json = response.text
+                val result = JSONObject(json).getJSONObject("result")
 
-                val body = JSONObject().apply {
-                    put("text", res.text)
-                    put("id", id)
-                }.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
+                val sourcesArray = result.getJSONArray("sources")
+                for (i in 0 until sourcesArray.length()) {
+                    val obj = sourcesArray.getJSONObject(i)
+                    val quality = obj.getString("quality")
+                    val source = obj.getString("url")
+                    var type = INFER_TYPE
 
-                val decRes = app.post(BuildConfig.VideasyDEC, requestBody = body)
-                if (decRes.code != 200) return@runCatching
+                    if(source.contains(".m3u8")) {
+                        headers = headers + mapOf(
+                            "Accept" to "application/vnd.apple.mpegurl,application/x-mpegURL,*/*",
+                            "Referer" to "$videasyAPI/"
+                        )
+                        type = ExtractorLinkType.M3U8
+                    } else if(source.contains(".mp4")) {
+                        headers = headers + mapOf(
+                            "Accept" to "video/mp4,*/*",
+                            "Range" to "bytes=0-",
+                        )
+                        type = ExtractorLinkType.VIDEO
+                    } else if(source.contains(".mkv")) {
+                        headers = headers + mapOf(
+                            "Accept" to "video/x-matroska,*/*",
+                            "Range" to "bytes=0-",
+                        )
+                        type = ExtractorLinkType.VIDEO
+                    }
 
-                val json = JSONObject(decRes.text)
-                val result = json.optJSONObject("result") ?: return@runCatching
+                    callback.invoke(
+                        newExtractorLink(
+                            "Videasy[${server.uppercase()}]",
+                            "Videasy[${server.uppercase()}] $quality",
+                            source,
+                            type
+                        ) {
+                            this.quality = getIndexQuality(quality)
+                            this.headers = headers
+                        }
+                    )
+                }
 
-                result.optJSONObject("streams")?.let { streams ->
-                    for (key in streams.keys()) {
-                        val link = streams.optString(key)
-                        if (link.isBlank()) continue
-                        Log.d("Phisher","${source.name} ${source.key}")
+                val subtitlesArray = result.getJSONArray("subtitles")
+                for (i in 0 until subtitlesArray.length()) {
+                    val obj = subtitlesArray.getJSONObject(i)
+                    val source = obj.getString("url")
+                    val language = obj.getString("language")
+
+                    subtitleCallback.invoke(
+                        newSubtitleFile(
+                            getLanguage(language),
+                            source
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    suspend fun invokeMapple(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        if(tmdbId == null) return
+        var mediaType: String
+        var tv_slug = ""
+        var url: String
+
+        if(season == null) {
+            mediaType =  "movie"
+            url = "$mappleAPI/watch/movie/$tmdbId"
+        } else {
+            mediaType = "tv"
+            tv_slug = "$season-$episode"
+            url = "$mappleAPI/watch/tv/$tmdbId/$season-$episode"
+        }
+
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "Referer" to "$mappleAPI/",
+        )
+
+        val text = app.get(url, headers = headers).text
+        val regex = Regex("""window\.__REQUEST_TOKEN__\s*=\s*"([^"]+)"""")
+        val match = regex.find(text)
+        val token = match?.groupValues?.get(1) ?: return
+
+        val sources = listOf(
+            "mapple", "sakura", "oak", "willow",
+            "cherry", "pines", "magnolia", "sequoia"
+        )
+
+        sources.amap { source ->
+            try {
+                val jsonBody = """
+                    {
+                        "data": {
+                            "mediaId": $tmdbId,
+                            "mediaType": "$mediaType",
+                            "tv_slug": "$tv_slug",
+                            "source": "$source"
+                        },
+                        "endpoint": "stream-encrypted"
+                    }
+                """.trimIndent()
+
+                val encryptResText = app.post(
+                    "$mappleAPI/api/encrypt",
+                    json = jsonBody,
+                    headers = headers
+                ).text
+
+                val encryptRes = JSONObject(encryptResText)
+                val streamPath = encryptRes.getString("url")
+                val finalUrl = "$mappleAPI$streamPath&requestToken=$token"
+
+                val streamsDataText = app.get(
+                    finalUrl,
+                    headers = headers
+                ).text
+
+                val streamsData = JSONObject(streamsDataText)
+
+                if (streamsData.optBoolean("success")) {
+                    val data = streamsData.getJSONObject("data")
+                    val streamUrl = data.optString("stream_url")
+
+                    if (streamUrl.isNotEmpty()) {
                         M3u8Helper.generateM3u8(
-                            "Videasy · ${source.name} (${source.language})",
-                            link,
-                            Videasy,
-                            headers = videasyheaders
+                            "Mapple [${source.uppercase()}]",
+                            streamUrl,
+                            "$mappleAPI/",
+                            headers = headers
                         ).forEach(callback)
                     }
                 }
-
-                result.optJSONArray("sources")?.let { arr ->
-                    for (i in 0 until arr.length()) {
-                        val obj = arr.getJSONObject(i)
-                        val link = obj.optString("url")
-                        val q = obj.optString("quality")
-
-                        if (link.isBlank()) continue
-                        Log.d("Phisher","${source.name} ${source.key} $q")
-                        M3u8Helper.generateM3u8(
-                            "Videasy · ${source.name} (${source.language})",
-                            link,
-                            Videasy,
-                            headers = videasyheaders
-                        ).forEach(callback)
-                    }
-                }
-
-                // ───── Subtitles ─────
-                result.optJSONArray("subtitles")?.let { subs ->
-                    for (i in 0 until subs.length()) {
-                        val s = subs.getJSONObject(i)
-                        val label = s.optString("label")
-                        val file = s.optString("file")
-                        if (file.isNotBlank()) subtitleCallback(newSubtitleFile(label, file))
-                    }
-                }
-
-            }.onFailure {
-                println("Videasy failed: ${source.name} → ${it.message}")
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -6279,6 +6353,111 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }
         }
+    }
+
+    suspend fun invokeM4uhd(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val res = app.get("$m4uhdAPI/search/${title.fixTitle()}", timeout = 5000L).document
+
+        val scriptData = res.select("div.item").map {
+            Triple(
+                it.selectFirst("img.imagecover")?.attr("alt"),
+                it.selectFirst(".jt-info")?.text(),
+                it.selectFirst("a")?.attr("href")
+            )
+        }
+
+        val cleanTitle = title
+            ?.lowercase()
+            ?.replace(Regex("[^a-z0-9]"), "")
+            ?: return
+
+        val script = scriptData.firstOrNull {
+
+            val siteTitle = it.first
+                ?.lowercase()
+                ?.replace(Regex("[^a-z0-9]"), "")
+                ?: return@firstOrNull false
+
+            siteTitle.contains(cleanTitle)
+
+        } ?: scriptData.firstOrNull()
+
+        val link = fixUrl(script?.third ?: return, m4uhdAPI)
+        val request = app.get(link)
+        val doc = request.document
+
+        val directIframe = doc.selectFirst("#myplayer iframe")?.attr("src")
+
+        if (!directIframe.isNullOrBlank()) {
+            loadExtractor(
+                fixUrl(directIframe, link),
+                m4uhdAPI,
+                subtitleCallback,
+                callback
+            )
+            return
+        }
+
+        val cookies = request.cookies
+        val token = doc.selectFirst("meta[name=csrf-token]")?.attr("content") ?: return
+        Log.d("Phisher","I'm here")
+        val m4uData = if (season == null) {
+
+            doc.selectFirst("span.singlemv.active, span#fem")?.attr("data")
+
+        } else {
+            val epCode = "S%02d-E%02d".format(season, episode)
+            val episodeBtn = doc.select("button.episode")
+                .firstOrNull {
+                    it.text().trim().equals(epCode, true)
+                } ?: return
+
+            val idepisode = episodeBtn.attr("idepisode")
+
+            val embed = app.post(
+                "$m4uhdAPI/ajaxtv",
+                data = mapOf(
+                    "idepisode" to idepisode,
+                    "_token" to token
+                ),
+                referer = link,
+                headers = mapOf(
+                    "X-Requested-With" to "XMLHttpRequest"
+                ),
+                cookies = cookies
+            ).document
+
+            embed.selectFirst("span.singlemv.active, span#fem")?.attr("data")
+
+        } ?: return
+
+        val iframe = app.post(
+            "$m4uhdAPI/ajax",
+            data = mapOf(
+                "m4u" to m4uData,
+                "_token" to token
+            ),
+            referer = link,
+            headers = mapOf(
+                "X-Requested-With" to "XMLHttpRequest"
+            ),
+            cookies = cookies
+        ).document.selectFirst("iframe")?.attr("src") ?: return
+
+        loadSourceNameExtractor(
+            "M4uhd",
+            fixUrl(iframe, link),
+            m4uhdAPI,
+            subtitleCallback,
+            callback
+        )
     }
 
 }

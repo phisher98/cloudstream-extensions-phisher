@@ -21,6 +21,8 @@ import com.phisher98.StreamPlayExtractor.invokeHindmoviez
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
+import com.phisher98.StreamPlayExtractor.invokeM4uhd
+import com.phisher98.StreamPlayExtractor.invokeMapple
 import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
 import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
@@ -226,7 +228,7 @@ fun buildProviders(): List<Provider> {
             invokeNuvioStreams(res.imdbId, res.season,res.episode,token, callback)
         },
         Provider("VidEasy", "VidEasy") { res, subtitleCallback, callback, _, _ ->
-            invokeVideasy(res.id, res.imdbId, res.title, res.year, res.season,res.episode,  callback, subtitleCallback)
+            invokeVideasy(res.title,res.id, res.imdbId, res.year, res.season,res.episode, subtitleCallback, callback )
         },
         Provider("XDMovies", "XDMovies") { res, subtitleCallback, callback, _, _ ->
             invokeXDmovies(res.title,res.id, res.season, res.episode,  callback, subtitleCallback)
@@ -260,6 +262,12 @@ fun buildProviders(): List<Provider> {
         },
         Provider("Movies4u", "Movies4u (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
+        },
+        Provider("M4uhd", "M4uhd (English)") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeM4uhd(res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
+        },
+        Provider("MappleTV", "MappleTV (English)") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeMapple(res.id, res.season, res.episode ,callback)
         }
     )
 }

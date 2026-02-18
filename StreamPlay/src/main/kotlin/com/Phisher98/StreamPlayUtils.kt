@@ -2215,6 +2215,10 @@ suspend fun fetchTmdbLogoUrl(
     return null
 }
 
+fun String?.fixTitle(): String? {
+    return this?.replace(Regex("[!%:']|( &)"), "")?.replace(" ", "-")?.lowercase()
+        ?.replace("-–-", "-")
+}
 private val QUALITY_REGEX_MAP = listOf(
     Regex("""\b(4k|2160p?|2160)\b""", RegexOption.IGNORE_CASE) to Qualities.P2160.value,
     Regex("""\b1440p?|1440\b""", RegexOption.IGNORE_CASE)     to Qualities.P1440.value,

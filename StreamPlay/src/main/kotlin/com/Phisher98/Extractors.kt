@@ -34,6 +34,7 @@ import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.phisher98.StreamPlay.Companion.animepaheAPI
 import kotlinx.coroutines.runBlocking
 import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -48,6 +49,7 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -3049,5 +3051,204 @@ open class Krakenfiles : ExtractorApi() {
     }
 }
 
+open class PpzjYoutube : ExtractorApi() {
+
+    override val name = "PpzjYoutube"
+    override val mainUrl = "https://if9.ppzj-youtube.cfd"
+    override val requiresReferer = true
+    private val apiUrl = "https://api-play-270325.ppzj-youtube.cfd/api/tp1rd/playiframe"
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val TAG = "PpzjYoutube"
+        try {
+            val domain = URI(url).let { "${it.scheme}://${it.host}" }
+            val headers = mapOf(
+                "User-Agent"       to USER_AGENT,
+                "Referer"          to domain,
+                "X-Requested-With" to "XMLHttpRequest",
+                "Content-Type"     to "application/x-www-form-urlencoded"
+            )
+
+            val html = app.get(url, headers = headers).text
+            val matches = Regex("""const\s*id(?:User|file)_enc\s*=\s*"([^"]+)"""").findAll(html).map { it.groupValues[1] }.toList()
+            val encryptedFileId = matches[0]
+            val encryptedUserId = matches[1]
+            val fileId = decryptHexAES(encryptedFileId, "jcLycoRJT6OWjoWspgLMOZwS3aSS0lEn")
+            val userId = decryptHexAES(encryptedUserId, "PZZ3J3LDbLT0GY7qSA5wW5vchqgpO36O")
+            val payload = buildPayloadJson(fileId, userId, referer ?: "https://m4uhd.vip")
+
+            val encryptedPayload = encryptHexAES(
+                payload,
+                "vlVbUQhkOhoSfyteyzGeeDzU0BHoeTyZ"
+            )
+
+            val signatureInput = encryptedPayload + "KRWN3AdgmxEMcd2vLN1ju9qKe8Feco5h"
+            val signature = md5(signatureInput)
+            val body = "data=$encryptedPayload%7C$signature".toRequestBody("application/x-www-form-urlencoded".toMediaType())
+
+            val response = app.post(
+                apiUrl,
+                headers     = headers,
+                requestBody = body
+            ).parsedSafe<Map<String, Any>>() ?: return
+
+            val encryptedVideo = (response["data"] as? String)?.substringBefore("|")
+
+            if (encryptedVideo == null) {
+                Log.e(TAG, "ERROR: No 'data' field in response or data is null")
+                Log.d(TAG, "Response keys: ${response.keys}")
+                return
+            }
+
+            val videoUrl = decryptHexAES(
+                encryptedVideo,
+                "oJwmvmVBajMaRCTklxbfjavpQO7SZpsL"
+            )
+
+            generateM3u8(
+                name,
+                videoUrl,
+                domain,
+                Qualities.P1080.value
+            ).forEach(callback)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "==================== ERROR ====================")
+            Log.e(TAG, "Exception occurred: ${e.message}")
+            Log.e(TAG, "Exception: ${e.stackTraceToString()}")
+        }
+    }
+
+    private fun buildPayloadJson(
+        fileId: String,
+        userId: String,
+        domain: String
+    ): String {
+
+        val payload =
+            """
+        {
+          "idfile":"$fileId",
+          "iduser":"$userId",
+          "domain_play":"$domain",
+          "platform":"Linux armv81",
+          "hlsSupport":true,
+          "jwplayer":{
+            "Browser":{
+              "androidNative":false,
+              "chrome":true,
+              "edge":false,
+              "facebook":false,
+              "firefox":false,
+              "ie":false,
+              "msie":false,
+              "safari":false,
+              "version":{
+                "version":"137.0.0.0",
+                "major":137,
+                "minor":0
+              }
+            },
+            "OS":{
+              "android":true,
+              "iOS":false,
+              "mobile":true,
+              "mac":false,
+              "iPad":false,
+              "iPhone":false,
+              "windows":false,
+              "tizen":false,
+              "tizenApp":false,
+              "version":{
+                "version":"10",
+                "major":10,
+                "minor":null
+              }
+            },
+            "Features":{
+              "iframe":false,
+              "passiveEvents":true,
+              "backgroundLoading":true
+            }
+          }
+        }
+        """.trimIndent()
+                .replace("\n", "")
+                .replace("  ", "")
 
 
+        return payload
+    }
+
+    private fun encryptHexAES(plaintext: String, password: String): String {
+        val salt = ByteArray(8).apply { SecureRandom().nextBytes(this) }
+        val keyIv = deriveKeyIv(password.toByteArray(), salt)
+
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").also {
+            it.init(
+                Cipher.ENCRYPT_MODE,
+                SecretKeySpec(keyIv.first, "AES"),
+                IvParameterSpec(keyIv.second)
+            )
+        }
+
+        val encrypted = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
+        val result = "Salted__".toByteArray() + salt + encrypted
+        return result.toHex()
+    }
+
+    private fun decryptHexAES(hex: String, password: String): String {
+        val bytes = hex.hexToBytes()
+        val salt = bytes.copyOfRange(8, 16)
+        val ciphertext = bytes.copyOfRange(16, bytes.size)
+        val keyIv = deriveKeyIv(password.toByteArray(), salt)
+
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").also {
+            it.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(keyIv.first, "AES"),
+                IvParameterSpec(keyIv.second)
+            )
+        }
+
+        return String(cipher.doFinal(ciphertext), Charsets.UTF_8)
+    }
+
+    private fun deriveKeyIv(password: ByteArray, salt: ByteArray): Pair<ByteArray, ByteArray> {
+        val md5 = MessageDigest.getInstance("MD5")
+        val keyIv = ByteArray(48)
+        var prev = ByteArray(0)
+        var generated = 0
+
+        while (generated < 48) {
+            md5.reset()
+            md5.update(prev)
+            md5.update(password)
+            md5.update(salt)
+            prev = md5.digest()
+            System.arraycopy(prev, 0, keyIv, generated, prev.size)
+            generated += prev.size
+        }
+
+        return Pair(
+            keyIv.copyOfRange(0, 32),
+            keyIv.copyOfRange(32, 48)
+        )
+    }
+
+    private fun ByteArray.toHex(): String =
+        joinToString("") { "%02x".format(it) }
+
+    private fun String.hexToBytes(): ByteArray =
+        chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+
+    private fun md5(input: String): String =
+        MessageDigest.getInstance("MD5")
+            .digest(input.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+}

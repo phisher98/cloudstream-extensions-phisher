@@ -177,6 +177,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(StreamwishTO())
         registerExtractorAPI(mixdrop21())
         registerExtractorAPI(m1xdrop())
+        registerExtractorAPI(PpzjYoutube())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
