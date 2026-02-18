@@ -186,7 +186,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeRiveStream(res.id, res.season, res.episode, callback)
         },
         Provider("moviebox", "MovieBox (Multi)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback)
+            invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("morph", "Morph") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback)

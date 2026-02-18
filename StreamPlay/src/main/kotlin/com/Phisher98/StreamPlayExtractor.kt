@@ -4378,8 +4378,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                         for (stream in streams) {
                             val streamId = stream["id"]?.asText() ?: "$subjectId|$season|$episode"
-                            val subjectTitle =
-                                subjectData?.get("title")?.asText() ?: "Unknown Title"
+                            //val subjectTitle = subjectData?.get("title")?.asText() ?: "Unknown Title"
                             val format = stream["format"]?.asText() ?: ""
                             val signCookie =
                                 stream["signCookie"]?.asText()?.takeIf { it.isNotEmpty() }
@@ -4393,8 +4392,8 @@ object StreamPlayExtractor : StreamPlay() {
 
                                     callback.invoke(
                                         newExtractorLink(
-                                            source = "MovieBox (${language.capitalize()})",
-                                            name = "MovieBox (${language.capitalize()}) [$subjectTitle]",
+                                            source = "MovieBox ${language.replace("dub", "Audio")}",
+                                            name = "MovieBox (${language.replace("dub", "Audio")})",
                                             url = resUrl,
                                             type = when {
                                                 resUrl.startsWith(
@@ -4437,8 +4436,8 @@ object StreamPlayExtractor : StreamPlay() {
 
                                 callback.invoke(
                                     newExtractorLink(
-                                        source = "MovieBox (${language.capitalize()})",
-                                        name = "MovieBox (${language.capitalize()}) [$subjectTitle]",
+                                        source = "MovieBox ${language.replace("dub", "Audio")}",
+                                        name = "MovieBox (${language.replace("dub", "Audio")})",
                                         url = singleUrl,
                                         type = when {
                                             singleUrl.startsWith(
@@ -4510,7 +4509,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         subtitleCallback.invoke(
                                             newSubtitleFile(
                                                 url = captionUrl,
-                                                lang = "$lang (${language.capitalize()})"
+                                                lang = "$lang (${language.replace("dub", "Audio")})"
                                             )
                                         )
                                     }

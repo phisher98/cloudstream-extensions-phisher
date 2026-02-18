@@ -624,8 +624,8 @@ class MovieBoxProvider : MainAPI() {
                                 val quality = getHighestQuality(resolutions)
                                 callback.invoke(
                                     newExtractorLink(
-                                        source = "$name $language",
-                                        name = "$name ($language)",
+                                        source = "$name ${language.replace("dub","Audio")}",
+                                        name = "$name (${language.replace("dub","Audio")})",
                                         url = streamUrl,
                                         type = when {
                                             streamUrl.startsWith("magnet:", ignoreCase = true) -> ExtractorLinkType.MAGNET
@@ -670,7 +670,7 @@ class MovieBoxProvider : MainAPI() {
                                         subtitleCallback.invoke(
                                             newSubtitleFile(
                                                 url = captionUrl,
-                                                lang = "$lang ($language)"
+                                                lang = "$lang (${language.replace("dub","Audio")})"
                                             )
                                         )
                                     }
@@ -702,13 +702,11 @@ class MovieBoxProvider : MainAPI() {
                                         subtitleCallback.invoke(
                                             newSubtitleFile(
                                                 url = captionUrl,
-                                                lang = "$lang ($language)"
+                                                lang = "$lang (${language.replace("dub","Audio")})"
                                             )
                                         )
                                     }
                                 }
-
-
                                 //hasAnyLinks = true
                             }
                         }
