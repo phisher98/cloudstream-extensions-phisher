@@ -6362,68 +6362,126 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get("$m4uhdAPI/search/${title.fixTitle()}", timeout = 5000L).document
+        try {
+            val safeTitle = title?.fixTitle() ?: return
 
-        val scriptData = res.select("div.item").map {
-            Triple(
-                it.selectFirst("img.imagecover")?.attr("alt"),
-                it.selectFirst(".jt-info")?.text(),
-                it.selectFirst("a")?.attr("href")
-            )
-        }
+            val res = app.get(
+                "$m4uhdAPI/search/$safeTitle",
+                timeout = 5000L
+            ).document
 
-        val cleanTitle = title
-            ?.lowercase()
-            ?.replace(Regex("[^a-z0-9]"), "")
-            ?: return
+            val scriptData = res.select("div.item").mapNotNull { element ->
+                val href = element.selectFirst("a")?.attr("href")
+                if (href.isNullOrBlank()) return@mapNotNull null
 
-        val script = scriptData.firstOrNull {
+                Triple(
+                    element.selectFirst("img.imagecover")?.attr("alt"),
+                    element.selectFirst(".jt-info")?.text(),
+                    href
+                )
+            }
 
-            val siteTitle = it.first
-                ?.lowercase()
-                ?.replace(Regex("[^a-z0-9]"), "")
-                ?: return@firstOrNull false
+            if (scriptData.isEmpty()) {
+                Log.e("M4uhd", "No search results")
+                return
+            }
 
-            siteTitle.contains(cleanTitle)
+            val cleanTitle = title
+                .lowercase()
+                .replace(Regex("[^a-z0-9]"), "")
 
-        } ?: scriptData.firstOrNull()
+            val script = scriptData.firstOrNull { triple ->
 
-        val link = fixUrl(script?.third ?: return, m4uhdAPI)
-        val request = app.get(link)
-        val doc = request.document
+                val siteTitle = triple.first
+                    ?.lowercase()
+                    ?.replace(Regex("[^a-z0-9]"), "")
+                    ?: return@firstOrNull false
 
-        val directIframe = doc.selectFirst("#myplayer iframe")?.attr("src")
+                siteTitle.contains(cleanTitle)
 
-        if (!directIframe.isNullOrBlank()) {
-            loadExtractor(
-                fixUrl(directIframe, link),
-                m4uhdAPI,
-                subtitleCallback,
-                callback
-            )
-            return
-        }
+            } ?: scriptData.firstOrNull()
 
-        val cookies = request.cookies
-        val token = doc.selectFirst("meta[name=csrf-token]")?.attr("content") ?: return
-        Log.d("Phisher","I'm here")
-        val m4uData = if (season == null) {
+            val scriptUrl = script?.third
+            if (scriptUrl.isNullOrBlank()) {
+                Log.e("M4uhd", "Script URL null")
+                return
+            }
 
-            doc.selectFirst("span.singlemv.active, span#fem")?.attr("data")
+            val link = fixUrl(scriptUrl, m4uhdAPI)
 
-        } else {
-            val epCode = "S%02d-E%02d".format(season, episode)
-            val episodeBtn = doc.select("button.episode")
-                .firstOrNull {
-                    it.text().trim().equals(epCode, true)
-                } ?: return
+            val request = app.get(link)
+            val doc = request.document
 
-            val idepisode = episodeBtn.attr("idepisode")
+            // direct iframe
+            val directIframe = doc
+                .selectFirst("#myplayer iframe")
+                ?.attr("src")
 
-            val embed = app.post(
-                "$m4uhdAPI/ajaxtv",
+            if (!directIframe.isNullOrBlank()) {
+                loadExtractor(
+                    fixUrl(directIframe, link),
+                    m4uhdAPI,
+                    subtitleCallback,
+                    callback
+                )
+                return
+            }
+
+            val cookies = request.cookies
+
+            val token = doc
+                .selectFirst("meta[name=csrf-token]")
+                ?.attr("content")
+
+            if (token.isNullOrBlank()) {
+                Log.e("M4uhd", "Token missing")
+                return
+            }
+
+            val m4uData = if (season == null) {
+
+                doc.selectFirst("span.singlemv.active, span#fem")
+                    ?.attr("data")
+
+            } else {
+
+                val epCode = "S%02d-E%02d".format(season, episode ?: return)
+
+                val episodeBtn = doc.select("button.episode")
+                    .firstOrNull {
+                        it.text().trim().equals(epCode, true)
+                    } ?: return
+
+                val idepisode = episodeBtn.attr("idepisode")
+
+                if (idepisode.isBlank()) return
+
+                val embed = app.post(
+                    "$m4uhdAPI/ajaxtv",
+                    data = mapOf(
+                        "idepisode" to idepisode,
+                        "_token" to token
+                    ),
+                    referer = link,
+                    headers = mapOf(
+                        "X-Requested-With" to "XMLHttpRequest"
+                    ),
+                    cookies = cookies
+                ).document
+
+                embed.selectFirst("span.singlemv.active, span#fem")
+                    ?.attr("data")
+            }
+
+            if (m4uData.isNullOrBlank()) {
+                Log.e("M4uhd", "m4uData missing")
+                return
+            }
+
+            val iframe = app.post(
+                "$m4uhdAPI/ajax",
                 data = mapOf(
-                    "idepisode" to idepisode,
+                    "m4u" to m4uData,
                     "_token" to token
                 ),
                 referer = link,
@@ -6432,31 +6490,25 @@ object StreamPlayExtractor : StreamPlay() {
                 ),
                 cookies = cookies
             ).document
+                .selectFirst("iframe")
+                ?.attr("src")
 
-            embed.selectFirst("span.singlemv.active, span#fem")?.attr("data")
+            if (iframe.isNullOrBlank()) {
+                Log.e("M4uhd", "iframe missing")
+                return
+            }
 
-        } ?: return
+            loadSourceNameExtractor(
+                "M4uhd",
+                fixUrl(iframe, link),
+                m4uhdAPI,
+                subtitleCallback,
+                callback
+            )
 
-        val iframe = app.post(
-            "$m4uhdAPI/ajax",
-            data = mapOf(
-                "m4u" to m4uData,
-                "_token" to token
-            ),
-            referer = link,
-            headers = mapOf(
-                "X-Requested-With" to "XMLHttpRequest"
-            ),
-            cookies = cookies
-        ).document.selectFirst("iframe")?.attr("src") ?: return
-
-        loadSourceNameExtractor(
-            "M4uhd",
-            fixUrl(iframe, link),
-            m4uhdAPI,
-            subtitleCallback,
-            callback
-        )
+        } catch (e: Exception) {
+            Log.e("M4uhd", "invokeM4uhd crash")
+        }
     }
 
 }
