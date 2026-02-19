@@ -66,7 +66,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     companion object {
         /** TOOLS */
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
-        private const val Cinemeta = "https://v3-cinemeta.strem.io"
+        private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
         private var currentBaseUrl: String? = null
