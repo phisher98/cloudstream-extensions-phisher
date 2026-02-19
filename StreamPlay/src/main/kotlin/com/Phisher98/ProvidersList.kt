@@ -42,6 +42,7 @@ import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
 import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
+import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
 import com.phisher98.StreamPlayExtractor.invokeToonstream
 import com.phisher98.StreamPlayExtractor.invokeTopMovies
@@ -56,6 +57,7 @@ import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
+import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.invokeXDmovies
 import com.phisher98.StreamPlayExtractor.invokeYflix
 import com.phisher98.StreamPlayExtractor.invokeZoechip
@@ -268,6 +270,12 @@ fun buildProviders(): List<Provider> {
         },
         Provider("MappleTV", "MappleTV (English)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMapple(res.id, res.season, res.episode ,callback)
+        },
+        Provider("WyZIESUB", "WyZIESUB (Subtitles)") { res, subtitleCallback, _, _, _ ->
+            invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+        },
+        Provider("SubtitleAPI", "SubtitleAPI (Subtitles)") { res, subtitleCallback, _, _, _ ->
+            invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
         }
     )
 }

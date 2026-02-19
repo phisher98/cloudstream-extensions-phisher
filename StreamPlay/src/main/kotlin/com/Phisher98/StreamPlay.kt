@@ -39,8 +39,6 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
-import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
@@ -68,7 +66,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     companion object {
         /** TOOLS */
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
-        private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
+        private const val Cinemeta = "https://v3-cinemeta.strem.io"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
         private var currentBaseUrl: String? = null
@@ -574,51 +572,28 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val res = parseJson<LinkData>(data)
-        val disabledProviderIds = sharedPref
-            ?.getStringSet("disabled_providers", emptySet())
-            ?.toSet() ?: emptySet()
-        val providersList = buildProviders().filter { it.id !in disabledProviderIds }
-        val authToken = token
-        runLimitedAsync( concurrency = 10,
-            {
-                try {
-                    if (!res.isAnime) {
-                        invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
-                    }
-                } catch (_: Throwable) {
-                    // ignore failure but do not cancel the rest
-                }
-            },
-            {
-                try {
-                    if (!res.isAnime) {
-                        invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
-                    }
-                } catch (_: Throwable) {
-                    // ignore failure
-                }
-            },
-            *providersList.map { provider ->
-                suspend {
-                    try {
-                        provider.invoke(
-                            res,
-                            subtitleCallback,
-                            callback,
-                            authToken ?: "",
-                            dahmerMoviesAPI
-                        )
-                    } catch (_: Throwable) {
-                        // provider failure shouldn't kill others
-                    }
-                }
-            }.toTypedArray()
-        )
+    ): Boolean = coroutineScope {
 
-        return true
+        val res = parseJson<LinkData>(data)
+        val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", emptySet())?.toSet() ?: emptySet()
+        val providersList = buildProviders().filter { it.id !in disabledProviderIds }
+        val authToken = token.orEmpty()
+        providersList.forEach { provider ->
+            launch {
+                runCatching {
+                    provider.invoke(
+                        res,
+                        subtitleCallback,
+                        callback,
+                        authToken,
+                        dahmerMoviesAPI
+                    )
+                }
+            }
+        }
+        true
     }
+
 
 
 
