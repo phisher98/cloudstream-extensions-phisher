@@ -3705,7 +3705,7 @@ object StreamPlayExtractor : StreamPlay() {
                 app.get("$PrimeSrcApi/api/v1/l?key=${it.key}", timeout = 30, headers = headers).text
             val jsonObject = JSONObject(rawServerJson)
             loadSourceNameExtractor(
-                "PrimeWire${if (it.fileName.isNullOrEmpty()) "" else " (${it.fileName}) "}",
+                "PrimeWire",
                 jsonObject.optString("link", ""),
                 PrimeSrcApi,
                 subtitleCallback,
@@ -3868,79 +3868,51 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
+        val fourkhdhub = getDomains()?.n4khdhub
         if (title.isNullOrBlank()) return
-
-        val baseUrl = runCatching { getDomains()?.n4khdhub }
-            .onFailure { Log.e("4Khdhub", "Failed to get domain: ${it.message}") }
-            .getOrNull() ?: return
-
-        val searchUrl = "$baseUrl/?s=${title.trim().replace(" ", "+")}"
-
-        // Normalization helper
-        val normalize = { str: String ->
-            str.lowercase()
-                .replace(Regex("[^a-z0-9 ]"), "")
-                .trim()
-        }
-
-        val normalizedTitle = normalize(title)
-
-        val searchDoc = runCatching { app.get(searchUrl).documentLarge }
-            .onFailure { Log.e("4Khdhub", "Failed to fetch search page: ${it.message}") }
-            .getOrNull() ?: return
-
-        val postLink = searchDoc.select("div.card-grid > a.movie-card")
-            .firstOrNull { card ->
-                val titleText = card.selectFirst("div.movie-card-content > h3.movie-card-title")
-                    ?.text()?.let(normalize) ?: return@firstOrNull false
-
-                val metaText = card.selectFirst("div.movie-card-content > p.movie-card-meta")
-                    ?.text()?.trim().orEmpty()
-
-                val titleMatch = titleText.contains(normalizedTitle)
-
-                val yearMatch = if (season == null) {
-                    year?.let { metaText.contains(it.toString().trim()) } ?: true
-                } else true
-
-                titleMatch && yearMatch
+        val document = app.get("$fourkhdhub/?s=${URLEncoder.encode(title, "UTF-8")}").document
+        val normalizedTitle = title.lowercase().trim()
+        val link = document.select("div.card-grid > a.movie-card").firstOrNull { element ->
+                val content = element.selectFirst("div.movie-card-content")?.text()?.lowercase() ?: return@firstOrNull false
+                val matchTitle = content.contains(normalizedTitle) || normalizedTitle.contains(content)
+                val matchYear = year == null || content.contains(year.toString())
+                matchTitle && matchYear
             }?.attr("href") ?: return
 
-        val doc = runCatching { app.get("$baseUrl$postLink").documentLarge }
-            .onFailure { Log.e("4Khdhub", "Failed to fetch detail page: ${it.message}") }
-            .getOrNull() ?: return
+        val url = if (link.startsWith("http")) link else "$fourkhdhub$link"
+        val doc =app.get(url).document
 
-        val links = if (season == null) {
-            doc.select("div.download-item a")
+        if (season == null) {
+            doc.select("div.download-item a").amap {
+                val source = getRedirectLinks(it.attr("href"))
+                loadSourceNameExtractor(
+                    "4Khdhub",
+                    source,
+                    "",
+                    subtitleCallback,
+                    callback
+                )
+            }
         } else {
-            val seasonText = "S${season.toString().padStart(2, '0')}"
-            val episodeText = "E${episode.toString().padStart(2, '0')}"
-
-            doc.select("div.episode-download-item")
-                .filter {
-                    it.text()
-                        .contains(Regex("${seasonText}${episodeText}", RegexOption.IGNORE_CASE))
+            val seasonText = "S" + season.toString().padStart(2, '0')
+            val episodeText = episode?.let { "E" + it.toString().padStart(2, '0') } ?: ""
+            doc.select("div.episode-download-item").amap { it ->
+                val text = it.text()
+                if (text.contains(seasonText, true) && (episodeText.isEmpty() || text.contains(episodeText, true))) {
+                    it.select("div.episode-links > a").amap {
+                        val source = getRedirectLinks(it.attr("href"))
+                        loadSourceNameExtractor(
+                            "4Khdhub",
+                            source,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
+                    }
                 }
-                .flatMap { it.select("div.episode-links > a") }
-        }
-
-        for (element in links) {
-            val rawHref = element.attr("href")
-            if (rawHref.isBlank()) continue
-
-            val link = runCatching { hdhubgetRedirectLinks(rawHref) }
-                .onFailure {
-                    Log.e(
-                        "4Khdhub",
-                        "Failed to resolve redirect for $rawHref: ${it.message}"
-                    )
-                }
-                .getOrNull() ?: continue
-
-            dispatchToExtractor(link, "4Khdhub", subtitleCallback, callback)
+            }
         }
     }
-
 
     suspend fun invokeElevenmovies(
         id: Int? = null,
@@ -4030,7 +4002,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val baseUrl = runCatching { getDomains()?.hdhub4u }.getOrNull() ?: return
+        val baseUrl = getDomains()?.hdhub4u
         if (title.isNullOrBlank()) return
 
         val response = app.get(
@@ -4093,10 +4065,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val matchedPosts = if (!imdbId.isNullOrBlank()) {
             val matched = posts.mapNotNull { postUrl ->
-                val postDoc = runCatching {
-                    app.get(postUrl).documentLarge
-                }.getOrNull() ?: return@mapNotNull null
-
+                val postDoc = app.get(postUrl).document
                 val imdbHref = postDoc
                     .selectFirst("""a[href*="imdb.com/title/$imdbId"]""")
                     ?.attr("href")
@@ -4115,16 +4084,21 @@ object StreamPlayExtractor : StreamPlay() {
 
 
         for (el in matchedPosts) {
-            val doc = runCatching { app.get(el).documentLarge }.getOrNull() ?: continue
+            val doc = app.get(el).document
 
             if (season == null) {
                 val qualityLinks =
                     doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
                 for (linkEl in qualityLinks) {
                     val resolvedLink = linkEl.attr("href")
-                    val resolvedWatch =
-                        if ("id=" in resolvedLink) hdhubgetRedirectLinks(resolvedLink) else resolvedLink
-                    dispatchToExtractor(resolvedWatch, "HDhub4u", subtitleCallback, callback)
+                    val resolvedWatch = if ("id=" in resolvedLink) getRedirectLinks(resolvedLink) else resolvedLink
+                    loadSourceNameExtractor(
+                        "HDhub4u",
+                        resolvedWatch,
+                        "",
+                        subtitleCallback,
+                        callback
+                    )
                 }
             } else {
                 val episodeRegex = Regex("episode\\s*(\\d+)", RegexOption.IGNORE_CASE)
@@ -4140,7 +4114,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     if (episodeNum != null && (episode == null || episode == episodeNum)) {
                         episodeLink?.absUrl("href")?.let { href ->
-                            val resolved = if ("id=" in href) hdhubgetRedirectLinks(href) else href
+                            val resolved = if ("id=" in href) getRedirectLinks(href) else href
                             val episodeDoc =
                                 runCatching { app.get(resolved).documentLarge }.getOrNull()
                                     ?: return@let
@@ -4148,11 +4122,11 @@ object StreamPlayExtractor : StreamPlay() {
                             episodeDoc.select("h3 a[href], h4 a[href], h5 a[href]")
                                 .mapNotNull { it.absUrl("href").takeIf { url -> url.isNotBlank() } }
                                 .forEach { link ->
-                                    val resolvedWatch =
-                                        if ("id=" in link) hdhubgetRedirectLinks(link) else link
-                                    dispatchToExtractor(
-                                        resolvedWatch,
+                                    val resolvedWatch = if ("id=" in link) getRedirectLinks(link) else link
+                                    loadSourceNameExtractor(
                                         "HDhub4u",
+                                        resolvedWatch,
+                                        "",
                                         subtitleCallback,
                                         callback
                                     )
@@ -4160,8 +4134,7 @@ object StreamPlayExtractor : StreamPlay() {
                         }
 
                         watchLink?.absUrl("href")?.let { watchHref ->
-                            val resolvedWatch =
-                                if ("id=" in watchHref) hdhubgetRedirectLinks(watchHref) else watchHref
+                            val resolvedWatch = if ("id=" in watchHref) getRedirectLinks(watchHref) else watchHref
                             loadSourceNameExtractor(
                                 "HDhub4u",
                                 resolvedWatch,

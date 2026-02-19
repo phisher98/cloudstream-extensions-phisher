@@ -279,11 +279,15 @@ suspend fun loadSourceNameExtractor(
     val fixSize = if(size.isNotEmpty()) " $size" else ""
     loadExtractor(url, referer, subtitleCallback) { link ->
         CoroutineScope(Dispatchers.IO).launch {
-            val label = if (fixSize.isBlank()) {
-                "$source [${link.name}]"
-            } else {
-                "$source [${link.name} $fixSize]"
-            }
+            val sourcePart = source.trim().takeIf { it.isNotBlank() }
+            val namePart = link.name.trim()
+            val sizePart = fixSize.trim().takeIf { it.isNotBlank() }
+
+            val label = listOfNotNull(
+                sourcePart,
+                namePart,
+                sizePart
+            ).joinToString(" ")
 
             callback.invoke(
                 newExtractorLink(
@@ -1577,7 +1581,7 @@ suspend fun elevenMoviesToken(rawData: String): String {
 }
 
 
-suspend fun hdhubgetRedirectLinks(url: String): String {
+suspend fun getRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
     val regex = "s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'".toRegex()
     val combinedString = buildString {

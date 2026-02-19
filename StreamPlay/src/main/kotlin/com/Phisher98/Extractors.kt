@@ -1031,7 +1031,6 @@ class HubCloud : ExtractorApi() {
             val link = element.attr("href")
             val text = element.ownText()
             val label = text.lowercase()
-            Log.d("Phisher",label)
             when {
                 "fsl server" in label -> {
                     callback(
@@ -1079,8 +1078,8 @@ class HubCloud : ExtractorApi() {
 
                     callback(
                         newExtractorLink(
-                            "$ref Pixeldrain",
-                            "$ref Pixeldrain $labelExtras",
+                            "$ref [Pixeldrain]",
+                            "$ref [Pixeldrain] $labelExtras",
                             finalUrl
                         ) { this.quality = quality }
                     )
@@ -1139,7 +1138,6 @@ class HubCloud : ExtractorApi() {
                     Log.e(tag, "10Gbps: Redirect limit reached")
                 }
                 */
-
                 else -> {
                     loadExtractor(link, "", subtitleCallback, callback)
                 }
