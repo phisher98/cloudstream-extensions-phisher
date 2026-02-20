@@ -97,10 +97,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         val pageSize = 100
         val skip = (page - 1) * pageSize
 
-        val manifest = app
-            .get(buildUrl("/manifest.json"))
-            .parsedSafe<Manifest>()
-
         val manifest = getManifest()
 
         val targetCatalogs = manifest?.catalogs?.filter { !it.isSearchRequired() } ?: emptyList()
