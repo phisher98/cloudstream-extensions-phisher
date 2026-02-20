@@ -101,7 +101,6 @@ object UltimaMediaProvidersUtils {
                     VegaMoviesProvider(),
                     VidsrcccProvider(),
                     Watch32Provider(),
-                    XPrimeProvider(),
                     PrimeWireProvider(),
                     MovieBoxMediaProvider()
             )
