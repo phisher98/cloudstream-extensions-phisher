@@ -46,7 +46,10 @@ import java.util.Locale
 class StremioC(override var mainUrl: String, override var name: String) : MainAPI() {
     override val supportedTypes = setOf(TvType.Others)
     override val hasMainPage = true
-
+     
+    private var cachedManifest: Manifest? = null
+    private var lastManifestUrl: String = ""
+    
     companion object {
         private const val cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         val TRACKER_LIST_URLS = listOf(
@@ -72,6 +75,16 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         return "${baseUrl()}$path${querySuffix()}"
     }
 
+    private suspend fun getManifest(): Manifest? {
+        val currentUrl = buildUrl("/manifest.json")
+        if (cachedManifest != null && lastManifestUrl == currentUrl) {
+            return cachedManifest
+        }
+        cachedManifest = app.get(currentUrl).parsedSafe<Manifest>()
+        lastManifestUrl = currentUrl
+        return cachedManifest
+    }
+
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -88,18 +101,17 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             .get(buildUrl("/manifest.json"))
             .parsedSafe<Manifest>()
 
-        val lists = mutableListOf<HomePageList>()
+        val manifest = getManifest()
 
-        manifest?.catalogs?.amap { catalog ->
+        val targetCatalogs = manifest?.catalogs?.filter { !it.isSearchRequired() } ?: emptyList()
+
+        val lists = targetCatalogs.amap { catalog ->
+            println("[v1.7 Debug] 일반 카탈로그 병렬 로드 시작: ${catalog.name ?: catalog.id}")
             catalog.toHomePageList(
                 provider = this,
                 skip = skip
-            ).let {
-                if (it.list.isNotEmpty()) {
-                    lists.add(it)
-                }
-            }
-        }
+            )
+        }.filter { it.list.isNotEmpty() }
 
         return newHomePageResponse(
             lists,
@@ -107,15 +119,20 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         )
     }
 
-
     override suspend fun search(query: String): List<SearchResponse> {
+        println("[v1.7 Debug] search 실행 - query: $query")
         mainUrl = mainUrl.fixSourceUrl()
-        val res = app.get(buildUrl("/manifest.json")).parsedSafe<Manifest>()
-        val list = mutableListOf<SearchResponse>()
-        res?.catalogs?.amap { catalog ->
-            list.addAll(catalog.search(query, this))
-        }
-        return list.distinct()
+        
+        val manifest = getManifest()
+        val targetCatalogs = manifest?.catalogs?.filter { it.supportsSearch() } ?: emptyList()
+
+        val list = targetCatalogs.amap { catalog ->
+            catalog.search(query, this)
+        }.flatten()
+        
+        val distinctList = list.distinctBy { it.url }
+        println("[v1.7 Debug] 검색 완료 - 총 반환 아이템 수: ${distinctList.size}")
+        return distinctList
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -248,61 +265,66 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     }
 
 
-    private data class Manifest(val catalogs: List<Catalog>)
+   private data class Manifest(val catalogs: List<Catalog>)
+    
+    private data class Extra(
+        @JsonProperty("name") val name: String?,
+        @JsonProperty("isRequired") val isRequired: Boolean? = false
+    )
+
     private data class Catalog(
         var name: String?,
         val id: String,
         val type: String?,
-        val types: MutableList<String> = mutableListOf()
+        val types: MutableList<String> = mutableListOf(),
+        @JsonProperty("extra") val extra: List<Extra>? = null,
+        @JsonProperty("extraSupported") val extraSupported: List<String>? = null
     ) {
         init {
             if (type != null) types.add(type)
         }
 
+        fun isSearchRequired(): Boolean {
+            return extra?.any { it.name == "search" && it.isRequired == true } == true
+        }
+
+        fun supportsSearch(): Boolean {
+            val hasSearchInExtra = extra?.any { it.name == "search" } == true
+            val hasSearchInExtraSupported = extraSupported?.contains("search") == true
+            return hasSearchInExtra || hasSearchInExtraSupported
+        }
+
         suspend fun search(query: String, provider: StremioC): List<SearchResponse> {
-            val entries = mutableListOf<SearchResponse>()
-            types.forEach { type ->
-                val res = app.get(
-                    provider.buildUrl("/catalog/${type}/${id}/search=${query}.json"),
-                    timeout = 120L
-                ).parsedSafe<CatalogResponse>()
-                res?.metas?.forEach { entry ->
-                    entries.add(entry.toSearchResponse(provider))
-                }
-            }
-            return entries
+            val allMetas = types.amap { type ->
+                val searchUrl = provider.buildUrl("/catalog/${type}/${id}/search=${query}.json")
+                val res = app.get(searchUrl, timeout = 120L).parsedSafe<CatalogResponse>()
+                res?.metas ?: emptyList()
+            }.flatten()
+
+            return allMetas.distinctBy { it.id }.map { it.toSearchResponse(provider) }
         }
 
         suspend fun toHomePageList(
             provider: StremioC,
             skip: Int
         ): HomePageList {
-            val entries = mutableMapOf<String, SearchResponse>()
-
-            types.forEach { type ->
+            val allMetas = types.amap { type ->
                 val path = if (skip > 0) {
                     "/catalog/$type/$id/skip=$skip.json"
                 } else {
                     "/catalog/$type/$id.json"
                 }
-
                 val url = provider.buildUrl(path)
 
-                val res = app.get(
-                    url,
-                    timeout = 120L
-                ).parsedSafe<CatalogResponse>()
+                val res = app.get(url, timeout = 120L).parsedSafe<CatalogResponse>()
+                res?.metas ?: emptyList()
+            }.flatten()
 
-                res?.metas?.forEach { entry ->
-                    if (!entries.containsKey(entry.id)) {
-                        entries[entry.id] = entry.toSearchResponse(provider)
-                    }
-                }
-            }
+            val distinctEntries = allMetas.distinctBy { it.id }.map { it.toSearchResponse(provider) }
 
             return HomePageList(
                 name ?: id,
-                entries.values.toList()
+                distinctEntries
             )
         }
     }
@@ -358,7 +380,11 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     tags = genre ?: genres
                     addActors(cast)
                     addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" })
-                    addImdbId(imdbId)
+                    if (imdbId?.startsWith("tt") == true) {
+                        addImdbId(imdbId)
+                    } else {
+                        println("Kitsu or TMDB ID: $imdbId")
+                    }
                 }
             } else {
                 return provider.newTvSeriesLoadResponse(
@@ -378,7 +404,11 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     addActors(cast)
                     addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" }
                         .randomOrNull())
-                    addImdbId(imdbId)
+                    if (imdbId?.startsWith("tt") == true) {
+                        addImdbId(imdbId)
+                    } else {
+                        println("Kitsu or TMDB ID: $imdbId")
+                    }
                 }
             }
 
