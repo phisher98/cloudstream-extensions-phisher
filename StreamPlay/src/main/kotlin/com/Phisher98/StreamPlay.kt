@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
@@ -578,17 +579,15 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", emptySet())?.toSet() ?: emptySet()
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
         val authToken = token.orEmpty()
-        providersList.forEach { provider ->
-            launch {
-                runCatching {
-                    provider.invoke(
-                        res,
-                        subtitleCallback,
-                        callback,
-                        authToken,
-                        dahmerMoviesAPI
-                    )
-                }
+        providersList.amap { provider ->
+            runCatching {
+                provider.invoke(
+                    res,
+                    subtitleCallback,
+                    callback,
+                    authToken,
+                    dahmerMoviesAPI
+                )
             }
         }
         true
