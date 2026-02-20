@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokBidsrc
 import com.phisher98.StreamPlayExtractor.invokFlixindia
-import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
@@ -131,9 +130,6 @@ fun buildProviders(): List<Provider> {
         Provider("multimovies", "MultiMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("2embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)
-        },
         Provider("zshow", "ZShow") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeZshow(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
@@ -153,7 +149,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, _, _ ->
-            invokeMoviesdrive(res.title, res.season, res.episode, res.imdbId, subtitleCallback, callback)
+            invokeMoviesdrive(res.title, res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,

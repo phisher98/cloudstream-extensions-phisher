@@ -2697,14 +2697,15 @@ object StreamPlayExtractor : StreamPlay() {
             "$moflixAPI/api/v1/titles/$mediaId/seasons/$season/episodes/$episode?loader=episodePage"
         }
 
-        val res = app.get(url, referer = "$moflixAPI/").parsedSafe<MoflixResponse>()
+        val response = app.get(url, referer = "$moflixAPI/")
+        if (response.code != 200) return
+        val res = response.parsedSafe<MoflixResponse>()
         (res?.episode ?: res?.title)?.videos?.filter {
             it.category.equals(
                 "full",
                 true
             )
-        }
-            ?.amap { iframe ->
+        }?.amap { iframe ->
                 val response =
                     app.get(iframe.src ?: return@amap, referer = "$moflixAPI/")
                 val host = getBaseUrl(iframe.src)
@@ -2823,27 +2824,6 @@ object StreamPlayExtractor : StreamPlay() {
             )
         }
     }
-
-    suspend fun invoke2embed(
-        imdbId: String?,
-        season: Int?,
-        episode: Int?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val url = if (season == null) {
-            "$twoEmbedAPI/embed/$imdbId"
-        } else {
-            "$twoEmbedAPI/embedtv/$imdbId&s=$season&e=$episode"
-        }
-        val framesrc =
-            app.get(url).documentLarge.selectFirst("iframe#iframesrc")?.attr("data-src")
-                ?: return
-        val ref = getBaseUrl(framesrc)
-        val id = framesrc.substringAfter("id=").substringBefore("&")
-        loadExtractor("https://uqloads.xyz/e/$id", "$ref/", subtitleCallback, callback)
-    }
-
 
     suspend fun invokeShowflix(
         title: String? = null,
@@ -3159,152 +3139,61 @@ object StreamPlayExtractor : StreamPlay() {
 
     suspend fun invokeMoviesdrive(
         title: String? = null,
+        imdbId: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        id: String? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val movieDriveAPI = getDomains()?.moviesdrive ?: return
-        val cleanTitle = title.orEmpty()
-        val searchUrl = "$movieDriveAPI/searchapi.php?q=${id}"
+        val url = "$movieDriveAPI/searchapi.php?q=$imdbId"
+        val jsonString = app.get(url, interceptor = wpRedisInterceptor).text
+        val root = JSONObject(jsonString)
+        if (!root.has("hits")) return
+        val hits = root.getJSONArray("hits")
 
-        val figures = retry {
-            val resp = app.get(searchUrl, interceptor = wpRedisInterceptor)
-            if (resp.code != 200) return@retry null
-
-            val root = JSONObject(resp.text)
-            val hits = root.optJSONArray("hits") ?: return@retry null
-
-            val elements = Elements()
-
-            for (i in 0 until hits.length()) {
-                val hit = hits.optJSONObject(i) ?: continue
-                val document = hit.optJSONObject("document") ?: continue
-
-                if (document.optString("imdb_id").equals(id, ignoreCase = true)) {
-                    val permalink = document.optString("permalink")
-                    if (permalink.isBlank()) continue
-                    val a = Element("a").attr("href", "$movieDriveAPI$permalink")
-                    val wrapper = Element("div")
-                    wrapper.appendChild(a)
-                    elements.add(wrapper)
-                    break
-                }
-            }
-
-            elements.takeIf { it.isNotEmpty() }
-        } ?: return
-
-
-        for (figure in figures) {
-            val detailUrl = figure.selectFirst("a[href]")?.attr("href").orEmpty()
-            if (detailUrl.isBlank()) continue
-
-            val detailDoc = retry {
-                val resp = app.get(detailUrl, interceptor = wpRedisInterceptor)
-                if (resp.code != 200) return@retry null
-                resp.documentLarge
-            } ?: continue
-
-            val imdbId = detailDoc
-                .select("a[href*=\"imdb.com/title/\"]")
-                .firstOrNull()
-                ?.attr("href")
-                ?.substringAfter("title/")
-                ?.substringBefore("/")
-                ?.takeIf { it.isNotBlank() }
-
-            val titleMatch = imdbId == id.orEmpty() || detailDoc
-                .select("main > p:nth-child(10),p strong:contains(Movie Name:) + span,p strong:contains(Series Name:)")
-                .firstOrNull()
-                ?.text()
-                ?.contains(cleanTitle, ignoreCase = true) == true
-
-            if (!titleMatch) continue
-
-            if (season == null) {
-                val links = detailDoc.select("h5 a")
-                for (element in links) {
-                    val urls = retry { extractMdrive(element.attr("href")) } ?: continue
-                    urls.forEach { serverUrl ->
-                        processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
-                    }
-                }
-            } else {
-                val seasonPattern = "(?i)Season\\s*0?$season\\b|S0?$season\\b"
-                val episodePattern =
-                    "(?i)Ep\\s?0?$episode\\b|Episode\\s+0?$episode\\b|V-Cloud|G-Direct|OXXFile"
-
-                val seasonElements = detailDoc.select("h5:matches($seasonPattern)")
-                if (seasonElements.isEmpty()) continue
-
-                val allLinks = mutableListOf<String>()
-                for (seasonElement in seasonElements) {
-                    val seasonHref = seasonElement.nextElementSibling()
-                        ?.selectFirst("a")
-                        ?.attr("href")
-                        ?.takeIf { it.isNotBlank() } ?: continue
-
-                    val episodeDoc = retry {
-                        val resp = app.get(seasonHref)
-                        if (resp.code != 200) return@retry null
-                        resp.documentLarge
-                    } ?: continue
-
-                    val episodeHeaders = episodeDoc.select("h5:matches($episodePattern)")
-                    for (header in episodeHeaders) {
-                        val siblingLinks =
-                            generateSequence(header.nextElementSibling()) { it.nextElementSibling() }
-                                .takeWhile { it.tagName() != "hr" }
-                                .filter { it.tagName() == "h5" }
-                                .mapNotNull { h5 ->
-                                    h5.selectFirst("a")?.takeIf { a ->
-                                        !a.text()
-                                            .contains("Zip", ignoreCase = true) && a.hasAttr("href")
-                                    }?.attr("href")
-                                }.toList()
-                        allLinks.addAll(siblingLinks)
-                    }
-                }
-
-                if (allLinks.isNotEmpty()) {
-                    allLinks.forEach { serverUrl ->
-                        Log.d("Phisher",serverUrl)
-                        processMoviesdriveUrl(serverUrl, subtitleCallback, callback)
+        for (i in 0 until hits.length()) {
+            val hit = hits.getJSONObject(i)
+            val doc = hit.getJSONObject("document")
+            val currentImdbId = doc.optString("imdb_id")
+            if(imdbId == currentImdbId) {
+                val document = app.get(movieDriveAPI + doc.optString("permalink"), interceptor = wpRedisInterceptor).document
+                if (season == null) {
+                    document.select("h5 > a").amap {
+                        val href = it.attr("href")
+                        val server = extractMdrive(href)
+                        server.amap {
+                            loadSourceNameExtractor("MoviesDrive",it, "", subtitleCallback, callback)
+                        }
                     }
                 } else {
-                    detailDoc.select("h5 a:contains(HubCloud)")
-                        .mapNotNull { it.attr("href").takeIf { href -> href.isNotBlank() } }
-                        .forEach { fallbackUrl ->
-                            Log.d("Phisher",fallbackUrl)
-                            processMoviesdriveUrl(fallbackUrl, subtitleCallback, callback)
+                    val stag = "Season $season|S0$season"
+                    val sep = "Ep0$episode|Ep$episode"
+                    val entries = document.select("h5:matches((?i)$stag)")
+                    entries.amap { entry ->
+                        val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
+
+                        if (href.isNotBlank()) {
+                            val doc = app.get(href).document
+                            val fEp = doc.selectFirst("h5:matches((?i)$sep)")
+                            val linklist = mutableListOf<String>()
+                            val source1 = fEp?.nextElementSibling()?.selectFirst("a")?.attr("href")
+                            val source2 = fEp?.nextElementSibling()?.nextElementSibling()?.selectFirst("a")?.attr("href")
+                            if (source1 != null) linklist.add(source1)
+                            if (source2 != null) linklist.add(source2)
+
+                            linklist.amap { url ->
+                                loadSourceNameExtractor(
+                                    "MoviesDrive",
+                                    url,
+                                    "",
+                                    subtitleCallback,
+                                    callback
+                                )
+                            }
                         }
+                    }
                 }
-            }
-        }
-    }
-
-
-    private suspend fun processMoviesdriveUrl(
-        serverUrl: String,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        when {
-            serverUrl.contains("hubcloud", ignoreCase = true) -> {
-                HubCloud().getUrl(serverUrl, "MoviesDrive", subtitleCallback, callback)
-            }
-
-            serverUrl.contains("gdlink", ignoreCase = true) -> {
-                GDFlix().getUrl(
-                    serverUrl, referer = "MoviesDrive",
-                )
-            }
-
-            else -> {
-                loadExtractor(serverUrl, referer = "MoviesDrive", subtitleCallback, callback)
             }
         }
     }
@@ -3319,7 +3208,9 @@ object StreamPlayExtractor : StreamPlay() {
         val bollyflixAPI = getDomains()?.bollyflix ?: return
         val res1 = app.get("""$bollyflixAPI/search/${id ?: return} ${season ?: ""}""", interceptor = wpRedisInterceptor).document
         val url = res1.selectFirst("div > article > a")?.attr("href") ?: return
-        val res = app.get(url, interceptor = wpRedisInterceptor).document
+        val response = app.get(url, interceptor = wpRedisInterceptor)
+        if (response.code != 200) return
+        val res = response.document
         val hTag = if (season == null) "h5" else "h4"
         val sTag = if (season == null) "" else "Season $season"
         val entries =
