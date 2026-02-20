@@ -1441,48 +1441,31 @@ fun cleanTitle(title: String): String {
 
     val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
 
-    val normalized = name
-        .replace(Regex("WEB[-_. ]?DL", RegexOption.IGNORE_CASE), "WEB-DL")
-        .replace(Regex("WEB[-_. ]?RIP", RegexOption.IGNORE_CASE), "WEBRIP")
-        .replace(Regex("H[ .]?265", RegexOption.IGNORE_CASE), "H265")
-        .replace(Regex("H[ .]?264", RegexOption.IGNORE_CASE), "H264")
-        .replace(Regex("DDP[ .]?([0-9]\\.[0-9])", RegexOption.IGNORE_CASE), "DDP$1")
-
-    val parts = normalized.split(" ", "_", ".")
-
-    val sourceTags = setOf(
-        "WEB-DL", "WEBRIP", "BLURAY", "HDRIP",
-        "DVDRIP", "HDTV", "CAM", "TS", "BRRIP", "BDRIP"
+    val patterns = listOf(
+        Regex("(WEB[-_. ]?DL|WEB[-_. ]?RIP|BLURAY|HDRIP|BDRIP|BRRIP|DVDRIP|HDTV|CAM|TS)", RegexOption.IGNORE_CASE),
+        Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC)", RegexOption.IGNORE_CASE),
+        Regex("(DDP[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS|EAC3|FLAC|MP3)", RegexOption.IGNORE_CASE),
+        Regex("(ATMOS|DUAL)", RegexOption.IGNORE_CASE),
+        Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
+        Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP)\\b", RegexOption.IGNORE_CASE)
     )
 
-    val codecTags = setOf("H264", "H265", "X264", "X265", "HEVC", "AVC")
+    val results = linkedSetOf<String>()
 
-    val audioTags = setOf("AAC", "AC3", "DTS", "MP3", "FLAC", "DD", "DDP", "EAC3")
-
-    val audioExtras = setOf("ATMOS")
-
-    val hdrTags = setOf("SDR","HDR", "HDR10", "HDR10+", "DV", "DOLBYVISION")
-
-    val filtered = parts.mapNotNull { part ->
-        val p = part.uppercase()
-
-        when {
-            sourceTags.contains(p) -> p
-            codecTags.contains(p) -> p
-            audioTags.any { p.startsWith(it) } -> p
-            audioExtras.contains(p) -> p
-            hdrTags.contains(p) -> {
-                when (p) {
-                    "DV", "DOLBYVISION" -> "DOLBYVISION"
-                    else -> p
-                }
-            }
-            p == "NF" || p == "CR" -> p
-            else -> null
+    for (pattern in patterns) {
+        pattern.findAll(name).forEach { match ->
+            var value = match.value.uppercase()
+            value = value
+                .replace(Regex("WEB[-_. ]?DL"), "WEB-DL")
+                .replace(Regex("WEB[-_. ]?RIP"), "WEBRIP")
+                .replace(Regex("H[ .]?265"), "H265")
+                .replace(Regex("H[ .]?264"), "H264")
+                .replace(Regex("DOLBY[ .]?VISION"), "DOLBYVISION")
+                .replace("2160P", "4K")
+            results.add(value)
         }
     }
-
-    return filtered.distinct().joinToString(" ")
+    return results.joinToString(" ")
 }
 
 

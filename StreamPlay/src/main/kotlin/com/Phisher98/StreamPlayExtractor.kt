@@ -3799,7 +3799,7 @@ object StreamPlayExtractor : StreamPlay() {
                     it.select("div.episode-links > a").amap {
                         val source = getRedirectLinks(it.attr("href"))
                         loadSourceNameExtractor(
-                            "4Khdhub",
+                            "4KHDHub",
                             source,
                             "",
                             subtitleCallback,
