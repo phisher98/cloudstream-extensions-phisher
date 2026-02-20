@@ -99,9 +99,19 @@ data class DomainsParser(
     val vegamovies: String,
     val rogmovies: String,
     val luxmovies: String,
-    val xprime: String,
-    val extramovies:String,
-    val dramadrip:String
+    val movierulzhd: String,
+    val extramovies: String,
+    val banglaplex: String,
+    val toonstream: String,
+    val telugumv: String,
+    val filmycab: String,
+    val tellyhd: String,
+    val filmyfiy: String,
+    val hindmoviez: String,
+    val tamilblasters: String,
+    val hubcloud: String,
+    val movienestbd: String,
+    val movies4u: String,
 )
 
 // ----------- Constants and Cache -----------

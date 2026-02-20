@@ -2471,18 +2471,24 @@ object StreamPlayExtractor : StreamPlay() {
         )
 
         val api = getDomains()?.rogmovies
+        Log.d("Phisher",api.toString())
+        val url = "$api/search.php?q=${id ?: return}"
 
-        val url = "$api/?s=${id ?: return}"
         app.get(
             url,
             referer = api,
             headers = headers
-        ).document.select("article h2 a,article h3 a").amap {
-            val res = app.get(
-                it.attr("href"),
-                referer = api,
-                headers = headers
-            ).document
+        ).parsedSafe<VegamoviesResponse>()?.hits
+            ?.mapNotNull { it.document }
+            ?.filter { it.imdb_id.equals(id, ignoreCase = true) }
+            ?.amap { doc ->
+                val permalink = doc.permalink ?: return@amap
+                val fullUrl = api + permalink
+                val res = app.get(
+                    fullUrl,
+                    referer = api,
+                    headers = headers
+                ).document
             if(season == null) {
                 res.select("button.dwd-button").amap {
                     val link = it.parent()?.attr("href") ?: return@amap

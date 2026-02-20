@@ -679,6 +679,7 @@ data class Elevenmoviesjson(
 
 
 //Domains Parser
+
 data class DomainsParser(
     val moviesdrive: String,
     @JsonProperty("HDHUB4u")
@@ -698,15 +699,16 @@ data class DomainsParser(
     val luxmovies: String,
     val movierulzhd: String,
     val extramovies: String,
-    val dramadrip: String,
     val banglaplex: String,
     val toonstream: String,
     val telugumv: String,
     val filmycab: String,
     val tellyhd: String,
+    val filmyfiy: String,
     val hindmoviez: String,
-    @JsonProperty("hubcloud")
+    val tamilblasters: String,
     val hubcloud: String,
+    val movienestbd: String,
     val movies4u: String,
 )
 

@@ -301,21 +301,21 @@ class VCloud : ExtractorApi() {
             val quality = getIndexQuality(header)
 
             when {
-                text.contains("FSL") -> {
-                    callback.invoke(
-                        newExtractorLink(
-                            "FSL Server",
-                            "FSL Server $labelExtras",
-                            link,
-                        ) { this.quality = quality }
-                    )
-                }
-
                 text.contains("FSLv2", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
                             "FSLv2",
                             "FSLv2 $labelExtras",
+                            link,
+                        ) { this.quality = quality }
+                    )
+                }
+
+                text.contains("FSL") -> {
+                    callback.invoke(
+                        newExtractorLink(
+                            "FSL Server",
+                            "FSL Server $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -1032,7 +1032,17 @@ class HubCloud : ExtractorApi() {
             val text = element.ownText()
             val label = text.lowercase()
             when {
-                "fsl server" in label -> {
+                "fslv2" in label -> {
+                    callback(
+                        newExtractorLink(
+                            "$ref [FSLv2]",
+                            "$ref [FSLv2] $labelExtras",
+                            link
+                        ) { this.quality = quality }
+                    )
+                }
+
+                "fsl" in label -> {
                     callback(
                         newExtractorLink(
                             "$ref [FSL Server]",
@@ -1090,16 +1100,6 @@ class HubCloud : ExtractorApi() {
                         newExtractorLink(
                             "$ref [S3 Server]",
                             "$ref [S3 Server] $labelExtras",
-                            link
-                        ) { this.quality = quality }
-                    )
-                }
-
-                "fslv2" in label -> {
-                    callback(
-                        newExtractorLink(
-                            "$ref [FSLv2]",
-                            "$ref [FSLv2] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
