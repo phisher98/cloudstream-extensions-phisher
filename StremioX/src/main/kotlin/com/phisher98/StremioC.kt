@@ -49,6 +49,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
      
     private var cachedManifest: Manifest? = null
     private var lastManifestUrl: String = ""
+    private var lastCacheTime: Long = 0
     
     companion object {
         private const val cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
@@ -77,12 +78,26 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
 
     private suspend fun getManifest(): Manifest? {
         val currentUrl = buildUrl("/manifest.json")
-        if (cachedManifest != null && lastManifestUrl == currentUrl) {
+        val now = System.currentTimeMillis()
+        val cacheAge = now - lastCacheTime
+        val isExpired = cacheAge > 24 * 60 * 60 * 1000 // 24Hour
+
+        if (cachedManifest != null && 
+            lastManifestUrl == currentUrl && 
+            !isExpired && 
+            !cachedManifest?.catalogs.isNullOrEmpty()) {
             return cachedManifest
         }
-        cachedManifest = app.get(currentUrl).parsedSafe<Manifest>()
-        lastManifestUrl = currentUrl
-        return cachedManifest
+
+        val res = app.get(currentUrl, timeout = 120L).parsedSafe<Manifest>()
+
+        if (res != null && !res.catalogs.isNullOrEmpty()) {
+            cachedManifest = res
+            lastManifestUrl = currentUrl
+            lastCacheTime = now
+        } else {
+        }        
+        return res ?: cachedManifest
     }
 
     override suspend fun getMainPage(
@@ -167,7 +182,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     ): Boolean {
         val loadData = parseJson<LoadData>(data)
         val encodedId = URLEncoder.encode(loadData.id, "UTF-8")
-        val request = app.get(buildUrl("/stream/${loadData.type}/$encodedId.json"))
+        val request = app.get(buildUrl("/stream/${loadData.type}/$encodedId.json"), timeout = 120L)
 
         val res = if (request.isSuccessful)
             request.parsedSafe<StreamsResponse>()
