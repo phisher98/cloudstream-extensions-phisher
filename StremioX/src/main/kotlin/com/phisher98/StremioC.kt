@@ -50,6 +50,8 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     private var cachedManifest: Manifest? = null
     private var lastManifestUrl: String = ""
     private var lastCacheTime: Long = 0
+    private val catalogSentIds = mutableMapOf<String, MutableSet<String>>()
+    private val pageContentCache = mutableMapOf<String, List<SearchResponse>>()
     
     companion object {
         private const val cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
@@ -95,6 +97,8 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             cachedManifest = res
             lastManifestUrl = currentUrl
             lastCacheTime = now
+            pageContentCache.clear()
+            catalogSentIds.clear()
         } else {
         }        
         return res ?: cachedManifest
@@ -104,23 +108,39 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        if (mainUrl.isEmpty()) {
-            throw IllegalArgumentException("Configure in Extension Settings\n")
-        }
+        if (mainUrl.isEmpty()) throw IllegalArgumentException("Configure in Extension Settings\n")
         mainUrl = mainUrl.fixSourceUrl()
 
-        val pageSize = 100
-        val skip = (page - 1) * pageSize
+        if (page <= 1) {
+            catalogSentIds.clear()
+        }
 
+        val skip = (page - 1) * 100
         val manifest = getManifest()
-
         val targetCatalogs = manifest?.catalogs?.filter { !it.isSearchRequired() } ?: emptyList()
 
         val lists = targetCatalogs.amap { catalog ->
-            catalog.toHomePageList(
-                provider = this,
-                skip = skip
-            )
+            val catalogKey = catalog.id ?: catalog.name ?: "default"
+            val cacheKey = "${catalogKey}_$skip"
+
+            val cachedItems = pageContentCache[cacheKey]
+            
+            val row = if (cachedItems != null) {
+                HomePageList(catalog.name ?: catalog.id, cachedItems)
+            } else {
+                val freshRow = catalog.toHomePageList(provider = this, skip = skip)
+                if (freshRow.list.isNotEmpty()) {
+                    pageContentCache[cacheKey] = freshRow.list
+                }
+                freshRow
+            }
+            
+            val seenForThisCatalog = catalogSentIds.getOrPut(catalogKey) { mutableSetOf() }
+            val filteredItems = row.list.filter { item ->
+                seenForThisCatalog.add(item.url)
+            }
+            
+            row.copy(list = filteredItems)
         }.filter { it.list.isNotEmpty() }
 
         return newHomePageResponse(
