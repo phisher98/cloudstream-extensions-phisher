@@ -106,7 +106,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         val targetCatalogs = manifest?.catalogs?.filter { !it.isSearchRequired() } ?: emptyList()
 
         val lists = targetCatalogs.amap { catalog ->
-            println("[v1.7 Debug] 일반 카탈로그 병렬 로드 시작: ${catalog.name ?: catalog.id}")
             catalog.toHomePageList(
                 provider = this,
                 skip = skip
@@ -120,7 +119,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        println("[v1.7 Debug] search 실행 - query: $query")
         mainUrl = mainUrl.fixSourceUrl()
         
         val manifest = getManifest()
@@ -131,7 +129,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         }.flatten()
         
         val distinctList = list.distinctBy { it.url }
-        println("[v1.7 Debug] 검색 완료 - 총 반환 아이템 수: ${distinctList.size}")
         return distinctList
     }
 
