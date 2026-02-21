@@ -58,7 +58,7 @@ Each mode serves a different purpose and should be used accordingly.
 - **Stream handling**:
   - Streams are fetched from the addon itself
   - If the addon does not provide streams, the system **automatically falls back to torrent links**
-- **✨AIOStreams Integration**:
+- **✨[AIOStreams](https://github.com/Viren070/AIOStreams) Integration**:
   - **By wrapping both stream and catalogue addons within the AIOStreams addon**
   - **StremioC can provide simultaneous support for both functions.**
 
