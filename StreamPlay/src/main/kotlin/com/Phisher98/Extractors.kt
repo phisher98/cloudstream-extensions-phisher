@@ -2741,13 +2741,13 @@ class XdMoviesExtractor : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url, allowRedirects = false).headers["location"]
-        if (href!=null) {
-            if (href.contains("hubcloud")) {
-                HubCloud().getUrl(href, "HubDrive", subtitleCallback, callback)
-            } else loadExtractor(href, "HubDrive", subtitleCallback, callback)
-        }
+        val redirect = app.get("${BuildConfig.XDAPI}/?url=$url").parsedSafe<BypassResponse>()?.url ?: return
+        loadExtractor(redirect, "HubCloud", subtitleCallback, callback)
     }
+
+    data class BypassResponse(
+        val url: String,
+    )
 }
 
 class Rapidairmax : MegaUp() {

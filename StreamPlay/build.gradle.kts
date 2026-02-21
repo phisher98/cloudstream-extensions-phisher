@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 548
+version = 549
 
 android {
     buildFeatures {
@@ -54,6 +54,8 @@ android {
         buildConfigField("String", "YFXENC", "\"${properties.getProperty("YFXENC")}\"")
         buildConfigField("String", "YFXDEC", "\"${properties.getProperty("YFXDEC")}\"")
         buildConfigField("String", "NuvFeb", "\"${properties.getProperty("NuvFeb")}\"")
+        buildConfigField("String", "XDAPI", "\"${properties.getProperty("XDAPI")}\"")
+
     }
 }
 

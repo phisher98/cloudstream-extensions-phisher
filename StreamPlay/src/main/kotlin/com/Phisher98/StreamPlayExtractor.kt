@@ -2692,12 +2692,12 @@ object StreamPlayExtractor : StreamPlay() {
         val url = if (season == null) {
             loaderUrl
         } else {
-            val mediaId = app.get(loaderUrl, referer = "$moflixAPI/")
+            val mediaId = app.get(loaderUrl, referer = "$moflixAPI/", interceptor = CloudflareKiller())
                 .parsedSafe<MoflixResponse>()?.title?.id
             "$moflixAPI/api/v1/titles/$mediaId/seasons/$season/episodes/$episode?loader=episodePage"
         }
 
-        val response = app.get(url, referer = "$moflixAPI/")
+        val response = app.get(url, referer = "$moflixAPI/", interceptor = CloudflareKiller())
         if (response.code != 200) return
         val res = response.parsedSafe<MoflixResponse>()
         (res?.episode ?: res?.title)?.videos?.filter {
@@ -5204,11 +5204,9 @@ object StreamPlayExtractor : StreamPlay() {
             "x-requested-with" to "XMLHttpRequest",
             "x-auth-token" to base64Decode("NzI5N3Nra2loa2Fqd25zZ2FrbGFrc2h1d2Q=")
         )
-        val searchData = app.get(
-            "$XDmoviesAPI/php/search_api.php?query=$title&fuzzy=true", headers
-        ).parsedSafe<SearchData>() ?: return
+        val searchData = app.get("$XDmoviesAPI/php/search_api.php?query=$title&fuzzy=true", headers, interceptor = CloudflareKiller()).parsedSafe<SearchData>() ?: return
         val matched = searchData.firstOrNull { it.tmdb_id == id } ?: return
-        val document = app.get(XDmoviesAPI + matched.path).documentLarge
+        val document = app.get(XDmoviesAPI + matched.path,interceptor = CloudflareKiller()).documentLarge
 
         if (season == null) {
             val link = document.select("div.download-item a").attr("href")
@@ -5908,7 +5906,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         if (id.isNullOrBlank()) return
 
-        val searchDoc = app.get("$api/?s=$id", timeout = 50L).document
+        val searchDoc = app.get("$api/?s=$id", timeout = 50L, interceptor = CloudflareKiller()).document
         val entries = searchDoc.select("h2.entry-title > a")
 
         entries.amap { entry ->
@@ -5918,7 +5916,7 @@ object StreamPlayExtractor : StreamPlay() {
             if (episode == null) {
                 // Movie
                 buttons.amap { btn ->
-                    val intermediateDoc = app.get(btn.attr("href"), timeout = 50L).document
+                    val intermediateDoc = app.get(btn.attr("href"), timeout = 50L, interceptor = CloudflareKiller()).document
                     val link = intermediateDoc.selectFirst("a.get-link-btn")
                         ?.attr("href")
                         ?: return@amap
@@ -5936,7 +5934,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     if (!headerText.contains("Season $season", ignoreCase = true)) return@amap
 
-                    val episodeDoc = app.get(btn.attr("href"), timeout = 50L).document
+                    val episodeDoc = app.get(btn.attr("href"), timeout = 50L, interceptor = CloudflareKiller()).document
                     val episodeLink = episodeDoc
                         .select("h3 > a")
                         .getOrNull(episode - 1)

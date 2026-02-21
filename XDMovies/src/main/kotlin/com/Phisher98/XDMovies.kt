@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -136,7 +137,7 @@ class XDMovies : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url, interceptor = CloudflareKiller()).documentLarge
         val infoDiv = document.selectFirst("div.info")
         val detailsWrapper = document.selectFirst("div.details-wrapper")
         val headerStyle = document.selectFirst("#movie-header")?.attr("style").orEmpty()

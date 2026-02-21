@@ -288,14 +288,14 @@ class XdMoviesExtractor : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val redirect = runCatching {
-            app.get(url, allowRedirects = false).headers["location"]
-        }.getOrNull()
-
-        redirect?.let {
-            loadExtractor(it, "HubCloud", subtitleCallback, callback)
-        }
+        val redirect = app.get("${BuildConfig.XDAPI}/?url=$url").parsedSafe<BypassResponse>()?.url ?: return
+        loadExtractor(redirect, "HubCloud", subtitleCallback, callback)
     }
+
+    data class BypassResponse(
+        val url: String,
+    )
+
 }
 
 fun parseTmdbActors(jsonText: String?): List<ActorData> {

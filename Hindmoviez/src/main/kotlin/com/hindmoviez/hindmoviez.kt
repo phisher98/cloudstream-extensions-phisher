@@ -17,6 +17,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -61,7 +62,7 @@ class Hindmoviez : MainAPI() {
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        val doc = if (page==1) app.get("$mainUrl/${request.data}", timeout = 5000L).document else app.get("$mainUrl/${request.data}/page/$page", timeout = 5000L).document
+        val doc = if (page==1) app.get("$mainUrl/${request.data}", timeout = 5000L, interceptor = CloudflareKiller()).document else app.get("$mainUrl/${request.data}/page/$page", timeout = 5000L, interceptor = CloudflareKiller()).document
 
         val home = doc.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home, true)
@@ -82,14 +83,14 @@ class Hindmoviez : MainAPI() {
 
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val doc = app.get("$mainUrl/page/$page/?s=$query").document
+        val doc = app.get("$mainUrl/page/$page/?s=$query", interceptor = CloudflareKiller()).document
         val res = doc.select("article").mapNotNull { it.toSearchResult() }
         return res.toNewSearchResponseList()
     }
 
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url, timeout = 10000).document
+        val doc = app.get(url, timeout = 10000, interceptor = CloudflareKiller()).document
 
         var name: String? = null
         var imdbRating: String? = null
