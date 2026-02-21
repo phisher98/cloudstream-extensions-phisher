@@ -326,7 +326,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
 
         suspend fun search(query: String, provider: StremioC): List<SearchResponse> {
             val allMetas = types.amap { type ->
-                val searchUrl = provider.buildUrl("/catalog/${type}/${id}/search=${query}.json")
+                val searchUrl = provider.buildUrl("/catalog/${type}/${id}/search=${URLEncoder.encode(query, "UTF-8")}.json")
                 val res = app.get(searchUrl, timeout = 120L).parsedSafe<CatalogResponse>()
                 res?.metas ?: emptyList()
             }.flatten()
