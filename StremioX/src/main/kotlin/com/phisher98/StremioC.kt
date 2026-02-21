@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -43,7 +44,6 @@ import org.json.JSONObject
 import java.net.URLEncoder
 import java.util.Locale
 
-
 class StremioC(override var mainUrl: String, override var name: String) : MainAPI() {
     override val supportedTypes = setOf(TvType.Others)
     override val hasMainPage = true
@@ -61,8 +61,9 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             "https://raw.githubusercontent.com/ngosang/trackerslist/refs/heads/master/trackers_best_ip.txt",
         )
         private const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
+        private const val tmdbAPI = "https://api.themoviedb.org/3"
+        private const val apiKey = BuildConfig.TMDB_API
     }
-
 
     private fun baseUrl(): String {
         return mainUrl.substringBefore("?").trimEnd('/')
@@ -286,7 +287,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         @JsonProperty("lang") val lang: String,
     )
 
-    // check if id is imdb/tmdb cause stremio addons like torrentio works base on imdbId
     private fun isImdborTmdb(url: String?): Boolean {
         return imdbUrlToIdNullable(url) != null || url?.startsWith("tmdb:") == true
     }
@@ -294,7 +294,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
     private fun isImdb(url: String?): Boolean {
         return imdbUrlToIdNullable(url) != null
     }
-
 
    private data class Manifest(val catalogs: List<Catalog>)
     
@@ -372,6 +371,12 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         @JsonProperty("title") val title: String? = null        
     )
 
+    private data class Link(
+        @JsonProperty("name") val name: String? = null,
+        @JsonProperty("category") val category: String? = null,
+        @JsonProperty("url") val url: String? = null
+    )
+
     private data class CatalogEntry(
         @JsonProperty("name") val name: String,
         @JsonProperty("id") val id: String,
@@ -386,7 +391,8 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         @JsonProperty("cast") val cast: List<String> = emptyList(),
         @JsonProperty("trailers") val trailersSources: List<Trailer> = emptyList(),
         @JsonProperty("trailerStreams") val trailerStreams: List<TrailerStream> = emptyList(),
-        @JsonProperty("year") val yearNum: String? = null
+        @JsonProperty("year") val yearNum: String? = null,
+        @JsonProperty("links") val links: List<Link> = emptyList()
     ) {
         fun toSearchResponse(provider: StremioC): SearchResponse {
             return provider.newMovieSearchResponse(
@@ -398,19 +404,73 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             }
         }
 
-
-
         suspend fun toLoadResponse(provider: StremioC, imdbId: String?): LoadResponse {
             val allTrailers = (trailersSources.mapNotNull { it.source } + trailerStreams.mapNotNull { it.ytId })
                 .distinct()
                 .map { "https://www.youtube.com/watch?v=$it" }
             
+            var fetchedRecommendations: List<SearchResponse>? = null
+
+            val extractedImdbId = links.firstOrNull { it.category == "imdb" }?.url?.substringAfterLast("/")?.takeIf { it.startsWith("tt") }
+            val extractedTmdbId = if (this.id.startsWith("tmdb:")) this.id.removePrefix("tmdb:") else null
+            val finalImdbId = extractedImdbId ?: (if (this.id.startsWith("tt")) this.id else imdbId)
+            var tmdbIdStr: String? = extractedTmdbId
+
+            try {
+                val isMovie = type == "movie" || videos.isNullOrEmpty()
+                val tmdbMediaType = if (isMovie) "movie" else "tv"
+
+                if (tmdbIdStr == null && finalImdbId?.startsWith("tt") == true) {
+                    val findUrl = "$tmdbAPI/find/$finalImdbId?api_key=$apiKey&external_source=imdb_id"
+                    val findRes = app.get(findUrl).parsedSafe<TmdbFindResponse>()
+                    
+                    val tmdbId = if (isMovie) findRes?.movie_results?.firstOrNull()?.id else findRes?.tv_results?.firstOrNull()?.id
+                    if (tmdbId != null) {
+                        tmdbIdStr = tmdbId.toString()
+                    }
+                }
+
+                if (tmdbIdStr != null) {
+                    val detailUrl = "$tmdbAPI/$tmdbMediaType/$tmdbIdStr?api_key=$apiKey&append_to_response=recommendations"
+                    val detailRes = app.get(detailUrl).parsedSafe<TmdbDetailResponse>()
+                    
+                    fetchedRecommendations = detailRes?.recommendations?.results?.mapNotNull { media ->
+                        val recTitle = media.title ?: media.name ?: media.originalTitle ?: return@mapNotNull null
+                        val posterUrl = if (media.posterPath?.startsWith("/") == true) "https://image.tmdb.org/t/p/original${media.posterPath}" else media.posterPath
+                        
+                        val rawMediaType = media.mediaType ?: tmdbMediaType
+                        val stremioType = if (rawMediaType == "tv") "series" else "movie"
+                        
+                        val recommendationEntry = CatalogEntry(
+                            name = recTitle,
+                            id = "tmdb:${media.id}",
+                            type = stremioType, 
+                            poster = posterUrl,
+                            background = null,
+                            description = media.overview,
+                            imdbRating = null,
+                            videos = null,
+                            genre = null
+                        )
+                        
+                        provider.newMovieSearchResponse(
+                            recTitle,
+                            recommendationEntry.toJson(),
+                            if (stremioType == "movie") TvType.Movie else TvType.TvSeries
+                        ) {
+                            this.posterUrl = posterUrl
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+            }
+
             if (videos.isNullOrEmpty()) {
                 return provider.newMovieLoadResponse(
                     name,
                     "${provider.mainUrl}/meta/${type}/${id}.json",
                     TvType.Movie,
-                    LoadData(type, id, imdbId = imdbId, year = yearNum?.toIntOrNull())
+                    LoadData(type, id, imdbId = finalImdbId, year = yearNum?.toIntOrNull())
                 ) {
                     posterUrl = poster
                     backgroundPosterUrl = background
@@ -420,10 +480,18 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     tags = genre ?: genres
                     addActors(cast)
                     addTrailer(allTrailers)                    
-                    if (imdbId?.startsWith("tt") == true) {
-                        addImdbId(imdbId)
-                    } else {
-                        println("Kitsu or TMDB ID: $imdbId")
+                    
+                    this.recommendations = fetchedRecommendations
+                    
+                    tmdbIdStr?.let { 
+                        addTMDbId(it)
+                    }
+                    finalImdbId?.let { 
+                        if (it.startsWith("tt")) {
+                            addImdbId(it)
+                        } else {
+                            println("Kitsu or TMDB ID: $it")
+                        }
                     }
                 }
             } else {
@@ -432,7 +500,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     "${provider.mainUrl}/meta/${type}/${id}.json",
                     TvType.TvSeries,
                     videos.map {
-                        it.toEpisode(provider, type, imdbId)
+                        it.toEpisode(provider, type, finalImdbId)
                     }
                 ) {
                     posterUrl = poster
@@ -443,10 +511,18 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     tags = genre ?: genres
                     addActors(cast)
                     addTrailer(allTrailers.randomOrNull())
-                    if (imdbId?.startsWith("tt") == true) {
-                        addImdbId(imdbId)
-                    } else {
-                        println("Kitsu or TMDB ID: $imdbId")
+                    
+                    this.recommendations = fetchedRecommendations
+                    
+                    tmdbIdStr?.let { 
+                        addTMDbId(it)
+                    }
+                    finalImdbId?.let { 
+                        if (it.startsWith("tt")) {
+                            addImdbId(it)
+                        } else {
+                            println("Kitsu or TMDB ID: $it")
+                        }
                     }
                 }
             }
@@ -566,6 +642,34 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         }
     }
 }
+
+private data class TmdbFindResponse(
+    @JsonProperty("movie_results") val movie_results: List<TmdbFindResult>? = null,
+    @JsonProperty("tv_results") val tv_results: List<TmdbFindResult>? = null
+)
+
+private data class TmdbFindResult(
+    @JsonProperty("id") val id: Int? = null,
+    @JsonProperty("media_type") val media_type: String? = null
+)
+
+private data class TmdbDetailResponse(
+    @JsonProperty("recommendations") val recommendations: TmdbRecommendations? = null
+)
+
+private data class TmdbRecommendations(
+    @JsonProperty("results") val results: List<TmdbMedia>? = null
+)
+
+private data class TmdbMedia(
+    @JsonProperty("id") val id: Int? = null,
+    @JsonProperty("name") val name: String? = null,
+    @JsonProperty("title") val title: String? = null,
+    @JsonProperty("original_title") val originalTitle: String? = null,
+    @JsonProperty("media_type") val mediaType: String? = null,
+    @JsonProperty("poster_path") val posterPath: String? = null,
+    @JsonProperty("overview") val overview: String? = null
+)
 
 suspend fun invokeUindex(
     title: String? = null,
@@ -760,12 +864,14 @@ suspend fun invokeTorrentio(
     episode: Int? = null,
     callback: (ExtractorLink) -> Unit
 ) {
-    val url = if(season == null) {
+    val url = if (id?.startsWith("kitsu:") == true) {
+        "https://torrentio.strem.fun/stream/series/$id:${episode ?: 1}.json"
+    } else if (season == null) {
         "https://torrentio.strem.fun/stream/movie/$id.json"
-    }
-    else {
+    } else {
         "https://torrentio.strem.fun/stream/series/$id:$season:$episode.json"
     }
+    
     val headers = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
