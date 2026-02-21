@@ -50,7 +50,7 @@ Want to learn how to add and manage Stremio addons more effectively?
 
 📘 **StremioX / StremioC – Written Guide**  
 Detailed explanation of StremioX (stream addons) and StremioC (catalogue addons), including usage and limitations.  
-✨ **StremioC: Wrap stream & catalogue in AIOStreams addon for dual support.**  
+✨ **StremioC: Wrap stream & catalogue in [AIOStreams](https://github.com/Viren070/AIOStreams) addon for dual support.**  
 [Open guide →](https://github.com/phisher98/cloudstream-extensions-phisher/blob/master/docs/README-StremioX.md)
 
 📘 **Stremio Addon – Written Guide**  
