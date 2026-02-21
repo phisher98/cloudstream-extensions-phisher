@@ -49,8 +49,8 @@ This guide will show you how to use a **private GitHub project** and a **persona
 Want to learn how to add and manage Stremio addons more effectively?
 
 📘 **StremioX / StremioC – Written Guide**  
-Detailed explanation of StremioX (stream addons) and StremioC (catalogue addons), including usage and limitations.
-Wrapping both stream and catalogue addons inside AIOStreams allows for concurrent support of both functions.
+Detailed explanation of StremioX (stream addons) and StremioC (catalogue addons), including usage and limitations.  
+✨ **StremioC: Wrap stream & catalogue in AIOStreams addon for dual support.**  
 [Open guide →](https://github.com/phisher98/cloudstream-extensions-phisher/blob/master/docs/README-StremioX.md)
 
 📘 **Stremio Addon – Written Guide**  
