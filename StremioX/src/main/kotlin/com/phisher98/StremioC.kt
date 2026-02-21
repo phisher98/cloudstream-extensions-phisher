@@ -405,7 +405,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                 .distinct()
                 .map { "https://www.youtube.com/watch?v=$it" }
             
-            if (type == "movie" || videos.isNullOrEmpty()) {
+            if (videos.isNullOrEmpty()) {
                 return provider.newMovieLoadResponse(
                     name,
                     "${provider.mainUrl}/meta/${type}/${id}.json",
