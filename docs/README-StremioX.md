@@ -58,6 +58,9 @@ Each mode serves a different purpose and should be used accordingly.
 - **Stream handling**:
   - Streams are fetched from the addon itself
   - If the addon does not provide streams, the system **automatically falls back to torrent links**
+- **✨AIOStreams Integration**:
+  - **By wrapping both stream and catalogue addons within the AIOStreams addon**
+  - **StremioC can provide simultaneous support for both functions.**
 
 #### Notes
 
@@ -65,15 +68,14 @@ Each mode serves a different purpose and should be used accordingly.
 - Episode playback will show:
   > **No link found**
 - This mode is intended for **browsing only**
-
+- **To enable full functionality (Catalogs + Streams), it is highly recommended to use AIOStreams to wrap your desired addons.**
 ---
 
 ## Limitations ⚠️
 
 - This extension is experimental
 - Not a replacement for native Stremio
-- Catalogue addons do not provide playable links
-
+- Standard catalogue addon may not provide playable links without AIOStreams wrapping.
 ---
 
 ## Disclaimer
