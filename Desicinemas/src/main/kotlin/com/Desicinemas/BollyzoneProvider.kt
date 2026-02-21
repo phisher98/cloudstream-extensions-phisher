@@ -31,6 +31,9 @@ class BollyzoneProvider : DesicinemasProvider() {
                 .firstOrNull { it.tagName() == "div" && it.hasClass("MovieListTop") } ?: continue
             val list = movieListDiv.toHomePageList(sectionName)
             homePageList.add(list)
+            if (list.list.isNotEmpty()) {
+                homePageList.add(list)
+            }
         }
         val hasNext = homePageList.any { it.list.isNotEmpty() }
         return newHomePageResponse(homePageList, hasNext)
