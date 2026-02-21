@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.Episode
@@ -93,13 +94,14 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
 
         val res = app.get(currentUrl, timeout = 120L).parsedSafe<Manifest>()
 
-        if (res != null && !res.catalogs.isNullOrEmpty()) {
+        if (res != null && res.catalogs.isNotEmpty()) {
             cachedManifest = res
             lastManifestUrl = currentUrl
             lastCacheTime = now
             pageContentCache.clear()
             catalogSentIds.clear()
         } else {
+            Log.d("Error:","Null")
         }        
         return res ?: cachedManifest
     }
@@ -120,7 +122,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         val targetCatalogs = manifest?.catalogs?.filter { !it.isSearchRequired() } ?: emptyList()
 
         val lists = targetCatalogs.amap { catalog ->
-            val catalogKey = catalog.id ?: catalog.name ?: "default"
+            val catalogKey = catalog.id
             val cacheKey = "${catalogKey}_$skip"
 
             val cachedItems = pageContentCache[cacheKey]
@@ -171,8 +173,8 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
             val metaJson = JSONObject(json).getJSONObject("meta").toString()
             parseJson(metaJson)
         }
-
-        val encodedId = URLEncoder.encode(res.id, "UTF-8")
+        val normalizedId = normalizeId(res.id)
+        val encodedId = URLEncoder.encode(normalizedId, "UTF-8")
         val response = app.get(buildUrl("/meta/${res.type}/$encodedId.json"))
             .parsedSafe<CatalogResponse>()
             ?: throw RuntimeException("Failed to load meta")
@@ -201,7 +203,8 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val loadData = parseJson<LoadData>(data)
-        val encodedId = URLEncoder.encode(loadData.id, "UTF-8")
+        val normalizedId = normalizeId(loadData.id)
+        val encodedId = URLEncoder.encode(normalizedId, "UTF-8")
         val request = app.get(buildUrl("/stream/${loadData.type}/$encodedId.json"), timeout = 120L)
 
         val res = if (request.isSuccessful)

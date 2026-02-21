@@ -200,3 +200,12 @@ suspend fun fetchTmdbLogoUrl(
     // No language match & no voted logos
     return null
 }
+
+fun normalizeId(id: String?): String {
+    val clean = id?.trim() ?: ""
+    return when {
+        clean.matches(Regex("^tt\\d+$")) -> clean
+        clean.all { it.isDigit() } -> "tmdb:$clean"
+        else -> clean
+    }
+}
