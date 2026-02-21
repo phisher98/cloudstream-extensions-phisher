@@ -54,7 +54,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
 import java.net.URI
@@ -3733,30 +3732,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    suspend fun invokeStreamPlay(
-        tmdbId: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        val url =
-            if (season == null) "${BuildConfig.StreamPlayAPI}/$tmdbId" else "${BuildConfig.StreamPlayAPI}/$tmdbId/seasons/$season/episodes/$episode"
-        app.get(url).parsedSafe<StremplayAPI>()?.fields?.links?.arrayValue?.values?.amap {
-            val href = it.mapValue.fields.href.stringValue
-            val quality = it.mapValue.fields.quality.stringValue
-            loadSourceNameExtractor(
-                "StreamPlay",
-                href,
-                "",
-                subtitleCallback,
-                callback,
-                getQualityFromName(quality)
-            )
-        }
-    }
-
-
     suspend fun invoke4khdhub(
         title: String? = null,
         year: Int? = null,
@@ -5204,10 +5179,16 @@ object StreamPlayExtractor : StreamPlay() {
             "x-requested-with" to "XMLHttpRequest",
             "x-auth-token" to base64Decode("NzI5N3Nra2loa2Fqd25zZ2FrbGFrc2h1d2Q=")
         )
-        val searchData = app.get("$XDmoviesAPI/php/search_api.php?query=$title&fuzzy=true", headers, interceptor = CloudflareKiller()).parsedSafe<SearchData>() ?: return
+        val searchData = app.get("$XDmoviesAPI/php/search_api.php?query=$title&fuzzy=true", headers).parsedSafe<SearchData>() ?: return
         val matched = searchData.firstOrNull { it.tmdb_id == id } ?: return
-        val document = app.get(XDmoviesAPI + matched.path,interceptor = CloudflareKiller()).documentLarge
-
+        val url = XDmoviesAPI + matched.path
+        val response = app.get(url).let {
+            if (
+                it.text.contains("Just a moment", true)
+            ) app.get(url, interceptor = CloudflareKiller())
+            else it
+        }
+        val document = response.documentLarge
         if (season == null) {
             val link = document.select("div.download-item a").attr("href")
             val codec = extractCodec(document.select("div.download-item > div").text())
@@ -5903,10 +5884,20 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val api = getDomains()?.hindmoviez ?: return
-
         if (id.isNullOrBlank()) return
+        val url = "$api/?s=$id"
+        var response = app.get(url, timeout = 50L)
+        if (
+            response.text.contains("Just a moment", true)
+        ) {
+            response = app.get(
+                url,
+                timeout = 50L,
+                interceptor = CloudflareKiller()
+            )
+        }
 
-        val searchDoc = app.get("$api/?s=$id", timeout = 50L, interceptor = CloudflareKiller()).document
+        val searchDoc = response.document
         val entries = searchDoc.select("h2.entry-title > a")
 
         entries.amap { entry ->
@@ -5916,7 +5907,7 @@ object StreamPlayExtractor : StreamPlay() {
             if (episode == null) {
                 // Movie
                 buttons.amap { btn ->
-                    val intermediateDoc = app.get(btn.attr("href"), timeout = 50L, interceptor = CloudflareKiller()).document
+                    val intermediateDoc = app.get(btn.attr("href"), timeout = 50L).document
                     val link = intermediateDoc.selectFirst("a.get-link-btn")
                         ?.attr("href")
                         ?: return@amap
@@ -5934,7 +5925,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     if (!headerText.contains("Season $season", ignoreCase = true)) return@amap
 
-                    val episodeDoc = app.get(btn.attr("href"), timeout = 50L, interceptor = CloudflareKiller()).document
+                    val episodeDoc = app.get(btn.attr("href"), timeout = 50L).document
                     val episodeLink = episodeDoc
                         .select("h3 > a")
                         .getOrNull(episode - 1)
@@ -5946,7 +5937,6 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
-
 
 
     suspend fun invokeSucccbots(

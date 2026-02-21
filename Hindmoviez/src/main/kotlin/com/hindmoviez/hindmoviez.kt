@@ -62,8 +62,23 @@ class Hindmoviez : MainAPI() {
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        val doc = if (page==1) app.get("$mainUrl/${request.data}", timeout = 5000L, interceptor = CloudflareKiller()).document else app.get("$mainUrl/${request.data}/page/$page", timeout = 5000L, interceptor = CloudflareKiller()).document
+        val url = if (page == 1) {
+            "$mainUrl/${request.data}"
+        } else {
+            "$mainUrl/${request.data}/page/$page"
+        }
 
+        var response = app.get(url, timeout = 5000L)
+        if (response.text.contains("Just a moment", ignoreCase = true)) {
+            // Retry using CloudflareKiller interceptor
+            response = app.get(
+                url,
+                timeout = 5000L,
+                interceptor = CloudflareKiller()
+            )
+        }
+
+        val doc = response.document
         val home = doc.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home, true)
     }
@@ -83,15 +98,28 @@ class Hindmoviez : MainAPI() {
 
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val doc = app.get("$mainUrl/page/$page/?s=$query", interceptor = CloudflareKiller()).document
+        val doc = app.get("$mainUrl/page/$page/?s=$query").document
         val res = doc.select("article").mapNotNull { it.toSearchResult() }
         return res.toNewSearchResponseList()
     }
 
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url, timeout = 10000, interceptor = CloudflareKiller()).document
+        val response = app.get(url, timeout = 10000L)
 
+        val finalResponse = if (
+            response.text.contains("Just a moment", ignoreCase = true)
+        ) {
+            app.get(
+                url,
+                timeout = 10000L,
+                interceptor = CloudflareKiller()
+            )
+        } else {
+            response
+        }
+
+        val doc = finalResponse.document
         var name: String? = null
         var imdbRating: String? = null
         var imdbId: String? = null
