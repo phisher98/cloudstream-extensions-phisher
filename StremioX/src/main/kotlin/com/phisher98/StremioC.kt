@@ -440,7 +440,6 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
                     tags = genre ?: genres
                     addActors(cast)
                     addTrailer(allTrailers.randomOrNull())
-                        .randomOrNull())
                     if (imdbId?.startsWith("tt") == true) {
                         addImdbId(imdbId)
                     } else {
