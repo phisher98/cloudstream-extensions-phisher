@@ -1,21 +1,5 @@
-import org.jetbrains.kotlin.konan.properties.Properties
-
 // use an integer for version numbers
 version = 28
-
-android {
-    buildFeatures {
-        buildConfig = true
-        viewBinding = true
-    }
-    defaultConfig {
-        val properties = Properties()
-        properties.load(project.rootProject.file("local.properties").inputStream())
-        android.buildFeatures.buildConfig=true
-        buildConfigField("String", "XDAPI", "\"${properties.getProperty("XDAPI")}\"")
-
-    }
-}
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
