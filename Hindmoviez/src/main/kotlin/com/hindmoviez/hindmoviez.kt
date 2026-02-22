@@ -352,7 +352,7 @@ class Hindmoviez : MainAPI() {
                         callback.invoke(
                             newExtractorLink(
                                 servername,
-                                "$name [HCloud] $extractedSpecs[$fileSize]",
+                                "[HCloud] $extractedSpecs[$fileSize]",
                                 href
                             )
                             {
