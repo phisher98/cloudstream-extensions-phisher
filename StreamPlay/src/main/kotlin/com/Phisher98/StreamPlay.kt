@@ -283,13 +283,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
-    private fun getIPosterUrl(link: String?): String? {
-        if (link == null) return null
-        return if (link.startsWith("/"))
-            "https://image.tmdb.org/t/p/w342$link"
-        else link
-    }
-
     private fun getOriImageUrl(link: String?): String? {
         if (link == null) return null
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
@@ -314,7 +307,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
-            this.posterUrl = getIPosterUrl(posterPath)
+            this.posterUrl = getImageUrl(posterPath)
             this.score= Score.from10(voteAverage)
         }
     }

@@ -56,13 +56,9 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override val hasQuickSearch = false
 
     companion object {
-        const val OnethreethreesevenxAPI = "https://proxy.phisher2.workers.dev/?url=https://1337x.to"
         const val MediafusionApi = "https://mediafusion.elfhosted.com/D-_ru4-xVDOkpYNgdQZ-gA6whxWtMNeLLsnAyhb82mkks4eJf4QTlrAksSeBnwFAbIGWQLaokCGFxxsHupxSVxZO8xhhB2UYnyc5nnLeDnIqiLajtkmaGJMB_ZHqMqSYIU2wcGhrw0s4hlXeRAfnnbDywHCW8DLF_ZZfOXYUGPzWS-91cvu7kA2xPs0lJtcqZO"
         private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         const val ThePirateBayApi = "https://thepiratebay-plus.strem.fun"
-        const val AIOStreams = "https://aiostreams.elfhosted.com/E2-xLzptGhmwLnA9L%2FOUHyZJg%3D%3D-Io2cJBStOrbqlmGwGz2ZwBbMGBj5enyJFgN5XcslkuiUS5KSjJrv90yd4HHLj1fyq6hJm7QpnCxDiPqbeOwdGA2yySllUQh2T%2B5qPqgtPt2sWBN5zdeetbiFFLHvVqq0PZOhKGM7pv2LzCoMLAk%2BSo86mcrzWIeszmvHuRMoKX3zBO6hUDvH6oqK2hFfbUF7ZONMdm9jE7lHp0LuXKPzHSwKUvDZroJ9iRgBkvHIGjJL65oBv2PxfQK%2Fu4gYEuLVhH3dQ7Xu6i1AshdxycCPRQOO2LcDDZkBC84zLXoy3DDPkvDkWBv2icVZIs2dnQlwvtfu7fFiXaGxWJxtYvbBALIhey8SaaeCKts8xMEyuJvSZiKBbkiTblb0NbqfRyGoJz5rJkiCPzlnX6S%2BpNHKNXVYRj2QZmmvN47fdteAZfhvCuNRW1XBP%2FhTr5ufzCQ9tC8ao%2F4ZhoVXPje45mgPpeJy%2FqYGkX36%2BDgjUMGM1SIvm416pHFL1fVG9MQlIdTn2T4VaUHA0dZHXxznaSQDB%2F1GIkDCHOp2iWUl8zceINOE08AI%2BUwmWCnVXsvsXYaTbFnsE%2F0n1zQwN19ULRCnO4AN2KKLfWKHCz9q5YwQG6y9r%2BXTkjtAXoju764x1f2UlFZT8aavjX1oAcPiTC5vA%3D%3D"
-        const val PeerflixApi = "https://peerflix.mov"
-        const val CometAPI = "https://comet.elfhosted.com"
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val AnimetoshoAPI = "https://feed.animetosho.org"
         const val TorrentioAnimeAPI = "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex%7Csort=seeders"
@@ -119,25 +115,9 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
-    /*
     private fun getOriImageUrl(link: String?): String? {
         if (link == null) return null
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
-    }
-     */
-
-    private fun getOriImageUrl(link: String?): String? {
-        if (link == null) return null
-        return if (link.startsWith("/"))
-            "https://image.tmdb.org/t/p/w1280$link"
-        else link
-    }
-
-    private fun getIPosterUrl(link: String?): String? {
-        if (link == null) return null
-        return if (link.startsWith("/"))
-            "https://image.tmdb.org/t/p/w342$link"
-        else link
     }
 
     override suspend fun getMainPage(
@@ -159,7 +139,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
-            this.posterUrl = getIPosterUrl(posterPath)
+            this.posterUrl = getImageUrl(posterPath)
             this.score= Score.from10(voteAverage)
         }
     }
