@@ -5165,6 +5165,46 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokeWebStreamr(
+        imdbId: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        token: String,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        if (imdbId.isNullOrBlank()) return
+        val api = if (season == null) {
+            "$webStreamrAPI/stream/movie/$imdbId.json"
+        } else {
+            "$webStreamrAPI/stream/series/$imdbId:$season:$episode.json"
+        }
+
+        val response = app.get(api).parsedSafe<webStreamr>() ?: return
+
+        response.streams.forEach { stream ->
+            val name = stream.name.replace(Regex("""\s*(2160p|1440p|1080p|720p|480p|360p|240p|4K)\b""", RegexOption.IGNORE_CASE), "").trim()
+            val headers = mutableMapOf<String, String>()
+
+            stream.behaviorHints.proxyHeaders?.request?.let { req ->
+                req.referer?.let { headers["Referer"] = it }
+                req.origin?.let { headers["Origin"] = it }
+                req.userAgent?.let { headers["User-Agent"] = it }
+            }
+
+            callback.invoke(
+                newExtractorLink(
+                    "WebStreamr",
+                     name,
+                    stream.url,
+                    INFER_TYPE
+                ) {
+                    this.quality = getIndexQuality(stream.name)
+                    this.headers = headers
+                }
+            )
+        }
+    }
+
     suspend fun invokeXDmovies(
         title: String? = null,
         id: Int? = null,

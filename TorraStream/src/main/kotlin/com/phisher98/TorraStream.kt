@@ -119,9 +119,25 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
+    /*
     private fun getOriImageUrl(link: String?): String? {
         if (link == null) return null
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
+    }
+     */
+
+    private fun getOriImageUrl(link: String?): String? {
+        if (link == null) return null
+        return if (link.startsWith("/"))
+            "https://image.tmdb.org/t/p/w1280$link"
+        else link
+    }
+
+    private fun getIPosterUrl(link: String?): String? {
+        if (link == null) return null
+        return if (link.startsWith("/"))
+            "https://image.tmdb.org/t/p/w342$link"
+        else link
     }
 
     override suspend fun getMainPage(
@@ -143,7 +159,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
-            this.posterUrl = getImageUrl(posterPath)
+            this.posterUrl = getIPosterUrl(posterPath)
             this.score= Score.from10(voteAverage)
         }
     }

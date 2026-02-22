@@ -46,6 +46,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "StreamPlay"
     override val hasMainPage = true
@@ -168,7 +171,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val jikanAPI = "https://api.jikan.moe/v4"
 
         /** ALL SOURCES */
-        const val twoEmbedAPI = "https://www.2embed.cc"
         const val MOVIE_API = BuildConfig.MOVIE_API
         val hianimeAPIs = listOf(
             "https://hianimez.is",
@@ -235,6 +237,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val sudatchi = "https://sudatchi.com"
         const val m4uhdAPI = "https://ww3.m4ufree.lat"
         const val mappleAPI = "https://mapple.uk"
+        const val webStreamrAPI = """https://webstreamr.hayd.uk/{"multi":"on","al":"on","de":"on","es":"on","fr":"on","it":"on","mx":"on","mediaFlowProxyUrl":"","mediaFlowProxyPassword":"","disableExtractor_hubcloud":"on","disableExtractor_hubdrive":"on"}"""
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -280,20 +283,28 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
+    private fun getIPosterUrl(link: String?): String? {
+        if (link == null) return null
+        return if (link.startsWith("/"))
+            "https://image.tmdb.org/t/p/w342$link"
+        else link
+    }
+
     private fun getOriImageUrl(link: String?): String? {
         if (link == null) return null
         return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val tmdbAPI =getApiBase()
-        val adultQuery =
-            if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
+        val tmdbAPI = getApiBase()
+        val adultQuery = if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page", timeout = 10000)
-            .parsedSafe<Results>()?.results?.mapNotNull { media ->
-                media.toSearchResponse(type)
-            } ?: throw ErrorLoadingException("Invalid Json reponse")
+        val home = app.get(
+            "$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page",
+            timeout = 10000
+        ).parsedSafe<Results>()?.results?.mapNotNull {
+            it.toSearchResponse(type)
+        } ?: throw ErrorLoadingException("Invalid Json response")
         return newHomePageResponse(request.name, home)
     }
 
@@ -303,7 +314,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
-            this.posterUrl = getImageUrl(posterPath)
+            this.posterUrl = getIPosterUrl(posterPath)
             this.score= Score.from10(voteAverage)
         }
     }
@@ -336,11 +347,17 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US"
         }
 
-        val enRes = app.get(enResUrl).parsedSafe<MediaDetail>()
-        val enTitle = enRes?.title ?: enRes?.name
+        val (res, enRes) = coroutineScope {
+            val resDeferred = async { app.get(resUrl).parsedSafe<MediaDetail>() }
+            val enResDeferred = async { app.get(enResUrl).parsedSafe<MediaDetail>() }
 
-        val res = app.get(resUrl).parsedSafe<MediaDetail>()
-            ?: throw ErrorLoadingException("Invalid Json Response")
+            Pair(
+                resDeferred.await() ?: throw ErrorLoadingException("Invalid Json Response"),
+                enResDeferred.await()
+            )
+        }
+
+        val enTitle = enRes?.title ?: enRes?.name
         val title = res.title ?: res.name ?: return null
         val poster = getOriImageUrl(res.posterPath)
         val bgPoster = getOriImageUrl(res.backdropPath)
@@ -364,26 +381,27 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             )
         } ?: emptyList()
 
-        val recommendations =
-            res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
-
-        val trailer = res.videos?.results.orEmpty()
-            .filter { it.type == "Trailer" }
-            .map { "https://www.youtube.com/watch?v=${it.key}" }
-            .reversed()
-            .ifEmpty {
-                res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } ?: emptyList()
-            }
-        val logoUrl = fetchTmdbLogoUrl(
-            tmdbAPI = "https://api.themoviedb.org/3",
-            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
-            type = type,
-            tmdbId = res.id,
-            appLangCode = langCode ?: "en"
-        )
+        val recommendations = res.recommendations?.results?.mapNotNull { media -> media.toSearchResponse() }
+        val trailer = res.videos?.results.orEmpty().filter { it.type == "Trailer" }.map { "https://www.youtube.com/watch?v=${it.key}" }.reversed().ifEmpty { res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" } ?: emptyList() }
         val cinetype = if (type == TvType.TvSeries) "series" else "movie"
-        val cineRes = app.get("$Cinemeta/meta/$cinetype/${res.external_ids?.imdb_id}.json").parsedSafe<CinemetaRes>()
+        val (logoUrl, cineRes) = coroutineScope {
+            val logoDeferred = async {
+                fetchTmdbLogoUrl(
+                    tmdbAPI = tmdbAPI,
+                    apiKey = apiKey,
+                    type = type,
+                    tmdbId = res.id,
+                    appLangCode = langCode ?: "en"
+                )
+            }
 
+            val cineDeferred = async {
+                app.get("$Cinemeta/meta/$cinetype/${res.external_ids?.imdb_id}.json")
+                    .parsedSafe<CinemetaRes>()
+            }
+
+            Pair(logoDeferred.await(), cineDeferred.await())
+        }
 
         val comingSoonFlag = when (res.status?.lowercase()) {
             "released" -> false
@@ -394,60 +412,64 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         if (type == TvType.TvSeries) {
             val lastSeason = res.last_episode_to_air?.season_number
             val episodes = coroutineScope {
+                val semaphore = Semaphore(4)
+
                 res.seasons?.map { season ->
                     async {
-                        app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
-                            .parsedSafe<MediaDetailEpisodes>()
-                            ?.episodes
-                            ?.map { eps ->
-                                newEpisode(
-                                    LinkData(
-                                        data.id,
-                                        res.external_ids?.imdb_id,
-                                        res.external_ids?.tvdb_id,
-                                        data.type,
-                                        eps.seasonNumber,
-                                        eps.episodeNumber,
-                                        eps.id,
-                                        title = enTitle,
-                                        year = season.airDate?.split("-")?.first()?.toIntOrNull(),
-                                        orgTitle = orgTitle,
-                                        isAnime = isAnime,
-                                        airedYear = year,
-                                        lastSeason = lastSeason,
-                                        epsTitle = eps.name,
-                                        jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
-                                        date = season.airDate,
-                                        airedDate = res.releaseDate ?: res.firstAirDate,
-                                        isAsian = isAsian,
-                                        isBollywood = isBollywood,
-                                        isCartoon = isCartoon,
-                                        alttitle = res.title,
-                                        nametitle = res.name
-                                    ).toJson()
-                                ) {
-                                    this.name = eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
-                                    this.season = eps.seasonNumber
-                                    this.episode = eps.episodeNumber
-                                    this.posterUrl = getImageUrl(eps.stillPath)
-                                    this.score = Score.from10(eps.voteAverage)
-                                    this.description = eps.overview
-                                    this.runTime = eps.runTime
-                                }.apply {
-                                    this.addDate(eps.airDate)
+                        semaphore.withPermit {
+                            app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
+                                .parsedSafe<MediaDetailEpisodes>()
+                                ?.episodes
+                                ?.map { eps ->
+
+                                    newEpisode(
+                                        LinkData(
+                                            data.id,
+                                            res.external_ids?.imdb_id,
+                                            res.external_ids?.tvdb_id,
+                                            data.type,
+                                            eps.seasonNumber,
+                                            eps.episodeNumber,
+                                            eps.id,
+                                            title = enTitle,
+                                            year = season.airDate?.split("-")?.first()?.toIntOrNull(),
+                                            orgTitle = orgTitle,
+                                            isAnime = isAnime,
+                                            airedYear = year,
+                                            lastSeason = lastSeason,
+                                            epsTitle = eps.name,
+                                            jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
+                                            date = season.airDate,
+                                            airedDate = res.releaseDate ?: res.firstAirDate,
+                                            isAsian = isAsian,
+                                            isBollywood = isBollywood,
+                                            isCartoon = isCartoon,
+                                            alttitle = res.title,
+                                            nametitle = res.name
+                                        ).toJson()
+                                    ) {
+                                        this.name = eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
+                                        this.season = eps.seasonNumber
+                                        this.episode = eps.episodeNumber
+                                        this.posterUrl = getImageUrl(eps.stillPath)
+                                        this.score = Score.from10(eps.voteAverage)
+                                        this.description = eps.overview
+                                        this.runTime = eps.runTime
+                                    }.apply {
+                                        this.addDate(eps.airDate)
+                                    }
+
                                 }
-                            }
+                        }
                     }
                 }?.awaitAll()?.filterNotNull()?.flatten() ?: listOf()
             }
             if (isAnime) {
-                val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
                 val imdbId = res.external_ids?.imdb_id.orEmpty()
-                val cineRes = app.get("$Cinemeta/meta/$animeType/$imdbId.json").parsedSafe<CinemetaRes>()
                 val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
                 val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
                     ?: cineRes?.meta?.name
-                val syncMetaData = app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").toString()
+                val syncMetaData = app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").textLarge
                 val animeMetaData = parseAnimeData(syncMetaData)
                 val kitsuid = animeMetaData?.mappings?.kitsuid
                 fun buildEpisodeList(isDub: Boolean) = animeVideos.map { video ->

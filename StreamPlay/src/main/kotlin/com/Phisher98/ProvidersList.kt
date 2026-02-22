@@ -56,6 +56,7 @@ import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
+import com.phisher98.StreamPlayExtractor.invokeWebStreamr
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.invokeXDmovies
 import com.phisher98.StreamPlayExtractor.invokeYflix
@@ -272,6 +273,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("SubtitleAPI", "SubtitleAPI (Subtitles)") { res, subtitleCallback, _, _, _ ->
             invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
-        }
+        },
+        Provider("WebStreamr", "WebStreamr") { res, _, callback, token, _ ->
+            invokeWebStreamr(res.imdbId, res.season,res.episode,token, callback)
+        },
     )
 }
