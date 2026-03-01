@@ -79,7 +79,7 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
 
 
 
-    override val mainPage = loadSections()
+    override val mainPage get() = loadSections()
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
         val creds = sm.deviceSyncCreds
@@ -161,13 +161,25 @@ class UltimaBeta(val plugin: UltimaBetaPlugin) : MainAPI() {
                 val provider = allProviders.find { it.name == section.pluginName }
                     ?: throw ErrorLoadingException("Provider '${section.pluginName}' is not available.")
 
-                provider.getMainPage(
+                val liveData = provider.mainPage
+                    .find { it.name.equals(section.name, ignoreCase = true) }
+                    ?.data
+                    ?: section.url
+
+                val response = provider.getMainPage(
                     page,
                     MainPageRequest(
-                        name = request.name,
-                        data = section.url,
+                        name = section.name,
+                        data = liveData,
                         horizontalImages = request.horizontalImages
                     )
+                ) ?: return null
+
+                newHomePageResponse(
+                    response.items.map { list ->
+                        HomePageList(request.name, list.list, list.isHorizontalImages)
+                    },
+                    response.hasNext
                 )
             }
         } catch (e: Throwable) {
