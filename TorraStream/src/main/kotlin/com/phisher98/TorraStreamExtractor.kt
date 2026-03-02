@@ -927,3 +927,97 @@ suspend fun invokeTorboxAnimeDebian(
         )
     }
 }
+
+suspend fun invokeTorrentsDB(
+    mainUrl: String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    if (id == null) return
+
+    val url = if (season == null) "$mainUrl/stream/movie/$id.json"
+    else "$mainUrl/stream/series/$id:$season:$episode.json"
+
+    val headers = mapOf(
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+
+    val response = app.get(url, headers = headers, timeout = 100L)
+        .parsedSafe<TorrentsDBResponse>() ?: return
+
+    response.streams?.amap { stream ->
+
+        val title = stream.title.orEmpty()
+        val qualityMatch = "(2160p|1080p|720p)".toRegex(RegexOption.IGNORE_CASE)
+            .find(title)?.value?.lowercase()
+        val tags = "(2160p|1080p|720p|WEBRip|WEB-DL|x265|x264|10bit|HEVC|H264)".toRegex(RegexOption.IGNORE_CASE).findAll(title).map { it.value.uppercase() }.distinct().joinToString(" | ")
+        val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.getOrNull(1) ?: "0"
+        val provider = "⚙️\\s*([^\\n]+)".toRegex().find(title)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+        val formattedTitle = "TorrentsDB | $tags | Seeder: $seeder | Provider: $provider"
+        val magnet = generateMagnetLink(stream.sources.orEmpty(), stream.infoHash)
+
+        callback.invoke(
+            newExtractorLink(
+                "TorrentsDB",
+                formattedTitle,
+                magnet,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName(qualityMatch)
+            }
+        )
+    }
+}
+
+suspend fun invokeTorrentsDBAnime(
+    mainUrl: String,
+    id: Int? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    if (id == null) return
+
+    val url = if(season == null) {
+        "$mainUrl/stream/movie/kitsu:$id.json"
+    }
+    else {
+        "$mainUrl/stream/series/kitsu:$id:$episode.json"
+    }
+
+    val headers = mapOf(
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    )
+
+    val response = app.get(url, headers = headers, timeout = 100L)
+        .parsedSafe<TorrentsDBResponse>() ?: return
+
+    response.streams?.amap { stream ->
+
+        val title = stream.title.orEmpty()
+        val qualityMatch = "(2160p|1080p|720p)".toRegex(RegexOption.IGNORE_CASE)
+            .find(title)?.value?.lowercase()
+        val tags = "(2160p|1080p|720p|WEBRip|WEB-DL|x265|x264|10bit|HEVC|H264)".toRegex(RegexOption.IGNORE_CASE).findAll(title).map { it.value.uppercase() }.distinct().joinToString(" | ")
+        val seeder = "👤\\s*(\\d+)".toRegex().find(title)?.groupValues?.getOrNull(1) ?: "0"
+        val provider = "⚙️\\s*([^\\n]+)".toRegex().find(title)?.groupValues?.getOrNull(1)?.trim() ?: "Unknown"
+        val formattedTitle = "TorrentsDB | $tags | Seeder: $seeder | Provider: $provider"
+        val magnet = generateMagnetLink(stream.sources.orEmpty(), stream.infoHash)
+
+        callback.invoke(
+            newExtractorLink(
+                "TorrentsDB",
+                formattedTitle,
+                magnet,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getQualityFromName(qualityMatch)
+            }
+        )
+    }
+}

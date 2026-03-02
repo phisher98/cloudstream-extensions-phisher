@@ -293,3 +293,21 @@ suspend fun fetchTmdbLogoUrl(
     // No language match & no voted logos
     return null
 }
+
+data class TorrentsDBResponse(
+    val streams: List<TorrentsDBStream>?
+)
+
+data class TorrentsDBStream(
+    val name: String?,
+    val title: String?,
+    val infoHash: String,
+    val fileIdx: Int?,
+    val behaviorHints: TorrentsDBBehaviorHints?,
+    val sources: List<String>?
+)
+
+data class TorrentsDBBehaviorHints(
+    val bingeGroup: String?,
+    val filename: String?
+)

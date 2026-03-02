@@ -62,6 +62,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
     private val torrentioDebian= "https://torrentio.strem.fun"
+    private val TorrentsDB = "https://torrentsdb.com"
 
     private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -300,7 +301,8 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         } else {
             runAllAsync(
                 { invokeAnimetosho(anidbEid, callback) },
-                { if (kitsuId != -1) invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback) }
+                { if (kitsuId != -1) invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback) },
+                { if (kitsuId != -1)  invokeTorrentsDBAnime(TorrentsDB, kitsuId, kitsuId, episode, callback) }
             )
         }
 

@@ -69,6 +69,8 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         )
         private const val Uindex = "https://uindex.org"
         private const val Knaben = "https://knaben.org"
+        private const val TorrentsDB = "https://torrentsdb.com"
+
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
 
@@ -406,6 +408,8 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
                 { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, kitsuId, season, episode, callback) },
                 { if (!dataObj.isAnime) invokeUindex(Uindex, title, year, season, episode, callback) },
+                { if (!dataObj.isAnime) invokeTorrentsDB(TorrentsDB, id, season, episode, callback) },
+                { if (dataObj.isAnime) invokeTorrentsDBAnime(TorrentsDB, kitsuId, season, episode, callback) },
                 { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback) },
                 { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
             )
