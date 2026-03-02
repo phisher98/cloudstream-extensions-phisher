@@ -298,8 +298,6 @@ class IStreamFlare  : MainAPI() {
                 links.forEach { link ->
                     when {
                         link.url.contains(".php?id=", ignoreCase = true) -> {
-                            Log.d("Phisher",link.toString())
-
                             loadExtractor(link.url, link.quality, subtitleCallback, callback)
                         }
 
@@ -348,8 +346,6 @@ class IStreamFlare  : MainAPI() {
                     }
 
                     data.contains(".php?id=", ignoreCase = true) -> {
-                        Log.d("Phisher 2",data.toString())
-
                         loadExtractor(data, subtitleCallback, callback)
                     }
 
