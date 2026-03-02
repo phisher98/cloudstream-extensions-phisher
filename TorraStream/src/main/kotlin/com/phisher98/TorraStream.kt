@@ -403,12 +403,12 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             )
         } else {
             runAllAsync(
-                { if (!dataObj.isAnime) invokeTorrentio(apiUrl, id, season, episode, callback) },
+                { invokeTorrentio(apiUrl, id, season, episode, callback) },
                 { if (!dataObj.isAnime) invokeThepiratebay(ThePirateBayApi, id, season, episode, callback) },
                 { if (dataObj.isAnime) invokeAnimetosho(anidbEid, callback) },
-                { if (dataObj.isAnime) invokeTorrentioAnime(TorrentioAnimeAPI, kitsuId, season, episode, callback) },
+                { invokeTorrentioAnime(TorrentioAnimeAPI, kitsuId, season, episode, callback) },
                 { if (!dataObj.isAnime) invokeUindex(Uindex, title, year, season, episode, callback) },
-                { if (!dataObj.isAnime) invokeTorrentsDB(TorrentsDB, id, season, episode, callback) },
+                { invokeTorrentsDB(TorrentsDB, id, season, episode, callback) },
                 { if (dataObj.isAnime) invokeTorrentsDBAnime(TorrentsDB, kitsuId, season, episode, callback) },
                 { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback) },
                 { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
