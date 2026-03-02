@@ -3820,84 +3820,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeElevenmovies(
-        id: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        val url =
-            if (season == null) "$Elevenmovies/movie/$id" else "$Elevenmovies/tv/$id/$season/$episode"
-
-        val encodedToken = app.get(url).documentLarge.selectFirst("script[type=application/json]")!!
-            .data()
-            .substringAfter("{\"data\":\"")
-            .substringBefore("\",")
-
-        val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json"
-        val jsonString = app.get(jsonUrl).text
-        val gson = Gson()
-        val json: Elevenmoviesjson = gson.fromJson(jsonString, Elevenmoviesjson::class.java)
-        val token = elevenMoviesToken(encodedToken)
-
-        val staticPath = json.static_path
-        val apiServerUrl = "$Elevenmovies/$staticPath/$token/sr"
-        val headers = mutableMapOf("Referer" to Elevenmovies)
-
-        val responseString = try {
-            if (json.http_method.contains("GET")) {
-                val res = app.get(apiServerUrl, headers = headers).body.string()
-                res
-            } else {
-                val postHeaders = headers.toMutableMap()
-                postHeaders["X-Requested-With"] = "XMLHttpRequest"
-                postHeaders["User-Agent"] = USER_AGENT
-                val res = app.post(apiServerUrl, headers = postHeaders).body.string()
-                res
-            }
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to fetch server list: ${e.message}")
-        }
-
-        val listType = object : TypeToken<List<ElevenmoviesServerEntry>>() {}.type
-        val serverList: List<ElevenmoviesServerEntry> = gson.fromJson(responseString, listType)
-
-        for (entry in serverList) {
-            val serverToken = entry.data
-            val serverName = entry.name
-            val streamApiUrl = "$Elevenmovies/$staticPath/$serverToken"
-
-            val streamResponseString = try {
-                val streamHeaders = headers.toMutableMap()
-                streamHeaders["X-Requested-With"] = "XMLHttpRequest"
-                streamHeaders["User-Agent"] = USER_AGENT
-                streamHeaders["Content-Type"] = "application/vnd.api+json"
-
-                val requestBody = "".toRequestBody("application/vnd.api+json".toMediaType())
-
-                app.post(
-                    streamApiUrl,
-                    headers = streamHeaders,
-                    requestBody = requestBody
-                ).body.string()
-            } catch (_: Exception) {
-                continue
-            }
-
-            val streamRes =
-                gson.fromJson(streamResponseString, ElevenmoviesStreamResponse::class.java)
-            val videoUrl = streamRes?.url ?: continue
-
-            M3u8Helper.generateM3u8("Eleven Movies $serverName", videoUrl, "").forEach(callback)
-            streamRes.tracks?.forEach { sub ->
-                val label = sub.label ?: return@forEach
-                val file = sub.file ?: return@forEach
-                subtitleCallback(newSubtitleFile(label, file))
-            }
-        }
-    }
-
 
     suspend fun invokehdhub4u(
         imdbId: String?,
@@ -4917,84 +4839,124 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val STATIC_PATH =
-            "hezushon/ira/2264ec23bfa5e4891e26d563e5daac61bcb05688/b544e02b"
-        val url =
-            if (season == null) "$vidfastProApi/movie/$tmdbId" else "$vidfastProApi/tv/$tmdbId/$season/$episode"
-        val headers = mapOf(
-            "Accept" to "*/*",
-            "Referer" to vidfastProApi,
-            "X-Csrf-Token" to "iwwuf3C7tleIfqxlgG5NUxOrOROfn5d9",
-            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
-            "X-Requested-With" to "XMLHttpRequest"
-        )
-        val response = app.get(url, headers = headers, timeout = 20).text
-        val regex = Regex("""\\"en\\":\\"(.*?)\\"""")
-        val match = regex.find(response)
-        val rawData = match?.groupValues?.get(1)
-        if (rawData.isNullOrEmpty()) {
+        if (tmdbId == null) {
+            println("VidFast: tmdbId is null")
             return
         }
-        // AES encryption setup
-        val keyHex = "1f9b96f4e6604062c39f69f4c2edd92210d44d185434b0d569b077a72975bf08"
-        val ivHex = "70ed610a03c6a59c7967abf77db57f71"
-        val aesKey = hexStringToByteArray2(keyHex)
-        val aesIv = hexStringToByteArray2(ivHex)
 
-        // Encrypt raw data
-        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(aesKey, "AES"), IvParameterSpec(aesIv))
-        val paddedData = padData(rawData.toByteArray(Charsets.UTF_8), 16)
-        val aesEncrypted = cipher.doFinal(paddedData)
-
-        // XOR operation
-        val xorKey = hexStringToByteArray2("d6f87ef72c")
-        val xorResult = aesEncrypted.mapIndexed { i, byte ->
-            (byte.toInt() xor xorKey[i % xorKey.size].toInt()).toByte()
-        }.toByteArray()
-
-        // Encode XORed data
-        val encodedFinal = customEncode(xorResult)
-
-        // Get servers
-        val apiServers = "$vidfastProApi/$STATIC_PATH/wfPFjh__qQ/$encodedFinal"
-        val serversResponse = app.get(
-            apiServers,
-            timeout = 20,
-            interceptor = CloudflareKiller(),
-            headers = headers
-        ).text
-        if (serversResponse.isEmpty()) return
-        val servers = parseServers(serversResponse)
-        val urlList = mutableMapOf<String, String>()
-        servers.forEach {
-            try {
-                val apiStream = "$vidfastProApi/${STATIC_PATH}/AddlBFe5/${it.data}"
-                val streamResponse = app.get(apiStream, timeout = 20, headers = headers).text
-                if (streamResponse.isNotEmpty()) {
-                    val jsonObject = JSONObject(streamResponse)
-                    val url = jsonObject.getString("url")
-                    urlList[it.name] = url
-                }
-            } catch (_: Exception) {
-                TODO("Not yet implemented")
-            }
+        val baseUrl = if (season == null) {
+            "$vidfastProApi/movie/$tmdbId"
+        } else {
+            "$vidfastProApi/tv/$tmdbId/$season/$episode"
         }
 
-        urlList.forEach {
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "Referer" to "$vidfastProApi/"
+        )
+
+        val pageResponse = app.get(baseUrl, headers = headers, timeout = 20).text
+        val text = Regex("""\\"en\\":\\"(.*?)\\"""")
+            .find(pageResponse)
+            ?.groupValues
+            ?.getOrNull(1)
+
+        if (text.isNullOrBlank()) {
+            println("VidFast: Failed to extract 'en' value")
+            return
+        }
+
+        val apiUrl = "https://enc-dec.app/api/enc-vidfast?text=$text"
+        val apiRaw = app.get(apiUrl, timeout = 20).text
+
+        val apiResponse = runCatching { JSONObject(apiRaw) }.getOrNull()
+        if (apiResponse == null) {
+            println("VidFast: Failed to parse API JSON")
+            return
+        }
+
+        val result = apiResponse.optJSONObject("result")
+        if (result == null) {
+            println("VidFast: API result is null")
+            return
+        }
+
+        val serversUrl = result.optString("servers")
+        val streamBase = result.optString("stream")
+
+        if (serversUrl.isBlank() || streamBase.isBlank()) {
+            println("VidFast: Servers or streamBase is blank")
+            return
+        }
+
+        val serversText = app.get(serversUrl, headers = headers, timeout = 20).text
+        val serversArray = runCatching { JSONArray(serversText) }.getOrNull()
+        if (serversArray == null) {
+            println("VidFast: Failed to parse servers JSON")
+            return
+        }
+
+        for (i in 0 until serversArray.length()) {
+            val serverObj = serversArray.getJSONObject(i)
+            val serverName = serverObj.optString("name", "Server ${i + 1}")
+            val serverData = serverObj.optString("data")
+
+            println("VidFast: Trying server -> $serverName")
+            println("VidFast: Server data -> $serverData")
+
+            if (serverData.isBlank()) {
+                println("VidFast: Server data blank, skipping")
+                continue
+            }
+
+            val streamUrl = "$streamBase/$serverData"
+            val streamText = app.get(streamUrl, headers = headers, timeout = 20).text
+            val streamResponse = runCatching { JSONObject(streamText) }.getOrNull()
+            if (streamResponse == null) {
+                println("VidFast: Failed to parse stream JSON")
+                continue
+            }
+
+            val finalUrl = streamResponse.optString("url")
+
+            if (finalUrl.isBlank()) {
+                println("VidFast: Final URL blank, trying next server")
+                continue
+            }
+
+            val subtitles = mutableListOf<SubtitleFile>()
+            val seen = mutableSetOf<String>()
+            val tracksArray = streamResponse.optJSONArray("tracks")
+
+            if (tracksArray != null) {
+                for (j in 0 until tracksArray.length()) {
+                    val track = tracksArray.getJSONObject(j)
+                    val file = track.optString("file")
+                    val label = track.optString("label")
+                    if (file.isNotBlank() && label.isNotBlank() && seen.add(file)) {
+                        subtitles.add(
+                            newSubtitleFile(
+                                label,
+                                file
+                            )
+                        )
+                    }
+                }
+            } else {
+                println("VidFast: No subtitles found")
+            }
+
             callback.invoke(
                 newExtractorLink(
-                    "VidFastPro [${it.key}]",
-                    "VidFastPro [${it.key}]",
-                    url = it.value,
-                )
-                {
+                    "VidFastPro [$serverName]",
+                    "VidFastPro [$serverName]",
+                    finalUrl,
+                ) {
+                    this.referer = "$vidfastProApi/"
                     this.quality = Qualities.P1080.value
                 }
             )
         }
-
-
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

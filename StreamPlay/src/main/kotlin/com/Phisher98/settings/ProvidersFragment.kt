@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
@@ -17,7 +18,9 @@ import androidx.core.content.edit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import androidx.core.view.isNotEmpty
+import androidx.core.widget.addTextChangedListener
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import androidx.core.view.isVisible
 
 
 private val PREFS_PROFILES = "provider_profiles"
@@ -94,6 +97,34 @@ class ProvidersFragment(
         container = view.findView("list_container")
         container.makeTvCompatible()
         providers = buildProviders().sortedBy { it.name.lowercase() }
+
+        //Search
+
+        val etSearch = view.findView<EditText>("ext_search")
+        etSearch.addTextChangedListener { text ->
+            val query = text.toString().lowercase().trim()
+            val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+            for (i in 0 until container.childCount) {
+                val item = container.getChildAt(i)
+                val chk = item.findViewById<CheckBox>(chkId)
+                item.visibility = if (query.isEmpty() || chk.text.toString().lowercase().contains(query)) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                }
+            }
+        }
+
+        etSearch.setOnEditorActionListener { _, _, _ ->
+            for (i in 0 until container.childCount) {
+                val item = container.getChildAt(i)
+                if (item.isVisible) {
+                    item.requestFocus()
+                    break
+                }
+            }
+            true
+        }
 
         // --- Load disabled providers ---
         val savedDisabled = sharedPref.getStringSet(PREFS_DISABLED, emptySet()) ?: emptySet()
