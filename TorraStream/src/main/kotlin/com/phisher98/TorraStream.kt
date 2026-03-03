@@ -39,6 +39,8 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
@@ -307,6 +309,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgPoster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = res.overview
                 this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
@@ -329,6 +332,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.posterUrl = poster
                 this.comingSoon = comingSoonFlag
                 this.backgroundPosterUrl = bgPoster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = res.overview
                 this.duration = res.runtime
