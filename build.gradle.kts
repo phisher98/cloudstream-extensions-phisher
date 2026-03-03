@@ -102,6 +102,9 @@ subprojects {
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
         implementation("com.github.vidstige:jadb:v1.2.1")
         implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
+        implementation("io.socket:socket.io-client:2.1.0")
+        implementation("org.bouncycastle:bcprov-jdk15on:1.70")
+        implementation("org.java-websocket:Java-WebSocket:1.5.3")
     }
 }
 
