@@ -94,10 +94,7 @@ suspend fun invokeTorrentioDebian(
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
         val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
-        val formattedName = name
-            .substringBeforeLast('.')
-            .replace('.', ' ')
-            .trim()
+        val formattedName = cleanTitle(name)
 
         val parts = listOfNotNull(
             size?.let { "📦 $it" },
@@ -369,67 +366,6 @@ suspend fun invokePeerFlix(
     }
 }
 
-
-suspend fun invokeComet(
-    CometAPI: String? = null,
-    imdbId: String? =null,
-    season: Int? = null,
-    episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
-) {
-    try {
-        val url = if(season == null) {
-            "$CometAPI/stream/movie/$imdbId.json"
-        }
-        else {
-            "$CometAPI/stream/series/$imdbId:$season:$episode.json"
-        }
-        val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
-        for(stream in res?.streams!!)
-        {
-            val formattedTitleName = stream.description.let { title ->
-                val tags = "\\[(.*?)]".toRegex()
-                    .findAll(title)
-                    .map { it.groupValues[1] }
-                    .joinToString(" | ")
-                    .takeIf { it.isNotBlank() }
-
-                val quality = "💿\\s*([^\n]+)".toRegex()
-                    .find(title)
-                    ?.groupValues?.getOrNull(1)
-                    ?.trim()
-                    ?.takeIf { it.isNotEmpty() && it != "Unknown" }
-
-                val provider = "🔎\\s*([^\n]+)".toRegex()
-                    .find(title)
-                    ?.groupValues?.getOrNull(1)
-                    ?.trim()
-                    ?.takeIf { it.isNotEmpty() && it != "Unknown" }
-
-                buildString {
-                    append("Comet")
-                    if (!tags.isNullOrEmpty()) append(" | $tags")
-                    if (!quality.isNullOrEmpty()) append(" | Quality: $quality")
-                    if (!provider.isNullOrEmpty()) append(" | Provider: $provider")
-                }
-            }
-
-            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash)
-            callback.invoke(
-                newExtractorLink(
-                    "Comet",
-                    formattedTitleName,
-                    url = magnetLink,
-                    ExtractorLinkType.MAGNET
-                ) {
-                    this.referer = ""
-                    this.quality = getIndexQuality(stream.description)
-                }
-            )
-        }
-    } catch (_: Exception) { }
-}
-
 suspend fun invokeSubtitleAPI(
     id: String? = null,
     season: Int? = null,
@@ -632,10 +568,7 @@ suspend fun invokeDebianTorbox(
         val displayName = buildString {
             append("TorBox+ | [$cache] | ")
             val rawName = stream.behaviorHints.filename
-            val baseName = rawName
-                .substringBeforeLast(".")
-                .replace(".", " ")
-                .trim()
+            val baseName = cleanTitle(rawName)
 
             if (baseName.isNotBlank())
                 append(baseName)
@@ -896,10 +829,7 @@ suspend fun invokeTorboxAnimeDebian(
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
 
-        val formattedName = name
-            .substringBeforeLast('.')
-            .replace('.', ' ')
-            .trim()
+        val formattedName = cleanTitle(name)
         val cache = Regex("""\((.*?)\)""").find(stream.name)
             ?.groupValues?.get(1)
             ?.takeIf { it == "Instant" }
@@ -1017,6 +947,106 @@ suspend fun invokeTorrentsDBAnime(
             ) {
                 this.referer = ""
                 this.quality = getQualityFromName(qualityMatch)
+            }
+        )
+    }
+}
+
+suspend fun invokeCometDebian(
+    mainUrl: String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if (season == null) {
+        "$mainUrl/stream/movie/$id.json"
+    } else {
+        "$mainUrl/stream/series/$id:$season:$episode.json"
+    }
+    val res = app.get(url).parsedSafe<DebianRoot>()
+    res?.streams?.forEach { stream ->
+        val fileUrl = stream.url
+
+        val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(stream.title)
+            ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
+
+        val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
+
+        val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
+        val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
+        val formattedName = cleanTitle(name)
+        val parts = listOfNotNull(
+            size?.let { "📦 $it" },
+            seedersNum?.let { "🌱 $it" }
+        )
+
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
+
+        val finalTitle = "Comet+ | [$cache] | $formattedName$suffix"
+
+        callback.invoke(
+            newExtractorLink(
+                "Comet+ [$cache]",
+                finalTitle,
+                url = fileUrl,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getIndexQuality(stream.name)
+            }
+        )
+    }
+}
+
+suspend fun invokeCometAnimeDebian(
+    mainUrl: String,
+    type: TvType,
+    id: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+    val url = if (type == TvType.Movie) {
+        "$mainUrl/stream/movie/kitsu:$id.json"
+    } else {
+        "$mainUrl/stream/series/kitsu:$id:$episode.json"
+    }
+    val res = app.get(url).parsedSafe<DebianRoot>()
+    res?.streams?.forEach { stream ->
+        val fileUrl = stream.url
+
+        val size = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(stream.title)
+            ?.let { m -> "${m.groupValues[1].replace(',', '.')} ${m.groupValues[2].uppercase()}" }
+
+        val seedersNum = Regex("""(\d+)$""").find(stream.title)?.groupValues?.get(1)
+
+        val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
+        val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
+
+        val parts = listOfNotNull(
+            size?.let { "📦 $it" },
+            seedersNum?.let { "🌱 $it" }
+        )
+
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
+
+        val finalTitle = "Comet+ Anime | [$cache] | $formattedName$suffix"
+
+        callback.invoke(
+            newExtractorLink(
+                "Comet+ [$cache]",
+                finalTitle,
+                url = fileUrl,
+                INFER_TYPE
+            ) {
+                this.referer = ""
+                this.quality = getIndexQuality(stream.name)
             }
         )
     }

@@ -409,12 +409,12 @@ class VCloud : ExtractorApi() {
         val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
 
         val patterns = listOf(
-            Regex("(WEB[-_. ]?DL|WEB[-_. ]?RIP|BLURAY|HDRIP|BDRIP|BRRIP|DVDRIP|HDTV|CAM|TS)", RegexOption.IGNORE_CASE),
-            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC)", RegexOption.IGNORE_CASE),
-            Regex("(DDP[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS|EAC3|FLAC|MP3)", RegexOption.IGNORE_CASE),
-            Regex("(ATMOS|DUAL)", RegexOption.IGNORE_CASE),
+            Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
+            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
+            Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
             Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP)\\b", RegexOption.IGNORE_CASE)
+            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
+            Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
         )
 
         val results = linkedSetOf<String>()
@@ -1143,12 +1143,12 @@ class HubCloud : ExtractorApi() {
         val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
 
         val patterns = listOf(
-            Regex("(WEB[-_. ]?DL|WEB[-_. ]?RIP|BLURAY|HDRIP|BDRIP|BRRIP|DVDRIP|HDTV|CAM|TS)", RegexOption.IGNORE_CASE),
-            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC)", RegexOption.IGNORE_CASE),
-            Regex("(DDP[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS|EAC3|FLAC|MP3)", RegexOption.IGNORE_CASE),
-            Regex("(ATMOS|DUAL)", RegexOption.IGNORE_CASE),
+            Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
+            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
+            Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
             Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP)\\b", RegexOption.IGNORE_CASE)
+            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
+            Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
         )
 
         val results = linkedSetOf<String>()
@@ -1421,12 +1421,12 @@ open class Driveseed : ExtractorApi() {
         val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
 
         val patterns = listOf(
-            Regex("(WEB[-_. ]?DL|WEB[-_. ]?RIP|BLURAY|HDRIP|BDRIP|BRRIP|DVDRIP|HDTV|CAM|TS)", RegexOption.IGNORE_CASE),
-            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC)", RegexOption.IGNORE_CASE),
-            Regex("(DDP[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS|EAC3|FLAC|MP3)", RegexOption.IGNORE_CASE),
-            Regex("(ATMOS|DUAL)", RegexOption.IGNORE_CASE),
+            Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
+            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
+            Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
             Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP)\\b", RegexOption.IGNORE_CASE)
+            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
+            Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
         )
 
         val results = linkedSetOf<String>()

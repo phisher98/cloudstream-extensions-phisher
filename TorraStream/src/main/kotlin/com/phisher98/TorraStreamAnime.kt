@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.newAnimeLoadResponse
@@ -43,6 +44,7 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.TorraStream.Companion.TorboxAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
@@ -63,6 +65,8 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
     private val torrentioDebian= "https://torrentio.strem.fun"
     private val TorrentsDB = "https://torrentsdb.com"
+    private val cometurl = "https://comet.elfhosted.com"
+
 
     private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -291,11 +295,14 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         }
 
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
+        val cometapiUrl = buildCometUrl(sharedPref)
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
                     { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) },
-                    { invokeTorboxAnimeDebian(TorboxAPI, key,type, kitsuId, episode, callback) }
+                    { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback) },
+                    { invokeCometAnimeDebian(cometapiUrl, type, kitsuId, episode, callback) }
+
                 )
             }
         } else {
@@ -502,6 +509,60 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
 
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
+    }
+
+    private fun buildCometUrl(sharedPref: SharedPreferences): String {
+        val json = buildCometJson(sharedPref)
+        val encoded = base64Encode(json.toByteArray(Charsets.UTF_8))
+        return "$cometurl/$encoded"
+    }
+
+    private fun buildCometJson(sharedPref: SharedPreferences): String {
+        val json = JSONObject()
+
+        json.put("maxResultsPerResolution", 0)
+        json.put("maxSize", 0)
+        json.put("cachedOnly", false)
+        json.put("sortCachedUncachedTogether", false)
+        json.put("removeTrash", true)
+
+        json.put("resultFormat", JSONArray().put("all"))
+
+        json.put("enableTorrent", true)
+        json.put("deduplicateStreams", false)
+        json.put("scrapeDebridAccountTorrents", false)
+        json.put("debridStreamProxyPassword", "")
+
+        // Debrid services
+        val provider = sharedPref.getString("debrid_provider", "")
+        val key = sharedPref.getString("debrid_key", "")
+
+        val debridArray = JSONArray()
+        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
+            val serviceObj = JSONObject()
+            serviceObj.put("service", provider.lowercase())
+            serviceObj.put("apiKey", key)
+            debridArray.put(serviceObj)
+        }
+        json.put("debridServices", debridArray)
+
+        // Languages
+        val languages = JSONObject()
+        languages.put("required", JSONArray())
+        languages.put("allowed", JSONArray())
+        languages.put("exclude", JSONArray())
+        languages.put("preferred", JSONArray())
+        json.put("languages", languages)
+
+        json.put("resolutions", JSONObject())
+
+        val options = JSONObject()
+        options.put("remove_ranks_under", -10000000000L)
+        options.put("allow_english_in_languages", false)
+        options.put("remove_unknown_languages", false)
+        json.put("options", options)
+
+        return json.toString()
     }
 
     fun getStatus(t: String?): ShowStatus {
