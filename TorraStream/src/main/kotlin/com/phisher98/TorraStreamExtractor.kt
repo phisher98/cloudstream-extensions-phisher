@@ -10,7 +10,6 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -94,7 +93,10 @@ suspend fun invokeTorrentioDebian(
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
         val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
-        val formattedName = cleanTitle(name)
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
 
         val parts = listOfNotNull(
             size?.let { "📦 $it" },
@@ -224,83 +226,6 @@ suspend fun invokeTorrentioAnime(
     }
 }
 
-
-suspend fun invoke1337x(
-    OnethreethreesevenxAPI: String? = null,
-    title: String? = null,
-    year: Int? = null,
-    callback: (ExtractorLink) -> Unit
-) {
-    app.get("$OnethreethreesevenxAPI/category-search/${title?.replace(" ", "+")}+$year/Movies/1/")
-        .documentLarge.select("tbody > tr > td a:nth-child(2)").amap {
-            val iframe = OnethreethreesevenxAPI + it.attr("href")
-            val doc = app.get(iframe).documentLarge
-
-            val magnet = doc.select("#openPopup").attr("href").trim()
-            val qualityRaw = doc.select("div.box-info ul.list li:contains(Type) span").text()
-            val quality = getQuality(qualityRaw)
-
-            val size = doc.select("div.box-info ul.list li:contains(Total size) span").text()
-            val language = doc.select("div.box-info ul.list li:contains(Language) span").text()
-            val seeders = doc.select("div.box-info ul.list li:contains(Seeders) span.seeds").text()
-
-            val displayName = buildString {
-                append("Torrent1337x $qualityRaw")
-                if (size.isNotBlank()) append(" | Size: $size")
-                if (language.isNotBlank()) append(" | Lang: $language")
-                if (seeders.isNotBlank()) append(" | 🟢$seeders")
-            }
-
-            callback.invoke(
-                newExtractorLink(
-                    "Torrent1337x",
-                    displayName,
-                    url = magnet,
-                    INFER_TYPE
-                ) {
-                    this.referer = ""
-                    this.quality = quality
-                }
-            )
-        }
-}
-
-
-suspend fun invokeMediaFusion(
-    mediaFusionApi: String? = null,
-    imdbId: String? =null,
-    season: Int? = null,
-    episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
-) {
-    try {
-        val url = if(season == null) {
-            "$mediaFusionApi/stream/movie/$imdbId.json"
-        }
-        else {
-            "$mediaFusionApi/stream/series/$imdbId:$season:$episode.json"
-        }
-        val res = app.get(url, timeout = 10).parsedSafe<MediafusionResponse>()
-        for(stream in res?.streams!!)
-        {
-            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash).trim()
-            val qualityFromName = getIndexQuality(stream.name)
-
-            callback.invoke(
-                newExtractorLink(
-                    "MediaFusion",
-                    stream.description,
-                    url = magnetLink,
-                    INFER_TYPE
-                ) {
-                    this.referer = ""
-                    this.quality = qualityFromName
-                }
-            )
-        }
-    } catch (_: Exception) { }
-}
-
 suspend fun invokeThepiratebay(
     thepiratebayApi: String? = null,
     imdbId: String? =null,
@@ -332,38 +257,6 @@ suspend fun invokeThepiratebay(
             )
         }
     } catch (_: Exception) { }
-}
-
-suspend fun invokePeerFlix(
-    peerflixApi: String? = null,
-    imdbId: String? =null,
-    season: Int? = null,
-    episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
-) {
-    try {
-        val url = if (season == null) {
-            "$peerflixApi/stream/movie/$imdbId.json"
-        } else {
-            "$peerflixApi/stream/series/$imdbId:$season:$episode.json"
-        }
-        val res = app.get(url, timeout = 10).parsedSafe<PeerflixResponse>()
-        for (stream in res?.streams!!) {
-            val magnetLink = generateMagnetLink(TRACKER_LIST_URL,stream.infoHash).trim()
-            callback.invoke(
-                newExtractorLink(
-                    "Peerflix",
-                    stream.name,
-                    url = magnetLink,
-                    INFER_TYPE
-                ) {
-                    this.referer = ""
-                    this.quality = getIndexQuality(stream.description)
-                }
-            )
-        }
-    } catch (_: Exception) {
-    }
 }
 
 suspend fun invokeSubtitleAPI(
@@ -500,35 +393,6 @@ suspend fun invokeAIOStreamsDebian(
     }
 }
 
-suspend fun invokeAIOStreams(
-    mainUrl:String,
-    id: String? = null,
-    season: Int? = null,
-    episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
-) {
-    val mainurl = if (season == null) {
-        "$mainUrl/stream/movie/$id.json"
-    } else {
-        "$mainUrl/stream/series/$id:$season:$episode.json"
-    }
-    val json= app.get(mainurl).toString()
-    val magnetLink = parseStreamsToMagnetLinks(json)
-    magnetLink.forEach {
-        callback.invoke(
-            newExtractorLink(
-                "Torrentio AIO ${it.title}",
-                it.title,
-                it.magnet,
-                INFER_TYPE
-            ) {
-                this.referer = ""
-                this.quality = getIndexQuality(it.quality)
-            }
-        )
-    }
-}
-
 suspend fun invokeDebianTorbox(
     torBoxAPI: String,
     key: String,
@@ -568,7 +432,10 @@ suspend fun invokeDebianTorbox(
         val displayName = buildString {
             append("TorBox+ | [$cache] | ")
             val rawName = stream.behaviorHints.filename
-            val baseName = cleanTitle(rawName)
+            val baseName = rawName
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
 
             if (baseName.isNotBlank())
                 append(baseName)
@@ -829,7 +696,11 @@ suspend fun invokeTorboxAnimeDebian(
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
 
-        val formattedName = cleanTitle(name)
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
+
         val cache = Regex("""\((.*?)\)""").find(stream.name)
             ?.groupValues?.get(1)
             ?.takeIf { it == "Instant" }
@@ -976,7 +847,11 @@ suspend fun invokeCometDebian(
 
         val name = stream.behaviorHints.filename ?: stream.title.substringBefore("\n")
         val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.get(1)
-        val formattedName = cleanTitle(name)
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
+
         val parts = listOfNotNull(
             size?.let { "📦 $it" },
             seedersNum?.let { "🌱 $it" }

@@ -311,34 +311,3 @@ data class TorrentsDBBehaviorHints(
     val bingeGroup: String?,
     val filename: String?
 )
-
-fun cleanTitle(title: String): String {
-
-    val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
-
-    val patterns = listOf(
-        Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
-        Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
-        Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
-        Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-        Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
-        Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
-    )
-
-    val results = linkedSetOf<String>()
-
-    for (pattern in patterns) {
-        pattern.findAll(name).forEach { match ->
-            var value = match.value.uppercase()
-            value = value
-                .replace(Regex("WEB[-_. ]?DL"), "WEB-DL")
-                .replace(Regex("WEB[-_. ]?RIP"), "WEBRIP")
-                .replace(Regex("H[ .]?265"), "H265")
-                .replace(Regex("H[ .]?264"), "H264")
-                .replace(Regex("DOLBY[ .]?VISION"), "DOLBYVISION")
-                .replace("2160P", "4K")
-            results.add(value)
-        }
-    }
-    return results.joinToString(" ")
-}
