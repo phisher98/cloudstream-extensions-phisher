@@ -65,8 +65,6 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
     private val torrentioDebian= "https://torrentio.strem.fun"
     private val TorrentsDB = "https://torrentsdb.com"
-    private val cometurl = "https://comet.elfhosted.com"
-
 
     private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -507,61 +505,6 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
     }
-
-    private fun buildCometUrl(sharedPref: SharedPreferences): String {
-        val json = buildCometJson(sharedPref)
-        val encoded = base64Encode(json.toByteArray(Charsets.UTF_8))
-        return "$cometurl/$encoded"
-    }
-
-    private fun buildCometJson(sharedPref: SharedPreferences): String {
-        val json = JSONObject()
-
-        json.put("maxResultsPerResolution", 0)
-        json.put("maxSize", 0)
-        json.put("cachedOnly", false)
-        json.put("sortCachedUncachedTogether", false)
-        json.put("removeTrash", true)
-
-        json.put("resultFormat", JSONArray().put("all"))
-
-        json.put("enableTorrent", true)
-        json.put("deduplicateStreams", false)
-        json.put("scrapeDebridAccountTorrents", false)
-        json.put("debridStreamProxyPassword", "")
-
-        // Debrid services
-        val provider = sharedPref.getString("debrid_provider", "")
-        val key = sharedPref.getString("debrid_key", "")
-
-        val debridArray = JSONArray()
-        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
-            val serviceObj = JSONObject()
-            serviceObj.put("service", provider.lowercase())
-            serviceObj.put("apiKey", key)
-            debridArray.put(serviceObj)
-        }
-        json.put("debridServices", debridArray)
-
-        // Languages
-        val languages = JSONObject()
-        languages.put("required", JSONArray())
-        languages.put("allowed", JSONArray())
-        languages.put("exclude", JSONArray())
-        languages.put("preferred", JSONArray())
-        json.put("languages", languages)
-
-        json.put("resolutions", JSONObject())
-
-        val options = JSONObject()
-        options.put("remove_ranks_under", -10000000000L)
-        options.put("allow_english_in_languages", false)
-        options.put("remove_unknown_languages", false)
-        json.put("options", options)
-
-        return json.toString()
-    }
-
     fun getStatus(t: String?): ShowStatus {
         return when {
             t?.contains("Returning", ignoreCase = true) == true -> ShowStatus.Ongoing

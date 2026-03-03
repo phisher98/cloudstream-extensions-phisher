@@ -71,8 +71,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         private const val Knaben = "https://knaben.org"
         private const val TorrentsDB = "https://torrentsdb.com"
 
-        private const val cometurl = "https://comet.elfhosted.com"
-
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
 
@@ -380,7 +378,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
 
         val torrentioapiUrl = buildTorrentioApiUrl(sharedPref, mainUrl)
-        val cometapiUrl = buildCometUrl(sharedPref)
 
         if (provider == "AIO Streams" && !key.isNullOrEmpty()) {
             runAllAsync(
@@ -391,7 +388,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         if (!key.isNullOrEmpty()) {
             runAllAsync(
                 { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, callback) },
-                { if (!dataObj.isAnime) invokeCometDebian(cometapiUrl, id, season, episode, callback) }
             )
         } else {
             runAllAsync(
@@ -482,61 +478,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
     }
-
-    private fun buildCometUrl(sharedPref: SharedPreferences): String {
-        val json = buildCometJson(sharedPref)
-        val encoded = base64Encode(json.toByteArray(Charsets.UTF_8))
-        return "$cometurl/$encoded"
-    }
-
-    private fun buildCometJson(sharedPref: SharedPreferences): String {
-        val json = JSONObject()
-
-        json.put("maxResultsPerResolution", 0)
-        json.put("maxSize", 0)
-        json.put("cachedOnly", false)
-        json.put("sortCachedUncachedTogether", false)
-        json.put("removeTrash", true)
-
-        json.put("resultFormat", JSONArray().put("all"))
-
-        json.put("enableTorrent", true)
-        json.put("deduplicateStreams", false)
-        json.put("scrapeDebridAccountTorrents", false)
-        json.put("debridStreamProxyPassword", "")
-
-        // Debrid services
-        val provider = sharedPref.getString("debrid_provider", "")
-        val key = sharedPref.getString("debrid_key", "")
-
-        val debridArray = JSONArray()
-        if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
-            val serviceObj = JSONObject()
-            serviceObj.put("service", provider.lowercase())
-            serviceObj.put("apiKey", key)
-            debridArray.put(serviceObj)
-        }
-        json.put("debridServices", debridArray)
-
-        // Languages
-        val languages = JSONObject()
-        languages.put("required", JSONArray())
-        languages.put("allowed", JSONArray())
-        languages.put("exclude", JSONArray())
-        languages.put("preferred", JSONArray())
-        json.put("languages", languages)
-
-        json.put("resolutions", JSONObject())
-
-        val options = JSONObject()
-        options.put("remove_ranks_under", -10000000000L)
-        options.put("allow_english_in_languages", false)
-        options.put("remove_unknown_languages", false)
-        json.put("options", options)
-
-        return json.toString()
-    }
-
 }
 
 suspend fun generateMagnetLink(
