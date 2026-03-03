@@ -295,14 +295,11 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         }
 
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
-        val cometapiUrl = buildCometUrl(sharedPref)
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
                     { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) },
                     { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback) },
-                    { invokeCometAnimeDebian(cometapiUrl, type, kitsuId, episode, callback) }
-
                 )
             }
         } else {

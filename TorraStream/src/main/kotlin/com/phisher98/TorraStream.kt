@@ -22,7 +22,6 @@ import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
@@ -40,9 +39,6 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
@@ -395,7 +391,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         if (!key.isNullOrEmpty()) {
             runAllAsync(
                 { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, callback) },
-                { invokeCometDebian(cometapiUrl, id, season, episode, callback) }
+                { if (!dataObj.isAnime) invokeCometDebian(cometapiUrl, id, season, episode, callback) }
             )
         } else {
             runAllAsync(
