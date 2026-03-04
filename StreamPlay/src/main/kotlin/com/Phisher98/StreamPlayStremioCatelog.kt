@@ -19,7 +19,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.fixTitle
 import com.lagradost.cloudstream3.imdbUrlToIdNullable
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -329,8 +328,7 @@ class StreamPlayStremioCatelog(
                     year = yearNum?.toIntOrNull()
                     tags = genre ?: genres
                     addActors(cast)
-                    addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" }
-                        ?.randomOrNull())
+                    addTrailer(trailersSources.map { "https://www.youtube.com/watch?v=${it.source}" }.randomOrNull())
                     addImdbId(imdbId)
                 }
             }
