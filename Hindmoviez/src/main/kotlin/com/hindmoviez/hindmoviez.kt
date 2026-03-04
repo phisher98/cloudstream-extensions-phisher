@@ -84,9 +84,9 @@ class Hindmoviez : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = cleanTitle(this.selectFirst("div.entry-content img")?.attr("alt"))
+        val title = cleanTitle(this.selectFirst("h2.entry-title a")?.text())
         val href = fixUrl(this.select("a").attr("href"))
-        val posterUrl = fixUrlNull(this.select("div.entry-content img").let {
+        val posterUrl = fixUrlNull(this.select("header.entry-header img").let {
             img -> img.attr("data-src").takeIf { it.isNotBlank() }
             ?: img.attr("src") })
 

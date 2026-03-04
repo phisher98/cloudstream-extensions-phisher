@@ -10,20 +10,24 @@ import org.json.JSONObject
 import java.text.Normalizer
 
 fun cleanTitle(raw: String?): String {
+    if (raw.isNullOrBlank()) return ""
+
     val regex = Regex("""S(\d+)[Ee](\d+)(?:-(\d+))?""")
-    val match = regex.find(raw ?: "") ?: return raw!!.trim()
+    val match = regex.find(raw) ?: return raw.trim()
 
     val season = match.groupValues[1].toInt()
     val epStart = match.groupValues[2].toInt()
     val epEnd = match.groupValues.getOrNull(3)?.takeIf { it.isNotEmpty() }?.toInt()
 
-    val showName = raw?.substringBefore(match.value)!!.trim()
-    val year = Regex("""\((\d{4})\)""").find(raw)?.groupValues?.get(1)
+    val showName = raw.substringBefore(match.value).trim()
 
-    val titleBase = if (year != null) showName else showName
-    val episodes = if (epEnd != null) "Episodes $epStart–$epEnd" else "Episode $epStart"
+    val episodes = if (epEnd != null) {
+        "Episodes $epStart–$epEnd"
+    } else {
+        "Episode $epStart"
+    }
 
-    return "$titleBase Season $season | $episodes"
+    return "$showName Season $season | $episodes"
 }
 
 fun parseCredits(jsonText: String?): List<ActorData> {

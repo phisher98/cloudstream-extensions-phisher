@@ -152,7 +152,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, _, _ ->
-            invokeMoviesdrive(res.title, res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            invokeMoviesdrive(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
@@ -265,7 +265,8 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
         },
         Provider("M4uhd", "M4uhd (English)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeM4uhd(res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
+            if (!res.isAnime) invokeM4uhd(res.title,
+                res.season, res.episode, subtitleCallback ,callback)
         },
         Provider("MappleTV", "MappleTV (English)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMapple(res.id, res.season, res.episode ,callback)
@@ -276,8 +277,8 @@ fun buildProviders(): List<Provider> {
         Provider("SubtitleAPI", "SubtitleAPI (Subtitles)") { res, subtitleCallback, _, _, _ ->
             invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
         },
-        Provider("WebStreamr", "WebStreamr") { res, _, callback, token, _ ->
-            invokeWebStreamr(res.imdbId, res.season,res.episode,token, callback)
+        Provider("WebStreamr", "WebStreamr") { res, _, callback, _, _ ->
+            invokeWebStreamr(res.imdbId, res.season,res.episode, callback)
         },
         Provider("CineVood", "CineVood (Movies Only)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeCineVood(res.imdbId, subtitleCallback, callback)
