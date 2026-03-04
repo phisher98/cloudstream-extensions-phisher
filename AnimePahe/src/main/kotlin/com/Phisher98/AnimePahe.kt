@@ -331,7 +331,7 @@ class AnimePahe : MainAPI() {
     ): Boolean {
         val parsed = parseJson<LinkLoadData>(data)
         val episodeUrl = parsed.getUrl() ?: ""
-        val document= app.get(episodeUrl, headers= headers).documentLarge
+        val document= app.get(episodeUrl, headers= headers).document
         document.select("#resolutionMenu button")
             .map {
                 val dubText = it.select("span").text().lowercase()

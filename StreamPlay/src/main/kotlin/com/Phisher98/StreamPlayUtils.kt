@@ -86,7 +86,7 @@ val M3U8_HEADERS = mapOf(
 
 suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: String): String {
     val link =
-        app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").documentLarge.toString()
+        app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").document.toString()
             .substringAfter("link\":\"").substringBefore("\",")
     return link
 }
@@ -100,7 +100,7 @@ suspend fun getDirectGdrive(url: String): String {
         }&export=download"
     }
 
-    val doc = app.get(fixUrl).documentLarge
+    val doc = app.get(fixUrl).document
     val form = doc.select("form#download-form").attr("action")
     val uc = doc.select("input#uc-download-link").attr("value")
     return app.post(
@@ -121,22 +121,22 @@ suspend fun bypassHrefli(url: String): String? {
     }
 
     val host = getBaseUrl(url)
-    var res = app.get(url).documentLarge
+    var res = app.get(url).document
     var formUrl = res.getFormUrl()
     var formData = res.getFormData()
 
-    res = app.post(formUrl, data = formData).documentLarge
+    res = app.post(formUrl, data = formData).document
     formUrl = res.getFormUrl()
     formData = res.getFormData()
 
-    res = app.post(formUrl, data = formData).documentLarge
+    res = app.post(formUrl, data = formData).document
     val skToken = res.selectFirst("script:containsData(?go=)")?.data()?.substringAfter("?go=")
         ?.substringBefore("\"") ?: return null
     val driveUrl = app.get(
         "$host?go=$skToken", cookies = mapOf(
             skToken to "${formData["_wp_http2"]}"
         )
-    ).documentLarge.selectFirst("meta[http-equiv=refresh]")?.attr("content")?.substringAfter("url=")
+    ).document.selectFirst("meta[http-equiv=refresh]")?.attr("content")?.substringAfter("url=")
     val path = app.get(driveUrl ?: return null).text.substringAfter("replace(\"")
         .substringBefore("\")")
     if (path == "/404") return null
@@ -149,11 +149,11 @@ suspend fun cinematickitBypass(url: String): String? {
         val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
         if (encodedLink.isEmpty()) return null
         val decodedUrl = base64Decode(encodedLink)
-        val doc = app.get(decodedUrl).documentLarge
+        val doc = app.get(decodedUrl).document
         val goValue = doc.select("form#landing input[name=go]").attr("value")
         if (goValue.isBlank()) return null
         val decodedGoUrl = base64Decode(goValue).replace("&#038;", "&")
-        val responseDoc = app.get(decodedGoUrl).documentLarge
+        val responseDoc = app.get(decodedGoUrl).document
         val script = responseDoc.select("script").firstOrNull { it.data().contains("window.location.replace") }?.data() ?: return null
         val regex = Regex("""window\.location\.replace\s*\(\s*["'](.+?)["']\s*\)\s*;?""")
         val match = regex.find(script) ?: return null
@@ -173,7 +173,7 @@ suspend fun cinematickitloadBypass(url: String): String? {
         val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
         if (encodedLink.isEmpty()) return null
         val decodedUrl = base64Decode(encodedLink)
-        val doc = app.get(decodedUrl).documentLarge
+        val doc = app.get(decodedUrl).document
         val goValue = doc.select("form#landing input[name=go]").attr("value")
         return base64Decode(goValue)
     } catch (e: Exception) {
@@ -473,7 +473,7 @@ suspend fun extractMdrive(url: String): List<String> {
     val regex = Regex("hubcloud|gdflix|gdlink", RegexOption.IGNORE_CASE)
 
     return try {
-        app.get(url).documentLarge
+        app.get(url).document
             .select("a[href]")
             .mapNotNull { element ->
                 val href = element.attr("href")
@@ -1223,7 +1223,7 @@ suspend fun getPlayer4uUrl(
 ) {
     val response = app.get(url, referer = referer)
     var script = getAndUnpack(response.text).takeIf { it.isNotEmpty() }
-        ?: response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+        ?: response.document.selectFirst("script:containsData(sources:)")?.data()
     if (script == null) {
         val iframeUrl =
             Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1)
@@ -1580,7 +1580,7 @@ suspend fun getRedirectLinks(url: String): String {
         val data = hdhubencode(jsonObject.optString("data", "")).trim()
         val wphttp1 = jsonObject.optString("blog_url", "").trim()
         val directlink = runCatching {
-            app.get("$wphttp1?re=$data".trim()).documentLarge.select("body").text().trim()
+            app.get("$wphttp1?re=$data".trim()).document.select("body").text().trim()
         }.getOrDefault("").trim()
 
         encodedurl.ifEmpty { directlink }

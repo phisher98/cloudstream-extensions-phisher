@@ -29,7 +29,7 @@ class MultiEmbededAPIProvider : MediaProvider() {
                 } else {
                     "$url/directstream.php?video_id=${data.imdbId}&s=${data.season}&e=${data.episode}"
                 }
-        val res = app.get(mediaUrl, referer = mediaUrl).documentLarge
+        val res = app.get(mediaUrl, referer = mediaUrl).document
         val script =
                 res.selectFirst("script:containsData(function(h,u,n,t,e,r))")?.data().toString()
         if (script.isNotEmpty()) {

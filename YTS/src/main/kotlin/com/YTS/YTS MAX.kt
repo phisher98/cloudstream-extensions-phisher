@@ -47,7 +47,7 @@ class YTSMX : YTS(){
         {
             url="$mainUrl/${request.data}?page=$page"
         }
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val home     = document.select("div.row div.browse-movie-wrap").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -74,7 +74,7 @@ class YTSMX : YTS(){
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title = document.selectFirst("#mobile-movie-info h1")?.text()?.trim() ?:"No Title"
         val poster = document.select("#movie-poster img").attr("src")
         val year = document.selectFirst("#mobile-movie-info h2")?.text()?.trim()?.toIntOrNull()
@@ -93,7 +93,7 @@ class YTSMX : YTS(){
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
         document.select("p.hidden-md.hidden-lg a").map {
             val infoHash=it.attr("href").substringAfter("download/").substringBefore("?")

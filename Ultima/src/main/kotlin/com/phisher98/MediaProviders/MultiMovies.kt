@@ -33,7 +33,7 @@ class MultiMoviesProvider : MediaProvider() {
                 } else {
                     "$multimoviesAPI/episodes/$fixTitle-${data.season}x${data.episode}"
                 }
-        val req = app.get(mediaurl).documentLarge
+        val req = app.get(mediaurl).document
         req.select("ul#playeroptionsul li").amap {
             val id = it.attr("data-post")
             val nume = it.attr("data-nume")

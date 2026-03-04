@@ -29,7 +29,7 @@ class AllMovielandMediaProvider : MediaProvider() {
         val resData = app.get(
             "$host/play/${data.imdbId}",
             referer = "$url/"
-        ).documentLarge.selectFirst("script:containsData(playlist)")?.data()
+        ).document.selectFirst("script:containsData(playlist)")?.data()
             ?.substringAfter("{")?.substringBefore(";")?.substringBefore(")") ?: return
 
         val json = tryParseJson<AllMovielandPlaylist>("{$resData}") ?: return

@@ -200,7 +200,7 @@ class KisskhProvider : MainAPI() {
             val tmdbJson = runCatching {
                 JSONObject(
                     app.get("${TMDBAPI}/$type/$tmdbId?api_key=1865f43a0549ca50d341dd9ab8b29f49&append_to_response=credits")
-                        .textLarge
+                        .text
                 )
             }.getOrNull()
 

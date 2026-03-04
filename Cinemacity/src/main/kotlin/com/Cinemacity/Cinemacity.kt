@@ -184,7 +184,7 @@ class Cinemacity : MainAPI() {
                         "https://api.themoviedb.org/3/find/$id" +
                                 "?api_key=1865f43a0549ca50d341dd9ab8b29f49" +
                                 "&external_source=imdb_id"
-                    ).textLarge
+                    ).text
                 )
 
                 obj.optJSONArray("movie_results")?.optJSONObject(0)?.optInt("id")?.takeIf { it != 0 }
@@ -201,7 +201,7 @@ class Cinemacity : MainAPI() {
                 app.get(
                     "https://api.themoviedb.org/3/$tmdbmetatype/$it/credits" +
                             "?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
-                ).textLarge
+                ).text
             }.getOrNull()
         }
 

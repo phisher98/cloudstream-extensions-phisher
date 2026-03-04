@@ -49,7 +49,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     private suspend fun cfKiller(url: String): NiceResponse {
         var doc = app.get(url)
-        if (doc.documentLarge.select("title").text() == "Just a moment...") {
+        if (doc.document.select("title").text() == "Just a moment...") {
             doc = app.get(url, interceptor = CloudflareKiller())
         }
         return doc
@@ -60,9 +60,9 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         request: MainPageRequest
     ): HomePageResponse {
         val document = if (page == 1) {
-            cfKiller("$mainUrl/${request.data}").documentLarge
+            cfKiller("$mainUrl/${request.data}").document
         } else {
-            cfKiller("$mainUrl/${request.data}" + "/page/$page/").documentLarge
+            cfKiller("$mainUrl/${request.data}" + "/page/$page/").document
         }
 
         val home = document.select("article.gridlove-post").mapNotNull {
@@ -92,7 +92,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("$mainUrl?s=$query ").documentLarge
+        val document = cfKiller("$mainUrl?s=$query ").document
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
@@ -105,7 +105,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     )
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
         val title = titleRegex.find(titleRaw)?.groupValues?.get(1)?.trim()?.substringBefore("(")?.substringBefore("Season")?.substringBefore("S0") ?: titleRaw.substringBefore("(").substringBefore("Season").substringBefore("S0")
@@ -313,13 +313,13 @@ suspend fun fetchIds(
         }
     }
 
-    val searchJson = JSONObject(app.get(searchUrl).textLarge)
+    val searchJson = JSONObject(app.get(searchUrl).text)
     val results = searchJson.optJSONArray("results")
     val tmdbId = results?.optJSONObject(0)?.optInt("id")
 
     val imdbId = tmdbId?.let { id ->
         val extUrl = "$TMDB_API/$type/$id/external_ids?api_key=$TMDB_API_KEY"
-        val extJson = JSONObject(app.get(extUrl).textLarge)
+        val extJson = JSONObject(app.get(extUrl).text)
         extJson.optString("imdb_id").takeIf { it.isNotBlank() }
     }
 

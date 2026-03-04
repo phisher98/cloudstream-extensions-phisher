@@ -29,7 +29,7 @@ class Filesdl : ExtractorApi() {
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit) {
-        val res = app.get(url).documentLarge
+        val res = app.get(url).document
         val titleText = res.select("div.title").text()
         val qualityRegex = Regex("(\\d{3,4}p)", RegexOption.IGNORE_CASE)
         val quality = qualityRegex.find(titleText)?.value ?: "Unknown"
@@ -88,7 +88,7 @@ class M4ulinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit)
     {
-        val res = app.get(url).documentLarge
+        val res = app.get(url).document
         res.select("div.downloads-btns-div a").map {
             val href = it.attr("href")
             loadExtractor(href,"",subtitleCallback,callback)
@@ -356,7 +356,7 @@ class GDFlix : ExtractorApi() {
     ) {
         val latestUrl = getLatestUrl()
         val newUrl = url.replace(mainUrl, latestUrl)
-        val document = app.get(newUrl).documentLarge
+        val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -401,10 +401,10 @@ class GDFlix : ExtractorApi() {
 
                 text.contains("Index Links") -> {
                     try {
-                        app.get("$latestUrl$link").documentLarge
+                        app.get("$latestUrl$link").document
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = latestUrl + btn.attr("href")
-                                app.get(serverUrl).documentLarge
+                                app.get(serverUrl).document
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val source = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -432,7 +432,7 @@ class GDFlix : ExtractorApi() {
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.documentLarge
+                                val indexbotDoc = indexbotResponse.document
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -487,7 +487,7 @@ class GDFlix : ExtractorApi() {
                 }
                 text.contains("GoFile") -> {
                     try {
-                        app.get(link).documentLarge
+                        app.get(link).document
                             .select(".row .row a").amap { gofileAnchor ->
                                 val link = gofileAnchor.attr("href")
                                 if (link.contains("gofile")) {

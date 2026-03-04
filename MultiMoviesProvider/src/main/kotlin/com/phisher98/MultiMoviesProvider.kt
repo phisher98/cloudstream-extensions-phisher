@@ -74,9 +74,9 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         request: MainPageRequest
     ): HomePageResponse {
         val document = if (page == 1) {
-            app.get("$mainUrl/${request.data}").documentLarge
+            app.get("$mainUrl/${request.data}").document
         } else {
-            app.get("$mainUrl/${request.data}" + "page/$page/").documentLarge
+            app.get("$mainUrl/${request.data}" + "page/$page/").document
         }
         val home = if (request.data.contains("/movies")) {
             document.select("#archive-content > article").mapNotNull {
@@ -109,7 +109,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").documentLarge
+        val document = app.get("$mainUrl/?s=$query").document
         return document.select("div.result-item").mapNotNull {
             val title =
                 it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
@@ -157,7 +157,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     )
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.trim() ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
         val titleClean = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
@@ -256,7 +256,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val req = app.get(data).documentLarge
+        val req = app.get(data).document
         req.select("ul#playeroptionsul li").map {
                 Triple(
                     it.attr("data-post"),
@@ -285,7 +285,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 when {
                     !link.contains("youtube") -> {
                         if (link.contains("deaddrive.xyz")) {
-                            app.get(link).documentLarge.select("ul.list-server-items > li").map {
+                            app.get(link).document.select("ul.list-server-items > li").map {
                                 val server = it.attr("data-video")
                                 loadExtractor(server, referer = mainUrl, subtitleCallback, callback)
                             }

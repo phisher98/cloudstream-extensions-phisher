@@ -96,7 +96,7 @@ suspend fun resolveIframeSrc(initialUrl: String): String? {
         val initialResponse = app.get(initialUrl, allowRedirects = false)
 
         // Extract meta refresh (case-insensitive handling)
-        val metaContent = initialResponse.documentLarge
+        val metaContent = initialResponse.document
             .selectFirst("meta[http-equiv=refresh]")
             ?.attr("content")
             ?.trim()
@@ -148,7 +148,7 @@ suspend fun resolveIframeSrc(initialUrl: String): String? {
             else emptyMap()
         )
 
-        val rawIframe = finalResponse.documentLarge
+        val rawIframe = finalResponse.document
             .selectFirst("iframe")
             ?.attr("src")
             ?.trim()

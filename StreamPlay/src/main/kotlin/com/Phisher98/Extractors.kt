@@ -69,7 +69,7 @@ open class Playm4u : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val document = app.get(url, referer = referer).documentLarge
+        val document = app.get(url, referer = referer).document
         val script = document.selectFirst("script:containsData(idfile =)")?.data() ?: return
         val passScript = document.selectFirst("script:containsData(domain_ref =)")?.data() ?: return
 
@@ -188,7 +188,7 @@ open class M4ufree : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val document = session.get(url, referer = referer).documentLarge
+        val document = session.get(url, referer = referer).document
         val script = document.selectFirst("script:containsData(idfile =)")?.data() ?: return
 
         val idFile = "idfile".findIn(script)
@@ -238,7 +238,7 @@ class VCloudGDirect : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val source = app.get(url).documentLarge.selectFirst("#vd")?.attr("href") ?: ""
+        val source = app.get(url).document.selectFirst("#vd")?.attr("href") ?: ""
         if (source.isBlank()) {
             Log.e("Error:", "Failed to extract video link from $url")
             //loadExtractor(url, subtitleCallback, callback) // Passes original URL, not an empty string
@@ -273,16 +273,16 @@ class VCloud : ExtractorApi() {
 
         if (href.contains("api/index.php")) {
             href = runCatching {
-                app.get(url).documentLarge.selectFirst("div.main h4 a")?.attr("href")
+                app.get(url).document.selectFirst("div.main h4 a")?.attr("href")
             }.getOrNull() ?: return
         }
 
-        val doc = runCatching { app.get(href).documentLarge }.getOrNull() ?: return
+        val doc = runCatching { app.get(href).document }.getOrNull() ?: return
         val scriptTag = doc.selectFirst("script:containsData(url)")?.data() ?: ""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag)?.groupValues?.getOrNull(1).orEmpty()
         if (urlValue.isEmpty()) return
 
-        val document = runCatching { app.get(urlValue).documentLarge }.getOrNull() ?: return
+        val document = runCatching { app.get(urlValue).document }.getOrNull() ?: return
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
         val headerdetails = cleanTitle(header)
@@ -467,7 +467,7 @@ open class Streamruby : ExtractorApi() {
         val script = if (!getPacked(response.text).isNullOrEmpty()) {
             getAndUnpack(response.text)
         } else {
-            response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+            response.document.selectFirst("script:containsData(sources:)")?.data()
         }
         val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
         generateM3u8(
@@ -490,14 +490,14 @@ open class Uploadever : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        var res = app.get(url, referer = referer).documentLarge
+        var res = app.get(url, referer = referer).document
         val formUrl = res.select("form").attr("action")
         var formData = res.select("form input").associate { it.attr("name") to it.attr("value") }
             .filterKeys { it != "go" }
             .toMutableMap()
         val formReq = app.post(formUrl, data = formData)
 
-        res = formReq.documentLarge
+        res = formReq.document
         val captchaKey =
             res.select("script[src*=https://www.google.com/recaptcha/api.js?render=]").attr("src")
                 .substringAfter("render=")
@@ -510,7 +510,7 @@ open class Uploadever : ExtractorApi() {
             formReq.url,
             data = formData + mapOf("g-recaptcha-response" to "$token"),
             cookies = formReq.cookies
-        ).documentLarge
+        ).document
         val video = res.select("div.download-button a.btn.btn-dow.recaptchav2").attr("href")
 
         callback.invoke(
@@ -562,7 +562,7 @@ open class Ridoo : ExtractorApi() {
         val script = if (!getPacked(response.text).isNullOrEmpty()) {
             getAndUnpack(response.text)
         } else {
-            response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+            response.document.selectFirst("script:containsData(sources:)")?.data()
         }
         val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
         val quality = "qualityLabels.*\"(\\d{3,4})[pP]\"".toRegex().find(script)?.groupValues?.get(1)
@@ -596,7 +596,7 @@ open class Streamvid : ExtractorApi() {
         val script = if (!getPacked(response.text).isNullOrEmpty()) {
             getAndUnpack(response.text)
         } else {
-            response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+            response.document.selectFirst("script:containsData(sources:)")?.data()
         }
         val m3u8 =
             Regex("src:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
@@ -620,7 +620,7 @@ open class Embedrise : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val res = app.get(url, referer = referer).documentLarge
+        val res = app.get(url, referer = referer).document
         val title = res.select("title").text()
         val video = res.select("video#player source").attr("src")
 
@@ -1238,7 +1238,7 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun CFType1(url: String): List<String> {
         return runCatching {
-            app.get("$url?type=1").documentLarge
+            app.get("$url?type=1").document
                 .select("a.btn-success")
                 .mapNotNull { it.attr("href").takeIf { href -> href.startsWith("http") } }
         }.getOrElse {
@@ -1249,7 +1249,7 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun resumeCloudLink(baseUrl: String, path: String): String? {
         return runCatching {
-            app.get(baseUrl + path).documentLarge
+            app.get(baseUrl + path).document
                 .selectFirst("a.btn-success")?.attr("href")
                 ?.takeIf { it.startsWith("http") }
         }.getOrElse {
@@ -1261,7 +1261,7 @@ open class Driveseed : ExtractorApi() {
     private suspend fun resumeBot(url: String): String? {
         return runCatching {
             val response = app.get(url)
-            val docString = response.documentLarge.toString()
+            val docString = response.document.toString()
             val ssid = response.cookies["PHPSESSID"].orEmpty()
             val token = Regex("formData\\.append\\('token', '([a-f0-9]+)'\\)").find(docString)?.groupValues?.getOrNull(1).orEmpty()
             val path = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/+]+)'").find(docString)?.groupValues?.getOrNull(1).orEmpty()
@@ -1308,14 +1308,14 @@ open class Driveseed : ExtractorApi() {
 
         val document = try {
             if (url.contains("r?key=")) {
-                val temp = app.get(url).documentLarge.selectFirst("script")
+                val temp = app.get(url).document.selectFirst("script")
                     ?.data()
                     ?.substringAfter("replace(\"")
                     ?.substringBefore("\")")
                     .orEmpty()
-                app.get(mainUrl + temp).documentLarge
+                app.get(mainUrl + temp).document
             } else {
-                app.get(url).documentLarge
+                app.get(url).document
             }
         } catch (e: Exception) {
             Log.e("Driveseed", "getUrl page load error: ${e.message}")
@@ -1457,7 +1457,7 @@ class Kwik : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val res = app.get(url,referer=animepaheAPI)
         val script =
-            res.documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+            res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
         callback.invoke(
@@ -1592,7 +1592,7 @@ open class Embtaku : ExtractorApi() {
     override suspend fun
             getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val responsecode= app.get(url)
-        val serverRes = responsecode.documentLarge
+        val serverRes = responsecode.document
         serverRes.select("ul.list-server-items").amap {
             val href=it.attr("data-video")
             loadSourceNameExtractor("Anichi",href,"",subtitleCallback,callback)
@@ -1813,7 +1813,7 @@ open class GDFlix : ExtractorApi() {
     ) {
         val newUrl = try {
             app.get(url)
-                .documentLarge
+                .document
                 .selectFirst("meta[http-equiv=refresh]")
                 ?.attr("content")
                 ?.substringAfter("url=")
@@ -1822,7 +1822,7 @@ open class GDFlix : ExtractorApi() {
             return
         } ?: url
 
-        val document = app.get(newUrl).documentLarge
+        val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -1844,10 +1844,10 @@ open class GDFlix : ExtractorApi() {
                 text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
-                        app.get("https://new6.gdflix.dad$link").documentLarge
+                        app.get("https://new6.gdflix.dad$link").document
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-                                app.get(serverUrl).documentLarge
+                                app.get(serverUrl).document
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -1875,7 +1875,7 @@ open class GDFlix : ExtractorApi() {
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.documentLarge
+                                val indexbotDoc = indexbotResponse.document
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -1960,7 +1960,7 @@ open class GDFlix : ExtractorApi() {
             val types = listOf("type=1", "type=2")
             types.map { type ->
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .documentLarge.select("a.btn-success").attr("href")
+                    .document.select("a.btn-success").attr("href")
 
                 if (sourceurl.isNotEmpty()) {
                     callback.invoke(
@@ -2080,7 +2080,7 @@ class UqloadsXyz : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         var response = app.get(url.replace("/download/", "/e/"), referer = referer)
-        val iframe = response.documentLarge.selectFirst("iframe")
+        val iframe = response.document.selectFirst("iframe")
         if (iframe != null) {
             response = app.get(
                 iframe.attr("src"), headers = mapOf(
@@ -2093,7 +2093,7 @@ class UqloadsXyz : ExtractorApi() {
         val script = if (!getPacked(response.text).isNullOrEmpty()) {
             getAndUnpack(response.text)
         } else {
-            response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+            response.document.selectFirst("script:containsData(sources:)")?.data()
         } ?: return
         val regex = Regex("""hls2":"(?<hls2>[^"]+)"|hls4":"(?<hls4>[^"]+)"""")
         val links = regex.findAll(script)
@@ -2502,7 +2502,7 @@ class Hubdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url, timeout = 2000).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        val href=app.get(url, timeout = 2000).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
         if (href.contains("hubcloud",ignoreCase = true)) HubCloud().getUrl(href,"HubDrive",subtitleCallback,callback)
         else loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
@@ -2519,7 +2519,7 @@ class HUBCDN : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
 
         val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")
@@ -2558,7 +2558,7 @@ internal class Molop : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val headers= mapOf("user-agent" to "okhttp/4.12.0")
-        val res = app.get(url, referer = referer, headers = headers).documentLarge
+        val res = app.get(url, referer = referer, headers = headers).document
         val sniffScript = res.selectFirst("script:containsData(sniff\\()")
             ?.data()
             ?.substringAfter("sniff(")
@@ -2645,7 +2645,7 @@ class BuzzServer : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         try {
-            val qualityText = app.get(url).documentLarge.selectFirst("div.max-w-2xl > span")?.text()
+            val qualityText = app.get(url).document.selectFirst("div.max-w-2xl > span")?.text()
             val quality = getIndexQuality(qualityText)
             val response = app.get("$url/download", referer = url, allowRedirects = false)
             val redirectUrl = response.headers["hx-redirect"] ?: ""
@@ -2692,7 +2692,7 @@ class Vidora : ExtractorApi() {
         val embedUrl = url.replace("/download/", "/e/")
         var pageResponse = app.get(embedUrl, referer = referer)
 
-        val iframeElement = pageResponse.documentLarge.selectFirst("iframe")
+        val iframeElement = pageResponse.document.selectFirst("iframe")
         if (iframeElement != null) {
             val iframeUrl = iframeElement.attr("src")
             pageResponse = app.get(
@@ -2708,7 +2708,7 @@ class Vidora : ExtractorApi() {
         val scriptData = if (!getPacked(pageResponse.text).isNullOrEmpty()) {
             getAndUnpack(pageResponse.text)
         } else {
-            pageResponse.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+            pageResponse.document.selectFirst("script:containsData(sources:)")?.data()
         }
 
         val m3u8Url = scriptData?.let {
@@ -2955,7 +2955,7 @@ open class Hblinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).documentLarge.select("h3 a,h5 a,div.entry-content p a").map {
+        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").map {
             val lower = it.absUrl("href").ifBlank { it.attr("href") }
             val href = lower.lowercase()
             when {
@@ -2985,7 +2985,7 @@ class Hubcdnn : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).documentLarge.toString().let {
+        app.get(url).document.toString().let {
             val encoded = Regex("r=([A-Za-z0-9+/=]+)").find(it)?.groups?.get(1)?.value
             if (!encoded.isNullOrEmpty()) {
                 val m3u8 = base64Decode(encoded).substringAfterLast("link=")
@@ -3265,7 +3265,7 @@ class Filesdl : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
 
         val quality = QUALITY_REGEX.find(doc.selectFirst("div.title")?.text().orEmpty())?.value ?: "Unknown"
         val inferredQuality = getQualityFromName(quality)

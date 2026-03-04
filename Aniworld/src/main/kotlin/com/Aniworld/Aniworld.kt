@@ -59,7 +59,7 @@ open class Aniworld : MainAPI() {
         val isTvSeries = name.equals("Serienstream", ignoreCase = true)
         val requesturl = if (isTvSeries) "$mainUrl/beliebte-serien" else mainUrl
 
-        val document = app.get(requesturl).documentLarge
+        val document = app.get(requesturl).document
 
         val item = arrayListOf<HomePageList>()
         document.select("div.carousel,div.mb-5").map { ele ->
@@ -120,7 +120,7 @@ open class Aniworld : MainAPI() {
 
     @Suppress("LABEL_NAME_CLASH")
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val imdbid = document.selectFirst("div.series-title > a")?.attr("data-imdb") ?: document
             .selectFirst("p a[href^='https://www.imdb.com/title/']")
             ?.attr("href")
@@ -167,7 +167,7 @@ open class Aniworld : MainAPI() {
         document.select("div#stream > ul:first-child li,#season-nav ul:first-child li").forEach { ele ->
             val pageLink = ele.selectFirst("a")?.attr("href") ?: return@forEach
             val seasonno = if ("-" in pageLink) { pageLink.substringAfterLast("-").toIntOrNull() ?: 0 } else { 0 }
-            val epsDocument = app.get(fixUrl(pageLink)).documentLarge
+            val epsDocument = app.get(fixUrl(pageLink)).document
 
             epsDocument.select("#season$seasonno tr,tr.episode-row").forEach { eps ->
                 val epno = eps.select("td > meta").attr("content").toIntOrNull() ?: eps.attr("data-episode-season-id")
@@ -219,7 +219,7 @@ open class Aniworld : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         document
             .select("div.hosterSiteVideo ul li, #episode-links button.link-box")
             .mapNotNull { el ->

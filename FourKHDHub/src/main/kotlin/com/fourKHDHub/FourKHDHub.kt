@@ -56,7 +56,7 @@ class FourKHDHub : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = "$mainUrl/${request.data}/page/$page"
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val results = document.select("div.card-grid a").mapNotNull {
                 it.toSearchResult()
         }
@@ -77,7 +77,7 @@ class FourKHDHub : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").documentLarge
+        val document = app.get("$mainUrl/?s=$query").document
         val results = document.select("div.card-grid a").mapNotNull {
             it.toSearchResult()
         }
@@ -86,7 +86,7 @@ class FourKHDHub : MainAPI() {
 
     @RequiresApi(Build.VERSION_CODES.N)
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title = document.selectFirst("h1.page-title")?.text()?.substringBefore("(")?.trim().toString()
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.mt-2 span.badge").map { it.text() }
@@ -116,7 +116,7 @@ class FourKHDHub : MainAPI() {
             val tmdbJson = runCatching {
                 JSONObject(
                     app.get("$TMDBAPI/$type/$tmdbId?api_key=$TMDB_API_KEY&append_to_response=credits")
-                        .textLarge
+                        .text
                 )
             }.getOrNull()
 
@@ -160,7 +160,7 @@ class FourKHDHub : MainAPI() {
             val imdbIdFromSeries = tmdbId?.let { id ->
                 runCatching {
                     val url = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
-                    JSONObject(app.get(url).textLarge).optString("imdb_id").takeIf { it.isNotBlank() }
+                    JSONObject(app.get(url).text).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
             }
 
@@ -311,7 +311,7 @@ class FourKHDHub : MainAPI() {
             val imdbIdFromMovie = tmdbId?.let { id ->
                 runCatching {
                     val url = "$TMDBAPI/movie/$id/external_ids?api_key=$TMDB_API_KEY"
-                    JSONObject(app.get(url).textLarge).optString("imdb_id").takeIf { it.isNotBlank() }
+                    JSONObject(app.get(url).text).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
             }
 
@@ -328,7 +328,7 @@ class FourKHDHub : MainAPI() {
 
             val movieCreditsJsonText = tmdbId?.let { id ->
                 runCatching {
-                    app.get("${TMDBAPI}/movie/$id/credits?api_key=$TMDB_API_KEY&language=en-US").textLarge
+                    app.get("${TMDBAPI}/movie/$id/credits?api_key=$TMDB_API_KEY&language=en-US").text
                 }.getOrNull()
             }
             val movieCastList = parseCredits(movieCreditsJsonText)

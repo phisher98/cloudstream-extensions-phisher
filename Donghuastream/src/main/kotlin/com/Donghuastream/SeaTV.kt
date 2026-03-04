@@ -34,7 +34,7 @@ open class SeaTV : Donghuastream() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/page/$i/?s=$query").documentLarge
+            val document = app.get("${mainUrl}/page/$i/?s=$query").document
 
             val results = document.select("div.listupd > article").mapNotNull { it.toSearchResult() }
 
@@ -51,7 +51,7 @@ open class SeaTV : Donghuastream() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         document.select(".mobius option").amap { server ->
             val base64 = server.attr("value").takeIf { it.isNotEmpty() }
             val doc = base64?.let { base64Decode(it).let(Jsoup::parse) }

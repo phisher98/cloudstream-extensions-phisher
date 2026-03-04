@@ -40,7 +40,7 @@ class ElevenmoviesProvider : MediaProvider() {
             "$domain/tv/${data.tmdbId}/${data.season}/${data.episode}"
         }
 
-        val encodedToken = app.get(apiurl).documentLarge.selectFirst("script[type=application/json]")
+        val encodedToken = app.get(apiurl).document.selectFirst("script[type=application/json]")
             ?.data()
             ?.substringAfter("{\"data\":\"")
             ?.substringBefore("\",")

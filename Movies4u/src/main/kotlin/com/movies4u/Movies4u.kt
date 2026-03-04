@@ -130,7 +130,7 @@ class Movies4u : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         var title = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("(")?.trim() ?: "Unknown Title"
         val hrefList = document.select("div.downloads-btns-div a[href]").map { it.attr("href") }
         val plot = document.selectFirst("h3.movie-title:contains(Storyline:)")?.nextElementSibling()?.takeIf { it.tagName() == "p" }?.text()

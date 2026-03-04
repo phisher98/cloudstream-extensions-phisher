@@ -78,7 +78,7 @@ class Animedekhoco : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc: Document? = if (url.contains("url=")) app.get(url).documentLarge else null
+        val doc: Document? = if (url.contains("url=")) app.get(url).document else null
         val text: String? = if (!url.contains("url=")) app.get(url).text else null
 
         val links = mutableListOf<Pair<String, String>>()
@@ -232,7 +232,7 @@ open class AWSStream : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val extractedHash = url.substringAfterLast("/")
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
         val header = mapOf("x-requested-with" to "XMLHttpRequest")
         val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)

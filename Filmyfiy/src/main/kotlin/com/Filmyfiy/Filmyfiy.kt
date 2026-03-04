@@ -90,7 +90,7 @@ class Filmyfiy : MainAPI() {
 
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val document = app.get("${mainUrl}/site-1.html?to-search=$query").documentLarge
+        val document = app.get("${mainUrl}/site-1.html?to-search=$query").document
         val results = document.select("div.A2").mapNotNull { el ->
                 val aTag = el.selectFirst("a:has(b), a:not(:has(img))") ?: return@mapNotNull null
                 val img = el.selectFirst("img") ?: return@mapNotNull null
@@ -115,7 +115,7 @@ class Filmyfiy : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title = document.selectFirst("div.fname:contains(Name:) > div")?.text()?.substringBefore("(")?.trim() ?: "Unknown Title"
         val href = document.selectFirst("div.dlbtn a")?.attr("href") ?: ""
         val poster = document.select("div.movie-thumb img").attr("src")
@@ -175,7 +175,7 @@ class Filmyfiy : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         document.select("div.dlink.dl a").forEach {
             val href= it.attr("href")
             if (href.contains("filesdl"))

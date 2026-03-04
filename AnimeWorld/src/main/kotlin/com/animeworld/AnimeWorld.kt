@@ -48,7 +48,7 @@ class AnimeWorld : MainAPI() {
         request.name,
         listOf(page, page + 1).flatMap { p ->
             app.get("$mainUrl/${request.data}?page=$p")
-                .documentLarge
+                .document
                 .select("#movies-a ul li")
                 .mapNotNull { it.toSearchResult() }
         }
@@ -63,12 +63,12 @@ class AnimeWorld : MainAPI() {
     }
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val document = app.get("$mainUrl/?s=$query&page=$page").documentLarge
+        val document = app.get("$mainUrl/?s=$query&page=$page").document
         return document.select("#movies-a ul li").mapNotNull { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title =document.selectFirst("div.dfxb  h1.entry-title")?.text() ?: document.selectFirst("meta[property=og:title]")?.attr("content")?.trim() ?: throw NotImplementedError("Unable to find title")
         val poster = fixUrlNull(document.selectFirst("div.dfxb img")?.attr("src"))
         val backgroundposter = fixUrlNull(document.selectFirst("div.bghd img")?.attr("src"))
@@ -84,7 +84,7 @@ class AnimeWorld : MainAPI() {
                 .map { it.attr("href") }
 
             val episodes = seasonLinks.flatMap { seasonUrl ->
-                val seasonDoc = app.get(mainUrl + seasonUrl).documentLarge
+                val seasonDoc = app.get(mainUrl + seasonUrl).document
 
                 seasonDoc.select("#episode_by_temp li").map { ep ->
                     val headerSpan = ep.selectFirst("header.entry-header span")?.text().orEmpty()

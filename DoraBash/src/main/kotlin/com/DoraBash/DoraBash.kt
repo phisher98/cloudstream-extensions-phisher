@@ -23,7 +23,7 @@ class DoraBash : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}").documentLarge
+        val document = app.get("$mainUrl/${request.data}").document
         val home = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -100,7 +100,7 @@ class DoraBash : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
 
         document.select("div.player-selection").forEach { container ->
 

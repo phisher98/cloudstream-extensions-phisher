@@ -513,7 +513,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
                     ?: cineRes?.meta?.name
                 val syncMetaData = withTimeoutOrNull(4000) {
-                    app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").textLarge
+                    app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").text
                 }
                 val animeMetaData = syncMetaData?.let { parseAnimeData(it) }
                 val kitsuid = animeMetaData?.mappings?.kitsuid

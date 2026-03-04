@@ -43,7 +43,7 @@ open class Hblinks : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val elements = runCatching {
-            app.get(url).documentLarge
+            app.get(url).document
                 .select("h3 a, h5 a, div.entry-content p a")
         }.getOrElse {
             Log.e(name, "Failed to load page: ${it.message}")
@@ -91,7 +91,7 @@ class Hubcdnn : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val html = runCatching {
-            app.get(url).documentLarge.toString()
+            app.get(url).document.toString()
         }.getOrElse {
             Log.e(name, "Failed to load page: ${it.message}")
             return
@@ -145,7 +145,7 @@ class Hubdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url, timeout = 5000L).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        val href=app.get(url, timeout = 5000L).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
         if (href.contains("hubcloud",ignoreCase = true)) HubCloud().getUrl(href,"HubDrive",subtitleCallback,callback)
         else loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
@@ -404,7 +404,7 @@ class HUBCDN : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
 
         val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")

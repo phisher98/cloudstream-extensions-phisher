@@ -81,7 +81,7 @@ class XDMovies : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${if (request.data.contains("Homepage")) "?" else "${request.data}&"}page=$page").documentLarge
+        val document = app.get("$mainUrl/${if (request.data.contains("Homepage")) "?" else "${request.data}&"}page=$page").document
         val home = document.select("div.container div.movie-grid a").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -137,7 +137,7 @@ class XDMovies : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url, interceptor = CloudflareKiller()).documentLarge
+        val document = app.get(url, interceptor = CloudflareKiller()).document
         val infoDiv = document.selectFirst("div.info")
         val detailsWrapper = document.selectFirst("div.details-wrapper")
         val headerStyle = document.selectFirst("#movie-header")?.attr("style").orEmpty()
@@ -227,7 +227,7 @@ class XDMovies : MainAPI() {
                 val tmdbSeasonRes: TMDBRes? = runCatching {
                     val text = app.get(
                         "$TMDBAPI/tv/$tmdbId/season/$seasonNum?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US"
-                    ).textLarge
+                    ).text
                     gson.fromJson(text, TMDBRes::class.java)
                 }.getOrNull()
 

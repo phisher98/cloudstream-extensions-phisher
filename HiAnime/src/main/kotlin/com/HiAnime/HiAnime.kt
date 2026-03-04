@@ -131,7 +131,7 @@ class HiAnime : MainAPI() {
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/search?keyword=$query&page=$page"
-        val res = app.get(link).documentLarge
+        val res = app.get(link).document
 
         return res.select("div.flw-item").map { it.toSearchResult() }.toNewSearchResponseList()
     }

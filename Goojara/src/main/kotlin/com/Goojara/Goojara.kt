@@ -129,7 +129,7 @@ class Goojara : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val raw = document.selectFirst("div.marl h1")
             ?.text()
             ?.substringBefore("(")
@@ -151,12 +151,12 @@ class Goojara : MainAPI() {
         val metatype = if (type == TvType.TvSeries) "series" else "movie"
         val tmdbmetatype = if (type == TvType.TvSeries) "tv" else "movie"
 
-        val metares = app.get("https://v3-cinemeta.strem.io/meta/$metatype/$imdbid.json").textLarge
+        val metares = app.get("https://v3-cinemeta.strem.io/meta/$metatype/$imdbid.json").text
         val tmdbId: String? = imdbid?.let { id ->
             runCatching {
                 val json = app.get(
                     "https://api.themoviedb.org/3/find/$id?api_key=1865f43a0549ca50d341dd9ab8b29f49&external_source=imdb_id"
-                ).textLarge
+                ).text
 
                 val obj = JSONObject(json)
 
@@ -175,7 +175,7 @@ class Goojara : MainAPI() {
 
         val movieCreditsJsonText = tmdbId?.let { id ->
             runCatching {
-                app.get("https://api.themoviedb.org/3/$tmdbmetatype/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
+                app.get("https://api.themoviedb.org/3/$tmdbmetatype/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").text
             }.getOrNull()
         }
         val castList = parseCredits(movieCreditsJsonText)
@@ -266,7 +266,7 @@ class Goojara : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val initialResp = app.get(data, mapOf("Referer" to "https://www.goojara.to", "Cookie" to ""))
-        val doc = initialResp.documentLarge
+        val doc = initialResp.document
         val bodyHtml = doc.outerHtml()
         val setCookieHeader = initialResp.headers["Set-Cookie"] ?: initialResp.headers["set-cookie"] ?: ""
         val cookieMap = parseSetCookieHeaders(listOf(setCookieHeader))

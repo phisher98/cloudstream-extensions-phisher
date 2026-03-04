@@ -41,22 +41,22 @@ suspend fun bypassHrefli(url: String): String? {
     }
 
     val host = getBaseUrl(url)
-    var res = app.get(url).documentLarge
+    var res = app.get(url).document
     var formUrl = res.getFormUrl()
     var formData = res.getFormData()
 
-    res = app.post(formUrl, data = formData).documentLarge
+    res = app.post(formUrl, data = formData).document
     formUrl = res.getFormUrl()
     formData = res.getFormData()
 
-    res = app.post(formUrl, data = formData).documentLarge
+    res = app.post(formUrl, data = formData).document
     val skToken = res.selectFirst("script:containsData(?go=)")?.data()?.substringAfter("?go=")
         ?.substringBefore("\"") ?: return null
     val driveUrl = app.get(
         "$host?go=$skToken", cookies = mapOf(
             skToken to "${formData["_wp_http2"]}"
         )
-    ).documentLarge.selectFirst("meta[http-equiv=refresh]")?.attr("content")?.substringAfter("url=")
+    ).document.selectFirst("meta[http-equiv=refresh]")?.attr("content")?.substringAfter("url=")
     val path = app.get(driveUrl ?: return null).text.substringAfter("replace(\"")
         .substringBefore("\")")
     if (path == "/404") return null

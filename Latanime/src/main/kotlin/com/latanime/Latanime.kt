@@ -43,7 +43,7 @@ class Latanime : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}&p=$page").documentLarge
+        val document = app.get("$mainUrl/${request.data}&p=$page").document
         val home     = document.select("div.row a").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             list    = HomePageList(
@@ -67,12 +67,12 @@ class Latanime : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("${mainUrl}/buscar?q=$query").documentLarge
+        val document = app.get("${mainUrl}/buscar?q=$query").document
         return document.select("div.row a").mapNotNull { it.toSearchResult() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document    = app.get(url).documentLarge
+        val document    = app.get(url).document
         val title       = document.selectFirst("h2")?.text() ?: "Desconocido"
         val poster      = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim()
         val description = document.selectFirst("h2 ~ p.my-2")?.text()
@@ -112,7 +112,7 @@ class Latanime : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         document.select("#play-video a").map {
             val href = base64Decode(it.attr("data-player")).substringAfter("=")
             loadExtractor(

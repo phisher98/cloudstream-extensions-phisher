@@ -61,7 +61,7 @@ open class AWSStream : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val extractedHash = url.substringAfterLast("/")
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
         val header = mapOf("x-requested-with" to "XMLHttpRequest")
         val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)
@@ -139,7 +139,7 @@ open class MegaPlay : ExtractorApi() {
                 "Referer" to mainUrl
             )
 
-            val id = app.get(url, headers = headers).documentLarge.selectFirst("#megaplay-player")?.attr("data-id")
+            val id = app.get(url, headers = headers).document.selectFirst("#megaplay-player")?.attr("data-id")
 
             val apiUrl = "$mainUrl/stream/getSources?id=$id&id=$id"
             val gson = Gson()

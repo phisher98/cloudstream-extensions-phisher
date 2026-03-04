@@ -55,7 +55,7 @@ open class Rumble : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val response = app.get(url, referer = referer ?: "$mainUrl/")
-        val document = response.documentLarge
+        val document = response.document
 
         val playerScript = document.selectFirst("script:containsData(jwplayer)")?.data()
             ?: return

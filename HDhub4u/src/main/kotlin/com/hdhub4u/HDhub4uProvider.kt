@@ -75,7 +75,7 @@ class HDhub4uProvider : MainAPI() {
             cacheTime = 60,
             headers = headers,
             allowRedirects = true
-        ).documentLarge
+        ).document
         val home = doc.select(".recent-movies > li.thumb").mapNotNull { toResult(it) }
         return newHomePageResponse(request.name, home, true)
     }
@@ -134,7 +134,7 @@ class HDhub4uProvider : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url, cacheTime = 60, headers = headers).documentLarge
+        val doc = app.get(url, cacheTime = 60, headers = headers).document
         var title = doc.select(
             ".page-body h2[data-ved=\"2ahUKEwjL0NrBk4vnAhWlH7cAHRCeAlwQ3B0oATAfegQIFBAM\"], " +
                     "h2[data-ved=\"2ahUKEwiP0pGdlermAhUFYVAKHV8tAmgQ3B0oATAZegQIDhAM\"]"
@@ -374,7 +374,7 @@ class HDhub4uProvider : MainAPI() {
                     baseLinks.forEach { url ->
                         try {
                             val resolvedUrl = getRedirectLinks(url.trim())
-                            val episodeDoc = app.get(resolvedUrl).documentLarge
+                            val episodeDoc = app.get(resolvedUrl).document
 
                             episodeDoc.select("h5 a").forEach { linkElement ->
                                 val text = linkElement.text()

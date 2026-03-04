@@ -100,13 +100,13 @@ class Wootly : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val iframe = app.get(url).documentLarge.select("iframe").attr("src")
+        val iframe = app.get(url).document.select("iframe").attr("src")
         val body = FormBody.Builder()
             .add("qdfx", "1")
             .build()
 
         val iframeResp = app.post(iframe, requestBody = body)
-        val iframeHtml = iframeResp.textLarge
+        val iframeHtml = iframeResp.text
         val vdRegex = Regex("""var\s+vd\s*=\s*["']([^"']+)["']""")
         val tkRegex = Regex("""tk\s*=\s*["']([^"']+)["']""")
         val vd = vdRegex.find(iframeHtml)?.groupValues?.get(1)

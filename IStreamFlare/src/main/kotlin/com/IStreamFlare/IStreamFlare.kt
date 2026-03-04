@@ -80,7 +80,7 @@ class IStreamFlare  : MainAPI() {
             "$mainUrl/${request.data}"
         }
 
-        val rawResponse = app.get(url, headers = headers).textLarge
+        val rawResponse = app.get(url, headers = headers).text
 
         val decodedResponse = decodeApiResponse(rawResponse)
         val gson = Gson()
@@ -398,7 +398,7 @@ class IStreamFlare  : MainAPI() {
 
 
     private suspend fun getDecodedJson(url: String): String {
-    val response = app.get(url, headers).textLarge
+    val response = app.get(url, headers).text
 
     return try {
         val root = JsonParser.parseString(response).asJsonObject

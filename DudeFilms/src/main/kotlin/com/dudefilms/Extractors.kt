@@ -33,7 +33,7 @@ class Hubcdnn : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).documentLarge.toString().let {
+        app.get(url).document.toString().let {
             val encoded = Regex("r=([A-Za-z0-9+/=]+)").find(it)?.groups?.get(1)?.value
             if (!encoded.isNullOrEmpty()) {
                 val m3u8 = base64Decode(encoded).substringAfterLast("link=")
@@ -72,7 +72,7 @@ class Hubdrive : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val href=app.get(url, timeout = 2000).documentLarge.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
+        val href=app.get(url, timeout = 2000).document.select(".btn.btn-primary.btn-user.btn-success1.m-1").attr("href")
         if (href.contains("hubcloud",ignoreCase = true)) HubCloud().getUrl(href,"HubDrive",subtitleCallback,callback)
         else loadExtractor(href,"HubDrive",subtitleCallback, callback)
     }
@@ -329,7 +329,7 @@ class HUBCDN : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
 
         val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")
@@ -369,7 +369,7 @@ class GDFlix : ExtractorApi() {
     ) {
         val newUrl = try {
             app.get(url)
-                .documentLarge
+                .document
                 .selectFirst("meta[http-equiv=refresh]")
                 ?.attr("content")
                 ?.substringAfter("url=")
@@ -378,7 +378,7 @@ class GDFlix : ExtractorApi() {
             return
         } ?: url
 
-        val document = app.get(newUrl).documentLarge
+        val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -400,10 +400,10 @@ class GDFlix : ExtractorApi() {
                 text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
-                        app.get("https://new6.gdflix.dad$link").documentLarge
+                        app.get("https://new6.gdflix.dad$link").document
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-                                app.get(serverUrl).documentLarge
+                                app.get(serverUrl).document
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -431,7 +431,7 @@ class GDFlix : ExtractorApi() {
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.documentLarge
+                                val indexbotDoc = indexbotResponse.document
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -488,7 +488,7 @@ class GDFlix : ExtractorApi() {
 
                 text.contains("GoFile",ignoreCase = true) -> {
                     try {
-                        app.get(anchor.attr("href")).documentLarge
+                        app.get(anchor.attr("href")).document
                             .select(".row .row a").amap { gofileAnchor ->
                                 val link = gofileAnchor.attr("href")
                                 if (link.contains("gofile")) {
@@ -521,7 +521,7 @@ class GDFlix : ExtractorApi() {
             val types = listOf("type=1", "type=2")
             types.map { type ->
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .documentLarge.select("a.btn-success").attr("href")
+                    .document.select("a.btn-success").attr("href")
 
                 if (sourceurl.isNotEmpty()) {
                     callback.invoke(

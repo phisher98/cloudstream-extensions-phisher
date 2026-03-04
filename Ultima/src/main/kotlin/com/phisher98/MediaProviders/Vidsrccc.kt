@@ -30,7 +30,7 @@ class VidsrcccProvider : MediaProvider() {
         } else {
             "$domain/v2/embed/tv/${data.tmdbId}/${data.season}/${data.episode}?autoPlay=false"
         }
-        val doc = app.get(url).documentLarge.toString()
+        val doc = app.get(url).document.toString()
         val regex = Regex("""var\s+(\w+)\s*=\s*(?:"([^"]*)"|(\w+));""")
         val variables = mutableMapOf<String, String>()
 

@@ -57,7 +57,7 @@ class IdlixProvider : MainAPI() {
             app.get("${url.first()}$page/?${url.lastOrNull()}")
         }
         mainUrl = getBaseUrl(req.url)
-        val document = req.documentLarge
+        val document = req.document
         val home = (if (nonPaged) {
             document.select("div.items.featured article")
         } else {
@@ -103,7 +103,7 @@ class IdlixProvider : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val req = app.get("$mainUrl/search/$query")
         mainUrl = getBaseUrl(req.url)
-        val document = req.documentLarge
+        val document = req.document
         return document.select("div.result-item").map {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
@@ -118,7 +118,7 @@ class IdlixProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
         directUrl = getBaseUrl(request.url)
-        val document = request.documentLarge
+        val document = request.document
         val title =
             document.selectFirst("div.data > h1")?.text()?.replace(Regex("\\(\\d{4}\\)"), "")
                 ?.trim().toString()
@@ -201,7 +201,7 @@ class IdlixProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         val scriptRegex = """window\.idlixNonce=['"]([a-f0-9]+)['"].*?window\.idlixTime=(\d+).*?""".toRegex(RegexOption.DOT_MATCHES_ALL)
         val script = document.select("script:containsData(window.idlix)").toString()
         val match = scriptRegex.find(script)

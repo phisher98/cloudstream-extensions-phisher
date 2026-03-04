@@ -247,7 +247,7 @@ class Pelisplushd() : TmdbProvider() {
         val episode = dataObj.episode
         val id = dataObj.imdbId
         val iframe=if(season==null) { "$mainUrl/f/$id" } else { "$mainUrl/f/$id-${season}x0$episode" }
-        val res= app.get(iframe).documentLarge
+        val res= app.get(iframe).document
         val jsonString = res.selectFirst("script:containsData(dataLink)")?.data()?.substringAfter("dataLink = ")?.substringBefore(";")
 
         val allLinksByLanguage = mutableMapOf<String, MutableList<String>>()

@@ -47,7 +47,7 @@ class Animeav1 : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}&page=$page").documentLarge
+        val document = app.get("$mainUrl/${request.data}&page=$page").document
         val home     = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             list    = HomePageList(
@@ -69,7 +69,7 @@ class Animeav1 : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("${mainUrl}/catalogo?search=$query").documentLarge
+        val document = app.get("${mainUrl}/catalogo?search=$query").document
         val results = document.select("article").mapNotNull { it.toSearchResult() }
         return results
     }
@@ -85,7 +85,7 @@ class Animeav1 : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document    = app.get(url).documentLarge
+        val document    = app.get(url).document
         val title       = document.selectFirst("article h1")?.text() ?: "Desconocido"
         val poster      = document.select("img.aspect-poster").attr("src")
         val description = document.selectFirst("div.entry.text-lead p")?.text()
@@ -146,7 +146,7 @@ class Animeav1 : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
 
         val scriptHtml = document.select("script")
             .firstOrNull { it.html().contains("__sveltekit_") }

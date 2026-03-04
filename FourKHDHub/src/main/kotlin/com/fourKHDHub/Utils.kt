@@ -61,7 +61,7 @@ suspend fun getRedirectLinks(url: String): String {
         if (wp.isBlank() || data.isBlank()) return@runCatching ""
 
         app.get("$wp?re=$data")
-            .documentLarge
+            .document
             .body()
             .text()
             .trim()

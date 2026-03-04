@@ -47,7 +47,7 @@ class Watch32 : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/${query.replace(" ", "-")}"
         val response = app.get(url)
-        return if (response.code == 200) searchResponseBuilder(response.documentLarge)
+        return if (response.code == 200) searchResponseBuilder(response.document)
         else listOf()
     }
 
@@ -67,7 +67,7 @@ class Watch32 : MainAPI() {
         if (response.code == 200)
                 return newHomePageResponse(
                         request.name,
-                        searchResponseBuilder(response.documentLarge),
+                        searchResponseBuilder(response.document),
                         true
                 )
         else throw ErrorLoadingException("Could not load data")
@@ -78,14 +78,14 @@ class Watch32 : MainAPI() {
         if (res.code != 200) throw ErrorLoadingException("Could not load data$url")
 
         val type = url
-        val contentId = res.documentLarge.select("div.detail_page-watch").attr("data-id")
-        val details = res.documentLarge.select("div.detail_page-infor")
+        val contentId = res.document.select("div.detail_page-watch").attr("data-id")
+        val details = res.document.select("div.detail_page-infor")
         val name = details.select("h2.heading-name > a").text()
-        val year = res.documentLarge.select("div.row-line:has(> span.type > strong:contains(Released))").text().replace("Released:", "").trim().substringBefore("-").toIntOrNull()
-        val actors = res.documentLarge
+        val year = res.document.select("div.row-line:has(> span.type > strong:contains(Released))").text().replace("Released:", "").trim().substringBefore("-").toIntOrNull()
+        val actors = res.document
             .select("div.row-line:has(> span.type > strong:contains(Casts)) a")
             .map { it.text().trim() }
-        val genres = res.documentLarge
+        val genres = res.document
             .select("div.row-line:has(> span.type > strong:contains(Genre)) a")
             .map { it.text().trim() }
 
@@ -94,21 +94,21 @@ class Watch32 : MainAPI() {
             val imdbIdFromMovie = tmdbMovieId?.let { id ->
                 runCatching {
                     val url = "$TMDBAPI/movie/$id/external_ids?api_key=1865f43a0549ca50d341dd9ab8b29f49"
-                    val jsonText = app.get(url).textLarge
+                    val jsonText = app.get(url).text
                     JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
             }
 
             val movieCreditsJsonText = tmdbMovieId?.let { id ->
                 runCatching {
-                    app.get("$TMDBAPI/movie/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").textLarge
+                    app.get("$TMDBAPI/movie/$id/credits?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US").text
                 }.getOrNull()
             }
 
             val bgurl = runCatching {
                 val json = app.get(
                     "$TMDBAPI/movie/$tmdbMovieId/images?api_key=1865f43a0549ca50d341dd9ab8b29f49&language=en-US&include_image_language=en,null"
-                ).textLarge
+                ).text
 
                 val backdrops = JSONObject(json).optJSONArray("backdrops")
                 val bestBackdrop = backdrops?.optJSONObject(0)?.optString("file_path")?.takeIf { it.isNotBlank() }
@@ -135,7 +135,7 @@ class Watch32 : MainAPI() {
                                 .replace("N/A", "").substringAfter(":").trim())
                 this.tags = genres
                 this.actors = movieCastList
-                addTrailer(res.documentLarge.select("iframe#iframe-trailer").attr("data-src"))
+                addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
             }
         } else {
 
@@ -143,7 +143,7 @@ class Watch32 : MainAPI() {
             val imdbIdFromShow = tmdbShowId?.let { id ->
                 runCatching {
                     val url = "${TMDBAPI}/tv/$id/external_ids?api_key=$TMDB_API_KEY"
-                    val jsonText = app.get(url).textLarge
+                    val jsonText = app.get(url).text
                     JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
             }
@@ -154,7 +154,7 @@ class Watch32 : MainAPI() {
 
             val showCreditsJsonText = tmdbShowId?.let { id ->
                 runCatching {
-                    app.get("${TMDBAPI}/tv/$id/credits?api_key=${TMDB_API_KEY}&language=en-US").textLarge
+                    app.get("${TMDBAPI}/tv/$id/credits?api_key=${TMDB_API_KEY}&language=en-US").text
                 }.getOrNull()
             }
             val castList: List<ActorData> = parseCredits(showCreditsJsonText)
@@ -162,7 +162,7 @@ class Watch32 : MainAPI() {
             val bgurl = runCatching {
                 val json = app.get(
                     "${TMDBAPI}/tv/$tmdbShowId/images?api_key=${TMDB_API_KEY}&language=en-US&include_image_language=en,null"
-                ).textLarge
+                ).text
 
                 val backdrops = JSONObject(json).optJSONArray("backdrops")
                 val bestBackdrop = backdrops?.optJSONObject(0)?.optString("file_path")?.takeIf { it.isNotBlank() }
@@ -172,7 +172,7 @@ class Watch32 : MainAPI() {
 
             val episodes = ArrayList<Episode>()
             val seasonsRes =
-                    app.get("$mainUrl/ajax/season/list/$contentId").documentLarge.select("a.ss-item")
+                    app.get("$mainUrl/ajax/season/list/$contentId").document.select("a.ss-item")
 
             seasonsRes.forEach { season ->
                 val seasonId = season.attr("data-id")
@@ -180,7 +180,7 @@ class Watch32 : MainAPI() {
 
                 val tmdbSeasonJson = tmdbShowId?.let { id ->
                     runCatching {
-                        app.get("${TMDBAPI}/tv/$id/season/$seasonNum?api_key=${TMDB_API_KEY}&language=en-US").textLarge
+                        app.get("${TMDBAPI}/tv/$id/season/$seasonNum?api_key=${TMDB_API_KEY}&language=en-US").text
                     }.getOrNull()?.let { JSONObject(it) }
                 }
 
@@ -195,7 +195,7 @@ class Watch32 : MainAPI() {
                 }
 
                 app.get("$mainUrl/ajax/season/episodes/$seasonId")
-                        .documentLarge
+                        .document
                         .select("a.eps-item")
                         .forEach { episode ->
                             val epId = episode.attr("data-id")
@@ -231,7 +231,7 @@ class Watch32 : MainAPI() {
                 this.tags = genres
                 this.actors = castList
                 addActors(actors)
-                addTrailer(res.documentLarge.select("iframe#iframe-trailer").attr("data-src"))
+                addTrailer(res.document.select("iframe#iframe-trailer").attr("data-src"))
             }
         }
     }
@@ -242,7 +242,7 @@ class Watch32 : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val serversRes = app.get("$mainUrl/ajax/episode/$data").documentLarge.select("a.link-item")
+        val serversRes = app.get("$mainUrl/ajax/episode/$data").document.select("a.link-item")
         serversRes.forEach { server ->
             val linkId =
                 server.attr("data-linkid").ifEmpty { server.attr("data-id") }

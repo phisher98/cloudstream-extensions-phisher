@@ -59,7 +59,7 @@ open class Animez : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}$page").documentLarge
+        val document = app.get("$mainUrl/${request.data}$page").document
         val home = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -78,7 +78,7 @@ open class Animez : MainAPI() {
     }
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val document = app.get("$mainUrl/?act=search&f[keyword]=$query&&pageNum=$page").documentLarge
+        val document = app.get("$mainUrl/?act=search&f[keyword]=$query&&pageNum=$page").document
         return document.select("article").map {
             it.toSearchResult()
         }.toNewSearchResponseList()
@@ -95,7 +95,7 @@ open class Animez : MainAPI() {
 
     @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title = document.select("article.TPost.Single h2").text().trim()
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.mvici-left > ul > li:nth-child(4) a").map { it.text() }
@@ -226,7 +226,7 @@ open class Animez : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         val token=document.select("iframe").attr("src").substringAfter("/embed/")
         document.select("#list_sv a").map {
             val host=it.attr("data-link")

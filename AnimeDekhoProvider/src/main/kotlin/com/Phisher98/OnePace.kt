@@ -28,7 +28,7 @@ open class OnepaceProvider : MainAPI() {
         request: MainPageRequest,
     ): HomePageResponse {
         val link = "$mainUrl${request.data}"
-        val document = app.get(link).documentLarge
+        val document = app.get(link).document
         val home =
             document.select("div.seasons.aa-crd > div.seasons-bx").map {
                 it.toSearchResult()
@@ -68,7 +68,7 @@ open class OnepaceProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<AnimeSearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").documentLarge
+        val document = app.get("$mainUrl/?s=$query").document
         return document.select("ul[data-results] li article").mapNotNull {
             it.toSearchResult()
         }
@@ -76,7 +76,7 @@ open class OnepaceProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val media = parseJson<Media>(url)
-        val document = app.get(media.url).documentLarge
+        val document = app.get(media.url).document
         val ArcINT=media.mediaType?.substringAfter("Arc ")
         val element= document.selectFirst("div.seasons.aa-crd > div.seasons-bx:contains($ArcINT)")
         val title = media.mediaType ?:"No Title"
@@ -125,11 +125,11 @@ open class OnepaceProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         val media = parseJson<Media>(data)
-        val body = app.get(media.url).documentLarge.selectFirst("body")?.attr("class") ?: return false
+        val body = app.get(media.url).document.selectFirst("body")?.attr("class") ?: return false
         val term = Regex("""(?:term|postid)-(\d+)""").find(body)?.groupValues?.get(1) ?: throw ErrorLoadingException("no id found")
         for (i in 0..4) {
             val link = app.get("$mainUrl/?trdekho=$i&trid=$term&trtype=${media.mediaType}")
-                .documentLarge.selectFirst("iframe")?.attr("src")
+                .document.selectFirst("iframe")?.attr("src")
                 ?: throw ErrorLoadingException("no iframe found")
             loadExtractor(link,subtitleCallback, callback)
         }

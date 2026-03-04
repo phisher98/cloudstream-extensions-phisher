@@ -145,7 +145,7 @@ open class AWSStream : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val extractedHash = url.substringAfterLast("/")
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
         val header = mapOf("x-requested-with" to "XMLHttpRequest")
         val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)
@@ -236,7 +236,7 @@ class Animedekhoco : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc: Document? = if (url.contains("url=")) app.get(url).documentLarge else null
+        val doc: Document? = if (url.contains("url=")) app.get(url).document else null
         val text: String? = if (!url.contains("url=")) app.get(url).text else null
 
         val links = mutableListOf<Pair<String, String>>()
@@ -286,7 +286,7 @@ class StreamRuby : ExtractorApi() {
             cleanedUrl,
             referer = cleanedUrl,
             headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        ).documentLarge
+        ).document
 
         val scriptData = response.selectFirst("script:containsData(vplayer)")?.data().orEmpty()
 

@@ -505,7 +505,7 @@ suspend fun invokeUindex(
         "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     )
 
-    val rows = app.get(url, headers = headers).documentLarge.select("tr")
+    val rows = app.get(url, headers = headers).document.select("tr")
 
     val episodePatterns: List<Regex> = if (isTv && episode != null) {
         val rawPatterns = listOf(
