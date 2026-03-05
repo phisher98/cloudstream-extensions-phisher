@@ -357,7 +357,7 @@ class IStreamFlare  : MainAPI() {
             else -> {
                 when {
 
-                    data.contains("UStream", ignoreCase = true) -> {
+                    data.contains("x7flix", ignoreCase = true) -> {
                         callback.invoke(
                             newExtractorLink(
                                 name = name,
