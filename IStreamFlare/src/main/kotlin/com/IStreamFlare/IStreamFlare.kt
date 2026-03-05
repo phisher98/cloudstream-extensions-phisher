@@ -80,14 +80,19 @@ class IStreamFlare  : MainAPI() {
             "$mainUrl/${request.data}"
         }
 
-        val rawResponse = app.get(url, headers = headers).text
+        val root = app.get(url, headers = headers).parsedSafe<Response>() ?: return newHomePageResponse(emptyList())
 
-        val decodedResponse = decodeApiResponse(rawResponse)
+        val jsonData = if (root.encrypted) {
+            decryptPayload(root.data)
+        } else {
+            root.data
+        }
+
         val gson = Gson()
         val type = object : TypeToken<List<HomeRes>>() {}.type
 
         val homeList: List<HomeRes> = try {
-            gson.fromJson(decodedResponse, type) ?: emptyList()
+            gson.fromJson(jsonData, type) ?: emptyList()
         } catch (_: Exception) {
             emptyList()
         }

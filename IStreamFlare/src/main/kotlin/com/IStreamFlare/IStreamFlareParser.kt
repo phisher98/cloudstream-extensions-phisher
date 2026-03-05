@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
 import com.phisher98.BuildConfig
-import org.json.JSONObject
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
@@ -202,21 +201,6 @@ data class ResponseData(
     val meta: Meta?
 )
 
-fun decodeApiResponse(response: String): String {
-    if (response.isBlank()) return response
-
-    return try {
-        val json = JSONObject(response)
-        if (json.optBoolean("encrypted", false)) {
-            decryptPayload(json.getString("data"))
-        } else {
-            response
-        }
-    } catch (_: Exception) {
-        response
-    }
-}
-
 private val SECRET_KEY = base64Decode(BuildConfig.iStreamFlareSecretKey)
 private const val SALT = BuildConfig.iStreamFlareSalt
 
@@ -253,3 +237,7 @@ private fun deriveKey(): SecretKey {
     return SecretKeySpec(factory.generateSecret(spec).encoded, "AES")
 }
 
+data class Response(
+    val encrypted: Boolean,
+    val data: String,
+)
