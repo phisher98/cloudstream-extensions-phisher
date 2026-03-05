@@ -16,11 +16,12 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import java.util.Locale
 
 suspend fun invokeTorrentio(
-    mainUrl:String,
+    mainUrl: String,
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
         val torrentioAPI:String = mainUrl
         val url = if(season == null) {
@@ -54,7 +55,7 @@ suspend fun invokeTorrentio(
 
         val magnet = generateMagnetLink(TRACKER_LIST_URL, stream.infoHash)
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Torrentio",
                 formattedTitleName ?: stream.name ?: "",
@@ -74,7 +75,8 @@ suspend fun invokeTorrentioDebian(
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val url = if (season == null) {
         "$mainUrl/stream/movie/$id.json"
@@ -107,7 +109,7 @@ suspend fun invokeTorrentioDebian(
 
         val finalTitle = "Torrentio+ | [$cache] | $formattedName$suffix"
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Torrentio+ [$cache]",
                 finalTitle,
@@ -127,7 +129,8 @@ suspend fun invokeTorrentioAnimeDebian(
     type: TvType,
     id: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val url = if (type == TvType.Movie) {
         "$mainUrl/stream/movie/kitsu:$id.json"
@@ -160,7 +163,7 @@ suspend fun invokeTorrentioAnimeDebian(
 
         val finalTitle = "Torrentio+ Anime | [$cache] | $formattedName$suffix"
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Torrentio+ [$cache]",
                 finalTitle,
@@ -175,7 +178,7 @@ suspend fun invokeTorrentioAnimeDebian(
 }
 
 
-suspend fun invokeTorrentioAnime(
+suspend fun invokeTorrentioAnimeType(
     mainUrl: String,
     type: TvType,
     id: Int? = null,
@@ -323,7 +326,7 @@ suspend fun invokeTorrentioAnime(
     id: Int? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    filtered: (ExtractorLink) -> Unit
 ) {
 
     val torrentioAPI:String = mainUrl
@@ -350,7 +353,7 @@ suspend fun invokeTorrentioAnime(
                 "Torrentio | $tags | Seeder: $seeder | Provider: $provider".trim()
             }
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Torrentio ",
                 formattedTitleName ?: "Torrentio",
@@ -365,11 +368,12 @@ suspend fun invokeTorrentioAnime(
 }
 
 suspend fun invokeAIOStreamsDebian(
-    mainUrl:String,
+    mainUrl: String,
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val mainurl = if (season == null) {
         "${mainUrl.substringBeforeLast("/manifest.json")}/stream/movie/$id.json"
@@ -379,7 +383,7 @@ suspend fun invokeAIOStreamsDebian(
     app.get(mainurl).parsedSafe<AIODebian>()?.streams?.map {
         val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
         val qualityMatch = qualityRegex.find(it.name)?.value ?: "Unknown"
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Torrentio AIO Debian ${getIndexQuality(qualityMatch)}",
                 it.behaviorHints.filename,
@@ -396,10 +400,11 @@ suspend fun invokeAIOStreamsDebian(
 suspend fun invokeDebianTorbox(
     torBoxAPI: String,
     key: String,
-    id: String? =null,
+    id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val url = if (season == null) {
         "$torBoxAPI/$key/stream/movie/$id.json"
@@ -459,7 +464,7 @@ suspend fun invokeDebianTorbox(
         }.trim()
 
 
-        callback(
+        filtered.invoke(
             newExtractorLink(
                 formatSourceName(sourceName, cache),
                 displayName,
@@ -486,7 +491,8 @@ suspend fun invokeUindex(
     year: Int? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val isTv = season != null
 
@@ -558,7 +564,7 @@ suspend fun invokeUindex(
             "UIndex | $tags | Seeder: $seeder | FileSize: $fileSize".trim()
         }
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "UIndex",
                 formattedTitleName.ifBlank { rowTitle },
@@ -578,7 +584,8 @@ suspend fun invokeKnaben(
     year: Int? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val isTv = season != null
     val host = knaben.trimEnd('/')
@@ -655,7 +662,7 @@ suspend fun invokeKnaben(
                 }
             }
 
-            callback(
+            filtered.invoke(
                 newExtractorLink(
                     "Knaben",
                     formattedTitleName.ifBlank { rawTitle },
@@ -677,7 +684,8 @@ suspend fun invokeTorboxAnimeDebian(
     type: TvType,
     id: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     val url = if (type == TvType.Movie) {
         "$mainUrl/$key/stream/movie/kitsu:$id.json"
@@ -715,7 +723,7 @@ suspend fun invokeTorboxAnimeDebian(
 
         val finalTitle = "TorBox+ Anime | [$cache] | $formattedName$suffix"
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "TorBox+ [$cache]",
                 finalTitle,
@@ -779,7 +787,8 @@ suspend fun invokeTorrentsDBAnime(
     id: Int? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
     if (id == null) return
 
@@ -809,7 +818,7 @@ suspend fun invokeTorrentsDBAnime(
         val formattedTitle = "TorrentsDB | $tags | Seeder: $seeder | Provider: $provider"
         val magnet = generateMagnetLink(stream.sources.orEmpty(), stream.infoHash)
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "TorrentsDB",
                 formattedTitle,
@@ -828,7 +837,8 @@ suspend fun invokeMeteorDebian(
     id: String? = null,
     season: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
 
     val url = if (season == null) {
@@ -872,7 +882,7 @@ suspend fun invokeMeteorDebian(
 
         val finalTitle = "Meteor | [${cache ?: "??"}] | $formattedName$suffix"
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Meteor [${cache ?: ""}]",
                 finalTitle,
@@ -891,7 +901,8 @@ suspend fun invokeMeteorAnimeDebian(
     type: TvType,
     id: Int? = null,
     episode: Int? = null,
-    callback: (ExtractorLink) -> Unit
+    callback: (ExtractorLink) -> Unit,
+    filtered: (ExtractorLink) -> Unit
 ) {
 
     val url = if (type == TvType.Movie) {
@@ -932,7 +943,7 @@ suspend fun invokeMeteorAnimeDebian(
 
         val finalTitle = "Meteor Anime | ${cache?.let { "[$it] | " } ?: ""}$formattedName$suffix"
 
-        callback.invoke(
+        filtered.invoke(
             newExtractorLink(
                 "Meteor${cache?.let { " [$it]" } ?: ""}",
                 finalTitle,

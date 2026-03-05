@@ -295,19 +295,22 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
 
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
         val meteorUrl = buildMeteorUrl(sharedPref, Meteorfortheweebs)
+
+        val filtered = filteredCallback(sharedPref, callback)
+
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
-                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) },
-                    { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback) },
-                    { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, callback) }
+                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback, filtered) },
+                    { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback, filtered) },
+                    { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, callback, filtered) }
                 )
             }
         } else {
             runAllAsync(
                 { invokeAnimetosho(anidbEid, callback) },
-                { if (kitsuId != -1) invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback) },
-                { if (kitsuId != -1)  invokeTorrentsDBAnime(TorrentsDB, kitsuId, kitsuId, episode, callback) }
+                { if (kitsuId != -1) invokeTorrentioAnimeType(torrentioDebian, type, kitsuId, episode, callback) },
+                { if (kitsuId != -1)  invokeTorrentsDBAnime(TorrentsDB, kitsuId, kitsuId, episode, callback, filtered) }
             )
         }
 

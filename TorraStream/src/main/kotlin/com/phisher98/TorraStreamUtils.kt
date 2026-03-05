@@ -1,11 +1,14 @@
 package com.phisher98
 
+import android.content.SharedPreferences
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -311,3 +314,49 @@ data class TorrentsDBBehaviorHints(
     val bingeGroup: String?,
     val filename: String?
 )
+
+fun filteredCallback(
+    sharedPref: SharedPreferences,
+    callback: (ExtractorLink) -> Unit
+): (ExtractorLink) -> Unit {
+
+    val excludedQualities = sharedPref.getString("qualityfilter", "")
+        ?.lowercase()
+        ?.split(",")
+        ?.filter { it.isNotBlank() }
+        ?: emptyList()
+
+    val maxSize = sharedPref.getString("sizefilter", "")?.toDoubleOrNull()
+    val limit = sharedPref.getString("limit", "")?.toIntOrNull() ?: 0
+    var resultCount = 0
+
+    return fun(link: ExtractorLink) {
+
+        if (limit in 1..resultCount) return
+
+        val detectedQuality = when (link.quality) {
+            in 2000..3000 -> "4k"
+            in 1080..1999 -> "1080p"
+            in 720..1079 -> "720p"
+            in 480..719 -> "480p"
+            else -> "other"
+        }
+
+        if (detectedQuality in excludedQualities) return
+
+        val sizeMatch = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(link.name)
+
+        val sizeValue = sizeMatch?.groupValues?.get(1)?.replace(',', '.')?.toDoubleOrNull()
+        val sizeUnit = sizeMatch?.groupValues?.get(2)
+
+        val sizeGB = when (sizeUnit?.uppercase()) {
+            "GB" -> sizeValue
+            "MB" -> sizeValue?.div(1024)
+            else -> null
+        }
+        if (maxSize != null && sizeGB != null && sizeGB > maxSize) return
+        callback(link)
+        resultCount++
+    }
+}
