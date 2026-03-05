@@ -31,7 +31,6 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
-import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.syncproviders.SyncIdName
@@ -80,13 +79,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 else -> TvType.TvSeries
             }
         }
-
-        fun getStatus(t: String?): ShowStatus {
-            return when (t) {
-                "Returning Series" -> ShowStatus.Ongoing
-                else -> ShowStatus.Completed
-            }
-        }
     }
 
     override val mainPage = mainPageOf(
@@ -114,7 +106,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original$link" else link
     }
 
     private fun getOriImageUrl(link: String?): String? {
@@ -203,16 +195,20 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         }
 
         val logoUrl = fetchTmdbLogoUrl(
-            tmdbAPI = "https://api.themoviedb.org/3",
-            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            tmdbAPI = tmdbAPI,
+            apiKey = apiKey,
             type = type,
             tmdbId = res.id,
             appLangCode = "en"
         )
+        val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
+        val imdbId = res.external_ids?.imdb_id.orEmpty()
+        val cineRes = app.get("$Cinemeta/meta/$animeType/$imdbId.json").parsedSafe<CinemetaRes>()
 
         return if (type == TvType.TvSeries) {
-            val episodes = res.seasons?.mapNotNull { season ->
-                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
+            val episodes = res.seasons?.amap { season ->
+                val mediaType = data.type ?: "tv"
+                app.get("$tmdbAPI/$mediaType/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
                         newEpisode(LoadData(
                             res.title,
@@ -231,13 +227,10 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                             this.description = eps.overview
                             this.addDate(eps.airDate)
                         }
-                    }
+                    }.orEmpty()
             }?.flatten() ?: listOf()
 
             if (isAnime) {
-                val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
-                val imdbId = res.external_ids?.imdb_id.orEmpty()
-                val cineRes = app.get("$Cinemeta/meta/$animeType/$imdbId.json").parsedSafe<CinemetaRes>()
                 val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
                 val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
                     ?: cineRes?.meta?.name
@@ -316,7 +309,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.recommendations = recommendations
                 this.actors = actors
                 this.episodes = episodes
-                //this.contentRating = fetchContentRating(data.id, "US")
+                this.contentRating = cineRes?.meta?.appExtras?.certification
                 addTrailer(trailer)
                 addImdbId(res.external_ids?.imdb_id)
             }
@@ -338,7 +331,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 this.score = Score.from10(res.vote_average.toString())
                 this.recommendations = recommendations
                 this.actors = actors
-                //this.contentRating = fetchContentRating(data.id, "US")
+                this.contentRating = cineRes?.meta?.appExtras?.certification
                 addTrailer(trailer)
                 addImdbId(res.external_ids?.imdb_id)
             }
@@ -361,16 +354,11 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         var episode = dataObj.episode
         val id = dataObj.imdbId
         val year = dataObj.year
-        val anijson = app.get("https://api.ani.zip/mappings?imdb_id=$id").toString()
-        val mappings = runCatching {
-            val response = app.get("https://api.ani.zip/mappings?imdb_id=$id")
-            JSONObject(response.text).optJSONObject("mappings")
-        }.getOrNull()
-        val kitsuId = runCatching {
-            val response = app.get("https://api.ani.zip/mappings?imdb_id=$id")
-            val json = JSONObject(response.text)
-            json.optJSONObject("mappings")?.optInt("kitsu_id")
-        }.getOrNull()
+        val aniResponse = runCatching { app.get("https://api.ani.zip/mappings?imdb_id=$id") }.getOrNull()
+        val anijson = aniResponse?.text.orEmpty()
+        val aniJson = runCatching { JSONObject(anijson) }.getOrNull()
+        val mappings = aniJson?.optJSONObject("mappings")
+        val kitsuId = mappings?.optInt("kitsu_id")
 
         val isMovie = mappings
             ?.optString("type", "")
@@ -413,37 +401,13 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback, filtered) }
             )
         }
-
-
-        // Subtitles
-        val subApiUrl = "https://opensubtitles-v3.strem.io"
-        val url = if (season == null) "$subApiUrl/subtitles/movie/$id.json"
-        else "$subApiUrl/subtitles/series/$id:$season:$episode.json"
-
-        val headers = mapOf(
-            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        )
-
-        app.get(url, headers = headers, timeout = 100L)
-            .parsedSafe<Subtitles>()?.subtitles?.amap {
-                val lan = getLanguage(it.lang) ?: it.lang
-                subtitleCallback(
-                    newSubtitleFile(
-                        lan,
-                        it.url
-                    )
-                )
-            }
-
         return true
     }
 
 
     private fun getStatus(t: String?): ShowStatus {
-        return when (t) {
-            "returning series" -> ShowStatus.Ongoing
-            "continuing" -> ShowStatus.Ongoing
+        return when (t?.lowercase()) {
+            "returning series", "continuing" -> ShowStatus.Ongoing
             else -> ShowStatus.Completed
         }
     }
@@ -511,9 +475,9 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val json = JSONObject().apply {
             put("debridService", debridProvider.lowercase())
             put("debridApiKey", debridKey)
-            put("cachedOnly", true)
-            put("removeTrash", false)
-            put("removeSamples", false)
+            put("cachedOnly", false)
+            put("removeTrash", true)
+            put("removeSamples", true)
             put("removeAdult", false)
             put("exclude3D", false)
             put("enableSeaDex", false)
@@ -539,14 +503,14 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             put(
                 "sortOrder",
                 JSONArray().apply {
-                    put("pack")
                     put("cached")
-                    put("seadex")
                     put("resolution")
-                    put("size")
                     put("quality")
                     put("seeders")
+                    put("size")
+                    put("pack")
                     put("language")
+                    put("seadex")
                 }
             )
         }
@@ -568,18 +532,15 @@ suspend fun generateMagnetLink(
 
     val trackers = mutableSetOf<String>()
 
-    trackerUrls.forEach { url ->
-        try {
-            val response = app.get(url)
-            response.text
+    trackerUrls.amap { url ->
+        runCatching {
+            app.get(url).text
                 .lineSequence()
                 .map { it.trim() }
                 .filter { it.isNotEmpty() && !it.startsWith("#") }
-                .forEach { trackers.add(it) }
-        } catch (_: Exception) {
-            // ignore bad sources
-        }
-    }
+                .toList()
+        }.getOrElse { emptyList() }
+    }.flatten().toMutableSet()
 
     return buildString {
         append("magnet:?xt=urn:btih:").append(hash)
