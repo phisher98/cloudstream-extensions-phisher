@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -40,9 +41,11 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.TorraStream.Companion.Meteorfortheweebs
 import com.phisher98.TorraStream.Companion.TorboxAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
@@ -291,11 +294,13 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         }
 
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
+        val meteorUrl = buildMeteorUrl(sharedPref, Meteorfortheweebs)
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
                     { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) },
                     { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback) },
+                    { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, callback) }
                 )
             }
         } else {
@@ -503,6 +508,82 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
     }
+
+    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+
+        val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
+        val debridKey = sharedPref.getString("debrid_key", "") ?: ""
+        val languagesPref = sharedPref.getString("language", "") ?: ""
+        val limit = sharedPref.getString("limit", "0") ?: "0"
+        val sizeFilter = sharedPref.getString("sizefilter", "0") ?: "0"
+
+        // preferred languages
+        val preferredLanguages = JSONArray().apply {
+            if (languagesPref.isNotEmpty()) {
+                languagesPref.split(",").forEach { put(it.lowercase()) }
+            } else {
+                put("en")
+                put("multi")
+            }
+        }
+
+        val languages = JSONObject().apply {
+            put("preferred", preferredLanguages)
+            put("required", JSONArray())
+            put("exclude", JSONArray())
+        }
+
+        val json = JSONObject().apply {
+            put("debridService", debridProvider.lowercase())
+            put("debridApiKey", debridKey)
+            put("cachedOnly", true)
+            put("removeTrash", false)
+            put("removeSamples", false)
+            put("removeAdult", false)
+            put("exclude3D", false)
+            put("enableSeaDex", false)
+
+            put("minSeeders", 0)
+            put("maxResults", limit.toIntOrNull() ?: 0)
+            put("maxResultsPerRes", 0)
+            put("maxSize", sizeFilter.toIntOrNull() ?: 0)
+
+            put("resolutions", JSONArray())
+            put("languages", languages)
+
+            put(
+                "resultFormat",
+                JSONArray().apply {
+                    put("title")
+                    put("quality")
+                    put("size")
+                    put("audio")
+                }
+            )
+
+            put(
+                "sortOrder",
+                JSONArray().apply {
+                    put("pack")
+                    put("cached")
+                    put("seadex")
+                    put("resolution")
+                    put("size")
+                    put("quality")
+                    put("seeders")
+                    put("language")
+                }
+            )
+        }
+
+        val encoded = Base64.encodeToString(
+            json.toString().toByteArray(),
+            Base64.URL_SAFE or Base64.NO_WRAP
+        )
+
+        return "$baseUrl/$encoded"
+    }
+
     fun getStatus(t: String?): ShowStatus {
         return when {
             t?.contains("Returning", ignoreCase = true) == true -> ShowStatus.Ongoing

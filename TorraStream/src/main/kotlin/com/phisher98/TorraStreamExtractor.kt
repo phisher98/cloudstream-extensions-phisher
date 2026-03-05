@@ -822,3 +822,126 @@ suspend fun invokeTorrentsDBAnime(
         )
     }
 }
+
+suspend fun invokeMeteorDebian(
+    mainUrl: String,
+    id: String? = null,
+    season: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+
+    val url = if (season == null) {
+        "$mainUrl/stream/movie/$id.json"
+    } else {
+        "$mainUrl/stream/series/$id:$season:$episode.json"
+    }
+
+    val res = app.get(url).parsedSafe<MeteorRoot>()
+
+    res?.streams?.forEach { stream ->
+
+        val fileUrl = stream.url
+
+        val size = stream.behaviorHints.videoSize?.let {
+            "%.1f GB".format(it / 1024.0 / 1024.0 / 1024.0)
+        }
+
+        val name = stream.behaviorHints.filename ?: stream.description.substringAfter("📄 ").substringBefore("\n")
+
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
+
+        val resolution = Regex("""\d{3,4}p""").find(stream.name)?.value
+        val audio = Regex("""🔊\s*(.*)""").find(stream.description)?.groupValues?.getOrNull(1)
+
+        val parts = listOfNotNull(
+            resolution?.let { "🎞 $it" },
+            size?.let { "📦 $it" },
+            audio?.let { "🔊 $audio" }
+        )
+
+        val cache = Regex("""\[(.*?)]""")
+            .find(stream.name)
+            ?.groupValues
+            ?.getOrNull(1)
+
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
+
+        val finalTitle = "Meteor | [${cache ?: "??"}] | $formattedName$suffix"
+
+        callback.invoke(
+            newExtractorLink(
+                "Meteor [${cache ?: ""}]",
+                finalTitle,
+                fileUrl,
+                INFER_TYPE
+            ) {
+                referer = ""
+                quality = getIndexQuality(stream.name)
+            }
+        )
+    }
+}
+
+suspend fun invokeMeteorAnimeDebian(
+    mainUrl: String,
+    type: TvType,
+    id: Int? = null,
+    episode: Int? = null,
+    callback: (ExtractorLink) -> Unit
+) {
+
+    val url = if (type == TvType.Movie) {
+        "$mainUrl/stream/movie/kitsu:$id.json"
+    } else {
+        "$mainUrl/stream/series/kitsu:$id:$episode.json"
+    }
+
+    val res = app.get(url).parsedSafe<MeteorRoot>()
+
+    res?.streams?.forEach { stream ->
+
+        val fileUrl = stream.url
+
+        val size = stream.behaviorHints.videoSize?.let {
+            "%.1f GB".format(it / 1024.0 / 1024.0 / 1024.0)
+        }
+
+        val name = stream.behaviorHints.filename
+            ?: stream.description.substringAfter("📄 ").substringBefore("\n")
+
+        val formattedName = name
+            .substringBeforeLast('.')
+            .replace('.', ' ')
+            .trim()
+
+        val resolution = Regex("""\d{3,4}p""").find(stream.name)?.value
+        val audio = Regex("""🔊\s*(.*)""").find(stream.description)?.groupValues?.getOrNull(1)
+        val cache = Regex("""\[(.*?)]""").find(stream.name)?.groupValues?.getOrNull(1)
+
+        val parts = listOfNotNull(
+            resolution?.let { "🎞 $it" },
+            size?.let { "📦 $it" },
+            audio?.let { "🔊 $audio" }
+        )
+
+        val suffix = if (parts.isNotEmpty()) " | ${parts.joinToString(" | ")}" else ""
+
+        val finalTitle = "Meteor Anime | ${cache?.let { "[$it] | " } ?: ""}$formattedName$suffix"
+
+        callback.invoke(
+            newExtractorLink(
+                "Meteor${cache?.let { " [$it]" } ?: ""}",
+                finalTitle,
+                fileUrl,
+                INFER_TYPE
+            ) {
+                referer = ""
+                quality = getIndexQuality(stream.name)
+            }
+        )
+    }
+}

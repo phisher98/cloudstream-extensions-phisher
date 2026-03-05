@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.util.Base64
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
@@ -38,6 +39,7 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -68,7 +70,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         private const val Uindex = "https://uindex.org"
         private const val Knaben = "https://knaben.org"
         private const val TorrentsDB = "https://torrentsdb.com"
-
+        const val Meteorfortheweebs ="https://meteorfortheweebs.midnightignite.me"
         private const val tmdbAPI = "https://api.themoviedb.org/3"
         private const val apiKey = "1865f43a0549ca50d341dd9ab8b29f49"
 
@@ -378,7 +380,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val anidbEid = getAnidbEid(anijson, episode) ?: 0
 
         val torrentioapiUrl = buildTorrentioApiUrl(sharedPref, mainUrl)
-
+        val meteorUrl = buildMeteorUrl(sharedPref, Meteorfortheweebs)
         if (provider == "AIO Streams" && !key.isNullOrEmpty()) {
             runAllAsync(
                 { invokeAIOStreamsDebian(key, id, season, episode, callback) }
@@ -388,6 +390,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         if (!key.isNullOrEmpty()) {
             runAllAsync(
                 { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, callback) },
+                { invokeMeteorDebian(meteorUrl, id, season, episode, callback) }
             )
         } else {
             runAllAsync(
@@ -477,6 +480,81 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
 
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
+    }
+
+    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+
+        val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
+        val debridKey = sharedPref.getString("debrid_key", "") ?: ""
+        val languagesPref = sharedPref.getString("language", "") ?: ""
+        val limit = sharedPref.getString("limit", "0") ?: "0"
+        val sizeFilter = sharedPref.getString("sizefilter", "0") ?: "0"
+
+        // preferred languages
+        val preferredLanguages = JSONArray().apply {
+            if (languagesPref.isNotEmpty()) {
+                languagesPref.split(",").forEach { put(it.lowercase()) }
+            } else {
+                put("en")
+                put("multi")
+            }
+        }
+
+        val languages = JSONObject().apply {
+            put("preferred", preferredLanguages)
+            put("required", JSONArray())
+            put("exclude", JSONArray())
+        }
+
+        val json = JSONObject().apply {
+            put("debridService", debridProvider.lowercase())
+            put("debridApiKey", debridKey)
+            put("cachedOnly", true)
+            put("removeTrash", false)
+            put("removeSamples", false)
+            put("removeAdult", false)
+            put("exclude3D", false)
+            put("enableSeaDex", false)
+
+            put("minSeeders", 0)
+            put("maxResults", limit.toIntOrNull() ?: 0)
+            put("maxResultsPerRes", 0)
+            put("maxSize", sizeFilter.toIntOrNull() ?: 0)
+
+            put("resolutions", JSONArray())
+            put("languages", languages)
+
+            put(
+                "resultFormat",
+                JSONArray().apply {
+                    put("title")
+                    put("quality")
+                    put("size")
+                    put("audio")
+                }
+            )
+
+            put(
+                "sortOrder",
+                JSONArray().apply {
+                    put("pack")
+                    put("cached")
+                    put("seadex")
+                    put("resolution")
+                    put("size")
+                    put("quality")
+                    put("seeders")
+                    put("language")
+                }
+            )
+        }
+
+        val encoded = Base64.encodeToString(
+            json.toString().toByteArray(),
+            Base64.URL_SAFE or Base64.NO_WRAP
+        )
+
+        return "$baseUrl/$encoded"
     }
 }
 

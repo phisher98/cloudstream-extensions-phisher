@@ -26,25 +26,6 @@ data class TorBoxDebianBehaviorHints(
 )
 
 
-data class MediafusionResponse(
-    val streams: List<MediafusionStream>,
-)
-
-data class MediafusionStream(
-    val name: String,
-    val description: String,
-    val infoHash: String,
-    val fileIdx: Long?,
-    val behaviorHints: MediafusionBehaviorHints,
-    val sources: List<String>,
-)
-
-data class MediafusionBehaviorHints(
-    val bingeGroup: String,
-    val filename: String,
-    val videoSize: Long,
-)
-
 data class TBPResponse(
     val streams: List<TBPStream>,
     val cacheMaxAge: Long,
@@ -58,23 +39,6 @@ data class TBPStream(
     val infoHash: String,
     val tag: String,
 )
-
-data class PeerflixResponse(
-    val streams: List<PeerflixStream>,
-)
-
-data class PeerflixStream(
-    val name: String,
-    val description: String,
-    val infoHash: String,
-    val sources: List<String>,
-    val fileIdx: Long?,
-    val language: String,
-    val quality: String,
-    val seed: Long,
-    val sizebytes: Long?,
-)
-
 data class SubtitlesAPI(
     val subtitles: List<Subtitle1>,
     val cacheMaxAge: Long,
@@ -139,29 +103,12 @@ data class AnimetoshoItem(
     @SerializedName("website_url")
     val websiteUrl: String?
 )
-data class AIO(
-    val streams: List<AIOStream>,
-)
-
-data class AIOStream(
-    val url: String,
-    val name: String,
-    val description: String,
-    val behaviorHints: AIOBehaviorHints,
-)
-
-data class AIOBehaviorHints(
-    val videoSize: Long,
-    val filename: String,
-    val bingeGroup: String,
-)
 
 data class MagnetStream(
     val title: String,
     val quality: String,
     val magnet: String
 )
-
 
 
 data class AIODebian(
@@ -496,4 +443,20 @@ data class LinkData(
     val nametitle: String? = null,
     val isDub: Boolean = false,
     val isMovie: Boolean? = false,
+)
+
+data class MeteorRoot(
+    val streams: List<MeteorStream>?
+)
+
+data class MeteorStream(
+    val name: String,
+    val description: String,
+    val url: String,
+    val behaviorHints: MeteorHints
+)
+
+data class MeteorHints(
+    val filename: String?,
+    val videoSize: Long?
 )
