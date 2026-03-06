@@ -70,7 +70,6 @@ class Yflix : MainAPI() {
 
 
     companion object {
-        private const val SIMKL = "https://api.simkl.com"
         private const val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
         const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
 
@@ -162,7 +161,7 @@ class Yflix : MainAPI() {
         val movieNode = epRes?.selectFirst("ul.episodes a")
         val allLinks = epRes?.select("ul.episodes a") ?: emptyList()
         val recommendations =
-            document.select("div.film-section.md div.item").map { it.toSearchResult() }
+            document.select("div.item > div.inner").map { it.toSearchResult() }
 
         if (allLinks.size == 1 && movieNode != null && movieNode.text().contains("Movie", ignoreCase = true)) {
             val movieId = movieNode.attr("eid")
@@ -179,14 +178,6 @@ class Yflix : MainAPI() {
 
             val logoPath = imdbIdFromMovie?.let {
                 "https://live.metahub.space/logo/medium/$it/img"
-            }
-
-            val simklIdMovie = imdbIdFromMovie?.let { imdb ->
-                runCatching {
-                    val simklJson =
-                        JSONObject(app.get("$SIMKL/movies/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                    simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-                }.getOrNull()
             }
 
             val movieCreditsJsonText = tmdbMovieId?.let { id ->
@@ -227,11 +218,6 @@ class Yflix : MainAPI() {
 
         val episodes = ArrayList<Episode>()
         val tmdbShowId = runCatching { fetchtmdb(title,false) }.getOrNull()
-        if (title.contains("Special"))
-        {
-            Log.d("Phisher",tmdbShowId.toString())
-
-        }
         val imdbIdFromShow = tmdbShowId?.let { id ->
             runCatching {
                 val url = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
@@ -242,14 +228,6 @@ class Yflix : MainAPI() {
 
         val logoPath = imdbIdFromShow?.let {
             "https://live.metahub.space/logo/medium/$it/img"
-        }
-
-        val simklIdShow = imdbIdFromShow?.let { imdb ->
-            runCatching {
-                val simklJson =
-                    JSONObject(app.get("$SIMKL/tv/$imdb?client_id=${com.lagradost.cloudstream3.BuildConfig.SIMKL_CLIENT_ID}").text)
-                simklJson.optJSONObject("ids")?.optInt("simkl")?.takeIf { it != 0 }
-            }.getOrNull()
         }
 
         // fetch show credits once (used for actors)

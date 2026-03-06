@@ -21,6 +21,7 @@ enum class ServerList(val link: Pair<String, Boolean>) {
     HuraWatch("https://hurawatch.la" to true),
     Soap2Day("https://soap2day.fi" to true),
     MyflixerBz("https://myflixer.bz" to true),
+    Watchseries("https://watchseries.st" to true),
 }
 
 
@@ -55,6 +56,7 @@ class YflixPlugin : Plugin() {
             ServerList.HuraWatch.link.first to "HuraWatch",
             ServerList.Soap2Day.link.first to "Soap2Day",
             ServerList.MyflixerBz.link.first to "MyflixerBz",
+            ServerList.Watchseries.link.first to "Watchseries",
         )
         var currentYflixServer: String
             get() = getKey("Yflix_CURRENT_SERVER") ?: ServerList.Yflix.link.first

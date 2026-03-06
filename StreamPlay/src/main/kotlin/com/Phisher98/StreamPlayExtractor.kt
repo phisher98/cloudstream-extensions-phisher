@@ -42,6 +42,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import okhttp3.FormBody
 import okhttp3.Interceptor
@@ -3715,8 +3716,20 @@ object StreamPlayExtractor : StreamPlay() {
             "$NuvFeb/api/media/tv/$id/$season/$episode?cookie=${URLEncoder.encode(token, "UTF-8")}"
         }
 
-        val json = app.get(url).text
-        val parsed = Gson().fromJson(json, FebResponse::class.java)
+        var parsed: FebResponse? = null
+
+        repeat(3) { _ ->
+            val response = app.get(url, timeout = 10000L)
+
+            if (response.code == 500) {
+                delay(2500L)
+            } else {
+                parsed = response.parsedSafe<FebResponse>()
+                return@repeat
+            }
+        }
+
+        parsed ?: return
 
         parsed.versions.orEmpty().forEach { version ->
             version.links.orEmpty().forEach { link ->

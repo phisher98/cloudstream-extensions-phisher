@@ -11,7 +11,7 @@ import com.phisher98.settings.SettingsFragment
 class SuperStreamPlugin: Plugin() {
     override fun load(context: Context) {
         val sharedPref = context.getSharedPreferences("SuperStream", Context.MODE_PRIVATE)
-        val api = Superstream(sharedPref) // pass context
+        val api = ShowBox(sharedPref) // pass context
         registerMainAPI(api)
         val activity = context as AppCompatActivity
         openSettings = {

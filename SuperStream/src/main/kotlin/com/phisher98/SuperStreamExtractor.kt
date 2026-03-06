@@ -17,6 +17,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.BuildConfig.SUPERSTREAM_FOURTH_API
 import com.phisher98.BuildConfig.SUPERSTREAM_THIRD_API
 import com.phisher98.BuildConfig.NuvFeb
+import kotlinx.coroutines.delay
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -243,8 +244,20 @@ object SuperStreamExtractor : SuperStream() {
             "$NuvFeb/api/media/tv/$id/$season/$episode?cookie=${URLEncoder.encode(token, "UTF-8")}"
         }
 
-        val json = app.get(url).text
-        val parsed = Gson().fromJson(json, FebResponse::class.java)
+        var parsed: FebResponse? = null
+
+        repeat(3) { _ ->
+            val response = app.get(url, timeout = 10000L)
+
+            if (response.code == 500) {
+                delay(2500L)
+            } else {
+                parsed = response.parsedSafe<FebResponse>()
+                return@repeat
+            }
+        }
+
+        parsed ?: return
 
         parsed.versions.orEmpty().forEach { version ->
             version.links.orEmpty().forEach { link ->

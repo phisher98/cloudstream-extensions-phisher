@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 8
+version = 1
 
 android {
     buildFeatures {
@@ -32,7 +32,7 @@ dependencies {
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
-    description = "SuperStream Beta (Retrieve the cookie using Login with Google to properly utilize SuperStream."
+    description = "ShowBox (Retrieve the cookie using Login with Google to properly utilize ShowBox."
 
     // description = "Lorem Ipsum"
     authors = listOf("Phisher98")
@@ -54,5 +54,5 @@ cloudstream {
     requiresResources = true
     isCrossPlatform = false
 
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.showbox.media/&size=256"
+    iconUrl = "https://miro.medium.com/v2/1*DyU8bmnyyEiJbFROEXO2VA.png"
 }

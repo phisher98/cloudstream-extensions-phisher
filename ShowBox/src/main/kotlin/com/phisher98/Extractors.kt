@@ -12,7 +12,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 
-object SuperStreamExtractor : Superstream() {
+object ShowBoxExtractor : ShowBox() {
 
     suspend fun invokeInternalSource(
         id: Int? = null,
@@ -44,8 +44,8 @@ object SuperStreamExtractor : Superstream() {
             val quality = this.quality
             if (this.path.isNullOrBlank()) return null
             return newExtractorLink(
-                "⌜ SuperStream ⌟ Internal",
-                "⌜ SuperStream ⌟ Internal [${this.size}]",
+                "⌜ ShowBox ⌟ Internal",
+                "⌜ ShowBox ⌟ Internal [${this.size}]",
                 this.path.replace("\\/", ""),
                 INFER_TYPE,
             )
@@ -194,8 +194,8 @@ object SuperStreamExtractor : Superstream() {
                     if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
                         newExtractorLink(
-                            "⌜ SuperStream ⌟ External",
-                            "⌜ SuperStream ⌟ External [Server ${index + 1}] ${source.size}",
+                            "⌜ ShowBox ⌟ External",
+                            "⌜ ShowBox ⌟ External [Server ${index + 1}] ${source.size}",
                             source.file?.replace("\\/", "/") ?: return@org,
                             INFER_TYPE
                         )
@@ -243,7 +243,7 @@ object SuperStreamExtractor : Superstream() {
                 }
         } ?: return
 
-        fids.amapIndexed { index, fileList ->
+        fids.amapIndexed { _, fileList ->
             val superToken = uitoken?.let {
                 if (it.startsWith("ui=")) it else "ui=$it"
             } ?: ""
@@ -283,7 +283,7 @@ object SuperStreamExtractor : Superstream() {
             /*
             urls.forEach {
                 M3u8Helper.generateM3u8(
-                    "⌜ SuperStream ⌟ External HLS [Server ${index + 1}]",
+                    "⌜ ShowBox ⌟ External HLS [Server ${index + 1}]",
                     it,
                     ""
                 ).forEach(callback)

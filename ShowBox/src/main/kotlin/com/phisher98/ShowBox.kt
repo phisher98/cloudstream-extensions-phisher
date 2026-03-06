@@ -36,12 +36,12 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.SuperStreamExtractor.invokeExternalM3u8Source
-import com.phisher98.SuperStreamExtractor.invokeExternalSource
-import com.phisher98.SuperStreamExtractor.invokeInternalSource
-import com.phisher98.SuperStreamExtractor.invokeOpenSubs
-import com.phisher98.SuperStreamExtractor.invokeWatchsomuch
-import com.phisher98.Superstream.CipherUtils.getVerify
+import com.phisher98.ShowBoxExtractor.invokeExternalM3u8Source
+import com.phisher98.ShowBoxExtractor.invokeExternalSource
+import com.phisher98.ShowBoxExtractor.invokeInternalSource
+import com.phisher98.ShowBoxExtractor.invokeOpenSubs
+import com.phisher98.ShowBoxExtractor.invokeWatchsomuch
+import com.phisher98.ShowBox.CipherUtils.getVerify
 import okhttp3.FormBody
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.Interceptor
@@ -65,8 +65,8 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
-open class Superstream(sharedPref: SharedPreferences?=null) : MainAPI() {
-    override var name = "SuperStream Beta"
+open class ShowBox(sharedPref: SharedPreferences?=null) : MainAPI() {
+    override var name = "ShowBox"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val instantLinkLoading = true
@@ -696,7 +696,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                     data.imdbId
                 ),
             ) {
-                this.recommendations = data.recommend.mapNotNull { it.toSearchResponse(this@Superstream) }
+                this.recommendations = data.recommend.mapNotNull { it.toSearchResponse(this@ShowBox) }
                 this.posterUrl = data.posterOrg ?: data.poster
                 this.backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
                         this.year = data.year
