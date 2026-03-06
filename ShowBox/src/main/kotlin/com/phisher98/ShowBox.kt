@@ -22,6 +22,8 @@ import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
@@ -36,12 +38,12 @@ import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.phisher98.ShowBox.CipherUtils.getVerify
 import com.phisher98.ShowBoxExtractor.invokeExternalM3u8Source
 import com.phisher98.ShowBoxExtractor.invokeExternalSource
 import com.phisher98.ShowBoxExtractor.invokeInternalSource
 import com.phisher98.ShowBoxExtractor.invokeOpenSubs
 import com.phisher98.ShowBoxExtractor.invokeWatchsomuch
-import com.phisher98.ShowBox.CipherUtils.getVerify
 import okhttp3.FormBody
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.Interceptor
@@ -340,6 +342,9 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
 
         val client = buildClientWithCert().newBuilder()
             .addInterceptor(UserAgentInterceptor())
+            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
             .build()
         val formBody = FormBody.Builder().apply {
             data.forEach { (k, v) -> add(k, v) }
@@ -546,60 +551,46 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
     private data class SeriesDataProp(
         @SerializedName("code") val code: Int? = null,
         @SerializedName("msg") val msg: String? = null,
-        @SerializedName("data") val data: SeriesData? = SeriesData()
+        @SerializedName("data") val data: SeriesData? = null
     )
 
     private data class SeriesSeasonProp(
-        @JsonProperty("code") val code: Int? = null,
-        @JsonProperty("msg") val msg: String? = null,
-        @JsonProperty("data") val data: ArrayList<SeriesEpisode>? = arrayListOf()
-    )
-
-    private data class SeriesEpisode(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("tid") val tid: Int? = null,
-        @JsonProperty("mb_id") val mbId: Int? = null,
-        @JsonProperty("imdb_id") val imdbId: String? = null,
-        @JsonProperty("imdb_id_status") val imdbIdStatus: Int? = null,
-        @JsonProperty("srt_status") val srtStatus: Int? = null,
-        @JsonProperty("season") val season: Int? = null,
-        @JsonProperty("episode") val episode: Int? = null,
-        @JsonProperty("state") val state: Int? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("thumbs") val thumbs: String? = null,
-        @JsonProperty("thumbs_bak") val thumbsBak: String? = null,
-        @JsonProperty("thumbs_original") val thumbsOriginal: String? = null,
-        @JsonProperty("poster_imdb") val posterImdb: Int? = null,
-        @JsonProperty("synopsis") val synopsis: String? = null,
-        @JsonProperty("runtime") val runtime: Int? = null,
-        @JsonProperty("view") val view: Int? = null,
-        @JsonProperty("download") val download: Int? = null,
-        @JsonProperty("source_file") val sourceFile: Int? = null,
-        @JsonProperty("code_file") val codeFile: Int? = null,
-        @JsonProperty("add_time") val addTime: Int? = null,
-        @JsonProperty("update_time") val updateTime: Int? = null,
-        @JsonProperty("released") val released: String? = null,
-        @JsonProperty("released_timestamp") val releasedTimestamp: Long? = null,
-        @JsonProperty("audio_lang") val audioLang: String? = null,
-        @JsonProperty("quality_tag") val qualityTag: String? = null,
-        @JsonProperty("3d") val _3d: Int? = null,
-        @JsonProperty("remark") val remark: String? = null,
-        @JsonProperty("pending") val pending: String? = null,
-        @JsonProperty("imdb_rating") val imdbRating: String? = null,
-        @JsonProperty("display") val display: Int? = null,
-        @JsonProperty("sync") val sync: Int? = null,
-        @JsonProperty("tomato_meter") val tomatoMeter: Int? = null,
-        @JsonProperty("tomato_meter_count") val tomatoMeterCount: Int? = null,
-        @JsonProperty("tomato_audience") val tomatoAudience: Int? = null,
-        @JsonProperty("tomato_audience_count") val tomatoAudienceCount: Int? = null,
-        @JsonProperty("thumbs_min") val thumbsMin: String? = null,
-        @JsonProperty("thumbs_org") val thumbsOrg: String? = null,
-        @JsonProperty("imdb_link") val imdbLink: String? = null,
+        @SerializedName("code") val code: Int? = null,
+        @SerializedName("msg") val msg: String? = null,
+        @SerializedName("data") val data: List<SeriesEpisode> = emptyList()
     )
 
     private data class SeriesLanguage(
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("lang") val lang: String? = null
+        @SerializedName("title") val title: String? = null,
+        @SerializedName("lang") val lang: String? = null
+    )
+
+    private data class SeriesEpisode(
+        @SerializedName("id") val id: Int? = null,
+        @SerializedName("tid") val tid: Int? = null,
+        @SerializedName("season") val season: Int? = null,
+        @SerializedName("episode") val episode: Int? = null,
+        @SerializedName("title") val title: String? = null,
+        @SerializedName("thumbs") val thumbs: String? = null,
+        @SerializedName("thumbs_bak") val thumbsBak: String? = null,
+        @SerializedName("thumbs_original") val thumbsOriginal: String? = null,
+        @SerializedName("synopsis") val synopsis: String? = null,
+        @SerializedName("runtime") val runtime: Int? = null,
+        @SerializedName("released") val released: String? = null,
+        @SerializedName("released_timestamp") val releasedTimestamp: Long? = null,
+        @SerializedName("audio_lang") val audioLang: String? = null,
+        @SerializedName("imdb_rating") val imdbRating: String? = null,
+        @SerializedName("thumbs_min") val thumbsMin: String? = null,
+        @SerializedName("thumbs_org") val thumbsOrg: String? = null,
+        @SerializedName("imdb_link") val imdbLink: String? = null,
+        @SerializedName("imdb_id") val imdbId: String? = null,
+        @SerializedName("mb_id") val mbId: Int? = null,
+        @SerializedName("state") val state: Int? = null,
+        @SerializedName("poster_imdb") val posterImdb: Int? = null,
+        @SerializedName("remark") val remark: String? = null,
+        @SerializedName("pending") val pending: String? = null,
+        @SerializedName("display") val display: Int? = null,
+        @SerializedName("quality_tag") val qualityTag: String? = null,
     )
 
     private data class SeriesData(
@@ -667,111 +658,91 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
         val loadData = parseJson<LoadData>(url)
         val isMovie = loadData.box_type == ResponseTypes.Movies.value
         val hideNsfw = if (settingsForProvider.enableAdult) 0 else 1
-        if (isMovie) { // 1 = Movie
-            val apiQuery =
-                """{"childmode":"$hideNsfw","uid":"","app_version":"$appVersion","appid":"$appIdSecond","module":"Movie_detail","channel":"Website","mid":"${loadData.id}","lang":"en","expired_date":"${getExpiryDate()}","platform":"android","oss":"","group":""}"""
-            val data = (queryApiParsed<MovieDataProp>(apiQuery)).data
-                ?: throw RuntimeException("API error")
-            val responseData = if (!data.imdbId.isNullOrEmpty()) {
-                val jsonResponse = app.get("$cinemeta_url/movie/${data.imdbId}.json").text
-                if (jsonResponse.isNotEmpty() && jsonResponse.startsWith("{")) {
-                    Gson().fromJson(jsonResponse, ResponseData::class.java)
-                } else null
-            } else null
 
-            val cast: List<String> = responseData?.meta?.cast ?: emptyList()
-            val background: String? = responseData?.meta?.background
-            val genre: List<String>? = responseData?.meta?.genre
+        suspend fun fetchCinemeta(type: String, imdbId: String?) =
+            imdbId?.takeIf { it.isNotEmpty() }?.let {
+                val res = app.get("$cinemeta_url/$type/$it.json", timeout = 10000L).text
+                if (res.isNotEmpty() && res.startsWith("{")) Gson().fromJson(res, ResponseData::class.java) else null
+            }
+
+        suspend fun fetchLogo(type: TvType, tmdbId: Int?) = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "1865f43a0549ca50d341dd9ab8b29f49",
+            type = type,
+            tmdbId = tmdbId,
+            appLangCode = "en"
+        )
+
+        if (isMovie) {
+            val data = queryApiParsed<MovieDataProp>(
+                """{"childmode":"$hideNsfw","uid":"","app_version":"$appVersion","appid":"$appIdSecond","module":"Movie_detail","channel":"Website","mid":"${loadData.id}","lang":"en","expired_date":"${getExpiryDate()}","platform":"android","oss":"","group":""}"""
+            ).data ?: throw RuntimeException("API error")
+
+            val meta = fetchCinemeta("movie", data.imdbId)?.meta
+            val logoUrl = fetchLogo(TvType.Movie, meta?.moviedb_id)
 
             return newMovieLoadResponse(
                 data.title ?: "",
                 url,
                 TvType.Movie,
-                LinkData(
-                    data.id ?: throw RuntimeException("No movie ID"),
-                    ResponseTypes.Movies.value,
-                    null,
-                    null,
-                    data.id,
-                    data.imdbId
-                ),
+                LinkData(data.id ?: throw RuntimeException("No movie ID"), ResponseTypes.Movies.value, null, null, data.id, data.imdbId)
             ) {
                 this.recommendations = data.recommend.mapNotNull { it.toSearchResponse(this@ShowBox) }
-                this.posterUrl = data.posterOrg ?: data.poster
-                this.backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
-                        this.year = data.year
-                addActors(cast)
+                this.posterUrl = data.poster ?: data.posterOrg
+                this.backgroundPosterUrl = meta?.background ?: data.posterOrg ?: data.poster
+                this.year = data.year
+                addActors(meta?.cast ?: emptyList())
                 this.plot = data.description
-                this.tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
+                this.tags = meta?.genre ?: data.cats?.split(",")?.map { it.capitalize() }
                 this.score = Score.from10(data.imdbRating)
                 addTrailer(data.trailerUrl)
-                this.addImdbId(data.imdbId)
+                addImdbId(data.imdbId)
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
             }
-        } else { // 2 Series
-            val apiQuery =
+        } else {
+            val data = queryApiParsed<SeriesDataProp>(
                 """{"childmode":"$hideNsfw","uid":"","app_version":"$appVersion","appid":"$appIdSecond","module":"TV_detail_1","display_all":"1","channel":"Website","lang":"en","expired_date":"${getExpiryDate()}","platform":"android","tid":"${loadData.id}"}"""
-            val data = queryApiParsed<SeriesDataProp>(apiQuery).data
-                ?: throw RuntimeException("API error")
-            val responseData = if (!data.imdbId.isNullOrEmpty()) {
-                val jsonResponse = app.get("$cinemeta_url/series/${data.imdbId}.json").text
-                if (jsonResponse.isNotEmpty() && jsonResponse.startsWith("{")) {
-                    Gson().fromJson(jsonResponse, ResponseData::class.java)
-                } else null
-            } else null
+            ).data ?: throw RuntimeException("API error")
 
-            val cast: List<String> = responseData?.meta?.cast ?: emptyList()
-            val background: String? = responseData?.meta?.background
-            val genre: List<String>? = responseData?.meta?.genre
+            val meta = fetchCinemeta("series", data.imdbId)?.meta
+            val logoUrl = fetchLogo(TvType.TvSeries, meta?.moviedb_id)
+
             val allEpisodes = mutableListOf<Episode>()
-            data.season.forEach { seasonNumber ->
-                val seasonApiQuery =
+            data.season.amap { seasonNumber ->
+                val seasonData = queryApiParsed<SeriesSeasonProp>(
                     """{"childmode":"$hideNsfw","uid":"","app_version":"$appVersion","appid":"$appIdSecond","module":"TV_episode","display_all":"1","season":"$seasonNumber","channel":"Website","lang":"en","expired_date":"${getExpiryDate()}","platform":"android","tid":"${loadData.id}"}"""
+                ).data
 
-                val seasonData = queryApiParsed<SeriesSeasonProp>(seasonApiQuery).data
-                    ?: return@forEach
-
-                seasonData.forEach { ep ->
-                    allEpisodes.add(
-                        newEpisode(
-                            LinkData(ep.tid ?: ep.id ?: throw RuntimeException("No Series ID"),
-                            ResponseTypes.Series.value,
-                            ep.season,
-                            ep.episode,
-                            data.id,
-                            data.imdbId
-                        ).toJson()
-                        ) {
-                            name = ep.title
-                            season = ep.season
-                            episode = ep.episode
-                            posterUrl = ep.thumbsOriginal ?: ep.thumbsBak ?: ep.thumbsMin ?: ep.thumbs ?: ep.thumbsOrg
-                            description = ep.synopsis
-                            date = ep.releasedTimestamp
-                            runTime = ep.runtime
-                            score=Score.from10(ep.imdbRating)
-                        }
-                    )
+                seasonData.amap { ep ->
+                    allEpisodes.add(newEpisode(
+                        LinkData(ep.tid ?: ep.id ?: throw RuntimeException("No Series ID"), ResponseTypes.Series.value, ep.season, ep.episode, data.id, data.imdbId).toJson()
+                    ) {
+                        this.name = ep.title?.takeIf { it.isNotBlank() } ?: "Episode ${ep.episode}"
+                        this.season = ep.season
+                        this.episode = ep.episode
+                        this.posterUrl = ep.thumbsOriginal ?: ep.thumbsBak ?: ep.thumbsMin ?: ep.thumbs ?: ep.thumbsOrg
+                        this.description = ep.synopsis
+                        this.runTime = ep.runtime
+                        this.score = ep.imdbRating?.toFloatOrNull()?.let { Score.from10(it) }
+                        addDate(ep.released?.substringBefore(" ("), "MMMM d, yyyy")
+                    })
                 }
             }
-            return newTvSeriesLoadResponse(
-                data.title ?: "",
-                url,
-                TvType.TvSeries,
-                allEpisodes
-            ) {
-                year = data.year
-                plot = data.description
-                addActors(cast)
-                this.posterUrl = data.posterOrg ?: data.poster
-                backgroundPosterUrl = background ?: data.posterOrg ?: data.poster
-                score = Score.from10(data.imdbRating)
-                tags = genre ?: data.cats?.split(",")?.map { it.capitalize() }
+
+            return newTvSeriesLoadResponse(data.title ?: "", url, TvType.TvSeries, allEpisodes) {
+                this.year = data.year
+                this.plot = data.description
+                addActors(meta?.cast ?: emptyList())
+                this.posterUrl = data.poster ?: data.posterOrg
+                this.backgroundPosterUrl = meta?.background ?: data.bannerMiniOrg ?: data.bannerMini ?: data.posterOrg ?: data.poster
+                this.score = Score.from10(data.imdbRating)
+                tags = meta?.genre ?: data.cats?.split(",")?.map { it.capitalize() }
                 addImdbId(data.imdbId)
                 addImdbUrl(data.imdbLink)
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
             }
         }
     }
-
     private data class LinkData(
         val id: Int,
         val type: Int,
