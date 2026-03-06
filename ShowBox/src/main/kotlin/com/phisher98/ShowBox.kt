@@ -7,7 +7,6 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTime
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -707,15 +706,21 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
             val meta = fetchCinemeta("series", data.imdbId)?.meta
             val logoUrl = fetchLogo(TvType.TvSeries, meta?.moviedb_id)
 
-            val allEpisodes = mutableListOf<Episode>()
-            data.season.amap { seasonNumber ->
+            val allEpisodes = data.season.amap { seasonNumber ->
                 val seasonData = queryApiParsed<SeriesSeasonProp>(
                     """{"childmode":"$hideNsfw","uid":"","app_version":"$appVersion","appid":"$appIdSecond","module":"TV_episode","display_all":"1","season":"$seasonNumber","channel":"Website","lang":"en","expired_date":"${getExpiryDate()}","platform":"android","tid":"${loadData.id}"}"""
                 ).data
 
-                seasonData.amap { ep ->
-                    allEpisodes.add(newEpisode(
-                        LinkData(ep.tid ?: ep.id ?: throw RuntimeException("No Series ID"), ResponseTypes.Series.value, ep.season, ep.episode, data.id, data.imdbId).toJson()
+                seasonData.map { ep ->
+                    newEpisode(
+                        LinkData(
+                            ep.tid ?: ep.id ?: throw RuntimeException("No Series ID"),
+                            ResponseTypes.Series.value,
+                            ep.season,
+                            ep.episode,
+                            data.id,
+                            data.imdbId
+                        ).toJson()
                     ) {
                         this.name = ep.title?.takeIf { it.isNotBlank() } ?: "Episode ${ep.episode}"
                         this.season = ep.season
@@ -725,9 +730,9 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
                         this.runTime = ep.runtime
                         this.score = ep.imdbRating?.toFloatOrNull()?.let { Score.from10(it) }
                         addDate(ep.released?.substringBefore(" ("), "MMMM d, yyyy")
-                    })
+                    }
                 }
-            }
+            }.flatten()
 
             return newTvSeriesLoadResponse(data.title ?: "", url, TvType.TvSeries, allEpisodes) {
                 this.year = data.year
