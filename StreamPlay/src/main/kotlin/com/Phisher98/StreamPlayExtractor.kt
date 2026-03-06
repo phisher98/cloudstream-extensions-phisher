@@ -75,6 +75,42 @@ val session = Session(Requests().baseClient)
 
 object StreamPlayExtractor : StreamPlay() {
 
+
+    suspend fun invoke2embed(
+        imdbId: String?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val url = if (season == null) {
+            "$twoEmbedAPI/embed/$imdbId"
+        } else {
+            "$twoEmbedAPI/embedtv/$imdbId&s=$season&e=$episode"
+        }
+
+        val headers = mapOf(
+            "Content-Type" to "application/x-www-form-urlencoded",
+            "Referer" to url,
+        )
+
+        val framesrc = app.post(
+            url = url,
+            data = mapOf("pls" to "pls"),
+            headers = headers
+        ).document.selectFirst("iframe#iframesrc")?.attr("data-src") ?: return
+
+        val ref = getBaseUrl(framesrc)
+        val id = framesrc.substringAfter("id=").substringBefore("&")
+
+        loadExtractor(
+            "https://uqloads.xyz/e/$id",
+            "$ref/",
+            subtitleCallback,
+            callback
+        )
+    }
+
     suspend fun invokeMultiEmbed(
         imdbId: String?,
         season: Int? = null,

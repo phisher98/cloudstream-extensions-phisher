@@ -26,7 +26,6 @@ import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -216,7 +215,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val NuvFeb = BuildConfig.NuvFeb
         const val KickassAPI = "https://kaa.lt"
         const val Vidsrcxyz = "https://vidsrc-embed.su"
-        const val Elevenmovies = "https://111movies.com"
         const val Watch32 = "https://watch32.sx"
         const val movieBox= "https://api.inmoviebox.com"
         const val vidrock = "https://vidrock.net"
@@ -236,11 +234,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val hexaSU = "https://themoviedb.hexa.su"
         const val bidSrc = "https://bidsrc.pro"
         const val flixindia = "https://m.flixindia.xyz"
-        val succcbots = base64Decode("aHR0cHM6Ly91c2VuZXQuc3VjY2Nib3RzLndvcmtlcnMuZGV2")
         const val sudatchi = "https://sudatchi.com"
         const val m4uhdAPI = "https://ww3.m4ufree.lat"
         const val mappleAPI = "https://mapple.uk"
         const val webStreamrAPI = """https://webstreamr.hayd.uk/{"multi":"on","al":"on","de":"on","es":"on","fr":"on","it":"on","mx":"on","mediaFlowProxyUrl":"","mediaFlowProxyPassword":"","disableExtractor_hubcloud":"on","disableExtractor_hubdrive":"on"}"""
+        const val twoEmbedAPI = "https://www.2embed.cc"
+
+
+
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie
@@ -299,7 +300,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 currentBaseUrl = null
                 getApiBase().also { sharedPref?.edit { putString("cached_api_base", it) } }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             sharedPref?.edit { remove("cached_api_base") }
             currentBaseUrl = null
             getApiBase()

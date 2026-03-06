@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invokBidsrc
 import com.phisher98.StreamPlayExtractor.invokFlixindia
+import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnimes
@@ -193,7 +194,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("vidrock", "Vidrock") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokevidrock(res.id, res.season, res.episode, callback)
+            invokevidrock(res.id, res.season, res.episode, callback)
         },
         Provider("soapy", "Soapy") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback)
@@ -285,6 +286,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("Filmyfiy", "Filmyfiy (Movies Only)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeFilmyfiy(res.title, subtitleCallback, callback)
+        },
+        Provider("2Embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
     )
 }
