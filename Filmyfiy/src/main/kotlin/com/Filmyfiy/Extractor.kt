@@ -5,6 +5,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -17,6 +18,7 @@ import org.json.JSONObject
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import kotlin.onFailure
 
 
 class Filesdl : ExtractorApi() {
@@ -33,44 +35,68 @@ class Filesdl : ExtractorApi() {
         val titleText = res.select("div.title").text()
         val qualityRegex = Regex("(\\d{3,4}p)", RegexOption.IGNORE_CASE)
         val quality = qualityRegex.find(titleText)?.value ?: "Unknown"
-        res.select("div.container a").map {
+        res.select("div.container a").map { it ->
             val source = it.text()
             val href = it.attr("href")
-            when {
 
-                source.contains("Hubcloud", ignoreCase = true) -> HubCloud().getUrl(href,"Filmyfiy",subtitleCallback,callback)
+            runCatching {
+                when {
 
-                source.contains("GDFLIX", ignoreCase = true) -> GDFlix().getUrl(href,"Filmyfiy",subtitleCallback,callback)
-
-                source.contains("Gofile", ignoreCase = true) -> Gofile().getUrl(href,"Filmyfiy",subtitleCallback,callback)
-
-                source.contains("Direct Download", ignoreCase = true) || source.contains("Ultra FastDL", ignoreCase = true) || source.contains("Fast Cloud-02", ignoreCase = true) -> {
-                    val response = app.get(href, allowRedirects = false)
-                    val redirectUrl = response.headers["location"] ?: href
-                    callback(
-                        newExtractorLink(
-                            "Direct Download",
-                            "Filmyfiy [Direct Download]",
-                            redirectUrl,
-                            INFER_TYPE
-                        ) {
-                            this.quality = getQualityFromName(quality)
-                        }
+                    source.contains("Hubcloud", ignoreCase = true) -> HubCloud().getUrl(
+                        href,
+                        "Filmyfiy",
+                        subtitleCallback,
+                        callback
                     )
-                }
 
-                source.contains("Fast Cloud", ignoreCase = true) -> {
-                    callback(
-                        newExtractorLink(
-                            "Fast Cloud",
-                            "Filmyfiy [Fast Cloud]",
-                            href,
-                            INFER_TYPE
-                        ) {
-                            this.quality = getQualityFromName(quality)
-                        }
+                    source.contains("GDFLIX", ignoreCase = true) -> GDFlix().getUrl(
+                        href,
+                        "Filmyfiy",
+                        subtitleCallback,
+                        callback
                     )
+
+                    source.contains("Gofile", ignoreCase = true) -> Gofile().getUrl(
+                        href,
+                        "Filmyfiy",
+                        subtitleCallback,
+                        callback
+                    )
+
+                    source.contains("Pixeldra", ignoreCase = true) -> {
+                        PixelDrain().getUrl(href, "Filmyfiy", subtitleCallback, callback)
+                    }
+
+                    source.contains("Direct Download", ignoreCase = true) || source.contains("Ultra FastDL", ignoreCase = true) || source.contains("Fast Cloud-02", ignoreCase = true) -> {
+                        val response = app.get(href, allowRedirects = false)
+                        val redirectUrl = response.headers["location"] ?: href
+                        callback(
+                            newExtractorLink(
+                                "Direct Download",
+                                "Filmyfiy [Direct Download]",
+                                redirectUrl,
+                                INFER_TYPE
+                            ) {
+                                this.quality = getQualityFromName(quality)
+                            }
+                        )
+                    }
+
+                    source.contains("Fast Cloud", ignoreCase = true) -> {
+                        callback(
+                            newExtractorLink(
+                                "Fast Cloud",
+                                "Filmyfiy [Fast Cloud]",
+                                href,
+                                INFER_TYPE
+                            ) {
+                                this.quality = getQualityFromName(quality)
+                            }
+                        )
+                    }
                 }
+            }.onFailure {
+                Log.e("Phisher", "Filesdl: Failed for source=$source href=$href — ${it.message}")
             }
         }
     }

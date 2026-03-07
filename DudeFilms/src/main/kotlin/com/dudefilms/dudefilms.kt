@@ -253,7 +253,7 @@ class Dudefilms : MainAPI() {
     ): Boolean {
         val links: List<String> = tryParseJson<List<String>>(data) ?: emptyList()
         links.amap {
-            loadExtractor(it,"",subtitleCallback,callback)
+            loadExtractor(it,name,subtitleCallback,callback)
         }
         return true
     }

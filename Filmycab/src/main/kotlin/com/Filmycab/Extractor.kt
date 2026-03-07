@@ -5,6 +5,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.PixelDrain
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -35,79 +36,76 @@ class Filesdl : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
-
-        val quality = QUALITY_REGEX.find(doc.selectFirst("div.title")?.text().orEmpty())?.value ?: "Unknown"
+        val doc = app.get(url, referer = referer).document
+        val titleText = doc.selectFirst("div.title")?.text().orEmpty()
+        val quality = QUALITY_REGEX.find(titleText)?.value ?: "Unknown"
         val inferredQuality = getQualityFromName(quality)
         doc.select("div.container a").amap { element ->
-
             val source = element.text().trim()
-            val href = element.attr("href")
+            val href = element.attr("href").trim()
+            if (href.isBlank()) return@amap
 
-            when {
-                source.contains("hubcloud", ignoreCase = true) -> {
-                    HubCloud().getUrl(href, "FilmyCab", subtitleCallback, callback)
-                }
+            runCatching {
+                when {
+                    source.contains("hubcloud", ignoreCase = true) -> {
+                        HubCloud().getUrl(href, name, subtitleCallback, callback)
+                    }
 
-                source.contains("GDFLIX", ignoreCase = true) -> {
-                    GDFlix().getUrl(href, "FilmyCab", subtitleCallback, callback)
-                }
+                    source.contains("gdflix", ignoreCase = true) -> {
+                        GDFlix().getUrl(href, url, subtitleCallback, callback)
+                    }
 
-                source.contains("Gofile", ignoreCase = true) -> {
-                    Gofile().getUrl(href, "FilmyCab", subtitleCallback, callback)
-                }
+                    source.contains("gofile", ignoreCase = true) -> {
+                        Gofile().getUrl(href, url, subtitleCallback, callback)
+                    }
 
-                source.contains("Fast Cloud", ignoreCase = true) || source.contains("Ultra Fast Download", ignoreCase = true)-> {
-                    callback(
-                        newExtractorLink(
-                            source = "[Fast Cloud]",
-                            name = "[Fast Cloud]",
-                            url = href,
-                            type = INFER_TYPE
-                        ) {
-                            this.quality = inferredQuality
-                        }
-                    )
-                }
+                    source.contains("Pixeldra", ignoreCase = true) -> {
+                        PixelDrain().getUrl(href, name, subtitleCallback, callback)
+                    }
 
-                source.contains("Direct Download", true)
-                        || source.contains("Ultra FastDL", true)
-                        || source.contains("Fast Cloud-02", true) -> {
-
-                    val res = app.get(
-                        href,
-                        allowRedirects = false
-                    )
-
-                    val redirectUrl = res.headers["Location"]
-                        ?: res.headers["location"]
-                        ?: href
-
-                    val finalUrl = fixUrl(redirectUrl)
-                    if (
-                        finalUrl.contains(".mkv", true) ||
-                        finalUrl.contains(".mp4", true) ||
-                        finalUrl.contains(".m3u8", true)
-                    ) {
+                    source.contains("fast cloud", ignoreCase = true) || source.contains("ultra fast download", ignoreCase = true) -> {
                         callback(
                             newExtractorLink(
-                                source = "[FastDL] [VLC]",
-                                name = "FilmyCab [FastDL] [VLC]",
-                                url = finalUrl,
+                                source = "[Fast Cloud]",
+                                name = "[Fast Cloud]",
+                                url = href,
                                 type = INFER_TYPE
                             ) {
                                 this.quality = inferredQuality
                             }
                         )
-                    } else {
-                        loadExtractor(
-                            finalUrl,
-                            "",
-                            subtitleCallback,
-                            callback
-                        )
+                    }
+
+                    source.contains("direct download", ignoreCase = true) || source.contains("ultra fastdl", ignoreCase = true) || source.contains("fast cloud-02", ignoreCase = true) -> {
+                        val res = app.get(href, allowRedirects = false, referer = url)
+                        val redirectUrl = res.headers["location"] ?: href
+                        val finalUrl = fixUrl(redirectUrl)
+
+                        if (finalUrl.contains(".mkv", true) ||
+                            finalUrl.contains(".mp4", true) ||
+                            finalUrl.contains(".m3u8", true)
+                        ) {
+                            callback(
+                                newExtractorLink(
+                                    source = "[FastDL] [VLC]",
+                                    name = "Filesdl [FastDL] [VLC]",
+                                    url = finalUrl,
+                                    type = INFER_TYPE
+                                ) {
+                                    this.quality = inferredQuality
+                                }
+                            )
+                        } else {
+                            loadExtractor(finalUrl, url, subtitleCallback, callback)
+                        }
+                    }
+
+                    else -> {
+                        loadExtractor(href, url, subtitleCallback, callback)
                     }
                 }
+            }.onFailure {
+                Log.e("Phisher", "Filesdl: Failed for source=$source href=$href — ${it.message}")
             }
         }
     }

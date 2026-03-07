@@ -160,11 +160,7 @@ class Filmycab : MainAPI() {
         val document = app.get(data).document
         document.select("div.dlink a").amap {
             val href= it.attr("href")
-            if (href.contains("filesdl"))
-            {
-                Filesdl().getUrl(href,"",subtitleCallback,callback)
-            }
-            else loadExtractor(href,"",subtitleCallback,callback)
+            loadExtractor(href,"",subtitleCallback,callback)
         }
         return true
     }

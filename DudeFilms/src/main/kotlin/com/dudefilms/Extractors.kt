@@ -136,7 +136,6 @@ class HubCloud : ExtractorApi() {
             val link = element.attr("href")
             val text = element.ownText()
             val label = text.lowercase()
-            Log.d("Phisher",label)
             when {
                 "fsl server" in label -> {
                     callback(
@@ -216,6 +215,16 @@ class HubCloud : ExtractorApi() {
                         newExtractorLink(
                             "$ref [Mega Server]",
                             "$ref [Mega Server] $labelExtras",
+                            link
+                        ) { this.quality = quality }
+                    )
+                }
+
+                "pdl Server" in label -> {
+                    callback(
+                        newExtractorLink(
+                            "$ref [PDL Server]",
+                            "$ref [PDL Server] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -562,7 +571,7 @@ open class Gofile : ExtractorApi() {
         ).parsedSafe<AccountResponse>()?.data?.token ?: return
 
         val globalRes = app.get("$mainUrl/dist/js/config.js").text
-        val wt = Regex("""appdata\.wt\s*=\s*[\"']([^\"']+)[\"']""").find(globalRes)?.groupValues?.get(1) ?: return
+        val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""").find(globalRes)?.groupValues?.get(1) ?: return
 
         val headers = mapOf(
             "Authorization" to "Bearer $token",

@@ -359,26 +359,22 @@ class FourKHDHub : MainAPI() {
 
         if (data.isBlank()) return false
         val links: List<String> = AppUtils.tryParseJson<List<String>>(data)?.distinct() ?: return false
-        for (raw in links) {
+        links.amap { raw ->
             val resolved = runCatching {
                 if ("id=" in raw) getRedirectLinks(raw) else raw
             }.getOrElse {
                 Log.e("Extractor", "Redirect failed: $raw — ${it.message}")
-                continue
+                return@amap
             }
-            if (resolved.isBlank()) continue
-            try {
-                loadExtractor(
-                    resolved,
-                    name,
-                    subtitleCallback,
-                    callback
-                )
-            } catch (e: Throwable) {
-                Log.e("Extractor", "Extractor failed: $resolved — ${e.message}")
+
+            if (resolved.isBlank()) return@amap
+
+            runCatching {
+                loadExtractor(resolved, name, subtitleCallback, callback)
+            }.onFailure {
+                Log.e("Extractor", "Extractor failed: $resolved — ${it.message}")
             }
         }
         return true
     }
-
 }

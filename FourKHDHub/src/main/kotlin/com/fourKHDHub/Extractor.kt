@@ -2,6 +2,7 @@ package com.fourKHDHub
 
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.extractors.PixelDrain
@@ -50,12 +51,12 @@ open class Hblinks : ExtractorApi() {
             return
         }
 
-        elements.forEach { el ->
+        elements.amap { el ->
             val href = el.absUrl("href")
                 .ifBlank { el.attr("href") }
                 .trim()
 
-            if (href.isEmpty()) return@forEach
+            if (href.isEmpty()) return@amap
 
             val lower = href.lowercase()
 
@@ -292,6 +293,16 @@ class HubCloud : ExtractorApi() {
                         newExtractorLink(
                             "$ref [Mega Server]",
                             "$ref [Mega Server] $labelExtras",
+                            link
+                        ) { this.quality = quality }
+                    )
+                }
+
+                "pdl Server" in label -> {
+                    callback(
+                        newExtractorLink(
+                            "$ref [PDL Server]",
+                            "$ref [PDL Server] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
