@@ -265,12 +265,12 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
 
         return if (isDir) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-                this.posterUrl = finalPoster
+                this.posterUrl = finalPoster.ifEmpty { "https://www.febbox.com/static/index_img/file_type/dir_icon2.png" }
             }
         } else
         {
             newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = finalPoster
+                this.posterUrl = finalPoster.ifEmpty { "https://www.febbox.com/static/index_img/file_type/dir_icon2.png" }
             }
         }
     }
