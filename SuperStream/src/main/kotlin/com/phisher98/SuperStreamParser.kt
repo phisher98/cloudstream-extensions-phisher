@@ -285,3 +285,12 @@ data class CinemetaRes(
         )
     }
 }
+data class FebboxPosterResponse(
+    val file: FebboxFile
+)
+
+data class FebboxFile(
+    val thumb_small: String?,
+    val thumb: String?,
+    val thumb_big: String?
+)
