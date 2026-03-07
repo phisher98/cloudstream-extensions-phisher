@@ -43,6 +43,8 @@ import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import okhttp3.FormBody
 import okhttp3.Interceptor
@@ -72,7 +74,7 @@ import kotlin.math.max
 
 
 val session = Session(Requests().baseClient)
-
+private val cfMutex = Mutex()
 object StreamPlayExtractor : StreamPlay() {
 
 
@@ -252,7 +254,9 @@ object StreamPlayExtractor : StreamPlay() {
             "$multimoviesApi/episodes/$fixTitle-${season}x${episode}"
         }
 
-        val response = app.get(url, interceptor = CloudflareKiller())
+        val response = cfMutex.withLock {
+            app.get(url, interceptor = CloudflareKiller())
+        }
         if (response.code != 200) return
         val req = response.document
         if (req.body().text().contains("Just a moment", ignoreCase = true)) return
@@ -2748,12 +2752,17 @@ object StreamPlayExtractor : StreamPlay() {
         val url = if (season == null) {
             loaderUrl
         } else {
-            val mediaId = app.get(loaderUrl, referer = "$moflixAPI/", interceptor = CloudflareKiller())
-                .parsedSafe<MoflixResponse>()?.title?.id
+            val mediaId = cfMutex.withLock {
+                app.get(loaderUrl, referer = "$moflixAPI/", interceptor = CloudflareKiller())
+            }.parsedSafe<MoflixResponse>()?.title?.id
+
             "$moflixAPI/api/v1/titles/$mediaId/seasons/$season/episodes/$episode?loader=episodePage"
         }
 
-        val response = app.get(url, referer = "$moflixAPI/", interceptor = CloudflareKiller())
+        val response = cfMutex.withLock {
+            app.get(url, referer = "$moflixAPI/", interceptor = CloudflareKiller())
+        }
+
         if (response.code != 200) return
         val res = response.parsedSafe<MoflixResponse>()
         (res?.episode ?: res?.title)?.videos?.filter {
@@ -5224,10 +5233,11 @@ object StreamPlayExtractor : StreamPlay() {
         val matched = searchData.firstOrNull { it.tmdb_id == id } ?: return
         val url = XDmoviesAPI + matched.path
         val response = app.get(url).let {
-            if (
-                it.text.contains("Just a moment", true)
-            ) app.get(url, interceptor = CloudflareKiller())
-            else it
+            if (it.text.contains("Just a moment", true)) {
+                cfMutex.withLock {
+                    app.get(url, interceptor = CloudflareKiller())
+                }
+            } else it
         }
         val document = response.document
         if (season == null) {
@@ -5929,14 +5939,14 @@ object StreamPlayExtractor : StreamPlay() {
         if (id.isNullOrBlank()) return
         val url = "$api/?s=$id"
         var response = app.get(url, timeout = 50L)
-        if (
-            response.text.contains("Just a moment", true)
-        ) {
-            response = app.get(
-                url,
-                timeout = 50L,
-                interceptor = CloudflareKiller()
-            )
+        if (response.text.contains("Just a moment", true)) {
+            response = cfMutex.withLock {
+                app.get(
+                    url,
+                    timeout = 50L,
+                    interceptor = CloudflareKiller()
+                )
+            }
         }
 
         val searchDoc = response.document
@@ -6214,16 +6224,28 @@ object StreamPlayExtractor : StreamPlay() {
         if (imdbId == null) return
 
         val searchRes = app.get("$baseUrl/?s=$imdbId")
-        val searchDoc = if (searchRes.text.contains("Just a moment", true)) app.get("$baseUrl/?s=$imdbId", interceptor = CloudflareKiller()).document else searchRes.document
+
+        val searchDoc = if (searchRes.text.contains("Just a moment", true)) {
+            cfMutex.withLock {
+                app.get("$baseUrl/?s=$imdbId", interceptor = CloudflareKiller())
+            }.document
+        } else {
+            searchRes.document
+        }
+
         searchDoc.select("article a[href]")
             .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
             .distinct()
             .amap { postUrl ->
 
                 val postRes = app.get(postUrl)
-                val postDoc = if (postRes.text.contains("Just a moment", true))
-                    app.get(postUrl, interceptor = CloudflareKiller()).document
-                else postRes.document
+                val postDoc = if (postRes.text.contains("Just a moment", true)) {
+                    cfMutex.withLock {
+                        app.get(postUrl, interceptor = CloudflareKiller())
+                    }.document
+                } else {
+                    postRes.document
+                }
 
                 postDoc.select("a.maxbutton[href]")
                     .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
