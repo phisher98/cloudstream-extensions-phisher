@@ -307,10 +307,11 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
 
                     val epFid = row.selectFirst("td[data-id]")?.attr("data-id") ?: return@mapIndexedNotNull null
                     val name = row.selectFirst("p.file_name_show")?.text() ?: return@mapIndexedNotNull null
-
+                    val thumb = row.selectFirst("div.file_icon img")?.attr("src")
                     newEpisode("$febbox|$epFid") {
                         this.name = name
                         this.episode = index + 1
+                        this.posterUrl = thumb
                     }
                 }
 
@@ -320,7 +321,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                     TvType.TvSeries,
                     episodes
                 ) {
-                    this.posterUrl = media.thumb_big
+                    this.posterUrl = media.thumb_big?.ifEmpty { "https://wallpapers.com/images/hd/netflix-background-gs7hjuwvv2g0e9fj.jpg" }
                     this.plot = "Added: ${media.add_time} | Updated: ${media.update_time}"
                 }
             }
@@ -331,7 +332,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                 TvType.Movie,
                 "$febbox|${media.fid}"
             ) {
-                this.posterUrl = media.thumb_big
+                this.posterUrl = media.thumb_big?.ifEmpty { "https://wallpapers.com/images/hd/netflix-background-gs7hjuwvv2g0e9fj.jpg" }
                 this.plot = "Added: ${media.add_time} | Updated: ${media.update_time} | Size: ${media.file_size}"
             }
         }
