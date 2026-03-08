@@ -1,8 +1,13 @@
 package com.MovieBlast
 
-import com.fasterxml.jackson.annotation.JsonAlias
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64Encode
+import java.net.URL
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 data class LoadURL(
     val link: String?=null ,
@@ -68,173 +73,6 @@ data class HomeLink(
     val active: Boolean? = null
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class MediaDetailResponse(
-    val id: Long? = null,
-    @JsonProperty("tmdb_id")
-    val tmdbId: String? = null,
-    @JsonAlias("title", "name")
-    val title: String? = null,
-    @JsonProperty("original_name")
-    val originalName: String? = null,
-    @JsonProperty("imdb_external_id")
-    val imdbExternalId: String? = null,
-    val subtitle: String? = null,
-    val overview: String? = null,
-    @JsonProperty("poster_path")
-    val posterPath: String? = null,
-    @JsonProperty("backdrop_path")
-    val backdropPath: String? = null,
-    @JsonProperty("backdrop_path_tv")
-    val backdropPathTv: String? = null,
-    @JsonProperty("preview_path")
-    val previewPath: String? = null,
-    @JsonProperty("vote_average")
-    val voteAverage: Double? = null,
-    @JsonProperty("vote_count")
-    val voteCount: Long? = null,
-    val popularity: Double? = null,
-    val runtime: String? = null,
-    val views: Long? = null,
-    val featured: Boolean? = null,
-    val premuim: Boolean? = null,
-    val active: Boolean? = null,
-    val pinned: Boolean? = null,
-    @JsonAlias("release_date", "first_air_date")
-    val releaseDate: String? = null,
-
-    @JsonProperty("skiprecap_start_in")
-    val skipRecapStartIn: Long? = null,
-
-    val hasrecap: Boolean? = null,
-
-    @JsonProperty("enable_stream")
-    val enableStream: Boolean? = null,
-
-    @JsonProperty("enable_media_download")
-    val enableMediaDownload: Boolean? = null,
-
-    @JsonProperty("enable_ads_unlock")
-    val enableAdsUnlock: Boolean? = null,
-
-    val casterslist: List<Caster> = emptyList(),
-    val networkslist: List<Network> = emptyList(),
-    val genres: List<Genre> = emptyList(),
-    val videos: List<Video> = emptyList(),
-    val seasons: List<Season> = emptyList()
-)
-
-data class Caster(
-    val id: Long? = null,
-    val name: String? = null,
-    @JsonProperty("original_name")
-    val originalName: String? = null,
-    @JsonProperty("profile_path")
-    val profilePath: String? = null,
-    val character: String? = null
-)
-
-data class Network(
-    val id: Long? = null,
-    val name: String? = null,
-    @JsonProperty("logo_path")
-    val logoPath: String? = null,
-    @JsonProperty("origin_country")
-    val originCountry: String? = null,
-    @JsonProperty("created_at")
-    val createdAt: String? = null,
-    @JsonProperty("updated_at")
-    val updatedAt: String? = null
-)
-
-data class Genre(
-    val id: Long? = null,
-    @JsonProperty("movie_id")
-    val movieId: Long? = null,
-    @JsonProperty("genre_id")
-    val genreId: Long? = null,
-    val name: String? = null
-)
-
-data class Season(
-    val id: Long,
-    @JsonProperty("tmdb_id")
-    val tmdbId: Long,
-    @JsonProperty("serie_id")
-    val serieId: Long,
-    @JsonProperty("season_number")
-    val seasonNumber: Int,
-    val name: String,
-    val overview: Any?,
-    @JsonProperty("poster_path")
-    val posterPath: String,
-    @JsonProperty("air_date")
-    val airDate: String,
-    @JsonProperty("created_at")
-    val createdAt: String,
-    @JsonProperty("updated_at")
-    val updatedAt: String,
-    val episodes: List<Episode>,
-)
-
-data class Episode(
-    val id: Long,
-    @JsonProperty("tmdb_id")
-    val tmdbId: Long,
-    @JsonProperty("season_id")
-    val seasonId: Long,
-    @JsonProperty("episode_number")
-    val episodeNumber: Int,
-    val name: String,
-    val overview: String,
-    @JsonProperty("still_path")
-    val stillPath: String,
-    @JsonProperty("vote_average")
-    val voteAverage: Long,
-    @JsonProperty("vote_count")
-    val voteCount: Long,
-    val views: Long,
-    @JsonProperty("air_date")
-    val airDate: String,
-    @JsonProperty("skiprecap_start_in")
-    val skiprecapStartIn: Long,
-    val hasrecap: Long,
-    @JsonProperty("created_at")
-    val createdAt: String,
-    @JsonProperty("updated_at")
-    val updatedAt: String,
-    @JsonProperty("still_path_tv")
-    val stillPathTv: String,
-    @JsonProperty("enable_stream")
-    val enableStream: Long,
-    @JsonProperty("enable_media_download")
-    val enableMediaDownload: Long,
-    @JsonProperty("enable_ads_unlock")
-    val enableAdsUnlock: Long,
-    val videos: List<Video>,
-    val substitles: List<Any?>,
-    val downloads: List<Any?>,
-)
-
-data class Video(
-    val id: Long? = null,
-    @JsonProperty("movie_id")
-    val movieId: Long? = null,
-    val server: String? = null,
-    val link: String? = null,
-    val lang: String? = null,
-    val hd: Boolean? = null,
-    val embed: Boolean? = null,
-    val youtubelink: Boolean? = null,
-    val hls: Boolean? = null,
-    val drm: Boolean? = null,
-    val status: Long? = null,
-    @JsonProperty("created_at")
-    val createdAt: String? = null,
-    @JsonProperty("updated_at")
-    val updatedAt: String? = null
-)
-
 //search
 
 data class SearchRoot(
@@ -286,4 +124,21 @@ data class Search(
     val matchScore: Double?
 )
 
+fun generateSignedUrl(url: String): String {
+    return try {
+        val path = URL(url).path
+        val timestamp = (System.currentTimeMillis() / 1000).toString()
+        val secret = base64Decode("R0o4cmV5ZGFySTdKcWF0OXJ2YkFKS05ROWdZNERvRVFGMkg1bmZ1STFnaQ==")
+        val charset = StandardCharsets.UTF_8
+        val key = SecretKeySpec(secret.toByteArray(charset), "HmacSHA256")
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(key)
+        val hash = mac.doFinal((path + timestamp).toByteArray(charset))
+        var signature = base64Encode(hash)
+        signature = URLEncoder.encode(signature, "UTF-8")
+        "$url?verify=$timestamp-$signature"
 
+    } catch (e: Exception) {
+        throw RuntimeException("Error generating HMAC", e)
+    }
+}

@@ -55,10 +55,6 @@ class MovieBlast : MainAPI() {
         }
     }
 
-    private fun MediaDetailResponse.isSeries(): Boolean {
-        return seasons.isNotEmpty()
-    }
-
 
     override val mainPage = mainPageOf(
         "api/genres/pinned/all" to "Latest",
@@ -91,9 +87,14 @@ class MovieBlast : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val safeQuery = query.trim().replace(" ", "%20")
+        val headers = mapOf(
+            "hash256" to base64Decode("ODZkYzAzMjQ0YWRkZGIzY2JlZGJmMGFlMzYwNzRhNzM2ZWUyOTNhNjQ3NzRiMThlODJhNjI0NGVhZmQwZGYzMA=="),
+            "packagename" to base64Decode("Y29tLm1vdmllYmxhc3QNCg==").trim(),
+            "signature" to base64Decode("MzA4MjAyZTQzMDgyMDFjYzAyMDEwMTMwMGQwNjA5MmE4NjQ4ODZmNzBkMDEwMTA1MDUwMDMwMzczMTE2MzAxNDA2MDM1NTA0MDMwYzBkNDE2ZTY0NzI2ZjY5NjQyMDQ0NjU2Mjc1NjczMTEwMzAwZTA2MDM1NTA0MGEwYzA3NDE2ZTY0NzI2ZjY5NjQzMTBiMzAwOTA2MDM1NTA0MDYxMzAyNTU1MzMwMjAxNzBkMzIzNDMxMzIzMTM5MzEzNTMyMzMzNTMzNWExODBmMzIzMDM1MzQzMTMyMzEzMjMxMzUzMjMzMzUzMzVhMzAzNzMxMTYzMDE0MDYwMzU1MDQwMzBjMGQ0MTZlNjQ3MjZmNjk2NDIwNDQ2NTYyNzU2NzMxMTAzMDBlMDYwMzU1MDQwYTBjMDc0MTZlNjQ3MjZmNjk2NDMxMGIzMDA5MDYwMzU1MDQwNjEzMDI1NTUzMzA4MjAxMjIzMDBkMDYwOTJhODY0ODg2ZjcwZDAxMDEwMTA1MDAwMzgyMDEwZjAwMzA4MjAxMGEwMjgyMDEwMTAwYmU1OWEzNGJkYWYyZDI1MzFlMjUyYWE1ZTJmMDg0ODkzMDJmNjYxNTE0YzYyOWMwZjQwM2M3MzZiMWY4OTEwYmJhYzM1Mzg5OWQ4YzI5ZDkzZTE4ODQxZGQxNTc5OTkwN2Q4MTM2OTk5YmI3NTFhMjlkNjU3ZTU0MDMzNjRlMTBiODZjOWI1ZWFhYjRjODY4MDNmN2RmMTZjNDc0OTQ5OWUwMGUxOThlOGY4ZGJlODdjMTdlZDU5OTdjMzk1ZWRhZmE0OWQzN2IxNTliYWVmZWNkYzhlMTU1Mzg2MDQ0ZjIyNGJhMmJmYTM2MzllZmM0YWM0YTYzODc1ODM4MjVlZTUxM2M5ZWE1OTRkNDQ5NmNmYjY4OWE5MzM2M2U3MGFkMWM5OWY4YTIyZTBhNGUxOWZiNzBiY2JlYmVjOTM3M2U0MWE0NTVlMmU0YWEwYWY4ZDJiODk2ZTRmZjVjYjM4Y2VlNTliMmM4YmU4NjI3MWJlYTEwYjAwM2EzYTY3NDBmZDM0MmZkOTk1MDk3MjdmMmI5YTFjYmZhZTczMGY1MTU0OGI5YzczMzBjNTI1MzBiNGNjMjVhOGJkZTRjNmY1MmE3N2IyYzI2OTYyYmNkMmRjYzNmZWI1MTcwYWJlMjY5YWVjNjJlMDE4M2QxZjNkMDcyYTliNGZlODZiYjc2M2YwMjAzMDEwMDAxMzAwZDA2MDkyYTg2NDg4NmY3MGQwMTAxMDUwNTAwMDM4MjAxMDEwMDM2NDU1MTA5NzNkYjA3ODIzZTlkY2I5YzA1N2RhN2RkYTE4M2M2NzFhMzhlZGUxYjYwOGJjNzkxNzQwNWJiZDZlM2Y5NTVkMzFkZmU2ZWIyMjAzOGMxODE4YjgzYTczMzVlMzA2MDZkZGFjMzMxYjVkYjI5MDYzYzhkM2MxZTdmZmQyM2VmNzUyZDFhYWJhMjhkM2NlMzFhMTZlOWViYjNlMGE1NTI5ZDc3NDdmZWY2ZGE3OWZjMTljMjQ2NzZjMWQ4MTJkMjA5ZDJhMmRhM2E4ZmE2YTQzZDhjOWE0Y2MxZTFmNWUwMzA5ZDBlNjkzNzZkZWM3YWE1ZTA2MjViZTI0ODQwOWNlZTg2MjZmODlkNjdiZDQ3N2JhZjU5MzdjMDM2MmVlZjEyNDkxYmI3OWU3OTFjZGRlMjEwZmY5Yzc4NTNkNWViZGIzZWY2ZTgxOTA0YmMwNjA0ODk2Mjk1Mzg3NTEzYzY4ZDM5YzA5MWQwZmIxMWRlOTA0OTQwMmEzY2IwZTc5NzVjMzI4ZmU4ZDM0YjlmNmVjYWUyY2E0NWYyZGFiM2IwOTA3NWJhYjEzNjA5NzdjM2FmMzc3NTkxNjgyMjU4OTJhNjJmYmY2NGY4YzI4Y2VkMjY2NGE2NWU2MWI2ODM3YmEwMTAzZTQ4NGE1OWI5YzQ3MTVkNzU5ZWUz"),
+            "User-Agent" to name)
 
         val res = app
-            .get("$mainUrl/api/search/$safeQuery/$token")
+            .get("$mainUrl/api/search/$safeQuery/$token",headers = headers)
             .parsedSafe<SearchRoot>()
             ?: return emptyList()
 
@@ -132,8 +133,6 @@ class MovieBlast : MainAPI() {
             posterUrl = posterPath
         }
     }
-
-
 
 
     override suspend fun load(url: String): LoadResponse {
@@ -267,21 +266,36 @@ class MovieBlast : MainAPI() {
         links.forEach { loadUrl ->
             if (loadUrl.link!=null)
             {
-                Log.d("Phisher", loadUrl.link)
+                val headers = mapOf(
+                    "Accept-Encoding" to "identity",
+                    "Connection" to "Keep-Alive",
+                    "Icy-MetaData" to "1",
+                    "Referer" to name,
+                    "User-Agent" to name,
+                    "x-request-x" to base64Decode("Y29tLm1vdmllYmxhc3QNCg==").trim()
+                )
+                val signed = generateSignedUrl(httpsify(loadUrl.link))
                 callback.invoke(
                     newExtractorLink(
                         "${loadUrl.server}",
                         "$name ${loadUrl.lang}",
-                        url = loadUrl.link,
+                        signed,
                         INFER_TYPE
                     ) {
                         this.quality = matchQualityFromString(loadUrl.server)
+                        this.headers = headers
                     }
                 )
             }
         }
         return true
     }
+
+
+    fun httpsify(url: String): String {
+        return if (!url.startsWith("http")) "https://$url" else url
+    }
+
 
     fun matchQualityFromString(s: String?): Int {
         if (s.isNullOrBlank()) return Qualities.Unknown.value

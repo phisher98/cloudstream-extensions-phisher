@@ -12,7 +12,7 @@ class LayarKacaProvider : MainAPI() {
 
     override var mainUrl = "https://lk21.de"
     private var seriesUrl = "https://series.lk21.de"
-    private var searchurl= "https://search.lk21.party"
+    private var searchurl= "https://gudangvape.com"
 
     override var name = "LayarKaca"
     override val hasMainPage = true
@@ -82,7 +82,8 @@ class LayarKacaProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$searchurl/search.php?s=$query").text
+        val refer = app.get(mainUrl).url
+        val res = app.get("$searchurl/search.php?s=$query", referer = refer).text
         val results = mutableListOf<SearchResponse>()
 
         val root = JSONObject(res)
@@ -93,7 +94,7 @@ class LayarKacaProvider : MainAPI() {
             val title = item.getString("title")
             val slug = item.getString("slug")
             val type = item.getString("type")
-            val posterUrl = "https://poster.lk21.party/wp-content/uploads/"+item.optString("poster")
+            val posterUrl = "https://static-jpg.lk21.party/wp-content/uploads/"+item.optString("poster")
             when (type) {
                 "series" -> results.add(
                     newTvSeriesSearchResponse(title, "$seriesUrl/$slug", TvType.TvSeries) {
