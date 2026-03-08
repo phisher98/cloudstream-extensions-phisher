@@ -4893,7 +4893,8 @@ object StreamPlayExtractor : StreamPlay() {
 
         val headers = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-            "Referer" to "$vidfastProApi/"
+            "Referer" to "$vidfastProApi/",
+            "X-Requested-With" to "XMLHttpRequest"
         )
 
         val pageResponse = app.get(baseUrl, headers = headers, timeout = 20).text
@@ -4941,9 +4942,6 @@ object StreamPlayExtractor : StreamPlay() {
             val serverObj = serversArray.getJSONObject(i)
             val serverName = serverObj.optString("name", "Server ${i + 1}")
             val serverData = serverObj.optString("data")
-
-            println("VidFast: Trying server -> $serverName")
-            println("VidFast: Server data -> $serverData")
 
             if (serverData.isBlank()) {
                 println("VidFast: Server data blank, skipping")
