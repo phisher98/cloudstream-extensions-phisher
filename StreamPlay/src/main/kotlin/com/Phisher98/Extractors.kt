@@ -974,8 +974,6 @@ class HubCloud : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val tag = "HubCloud"
-        val ref = referer.orEmpty()
-
         val uri = runCatching { URI(url) }.getOrElse {
             Log.e(tag, "Invalid URL: ${it.message}")
             return
@@ -1369,7 +1367,7 @@ open class Driveseed : ExtractorApi() {
                             callback(
                                 newExtractorLink(
                                     "$name Instant(Download)",
-                                    "$name Instant(Download) $labelExtras",
+                                    "$name [Instant(Download)] $labelExtras",
                                     url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
@@ -1383,7 +1381,7 @@ open class Driveseed : ExtractorApi() {
                             callback(
                                 newExtractorLink(
                                     "$name ResumeBot(VLC)",
-                                    "$name ResumeBot(VLC) $labelExtras",
+                                    "$name [ResumeBot(VLC)] $labelExtras",
                                     url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
@@ -1397,7 +1395,7 @@ open class Driveseed : ExtractorApi() {
                             callback(
                                 newExtractorLink(
                                     "$name CF Type1",
-                                    "$name CF Type1 $labelExtras",
+                                    "$name [CF Type1] $labelExtras",
                                     url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
@@ -1411,7 +1409,7 @@ open class Driveseed : ExtractorApi() {
                             callback(
                                 newExtractorLink(
                                     "$name ResumeCloud",
-                                    "$name ResumeCloud $labelExtras",
+                                    "$name [ResumeCloud] $labelExtras",
                                     url = link
                                 ) {
                                     this.quality = getIndexQuality(qualityText)
@@ -1423,8 +1421,8 @@ open class Driveseed : ExtractorApi() {
                     text.contains("Cloud Download", ignoreCase = true) -> {
                         callback(
                             newExtractorLink(
-                                "$name Cloud Download $labelExtras",
-                                "$name Cloud Download $labelExtras",
+                                "$name Cloud Download",
+                                "$name [Cloud Download] $labelExtras",
                                 url = href
                             ) {
                                 this.quality = getIndexQuality(qualityText)
