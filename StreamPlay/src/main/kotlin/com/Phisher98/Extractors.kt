@@ -305,7 +305,7 @@ class VCloud : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             "FSLv2",
-                            "FSLv2 $labelExtras",
+                            "[FSLv2] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -315,7 +315,7 @@ class VCloud : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             "FSL Server",
-                            "FSL Server $labelExtras",
+                            "[FSL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -328,7 +328,7 @@ class VCloud : ExtractorApi() {
                         callback.invoke(
                             newExtractorLink(
                                 "BuzzServer",
-                                "BuzzServer $labelExtras",
+                                "[BuzzServer] $labelExtras",
                                 baseUrl + dlink,
                             ) { this.quality = quality }
                         )
@@ -345,7 +345,7 @@ class VCloud : ExtractorApi() {
                     callback(
                         newExtractorLink(
                             "Pixeldrain",
-                            "Pixeldrain $labelExtras",
+                            "[Pixeldrain] $labelExtras",
                             finalURL
                         ) { this.quality = quality }
                     )
@@ -355,7 +355,7 @@ class VCloud : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             "PDL Server",
-                            "PDL Server $labelExtras",
+                            "[PDL Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -391,7 +391,7 @@ class VCloud : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             "S3 Server",
-                            "S3 Server $labelExtras",
+                            "[S3 Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -401,7 +401,7 @@ class VCloud : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             "Mega Server",
-                            "Mega Server $labelExtras",
+                            "[Mega Server] $labelExtras",
                             link,
                         ) { this.quality = quality }
                     )
@@ -1023,8 +1023,8 @@ class HubCloud : ExtractorApi() {
                 "fslv2" in label -> {
                     callback(
                         newExtractorLink(
-                            "$ref [FSLv2]",
-                            "$ref [FSLv2] $labelExtras",
+                            "FSLv2",
+                            "[FSLv2] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -1033,8 +1033,8 @@ class HubCloud : ExtractorApi() {
                 "fsl" in label -> {
                     callback(
                         newExtractorLink(
-                            "$ref [FSL Server]",
-                            "$ref [FSL Server] $labelExtras",
+                            "FSL Server",
+                            "[FSL Server] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -1043,8 +1043,8 @@ class HubCloud : ExtractorApi() {
                 "download file" in label -> {
                     callback(
                         newExtractorLink(
-                            ref,
-                            "$ref $labelExtras",
+                            "Download File",
+                            "[Download file] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -1058,8 +1058,8 @@ class HubCloud : ExtractorApi() {
                     if (dlink.isNotBlank()) {
                         callback(
                             newExtractorLink(
-                                "$ref [BuzzServer]",
-                                "$ref [BuzzServer] $labelExtras",
+                                "BuzzServer",
+                                "[BuzzServer] $labelExtras",
                                 dlink
                             ) { this.quality = quality }
                         )
@@ -1076,8 +1076,8 @@ class HubCloud : ExtractorApi() {
 
                     callback(
                         newExtractorLink(
-                            "$ref [Pixeldrain]",
-                            "$ref [Pixeldrain] $labelExtras",
+                            "Pixeldrain",
+                            "[Pixeldrain] $labelExtras",
                             finalUrl
                         ) { this.quality = quality }
                     )
@@ -1086,8 +1086,8 @@ class HubCloud : ExtractorApi() {
                 "s3 server" in label -> {
                     callback(
                         newExtractorLink(
-                            "$ref [S3 Server]",
-                            "$ref [S3 Server] $labelExtras",
+                            "S3 Server",
+                            "[S3 Server] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -1096,8 +1096,8 @@ class HubCloud : ExtractorApi() {
                 "mega server" in label -> {
                     callback(
                         newExtractorLink(
-                            "$ref [Mega Server]",
-                            "$ref [Mega Server] $labelExtras",
+                            "Mega Server",
+                            "[Mega Server] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -1106,8 +1106,8 @@ class HubCloud : ExtractorApi() {
                 "pdl Server" in label -> {
                     callback(
                         newExtractorLink(
-                            "$ref [PDL Server]",
-                            "$ref [PDL Server] $labelExtras",
+                            "PDL Server",
+                            "[PDL Server] $labelExtras",
                             link
                         ) { this.quality = quality }
                     )
@@ -1124,8 +1124,8 @@ class HubCloud : ExtractorApi() {
                         if ("link=" in loc) {
                             callback(
                                 newExtractorLink(
-                                    "$ref 10Gbps [Download]",
-                                    "$ref 10Gbps [Download] $labelExtras",
+                                    "10Gbps [Download]",
+                                    "10Gbps [Download] $labelExtras",
                                     loc.substringAfter("link=")
                                 ) { this.quality = quality }
                             )
@@ -1962,8 +1962,8 @@ open class GDFlix : ExtractorApi() {
 
                     callback.invoke(
                         newExtractorLink(
-                            "Pixeldrain",
-                            "Pixeldrain [$fileSize]",
+                            "GDFlix Pixeldrain",
+                            "GDFlix [Pixeldrain] [$fileSize]",
                             finalURL
                         ) { this.quality = quality }
                     )

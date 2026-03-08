@@ -25,7 +25,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -38,7 +37,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -67,7 +65,6 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.experimental.xor
 import kotlin.math.min
 
 
@@ -143,44 +140,6 @@ suspend fun bypassHrefli(url: String): String? {
     return fixUrl(path, getBaseUrl(driveUrl))
 }
 
-suspend fun cinematickitBypass(url: String): String? {
-    return try {
-        val cleanedUrl = url.replace("&#038;", "&")
-        val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
-        if (encodedLink.isEmpty()) return null
-        val decodedUrl = base64Decode(encodedLink)
-        val doc = app.get(decodedUrl).document
-        val goValue = doc.select("form#landing input[name=go]").attr("value")
-        if (goValue.isBlank()) return null
-        val decodedGoUrl = base64Decode(goValue).replace("&#038;", "&")
-        val responseDoc = app.get(decodedGoUrl).document
-        val script = responseDoc.select("script").firstOrNull { it.data().contains("window.location.replace") }?.data() ?: return null
-        val regex = Regex("""window\.location\.replace\s*\(\s*["'](.+?)["']\s*\)\s*;?""")
-        val match = regex.find(script) ?: return null
-        val redirectPath = match.groupValues[1]
-        return if (redirectPath.startsWith("http")) redirectPath else URI(decodedGoUrl).let { "${it.scheme}://${it.host}$redirectPath" }
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
-
-@RequiresApi(Build.VERSION_CODES.O)
-suspend fun cinematickitloadBypass(url: String): String? {
-    return try {
-        val cleanedUrl = url.replace("&#038;", "&")
-        val encodedLink = cleanedUrl.substringAfter("safelink=").substringBefore("-")
-        if (encodedLink.isEmpty()) return null
-        val decodedUrl = base64Decode(encodedLink)
-        val doc = app.get(decodedUrl).document
-        val goValue = doc.select("form#landing input[name=go]").attr("value")
-        return base64Decode(goValue)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
 
 suspend fun String.haveDub(referer: String): Boolean {
     return app.get(this, referer = referer).text.contains("TYPE=AUDIO")
@@ -276,24 +235,25 @@ suspend fun loadSourceNameExtractor(
     quality: Int? = null,
     size: String = ""
 ) {
-    val fixSize = if(size.isNotEmpty()) " $size" else ""
+    val fixSize = if (size.isNotEmpty()) " $size" else ""
+
     loadExtractor(url, referer, subtitleCallback) { link ->
         CoroutineScope(Dispatchers.IO).launch {
-            val sourcePart = source.trim().takeIf { it.isNotBlank() }
-            val namePart = link.name.trim()
+
+            val provider = source.trim().takeIf { it.isNotBlank() }
             val sizePart = fixSize.trim().takeIf { it.isNotBlank() }
 
             val label = listOfNotNull(
-                sourcePart,
-                namePart,
+                provider,
+                link.name,
                 sizePart
             ).joinToString(" ")
 
-            callback.invoke(
+            callback(
                 newExtractorLink(
-                    source,
+                    link.source,
                     label,
-                    link.url,
+                    link.url
                 ) {
                     this.quality = quality ?: link.quality
                     this.type = link.type
@@ -439,8 +399,6 @@ fun String?.createSlug(): String? {
         ?.replace("\\s+".toRegex(), "-")
         ?.lowercase()
 }
-
-fun bytesToGigaBytes(number: Double): Double = number / 1024000000
 
 fun getKisskhTitle(str: String?): String? {
     return str?.replace(Regex("[^a-zA-Z\\d]"), "-")
@@ -757,7 +715,7 @@ suspend fun invokeExternalSource(
                 "$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1",
                 headers = headers
             )
-                .parsedSafe<ExternalResponse>()?.data?.fileList?.filterNotNull()?.filter {
+                .parsedSafe<ExternalResponse>()?.data?.fileList?.filter {
                     it.fileName?.contains("s${seasonSlug}e${episodeSlug}", true) == true
                 }
         }
@@ -972,7 +930,7 @@ object CryptoAES {
                 keyAndIV?.get(0) ?: ByteArray(KEY_SIZE),
                 keyAndIV?.get(1) ?: ByteArray(IV_SIZE),
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -988,7 +946,7 @@ object CryptoAES {
         return try {
             val cipherTextBytes = base64DecodeArray(cipherText)
             decryptAES(cipherTextBytes, keyBytes, ivBytes)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -1004,7 +962,7 @@ object CryptoAES {
         return try {
             val cipherTextBytes = plainText.toByteArray()
             encryptAES(cipherTextBytes, keyBytes, ivBytes)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -1024,13 +982,13 @@ object CryptoAES {
         return try {
             val cipher = try {
                 Cipher.getInstance(HASH_CIPHER)
-            } catch (e: Throwable) {
+            } catch (_: Throwable) {
                 Cipher.getInstance(HASH_CIPHER_FALLBACK)
             }
             val keyS = SecretKeySpec(keyBytes, AES)
             cipher.init(Cipher.DECRYPT_MODE, keyS, IvParameterSpec(ivBytes))
             cipher.doFinal(cipherTextBytes).toString(Charsets.UTF_8)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -1050,13 +1008,13 @@ object CryptoAES {
         return try {
             val cipher = try {
                 Cipher.getInstance(HASH_CIPHER)
-            } catch (e: Throwable) {
+            } catch (_: Throwable) {
                 Cipher.getInstance(HASH_CIPHER_FALLBACK)
             }
             val keyS = SecretKeySpec(keyBytes, AES)
             cipher.init(Cipher.ENCRYPT_MODE, keyS, IvParameterSpec(ivBytes))
             base64Encode(cipher.doFinal(plainTextBytes))
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
     }
@@ -1213,56 +1171,6 @@ fun getLanguage(code: String): String {
     return languageMap.entries.firstOrNull { lower in it.value }?.key ?: "UnKnown"
 }
 
-
-suspend fun getPlayer4uUrl(
-    name: String,
-    selectedQuality: Int,
-    url: String,
-    referer: String?,
-    callback: (ExtractorLink) -> Unit
-) {
-    val response = app.get(url, referer = referer)
-    var script = getAndUnpack(response.text).takeIf { it.isNotEmpty() }
-        ?: response.document.selectFirst("script:containsData(sources:)")?.data()
-    if (script == null) {
-        val iframeUrl =
-            Regex("""<iframe src="(.*?)"""").find(response.text)?.groupValues?.getOrNull(1)
-                ?: return
-        val iframeResponse = app.get(
-            iframeUrl,
-            referer = null,
-            headers = mapOf("Accept-Language" to "en-US,en;q=0.5")
-        )
-        script = getAndUnpack(iframeResponse.text).takeIf { it.isNotEmpty() } ?: return
-    }
-
-    val m3u8 = Regex("\"hls2\":\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1).orEmpty()
-    callback(newExtractorLink(name, name, m3u8) {
-        this.quality=selectedQuality
-        this.type=ExtractorLinkType.M3U8
-    })
-
-}
-
-fun getPlayer4UQuality(quality: String): Int {
-    return when (quality) {
-        "4K", "2160P" -> Qualities.P2160.value
-        "FHD", "1080P" -> Qualities.P1080.value
-        "HQ", "HD", "720P", "DVDRIP", "TVRIP", "HDTC", "PREDVD" -> Qualities.P720.value
-        "480P" -> Qualities.P480.value
-        "360P", "CAM" -> Qualities.P360.value
-        "DS" -> Qualities.P144.value
-        "SD" -> Qualities.P480.value
-        "WEBRIP" -> Qualities.P720.value
-        "BLURAY", "BRRIP" -> Qualities.P1080.value
-        "HDRIP" -> Qualities.P1080.value
-        "TS" -> Qualities.P480.value
-        "R5" -> Qualities.P480.value
-        "SCR" -> Qualities.P480.value
-        "TC" -> Qualities.P480.value
-        else -> Qualities.Unknown.value
-    }
-}
 
 fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
     if (episodeNumber == null) return null
@@ -1506,64 +1414,6 @@ suspend fun getM3u8Qualities(
 }
 
 
-suspend fun <T> retryIO(
-    times: Int = 3,
-    delayTime: Long = 1000,
-    block: suspend () -> T
-): T {
-    repeat(times - 1) {
-        try {
-            return block()
-        } catch (e: Exception) {
-            delay(delayTime)
-        }
-    }
-    return block() // last attempt, let it throw
-}
-
-suspend fun elevenMoviesToken(rawData: String): String {
-    // AES setup
-    val jsonUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/main/output.json"
-    val jsonString = app.get(jsonUrl).text
-    val gson = Gson()
-    val json: Elevenmoviesjson = gson.fromJson(jsonString, Elevenmoviesjson::class.java)
-    val keyHex = json.key_hex
-    val ivHex = json.iv_hex
-    val aesKey = SecretKeySpec(keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray(), "AES")
-    val aesIv = IvParameterSpec(ivHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray())
-
-    // AES encrypt
-    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, aesKey, aesIv)
-    val aesEncrypted = cipher.doFinal(rawData.toByteArray())
-    val aesHex = aesEncrypted.joinToString("") { "%02x".format(it) }
-
-    // XOR operation
-    val xorKeyHex = json.xor_key
-    val xorKey = xorKeyHex.chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-
-    val xorResult = aesHex.mapIndexed { index, char ->
-        ((char.code.toByte() xor xorKey[index % xorKey.size]).toInt()).toChar()
-    }.joinToString("")
-
-
-    val src = json.src
-    val dst = json.dst
-
-    val b64 = base64Encode(xorResult.toByteArray())
-        .replace("+", "-")
-        .replace("/", "_")
-        .replace("=", "")
-
-    return b64.map { char ->
-        val index = src.indexOf(char)
-        if (index != -1) dst[index] else char
-    }.joinToString("")
-}
-
-
 suspend fun getRedirectLinks(url: String): String {
     val doc = app.get(url).toString()
     val regex = "s\\('o','([A-Za-z0-9+/=]+)'|ck\\('_wp_http_\\d+','([^']+)'".toRegex()
@@ -1606,35 +1456,6 @@ fun hdhubpen(value: String): String {
     }.joinToString("")
 }
 
-suspend fun dispatchToExtractor(
-    link: String,
-    source: String,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit
-) {
-    when {
-        link.contains("hubdrive", ignoreCase = true) -> Hubdrive().getUrl(link, source, subtitleCallback, callback)
-        link.contains("hubcloud", ignoreCase = true) -> HubCloud().getUrl(link, source, subtitleCallback, callback)
-        link.contains("hubcdn", ignoreCase = true) -> HUBCDN().getUrl(link, source, subtitleCallback, callback)
-        else -> loadSourceNameExtractor(source, link, "", subtitleCallback, callback)
-    }
-}
-
-
-fun customBase64EncodeVidfast(input: ByteArray): String {
-    val sourceChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-    val targetChars = "7EkRi2WnMSlgLbXm_jy1vtO69ehrAV0-saUB5FGpoq3QuNIZ8wJ4PfdHxzTDKYCc"
-
-    // Standard Base64 URL-safe encode, no padding or wrap
-    val base64 = android.util.Base64.encodeToString(
-        input,
-        android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP
-    )
-
-    // Translate characters to custom charset
-    val translationMap = sourceChars.zip(targetChars).toMap()
-    return base64.map { translationMap[it] ?: it }.joinToString("")
-}
 
 private fun md5(input: ByteArray): String {
     return MessageDigest.getInstance("MD5").digest(input)
@@ -1929,55 +1750,6 @@ fun hexStringToByteArray2(hex: String): ByteArray {
     return result
 }
 
-/**
- * PKCS7 padding implementation
- */
-fun padData(data: ByteArray, blockSize: Int): ByteArray {
-    val padding = blockSize - (data.size % blockSize)
-    val result = ByteArray(data.size + padding)
-    System.arraycopy(data, 0, result, 0, data.size)
-    for (i in data.size until result.size) {
-        result[i] = padding.toByte()
-    }
-    return result
-}
-
-fun customEncode(input: ByteArray): String {
-    val sourceChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-    val targetChars = "4stjqN6BT05-L8rQe_HxWmAVv9icYKaCDzIP1fZ7kwXRyFhd2GEng3SMJlUubOop"
-
-    val translationMap = sourceChars.zip(targetChars).toMap()
-    val encoded = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        Base64.getUrlEncoder().withoutPadding().encodeToString(input)
-    } else {
-        TODO("VERSION.SDK_INT < O")
-    }
-
-    return encoded.map { char ->
-        translationMap[char] ?: char
-    }.joinToString("")
-}
-
-fun parseServers(jsonString: String): List<VidFastServer> {
-    val servers = mutableListOf<VidFastServer>()
-    try {
-        val jsonArray = JSONArray(jsonString)
-        for (i in 0 until jsonArray.length()) {
-            val jsonObject = jsonArray.getJSONObject(i)
-            val server = VidFastServer(
-                name = jsonObject.getString("name"),
-                description = jsonObject.getString("description"),
-                image = jsonObject.getString("image"),
-                data = jsonObject.getString("data")
-            )
-            servers.add(server)
-        }
-    } catch (e: Exception) {
-        Log.e("salman731", "Manual parsing failed: ${e.message}")
-    }
-    return servers
-}
-
 fun derivePbkdf2Key(
     password: String,
     salt: ByteArray,
@@ -2005,28 +1777,11 @@ fun hasHost(url: String): Boolean {
     return try {
         val host = URL(url).host
         !host.isNullOrEmpty()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         false
     }
 }
 
-fun generateKeyIv(keySize: Int = 32): KeyIvResult {
-
-    val secureRandom = SecureRandom()
-
-    val keyBytes = ByteArray(keySize)
-    secureRandom.nextBytes(keyBytes)
-
-    val ivBytes = ByteArray(16) // 16 bytes for AES IV
-    secureRandom.nextBytes(ivBytes)
-
-    return KeyIvResult(
-        keyBytes = keyBytes,
-        ivBytes = ivBytes,
-        keyHex = toHex(keyBytes),
-        ivHex = toHex(ivBytes)
-    )
-}
 /**
  * Run multiple suspend functions concurrently with a limit on simultaneous executions.
  *
@@ -2100,21 +1855,6 @@ fun yflixextractVideoUrlFromJson(jsonData: String): String {
     return jsonObject.getString("url")
 }
 
-
-suspend fun <T> retry(
-    times: Int = 3,
-    delayMillis: Long = 1000,
-    block: suspend () -> T
-): T? {
-    repeat(times) { attempt ->
-        try {
-            return block()
-        } catch (_: Throwable) {
-            if (attempt < times - 1) delay(delayMillis)
-        }
-    }
-    return null
-}
 
 fun String.fixSourceUrl(): String {
     return this.replace("/manifest.json", "").replace("stremio://", "https://")

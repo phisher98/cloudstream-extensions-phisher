@@ -193,9 +193,6 @@ object StreamPlayExtractor : StreamPlay() {
                             ?.get(1)
                         ?: return@runCatching
 
-
-                Log.d("Phisher Load 1",fileUrl)
-
                 when {
                     fileUrl.contains(".m3u8", ignoreCase = true) || fileUrl.contains(".json", ignoreCase = true) -> {
 
@@ -2381,7 +2378,6 @@ object StreamPlayExtractor : StreamPlay() {
                     val detailDoc = runCatching {
                         app.get(url).document
                     }.getOrNull() ?: return@amap
-                    Log.d("Phisher episodeLinks", episodeLinks.toString())
 
                     val link = detailDoc.select("span strong")
                         .firstOrNull { it.text().contains("Episode $episode", true) }
@@ -5162,10 +5158,10 @@ object StreamPlayExtractor : StreamPlay() {
         response.streams.amap { stream ->
             callback.invoke(
                 newExtractorLink(
-                    name = stream.name.substringBefore("-"),
-                    source = stream.name,
-                    url = stream.url,
-                    type = INFER_TYPE
+                    stream.name.substringAfter("[").substringBefore("]").substringBefore("-"),
+                    stream.name.substringBefore("-"),
+                    stream.url,
+                    INFER_TYPE
                 )
                 {
                     this.quality = getIndexQuality(stream.name)
@@ -5202,7 +5198,7 @@ object StreamPlayExtractor : StreamPlay() {
             callback.invoke(
                 newExtractorLink(
                     "WebStreamr",
-                     name,
+                    name,
                     stream.url,
                     INFER_TYPE
                 ) {
