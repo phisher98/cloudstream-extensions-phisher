@@ -1,6 +1,15 @@
 // use an integer for version numbers
-version = 10
+version = 11
 
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+}
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
+}
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -23,6 +32,7 @@ cloudstream {
 
     iconUrl = "https://img.watch32.sx/xxrz/400x400/100/a9/5e/a95e15a880a9df3c045f6a5224daf576/a95e15a880a9df3c045f6a5224daf576.png"
 
+    requiresResources = true
     isCrossPlatform = false
 }
 

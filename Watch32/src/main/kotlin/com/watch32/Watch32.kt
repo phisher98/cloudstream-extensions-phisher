@@ -29,8 +29,8 @@ import org.json.JSONObject
 import org.jsoup.nodes.Document
 
 class Watch32 : MainAPI() {
-    override var mainUrl = "https://watch32.sx"
-    override var name = "Watch32"
+    override var mainUrl = Watch32Plugin.currentWatch32Server
+    override var name = Watch32Plugin.getCurrentServerName()
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override var lang = "en"
     override val hasMainPage = true
@@ -63,7 +63,7 @@ class Watch32 : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = request.data + page
-        val response = app.get(url)
+        val response = app.get(url, timeout = 10000L)
         if (response.code == 200)
                 return newHomePageResponse(
                         request.name,
