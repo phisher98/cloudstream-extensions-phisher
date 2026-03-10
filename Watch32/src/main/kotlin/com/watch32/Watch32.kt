@@ -195,29 +195,34 @@ class Watch32 : MainAPI() {
                 }
 
                 app.get("$mainUrl/ajax/season/episodes/$seasonId")
-                        .document
-                        .select("a.eps-item")
-                        .forEach { episode ->
-                            val epId = episode.attr("data-id")
-                            val match = Regex("Eps (\\d+): (.+)").find(episode.attr("title"))
-                                ?: return@forEach
-
-                            val (epNum, epName) = match.destructured
-                            val tmdbEpJson = tmdbEpisodeMap?.get(epNum.toInt())
-                            episodes.add(
-                                    newEpisode(epId) {
-                                        this.name = tmdbEpJson?.optString("name")?.takeIf { it.isNotBlank() } ?: epName
-                                        this.episode = epNum.toInt()
-                                        this.season = seasonNum.replace("Series", "").trim().toInt()
-                                        this.data = "servers/$epId"
-                                        this.description = tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() }
-                                        this.posterUrl = tmdbEpJson?.optString("still_path")?.takeIf { it.isNotBlank() }?.let { "${TMDBIMAGEBASEURL}$it" }
-                                        this.score = tmdbEpJson?.optDouble("vote_average")?.let { Score.from10(it.toString()) }
-                                        addDate(tmdbEpJson?.optString("air_date")?.takeIf { it.isNotBlank() })
-                                    }
-                            )
+                    .document
+                    .select("a.eps-item, div.eps-item")
+                    .forEach { episode ->
+                        val epId = episode.attr("data-id")
+                        val titleText = episode.attr("title").ifBlank {
+                            episode.select("img").attr("title")
                         }
+
+                        val match = Regex("(?:Eps|Episode) (\\d+): (.+)").find(titleText) ?: return@forEach
+
+                        val (epNum, epName) = match.destructured
+                        val tmdbEpJson = tmdbEpisodeMap?.get(epNum.toInt())
+
+                        episodes.add(
+                            newEpisode(epId) {
+                                this.name = tmdbEpJson?.optString("name")?.takeIf { it.isNotBlank() } ?: epName
+                                this.episode = epNum.toInt()
+                                this.season = seasonNum.replace("Series", "").trim().toInt()
+                                this.data = "servers/$epId"
+                                this.description = tmdbEpJson?.optString("overview")?.takeIf { it.isNotBlank() }
+                                this.posterUrl = tmdbEpJson?.optString("still_path")?.takeIf { it.isNotBlank() }?.let { "${TMDBIMAGEBASEURL}$it" }
+                                this.score = tmdbEpJson?.optDouble("vote_average")?.let { Score.from10(it.toString()) }
+                                addDate(tmdbEpJson?.optString("air_date")?.takeIf { it.isNotBlank() })
+                            }
+                        )
+                    }
             }
+
             return newTvSeriesLoadResponse(name, url, TvType.TvSeries, episodes) {
                 this.posterUrl = details.select("div.film-poster > img").attr("src")
                 this.backgroundPosterUrl = bgurl ?: posterUrl

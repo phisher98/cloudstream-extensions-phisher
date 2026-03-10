@@ -3365,14 +3365,21 @@ object StreamPlayExtractor : StreamPlay() {
             }
         } else {
             val episodeLinks = runCatching {
-                app.get("$Watch32/ajax/episode/list/$infoId").document.select("li.nav-item a")
+                app.get("$Watch32/ajax/episode/list/$infoId")
+                    .document
+                    .select("li.nav-item a")
             }.getOrNull() ?: return
             episodeLinks.amap { ep ->
                 val dataId = ep.attr("data-id")
+                if (dataId.isBlank()) return@amap
+
                 val iframeUrl = runCatching {
                     app.get("$Watch32/ajax/episode/sources/$dataId")
                         .parsedSafe<Watch32>()?.link
-                }.getOrNull() ?: return@amap
+                }.getOrNull()
+
+                if (iframeUrl.isNullOrBlank()) return@amap
+
                 loadDisplaySourceNameExtractor(
                     "Watch32",
                     "Watch32",

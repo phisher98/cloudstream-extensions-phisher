@@ -6,7 +6,6 @@ import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.google.gson.JsonParser
-import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.SubtitleFile
@@ -2406,105 +2405,72 @@ class Videostr : ExtractorApi() {
         )
 
         val id = url.substringAfterLast("/").substringBefore("?")
-        val responsenonce = app.get(url, headers = headers).text
-        val match1 = Regex("""\b[a-zA-Z0-9]{48}\b""").find(responsenonce)
-        val match2 = Regex("""\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b""")
-            .find(responsenonce)
+        val html = app.get(url, headers = headers).text
 
-        val nonce = match1?.value ?: match2?.let {
-            it.groupValues[1] + it.groupValues[2] + it.groupValues[3]
-        } ?: throw Exception("Nonce not found")
+        val nonce = Regex("""\b[a-zA-Z0-9]{48}\b""").find(html)?.value
+            ?: Regex("""\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b""")
+                .find(html)?.let { it.groupValues[1] + it.groupValues[2] + it.groupValues[3] }
+            ?: throw Exception("Nonce not found")
 
         val apiUrl = "$mainUrl/embed-1/v3/e-1/getSources?id=$id&_k=$nonce"
-        val gson = Gson()
-        val response = try {
-            val json = app.get(apiUrl, headers).text
-            gson.fromJson(json, VideostrResponse::class.java)
-        } catch (e: Exception) {
-            throw Exception("Failed to parse VideostrResponse: ${e.message}")
-        }
-
-        Log.d("Videostr", "Parsed VideostrResponse: $response")
-
-        val key = try {
-            val keyJson = app.get(
-                "https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json"
-            ).text
-            gson.fromJson(keyJson, Megakey::class.java)?.vidstr
-        } catch (e: Exception) {
-            throw Exception("Failed to parse Megakey: ${e.message}")
-        } ?: throw Exception("Decryption key not found")
+        val response = Gson().fromJson(
+            app.get(apiUrl, headers).text,
+            VideostrResponse::class.java
+        )
 
         val encodedSource = response.sources.firstOrNull()?.file
-            ?: throw Exception("No sources found in response")
+            ?: throw Exception("No sources found")
 
-        val m3u8: String = if (".m3u8" in encodedSource) {
+        val m3u8 = if (".m3u8" in encodedSource) {
             encodedSource
         } else {
+            val key = Gson().fromJson(
+                app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text,
+                Megakey::class.java
+            ).vidstr
+
             val decodeUrl =
                 "https://script.google.com/macros/s/AKfycbxHbYHbrGMXYD2-bC-C43D3njIbU-wGiYQuJL61H4vyy6YVXkybMNNEPJNPPuZrD1gRVA/exec"
 
-            val fullUrl = buildString {
-                append(decodeUrl)
-                append("?encrypted_data=").append(URLEncoder.encode(encodedSource, "UTF-8"))
-                append("&nonce=").append(URLEncoder.encode(nonce, "UTF-8"))
-                append("&secret=").append(URLEncoder.encode(key, "UTF-8"))
-            }
+            val fullUrl =
+                "$decodeUrl?encrypted_data=${URLEncoder.encode(encodedSource,"UTF-8")}&nonce=${URLEncoder.encode(nonce,"UTF-8")}&secret=${URLEncoder.encode(key,"UTF-8")}"
 
-            val decryptedResponse = app.get(fullUrl).text
             Regex("\"file\":\"(.*?)\"")
-                .find(decryptedResponse)
+                .find(app.get(fullUrl).text)
                 ?.groupValues?.get(1)
-                ?: throw Exception("Video URL not found in decrypted response")
+                ?: throw Exception("Video URL not found")
         }
 
-        val m3u8headers = mapOf(
-            "Referer" to "$mainUrl/",
-            "Origin" to mainUrl
-        )
+        generateM3u8(
+            name,
+            m3u8,
+            mainUrl,
+            headers = mapOf("Referer" to "$mainUrl/", "Origin" to mainUrl)
+        ).forEach(callback)
 
-        try {
-            generateM3u8(name, m3u8, mainUrl, headers = m3u8headers).forEach(callback)
-        } catch (e: Exception) {
-            Log.e("Videostr", "Error generating M3U8: ${e.message}")
-        }
-
-        response.tracks.forEach { track ->
-            if (track.kind == "captions" || track.kind == "subtitles") {
-                subtitleCallback(
-                    newSubtitleFile(
-                        track.label,
-                        track.file
-                    )
-                )
+        response.tracks.forEach {
+            if (it.kind == "captions" || it.kind == "subtitles") {
+                subtitleCallback(newSubtitleFile(it.label, it.file))
             }
         }
     }
 
     data class VideostrResponse(
         val sources: List<VideostrSource>,
-        val tracks: List<Track>,
-        val encrypted: Boolean,
-        @SerializedName("_f") val f: String,
-        val server: Long,
+        val tracks: List<Track>
     )
 
     data class VideostrSource(
-        val file: String,
-        val type: String,
+        val file: String
     )
 
     data class Track(
         val file: String,
         val label: String,
-        val kind: String,
-        val s: String,
-        val default: Boolean?,
+        val kind: String
     )
 
     data class Megakey(
-        val rabbit: String,
-        val mega: String,
         val vidstr: String
     )
 }
