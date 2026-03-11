@@ -4071,12 +4071,13 @@ object StreamPlayExtractor : StreamPlay() {
             }
         } else {
             document.select("ul#playeroptionsul > li")
-                .firstOrNull { it.text().contains("v2", ignoreCase = true) }
+                .firstOrNull { it.text().contains("v2", ignoreCase = true) || it.text().contains("v3", ignoreCase = true) }
                 ?.let { mv ->
                     val post = mv.attr("data-post")
                     val nume = mv.attr("data-nume")
                     link = fetchSource(post, nume, "movie")
                 }
+
         }
 
         // If ajax link failed, fallback to legacy anchors
@@ -6280,6 +6281,49 @@ object StreamPlayExtractor : StreamPlay() {
                             }
                     }
             }
+    }
+
+    suspend fun invokeDooflix(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val baseApi = "https://panel.watchkaroabhi.com"
+        val apiKey = "qNhKLJiZVyoKdi9NCQGz8CIGrpUijujE"
+
+        if (tmdbId == null) return
+
+        val requestUrl = if (season == null) {
+            "$baseApi/api/3/movie/$tmdbId/links?api_key=$apiKey"
+        } else {
+            "$baseApi/api/3/tv/$tmdbId/season/$season/episode/$episode/links?api_key=$apiKey"
+        }
+
+        val headers = mapOf(
+            base64Decode("WC1QYWNrYWdlLU5hbWU=") to base64Decode("Y29tLmtpbmcubW9qYQ=="),
+            base64Decode("VXNlci1BZ2VudA==") to base64Decode("ZG9vZmxpeA=="),
+            base64Decode("WC1BcHAtVmVyc2lvbg==") to base64Decode("MzA1")
+        )
+
+        val response = app.get(requestUrl,headers).parsedSafe<Dooflix>() ?: return
+        val links = response.links
+
+        links.amap { link ->
+            val streamurl = app.get(link.url, referer = "https://molop.art/", allowRedirects = false).headers["location"] ?: return@amap
+            callback.invoke(
+                newExtractorLink(
+                    "Dooflix",
+                    link.host,
+                    streamurl
+                )
+                {
+                    this.referer = "https://molop.art/"
+                    this.quality = Qualities.P1080.value
+                }
+            )
+        }
     }
 }
 

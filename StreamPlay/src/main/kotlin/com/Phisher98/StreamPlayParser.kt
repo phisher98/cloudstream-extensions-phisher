@@ -1095,3 +1095,25 @@ data class VegamoviesDocument(
     val post_title: String?,
     val post_thumbnail: String?
 )
+
+//Dooflix
+
+data class Dooflix(
+    val id: Long,
+    val links: List<DooflixLink>,
+)
+
+data class DooflixLink(
+    val id: Long,
+    @JsonProperty("movie_id")
+    val movieId: Long,
+    val host: String,
+    val url: String,
+    val quality: String,
+    val size: String,
+    val order: Long,
+    @JsonProperty("created_at")
+    val createdAt: String,
+    @JsonProperty("updated_at")
+    val updatedAt: String,
+)

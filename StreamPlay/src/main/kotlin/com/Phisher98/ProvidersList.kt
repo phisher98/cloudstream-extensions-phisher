@@ -14,6 +14,7 @@ import com.phisher98.StreamPlayExtractor.invokeBollyflix
 import com.phisher98.StreamPlayExtractor.invokeCineVood
 import com.phisher98.StreamPlayExtractor.invokeCinemaOS
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
+import com.phisher98.StreamPlayExtractor.invokeDooflix
 import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
 import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFilmyfiy
@@ -289,6 +290,9 @@ fun buildProviders(): List<Provider> {
         },
         Provider("2Embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+        },
+        Provider("DooFlix", "DooFlix (Multi)") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeDooflix(res.id, res.season, res.episode, subtitleCallback, callback)
         },
     )
 }

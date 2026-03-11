@@ -3327,3 +3327,41 @@ class Filesdl : ExtractorApi() {
         }
     }
 }
+
+class HDm2 : ExtractorApi() {
+    override val name = "Ultra Stream V3"
+    override val mainUrl = "https://hdm2.ink"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val headers = mapOf("user-agent" to "okhttp/4.12.0")
+
+        val res = app.get(url, referer = referer, headers = headers).text
+        val regex = Regex("""data-stream-url=["'](.*?)["']""")
+        val args = regex.find(res)?.groupValues?.get(1)?.trim()
+
+        if (!args.isNullOrEmpty()) {
+            val m3u8 = if (args.startsWith("http")) {
+                args
+            } else {
+                "${mainUrl.trimEnd('/')}/${args.removePrefix("/")}"
+            }
+            val safe = safeUrl(m3u8)
+            generateM3u8(name, safe, mainUrl, headers = headers).forEach(callback)
+        } else {
+            Log.w("HDm2", "stream url not found")
+        }
+    }
+
+    private fun safeUrl(raw: String): String {
+        val cleaned = raw.replace("&amp;", "&")
+        val base = cleaned.substringBefore("?")
+        val tok = Regex("""[?&]tok=([^&]+)""").find(cleaned)?.groupValues?.get(1)
+        return if (!tok.isNullOrEmpty()) "$base?tok=$tok" else base
+    }
+}
