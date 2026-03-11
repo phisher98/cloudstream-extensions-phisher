@@ -291,8 +291,8 @@ fun buildProviders(): List<Provider> {
         Provider("2Embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("DooFlix", "DooFlix (Multi)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeDooflix(res.id, res.season, res.episode, subtitleCallback, callback)
+        Provider("DooFlix", "DooFlix (Multi)") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeDooflix(res.id, res.season, res.episode, callback)
         },
     )
 }

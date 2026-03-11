@@ -819,6 +819,13 @@ object StreamPlayExtractor : StreamPlay() {
 
     }
 
+    fun normalizeTitle(title: String?): String? {
+        return title
+            ?.lowercase()
+            ?.replace(Regex("[^a-z0-9 ]"), "")
+            ?.replace(Regex("\\s+"), " ")
+            ?.trim()
+    }
 
     suspend fun invokeAnichi(
         name: String?,
@@ -836,9 +843,10 @@ object StreamPlayExtractor : StreamPlay() {
         val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
         val type = if (episode == null) "Movie" else "TV"
 
-        val normalizedName = name?.trim()?.lowercase()
-        val normalizedEngTitle = engtitle?.trim()?.lowercase()
+        val normalizedName = normalizeTitle(name)
+        val normalizedEngTitle = normalizeTitle(engtitle)
 
+        Log.d("Phisher","$normalizedName $normalizedEngTitle")
         val query =
             """${BuildConfig.ANICHI_API}?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
         val response = app.get(query, referer = privatereferer)
@@ -846,16 +854,11 @@ object StreamPlayExtractor : StreamPlay() {
             ?.data?.shows?.edges ?: return
 
         val matched = response.find { item ->
-            val itemName = item.name.trim().lowercase()
-            val itemEnglishName = item.englishName.trim().lowercase()
+            val itemName = normalizeTitle(item.name)
+            val itemEnglishName = normalizeTitle(item.englishName)
+
             (normalizedName != null && (itemName == normalizedName || itemEnglishName == normalizedName)) ||
                     (normalizedEngTitle != null && (itemName == normalizedEngTitle || itemEnglishName == normalizedEngTitle))
-        } ?: response.find { item ->
-            val allTitles = listOfNotNull(item.name, item.englishName).map { it.trim().lowercase() }
-            allTitles.any {
-                (normalizedName != null && it.contains(normalizedName)) ||
-                        (normalizedEngTitle != null && it.contains(normalizedEngTitle))
-            }
         } ?: return
 
         val id = matched.id
@@ -888,6 +891,22 @@ object StreamPlayExtractor : StreamPlay() {
                                 subtitleCallback,
                                 callback
                             )
+                            return@safeApiCall
+                        }
+
+                        if (URI(sourceUrl).isAbsolute || sourceUrl.startsWith("//")) {
+                            val fixedLink = if (sourceUrl.startsWith("//")) "https:$sourceUrl" else sourceUrl
+                            val host = fixedLink.getHost()
+
+                            loadDisplaySourceNameExtractor(
+                                "Allanime",
+                                "⌜ Allanime ⌟ | $host | [${lang.uppercase()}]",
+                                fixedLink,
+                                "",
+                                subtitleCallback,
+                                callback
+                            )
+
                             return@safeApiCall
                         }
 
@@ -6287,7 +6306,6 @@ object StreamPlayExtractor : StreamPlay() {
         tmdbId: Int?,
         season: Int?,
         episode: Int?,
-        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val baseApi = "https://panel.watchkaroabhi.com"
