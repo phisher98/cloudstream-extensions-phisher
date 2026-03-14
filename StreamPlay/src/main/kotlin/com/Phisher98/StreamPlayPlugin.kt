@@ -177,6 +177,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(PpzjYoutube())
         registerExtractorAPI(Filesdl())
         registerExtractorAPI(HDm2())
+        registerExtractorAPI(ZenCloudExtractor())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity

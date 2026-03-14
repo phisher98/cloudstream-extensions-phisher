@@ -1122,3 +1122,27 @@ data class DooflixLink(
     @JsonProperty("updated_at")
     val updatedAt: String,
 )
+
+//kuudere
+data class KuudereSearch(
+    val success: Boolean?,
+    val results: List<KuudereResult>?
+)
+
+data class KuudereResult(
+    val id: String?,
+    val title: String?,
+    val details: String?
+)
+
+data class KuudereWatch(
+    val episode_links: List<KuudereEpisodeLink>?
+)
+
+data class KuudereEpisodeLink(
+    val serverId: Int?,
+    val serverName: String?,
+    val episodeNumber: Int?,
+    val dataType: String?,
+    val dataLink: String?,
+)

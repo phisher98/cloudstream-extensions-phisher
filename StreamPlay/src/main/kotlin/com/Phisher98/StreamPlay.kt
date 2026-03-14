@@ -239,7 +239,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val mappleAPI = "https://mapple.uk"
         const val webStreamrAPI = """https://webstreamr.hayd.uk/{"multi":"on","al":"on","de":"on","es":"on","fr":"on","it":"on","mx":"on","mediaFlowProxyUrl":"","mediaFlowProxyPassword":"","disableExtractor_hubcloud":"on","disableExtractor_hubdrive":"on"}"""
         const val twoEmbedAPI = "https://www.2embed.cc"
-
+        const val kuudere = "https://kuudere.to"
 
 
         fun getType(t: String?): TvType {

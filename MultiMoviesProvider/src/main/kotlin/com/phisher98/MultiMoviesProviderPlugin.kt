@@ -34,6 +34,7 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(Dhcplay())
         registerExtractorAPI(server1())
         registerExtractorAPI(Techinmind())
+        registerExtractorAPI(Gofile())
         }
 
     companion object {

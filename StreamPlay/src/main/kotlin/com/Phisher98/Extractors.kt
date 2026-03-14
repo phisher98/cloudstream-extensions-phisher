@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.Jeniusplay
@@ -27,9 +28,19 @@ import com.lagradost.cloudstream3.extractors.Voe
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.getPacked
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.httpsify
+import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.StreamPlay.Companion.animepaheAPI
 import kotlinx.coroutines.runBlocking
 import okhttp3.FormBody
@@ -53,7 +64,6 @@ import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.text.isBlank
 
 
 open class Playm4u : ExtractorApi() {
@@ -3358,5 +3368,95 @@ class HDm2 : ExtractorApi() {
         val base = cleaned.substringBefore("?")
         val tok = Regex("""[?&]tok=([^&]+)""").find(cleaned)?.groupValues?.get(1)
         return if (!tok.isNullOrEmpty()) "$base?tok=$tok" else base
+    }
+}
+
+
+class ZenCloudExtractor : ExtractorApi() {
+
+    override val name = "ZenCloud"
+    override val mainUrl = "https://zencloudz.cc"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+
+        val html = app.get(url).text
+
+        val seed = Regex("""obfuscation_seed:"([^"]+)"""")
+            .find(html)?.groupValues?.get(1) ?: return
+
+        val dataBlock = Regex("""obfuscated_crypto_data:\s*(\{.*?\})\s*,\s*start_at""", RegexOption.DOT_MATCHES_ALL)
+            .find(html)?.groupValues?.get(1) ?: return
+
+        val dataJson = JSONObject(dataBlock)
+
+        val hash = sha256(seed)
+
+        val videoField = "vf_${hash.substring(0,8)}"
+        val keyField = "kf_${hash.substring(8,16)}"
+        val ivField = "ivf_${hash.substring(16,24)}"
+        val containerName = "cd_${hash.substring(24,32)}"
+        val arrayName = "ad_${hash.substring(32,40)}"
+        val objectName = "od_${hash.substring(40,48)}"
+        val tokenField = "${hash.substring(48,64)}_${hash.substring(56,64)}"
+
+        val container = dataJson.getJSONObject(containerName)
+        val arr = container.getJSONArray(arrayName)
+        val obj = arr.getJSONObject(0).getJSONObject(objectName)
+
+        val keyB64 = obj.getString(keyField)
+        val ivB64 = obj.getString(ivField)
+
+        val token = Regex("""$tokenField:"([^"]+)"""")
+            .find(html)?.groupValues?.get(1) ?: return
+
+        val api = app.get("$mainUrl/api/m3u8/$token").text
+        val apiJson = JSONObject(api)
+
+        val videoB64 = apiJson.getString("video_b64")
+
+        val decrypted = aesDecrypt(videoB64, keyB64, ivB64)
+
+        callback.invoke(
+            newExtractorLink(
+                source = name,
+                name = name,
+                url = decrypted,
+                type = ExtractorLinkType.M3U8
+            )
+        )
+
+        Regex("""url:"(https://fetch1\.zencloudz\.cc/subtitles[^"]+)"""")
+            .findAll(html)
+            .forEach {
+                subtitleCallback.invoke(
+                    newSubtitleFile("English", it.groupValues[1])
+                )
+            }
+    }
+
+    private fun sha256(input: String): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        return md.digest(input.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+    }
+
+    private fun aesDecrypt(videoB64: String, keyB64: String, ivB64: String): String {
+
+        val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+
+        val key = SecretKeySpec(base64DecodeArray(keyB64), "AES")
+        val iv = IvParameterSpec(base64DecodeArray(ivB64))
+
+        cipher.init(Cipher.DECRYPT_MODE, key, iv)
+
+        val decrypted = cipher.doFinal(base64DecodeArray(videoB64))
+
+        return String(decrypted)
     }
 }

@@ -6339,6 +6339,48 @@ object StreamPlayExtractor : StreamPlay() {
             )
         }
     }
+
+    suspend fun invokekuudere(
+        title: String?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val api = "$kuudere/api/search?q=${title?.replace(" ", "%20")}"
+        val res = app.get(api).parsedSafe<KuudereSearch>() ?: return
+        fun normalizeTitle(title: String?): String {
+            return title
+                ?.lowercase()
+                ?.replace(Regex("[^a-z0-9 ]"), "")
+                ?.trim()
+                ?: ""
+        }
+
+        val normalizedQuery = normalizeTitle(title)
+
+        val match = res.results?.firstOrNull { result ->
+            val normalizedResult = normalizeTitle(result.title)
+
+            if (season != null) {
+                normalizedResult.contains(normalizedQuery) &&
+                        normalizedResult.contains("season $season")
+            } else {
+                normalizedResult.contains(normalizedQuery)
+            }
+        } ?: res.results?.firstOrNull()
+
+        val animeId = match?.id ?: return
+
+        val watchApi = "$kuudere/api/watch/$animeId/$episode"
+        val watchRes = app.get(watchApi).parsedSafe<KuudereWatch>() ?: return
+
+        watchRes.episode_links?.forEach { link ->
+            val url = link.dataLink ?: return@forEach
+            loadExtractor(url, "", subtitleCallback, callback
+            )
+        }
+    }
 }
 
 
