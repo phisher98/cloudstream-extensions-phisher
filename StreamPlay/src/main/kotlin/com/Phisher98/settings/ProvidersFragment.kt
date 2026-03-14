@@ -13,6 +13,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.edit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -38,6 +39,7 @@ class ProvidersFragment(
     private lateinit var container: LinearLayout
     private var providers: List<Provider> = emptyList()
     private val PREFS_DISABLED = "disabled_providers"
+    private lateinit var tvProviderCount: TextView
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -80,12 +82,18 @@ class ProvidersFragment(
             }
         }
     }
+    @SuppressLint("SetTextI18n")
+    private fun updateProviderCount() {
+        val enabled = providers.count { !adapter.isDisabled(it.id) }
+        val total = providers.size
+        tvProviderCount.text = "$enabled / $total enabled"
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        tvProviderCount = view.findView("tv_provider_count")
         btnSave = view.findView("btn_save")
         btnSave.setImageDrawable(getDrawable("save_icon"))
         btnSave.makeTvCompatible()
@@ -132,6 +140,7 @@ class ProvidersFragment(
         adapter = ProviderAdapter(providers, savedDisabled) { disabled ->
             sharedPref.edit { putStringSet(PREFS_DISABLED, disabled) }
             updateUI()
+            updateProviderCount()
         }
 
         val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -154,6 +163,7 @@ class ProvidersFragment(
             }
 
             container.addView(item)
+            updateProviderCount()
         }
         container.post {
             if (container.isNotEmpty()) {
@@ -249,6 +259,7 @@ class ProvidersFragment(
             val chk = container.getChildAt(i).findViewById<CheckBox>(chkId)
             chk.isChecked = !adapter.isDisabled(providers[i].id)
         }
+        updateProviderCount()
     }
 
     private fun dismissFragment() {

@@ -1828,138 +1828,113 @@ open class GDFlix : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val newUrl = try {
-            app.get(url)
-                .document
-                .selectFirst("meta[http-equiv=refresh]")
-                ?.attr("content")
-                ?.substringAfter("url=")
+
+        val newUrl = try { app.get(url).document.selectFirst("meta[http-equiv=refresh]")?.attr("content")
+            ?.substringAfter("url=")
         } catch (e: Exception) {
-            Log.e("Error", "Failed to fetch redirect: ${e.localizedMessage}")
+            Log.e("GDFlix", "Redirect error: ${e.localizedMessage}")
             return
         } ?: url
 
         val document = app.get(newUrl).document
-        val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
+
+        val fileName = document.select("ul > li.list-group-item:contains(Name)")
+            .text()
             .substringAfter("Name : ")
-        val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
+
+        val fileSize = document.select("ul > li.list-group-item:contains(Size)")
+            .text()
             .substringAfter("Size : ")
 
+        val quality = getIndexQuality(fileName)
+
         document.select("div.text-center a").amap { anchor ->
-            val text = anchor.select("a").text()
+
+            val text = anchor.text()
+            val link = anchor.attr("href")
 
             when {
-                text.contains("DIRECT DL",ignoreCase = true) -> {
-                    val link = anchor.attr("href")
+
+                text.contains("DIRECT DL", true) -> {
                     callback.invoke(
-                        newExtractorLink("GDFlix [Direct]", "GDFlix [Direct] [$fileSize]", link) {
-                            this.quality = getIndexQuality(fileName)
-                        }
+                        newExtractorLink(
+                            "GDFlix [Direct]",
+                            "GDFlix [Direct] [$fileSize]",
+                            link
+                        ) { this.quality = quality }
                     )
                 }
 
-                text.contains("Index Links",ignoreCase = true) -> {
+                text.contains("Index Links", true) -> {
                     try {
-                        val link = anchor.attr("href")
+
                         app.get("https://new6.gdflix.dad$link").document
-                            .select("a.btn.btn-outline-info").amap { btn ->
+                            .select("a.btn.btn-outline-info")
+                            .amap { btn ->
+
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
+
                                 app.get(serverUrl).document
-                                    .select("div.mb-4 > a").amap { sourceAnchor ->
+                                    .select("div.mb-4 > a")
+                                    .amap { sourceAnchor ->
+
                                         val sourceurl = sourceAnchor.attr("href")
+
                                         callback.invoke(
-                                            newExtractorLink("GDFlix [Index]", "GDFlix [Index] [$fileSize]", sourceurl) {
-                                                this.quality = getIndexQuality(fileName)
-                                            }
+                                            newExtractorLink(
+                                                "GDFlix [Index]",
+                                                "GDFlix [Index] [$fileSize]",
+                                                sourceurl
+                                            ) { this.quality = quality }
                                         )
                                     }
                             }
+
                     } catch (e: Exception) {
-                        Log.d("Index Links", e.toString())
+                        Log.d("GDFlix Index", e.toString())
                     }
                 }
 
-                text.contains("DRIVEBOT",ignoreCase = true) -> {
+                text.contains("Instant DL", true) -> {
                     try {
-                        val driveLink = anchor.attr("href")
-                        val id = driveLink.substringAfter("id=").substringBefore("&")
-                        val doId = driveLink.substringAfter("do=").substringBefore("==")
-                        val baseUrls = listOf("https://drivebot.sbs", "https://drivebot.cfd")
 
-                        baseUrls.amap { baseUrl ->
-                            val indexbotLink = "$baseUrl/download?id=$id&do=$doId"
-                            val indexbotResponse = app.get(indexbotLink, timeout = 100L)
+                        val instantLink = app.get(link, allowRedirects = false)
+                            .headers["location"]
+                            ?.substringAfter("url=")
+                            .orEmpty()
 
-                            if (indexbotResponse.isSuccessful) {
-                                val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.document
-
-                                val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
-                                    .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
-
-                                val postId = Regex("""fetch\('/download\?id=([a-zA-Z0-9/+]+)'""")
-                                    .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
-
-                                val requestBody = FormBody.Builder()
-                                    .add("token", token)
-                                    .build()
-
-                                val headers = mapOf("Referer" to indexbotLink)
-                                val cookies = mapOf("PHPSESSID" to "$cookiesSSID")
-
-                                val downloadLink = app.post(
-                                    "$baseUrl/download?id=$postId",
-                                    requestBody = requestBody,
-                                    headers = headers,
-                                    cookies = cookies,
-                                    timeout = 100L
-                                ).text.let {
-                                    Regex("url\":\"(.*?)\"").find(it)?.groupValues?.get(1)?.replace("\\", "").orEmpty()
-                                }
-
-                                callback.invoke(
-                                    newExtractorLink("GDFlix [DriveBot]", "GDFlix [DriveBot] [$fileSize]", downloadLink) {
-                                        this.referer = baseUrl
-                                        this.quality = getIndexQuality(fileName)
-                                    }
-                                )
-                            }
+                        if (instantLink.isNotEmpty()) {
+                            callback.invoke(
+                                newExtractorLink(
+                                    "GDFlix [Instant Download]",
+                                    "GDFlix [Instant Download] [$fileSize]",
+                                    instantLink
+                                ) { this.quality = quality }
+                            )
                         }
+
                     } catch (e: Exception) {
-                        Log.d("DriveBot", e.toString())
+                        Log.d("GDFlix Instant", e.toString())
                     }
                 }
 
-                text.contains("Instant DL",ignoreCase = true) -> {
-                    try {
-                        val instantLink = anchor.attr("href")
-                        val link = app.get(instantLink, allowRedirects = false)
-                            .headers["location"]?.substringAfter("url=").orEmpty()
-
-                        callback.invoke(
-                            newExtractorLink("GDFlix [Instant Download]", "GDFlix [Instant Download] [$fileSize]", link) {
-                                this.quality = getIndexQuality(fileName)
-                            }
-                        )
-                    } catch (e: Exception) {
-                        Log.d("Instant DL", e.toString())
-                    }
+                text.contains("GoFile", true) -> {
+                    Gofile().getUrl(link)
                 }
 
+                text.contains("pixeldra", true)
+                        || text.contains("pixel", true)
+                        || text.contains("PixeLServer", true) -> {
 
-                text.contains("GoFile",ignoreCase = true) -> {
-                    Gofile().getUrl(anchor.attr("href"))
-                }
-
-                text.contains("pixeldra", ignoreCase = true) || text.contains("pixel", ignoreCase = true) || text.contains("PixeLServer", ignoreCase = true) -> {
-                    val link = anchor.attr("href")
                     val baseUrlLink = getBaseUrl(link)
-                    val finalURL = if (link.contains("download", true)) link
-                    else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
+
+                    val finalURL =
+                        if (link.contains("download", true)) link
+                        else "$baseUrlLink/api/file/${link.substringAfterLast("/")}?download"
 
                     callback.invoke(
                         newExtractorLink(
-                            "GDFlix Pixeldrain",
+                            "GDFlix [Pixeldrain]",
                             "GDFlix [Pixeldrain] [$fileSize]",
                             finalURL
                         ) { this.quality = quality }
@@ -1967,38 +1942,47 @@ open class GDFlix : ExtractorApi() {
                 }
 
                 else -> {
-                    Log.d("Error", "No Server matched")
+                    Log.d("GDFlix", "No server matched")
                 }
             }
         }
 
-        // Cloudflare backup links
+        // Cloudflare backup
         try {
+
             val types = listOf("type=1", "type=2")
+
             types.map { type ->
+
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .document.select("a.btn-success").attr("href")
+                    .document
+                    .select("a.btn-success")
+                    .attr("href")
 
                 if (sourceurl.isNotEmpty()) {
                     callback.invoke(
-                        newExtractorLink("GDFlix [CF]", "GDFlix [CF] [$fileSize]", sourceurl) {
-                            this.quality = getIndexQuality(fileName)
-                        }
+                        newExtractorLink(
+                            "GDFlix [CF]",
+                            "GDFlix [CF] [$fileSize]",
+                            sourceurl
+                        ) { this.quality = quality }
                     )
                 }
             }
+
         } catch (e: Exception) {
-            Log.d("CF", e.toString())
+            Log.d("GDFlix CF", e.toString())
         }
     }
 }
-
 
 open class Gofile : ExtractorApi() {
     override val name = "Gofile"
     override val mainUrl = "https://gofile.io"
     override val requiresReferer = false
     private val mainApi = "https://api.gofile.io"
+    private val browserLanguage = "en-GB"
+    private val secret = "gf2026x"
 
     override suspend fun getUrl(
         url: String,
@@ -2012,12 +1996,17 @@ open class Gofile : ExtractorApi() {
             "$mainApi/accounts",
         ).parsedSafe<AccountResponse>()?.data?.token ?: return
 
-        val globalRes = app.get("$mainUrl/dist/js/config.js").text
-        val wt = Regex("""appdata\.wt\s*=\s*["']([^"']+)["']""").find(globalRes)?.groupValues?.get(1) ?: return
+        val currentTimeSeconds = System.currentTimeMillis() / 1000
+        val interval = (currentTimeSeconds / 14400).toString()
+        val message = listOf(USER_AGENT, browserLanguage, token, interval, secret).joinToString("::")
+        val hashedToken = sha256(message)
 
         val headers = mapOf(
+            "Referer" to "$mainUrl/",
+            "User-Agent" to USER_AGENT,
             "Authorization" to "Bearer $token",
-            "X-Website-Token" to wt
+            "X-BL" to browserLanguage,
+            "X-Website-Token" to hashedToken
         )
 
         val parsedResponse = app.get(
@@ -2050,6 +2039,12 @@ open class Gofile : ExtractorApi() {
     private fun getQuality(str: String?): Int {
         return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
             ?: Qualities.Unknown.value
+    }
+
+    private fun sha256(input: String): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val bytes = md.digest(input.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     private fun formatBytes(bytes: Long): String {

@@ -892,6 +892,11 @@ data class CinemaOSReponseData(
     val salt: String,
 )
 
+data class CinemaOsAuthResponse(
+    val token: String,
+    val expiresIn: Long,
+)
+
 
 data class Vidlink(
     val sourceId: String,

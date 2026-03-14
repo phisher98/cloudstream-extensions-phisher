@@ -207,7 +207,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback)
         },
         Provider("cinemaos", "CinemaOS") { res, _, callback, _, _ ->
-            invokeCinemaOS(res.imdbId, res.id, res.title, res.season, res.episode, res.year, callback)
+            invokeCinemaOS(res.imdbId, res.id, res.season, res.episode,callback)
         },
         Provider("dahmermovies", "DahmerMovies") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeDahmerMovies(res.title, res.year, res.season, res.episode, callback)

@@ -1560,20 +1560,17 @@ fun vidrockEncode(tmdb: String, type: String, season: Int? = null, episode: Int?
     return doubleEncode
 }
 
-fun cinemaOSGenerateHash(t: CinemaOsSecretKeyRequest,isSeries: Boolean): String {
+fun cinemaOSGenerateHash(tmdbId: Int?, imdbId: String?, season: Int?, episode: Int?): String {
     val primary = "a7f3b9c2e8d4f1a6b5c9e2d7f4a8b3c6e1d9f7a4b2c8e5d3f9a6b4c1e7d2f8a5"
     val secondary = "d3f8a5b2c9e6d1f7a4b8c5e2d9f3a6b1c7e4d8f2a9b5c3e7d4f1a8b6c2e9d5f3"
 
+    var message = "tmdbId:$tmdbId|imdbId:$imdbId"
 
-    // Create content identifier string
-    val contentString = createContentString(t)
-
-    // First HMAC with primary key
-    val firstHash = calculateHmacSha256(contentString, primary)
-
-    // Second HMAC with secondary key
+    if (season != null && episode != null) {
+        message += "|seasonId:$season|episodeId:$episode"
+    }
+    val firstHash = calculateHmacSha256(message, primary)
     return calculateHmacSha256(firstHash, secondary)
-
 }
 
 
@@ -1610,47 +1607,44 @@ fun bytesToHex(bytes: ByteArray): String {
 }
 
 
-fun cinemaOSDecryptResponse(e: CinemaOSReponseData?): Any {
-    val encrypted = e?.encrypted
-    val cin = e?.cin
-    val mao = e?.mao
-    val salt = e?.salt
+// Helper function to convert hex string to byte array
 
-    val keyBytes =  "a1b2c3d4e4f6477658455678901477567890abcdef1234567890abcdef123456".toByteArray()
-    val ivBytes = hexStringToByteArray(cin.toString())
-    val authTagBytes = hexStringToByteArray(mao.toString())
-    val encryptedBytes =hexStringToByteArray(encrypted.toString())
-    val saltBytes = hexStringToByteArray(salt.toString())
+fun cinemaOSDecryptResponse(e: CinemaOSReponseData?): String? {
 
-    // Derive key with PBKDF2-HMAC-SHA256
+    if (e?.encrypted.isNullOrEmpty() || e.cin.isEmpty() || e.mao.isEmpty() || e.salt.isEmpty()) {
+        return null
+    }
+
+    val encrypted = e.encrypted
+    val cin = e.cin
+    val mao = e.mao
+    val salt = e.salt
+
+    val passwordStr = "a1b2c3d4e4f6477658455678901477567890abcdef1234567890abcdef123456"
+
+    val ivBytes = hexStringToByteArray(cin)
+    val authTagBytes = hexStringToByteArray(mao)
+    val encryptedBytes = hexStringToByteArray(encrypted)
+    val saltBytes = hexStringToByteArray(salt)
+
     val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-    val spec = PBEKeySpec(keyBytes.map { it.toInt().toChar() }.toCharArray(), saltBytes, 100000, 256)
+    val spec = PBEKeySpec(passwordStr.toCharArray(), saltBytes, 100000, 256)
     val tmp = factory.generateSecret(spec)
     val key = SecretKeySpec(tmp.encoded, "AES")
 
-    // AES-256-GCM decrypt
     val cipher = Cipher.getInstance("AES/GCM/NoPadding")
     val gcmSpec = GCMParameterSpec(128, ivBytes)
     cipher.init(Cipher.DECRYPT_MODE, key, gcmSpec)
-    val decryptedBytes = cipher.doFinal(encryptedBytes + authTagBytes)
-    val decryptedData = String(decryptedBytes)
 
-    return decryptedData // Use your JSON parser
+    val decryptedBytes = cipher.doFinal(encryptedBytes + authTagBytes)
+    return String(decryptedBytes, Charsets.UTF_8)
 }
 
-
-// Helper function to convert hex string to byte array
 fun hexStringToByteArray(hex: String): ByteArray {
-    val len = hex.length
-    require(len % 2 == 0) { "Hex string must have even length" }
-
-    val data = ByteArray(len / 2)
-    var i = 0
-    while (i < len) {
-        data[i / 2] = ((Character.digit(hex[i], 16) shl 4) + Character.digit(hex[i + 1], 16)).toByte()
-        i += 2
-    }
-    return data
+    require(hex.length % 2 == 0) { "Hex string must have even length" }
+    return hex.chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
 }
 
 fun parseCinemaOSSources(jsonString: String): List<Map<String, String>> {
