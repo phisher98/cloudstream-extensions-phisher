@@ -129,33 +129,37 @@ class IStreamFlare  : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val response = app.get("$mainUrl/android/searchContent/$query/1", headers).text
-        val gson = Gson()
+        val url = "$mainUrl/android/searchContent/$query/1"
+        val raw = app.get(url, headers).text
+        val outer = JSONObject(raw)
+        val jsonString = if (outer.optBoolean("encrypted")) {
+            getDecodedJson(url)
+        } else {
+            raw
+        }
 
+        val gson = Gson()
         val type = object : TypeToken<List<HomeRes>>() {}.type
-        val homeList = try {
-            gson.fromJson<List<HomeRes>>(response, type)
+
+        val homeList: List<HomeRes> = try {
+            gson.fromJson(jsonString, type)
         } catch (_: Exception) {
             emptyList()
         }
-        val results = homeList.map { it.toSearchResult() }
-        return results
+        return homeList.map { it.toSearchResult() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-
         val res = tryParseJson<LoadDataObject>(url)
             ?: throw ErrorLoadingException("Invalid URL JSON")
 
         val gson = Gson()
-
         fun parseJsonSafe(input: String?): JsonElement? {
             if (input.isNullOrBlank()) return null
             val clean = input.trim()
             if (!clean.startsWith("{") && !clean.startsWith("[")) return null
             return runCatching { JsonParser.parseString(clean) }.getOrNull()
         }
-
         if (res.contentType?.toIntOrNull() == 3 && !res.url.isNullOrBlank()) {
             return newLiveStreamLoadResponse(
                 name = "Live TV",
