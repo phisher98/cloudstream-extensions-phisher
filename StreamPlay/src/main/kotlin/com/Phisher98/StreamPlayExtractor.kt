@@ -20,6 +20,7 @@ import com.lagradost.cloudstream3.base64DecodeArray
 import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
@@ -720,6 +721,16 @@ object StreamPlayExtractor : StreamPlay() {
                 if (aniXL != null) {
                     invokeAniXL(aniXL, episode, callback, dubStatus)
                 }
+            },
+            {
+                invokekuudere(
+                    title,
+                    season,
+                    episode,
+                    subtitleCallback,
+                    callback,
+                    dubStatus
+                    )
             },
             )
     }
@@ -6340,45 +6351,76 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    private fun normalizeTitleFast(title: String?): String {
+        if (title == null) return ""
+        val sb = StringBuilder(title.length)
+        for (c in title.lowercase()) {
+            if (c.isLetterOrDigit() || c == ' ') sb.append(c)
+        }
+        return sb.toString().trim()
+    }
+
     suspend fun invokekuudere(
         title: String?,
         season: Int?,
         episode: Int?,
         subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
+        callback: (ExtractorLink) -> Unit,
+        dubtype: String?
     ) {
-        val api = "$kuudere/api/search?q=${title?.replace(" ", "%20")}"
+        val isMovie = dubtype == "Movie"
+
+        val query = title?.replace(" ", "%20") ?: return
+        val api = "$kuudere/api/search?q=$query"
+
         val res = app.get(api).parsedSafe<KuudereSearch>() ?: return
-        fun normalizeTitle(title: String?): String {
-            return title
-                ?.lowercase()
-                ?.replace(Regex("[^a-z0-9 ]"), "")
-                ?.trim()
-                ?: ""
-        }
+        val results = res.results ?: return
 
-        val normalizedQuery = normalizeTitle(title)
+        val normalizedQuery = normalizeTitleFast(title)
 
-        val match = res.results?.firstOrNull { result ->
-            val normalizedResult = normalizeTitle(result.title)
+        val match = results
+            .firstOrNull { result ->
+                val normalized = normalizeTitleFast(result.title)
 
-            if (season != null) {
-                normalizedResult.contains(normalizedQuery) &&
-                        normalizedResult.contains("season $season")
-            } else {
-                normalizedResult.contains(normalizedQuery)
-            }
-        } ?: res.results?.firstOrNull()
+                if (season != null) {
+                    normalized.contains(normalizedQuery) &&
+                            normalized.contains("season $season")
+                } else {
+                    normalized.contains(normalizedQuery)
+                }
+            } ?: results.firstOrNull() ?: return
 
-        val animeId = match?.id ?: return
+        val animeId = match.id ?: return
 
-        val watchApi = "$kuudere/api/watch/$animeId/$episode"
-        val watchRes = app.get(watchApi).parsedSafe<KuudereWatch>() ?: return
+        val watchRes = app.get("$kuudere/api/watch/$animeId/$episode").parsedSafe<KuudereWatch>() ?: return
 
         watchRes.episode_links?.forEach { link ->
+
+            val allow = when {
+                isMovie -> true
+                dubtype == null -> false
+                else -> link.dataType?.contains(dubtype, ignoreCase = true) ?: return@forEach
+            }
+
+            if (!allow) return@forEach
             val url = link.dataLink ?: return@forEach
-            loadExtractor(url, "", subtitleCallback, callback
-            )
+            val name = "⌜ Kuudere ⌟ | ${link.dataType?.replaceFirstChar { it.uppercase() }}"
+
+            val server = link.serverName?.lowercase() ?: return@forEach
+
+            when {
+                server.contains("hide") ->
+                    VidHidePro().getUrl(url, kuudere, subtitleCallback, callback)
+
+                server.contains("wish") ->
+                    StreamWishExtractor().getUrl(url, kuudere, subtitleCallback, callback)
+
+                server.contains("kumi") ->
+                    KumiUns().getUrl(url, kuudere, subtitleCallback, callback)
+
+                else ->
+                    loadExtractor(url, name, subtitleCallback, callback)
+            }
         }
     }
 }

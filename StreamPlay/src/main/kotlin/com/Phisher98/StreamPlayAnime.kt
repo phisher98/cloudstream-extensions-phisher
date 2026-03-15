@@ -53,6 +53,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeSudatchi
+import com.phisher98.StreamPlayExtractor.invokekuudere
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
@@ -345,6 +346,16 @@ class StreamPlayAnime : MainAPI() {
             },
             {
                 invokeSudatchi(aniid, episode, subtitleCallback, callback)
+            },
+            {
+                invokekuudere(
+                    anititle ?: zorotitle,
+                    season,
+                    episode,
+                    subtitleCallback,
+                    callback,
+                    dubStatus
+                )
             },
         )
         return true

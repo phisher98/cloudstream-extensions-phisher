@@ -68,7 +68,6 @@ import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokecinemacity
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
-import com.phisher98.StreamPlayExtractor.invokekuudere
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokemp4hydra
 import com.phisher98.StreamPlayExtractor.invokevidrock
@@ -294,9 +293,6 @@ fun buildProviders(): List<Provider> {
         },
         Provider("DooFlix", "DooFlix (Multi)") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeDooflix(res.id, res.season, res.episode, callback)
-        },
-        Provider("Kuudere", "Kuudere") { res, subtitleCallback, callback, _, _ ->
-            if (res.isAnime) invokekuudere(res.title, res.season, res.episode, subtitleCallback, callback)
-        },
+        }
     )
 }

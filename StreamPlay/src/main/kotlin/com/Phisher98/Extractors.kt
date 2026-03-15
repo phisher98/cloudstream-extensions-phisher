@@ -2933,6 +2933,10 @@ class Hubstreamdad : Hblinks() {
     override var mainUrl = "https://hblinks.*"
 }
 
+class KumiUns : VidStack() {
+    override var mainUrl = "https://kumi.uns.wtf"
+}
+
 open class Hblinks : ExtractorApi() {
     override val name = "Hblinks"
     override val mainUrl = "https://hblinks.*"
@@ -3384,79 +3388,169 @@ class ZenCloudExtractor : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val html = app.get(url).text
+        if (html.isBlank()) return
 
         val seed = Regex("""obfuscation_seed:"([^"]+)"""")
             .find(html)?.groupValues?.get(1) ?: return
 
-        val dataBlock = Regex("""obfuscated_crypto_data:\s*(\{.*?\})\s*,\s*start_at""", RegexOption.DOT_MATCHES_ALL)
-            .find(html)?.groupValues?.get(1) ?: return
+        val dataBlock = extractJsonBlock(html, "obfuscated_crypto_data") ?: return
 
-        val dataJson = JSONObject(dataBlock)
+        val dataJson = try {
+            JSONObject(dataBlock)
+        } catch (_: Exception) { return }
 
-        val hash = sha256(seed)
+        val h1 = sha256(seed)
+        val h2 = sha256(h1)
 
-        val videoField = "vf_${hash.substring(0,8)}"
-        val keyField = "kf_${hash.substring(8,16)}"
-        val ivField = "ivf_${hash.substring(16,24)}"
-        val containerName = "cd_${hash.substring(24,32)}"
-        val arrayName = "ad_${hash.substring(32,40)}"
-        val objectName = "od_${hash.substring(40,48)}"
-        val tokenField = "${hash.substring(48,64)}_${hash.substring(56,64)}"
+        val keyField      = "kf_${h1.substring(8,  16)}"
+        val ivField       = "ivf_${h1.substring(16, 24)}"
+        val containerName = "cd_${h1.substring(24, 32)}"
+        val arrayName     = "ad_${h1.substring(32, 40)}"
+        val objectName    = "od_${h1.substring(40, 48)}"
+        val tokenField    = "${h1.substring(48, 64)}_${h1.substring(56, 64)}"
+        val keyFrag2Field = "${h2.take(16)}_${h2.substring(16, 24)}"
 
+        if (!dataJson.has(containerName)) return
         val container = dataJson.getJSONObject(containerName)
+
+        if (!container.has(arrayName)) return
         val arr = container.getJSONArray(arrayName)
-        val obj = arr.getJSONObject(0).getJSONObject(objectName)
 
-        val keyB64 = obj.getString(keyField)
-        val ivB64 = obj.getString(ivField)
+        if (arr.length() == 0) return
+        val arrObj = arr.getJSONObject(0)
 
-        val token = Regex("""$tokenField:"([^"]+)"""")
+        if (!arrObj.has(objectName)) return
+        val obj = arrObj.getJSONObject(objectName)
+
+        if (!obj.has(keyField) || !obj.has(ivField)) return
+
+        val frag1B64 = obj.getString(keyField)
+        val ivB64    = obj.getString(ivField)
+
+        val frag2B64 = Regex(""""?${Regex.escape(keyFrag2Field)}"?\s*:\s*"([^"]+)"""")
             .find(html)?.groupValues?.get(1) ?: return
 
-        val api = app.get("$mainUrl/api/m3u8/$token").text
-        val apiJson = JSONObject(api)
+        val token = Regex(""""?${Regex.escape(tokenField)}"?\s*:\s*"([^"]+)"""")
+            .find(html)?.groupValues?.get(1) ?: return
+
+        val apiResponse = app.get("$mainUrl/api/m3u8/$token").text
+        if (apiResponse.isBlank()) return
+
+        val apiJson = try {
+            JSONObject(apiResponse)
+        } catch (_: Exception) { return }
+
+        if (!apiJson.has("video_b64") || !apiJson.has("key_frag")) return
 
         val videoB64 = apiJson.getString("video_b64")
+        val frag3B64 = apiJson.getString("key_frag")
 
-        val decrypted = aesDecrypt(videoB64, keyB64, ivB64)
+        val aesKey = try {
+            wasmDeriveKey(
+                frag1 = b64Decode(frag1B64),
+                frag2 = b64Decode(frag2B64),
+                frag3 = b64Decode(frag3B64),
+                seed  = seed
+            )
+        } catch (_: Exception) { return }
+
+        val streamUrl = try {
+            aesCbcDecrypt(
+                key        = aesKey,
+                iv         = b64Decode(ivB64),
+                ciphertext = b64Decode(videoB64)
+            ).trim()
+        } catch (_: Exception) { return }
+
+        if (streamUrl.isBlank()) return
 
         callback.invoke(
             newExtractorLink(
-                source = name,
-                name = name,
-                url = decrypted,
-                type = ExtractorLinkType.M3U8
+                name,
+                referer ?: name,
+                streamUrl,
+                INFER_TYPE
             )
+            {
+                this.referer = mainUrl
+                this.quality = Qualities.P1080.value
+            }
         )
 
-        Regex("""url:"(https://fetch1\.zencloudz\.cc/subtitles[^"]+)"""")
-            .findAll(html)
-            .forEach {
-                subtitleCallback.invoke(
-                    newSubtitleFile("English", it.groupValues[1])
-                )
+        val subtitlesBlock = extractArrayBlock(html, "subtitles")
+        if (subtitlesBlock != null) {
+            Regex("""\{[^{}]+\}""").findAll(subtitlesBlock).forEach { entry ->
+                val entryStr = entry.value
+                val subUrl = Regex(""""?url"?\s*:\s*"([^"]+)"""")
+                    .find(entryStr)?.groupValues?.get(1)
+                val lang = Regex(""""?language"?\s*:\s*"([^"]+)"""")
+                    .find(entryStr)?.groupValues?.get(1) ?: "Unknown"
+                if (!subUrl.isNullOrBlank()) {
+                    subtitleCallback.invoke(newSubtitleFile(lang, subUrl))
+                }
             }
+        }
     }
 
-    private fun sha256(input: String): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        return md.digest(input.toByteArray())
-            .joinToString("") { "%02x".format(it) }
+    private fun extractJsonBlock(html: String, key: String): String? {
+        val match = Regex(""""?${Regex.escape(key)}"?\s*:\s*(\{)""").find(html) ?: return null
+        val startIdx = match.groups[1]!!.range.first
+        var depth = 0
+        var i = startIdx
+        while (i < html.length) {
+            when (html[i]) {
+                '{' -> depth++
+                '}' -> { depth--; if (depth == 0) return html.substring(startIdx, i + 1) }
+            }
+            i++
+        }
+        return null
     }
 
-    private fun aesDecrypt(videoB64: String, keyB64: String, ivB64: String): String {
+    private fun extractArrayBlock(html: String, key: String): String? {
+        val match = Regex(""""?${Regex.escape(key)}"?\s*:\s*(\[)""").find(html) ?: return null
+        val startIdx = match.groups[1]!!.range.first
+        var depth = 0
+        var i = startIdx
+        while (i < html.length) {
+            when (html[i]) {
+                '[' -> depth++
+                ']' -> { depth--; if (depth == 0) return html.substring(startIdx, i + 1) }
+            }
+            i++
+        }
+        return null
+    }
 
+    private fun wasmDeriveKey(
+        frag1: ByteArray,
+        frag2: ByteArray,
+        frag3: ByteArray,
+        seed:  String
+    ): ByteArray {
+        val seedInt = seed.take(8).toLong(16).toInt()
+        val lookup  = ByteArray(512) { i -> ((i * 37 + seedInt) and 0xFF).toByte() }
+        return ByteArray(frag1.size) { i ->
+            val a   = frag1[i].toInt() and 0xFF
+            val b   = frag2[i].toInt() and 0xFF
+            val c   = frag3[i].toInt() and 0xFF
+            val lut = lookup[i and 0xFF].toInt() and 0xFF
+            (a xor b xor c xor lut).toByte()
+        }
+    }
+
+    private fun aesCbcDecrypt(key: ByteArray, iv: ByteArray, ciphertext: ByteArray): String {
         val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-
-        val key = SecretKeySpec(base64DecodeArray(keyB64), "AES")
-        val iv = IvParameterSpec(base64DecodeArray(ivB64))
-
-        cipher.init(Cipher.DECRYPT_MODE, key, iv)
-
-        val decrypted = cipher.doFinal(base64DecodeArray(videoB64))
-
-        return String(decrypted)
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(iv))
+        return String(cipher.doFinal(ciphertext), Charsets.UTF_8)
     }
+
+    private fun sha256(input: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+
+    private fun b64Decode(input: String): ByteArray =
+        base64DecodeArray(input)
 }
