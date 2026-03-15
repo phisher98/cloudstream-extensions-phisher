@@ -210,12 +210,11 @@ data class JikanResponse(
 //Hianime
 
 data class EpisodeServers(
-    val type: String,
-    val link: String,
-    val server: Long,
-    val sources: List<Any?>,
-    val tracks: List<Any?>,
-    val htmlGuide: String,
+    val type: String? = null,
+    val link: String? = null,
+    val server: Long? = null,
+    val sources: List<Any?>? = null,
+    val tracks: List<Any?>? = null
 )
 
 

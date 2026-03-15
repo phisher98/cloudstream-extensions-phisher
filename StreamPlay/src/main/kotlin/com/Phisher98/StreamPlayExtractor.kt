@@ -42,11 +42,9 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
 import okhttp3.FormBody
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -504,7 +502,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback.invoke(
             newExtractorLink(
                 "Anizone",
-                "Anizone",
+                "⌜ Anizone ⌟",
                 url = m3u8,
                 INFER_TYPE
             ) {
@@ -669,6 +667,7 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             },
             { invokeHianime(zoroIds, episode, subtitleCallback, callback, dubStatus) },
+            { invokeKaido(zoroIds, episode, subtitleCallback, callback, dubStatus) },
             {
                 malId?.let {
                     invokeAnimeKai(
@@ -1399,99 +1398,114 @@ object StreamPlayExtractor : StreamPlay() {
         val japaneseTitle: String? = null
     )
 
+    suspend fun invokeHianime(
+        animeIds: List<String?>?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        dubtype: String?,
+    ) = invokeHiAnimeAnimeSource(
+        name = "HiAnime",
+        apis = hianimeAPIs,
+        ajax = "/ajax/v2",
+        animeIds = animeIds,
+        episode = episode,
+        subtitleCallback = subtitleCallback,
+        callback = callback,
+        dubtype = dubtype
+    )
 
-    internal suspend fun invokeHianime(
-        animeIds: List<String?>? = null,
-        episode: Int? = null,
+    suspend fun invokeKaido(
+        animeIds: List<String?>?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        dubtype: String?,
+    ) = invokeHiAnimeAnimeSource(
+        name = "Kaido",
+        apis = listOf("https://kaido.to"),
+        ajax = "/ajax",
+        animeIds = animeIds,
+        episode = episode,
+        subtitleCallback = subtitleCallback,
+        callback = callback,
+        dubtype = dubtype
+    )
+
+    private suspend fun invokeHiAnimeAnimeSource(
+        name: String,
+        apis: List<String>,
+        ajax: String,
+        animeIds: List<String?>?,
+        episode: Int?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
     ) {
+
         val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        val shuffledApis = hianimeAPIs.shuffled().toMutableList()
         val episodeNumber = (episode ?: 1).toString()
-        val timeoutMillis = 10_000L
         val isMovie = dubtype == "Movie"
 
-        while (shuffledApis.isNotEmpty()) {
-            val api = shuffledApis.removeAt(0)
-            try {
-                withTimeout(timeoutMillis) {
-                    animeIds?.amap { id ->
-                        val animeId = id ?: return@amap
+        val api = apis.random()
 
-                        val episodeId = app.get(
-                            "$api/ajax/v2/episode/list/$animeId",
-                            headers = headers
-                        )
-                            .takeIf { it.isSuccessful }
-                            ?.parsedSafe<HianimeResponses>()?.html
-                            ?.let { Jsoup.parse(it) }
-                            ?.select("div.ss-list a")
-                            ?.find { it.attr("data-number") == episodeNumber }
-                            ?.attr("data-id")
-                            ?: return@amap
+        animeIds?.amap { id ->
+            val animeId = id ?: return@amap
 
-                        val servers = app.get(
-                            "$api/ajax/v2/episode/servers?episodeId=$episodeId",
-                            headers = headers
-                        )
-                            .takeIf { it.isSuccessful }
-                            ?.parsedSafe<HianimeResponses>()?.html
-                            ?.let { Jsoup.parse(it) }
-                            ?.select("div.item.server-item")
-                            ?.map {
-                                Triple(
-                                    it.text(),
-                                    it.attr("data-id"),
-                                    it.attr("data-type")
-                                )
-                            }
+            val episodeId = app.get(
+                "$api$ajax/episode/list/$animeId",
+                headers = headers
+            ).parsedSafe<HianimeResponses>()?.html
+                ?.let { Jsoup.parse(it) }
+                ?.select("div.ss-list a")
+                ?.find { it.attr("data-number") == episodeNumber }
+                ?.attr("data-id")
+                ?: return@amap
 
-                        servers?.forEach { (label, serverId, effectiveType) ->
-                            val resolvedType =
-                                if (effectiveType.equals("raw", ignoreCase = true)) "SUB"
-                                else effectiveType
-
-                            val allow =
-                                when {
-                                    isMovie -> true                  // 🎬 movie → BOTH
-                                    dubtype == null -> false         // block
-                                    else -> resolvedType.contains(dubtype, ignoreCase = true)
-                                }
-
-                            if (allow) {
-                                val sourceUrl = app.get(
-                                    "$api/ajax/v2/episode/sources?id=$serverId",
-                                    headers = headers
-                                )
-                                    .takeIf { it.isSuccessful }
-                                    ?.parsedSafe<EpisodeServers>()
-                                    ?.link
-
-                                if (!sourceUrl.isNullOrBlank()) {
-                                    loadDisplaySourceNameExtractor(
-                                        "HiAnime",
-                                        "⌜ HiAnime ⌟ | ${label.uppercase()} | ${resolvedType.uppercase()}",
-                                        sourceUrl,
-                                        "",
-                                        subtitleCallback,
-                                        callback,
-                                    )
-                                }
-                            }
-                        }
-                    }
+            val servers = app.get(
+                "$api$ajax/episode/servers?episodeId=$episodeId",
+                headers = headers
+            ).parsedSafe<HianimeResponses>()?.html
+                ?.let { Jsoup.parse(it) }
+                ?.select("div.item.server-item")
+                ?.map {
+                    Triple(
+                        it.text(),
+                        it.attr("data-id"),
+                        it.attr("data-type")
+                    )
                 }
-                return
-            } catch (_: TimeoutCancellationException) {
-                println("Timed out with domain $api")
-            } catch (e: Exception) {
-                println("Failed with domain $api: ${e.message}")
+
+            servers?.forEach { (label, serverId, type) ->
+
+                val resolvedType =
+                    if (type.equals("raw", true)) "SUB" else type
+
+                val allow = when {
+                    isMovie -> true
+                    dubtype == null -> false
+                    else -> resolvedType.contains(dubtype, true)
+                }
+
+                if (!allow) return@forEach
+
+                val sourceUrl = app.get(
+                    "$api$ajax/episode/sources?id=$serverId",
+                    headers = headers
+                ).parsedSafe<EpisodeServers>()?.link
+
+                if (!sourceUrl.isNullOrBlank()) {
+                    loadDisplaySourceNameExtractor(
+                        name,
+                        "⌜ $name ⌟ | ${label.uppercase()} | ${resolvedType.uppercase()}",
+                        sourceUrl,
+                        "",
+                        subtitleCallback,
+                        callback
+                    )
+                }
             }
         }
-
-        println("All hianimeAPI domains failed.")
     }
 
 

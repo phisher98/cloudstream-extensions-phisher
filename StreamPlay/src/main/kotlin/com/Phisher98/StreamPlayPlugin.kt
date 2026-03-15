@@ -179,6 +179,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(HDm2())
         registerExtractorAPI(ZenCloudExtractor())
         registerExtractorAPI(KumiUns())
+        registerExtractorAPI(Rapid())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity

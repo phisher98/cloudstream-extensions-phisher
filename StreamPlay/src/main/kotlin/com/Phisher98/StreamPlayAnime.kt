@@ -51,6 +51,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeHianime
+import com.phisher98.StreamPlayExtractor.invokeKaido
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeSudatchi
 import com.phisher98.StreamPlayExtractor.invokekuudere
@@ -317,6 +318,7 @@ class StreamPlayAnime : MainAPI() {
 
         runAllAsync(
             { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback, dubStatus) },
+            { invokeKaido(zoro?.keys?.toList(), episode, subtitleCallback, callback, dubStatus) },
             {
                 malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let {
                     invokeAnimepahe(it, episode, subtitleCallback, callback, dubStatus)
