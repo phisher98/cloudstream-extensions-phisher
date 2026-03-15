@@ -51,7 +51,7 @@ open class YTS : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/browse-movies?keyword=$query&quality=all&genre=all&rating=0&order_by=latest&year=0&page=$i").document
+            val document = app.get("${mainUrl}/browse-movies/$query/all/all/0/latest/0/all", timeout = 10000L).document
             val results = document.select("div.row div.browse-movie-wrap").mapNotNull { it.toSearchResult() }
             if (!searchResponse.containsAll(results)) {
                 searchResponse.addAll(results)

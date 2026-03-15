@@ -1,6 +1,5 @@
 package com.YTS
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -18,11 +17,12 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Element
 
 class YTSMX : YTS(){
-    override var mainUrl              = "https://yts.lt"
+    override var mainUrl              = "https://yts.bz"
     override var name                 = "YTS MX"
     override val hasMainPage          = true
     override var lang                 = "en"
@@ -47,7 +47,7 @@ class YTSMX : YTS(){
         {
             url="$mainUrl/${request.data}?page=$page"
         }
-        val document = app.get(url).document
+        val document = app.get(url, timeout = 10000L).document
         val home     = document.select("div.row div.browse-movie-wrap").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -92,46 +92,29 @@ class YTSMX : YTS(){
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
-        val TRACKER_LIST_URL="https://newtrackon.com/api/stable"
-        document.select("p.hidden-md.hidden-lg a").map {
-            val infoHash=it.attr("href").substringAfter("download/").substringBefore("?")
-            if (infoHash.startsWith("http"))
-            {
-                Log.d("Error","Subtitles")
-            }
-            else {
-                val quality = it.ownText().substringBefore(".").replace("p", "").toInt()
-                val magnet = generateMagnetLink(TRACKER_LIST_URL, infoHash)
-                callback.invoke(
-                    newExtractorLink(
-                        "$name $quality",
-                        name,
-                        url = magnet,
-                        ExtractorLinkType.MAGNET
-                    ) {
-                        this.referer = ""
-                        this.quality = quality
-                    }
-                )
-            }
-        }
-        return true
+    private fun getIndexQuality(str: String?): Int {
+        return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
+            ?: Qualities.Unknown.value
     }
 
-    private suspend fun generateMagnetLink(url: String, hash: String?): String {
-        // Fetch the content of the file from the provided URL
-        val response = app.get(url)
-        val trackerList = response.text.trim().split("\n") // Assuming each tracker is on a new line
-        // Build the magnet link
-        return buildString {
-            append("magnet:?xt=urn:btih:$hash")
-            trackerList.forEach { tracker ->
-                if (tracker.isNotBlank()) {
-                    append("&tr=").append(tracker.trim())
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        val document = app.get(data).document
+        document.select("a.magnet-download.download-torrent.magnet").map {
+            val magnet=it.attr("href")
+            val quality =getIndexQuality(it.attr("title"))
+
+            callback.invoke(
+                newExtractorLink(
+                    name,
+                    name,
+                    url = magnet,
+                    ExtractorLinkType.MAGNET
+                ) {
+                    this.referer = ""
+                    this.quality = quality
                 }
-            }
+            )
         }
+        return true
     }
 }
