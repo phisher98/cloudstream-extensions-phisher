@@ -180,6 +180,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(ZenCloudExtractor())
         registerExtractorAPI(KumiUns())
         registerExtractorAPI(Rapid())
+        registerExtractorAPI(Allanimeups())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity

@@ -1,6 +1,5 @@
 package com.BanglaPlex
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
@@ -37,19 +36,23 @@ class Plextream : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val iframeScript = app.get(url).document.selectFirst("script:containsData(videoUrls)")?.data() ?: return
-        val regex = Regex("""(\w+)\s*:\s*['"](https://[^'"]+)['"]""")
-        val matches = regex.findAll(iframeScript)
-        matches.forEach { match ->
-            val serverName = match.groupValues[1]
-            val videoUrl = match.groupValues[2]
-            Log.d("Phisher","$serverName $videoUrl")
-            when (serverName.lowercase()) {
-                "rpmshare", "upnshare", "streamp2p" -> {
+        val doc = app.get(url, referer = referer).document
+
+        doc.select(".menu-card button").forEach { btn ->
+            val onclick = btn.attr("onclick")
+
+            val videoUrl = onclick
+                .substringAfter("changeServer('")
+                .substringBefore("'")
+
+            if (videoUrl.isBlank()) return@forEach
+
+            when {
+                videoUrl.contains("rpmvid") || videoUrl.contains("rpmshare") || videoUrl.contains("strp2p") -> {
                     VidStack().getUrl(videoUrl, referer, subtitleCallback, callback)
                 }
                 else -> {
-                    loadExtractor(videoUrl, subtitleCallback, callback)
+                    loadExtractor(videoUrl, referer, subtitleCallback, callback)
                 }
             }
         }

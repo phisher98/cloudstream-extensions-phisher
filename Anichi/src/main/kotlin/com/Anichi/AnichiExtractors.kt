@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
@@ -102,6 +103,16 @@ object AnichiExtractors : Anichi() {
                                         "https://static.crunchyroll.com/",
                                         host
                                     ).forEach(callback)
+                                }
+
+                                source.sourceName?.contains("Uns") == true -> {
+                                    loadCustomExtractor(
+                                        "Allanime VidStack",
+                                        fixedLink,
+                                        "",
+                                        subtitleCallback,
+                                        callback
+                                    )
                                 }
 
                                 server.hls == null -> {
@@ -341,4 +352,8 @@ class FilemoonV2 : ExtractorApi() {
             }
         }
     }
+}
+
+class Allanimeups : VidStack() {
+    override var mainUrl = "https://allanime.uns.bio"
 }

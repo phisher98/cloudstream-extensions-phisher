@@ -13,7 +13,6 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.fixTitle
-import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.CoverImage
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.LikePageInfo
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi.RecommendationConnection
@@ -37,75 +36,85 @@ import org.json.JSONObject
 object AnichiUtils {
 
     suspend fun getTracker(
-            name: String?,
-            altName: String?,
-            year: Int?,
-            season: String?,
-            type: String?
+        name: String?,
+        altName: String?,
+        year: Int?,
+        season: String?,
+        type: String?
     ): AniMedia? {
-        return fetchId(name, year, season, type).takeIf { it?.id != null }
-                ?: fetchId(altName, year, season, type)
+
+        val primary = fetchId(name, year, season, type)
+        if (primary?.id != null) return primary
+
+        val secondary = fetchId(altName, year, season, type)
+        if (secondary?.id != null) return secondary
+
+        return null
     }
 
     suspend fun fetchId(title: String?, year: Int?, season: String?, type: String?): AniMedia? {
-        val query =
-                """
-        query (
-          ${'$'}page: Int = 1
-          ${'$'}search: String
-          ${'$'}sort: [MediaSort] = [POPULARITY_DESC, SCORE_DESC]
-          ${'$'}type: MediaType
-          ${'$'}season: MediaSeason
-          ${'$'}year: String
-          ${'$'}format: [MediaFormat]
-        ) {
-          Page(page: ${'$'}page, perPage: 20) {
-            media(
-              search: ${'$'}search
-              sort: ${'$'}sort
-              type: ${'$'}type
-              season: ${'$'}season
-              startDate_like: ${'$'}year
-              format_in: ${'$'}format
-            ) {
+
+        if (title.isNullOrBlank()) return null
+
+        val query = """
+        query (${'$'}search: String, ${'$'}type: MediaType) {
+          Page(perPage: 10) {
+            media(search: ${'$'}search, type: ${'$'}type) {
               id
               idMal
+              seasonYear
+              format
+              title { romaji english native }
+              synonyms
               coverImage { extraLarge large }
               bannerImage
             }
           }
         }
-    """
-                        .trimIndent()
-                        .trim()
+    """.trimIndent()
 
-        val variables =
-                mapOf(
-                                "search" to title,
-                                "sort" to "SEARCH_MATCH",
-                                "type" to "ANIME",
-                                "season" to
-                                        if (type.equals("ona", true)) "" else season?.uppercase(),
-                                "year" to "$year%",
-                                "format" to listOf(type?.uppercase())
-                        )
-                        .filterValues { value -> value != null && value.toString().isNotEmpty() }
+        val variables = mapOf(
+            "search" to title,
+            "type" to "ANIME"
+        )
 
-        val data =
-                mapOf("query" to query, "variables" to variables)
-                        .toJson()
-                        .toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
+        val body = mapOf("query" to query, "variables" to variables)
+            .toJson()
+            .toRequestBody(RequestBodyTypes.JSON.toMediaTypeOrNull())
 
-        return try {
-            app.post(anilistApi, requestBody = data)
-                    .parsedSafe<AniSearch>()
-                    ?.data
-                    ?.Page
-                    ?.media
-                    ?.firstOrNull()
-        } catch (t: Throwable) {
-            logError(t)
+        val results = try {
+            app.post(anilistApi, requestBody = body)
+                .parsedSafe<AniSearch>()
+                ?.data?.Page?.media
+        } catch (_: Throwable) {
             null
+        } ?: return null
+
+        return results.maxByOrNull { media ->
+
+            var score = 0
+
+            // Year match
+            if (year != null && media.seasonYear == year) score += 3
+
+            // Format match
+            if (!type.isNullOrBlank() && media.format?.equals(type, true) == true) score += 2
+
+            // Collect all titles safely
+            val titles = buildList {
+                media.title?.romaji?.let { add(it) }
+                media.title?.english?.let { add(it) }
+                media.title?.native?.let { add(it) }
+                media.synonyms?.let { addAll(it) }
+            }
+
+            // Exact match
+            if (titles.any { it.equals(title, ignoreCase = true) }) score += 5
+
+            // Partial match
+            if (titles.any { it.contains(title, ignoreCase = true) }) score += 2
+
+            score
         }
     }
 
@@ -271,22 +280,6 @@ data class AnilistAPIResponse(
         data class AiringScheduleNodes(
             @JsonProperty("nodes") val nodes: List<SeasonNextAiringEpisode>?
         )
-
-        fun totalEpisodes(): Int {
-            return nextAiringEpisode?.episode?.minus(1)
-                ?: episodes
-                ?: airingSchedule?.nodes?.getOrNull(0)?.episode
-                ?: 0
-        }
-
-        fun getTitle(): String {
-            return title.english
-                ?: title.romaji ?: throw Exception("Unable to calculate total episodes")
-        }
-
-        fun getCoverImage(): String? {
-            return coverImage.extraLarge ?: coverImage.large ?: coverImage.medium
-        }
     }
 
     data class Media(

@@ -43,10 +43,20 @@ object AnichiParser {
     )
 
     data class AniMedia(
-            @JsonProperty("id") var id: Int? = null,
-            @JsonProperty("idMal") var idMal: Int? = null,
-            @JsonProperty("coverImage") var coverImage: CoverImage? = null,
-            @JsonProperty("bannerImage") var bannerImage: String? = null,
+        @JsonProperty("id") val id: Int,
+        @JsonProperty("idMal") val idMal: Int?,
+        @JsonProperty("seasonYear") val seasonYear: Int?,
+        @JsonProperty("format") val format: String?,
+        @JsonProperty("title") val title: Title?,
+        @JsonProperty("synonyms") val synonyms: List<String>?,
+        @JsonProperty("coverImage") val coverImage: CoverImage?,
+        @JsonProperty("bannerImage") val bannerImage: String?
+    )
+
+    data class Title(
+        @JsonProperty("romaji") val romaji: String?,
+        @JsonProperty("english") val english: String?,
+        @JsonProperty("native") val native: String?
     )
 
     data class AniPage(@JsonProperty("media") var media: ArrayList<AniMedia> = arrayListOf())

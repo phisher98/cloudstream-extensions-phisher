@@ -63,16 +63,28 @@ class Banglaplex : MainAPI() {
         val title     = fixTitle(this.select("div.movie-img > div.movie-title > h3 >a").text()).trim()
         val href      = fixUrl(this.select("div.movie-img > div.movie-title > h3 >a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div > div.latest-movie-img-container").attr("style")).toString().substringAfter("url('").substringBefore("')")
+        val quality = this.select("span.label.label-primary").text()
+        val score = this.selectFirst("span.label.label-imdb")?.ownText()?.substringAfter("IMDB")?.trim()
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.quality = getQualityFromString(quality)
+            this.score = Score.from10(score)
         }
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList {
-        val newpagenumber=page*12
-        val document = app.get("${mainUrl}/search?q=$query&per_page=$newpagenumber").document
-        val results = document.select("div.movie-container > div.col-md-2").mapNotNull { it.toSearchResult() }
+    override suspend fun search(query: String, page: Int): SearchResponseList {
+        val url = if (page == 1) {
+            "$mainUrl/search?q=$query"
+        } else {
+            val newPageNumber = page * 12
+            "$mainUrl/search?q=$query&per_page=$newPageNumber"
+        }
+
+        val document = app.get(url).document
+        val results = document.select("div.movie-container > div.col-md-2")
+            .mapNotNull { it.toSearchResult() }
+
         return results.toNewSearchResponseList()
     }
 

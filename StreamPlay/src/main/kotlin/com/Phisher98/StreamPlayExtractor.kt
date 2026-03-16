@@ -856,7 +856,6 @@ object StreamPlayExtractor : StreamPlay() {
         val normalizedName = normalizeTitle(name)
         val normalizedEngTitle = normalizeTitle(engtitle)
 
-        Log.d("Phisher","$normalizedName $normalizedEngTitle")
         val query =
             """${BuildConfig.ANICHI_API}?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
         val response = app.get(query, referer = privatereferer)
@@ -943,8 +942,19 @@ object StreamPlayExtractor : StreamPlay() {
                                         server.link,
                                         "https://static.crunchyroll.com/",
                                         host
+                                    ).forEach(callback)
+                                }
+
+
+                                source.sourceName.contains("Uns") -> {
+                                    loadDisplaySourceNameExtractor(
+                                        "Allanime VidStack",
+                                        "⌜ Allanime VidStack ⌟ | $host | [${lang.uppercase()}]",
+                                        sourceUrl,
+                                        "",
+                                        subtitleCallback,
+                                        callback
                                     )
-                                        .forEach(callback)
                                 }
 
                                 server.hls == null -> {
@@ -959,6 +969,7 @@ object StreamPlayExtractor : StreamPlay() {
                                         }
                                     )
                                 }
+
 
                                 server.hls -> {
                                     val endpoint = "https://allanime.day/player?uri=" +

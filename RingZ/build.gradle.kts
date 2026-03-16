@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
-    iconUrl="https://ringzapk.com/logo.png"
+    iconUrl="https://rzflix.com/logo.png"
 
     isCrossPlatform = false
 }

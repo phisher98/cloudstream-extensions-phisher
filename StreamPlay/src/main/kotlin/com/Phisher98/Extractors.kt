@@ -3601,10 +3601,8 @@ open class MegaPlay : ExtractorApi() {
                     ?.attr("data-id")
                 ?: return
 
-            Log.d("Phisher", id)
 
             val apiUrl = "$mainUrl/embed-2/v2/e-1/getSources?id=$id"
-            Log.d("Phisher", apiUrl)
 
             val response = app.get(apiUrl, headers = headers)
                 .parsedSafe<MegaPlayResponse>()
@@ -3661,4 +3659,8 @@ open class MegaPlay : ExtractorApi() {
         val start: Long?,
         val end: Long?
     )
+}
+
+class Allanimeups : VidStack() {
+    override var mainUrl = "https://allanime.uns.bio"
 }

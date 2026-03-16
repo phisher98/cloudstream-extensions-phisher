@@ -124,7 +124,10 @@ open class Anichi : MainAPI() {
     }
 
     private fun Edges.toSearchResponse(): AnimeSearchResponse? {
-        val posterUrl = if (thumbnail?.startsWith("http") == true) thumbnail else "https://wp.youtube-anime.com/aln.youtube-anime.com/$thumbnail"
+        val posterUrl = thumbnail?.let {
+            if (it.startsWith("http")) it
+            else "https://wp.youtube-anime.com/aln.youtube-anime.com/$it"
+        }
         return newAnimeSearchResponse(
                 name ?: englishName ?: nativeName ?: "",
                 Id ?: return null,
@@ -137,6 +140,7 @@ open class Anichi : MainAPI() {
             addSub(availableEpisodes?.sub)
         }
     }
+
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(
         withContext(
             Dispatchers.IO
@@ -232,15 +236,17 @@ open class Anichi : MainAPI() {
                         showData.season?.quarter,
                         showData.type
                 )
-        val data = anilistAPICall(
-            "query (\$id: Int = ${trackers?.id}) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
-        ).data.media ?: throw Exception("Unable to fetch media details")
 
+        val aniId =trackers?.id
+
+        val data = anilistAPICall(
+            "query { Media(id: $aniId, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+        ).data.media
 
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=${trackers?.idMal}").toString()
         val animeMetadata = parseAnimeData(syncData)
 
-        val backgroundposter = data.bannerImage ?: trackers?.coverImage?.large
+        val backgroundposter = data?.bannerImage ?: trackers?.coverImage?.large
 
         val logotvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
 
@@ -368,15 +374,12 @@ open class Anichi : MainAPI() {
         const val anilistApi = "https://graphql.anilist.co"
         const val jikanApi = "https://api.jikan.moe/v4"
 
-        private const val mainHash =
-                "e42a4466d984b2c0a2cecae5dd13aa68867f634b16ee0f17b380047d14482406"
-        private const val popularHash =
-                "31a117653812a2547fd981632e8c99fa8bf8a75c4ef1a77a1567ef1741a7ab9c"
+        private const val mainHash = "e42a4466d984b2c0a2cecae5dd13aa68867f634b16ee0f17b380047d14482406"
+        private const val popularHash = "31a117653812a2547fd981632e8c99fa8bf8a75c4ef1a77a1567ef1741a7ab9c"
         //private const val slugHash = "bf603205eb2533ca21d0324a11f623854d62ed838a27e1b3fcfb712ab98b03f4"
-        private const val detailHash =
-                "bb263f91e5bdd048c1c978f324613aeccdfe2cbc694a419466a31edb58c0cc0b"
+        private const val detailHash = "bb263f91e5bdd048c1c978f324613aeccdfe2cbc694a419466a31edb58c0cc0b"
         const val serverHash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
-        const val maipageshaHash="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
+        const val maipageshaHash="a24c500a1b765c68ae1d8dd85174931f661c71369c89b92b88b75a725afc471c"
         val headers =
                 mapOf(
                         "app-version" to "android_c-247",
