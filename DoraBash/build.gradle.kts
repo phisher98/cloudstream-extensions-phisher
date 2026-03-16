@@ -23,6 +23,8 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
     iconUrl="https://dorabash.in/wp-content/uploads/2025/11/20210525_121800-6.png"
+    iconUrl= "https://www.google.com/s2/favicons?domain=dorabash.in&sz=%size%"
+
 
     isCrossPlatform = false
 }

@@ -1,4 +1,4 @@
-version = 4
+version = 5
 
 
 cloudstream {
@@ -22,7 +22,8 @@ cloudstream {
         "Cartoon"
     )
 
-    iconUrl = "https://animesalt.top/wp-content/uploads/AnimeSaltLong.png"
+    iconUrl= "https://www.google.com/s2/favicons?domain=animesalt.ac&sz=%size%"
+
 
     isCrossPlatform = true
 }

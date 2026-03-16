@@ -22,7 +22,8 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","Anime","AnimeMovie")
-    iconUrl="https://raw.githubusercontent.com/phisher98/cloudstream-extensions-phisher/refs/heads/master/Animez/icon.png"
+    iconUrl= "https://www.google.com/s2/favicons?domain=animeyy.com&sz=%size%"
+
 
     isCrossPlatform = true
 }
