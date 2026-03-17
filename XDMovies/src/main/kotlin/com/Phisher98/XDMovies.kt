@@ -30,9 +30,14 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Element
+import java.util.concurrent.atomic.AtomicInteger
 
 class XDMovies : MainAPI() {
     override var mainUrl = "https://new.xdmovies.wtf"
@@ -343,18 +348,25 @@ class XDMovies : MainAPI() {
             listOf(data.trim()).filter { it.isNotEmpty() }
         }
 
-        var success = false
+        if (links.isEmpty()) return false
 
-        links.forEach { link ->
-            runCatching {
-                loadExtractor(link, name, subtitleCallback, callback)
-                success = true
-            }.onFailure {
-                Log.e("XDMovies", "Failed to load link: $link")
-            }
+        val successCount = AtomicInteger(0)
+
+        // All links fire simultaneously — callbacks stream in as each one finishes
+        coroutineScope {
+            links.map { link ->
+                launch(Dispatchers.IO) {
+                    runCatching {
+                        loadExtractor(link, name, subtitleCallback, callback)
+                        successCount.incrementAndGet()
+                    }.onFailure {
+                        Log.e("XDMovies", "Failed to load link: $link")
+                    }
+                }
+            }.joinAll()
         }
 
-        return success
+        return successCount.get() > 0
     }
 
 }

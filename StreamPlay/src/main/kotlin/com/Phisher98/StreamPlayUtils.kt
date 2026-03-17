@@ -11,6 +11,7 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.amapIndexed
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
@@ -32,17 +33,25 @@ import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.StreamPlay.Companion.anilistAPI
 import com.phisher98.StreamPlay.Companion.fourthAPI
 import com.phisher98.StreamPlay.Companion.thrirdAPI
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeout
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -2118,3 +2127,196 @@ fun extractSpecs(inputString: String): Map<String, List<String>> {
     return results.toMap()
 }
 
+fun generateBrowserFingerprint(): String {
+    val components = listOf(
+        "1920x1080x24",
+        "Asia/Kolkata",
+        "en-US",
+        "Win32",
+        "8",
+        "8",
+        "canvas_stub_xdmovies",
+        "ANGLE (NVIDIA)",
+        "no_touch",
+        "3",
+        "true",
+        "unset"
+    )
+
+    val raw = components.joinToString("|||")
+    val digest = MessageDigest.getInstance("SHA-256")
+    val hash = digest.digest(raw.toByteArray(Charsets.UTF_8))
+    return hash.joinToString("") { "%02x".format(it) }.take(32)
+}
+
+
+suspend fun bypassXD(url: String): String? {
+    // Follow initial redirect to get actual bypass URL
+    val redirect = app.get(url, allowRedirects = false)
+        .headers["location"] ?: return null
+
+    val baseUrl = getBaseUrl(redirect)
+    val code = redirect.substringAfterLast("/").takeIf { it.isNotEmpty() } ?: return null
+    val fingerprint = generateBrowserFingerprint()
+
+    val mouseData = mapOf(
+        "eventCount"    to 220,
+        "moveCount"     to 185,
+        "clickCount"    to 3,
+        "totalDistance" to 3800,
+        "hasMovement"   to true,
+        "duration"      to 27000
+    )
+
+    val baseHeaders = mapOf(
+        "User-Agent"      to USER_AGENT,
+        "Accept"          to "*/*",
+        "Origin"          to baseUrl,
+        "Referer"         to "$baseUrl/r/$code",
+        "sec-fetch-site"  to "same-origin",
+        "sec-fetch-mode"  to "cors",
+        "sec-fetch-dest"  to "empty"
+    )
+
+    // ── STEP 1: Create session ────────────────────────────────────────────────
+    val sessionJson = try {
+        JSONObject(
+            app.post(
+                "$baseUrl/api/session",
+                json = mapOf(
+                    "code"        to code,
+                    "fingerprint" to fingerprint,
+                    "mouseData"   to mouseData
+                ),
+                headers = baseHeaders
+            ).text
+        )
+    } catch (_: Exception) { return null }
+
+    val sessionId  = sessionJson.optString("sessionId").takeIf { it.isNotEmpty() } ?: return null
+
+    val cookieHeaders = baseHeaders + mapOf("Cookie" to "sid=$sessionId")
+
+    // ── STEP 2: Rebind (simulates step-2 page reload) ────────────────────────
+    val rebindJson = try {
+        JSONObject(
+            app.post(
+                "$baseUrl/api/session/rebind",
+                json = mapOf("fingerprint" to fingerprint),
+                headers = cookieHeaders
+            ).text
+        )
+    } catch (_: Exception) { return null }
+
+    val rebindToken = rebindJson.optString("token").takeIf { it.isNotEmpty() } ?: return null
+
+    // ── STEP 3: WebSocket heartbeats ─────────────────────────────────────────
+    // Server only advances visible-time counter when it receives
+    // "heartbeat" events over the Socket.IO WebSocket while
+    // visibility is "visible". A plain delay() does nothing.
+    val wsBaseUrl = baseUrl
+        .replace("https://", "wss://")
+        .replace("http://",  "ws://")
+
+    val visibleTimeDone = CompletableDeferred<Unit>()
+    val okHttpClient    = OkHttpClient()
+
+    val wsRequest = Request.Builder()
+        .url("$wsBaseUrl/socket.io/?EIO=4&transport=websocket")
+        .addHeader("Origin",     baseUrl)
+        .addHeader("Cookie",     "sid=$sessionId")
+        .addHeader("User-Agent", USER_AGENT)
+        .build()
+
+    var heartbeatJob: kotlinx.coroutines.Job? = null
+
+    val webSocket = okHttpClient.newWebSocket(wsRequest, object : WebSocketListener() {
+
+        override fun onOpen(webSocket: WebSocket, response: Response) {
+            // Socket.IO: connect to default namespace
+            webSocket.send("40")
+        }
+
+        override fun onMessage(webSocket: WebSocket, text: String) {
+            when {
+                // Socket.IO ping → reply with pong to keep connection alive
+                text == "2" -> webSocket.send("3")
+
+                // Namespace connected → bind session + mark visible + start heartbeats
+                text.startsWith("40") -> {
+                    webSocket.send("""42["bind","$rebindToken"]""")
+                    webSocket.send("""42["visibility","visible"]""")
+
+                    heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+                        var elapsed = 0
+                        while (elapsed < 28) {
+                            delay(1000)
+                            elapsed++
+
+                            webSocket.send("""42["heartbeat"]""")
+                            webSocket.send(
+                                """42["mouseActivity",${
+                                    JSONObject(
+                                        mouseData.toMutableMap().apply {
+                                            put("duration", elapsed * 1000)
+                                        }
+                                    )
+                                }]"""
+                            )
+                        }
+                        visibleTimeDone.complete(Unit)
+                    }
+                }
+            }
+        }
+
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            visibleTimeDone.completeExceptionally(t)
+        }
+    })
+
+    // Wait for 28 heartbeats (≈ 28 seconds of visible time)
+    try {
+        withTimeout(40_000) { visibleTimeDone.await() }
+    } catch (_: Exception) {
+        return null
+    } finally {
+        heartbeatJob?.cancel()
+        webSocket.close(1000, null)
+        okHttpClient.dispatcher.executorService.shutdown()
+    }
+
+    // ── STEP 4: Complete session — retry until token returned ─────────────────
+    var finalToken: String? = null
+
+    repeat(5) { attempt ->
+        if (finalToken != null) return@repeat
+        try {
+            val json = JSONObject(
+                app.post(
+                    "$baseUrl/api/session/complete",
+                    json = mapOf(
+                        "fingerprint" to fingerprint,
+                        "mouseData"   to mouseData.toMutableMap().apply {
+                            put("duration", 28000 + attempt * 2000)
+                        },
+                        "honeypot"    to ""   // must be empty — bots fill this
+                    ),
+                    headers = cookieHeaders
+                ).text
+            )
+            json.optString("token").takeIf { it.isNotEmpty() }?.let { finalToken = it }
+        } catch (_: Exception) { }
+
+        if (finalToken == null) delay(2000)
+    }
+
+    val token = finalToken ?: return null
+
+    // ── STEP 5: Final redirect ────────────────────────────────────────────────
+    return app.get(
+        "$baseUrl/go/$sessionId?t=$token",
+        allowRedirects = false,
+        headers = cookieHeaders
+    ).headers["location"]
+}

@@ -3883,12 +3883,28 @@ object StreamPlayExtractor : StreamPlay() {
         if (title.isNullOrBlank()) return
         val document = app.get("$fourkhdhub/?s=${URLEncoder.encode(title, "UTF-8")}").document
         val normalizedTitle = title.lowercase().trim()
-        val link = document.select("div.card-grid > a.movie-card").firstOrNull { element ->
-                val content = element.selectFirst("div.movie-card-content")?.text()?.lowercase() ?: return@firstOrNull false
-                val matchTitle = content.contains(normalizedTitle) || normalizedTitle.contains(content)
-                val matchYear = year == null || content.contains(year.toString())
-                matchTitle && matchYear
-            }?.attr("href") ?: return
+        val elements = document.select("div.card-grid > a.movie-card")
+
+        val link = elements.firstOrNull { element ->
+            val content = element.selectFirst("div.movie-card-content")
+                ?.text()
+                ?.lowercase()
+                ?: return@firstOrNull false
+
+            val matchTitle = content.contains(normalizedTitle)
+            val matchYear = year == null || content.contains(year.toString())
+
+            matchTitle && matchYear
+        }?.attr("href")
+            ?: elements.firstOrNull { element ->
+                val content = element.selectFirst("div.movie-card-content")
+                    ?.text()
+                    ?.lowercase()
+                    ?: return@firstOrNull false
+
+                content.contains(normalizedTitle)
+            }?.attr("href")
+            ?: return
 
         val url = if (link.startsWith("http")) link else "$fourkhdhub$link"
         val doc =app.get(url).document

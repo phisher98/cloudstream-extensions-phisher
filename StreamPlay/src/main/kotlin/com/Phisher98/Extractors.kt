@@ -2754,39 +2754,6 @@ class XdMoviesExtractor : ExtractorApi() {
         val redirect = bypassXD(url) ?: return
         loadExtractor(redirect, "HubCloud", subtitleCallback, callback)
     }
-
-    suspend fun bypassXD(url: String): String? {
-        val redirect = app.get(
-            url,
-            allowRedirects = false,
-            timeout = 600L
-        ).headers["location"] ?: return null
-        val baseUrl = getBaseUrl(redirect)
-        val code = redirect.substringAfterLast("/").takeIf { it.isNotEmpty() } ?: return null
-        val sessionJson = try {
-            JSONObject(
-                app.post(
-                    "$baseUrl/api/session",
-                    json = mapOf("code" to code),
-                    timeout = 600L
-                ).text
-            )
-        } catch (_: Exception) {
-            return null
-        }
-        val sessionId = sessionJson.optString("sessionId")
-        val token = sessionJson.optString("token")
-        if (sessionId.isEmpty() || token.isEmpty()) return null
-        return app.get(
-            "$baseUrl/go/$sessionId?t=$token",
-            allowRedirects = false,
-            timeout = 600L
-        ).headers["location"]
-    }
-
-    private fun getBaseUrl(url: String): String {
-        return URI(url).let { "${it.scheme}://${it.host}" }
-    }
 }
 
 class Rapidairmax : MegaUp() {
