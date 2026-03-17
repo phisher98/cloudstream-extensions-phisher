@@ -9,7 +9,12 @@ import com.phisher98.StreamPlayExtractor.invokFlixindia
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
-import com.phisher98.StreamPlayExtractor.invokeAnimes
+import com.phisher98.StreamPlayExtractor.invokeAniXL
+import com.phisher98.StreamPlayExtractor.invokeAnichi
+import com.phisher98.StreamPlayExtractor.invokeAnimeKai
+import com.phisher98.StreamPlayExtractor.invokeAnimepahe
+import com.phisher98.StreamPlayExtractor.invokeAnimetosho
+import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeBollyflix
 import com.phisher98.StreamPlayExtractor.invokeCineVood
 import com.phisher98.StreamPlayExtractor.invokeCinemaOS
@@ -20,7 +25,10 @@ import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFilmyfiy
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeHexa
+import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeHindmoviez
+import com.phisher98.StreamPlayExtractor.invokeKaido
+import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
@@ -71,6 +79,9 @@ import com.phisher98.StreamPlayExtractor.invokehdhub4u
 import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokemp4hydra
 import com.phisher98.StreamPlayExtractor.invokevidrock
+import com.phisher98.StreamPlayExtractor.invokeTokyoInsider
+import com.phisher98.StreamPlayExtractor.invokekuudere
+import com.phisher98.StreamPlayExtractor.resolveAnimeIds
 
 data class Provider(
     val id: String,
@@ -84,15 +95,85 @@ data class Provider(
     ) -> Unit
 )
 
-
 @RequiresApi(Build.VERSION_CODES.O)
 fun buildProviders(): List<Provider> {
     return listOf(
-        Provider("uhdmovies", "UHD Movies (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("uhdmovies", "UHD Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
-        Provider("anime", "All Anime Sources") { res, subtitleCallback, callback, _, _ ->
-            if (res.isAnime) invokeAnimes(res.title, res.jpTitle, res.date, res.airedDate, res.season, res.episode, subtitleCallback, callback, res.isDub,res.isMovie)
+        Provider("hianime", "HiAnime") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                invokeHianime(ids.zoroIds, res.episode, subtitleCallback, callback, dubStatus)
+            }
+        },
+        Provider("kaido", "Kaido") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                invokeKaido(ids.zoroIds, res.episode, subtitleCallback, callback, dubStatus)
+            }
+        },
+        Provider("animetosho", "AnimeTosho") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                ids.malId?.let { invokeAnimetosho(it, res.episode, subtitleCallback, callback, dubStatus, ids.anidbEid) }
+            }
+        },
+        Provider("animekai", "AnimeKai") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                ids.malId?.let { invokeAnimeKai(res.jpTitle, ids.zoroTitle, res.episode, subtitleCallback, callback, dubStatus) }
+            }
+        },
+        Provider("kickass", "KickAssAnime") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                ids.kaasSlug?.let { invokeKickAssAnime(res.title, it, res.episode, subtitleCallback, callback, dubStatus) }
+            }
+        },
+        Provider("animepahe", "AnimePahe") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                ids.animepaheUrl?.let { invokeAnimepahe(it, res.episode, subtitleCallback, callback, dubStatus) }
+            }
+        },
+        Provider("anichi", "Anichi / AllAnime") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                invokeAnichi(ids.zoroTitle, res.title, ids.tmdbYear, res.episode, subtitleCallback, callback, dubStatus)
+            }
+        },
+        Provider("tokyoinsider", "Tokyo Insider") { res, _, callback, _, _ ->
+            if (res.isAnime) {
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                invokeTokyoInsider(res.jpTitle, res.title, res.episode, callback, dubStatus)
+            }
+        },
+        Provider("anizone", "AniZone") { res, _, callback, _, _ ->
+            if (res.isAnime) {
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                invokeAnizone(res.jpTitle, res.title, res.episode, callback, dubStatus)
+            }
+        },
+        Provider("anixl", "AniXL") { res, _, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                ids.aniXL?.let { invokeAniXL(it, res.episode, callback, dubStatus) }
+            }
+        },
+        Provider("kuudere", "Kuudere") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
+                invokekuudere(res.title, res.season, res.episode, subtitleCallback, callback, dubStatus)
+            }
         },
         Provider("vidsrccc", "Vidsrccc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
@@ -126,13 +207,13 @@ fun buildProviders(): List<Provider> {
         Provider("multiembed", "MultiEmbed") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, subtitleCallback,callback)
         },
-        Provider("vegamovies", "VegaMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("vegamovies", "VegaMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isBollywood) invokeVegamovies(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("Rogmovies", "RogMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("Rogmovies", "RogMovies") { res, subtitleCallback, callback, _, _ ->
             if (res.isBollywood) invokeRogmovies(res.title, res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("multimovies", "MultiMovies (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("multimovies", "MultiMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMultimovies(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("zshow", "ZShow") { res, subtitleCallback, callback, _, _ ->
@@ -141,7 +222,7 @@ fun buildProviders(): List<Provider> {
         Provider("showflix", "ShowFlix (South Indian)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeShowflix(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moflix", "Moflix (Multi)") { res, _, callback, _, _ ->
+        Provider("moflix", "Moflix") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
         },
         Provider("zoechip", "ZoeChip") { res, _, callback, _, _ ->
@@ -153,10 +234,10 @@ fun buildProviders(): List<Provider> {
         Provider("playdesi", "PlayDesi") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokePlaydesi(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moviesdrive", "MoviesDrive (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("moviesdrive", "MoviesDrive") { res, subtitleCallback, callback, _, _ ->
             invokeMoviesdrive(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("watch32APIHQ", "Watch32 API HQ (English)") { res, subtitleCallback, callback, _, _ ->
+        Provider("watch32APIHQ", "Watch32 API HQ") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
                 subtitleCallback, callback)
         },
@@ -169,7 +250,7 @@ fun buildProviders(): List<Provider> {
         Provider("superstream", "SuperStream") { res, _, callback, token, _ ->
             if (!res.isAnime && res.imdbId != null) invokeSuperstream(token, res.id, res.season, res.episode, callback)
         },
-        Provider("vidsrcxyz", "VidSrcXyz (English)") { res, _, callback, _, _ ->
+        Provider("vidsrcxyz", "VidSrcXyz") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)
         },
         Provider("vidzeeapi", "Vidzee API") { res, subtitleCallback, callback, _, _ ->
@@ -257,20 +338,20 @@ fun buildProviders(): List<Provider> {
         Provider("BidSrc", "BidSrc") { res, _, callback, _, _ ->
             if (!res.isAnime) invokBidsrc(res.id, res.season, res.episode, callback)
         },
-        Provider("flixindia", "FlixIndia (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("flixindia", "FlixIndia") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("Hindmoviez", "HindMoviez (Multi)") { res, _, callback, _, _ ->
+        Provider("Hindmoviez", "HindMoviez") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, callback)
         },
-        Provider("Movies4u", "Movies4u (Multi)") { res, subtitleCallback, callback, _, _ ->
+        Provider("Movies4u", "Movies4u") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
         },
-        Provider("M4uhd", "M4uhd (English)") { res, subtitleCallback, callback, _, _ ->
+        Provider("M4uhd", "M4uhd") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeM4uhd(res.title,
                 res.season, res.episode, subtitleCallback ,callback)
         },
-        Provider("MappleTV", "MappleTV (English)") { res, _, callback, _, _ ->
+        Provider("MappleTV", "MappleTV") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMapple(res.id, res.season, res.episode ,callback)
         },
         Provider("WyZIESUB", "WyZIESUB (Subtitles)") { res, subtitleCallback, _, _, _ ->
@@ -291,7 +372,7 @@ fun buildProviders(): List<Provider> {
         Provider("2Embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("DooFlix", "DooFlix (Multi)") { res, _, callback, _, _ ->
+        Provider("DooFlix", "DooFlix") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeDooflix(res.id, res.season, res.episode, callback)
         }
     )

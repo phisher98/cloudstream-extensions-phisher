@@ -19,6 +19,7 @@ import com.phisher98.StreamPlay
 import com.phisher98.StreamPlayAnime
 import com.phisher98.StreamPlayPlugin
 import com.phisher98.StreamPlayStremioCatelog
+import com.phisher98.StreamPlayStremioCatelogFrag
 
 class ToggleFragment(
     plugin: StreamPlayPlugin,
@@ -54,17 +55,52 @@ class ToggleFragment(
         this.background = res.getDrawable(outlineId, null)
     }
 
+    private fun loadStremioLinks(): List<StreamPlayStremioCatelogFrag.LinkItem> {
+        val json = sharedPref.getString("streamplay_stremio_saved_links", null)
+            ?: return emptyList()
+
+        val list = mutableListOf<StreamPlayStremioCatelogFrag.LinkItem>()
+
+        return try {
+            val arr = org.json.JSONArray(json)
+
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+
+                list.add(
+                    StreamPlayStremioCatelogFrag.LinkItem(
+                        id = obj.optLong("id", System.currentTimeMillis()),
+                        name = obj.optString("name", ""),
+                        link = obj.optString("link", ""),
+                        type = obj.optString("type", "StremioC")
+                    )
+                )
+            }
+
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val root = getLayout("fragment_toggle_extensions", inflater, container)
         val extensionList = root.findView<LinearLayout>("toggle_list_container")
-
-        val apis = listOf(
-            StreamPlay(sharedPref),
-            StreamPlayAnime(),
-            StreamPlayStremioCatelog("", "StreamPlay-StremioCatelog", sharedPref)
-            //StreamplayTorrentAnime()
-        )
+        val stremioLinks = loadStremioLinks()
+        val apis = buildList {
+            add(StreamPlay(sharedPref))
+            add(StreamPlayAnime())
+            stremioLinks.forEach { link ->
+                add(
+                    StreamPlayStremioCatelog(
+                        link.link,   // mainUrl
+                        link.name,   // unique name shown in UI
+                        sharedPref
+                    )
+                )
+            }
+        }
 
         val savedKey = "enabled_plugins_saved"
         val savedSet = sharedPref.getStringSet(savedKey, null)

@@ -26,7 +26,6 @@ import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
-import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -411,7 +410,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private suspend fun invokeTokyoInsider(
+    suspend fun invokeTokyoInsider(
         jptitle: String? = null,
         title: String? = null,
         episode: Int? = null,
@@ -608,6 +607,58 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+
+    // Shared data class to hold pre-fetched anime metadata
+    data class AnimeResolvedIds(
+        val malId: Int?,
+        val anidbEid: Int,
+        val zoroIds: List<String>? = null,
+        val zoroTitle: String?,
+        val aniXL: String?,
+        val kaasSlug: String?,
+        val animepaheUrl: String?,
+        val tmdbYear: Int?,
+    )
+
+    suspend fun resolveAnimeIds(
+        title: String?,
+        date: String?,
+        airedDate: String?,
+        season: Int?,
+        episode: Int?,
+    ): AnimeResolvedIds {
+        val (_, malId) = convertTmdbToAnimeId(
+            title, date, airedDate, if (season == null) TvType.AnimeMovie else TvType.Anime
+        )
+
+        var anijson: String? = null
+        try {
+            anijson = app.get("https://api.ani.zip/mappings?mal_id=$malId").toString()
+        } catch (e: Exception) {
+            println("Error fetching mapping: ${e.message}")
+        }
+
+        val anidbEid = getAnidbEid(anijson ?: "{}", episode ?: 1) ?: 0
+
+        val malsync = malId?.let {
+            runCatching {
+                app.get("$malsyncAPI/mal/anime/$it").parsedSafe<MALSyncResponses>()?.sites
+            }.getOrNull()
+        }
+
+        return AnimeResolvedIds(
+            malId       = malId,
+            anidbEid    = anidbEid,
+            zoroIds     = malsync?.zoro?.keys?.toList()?.filterNotNull(),
+            zoroTitle   = malsync?.zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " "),
+            aniXL       = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] },
+            kaasSlug    = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] },
+            animepaheUrl= malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] },
+            tmdbYear    = date?.substringBefore("-")?.toIntOrNull(),
+        )
+    }
+
+    /*
     suspend fun invokeAnimes(
         title: String?,
         jptitle: String? = null,
@@ -734,6 +785,8 @@ object StreamPlayExtractor : StreamPlay() {
             )
     }
 
+     */
+
     suspend fun invokeAniXL(
         url: String,
         episode: Int? = null,
@@ -850,14 +903,19 @@ object StreamPlayExtractor : StreamPlay() {
         val isMovie = dubtype == "Movie"
         val privatereferer = "https://allmanga.to"
         val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
-        val queryhash = "06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
+        val queryhash = "a24c500a1b765c68ae1d8dd85174931f661c71369c89b92b88b75a725afc471c"
         val type = if (episode == null) "Movie" else "TV"
 
         val normalizedName = normalizeTitle(name)
         val normalizedEngTitle = normalizeTitle(engtitle)
 
-        val query =
-            """${BuildConfig.ANICHI_API}?variables={"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$queryhash"}}"""
+        val variables = if (isMovie) {
+            """{"search":{"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}"""
+        } else {
+            """{"search":{"types":["$type"],"year":$year,"query":"$name"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}"""
+        }
+
+        val query = "${BuildConfig.ANICHI_API}?variables=$variables&extensions={\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"$queryhash\"}}"
         val response = app.get(query, referer = privatereferer)
             .parsedSafe<AnichiRoot>()
             ?.data?.shows?.edges ?: return
