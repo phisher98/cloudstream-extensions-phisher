@@ -250,8 +250,11 @@ open class Anichi : MainAPI() {
 
         val syncData = app.get("https://api.ani.zip/mappings?mal_id=${trackers?.idMal}").toString()
         val animeMetadata = parseAnimeData(syncData)
+        val fanart = animeMetadata?.images
+            ?.firstOrNull { it.coverType.equals("Fanart", ignoreCase = true) }
+            ?.url
 
-        val backgroundposter = data?.bannerImage ?: trackers?.coverImage?.large
+        val backgroundposter = fanart ?: data?.bannerImage ?: trackers?.coverImage?.large
 
         val logotvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
 
