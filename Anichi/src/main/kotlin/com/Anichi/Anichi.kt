@@ -87,39 +87,44 @@ open class Anichi : MainAPI() {
 
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
-        """$apiUrl?variables={"search":{"season":"$season","year":$year},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to "New Series",
-        """$apiUrl?variables={"search":{},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to animeRecentTitle,
-        """$apiUrl?variables={"search":{},"limit":26,"page":1,"translationType":"sub","countryOrigin":"CN"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to donghuaRecentTitle,
+        """$apiUrl?variables={"search":{"season":"$season","year":$year},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to "New Series",
+        """$apiUrl?variables={"search":{},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to animeRecentTitle,
+        """$apiUrl?variables={"search":{},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"CN"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to donghuaRecentTitle,
         """$apiUrl?variables={"type":"anime","size":30,"dateRange":1,"page":%d,"allowAdult":${settingsForProvider.enableAdult},"allowUnknown":false}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$popularHash"}}""" to popularTitle,
-        """$apiUrl?variables={"search":{"types":["Movie"]},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to movieTitle,
+        """$apiUrl?variables={"search":{"types":["Movie"]},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to movieTitle,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
 
-        val url = request.data.format(page)
+        val url = if (request.data.contains("%d")) {
+            request.data.format(page)
+        } else {
+            request.data
+        }
+
         val res = app.get(url, headers = headers).parsedSafe<AnichiQuery>()?.data
         val query = res?.shows ?: res?.queryPopular ?: res?.queryListForTag
+
         val card =
-                if (request.name == popularTitle) query?.recommendations?.map { it.anyCard }
-                else query?.edges
-        val home =
-                card
-                        ?.filter {
-                            // filtering in case there is an anime with 0 episodes available on the
-                            // site.
-                            !(it?.availableEpisodes?.raw == 0 &&
-                                    it.availableEpisodes.sub == 0 &&
-                                    it.availableEpisodes.dub == 0)
-                        }
-                        ?.mapNotNull { media -> media?.toSearchResponse() }
-                        ?: emptyList()
+            if (request.name == popularTitle) query?.recommendations?.map { it.anyCard }
+            else query?.edges
+
+        val home = card
+            ?.filter {
+                // filtering in case there is an anime with 0 episodes available on the // site.
+                !(it?.availableEpisodes?.raw == 0 &&
+                        it.availableEpisodes.sub == 0 &&
+                        it.availableEpisodes.dub == 0)
+            }
+            ?.mapNotNull { media -> media?.toSearchResponse() }
+            ?: emptyList()
+
         return newHomePageResponse(
-                list =
-                        HomePageList(
-                                name = request.name,
-                                list = home,
-                        ),
-                hasNext = request.name != movieTitle
+            list = HomePageList(
+                name = request.name,
+                list = home,
+            ),
+            hasNext = home.isNotEmpty() // better pagination handling
         )
     }
 
