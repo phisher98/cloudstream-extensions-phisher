@@ -664,7 +664,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         activityManager.getMemoryInfo(memoryInfo)
         val deviceRamMB = memoryInfo.totalMem / (1024 * 1024)
 
-        if (deviceRamMB < 3000) {
+        if (deviceRamMB < 3072) {
             Log.d("StreamPlay", "Device RAM: ${deviceRamMB}MB")
             val concurrentLimit = when {
                 deviceRamMB < 512 -> 3
