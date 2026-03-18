@@ -97,82 +97,79 @@ data class Provider(
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun buildProviders(): List<Provider> {
+    fun getDubStatus(res: StreamPlay.LinkData): String {
+        return when {
+            res.isMovie == true -> "Movie"
+            res.isDub -> "DUB"
+            else -> "SUB"
+        }
+    }
+
+    suspend fun getAnimeIds(res: StreamPlay.LinkData) = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+
     return listOf(
         Provider("uhdmovies", "UHD Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
         Provider("hianime", "HiAnime") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                invokeHianime(ids.zoroIds, res.episode, subtitleCallback, callback, dubStatus)
+                invokeHianime(getAnimeIds(res).zoroIds, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("kaido", "Kaido") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                invokeKaido(ids.zoroIds, res.episode, subtitleCallback, callback, dubStatus)
+                invokeKaido(getAnimeIds(res).zoroIds, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("animetosho", "AnimeTosho") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                ids.malId?.let { invokeAnimetosho(it, res.episode, subtitleCallback, callback, dubStatus, ids.anidbEid) }
+                val ids = getAnimeIds(res)
+                ids.malId?.let { invokeAnimetosho(it, res.episode, subtitleCallback, callback, getDubStatus(res), ids.anidbEid) }
             }
         },
         Provider("animekai", "AnimeKai") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                ids.malId?.let { invokeAnimeKai(res.jpTitle, ids.zoroTitle, res.episode, subtitleCallback, callback, dubStatus) }
+                val ids = getAnimeIds(res)
+                ids.malId?.let { invokeAnimeKai(res.jpTitle, ids.zoroTitle, res.episode, subtitleCallback, callback, getDubStatus(res)) }
             }
         },
         Provider("kickass", "KickAssAnime") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                ids.kaasSlug?.let { invokeKickAssAnime(res.title, it, res.episode, subtitleCallback, callback, dubStatus) }
+                val ids = getAnimeIds(res)
+                ids.kaasSlug?.let { invokeKickAssAnime(res.title, it, res.episode, subtitleCallback, callback, getDubStatus(res)) }
             }
         },
         Provider("animepahe", "AnimePahe") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                ids.animepaheUrl?.let { invokeAnimepahe(it, res.episode, subtitleCallback, callback, dubStatus) }
+                val ids = getAnimeIds(res)
+                ids.animepaheUrl?.let { invokeAnimepahe(it, res.episode, subtitleCallback, callback, getDubStatus(res)) }
             }
         },
         Provider("anichi", "Anichi / AllAnime") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                invokeAnichi(ids.zoroTitle, res.title, ids.tmdbYear, res.episode, subtitleCallback, callback, dubStatus)
+                val ids = getAnimeIds(res)
+                invokeAnichi(ids.zoroTitle, res.title, ids.tmdbYear, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("tokyoinsider", "Tokyo Insider") { res, _, callback, _, _ ->
             if (res.isAnime) {
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                invokeTokyoInsider(res.jpTitle, res.title, res.episode, callback, dubStatus)
+                invokeTokyoInsider(res.jpTitle, res.title, res.episode, callback, getDubStatus(res))
             }
         },
         Provider("anizone", "AniZone") { res, _, callback, _, _ ->
             if (res.isAnime) {
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                invokeAnizone(res.jpTitle, res.title, res.episode, callback, dubStatus)
+                invokeAnizone(res.jpTitle, res.title, res.episode, callback, getDubStatus(res))
             }
         },
         Provider("anixl", "AniXL") { res, _, callback, _, _ ->
             if (res.isAnime) {
-                val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                ids.aniXL?.let { invokeAniXL(it, res.episode, callback, dubStatus) }
+                val ids = getAnimeIds(res)
+                ids.aniXL?.let { invokeAniXL(it, res.episode, callback, getDubStatus(res)) }
             }
         },
         Provider("kuudere", "Kuudere") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                val dubStatus = if (res.isMovie == true) "Movie" else if (res.isDub) "DUB" else "SUB"
-                invokekuudere(res.title, res.season, res.episode, subtitleCallback, callback, dubStatus)
+                invokekuudere(res.title, res.season, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("vidsrccc", "Vidsrccc") { res, _, callback, _, _ ->
@@ -248,10 +245,22 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeFilm1k(res.title, res.season, res.year, subtitleCallback, callback)
         },
         Provider("superstream", "SuperStream") { res, _, callback, token, _ ->
-            if (!res.isAnime && res.imdbId != null) invokeSuperstream(token, res.id, res.season, res.episode, callback)
+            val status = getDubStatus(res)
+            val isAnime = res.isAnime
+            if (isAnime && status != "SUB") return@Provider
+
+            if (res.imdbId != null && token.isNotEmpty()) {
+                invokeSuperstream(
+                    token,
+                    res.id,
+                    res.season,
+                    res.episode,
+                    callback
+                )
+            }
         },
         Provider("vidsrcxyz", "VidSrcXyz") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)
+            invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)
         },
         Provider("vidzeeapi", "Vidzee API") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVidzee(res.id, res.season, res.episode, subtitleCallback, callback)
@@ -300,10 +309,10 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokemp4hydra(res.title, res.year,res.season, res.episode, subtitleCallback, callback)
         },
         Provider("vidfast", "VidFast") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeVidFast(res.id, res.season,res.episode, callback)
+            invokeVidFast(res.id, res.season,res.episode, callback)
         },
         Provider("vidplus", "VidPlus") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeVidPlus(res.id, res.season,res.episode,  callback)
+            invokeVidPlus(res.id, res.season,res.episode,  callback)
         },
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime || res.isCartoon) invokeToonstream(res.title, res.season, res.episode, subtitleCallback, callback)
@@ -321,16 +330,22 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeKimcartoon(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("YFlix", "YFlix") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeYflix(res.title, res.season, res.episode, subtitleCallback, callback)
+            val status = getDubStatus(res)
+            val isAnime = res.isAnime
+            if (isAnime && status != "SUB") return@Provider
+            invokeYflix(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moviesapi", "MoviesApi Club") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeMoviesApi(res.id, res.season, res.episode, callback)
+            invokeMoviesApi(res.id, res.season, res.episode, callback)
         },
         Provider("CinemaCity", "CinemaCity") { res, _, callback, _, _ ->
             invokecinemacity(res.imdbId, res.season,res.episode,  callback)
         },
         Provider("EmbedMaster", "EmbedMaster") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeEmbedMaster(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            val status = getDubStatus(res)
+            val isAnime = res.isAnime
+            if (isAnime && status != "SUB") return@Provider
+            invokeEmbedMaster(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("HexaSU", "HexaSU") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeHexa(res.id, res.season, res.episode, callback)
