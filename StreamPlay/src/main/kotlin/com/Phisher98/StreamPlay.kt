@@ -656,47 +656,31 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
         val authToken = token.orEmpty()
 
-        // Use activity context if available
         val context = activity?.applicationContext ?: return@coroutineScope true
+        val memoryInfo = ActivityManager.MemoryInfo().apply {
+            (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(this)
+        }
 
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        val deviceRamMB = memoryInfo.totalMem / (1024 * 1024)
+        val total = memoryInfo.totalMem / (1024 * 1024)
+        val available = memoryInfo.availMem / (1024 * 1024)
 
-        if (deviceRamMB < 3072) {
-            Log.d("StreamPlay", "Device RAM: ${deviceRamMB}MB")
-            val concurrentLimit = when {
-                deviceRamMB < 512 -> 3
-                deviceRamMB < 1024 -> 5
-                deviceRamMB < 1536 -> 8
-                deviceRamMB < 2048 -> 10
-                deviceRamMB < 2500 -> 12
-                else -> 15
+        if (total < 3072) {
+            val limit = when {
+                total < 512 -> if (available < 50) 1 else if (available < 150) 2 else 4
+                total < 1024 -> if (available < 100) 1 else if (available < 250) 4 else 6
+                total < 2048 -> if (available < 150) 3 else if (available < 350) 6 else 10
+                else -> if (available < 250) 8 else if (available < 450) 12 else 15
             }
 
-            val semaphore = Semaphore(concurrentLimit)
-            providersList.map { provider ->
-                async {
-                    semaphore.withPermit {
-                        runCatching {
-                            provider.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI)
-                        }
-                    }
-                }
-            }.awaitAll()
+            Semaphore(limit).let { semaphore ->
+                providersList.map { async { semaphore.withPermit { runCatching { it.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI) } } } }.awaitAll()
+            }
         } else {
-            providersList.amap { provider ->
-                runCatching {
-                    provider.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI)
-                }
-            }
+            providersList.amap { runCatching { it.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI) } }
         }
 
         true
     }
-
-
 
     data class LinkData(
         val id: Int? = null,
