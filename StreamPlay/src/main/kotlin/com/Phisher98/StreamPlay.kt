@@ -1,5 +1,7 @@
 package com.phisher98
 
+import android.app.ActivityManager
+import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -8,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
@@ -652,20 +655,38 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", emptySet())?.toSet() ?: emptySet()
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
         val authToken = token.orEmpty()
-        providersList.amap { provider ->
-            runCatching {
-                provider.invoke(
-                    res,
-                    subtitleCallback,
-                    callback,
-                    authToken,
-                    dahmerMoviesAPI
-                )
+
+        // Use activity context if available
+        val context = activity?.applicationContext ?: return@coroutineScope true
+
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        val deviceRamMB = memoryInfo.totalMem / (1024 * 1024)
+
+        if (deviceRamMB < 3000) {
+            Log.d("StreamPlay", "Device RAM: ${deviceRamMB}MB")
+            val concurrentLimit = 15  // Only 15 running at once
+            val semaphore = Semaphore(concurrentLimit)
+            providersList.map { provider ->
+                async {
+                    semaphore.withPermit {
+                        runCatching {
+                            provider.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI)
+                        }
+                    }
+                }
+            }.awaitAll()
+        } else {
+            providersList.amap { provider ->
+                runCatching {
+                    provider.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI)
+                }
             }
         }
+
         true
     }
-
 
 
 
