@@ -666,7 +666,15 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         if (deviceRamMB < 3000) {
             Log.d("StreamPlay", "Device RAM: ${deviceRamMB}MB")
-            val concurrentLimit = 15  // Only 15 running at once
+            val concurrentLimit = when {
+                deviceRamMB < 512 -> 3
+                deviceRamMB < 1024 -> 5
+                deviceRamMB < 1536 -> 8
+                deviceRamMB < 2048 -> 10
+                deviceRamMB < 2500 -> 12
+                else -> 15
+            }
+
             val semaphore = Semaphore(concurrentLimit)
             providersList.map { provider ->
                 async {
