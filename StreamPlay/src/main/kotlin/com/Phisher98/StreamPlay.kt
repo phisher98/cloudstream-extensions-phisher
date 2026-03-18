@@ -656,27 +656,17 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
         val authToken = token.orEmpty()
 
-        val context = activity?.applicationContext ?: return@coroutineScope true
-        val memoryInfo = ActivityManager.MemoryInfo().apply {
-            (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(this)
-        }
-
-        val total = memoryInfo.totalMem / (1024 * 1024)
-        val available = memoryInfo.availMem / (1024 * 1024)
-
-        if (total < 3072) {
-            val limit = when {
-                total < 512 -> if (available < 50) 1 else if (available < 150) 2 else 4
-                total < 1024 -> if (available < 100) 1 else if (available < 250) 4 else 6
-                total < 2048 -> if (available < 150) 3 else if (available < 350) 6 else 10
-                else -> if (available < 250) 8 else if (available < 450) 12 else 15
-            }
-
-            Semaphore(limit).let { semaphore ->
-                providersList.map { async { semaphore.withPermit { runCatching { it.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI) } } } }.awaitAll()
-            }
-        } else {
-            providersList.amap { runCatching { it.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI) } }
+        val concurrencyLimit = sharedPref?.getInt("provider_concurrency", 40) ?: 40
+        Semaphore(concurrencyLimit).let { semaphore ->
+            providersList.map { provider ->
+                async {
+                    semaphore.withPermit {
+                        runCatching {
+                            provider.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI)
+                        }
+                    }
+                }
+            }.awaitAll()
         }
 
         true

@@ -26,7 +26,7 @@
                 android:layout_rowWeight="1"
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="5dp"
-                android:text="Streamplay Settings"
+                android:text="StreamPlay Settings"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -56,7 +56,7 @@
             android:layout_marginBottom="10dp"
             android:layout_marginTop="10dp" />
 
-        <!-- Febbox -->
+        <!-- Performance Setting (1st - Most Important) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -67,7 +67,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Febbox Login"
+                android:text="Performance Setting"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -77,45 +77,16 @@
                 android:gravity="right">
 
                 <ImageView
-                    android:id="@+id/loginCard"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:focusable="true"
-                    android:padding="5dp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Toggle Extensions -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="10dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_rowWeight="1"
-                android:text="Toggle Extensions"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="right">
-
-                <ImageView
-                    android:id="@+id/featureCard"
+                    android:id="@+id/performance"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="5dp"
                     android:focusable="true"
-                    android:nextFocusUp="@id/loginCard" />
+                    android:nextFocusUp="@id/saveIcon" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Enable/Disable Sources -->
+        <!-- Enable/Disable Sources (2nd - Core Feature) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -141,11 +112,101 @@
                     android:layout_height="wrap_content"
                     android:padding="5dp"
                     android:focusable="true"
+                    android:nextFocusUp="@id/performance" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Febbox Login (4th - Account) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_rowWeight="1"
+                android:text="Febbox Login"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+
+                <ImageView
+                    android:id="@+id/loginCard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:focusable="true"
+                    android:padding="5dp"
+                    android:nextFocusUp="@id/toggleproviders" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Stramio Catelog Addons (3rd - Related to Sources) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_rowWeight="1"
+                android:text="Stramio Catelog Addons"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+
+                <ImageView
+                    android:id="@+id/stremioaddons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:focusable="true"
                     android:nextFocusUp="@id/loginCard" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ✅ NEW: Language Change -->
+        <!-- Toggle Extensions (5th - Features) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_rowWeight="1"
+                android:text="Toggle Extensions"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+
+                <ImageView
+                    android:id="@+id/featureCard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/stremioaddons" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Change Language (6th - Least Frequent) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -171,36 +232,7 @@
                     android:layout_height="wrap_content"
                     android:padding="5dp"
                     android:focusable="true"
-                    android:nextFocusUp="@id/toggleproviders" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="10dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_rowWeight="1"
-                android:text="Stramio Catelog Addons (Beta)"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="right">
-
-                <ImageView
-                    android:id="@+id/stremioaddons"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:padding="5dp"
-                    android:focusable="true"
-                    android:nextFocusUp="@id/languageCard" />
+                    android:nextFocusUp="@id/featureCard" />
             </LinearLayout>
         </LinearLayout>
 

@@ -91,14 +91,17 @@ class ToggleFragment(
         val apis = buildList {
             add(StreamPlay(sharedPref))
             add(StreamPlayAnime())
-            stremioLinks.forEach { link ->
-                add(
-                    StreamPlayStremioCatelog(
-                        link.link,   // mainUrl
-                        link.name,   // unique name shown in UI
-                        sharedPref
+            if (stremioLinks.isNotEmpty())
+            {
+                stremioLinks.forEach { link ->
+                    add(
+                        StreamPlayStremioCatelog(
+                            link.link,   // mainUrl
+                            link.name,   // unique name shown in UI
+                            sharedPref
+                        )
                     )
-                )
+                }
             }
         }
 
