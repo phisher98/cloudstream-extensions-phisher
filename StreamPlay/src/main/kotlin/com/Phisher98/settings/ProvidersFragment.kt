@@ -303,13 +303,21 @@ class ProvidersFragment(
         val encoded = sharedPref.getString(PREFS_PROFILES, "") ?: return emptyMap()
         if (encoded.isEmpty()) return emptyMap()
 
-        return encoded.split("|").mapNotNull { entry ->
-            val parts = entry.split(":")
-            if (parts.size < 2) return@mapNotNull null
-            val name = parts[0]
-            val ids = if (parts[1].isEmpty()) emptySet() else parts[1].split(",").toSet()
-            name to ids
-        }.toMap()
+        return buildMap {
+            encoded.split("|").forEach { entry ->
+                val separatorIndex = entry.indexOf(':')
+                if (separatorIndex < 0) return@forEach
+
+                val name = entry.substring(0, separatorIndex)
+                val idsPart = entry.substring(separatorIndex + 1)
+                val ids = if (idsPart.isEmpty()) {
+                    emptySet()
+                } else {
+                    idsPart.split(",").toSet()
+                }
+                put(name, ids)
+            }
+        }
     }
 
     private fun loadProfile(name: String) {

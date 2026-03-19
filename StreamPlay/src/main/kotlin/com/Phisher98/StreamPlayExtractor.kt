@@ -79,6 +79,12 @@ import kotlin.math.max
 
 val session = Session(Requests().baseClient)
 private val cfMutex = Mutex()
+private val streamPlayExtractorGson by lazy { Gson() }
+private val streamPlayExtractorMapper by lazy { jacksonObjectMapper() }
+private val nonWordSplitRegex = Regex("\\W+")
+private val normalizeAlphaNumSpaceRegex = Regex("[^a-z0-9 ]")
+private val normalizeAlphaNumRegex = Regex("[^a-z0-9]")
+private val wyzieSubListType by lazy { object : TypeToken<List<WyZIESUB>>() {}.type }
 
 object StreamPlayExtractor : StreamPlay() {
 
@@ -1545,8 +1551,8 @@ object StreamPlayExtractor : StreamPlay() {
 
     private fun similarity(a: String?, b: String?): Double {
         if (a.isNullOrBlank() || b.isNullOrBlank()) return 0.0
-        val tokensA = a.lowercase().split(Regex("\\W+")).toSet()
-        val tokensB = b.lowercase().split(Regex("\\W+")).toSet()
+        val tokensA = a.lowercase().split(nonWordSplitRegex).toSet()
+        val tokensB = b.lowercase().split(nonWordSplitRegex).toSet()
         if (tokensA.isEmpty() || tokensB.isEmpty()) return 0.0
         val intersection = tokensA.intersect(tokensB).size
         return intersection.toDouble() / max(tokensA.size, tokensB.size)
@@ -2120,9 +2126,9 @@ object StreamPlayExtractor : StreamPlay() {
         if (response.code != 200) return
 
         val subtitles = runCatching {
-            Gson().fromJson<List<WyZIESUB>>(
+            streamPlayExtractorGson.fromJson<List<WyZIESUB>>(
                 response.toString(),
-                object : TypeToken<List<WyZIESUB>>() {}.type
+                wyzieSubListType
             )
         }.getOrElse { emptyList() }
 
@@ -2791,14 +2797,14 @@ object StreamPlayExtractor : StreamPlay() {
         if (filtered.isEmpty() && !title.isNullOrBlank()) {
             val keywords = title
                 .lowercase()
-                .replace(Regex("[^a-z0-9 ]"), "")
+                .replace(normalizeAlphaNumSpaceRegex, "")
                 .split(" ")
                 .filter { it.length > 2 }
 
             filtered = searchRes.filter { doc ->
                 val docTitle = doc.post_title
                     ?.lowercase()
-                    ?.replace(Regex("[^a-z0-9 ]"), "")
+                    ?.replace(normalizeAlphaNumSpaceRegex, "")
                     ?: return@filter false
 
                 keywords.any { docTitle.contains(it) }
@@ -4231,8 +4237,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
         val hits = json.optJSONArray("hits") ?: return
 
-        val normalizeRegex = Regex("[^a-z0-9]")
-        val normalizedTitle = title.lowercase().replace(normalizeRegex, "")
+        val normalizedTitle = title.lowercase().replace(normalizeAlphaNumRegex, "")
         val seasonText = season?.let { "season $it" }
 
         val posts = mutableListOf<String>()
@@ -4247,7 +4252,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             if (postTitle.isBlank() || permalink.isBlank()) continue
 
-            val cleanTitle = postTitle.replace(normalizeRegex, "")
+            val cleanTitle = postTitle.replace(normalizeAlphaNumRegex, "")
 
             val matches = when {
                 season != null ->
@@ -4481,7 +4486,7 @@ object StreamPlayExtractor : StreamPlay() {
             val response = app.post(url, headers = headers, requestBody = requestBody)
             if (response.code != 200) return false
 
-            val mapper = jacksonObjectMapper()
+            val mapper = streamPlayExtractorMapper
             val root = mapper.readTree(response.body.string())
             val results = root["data"]?.get("results") ?: return false
 
@@ -4978,8 +4983,7 @@ object StreamPlayExtractor : StreamPlay() {
         val iframe = app.get(url, interceptor = apifetch).url
         val jsonString = app.get(iframe).body.string()
 
-        val mapper = jacksonObjectMapper()
-        val root: Vidlink = mapper.readValue(jsonString)
+        val root: Vidlink = streamPlayExtractorMapper.readValue(jsonString)
         val playlistParts = root.stream.playlist.split("?")
         val rawM3u8Url = playlistParts[0]
 
@@ -6061,15 +6065,13 @@ object StreamPlayExtractor : StreamPlay() {
             headers = scrapemaster_headers
         ).text
 
-        val jsonMapper = jacksonObjectMapper()
-
         sourcesText
             .lineSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() && it.first() == '{' && it.last() == '}' }
             .mapNotNull {
                 runCatching {
-                    jsonMapper.readValue<EmbedmasterSourceItem>(it)
+                    streamPlayExtractorMapper.readValue<EmbedmasterSourceItem>(it)
                 }.getOrNull()
             }.filter { it.type == "server" && it.sourceUrl.isNotBlank() }.toList().amap { source ->
                 val playResponse = app.get("https://embdmstrplayer.com/play/${source.sourceUrl}")

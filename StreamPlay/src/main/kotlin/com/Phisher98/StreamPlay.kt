@@ -652,21 +652,34 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     ): Boolean = coroutineScope {
 
         val res = parseJson<LinkData>(data)
-        val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", emptySet())?.toSet() ?: emptySet()
-        val providersList = buildProviders().filter { it.id !in disabledProviderIds }
+        val allProviders = buildProviders()
+        if (allProviders.isEmpty()) return@coroutineScope true
+
+        val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", null)
+        val providersList = if (disabledProviderIds.isNullOrEmpty()) {
+            allProviders
+        } else {
+            ArrayList<Provider>(allProviders.size).apply {
+                allProviders.forEach { provider ->
+                    if (!disabledProviderIds.contains(provider.id)) add(provider)
+                }
+            }
+        }
+        if (providersList.isEmpty()) return@coroutineScope true
+
         val authToken = token.orEmpty()
 
-        val concurrencyLimit = sharedPref?.getInt("provider_concurrency", 40) ?: 40
-        Semaphore(concurrencyLimit).let { semaphore ->
-            providersList.map { provider ->
-                async {
-                    semaphore.withPermit {
-                        runCatching {
-                            provider.invoke(res, subtitleCallback, callback, authToken, dahmerMoviesAPI)
-                        }
-                    }
-                }
-            }.awaitAll()
+        val concurrencyLimit = (sharedPref?.getInt("provider_concurrency", 50)?.coerceIn(1, 100) ?: 50)
+            .coerceAtMost(providersList.size)
+
+        providersList.runLimitedAsync(concurrencyLimit) { provider ->
+            provider.invoke(
+                res,
+                subtitleCallback,
+                callback,
+                authToken,
+                dahmerMoviesAPI
+            )
         }
 
         true

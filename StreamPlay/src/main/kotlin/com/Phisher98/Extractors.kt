@@ -65,6 +65,47 @@ import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
+private val sharedGson by lazy { Gson() }
+private val extractorTitleExtensionRegex = Regex("\\.[a-zA-Z0-9]{2,4}$")
+private val extractorTitlePatterns = listOf(
+    Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
+    Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
+    Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
+    Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
+    Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
+    Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
+)
+private val extractorNormalizeWebDlRegex = Regex("WEB[-_. ]?DL")
+private val extractorNormalizeWebRipRegex = Regex("WEB[-_. ]?RIP")
+private val extractorNormalizeH265Regex = Regex("H[ .]?265")
+private val extractorNormalizeH264Regex = Regex("H[ .]?264")
+private val extractorNormalizeDolbyVisionRegex = Regex("DOLBY[ .]?VISION")
+private val extractorQualityRegex = Regex("(\\d{3,4})[pP]")
+
+private fun extractCleanTitle(title: String): String {
+    val name = title.replace(extractorTitleExtensionRegex, "")
+    val results = linkedSetOf<String>()
+
+    for (pattern in extractorTitlePatterns) {
+        pattern.findAll(name).forEach { match ->
+            val value = match.value.uppercase()
+                .replace(extractorNormalizeWebDlRegex, "WEB-DL")
+                .replace(extractorNormalizeWebRipRegex, "WEBRIP")
+                .replace(extractorNormalizeH265Regex, "H265")
+                .replace(extractorNormalizeH264Regex, "H264")
+                .replace(extractorNormalizeDolbyVisionRegex, "DOLBYVISION")
+                .replace("2160P", "4K")
+            results.add(value)
+        }
+    }
+
+    return results.joinToString(" ")
+}
+
+private fun extractIndexQuality(str: String?, defaultQuality: Int = Qualities.Unknown.value): Int {
+    return extractorQualityRegex.find(str.orEmpty())?.groupValues?.getOrNull(1)?.toIntOrNull()
+        ?: defaultQuality
+}
 
 open class Playm4u : ExtractorApi() {
     override val name = "Playm4u"
@@ -424,39 +465,11 @@ class VCloud : ExtractorApi() {
     }
 
     private fun cleanTitle(title: String): String {
-
-        val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
-
-        val patterns = listOf(
-            Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
-            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
-            Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
-            Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
-            Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
-        )
-
-        val results = linkedSetOf<String>()
-
-        for (pattern in patterns) {
-            pattern.findAll(name).forEach { match ->
-                var value = match.value.uppercase()
-                value = value
-                    .replace(Regex("WEB[-_. ]?DL"), "WEB-DL")
-                    .replace(Regex("WEB[-_. ]?RIP"), "WEBRIP")
-                    .replace(Regex("H[ .]?265"), "H265")
-                    .replace(Regex("H[ .]?264"), "H264")
-                    .replace(Regex("DOLBY[ .]?VISION"), "DOLBYVISION")
-                    .replace("2160P", "4K")
-                results.add(value)
-            }
-        }
-        return results.joinToString(" ")
+        return extractCleanTitle(title)
     }
 
     private fun getIndexQuality(str: String?): Int {
-        return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
-            ?: Qualities.Unknown.value
+        return extractIndexQuality(str)
     }
 }
 
@@ -1151,12 +1164,7 @@ class HubCloud : ExtractorApi() {
     }
 
     private fun getIndexQuality(str: String?): Int {
-        return Regex("(\\d{3,4})[pP]")
-            .find(str.orEmpty())
-            ?.groupValues
-            ?.getOrNull(1)
-            ?.toIntOrNull()
-            ?: Qualities.P2160.value
+        return extractIndexQuality(str, Qualities.P2160.value)
     }
 
     private fun getBaseUrl(url: String): String {
@@ -1166,34 +1174,7 @@ class HubCloud : ExtractorApi() {
     }
 
     private fun cleanTitle(title: String): String {
-
-        val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
-
-        val patterns = listOf(
-            Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
-            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
-            Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
-            Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
-            Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
-        )
-
-        val results = linkedSetOf<String>()
-
-        for (pattern in patterns) {
-            pattern.findAll(name).forEach { match ->
-                var value = match.value.uppercase()
-                value = value
-                    .replace(Regex("WEB[-_. ]?DL"), "WEB-DL")
-                    .replace(Regex("WEB[-_. ]?RIP"), "WEBRIP")
-                    .replace(Regex("H[ .]?265"), "H265")
-                    .replace(Regex("H[ .]?264"), "H264")
-                    .replace(Regex("DOLBY[ .]?VISION"), "DOLBYVISION")
-                    .replace("2160P", "4K")
-                results.add(value)
-            }
-        }
-        return results.joinToString(" ")
+        return extractCleanTitle(title)
     }
 }
 
@@ -1259,8 +1240,7 @@ open class Driveseed : ExtractorApi() {
     override val requiresReferer = false
 
     private fun getIndexQuality(str: String?): Int {
-        return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
-            ?: Qualities.Unknown.value
+        return extractIndexQuality(str)
     }
 
     private suspend fun CFType1(url: String): List<String> {
@@ -1444,34 +1424,7 @@ open class Driveseed : ExtractorApi() {
     }
 
     private fun cleanTitle(title: String): String {
-
-        val name = title.replace(Regex("\\.[a-zA-Z0-9]{2,4}$"), "")
-
-        val patterns = listOf(
-            Regex("(WEB[- ]?DL|WEB[- ]?RIP|WEBDL|WEBRIP|BLURAY|BDRIP|BRRIP|REMUX|HDRIP|DVDRIP|HDTV|UHD|CAM|TS|TC)", RegexOption.IGNORE_CASE),
-            Regex("(H[ .]?264|H[ .]?265|X264|X265|HEVC|AVC|AV1|VP9|XVID)", RegexOption.IGNORE_CASE),
-            Regex("(DDP?[ .]?[0-9]\\.[0-9]|DD[ .]?[0-9]\\.[0-9]|AAC[ .]?[0-9]\\.[0-9]|AC3|DTS[- ]?HD|DTS|EAC3|TRUEHD|ATMOS|FLAC|MP3|OPUS)", RegexOption.IGNORE_CASE),
-            Regex("(HDR10\\+?|HDR|DV|DOLBY[ .]?VISION)", RegexOption.IGNORE_CASE),
-            Regex("\\b(NF|AMZN|DSNP|HULU|CRAV|ATVP|HMAX|PCOK|STAN)\\b", RegexOption.IGNORE_CASE),
-            Regex("\\b(REPACK|PROPER|REAL|EXTENDED|UNCUT|REMASTERED|LIMITED|MULTI|DUAL)\\b", RegexOption.IGNORE_CASE)
-        )
-
-        val results = linkedSetOf<String>()
-
-        for (pattern in patterns) {
-            pattern.findAll(name).forEach { match ->
-                var value = match.value.uppercase()
-                value = value
-                    .replace(Regex("WEB[-_. ]?DL"), "WEB-DL")
-                    .replace(Regex("WEB[-_. ]?RIP"), "WEBRIP")
-                    .replace(Regex("H[ .]?265"), "H265")
-                    .replace(Regex("H[ .]?264"), "H264")
-                    .replace(Regex("DOLBY[ .]?VISION"), "DOLBYVISION")
-                    .replace("2160P", "4K")
-                results.add(value)
-            }
-        }
-        return results.joinToString(" ")
+        return extractCleanTitle(title)
     }
 }
 
@@ -2178,10 +2131,9 @@ open class Megacloud : ExtractorApi() {
             val nonce = match1?.value ?: match2?.let { it.groupValues[1] + it.groupValues[2] + it.groupValues[3] }
 
             val apiUrl = "$mainUrl/embed-2/v3/e-1/getSources?id=$id&_k=$nonce"
-            val gson = Gson()
             val response = try {
                 val json = app.get(apiUrl, headers).text
-                gson.fromJson(json, MegacloudResponse::class.java)
+                sharedGson.fromJson(json, MegacloudResponse::class.java)
             } catch (_: Exception) {
                 null
             }
@@ -2190,7 +2142,7 @@ open class Megacloud : ExtractorApi() {
                 ?: throw Exception("No sources found")
             val key = try {
                 val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
-                gson.fromJson(keyJson, Megakey::class.java)?.mega
+                sharedGson.fromJson(keyJson, Megakey::class.java)?.mega
             } catch (_: Exception) { null }
 
             val m3u8: String = if (".m3u8" in encoded) {
@@ -2418,7 +2370,7 @@ class Videostr : ExtractorApi() {
             ?: throw Exception("Nonce not found")
 
         val apiUrl = "$mainUrl/embed-1/v3/e-1/getSources?id=$id&_k=$nonce"
-        val response = Gson().fromJson(
+        val response = sharedGson.fromJson(
             app.get(apiUrl, headers).text,
             VideostrResponse::class.java
         )
@@ -2429,7 +2381,7 @@ class Videostr : ExtractorApi() {
         val m3u8 = if (".m3u8" in encodedSource) {
             encodedSource
         } else {
-            val key = Gson().fromJson(
+            val key = sharedGson.fromJson(
                 app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text,
                 Megakey::class.java
             ).vidstr

@@ -193,21 +193,6 @@ class StreamPlayStremioCatelog(
         )
     }
 
-
-
-
-
-
-    // check if id is imdb/tmdb cause stremio addons like torrentio works base on imdbId
-    private fun isImdborTmdb(url: String?): Boolean {
-        return imdbUrlToIdNullable(url) != null || url?.startsWith("tmdb:") == true
-    }
-
-    private fun isImdb(url: String?): Boolean {
-        return imdbUrlToIdNullable(url) != null
-    }
-
-
     private data class Manifest(val catalogs: List<Catalog>)
     private data class Catalog(
         var name: String?,

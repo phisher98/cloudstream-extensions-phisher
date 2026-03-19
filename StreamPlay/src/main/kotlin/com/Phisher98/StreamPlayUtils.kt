@@ -36,6 +36,7 @@ import com.phisher98.StreamPlay.Companion.thrirdAPI
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -89,6 +90,15 @@ val M3U8_HEADERS = mapOf(
     "Accept-Encoding" to "identity",
     "Connection" to "keep-alive",
 )
+
+private val extractorCallbackScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+private val sharedObjectMapper by lazy { ObjectMapper() }
+private val sharedGson by lazy { Gson() }
+private val tmdbDateFormatter = ThreadLocal.withInitial {
+    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+}
+
+private fun getTmdbDateFormatter(): SimpleDateFormat = tmdbDateFormatter.get()!!
 
 suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: String): String {
     val link =
@@ -244,19 +254,22 @@ suspend fun loadSourceNameExtractor(
     quality: Int? = null,
     size: String = ""
 ) {
-    val fixSize = if (size.isNotEmpty()) " $size" else ""
+    val provider = source.trim().takeIf { it.isNotBlank() }
+    val sizePart = size.trim().takeIf { it.isNotBlank() }
 
     loadExtractor(url, referer, subtitleCallback) { link ->
-        CoroutineScope(Dispatchers.IO).launch {
-
-            val provider = source.trim().takeIf { it.isNotBlank() }
-            val sizePart = fixSize.trim().takeIf { it.isNotBlank() }
-
-            val label = listOfNotNull(
-                provider,
-                link.name,
-                sizePart
-            ).joinToString(" ")
+        extractorCallbackScope.launch {
+            val label = buildString {
+                provider?.let { append(it) }
+                if (link.name.isNotEmpty()) {
+                    if (isNotEmpty()) append(' ')
+                    append(link.name)
+                }
+                sizePart?.let {
+                    if (isNotEmpty()) append(' ')
+                    append(it)
+                }
+            }
 
             callback(
                 newExtractorLink(
@@ -286,7 +299,7 @@ suspend fun loadDisplaySourceNameExtractor(
     quality: Int? = null,
 ) {
     loadExtractor(url, referer, subtitleCallback) { link ->
-        CoroutineScope(Dispatchers.IO).launch {
+        extractorCallbackScope.launch {
             callback.invoke(
                 newExtractorLink(
                     sourceName ?: "",
@@ -487,7 +500,7 @@ fun String.getHost(): String {
 
 fun isUpcoming(dateString: String?): Boolean {
     return try {
-        val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val format = getTmdbDateFormatter()
         val dateTime = dateString?.let { format.parse(it)?.time } ?: return false
         unixTimeMS < dateTime
     } catch (t: Throwable) {
@@ -497,7 +510,7 @@ fun isUpcoming(dateString: String?): Boolean {
 }
 
 fun getDate(): TmdbDate {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val formatter = getTmdbDateFormatter()
     val calendar = Calendar.getInstance()
 
     // Today
@@ -686,12 +699,6 @@ object CryptoJS {
 }
 
 
-private fun getVideoQuality(string: String?): Int {
-    return Regex("(\\d{3,4})[pP]").find(string ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
-        ?: Qualities.Unknown.value
-}
-
-
 suspend fun invokeExternalSource(
     mediaId: Int? = null,
     type: Int? = null,
@@ -799,9 +806,8 @@ suspend fun invokeExternalSource(
 }
 
 fun parseJsonToEpisodes(json: String): List<EpisoderesponseKAA> {
-    val gson = Gson()
     data class Response(val result: List<EpisoderesponseKAA>)
-    val response = gson.fromJson(json, Response::class.java)
+    val response = sharedGson.fromJson(json, Response::class.java)
     return response.result
 }
 
@@ -1309,8 +1315,7 @@ val decryptMethods: Map<String, (String) -> String> = mapOf(
 
 fun parseAnimeData(jsonString: String): MetaAnimeData? {
     return try {
-        val objectMapper = ObjectMapper()
-        objectMapper.readValue(jsonString, MetaAnimeData::class.java)
+        sharedObjectMapper.readValue(jsonString, MetaAnimeData::class.java)
     } catch (_: Exception) {
         null // Return null for invalid JSON instead of crashing
     }
@@ -1582,17 +1587,6 @@ fun cinemaOSGenerateHash(tmdbId: Int?, imdbId: String?, season: Int?, episode: I
     return calculateHmacSha256(firstHash, secondary)
 }
 
-
-private fun createContentString(info: CinemaOsSecretKeyRequest): String {
-    val parts = mutableListOf<String>()
-
-    info.tmdbId.let { parts.add("tmdbId:$it") }
-    info.imdbId.let { parts.add("imdbId:$it") }
-    info.seasonId.takeIf { it.isNotEmpty() }?.let { parts.add("seasonId:$it") }
-    info.episodeId.takeIf { it.isNotEmpty() }?.let { parts.add("episodeId:$it") }
-
-    return parts.joinToString("|")
-}
 
 private fun calculateHmacSha256(data: String, key: String): String {
     val algorithm = "HmacSHA256"
@@ -1949,13 +1943,6 @@ fun String?.fixTitle(): String? {
     return this?.replace(Regex("[!%:']|( &)"), "")?.replace(" ", "-")?.lowercase()
         ?.replace("-–-", "-")
 }
-private val QUALITY_REGEX_MAP = listOf(
-    Regex("""\b(4k|2160p?|2160)\b""", RegexOption.IGNORE_CASE) to Qualities.P2160.value,
-    Regex("""\b1440p?|1440\b""", RegexOption.IGNORE_CASE)     to Qualities.P1440.value,
-    Regex("""\b1080p?|1080\b""", RegexOption.IGNORE_CASE)     to Qualities.P1080.value,
-    Regex("""\b720p?|720\b""", RegexOption.IGNORE_CASE)      to Qualities.P720.value,
-    Regex("""\b480p?|480\b""", RegexOption.IGNORE_CASE)      to Qualities.P480.value
-)
 suspend fun getSessionAndCsrfforFlixindia(baseUrl: String): Pair<String, String>? {
     val res = app.get(baseUrl)
 
@@ -2031,9 +2018,7 @@ suspend fun getHindMoviezLinks(
 }
 
 fun buildExtractedTitle(extracted: Map<String, List<String>>): String {
-    val orderedCategories = listOf("quality", "codec", "audio", "hdr", "language")
-
-    val specs = orderedCategories
+    val specs = ORDERED_SPEC_CATEGORIES
         .flatMap { extracted[it] ?: emptyList() }
         .distinct()
         .joinToString(" ")
@@ -2046,6 +2031,9 @@ fun buildExtractedTitle(extracted: Map<String, List<String>>): String {
         specs
     }
 }
+
+private val ORDERED_SPEC_CATEGORIES = listOf("quality", "codec", "audio", "hdr", "language")
+private val FILE_SIZE_REGEX = """(\d+(?:\.\d+)?\s?(?:MB|GB))""".toRegex(RegexOption.IGNORE_CASE)
 
 val SPEC_OPTIONS = mapOf(
     "quality" to listOf(
@@ -2105,21 +2093,27 @@ val SPEC_OPTIONS = mapOf(
     )
 )
 
+private val SPEC_REGEX_CACHE = SPEC_OPTIONS.mapValues { (_, options) ->
+    options.map { option ->
+        val value = option["value"] as String
+        val label = option["label"] as String
+        label to "\\b${Regex.escape(value)}\\b".toRegex(RegexOption.IGNORE_CASE)
+    }
+}
+
 fun extractSpecs(inputString: String): Map<String, List<String>> {
     val results = mutableMapOf<String, List<String>>()
 
-    SPEC_OPTIONS.forEach { (category, options) ->
-        val matches = options.filter { option ->
-            val value = option["value"] as String
-            val regexPattern = "\\b${Regex.escape(value)}\\b".toRegex(RegexOption.IGNORE_CASE)
-            regexPattern.containsMatchIn(inputString)
-        }.map { it["label"] as String }
+    SPEC_REGEX_CACHE.forEach { (category, options) ->
+        val matches = options.asSequence()
+            .filter { (_, regex) -> regex.containsMatchIn(inputString) }
+            .map { (label, _) -> label }
+            .toList()
 
         results[category] = matches
     }
 
-    val fileSizeRegex = """(\d+(?:\.\d+)?\s?(?:MB|GB))""".toRegex(RegexOption.IGNORE_CASE)
-    val sizeMatch = fileSizeRegex.find(inputString)
+    val sizeMatch = FILE_SIZE_REGEX.find(inputString)
     if (sizeMatch != null) {
         results["size"] = listOf(sizeMatch.groupValues[1])
     }
@@ -2127,8 +2121,8 @@ fun extractSpecs(inputString: String): Map<String, List<String>> {
     return results.toMap()
 }
 
-fun generateBrowserFingerprint(): String {
-    val components = listOf(
+private val BROWSER_FINGERPRINT by lazy {
+    val raw = listOf(
         "1920x1080x24",
         "Asia/Kolkata",
         "en-US",
@@ -2141,12 +2135,15 @@ fun generateBrowserFingerprint(): String {
         "3",
         "true",
         "unset"
-    )
+    ).joinToString("|||")
+    MessageDigest.getInstance("SHA-256")
+        .digest(raw.toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it) }
+        .take(32)
+}
 
-    val raw = components.joinToString("|||")
-    val digest = MessageDigest.getInstance("SHA-256")
-    val hash = digest.digest(raw.toByteArray(Charsets.UTF_8))
-    return hash.joinToString("") { "%02x".format(it) }.take(32)
+fun generateBrowserFingerprint(): String {
+    return BROWSER_FINGERPRINT
 }
 
 
@@ -2247,7 +2244,7 @@ suspend fun bypassXD(url: String): String? {
                     webSocket.send("""42["bind","$rebindToken"]""")
                     webSocket.send("""42["visibility","visible"]""")
 
-                    heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+                    heartbeatJob = extractorCallbackScope.launch {
                         var elapsed = 0
                         while (elapsed < 28) {
                             delay(1000)
@@ -2319,4 +2316,21 @@ suspend fun bypassXD(url: String): String? {
         allowRedirects = false,
         headers = cookieHeaders
     ).headers["location"]
+}
+
+suspend fun <T> Iterable<T>.runLimitedAsync(
+    limit: Int,
+    block: suspend (T) -> Unit
+) = coroutineScope {
+    val semaphore = Semaphore(limit)
+
+    forEach { item ->
+        launch(Dispatchers.IO) {
+            semaphore.withPermit {
+                try {
+                    block(item)
+                } catch (_: Throwable) {}
+            }
+        }
+    }
 }

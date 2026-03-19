@@ -95,19 +95,19 @@ data class Provider(
     ) -> Unit
 )
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun buildProviders(): List<Provider> {
-    fun getDubStatus(res: StreamPlay.LinkData): String {
-        return when {
-            res.isMovie == true -> "Movie"
-            res.isDub -> "DUB"
-            else -> "SUB"
-        }
+private fun getDubStatus(res: StreamPlay.LinkData): String {
+    return when {
+        res.isMovie == true -> "Movie"
+        res.isDub -> "DUB"
+        else -> "SUB"
     }
+}
 
-    suspend fun getAnimeIds(res: StreamPlay.LinkData) = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+private suspend fun getAnimeIds(res: StreamPlay.LinkData) =
+    resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
 
-    return listOf(
+private val providers by lazy {
+    listOf(
         Provider("uhdmovies", "UHD Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
@@ -260,7 +260,7 @@ fun buildProviders(): List<Provider> {
             }
         },
         Provider("vidsrcxyz", "VidSrcXyz") { res, _, callback, _, _ ->
-            invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)
+            if (!res.isAnime) invokeVidSrcXyz(res.imdbId, res.season, res.episode, callback)
         },
         Provider("vidzeeapi", "Vidzee API") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeVidzee(res.id, res.season, res.episode, subtitleCallback, callback)
@@ -285,7 +285,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("vidrock", "Vidrock") { res, _, callback, _, _ ->
-            invokevidrock(res.id, res.season, res.episode, callback)
+            if (!res.isAnime) invokevidrock(res.id, res.season, res.episode, callback)
         },
         Provider("soapy", "Soapy") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback)
@@ -297,7 +297,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback)
         },
         Provider("cinemaos", "CinemaOS") { res, _, callback, _, _ ->
-            invokeCinemaOS(res.imdbId, res.id, res.season, res.episode,callback)
+            if (!res.isAnime) invokeCinemaOS(res.imdbId, res.id, res.season, res.episode,callback)
         },
         Provider("dahmermovies", "DahmerMovies") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeDahmerMovies(res.title, res.year, res.season, res.episode, callback)
@@ -360,7 +360,7 @@ fun buildProviders(): List<Provider> {
             if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, callback)
         },
         Provider("Movies4u", "Movies4u") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
+            invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)
         },
         Provider("M4uhd", "M4uhd") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeM4uhd(res.title,
@@ -392,3 +392,6 @@ fun buildProviders(): List<Provider> {
         }
     )
 }
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun buildProviders(): List<Provider> = providers
