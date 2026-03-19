@@ -6134,100 +6134,70 @@ object StreamPlayExtractor : StreamPlay() {
 
 
     suspend fun invokeHexa(
-        tmdbId: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val key = generateHexKey32()
-        val headers = mapOf(
+
+        val baseHeaders = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-            "Accept" to "plain/text",
+            "Referer" to "https://hexa.su/",
+            "Accept" to "text/plain",
+            "X-Fingerprint-Lite" to "e9136c41504646444",
             "X-Api-Key" to key
         )
 
-        val api = if (season == null) {
+        val apiBase = "https://enc-dec.app/api"
+
+        val token = app.get("$apiBase/enc-hexa", headers = baseHeaders).parsedSafe<HexaEn>()?.result?.token ?: return
+
+        val headers = baseHeaders + mapOf(
+            "X-Cap-Token" to token
+        )
+
+        val url = if (season == null) {
             "$hexaSU/api/tmdb/movie/$tmdbId/images"
         } else {
             "$hexaSU/api/tmdb/tv/$tmdbId/season/$season/episode/$episode/images"
         }
 
-        val encryptedstring = app.get(api, headers).text
+        val encrypted = app.get(url, headers).text
+        if (encrypted.isEmpty()) return
 
+        val jsonBody = """
+        {
+            "text": "$encrypted",
+            "key": "$key"
+        }
+    """.trimIndent().toRequestBody("application/json".toMediaType())
 
-        val jsonBody =
-            """{"text":"$encryptedstring","key":"$key"}""".toRequestBody("application/json; charset=utf-8".toMediaType())
-
-        val response = app.post(
-            "https://enc-dec.app/api/dec-hexa",
+        val decryptRes = app.post(
+            "$apiBase/dec-hexa",
             headers = mapOf("Content-Type" to "application/json"),
             requestBody = jsonBody
-        ).text
+        ).parsedSafe<HexaResponse>() ?: return
 
-        val root = JSONObject(response)
-        if (root.optInt("status") != 200) return
+        if (decryptRes.status != 200) return
 
-        val sources = root
-            .optJSONObject("result")
-            ?.optJSONArray("sources")
-            ?: return
+        val sources = decryptRes.result?.sources ?: return
 
-        for (i in 0 until sources.length()) {
-            val obj = sources.optJSONObject(i) ?: continue
-            val server = obj.optString("server")
-            val url = obj.optString("url")
-            if (url.isNotEmpty()) {
-                M3u8Helper.generateM3u8(
-                    "HexaSU ${server.capitalize()}",
-                    url,
-                    "https://hexa.su",
-                ).forEach(callback)
+        for (src in sources) {
+            val server = src.server ?: continue
+            val link = src.url ?: continue
+
+            if (link.isEmpty()) continue
+
+            val name = server.replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase() else it.toString()
             }
-        }
 
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    suspend fun invokBidsrc(
-        tmdbId: Int? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit
-    ) {
-
-        val headers = mapOf("referer" to bidSrc)
-
-        val api = if (season == null) {
-            "$bidSrc/api/movie/$tmdbId"
-        } else {
-            "$bidSrc/api/tv/$tmdbId/$season/$episode"
-        }
-
-        val response = app.get(api, timeout = 30, headers = headers).parsedSafe<BidSrcResponse>()
-        response?.servers?.amap { server ->
-            val decodedUrl = String(Base64.getDecoder().decode(server.url)).reversed()
-            val finalUrl = decodedUrl.substringAfter("/api/proxy?url=")
-            val decoded = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                URLDecoder.decode(finalUrl, StandardCharsets.UTF_8)
-            } else {
-                TODO("VERSION.SDK_INT < TIRAMISU")
-            }
-            callback.invoke(
-                newExtractorLink(
-                    "Bidsrc",
-                    "Bidsrc ${server.name}",
-                    decoded,
-                    if (decoded.contains("m3u8")) ExtractorLinkType.M3U8 else INFER_TYPE
-                )
-                {
-                    this.quality = Qualities.P1080.value
-                    this.headers = if (server.headers != null) mapOf(
-                        "Referer" to server.headers.referer,
-                        "Origin" to server.headers.origin
-                    ) else mapOf()
-                }
-            )
+            M3u8Helper.generateM3u8(
+                "HexaSU $name",
+                link,
+                "https://hexa.su/"
+            ).forEach(callback)
         }
     }
 
@@ -6772,6 +6742,88 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokeLevidia(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val safeTitle = title?.let { URLEncoder.encode(it, "utf-8") } ?: return
+        val yearVal = year ?: return
+
+        val searchType = if (season == null) "movies" else "episodes"
+        val searchUrl = "$levidia/search.php?q=$safeTitle+$yearVal&v=$searchType"
+
+        val res = app.get(searchUrl)
+
+        val sessionId = res.cookies["PHPSESSID"] ?: return
+
+        val (value1, value2) = Regex("""_3chk\(['"]([^'"]+)['"],\s*['"]([^'"]+)['"]\)""")
+            .find(res.text)
+            ?.destructured
+            ?: return
+
+        val headers = mapOf(
+            "User-Agent" to USER_AGENT,
+            "Referer" to "$levidia/",
+            "Cookie" to "PHPSESSID=$sessionId;$value1=$value2"
+        )
+
+        val href = res.document
+            .select("li.mlist div.mainlink a")
+            .firstNotNullOfOrNull { a ->
+                val parsedTitle = a.selectFirst("strong")?.text()?.trim() ?: return@firstNotNullOfOrNull null
+                val parsedYear = a.ownText().filter(Char::isDigit).toIntOrNull()
+
+                if (parsedTitle.equals(title, true) && parsedYear == yearVal) {
+                    a.attr("href")
+                } else null
+            } ?: return
+
+        suspend fun extractLinks(document: org.jsoup.nodes.Document) {
+            document.select("a.xxx").amap { el ->
+                try {
+                    val embedUrl = app.get(
+                        el.attr("href"),
+                        headers = headers,
+                        allowRedirects = false
+                    ).headers["Location"] ?: return@amap
+                    Log.d("Phisher",embedUrl)
+                    loadSourceNameExtractor(
+                        "Levidia",
+                        embedUrl,
+                        "$levidia/",
+                        subtitleCallback,
+                        callback
+                    )
+                } catch (_: Throwable) {
+                    // ignore individual failures
+                }
+            }
+        }
+
+        val mainDoc = app.get(href, headers = headers).document
+
+        if (season == null) {
+            extractLinks(mainDoc)
+            return
+        }
+
+        val epRegex = Regex("""(?i)[^a-z]s0?$season e0?$episode[^0-9]""".replace(" ", ""))
+
+        val episodePath = mainDoc
+            .select("li.mlist.links b a")
+            .firstNotNullOfOrNull { a ->
+                a.attr("href").takeIf { epRegex.containsMatchIn(it) }
+            } ?: return
+
+        val episodeDoc = app.get("$levidia/$episodePath", headers = headers).document
+        extractLinks(episodeDoc)
+    }
+
 }
 
 

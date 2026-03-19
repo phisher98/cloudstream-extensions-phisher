@@ -3581,5 +3581,49 @@ open class MegaPlay : ExtractorApi() {
 }
 
 class Allanimeups : VidStack() {
+    override var name = "Allanime UPS"
     override var mainUrl = "https://allanime.uns.bio"
+}
+
+class Luluvdo : StreamWishExtractor() {
+    override var name = "Luluvdo"
+    override val mainUrl = "https://luluvdo.com"
+}
+
+
+class Wootly : ExtractorApi() {
+    override var name = "Wootly"
+    override var mainUrl = "https://www.wootly.ch"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val iframe = app.get(url).document.select("iframe").attr("src")
+        val body = FormBody.Builder()
+            .add("qdfx", "1")
+            .build()
+
+        val iframeResp = app.post(iframe, requestBody = body)
+        val iframeHtml = iframeResp.text
+        val vdRegex = Regex("""var\s+vd\s*=\s*["']([^"']+)["']""")
+        val tkRegex = Regex("""tk\s*=\s*["']([^"']+)["']""")
+        val vd = vdRegex.find(iframeHtml)?.groupValues?.get(1)
+        val tk = tkRegex.find(iframeHtml)?.groupValues?.get(1)
+
+        if (vd.isNullOrBlank() || tk.isNullOrBlank()) {
+            return null
+        }
+        val iframeurl=app.get("https://web.wootly.ch/grabm?t=$tk&id=$vd").text
+
+        return listOf(
+            newExtractorLink(
+                this.name,
+                this.name,
+                url = iframeurl,
+                type = INFER_TYPE
+            ) {
+                this.referer = referer ?: ""
+                this.quality = Qualities.P720.value
+            }
+        )
+    }
 }

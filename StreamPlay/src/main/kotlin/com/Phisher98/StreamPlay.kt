@@ -234,7 +234,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val moviesClubApi = "https://moviesapi.club"
         const val cinemacity = "https://cinemacity.cc"
         const val embedmaster = "https://embedmaster.link"
-        const val hexaSU = "https://themoviedb.hexa.su"
+        const val hexaSU = "https://theemoviedb.hexa.su"
         const val bidSrc = "https://bidsrc.pro"
         const val flixindia = "https://m.flixindia.xyz"
         const val sudatchi = "https://sudatchi.com"
@@ -243,6 +243,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val webStreamrAPI = """https://webstreamr.hayd.uk/{"multi":"on","al":"on","de":"on","es":"on","fr":"on","it":"on","mx":"on","mediaFlowProxyUrl":"","mediaFlowProxyPassword":"","disableExtractor_hubcloud":"on","disableExtractor_hubdrive":"on"}"""
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val kuudere = "https://kuudere.to"
+        const val levidia = "https://www.levidia.ch"
 
 
         fun getType(t: String?): TvType {

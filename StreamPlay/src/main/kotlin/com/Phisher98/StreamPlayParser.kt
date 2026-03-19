@@ -1145,3 +1145,30 @@ data class KuudereEpisodeLink(
     val dataType: String?,
     val dataLink: String?,
 )
+
+//Hexa
+
+data class HexaEn(
+    val status: Long,
+    val result: HexResult,
+)
+
+data class HexResult(
+    val token: String,
+    val expires: String,
+)
+
+data class HexaResponse(
+    val status: Int? = null,
+    val result: HexaResult? = null
+)
+
+data class HexaResult(
+    val sources: List<HexaSource>? = null,
+    val skipTime: Any? = null
+)
+
+data class HexaSource(
+    val server: String? = null,
+    val url: String? = null
+)

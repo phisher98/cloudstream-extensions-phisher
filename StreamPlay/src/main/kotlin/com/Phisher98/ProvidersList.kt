@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.phisher98.StreamPlayExtractor.invokBidsrc
 import com.phisher98.StreamPlayExtractor.invokFlixindia
 import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
@@ -32,6 +31,7 @@ import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
+import com.phisher98.StreamPlayExtractor.invokeLevidia
 import com.phisher98.StreamPlayExtractor.invokeM4uhd
 import com.phisher98.StreamPlayExtractor.invokeMapple
 import com.phisher98.StreamPlayExtractor.invokeMoflix
@@ -173,7 +173,9 @@ private val providers by lazy {
             }
         },
         Provider("vidsrccc", "Vidsrccc") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeVidsrccc(res.id, res.season, res.episode, callback)
+            if (!res.isAnime) if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                invokeVidsrccc(res.id, res.season, res.episode, callback)
+            }
         },
         Provider("topmovies", "Top Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeTopMovies(res.imdbId,
@@ -312,7 +314,9 @@ private val providers by lazy {
             invokeVidFast(res.id, res.season,res.episode, callback)
         },
         Provider("vidplus", "VidPlus") { res, _, callback, _, _ ->
-            invokeVidPlus(res.id, res.season,res.episode,  callback)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                invokeVidPlus(res.id, res.season,res.episode,  callback)
+            }
         },
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime || res.isCartoon) invokeToonstream(res.title, res.season, res.episode, subtitleCallback, callback)
@@ -350,9 +354,6 @@ private val providers by lazy {
         Provider("HexaSU", "HexaSU") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeHexa(res.id, res.season, res.episode, callback)
         },
-        Provider("BidSrc", "BidSrc") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokBidsrc(res.id, res.season, res.episode, callback)
-        },
         Provider("flixindia", "FlixIndia") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback, callback)
         },
@@ -389,6 +390,9 @@ private val providers by lazy {
         },
         Provider("DooFlix", "DooFlix") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeDooflix(res.id, res.season, res.episode, callback)
+        },
+        Provider("levidia", "Levidia") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeLevidia(res.title, res.year, res.season, res.episode, subtitleCallback, callback, )
         }
     )
 }

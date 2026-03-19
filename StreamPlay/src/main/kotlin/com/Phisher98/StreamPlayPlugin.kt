@@ -181,6 +181,8 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(KumiUns())
         registerExtractorAPI(Rapid())
         registerExtractorAPI(Allanimeups())
+        registerExtractorAPI(Wootly())
+        registerExtractorAPI(Luluvdo())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
