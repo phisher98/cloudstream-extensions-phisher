@@ -62,8 +62,9 @@ class Movies4u : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val headers = mapOf("Cookie" to "xla=s4t; ext_name=ojplmecpdpgccookcobabopnaifgidhf; cf_clearance=t8e4FnYNVLq5mnSM3STcq978u7YyAaAb_WiqmVmXkcI-1773985249-1.2.1.1-Sg.2ExY1ScnsVHPQ0nj5jSQ7aKuFzBaPOPn8WRH5i0JYxUTrGXNrowzFsl36zUeK9irU7RqVsRTLF9DoM25Rz1tyFLiGaVK6WlxZLkOyr0_xyAduok9mNr3ilfnSXx1FT6.g9jo4m2cAKY.AFbvLZ8AB.8VgL0Wv4BTn5EBGcKQo4s.grQTQ.Bd58bFWF0CQRYgxD0O2PrfIoveenO8wCQMqQ_R9h22MKBQdBqqLCgk")
         val url = if (page == 1) "$mainUrl/${request.data}" else "$mainUrl/${request.data}page/$page"
-        val document = app.get(url).document
+        val document = app.get(url, headers = headers).document
         val items = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(
             HomePageList(
@@ -103,8 +104,9 @@ class Movies4u : MainAPI() {
 
 
     override suspend fun search(query:String,page:Int):SearchResponseList{
+        val headers = mapOf("Cookie" to "xla=s4t")
         val url=if(page==1)"$mainUrl/?s=$query" else "$mainUrl/page/$page/?s=$query"
-        val document=app.get(url).document
+        val document=app.get(url, headers = headers).document
         val results=document.select("article").mapNotNull{article->
             val aTag=article.selectFirst("h3.entry-title a")?:return@mapNotNull null
             val img=article.selectFirst("div.post-thumbnail img")?:return@mapNotNull null
@@ -130,7 +132,8 @@ class Movies4u : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val headers = mapOf("Cookie" to "xla=s4t")
+        val document = app.get(url, headers = headers).document
         var title = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("(")?.trim() ?: "Unknown Title"
         val hrefList = document.select("div.downloads-btns-div a[href]").map { it.attr("href") }
         val plot = document.selectFirst("h3.movie-title:contains(Storyline:)")?.nextElementSibling()?.takeIf { it.tagName() == "p" }?.text()
@@ -232,7 +235,7 @@ class Movies4u : MainAPI() {
 
                 qualityLinks.forEach { qualityLink ->
                     try {
-                        val seasonDoc = app.get(qualityLink).document
+                        val seasonDoc = app.get(qualityLink, headers = headers).document
                         val episodeBlocks = seasonDoc.select("h5")
                         if (episodeBlocks.isNotEmpty()) {
                             episodeBlocks.forEach { h5 ->
