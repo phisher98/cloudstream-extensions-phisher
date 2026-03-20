@@ -67,7 +67,6 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.Base64
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -607,7 +606,7 @@ object StreamPlayExtractor : StreamPlay() {
                 try {
                     app.get("${BuildConfig.KissKh}$epsId&version=2.8.10", timeout = 10000)
                         .parsedSafe<KisskhKey>()?.key
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
@@ -616,7 +615,7 @@ object StreamPlayExtractor : StreamPlay() {
                 try {
                     app.get("${BuildConfig.KisskhSub}$epsId&version=2.8.10", timeout = 10000)
                         .parsedSafe<KisskhKey>()?.key
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
@@ -633,16 +632,15 @@ object StreamPlayExtractor : StreamPlay() {
                         "$kissKhAPI/api/DramaList/Episode/$epsId.png?err=false&ts=&time=&kkey=$kkey",
                         referer = "$kissKhAPI/Drama/${getKisskhTitle(contentTitle)}/Episode-${episode ?: 0}?id=$id&ep=$epsId&page=0&pageSize=100"
                     ).parsedSafe<KisskhSources>()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
 
             val subDeferred = async {
                 try {
-                    app.get("$kissKhAPI/api/Sub/$epsId&kkey=$kkey1")
-                        .let { tryParseJson<List<KisskhSubtitle>>(it.text) }
-                } catch (e: Exception) {
+                    tryParseJson<List<KisskhSubtitle>>(app.get("$kissKhAPI/api/Sub/$epsId&kkey=$kkey1").text)
+                } catch (_: Exception) {
                     null
                 }
             }
@@ -985,7 +983,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val isMovie = dubtype == "Movie"
         val privatereferer = "https://allmanga.to"
-        val ephash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
+        val ephash = "d405d0edd690624b66baba3068e0edc3ac90f1597d898a1ec8db4e5c43c00fec"
         val queryhash = "a24c500a1b765c68ae1d8dd85174931f661c71369c89b92b88b75a725afc471c"
         val type = if (episode == null) "Movie" else "TV"
 
