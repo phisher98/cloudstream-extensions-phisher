@@ -28,29 +28,29 @@ import com.lagradost.cloudstream3.utils.getPacked
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.net.URI
 
 object AnichiExtractors : Anichi() {
 
-    fun invokeInternalSources(
+    suspend fun invokeInternalSources(
         hash: String,
         dubStatus: String,
         episode: String,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
-    ) = runBlocking {
+    ) = coroutineScope {
         val fullApiUrl = """$apiUrl?variables={"showId":"$hash","translationType":"$dubStatus","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$serverHash"}}"""
 
         val apiResponse = try {
             app.get(fullApiUrl, headers = headers).parsed<LinksQuery>()
         } catch (e: Exception) {
             e.printStackTrace()
-            return@runBlocking
+            return@coroutineScope
         }
 
-        val sources = apiResponse.data?.episode?.sourceUrls ?: return@runBlocking
+        val sources = apiResponse.data?.episode?.sourceUrls ?: return@coroutineScope
 
         sources.forEach { source ->
             launch {

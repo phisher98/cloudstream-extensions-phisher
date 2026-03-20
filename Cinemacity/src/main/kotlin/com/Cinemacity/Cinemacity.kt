@@ -38,6 +38,8 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 
 class Cinemacity : MainAPI() {
@@ -85,8 +87,8 @@ class Cinemacity : MainAPI() {
     override suspend fun getMainPage(
         page: Int, request: MainPageRequest
     ): HomePageResponse {
-        val doc = if (page==1) app.get("$mainUrl/${request.data}").document
-        else app.get("$mainUrl/${request.data}/page/$page").document
+        val doc = if (page==1) app.get("$mainUrl/${request.data}", headers = headers).document
+        else app.get("$mainUrl/${request.data}/page/$page", headers = headers).document
 
         val home = doc.select("div.dar-short_item").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home, true)
@@ -110,7 +112,9 @@ class Cinemacity : MainAPI() {
                 ) "TS" else "HD"
             }
 
-        return newMovieSearchResponse(title, href, TvType.Movie) {
+        val type = if (href.contains("/tv-series/", true)) TvType.TvSeries else TvType.Movie
+
+        return newMovieSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
             this.score = Score.from10(score)
             this.quality = getQualityFromString(quality)
@@ -119,7 +123,11 @@ class Cinemacity : MainAPI() {
 
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val doc = app.get("$mainUrl/index.php?do=search&subaction=search&search_start=$page&full_search=0&story=$query").document
+        val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+        val doc = app.get(
+            "$mainUrl/index.php?do=search&subaction=search&search_start=$page&full_search=0&story=$encodedQuery",
+            headers = headers
+        ).document
         val res = doc.select("div.dar-short_item").mapNotNull { it.toSearchResult() }
         return res.toNewSearchResponseList()
     }
@@ -162,8 +170,6 @@ class Cinemacity : MainAPI() {
         }
 
         val year = ogTitle.substringAfter("(", "").substringBefore(")").toIntOrNull()
-        var contenttype = doc.select("div.dar-full_meta > span:nth-child(5) > a").text()
-
         val tvtype = if (url.contains("/movies/", true)) TvType.Movie else TvType.TvSeries
         val tmdbmetatype = if (tvtype == TvType.TvSeries) "tv" else "movie"
 
@@ -372,7 +378,7 @@ class Cinemacity : MainAPI() {
                 this.plot = buildString {
                     append(description ?: descriptions)
                     if (!audioLanguages.isNullOrBlank()) {
-                        append(" — Audio: ")
+                        append(" - Audio: ")
                         append(audioLanguages)
                     }
                 }
@@ -402,7 +408,7 @@ class Cinemacity : MainAPI() {
             this.plot = buildString {
                 append(description ?: descriptions)
                 if (!audioLanguages.isNullOrBlank()) {
-                    append(" — Audio: ")
+                    append(" - Audio: ")
                     append(audioLanguages)
                 }
             }

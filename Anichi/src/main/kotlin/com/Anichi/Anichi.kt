@@ -46,6 +46,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -102,7 +104,7 @@ open class Anichi : MainAPI() {
             request.data
         }
 
-        val res = app.get(url, headers = headers).parsedSafe<AnichiQuery>()?.data
+        val res = fetchQuery(url)?.data
         val query = res?.shows ?: res?.queryPopular ?: res?.queryListForTag
 
         val card =
@@ -128,17 +130,23 @@ open class Anichi : MainAPI() {
         )
     }
 
-    private fun Edges.toSearchResponse(): AnimeSearchResponse? {
-        val posterUrl = thumbnail?.let {
+    private suspend fun fetchQuery(url: String): AnichiQuery? =
+        app.get(url, headers = headers).parsedSafe()
+
+    private fun getPosterUrl(thumbnail: String?): String? {
+        return thumbnail?.let {
             if (it.startsWith("http")) it
             else "https://wp.youtube-anime.com/aln.youtube-anime.com/$it"
         }
+    }
+
+    private fun Edges.toSearchResponse(): AnimeSearchResponse? {
         return newAnimeSearchResponse(
                 name ?: englishName ?: nativeName ?: "",
                 Id ?: return null,
                 fix = false
         ) {
-            this.posterUrl = posterUrl
+            this.posterUrl = getPosterUrl(thumbnail)
             this.year = airedStart?.year
             this.otherName = englishName
             addDub(availableEpisodes?.dub)
@@ -160,16 +168,10 @@ open class Anichi : MainAPI() {
         }
         val link =
                 """$apiUrl?variables={"search":{"query":"$encodedQuery"},"limit":26,"page":$page,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}"""
-        val res: String =
-            app.get(link, headers = headers).text.takeUnless {
-                it.contains("PERSISTED_QUERY_NOT_FOUND")
-            }
-                ?: app.get(link, headers = headers).text.takeUnless {
-                    it.contains("PERSISTED_QUERY_NOT_FOUND")
-                }
-                ?: return null
-
-        val response = parseJson<AnichiQuery>(res)
+        val responseText = app.get(link, headers = headers).text
+            .takeUnless { it.contains("PERSISTED_QUERY_NOT_FOUND") }
+            ?: return null
+        val response = parseJson<AnichiQuery>(responseText)
 
         val results =
                 response.data?.shows?.edges?.filter {
@@ -179,16 +181,7 @@ open class Anichi : MainAPI() {
                             it.availableEpisodes.dub == 0)
                 }
 
-        return results?.map {
-            val posterUrl = if (it.thumbnail?.startsWith("http") == true) it.thumbnail else "https://wp.youtube-anime.com/aln.youtube-anime.com/${it.thumbnail}"
-            newAnimeSearchResponse(it.name ?: "", "${it.Id}", fix = false) {
-                this.posterUrl = posterUrl
-                this.year = it.airedStart?.year
-                this.otherName = it.englishName
-                addDub(it.availableEpisodes?.dub)
-                addSub(it.availableEpisodes?.sub)
-            }
-        }?.toNewSearchResponseList()
+        return results?.mapNotNull { it.toSearchResponse() }?.toNewSearchResponseList()
     }
 
     override suspend fun getLoadUrl(name: SyncIdName, id: String): String? {
@@ -201,7 +194,7 @@ open class Anichi : MainAPI() {
                 }
         val media = app.get("$jikanApi/anime/$malId").parsedSafe<JikanResponse>()?.data
         val link = """$apiUrl?variables={"search":{"allowAdult":false,"allowUnknown":false,"query":"${media?.title}"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$mainHash"}}"""
-        val res = app.get(link, headers = headers).parsedSafe<AnichiQuery>()?.data?.shows?.edges
+        val res = fetchQuery(link)?.data?.shows?.edges
         return res
                 ?.find {
                     (it.name.equals(media?.title, true) ||
@@ -242,14 +235,21 @@ open class Anichi : MainAPI() {
                         showData.type
                 )
 
-        val aniId =trackers?.id
-
-        val data = anilistAPICall(
-            "query { Media(id: $aniId, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
-        ).data.media
-
-        val syncData = app.get("https://api.ani.zip/mappings?mal_id=${trackers?.idMal}").toString()
-        val animeMetadata = parseAnimeData(syncData)
+        val (data, animeMetadata) = coroutineScope {
+            val anilistDeferred = async {
+                trackers?.id?.let { aniId ->
+                    anilistAPICall(
+                        "query { Media(id: $aniId, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+                    ).data.media
+                }
+            }
+            val metadataDeferred = async {
+                trackers?.idMal?.let { malId ->
+                    parseAnimeData(app.get("https://api.ani.zip/mappings?mal_id=$malId").text)
+                }
+            }
+            anilistDeferred.await() to metadataDeferred.await()
+        }
         val fanart = animeMetadata?.images
             ?.firstOrNull { it.coverType.equals("Fanart", ignoreCase = true) }
             ?.url
@@ -269,49 +269,24 @@ open class Anichi : MainAPI() {
         )
 
         val poster = showData.thumbnail
-        val episodes = showData.availableEpisodesDetail?.let { detail ->
-            val id = showData.Id ?: return@let null
-
-            // 🔹 Helper to safely get episode metadata
-            fun getEpMeta(epNum: Int?): EpisodeInfo? =
-                epNum?.let { animeMetadata?.episodes?.get(it.toString()) }
-
-            val sub = detail.sub.map { eps ->
-                val epNum = eps.toIntOrNull()
-                val meta = getEpMeta(epNum)
-
-                newEpisode(
-                    AnichiLoadData(id, "sub", eps, trackers?.idMal).toJson()
-                ) {
-                    this.episode = epNum
-                    this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
-                    this.score = Score.from10(meta?.rating)
-                    this.posterUrl = meta?.image ?: showData.thumbnail
-                    this.description = meta?.overview ?: "No summary available"
-                    this.addDate(meta?.airDateUtc)
-                    this.runTime = meta?.runtime
-                }
+        fun buildEpisodes(episodeNumbers: List<String>, dubStatus: String) = episodeNumbers.map { eps ->
+            val epNum = eps.toIntOrNull()
+            val meta = epNum?.let { animeMetadata?.episodes?.get(it.toString()) }
+            newEpisode(
+                AnichiLoadData(id, dubStatus, eps, trackers?.idMal).toJson()
+            ) {
+                this.episode = epNum
+                this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
+                this.score = Score.from10(meta?.rating)
+                this.posterUrl = meta?.image ?: showData.thumbnail
+                this.description = meta?.overview ?: "No summary available"
+                this.addDate(meta?.airDateUtc)
+                this.runTime = meta?.runtime
             }
-
-            val dub = detail.dub.map { eps ->
-                val epNum = eps.toIntOrNull()
-                val meta = getEpMeta(epNum)
-                newEpisode(
-                    AnichiLoadData(id, "dub", eps, trackers?.idMal).toJson()
-                ) {
-                    this.episode = epNum
-                    this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
-                    this.score = Score.from10(meta?.rating)
-                    this.posterUrl = meta?.image ?: showData.thumbnail
-                    this.description = meta?.overview ?: "No summary available"
-                    this.addDate(meta?.airDateUtc)
-                    this.runTime = meta?.runtime
-                }
-            }
-
-            Pair(sub.reversed(), dub.reversed())
         }
-
+        val episodes = showData.availableEpisodesDetail?.let { detail ->
+            Pair(buildEpisodes(detail.sub, "sub").reversed(), buildEpisodes(detail.dub, "dub").reversed())
+        }
         val (subEpisodes, dubEpisodes) = episodes ?: Pair(emptyList(), emptyList())
         val characters =
                 showData.characters?.map {

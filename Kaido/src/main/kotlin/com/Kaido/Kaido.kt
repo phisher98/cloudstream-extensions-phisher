@@ -37,6 +37,7 @@ import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
@@ -49,6 +50,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import org.json.JSONObject
 
 class Kaido : MainAPI() {
@@ -60,6 +63,11 @@ class Kaido : MainAPI() {
     override val hasDownloadSupport = true
     override val usesWebView = true
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
+
+    private data class EpisodeLoadData(
+        @JsonProperty("source") val source: String,
+        @JsonProperty("href") val href: String,
+    )
 
     private fun Element.toSearchResult(): SearchResponse {
         val href = fixUrl(this.select("a").attr("href"))
@@ -127,7 +135,8 @@ class Kaido : MainAPI() {
             )
 
     override suspend fun search(query: String,page: Int): SearchResponseList {
-        val link = "$mainUrl/search?keyword=$query&page=$page"
+        val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
+        val link = "$mainUrl/search?keyword=$encodedQuery&page=$page"
         val res = app.get(link).document
 
         return res.select("div.flw-item").map { it.toSearchResult() }.toNewSearchResponseList()
@@ -143,7 +152,7 @@ class Kaido : MainAPI() {
         val document = app.get(url.replace("watch/", "")).document
 
         val syncData = tryParseJson<ZoroSyncData>(document.selectFirst("#syncData")?.data())
-        val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").toString()
+        val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").text
         val animeMetaData = parseAnimeData(syncMetaData)
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
         val description = document.select("div.film-description > div").text().ifEmpty { document.select("div.film-description div").text() }
@@ -156,7 +165,7 @@ class Kaido : MainAPI() {
         val tmdbid = animeMetaData?.mappings?.themoviedbId
 
         val typeraw = document.select("div.film-stats div.tick").text()
-        val type = if (typeraw.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.Anime
+        val type = if (typeraw.contains("Movie",ignoreCase = true)) TvType.AnimeMovie else TvType.Anime
 
 
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
@@ -176,34 +185,69 @@ class Kaido : MainAPI() {
             appLangCode = "en"
         )
 
+        val metaEpisodeMap = animeMetaData?.episodes.orEmpty()
+        val maxMappedEpisode = metaEpisodeMap.keys
+            .mapNotNull { it.toIntOrNull() }
+            .maxOrNull()
+        if (maxMappedEpisode != null) {
+            Log.d(
+                "Kaido",
+                "metadataCoverage maxMappedEpisode=$maxMappedEpisode totalMapped=${metaEpisodeMap.size} animeId=$animeId malId=$malId"
+            )
+        }
+
+        fun resolveMetaEpisode(episodeKey: String): MetaEpisode? {
+            val episodeNumber = episodeKey.toIntOrNull()
+            if (episodeNumber != null && maxMappedEpisode != null && episodeNumber > maxMappedEpisode) {
+                Log.d(
+                    "Kaido",
+                    "resolveMetaEpisode key=$episodeKey skippedBecauseBeyondCoverage maxMappedEpisode=$maxMappedEpisode"
+                )
+                return null
+            }
+            val metaEp = metaEpisodeMap[episodeKey] ?: return null
+            val normalizedEpisode = metaEp.episode?.trim()
+            val matched = normalizedEpisode == null || normalizedEpisode == episodeKey
+            Log.d(
+                "Kaido",
+                "resolveMetaEpisode key=$episodeKey metaEpisode=$normalizedEpisode matched=$matched hasImage=${!metaEp.image.isNullOrBlank()} hasOverview=${!metaEp.overview.isNullOrBlank()}"
+            )
+            return if (matched) metaEp else null
+        }
+
 
         epRes?.select(".ss-list > a[href].ssl-item.ep-item")?.forEachIndexed { index, ep ->
             val href = ep.attr("href").removePrefix("/")
             val episodeNum = ep.selectFirst(".ssli-order")?.text()?.toIntOrNull() ?: return@forEachIndexed
             val episodeKey = episodeNum.toString()
+            val siteEpisodeTitle = ep.attr("title").ifBlank { "Episode $episodeNum" }
+            Log.d(
+                "Kaido",
+                "episode index=$index sourceHref=$href episodeNum=$episodeNum siteTitle=$siteEpisodeTitle"
+            )
 
             // --- Helper to get best episode title ---
             fun resolveTitle(ep: Element, episodeKey: String): String {
-                val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
+                val titleMap = resolveMetaEpisode(episodeKey)?.title
                 val jsonTitle = titleMap?.get("en")
                     ?: titleMap?.get("ja")
                     ?: titleMap?.get("x-jat")
-                    ?: animeMetaData?.titles?.get("en")
-                    ?: animeMetaData?.titles?.get("ja")
-                    ?: animeMetaData?.titles?.get("x-jat")
                     ?: ""
-                val attrTitle = ep.attr("title")
-                return jsonTitle.ifBlank { attrTitle }
+                return jsonTitle.ifBlank { siteEpisodeTitle }
             }
 
             fun createEpisode(source: String): Episode {
-                val metaEp = animeMetaData?.episodes?.get(episodeKey)
-                return newEpisode("$source|$malId|$href") {
+                val metaEp = resolveMetaEpisode(episodeKey)
+                Log.d(
+                    "Kaido",
+                    "createEpisode source=$source episodeKey=$episodeKey metaFound=${metaEp != null} finalPoster=${metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: poster} finalDescriptionFromMeta=${!metaEp?.overview.isNullOrBlank()}"
+                )
+                return newEpisode(EpisodeLoadData(source, href).toJson()) {
                     this.name = if (type == TvType.AnimeMovie) title else resolveTitle(ep, episodeKey)
                     this.episode = episodeNum
                     this.score = Score.from10(metaEp?.rating)
-                    this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
-                    this.description = metaEp?.overview ?: "No summary available"
+                    this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: poster
+                    this.description = metaEp?.overview ?: description.ifBlank { "No summary available" }
                     this.addDate(metaEp?.airDateUtc)
                     this.runTime = metaEp?.runtime
                 }
@@ -214,7 +258,7 @@ class Kaido : MainAPI() {
         }
         val actors = document.select("div.block-actors-content div.bac-item").mapNotNull { it.getActorData() }
         val recommendations = document.select("div.block_area_category div.flw-item").map { it.toSearchResult() }
-        return newAnimeLoadResponse(title, url, TvType.Anime) {
+        return newAnimeLoadResponse(title, url, type) {
             engName = title
             posterUrl = poster
             backgroundPosterUrl = backgroundposter
@@ -252,8 +296,9 @@ class Kaido : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         try {
-            val dubType = data.removePrefix("$mainUrl/").substringBefore("|").ifEmpty { "raw" }
-            val hrefPart = data.substringAfterLast("|")
+            val loadData = tryParseJson<EpisodeLoadData>(data)
+            val dubType = loadData?.source ?: data.removePrefix("$mainUrl/").substringBefore("|").ifEmpty { "raw" }
+            val hrefPart = loadData?.href ?: data.substringAfterLast("|")
             val epId = hrefPart.substringAfter("ep=")
             val doc = app.get("$mainUrl/ajax/episode/servers?episodeId=$epId")
                 .parsed<Response>()
@@ -274,7 +319,7 @@ class Kaido : MainAPI() {
                     loadCustomExtractor(
                         "Kaido [$label]",
                         sourceurl,
-                        "",
+                        mainUrl,
                         subtitleCallback,
                         callback,
                     )
