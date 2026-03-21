@@ -13,6 +13,7 @@ class BollyzoneProvider : DesicinemasProvider() {
     override var name = "Bollyzone"
 
     override val mainPage = mainPageOf(
+        "$proxy?url=$mainUrl/series/" to "Episodes",
         "$proxy?url=$mainUrl/tv-channels/" to "Series",
     )
 
@@ -25,28 +26,41 @@ class BollyzoneProvider : DesicinemasProvider() {
         val headers = doc.select("h2.Title").filter {
             it.text().contains("Shows", ignoreCase = true)
         }
+
         for (header in headers) {
             val sectionName = header.selectFirst("a")?.text()?.trim() ?: continue
             val movieListDiv = header.nextElementSiblings()
                 .firstOrNull { it.tagName() == "div" && it.hasClass("MovieListTop") } ?: continue
+
             val list = movieListDiv.toHomePageList(sectionName)
-            homePageList.add(list)
             if (list.list.isNotEmpty()) {
                 homePageList.add(list)
             }
         }
+
+        if (homePageList.isEmpty()) {
+            val fallbackItems = doc.select("ul.MovieList li.TPostMv")
+                .mapNotNull { it.toHomePageResult() }
+
+            if (fallbackItems.isNotEmpty()) {
+                homePageList.add(HomePageList("Latest", fallbackItems))
+            }
+        }
+
         val hasNext = homePageList.any { it.list.isNotEmpty() }
         return newHomePageResponse(homePageList, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$proxy?url=$mainUrl/?s=$query"
-        val doc = app.get(url, referer = "$mainUrl/").document
-
-        val items = doc.select(".MovieList li").mapNotNull {
-            it.toHomePageResult()
+        val url = "$mainUrl/?s=$query"
+        val doc = try {
+            app.get(url, referer = "$mainUrl/").document
+        } catch (_: Exception) {
+            app.get("$proxy?url=$url", referer = "$mainUrl/").document
         }
-        return items
+
+        return doc.select("ul.MovieList li.TPostMv")
+            .mapNotNull { it.toHomePageResult() }
     }
 
     private fun Element.toHomePageList(name: String): HomePageList {
@@ -61,9 +75,10 @@ class BollyzoneProvider : DesicinemasProvider() {
         val title = selectFirst("h2.Title")?.text()?.trim() ?: return null
         val href = fixUrlNull(selectFirst("a")?.attr("href")) ?: return null
         val img = selectFirst("img")
-        val posterUrl ="$proxy?url=" + fixUrlNull(img?.getImageAttr())
 
-        return newAnimeSearchResponse(title, href) {
+        val posterUrl = fixUrlNull(img?.getImageAttr())
+
+        return newTvSeriesSearchResponse(title, href) {
             this.posterUrl = posterUrl
         }
     }
