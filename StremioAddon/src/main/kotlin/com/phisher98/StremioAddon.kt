@@ -6,7 +6,6 @@ import android.webkit.URLUtil
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import java.time.LocalDate
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -43,6 +42,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.SubsExtractors.invokeOpenSubs
 import com.phisher98.SubsExtractors.invokeWatchsomuch
+import java.util.Calendar
 
 class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override var mainUrl = "https://example.com"
@@ -74,7 +74,7 @@ class StremioAddon(private val sharedPref: SharedPreferences) : TmdbProvider() {
     @RequiresApi(Build.VERSION_CODES.O)
     override val mainPage = run {
         val categories = mutableListOf<Pair<String, String>>()
-        val currentMonth = LocalDate.now().monthValue
+        val currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
 
         categories += "$tmdbAPI/trending/all/day?api_key=$apiKey&region=US" to "Trending"
         categories += "$tmdbAPI/movie/popular?api_key=$apiKey&region=US" to "Popular Movies"

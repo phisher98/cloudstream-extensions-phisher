@@ -1,7 +1,5 @@
 package com.phisher98
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -64,7 +62,6 @@ import java.security.SecureRandom
 import java.security.spec.KeySpec
 import java.text.SimpleDateFormat
 import java.util.Arrays
-import java.util.Base64
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -94,8 +91,10 @@ val M3U8_HEADERS = mapOf(
 private val extractorCallbackScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 private val sharedObjectMapper by lazy { ObjectMapper() }
 private val sharedGson by lazy { Gson() }
-private val tmdbDateFormatter = ThreadLocal.withInitial {
-    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+private val tmdbDateFormatter = object : ThreadLocal<SimpleDateFormat>() {
+    override fun initialValue(): SimpleDateFormat {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    }
 }
 
 private fun getTmdbDateFormatter(): SimpleDateFormat = tmdbDateFormatter.get()!!
@@ -1202,23 +1201,6 @@ fun getAnidbEid(jsonString: String, episodeNumber: Int?): Int? {
         null
     }
 }
-
-@RequiresApi(Build.VERSION_CODES.O)
-fun generateVrfAES(movieId: String, userId: String): String {
-    // Step 1: Derive key = SHA-256("hack_" + userId)
-    val driveKey = base64Decode("emgmNzJjaU8zOXRnSDU=")
-    val keyData = "${driveKey}_$userId".toByteArray(Charsets.UTF_8)
-    val keyBytes = MessageDigest.getInstance("SHA-256").digest(keyData)
-    val keySpec = SecretKeySpec(keyBytes, "AES")
-    val ivSpec = IvParameterSpec(ByteArray(16))
-    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
-    val encrypted = cipher.doFinal(movieId.toByteArray(Charsets.UTF_8))
-    return Base64.getUrlEncoder()
-        .withoutPadding()
-        .encodeToString(encrypted)
-}
-
 
 val decryptMethods: Map<String, (String) -> String> = mapOf(
     "TsA2KGDGux" to { inputString ->
