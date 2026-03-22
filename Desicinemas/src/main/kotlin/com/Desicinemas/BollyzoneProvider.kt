@@ -154,10 +154,13 @@ class BollyzoneProvider : DesicinemasProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get("${proxy}?url=${data}", referer = mainUrl).document.select(".MovieList .OptionBx")
+        app.get("${proxy}?url=${data}", referer = mainUrl)
+            .document.select(".MovieList .OptionBx")
             .amap {
+
                 val name = it.select("p.AAIco-dns").text()
                 val link = it.select("a").attr("href")
+
                 val headers = mapOf(
                     "referer" to mainUrl,
                     "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
@@ -166,12 +169,48 @@ class BollyzoneProvider : DesicinemasProvider() {
                     "Connection" to "keep-alive",
                     "Cache-Control" to "no-cache"
                 )
-                val src = app.get(link, headers = headers).document
-                val iframe = src.selectFirst("#Proceed a[href]")?.attr("href").orEmpty()
-                val iframeURL = resolveIframeSrc(iframe) ?: src.selectFirst("IFRAME")?.attr("src")
-                ?: return@amap
-                loadSourceNameExtractor(name, iframeURL, mainUrl, subtitleCallback, callback)
+
+                val src = app.get(link, headers = headers)
+                val doc = src.document
+
+                val iframe = doc.selectFirst("#Proceed a[href], a.button.button1, a.button1")
+                    ?.attr("href")
+                    .orEmpty()
+
+                val iframeURL = resolveIframeSrc(iframe) ?: doc.selectFirst("IFRAME")?.attr("src")
+
+                // Fallback when iframe not found
+                if (iframeURL.isNullOrBlank()) {
+                    if (iframe.isBlank()) return@amap
+
+                    val pathParts = iframe.trimEnd('/').split('/')
+                    if (pathParts.size < 2) return@amap
+
+                    val token = pathParts.last()
+                    val type = pathParts.dropLast(1).last()
+
+                    val playerUrl = "https://flow.tvlogy.to/$type/$token/"
+
+                    loadSourceNameExtractor(
+                        name,
+                        playerUrl,
+                        mainUrl,
+                        subtitleCallback,
+                        callback
+                    )
+                    return@amap
+                }
+
+                // Normal flow
+                loadSourceNameExtractor(
+                    name,
+                    iframeURL,
+                    mainUrl,
+                    subtitleCallback,
+                    callback
+                )
             }
+
         return true
     }
 
