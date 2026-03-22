@@ -7,14 +7,13 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.ResponseParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.net.URI
 import kotlin.reflect.KClass
@@ -56,39 +55,6 @@ inline fun <reified T : Any> tryParseJson(text: String): T? {
         null
     }
 }
-
-suspend fun loadCustomExtractor(
-    name: String? = null,
-    url: String,
-    referer: String? = null,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit,
-    quality: Int? = null,
-) {
-    loadExtractor(url, referer, subtitleCallback) { link ->
-        CoroutineScope(Dispatchers.IO).launch {
-            callback.invoke(
-                newExtractorLink(
-                    name ?: link.source,
-                    name ?: link.name,
-                    link.url,
-                ) {
-                    this.quality = when {
-                        link.name == "VidSrc" -> Qualities.P1080.value
-                        link.type == ExtractorLinkType.M3U8 -> link.quality
-                        else -> quality ?: link.quality
-                    }
-                    this.type = link.type
-                    this.referer = link.referer
-                    this.headers = link.headers
-                    this.extractorData = link.extractorData
-                }
-            )
-        }
-    }
-}
-
-
 suspend fun resolveIframeSrc(initialUrl: String): String? {
     return try {
         if (initialUrl.isBlank()) return null
@@ -185,6 +151,51 @@ private fun getBaseUrl(url: String): String {
         URI(url).let { "${it.scheme}://${it.host}" }
     } catch (_: Exception) {
         ""
+    }
+}
+
+private val extractorCallbackScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+suspend fun loadSourceNameExtractor(
+    source: String,
+    url: String,
+    referer: String? = null,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+    quality: Int? = null,
+    size: String = ""
+) {
+    val provider = source.trim().takeIf { it.isNotBlank() }
+    val sizePart = size.trim().takeIf { it.isNotBlank() }
+
+    loadExtractor(url, referer, subtitleCallback) { link ->
+        extractorCallbackScope.launch {
+            val label = buildString {
+                provider?.let { append(it) }
+                if (link.name.isNotEmpty()) {
+                    if (isNotEmpty()) append(' ')
+                    append(link.name)
+                }
+                sizePart?.let {
+                    if (isNotEmpty()) append(' ')
+                    append(it)
+                }
+            }
+
+            callback(
+                newExtractorLink(
+                    link.source,
+                    label,
+                    link.url
+                ) {
+                    this.quality = quality ?: link.quality
+                    this.type = link.type
+                    this.referer = link.referer
+                    this.headers = link.headers
+                    this.extractorData = link.extractorData
+                }
+            )
+        }
     }
 }
 

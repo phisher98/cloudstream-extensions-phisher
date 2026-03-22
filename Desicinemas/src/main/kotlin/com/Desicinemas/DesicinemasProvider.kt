@@ -77,7 +77,7 @@ open class DesicinemasProvider : MainAPI() {
             )
             val src = app.get(link, headers = headers).document
             val iframe=src.select("iframe").attr("src")
-            loadCustomExtractor(name,iframe,mainUrl,subtitleCallback, callback)
+            loadSourceNameExtractor(name,iframe,mainUrl,subtitleCallback, callback)
         }
         return true
     }

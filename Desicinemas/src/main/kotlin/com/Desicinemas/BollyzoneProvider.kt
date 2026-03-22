@@ -1,6 +1,19 @@
 package com.Desicinemas
 
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 
@@ -141,22 +154,24 @@ class BollyzoneProvider : DesicinemasProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get("${proxy}?url=${data}", referer = mainUrl).document.select(".MovieList .OptionBx").amap {
-            val name = it.select("p.AAIco-dns").text()
-            val link = it.select("a").attr("href")
-            val headers = mapOf(
-                "referer" to mainUrl,
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
-                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language" to "en-US,en;q=0.5",
-                "Connection" to "keep-alive",
-                "Cache-Control" to "no-cache"
-            )
-            val src = app.get(link, headers = headers).document
-            val iframe=src.selectFirst("#Proceed a[href]")?.attr("href").orEmpty()
-            val iframeURL = resolveIframeSrc(iframe) ?: src.selectFirst("IFRAME")?.attr("src") ?: return@amap
-            loadCustomExtractor(name,iframeURL,mainUrl,subtitleCallback, callback)
-        }
+        app.get("${proxy}?url=${data}", referer = mainUrl).document.select(".MovieList .OptionBx")
+            .amap {
+                val name = it.select("p.AAIco-dns").text()
+                val link = it.select("a").attr("href")
+                val headers = mapOf(
+                    "referer" to mainUrl,
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+                    "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language" to "en-US,en;q=0.5",
+                    "Connection" to "keep-alive",
+                    "Cache-Control" to "no-cache"
+                )
+                val src = app.get(link, headers = headers).document
+                val iframe = src.selectFirst("#Proceed a[href]")?.attr("href").orEmpty()
+                val iframeURL = resolveIframeSrc(iframe) ?: src.selectFirst("IFRAME")?.attr("src")
+                ?: return@amap
+                loadSourceNameExtractor(name, iframeURL, mainUrl, subtitleCallback, callback)
+            }
         return true
     }
 
