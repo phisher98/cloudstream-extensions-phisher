@@ -36,7 +36,7 @@ import org.jsoup.nodes.Element
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl: String = runBlocking {
-        MultiMoviesProviderPlugin.getDomains()?.MultiMovies ?: "https://multimovies.cheap"
+        MultiMoviesProviderPlugin.getDomains()?.MultiMovies ?: "https://multimovies.autos"
     }
     override var name = "MultiMovies"
     override val hasMainPage = true
@@ -162,9 +162,8 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         val titleRegex = Regex("(^.*\\)\\d*)")
         val titleClean = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
         val title = if (titleClean == "null") titleL else titleClean
-        val poster = fixUrlNull(
-            doc.select("div.g-item a").attr("href")
-        )
+        val poster = fixUrlNull(doc.select("div.poster img").attr("src"))
+        val bgposter = fixUrlNull(doc.select("div.g-item a").attr("href"))
         val tags = doc.select("div.sgeneros > a").map { it.text() }
         val year = doc.selectFirst("span.date")?.text()?.substringAfter(",")?.trim()?.toInt()
         val description = doc.selectFirst("#info div.wp-content p")?.text()?.trim()
@@ -226,6 +225,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 url
             ) {
                 this.posterUrl = poster?.trim()
+                this.backgroundPosterUrl = bgposter ?:poster
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -238,6 +238,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         } else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster?.trim()
+                this.backgroundPosterUrl = bgposter ?:poster
                 this.year = year
                 this.plot = description
                 this.tags = tags

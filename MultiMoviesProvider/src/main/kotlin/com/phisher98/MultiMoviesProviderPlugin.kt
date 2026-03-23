@@ -35,6 +35,7 @@ class MultiMoviesProviderPlugin: BasePlugin() {
         registerExtractorAPI(server1())
         registerExtractorAPI(Techinmind())
         registerExtractorAPI(Gofile())
+        registerExtractorAPI(Iqsmartgames())
         }
 
     companion object {

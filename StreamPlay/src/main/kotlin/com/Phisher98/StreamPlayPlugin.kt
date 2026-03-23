@@ -183,6 +183,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Allanimeups())
         registerExtractorAPI(Wootly())
         registerExtractorAPI(Luluvdo())
+        registerExtractorAPI(Iqsmartgames())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
