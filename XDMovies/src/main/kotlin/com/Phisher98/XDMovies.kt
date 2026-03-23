@@ -40,7 +40,7 @@ import org.jsoup.nodes.Element
 import java.util.concurrent.atomic.AtomicInteger
 
 class XDMovies : MainAPI() {
-    override var mainUrl = "https://new.xdmovies.wtf"
+    override var mainUrl = "https://top.xdmovies.wtf"
     override var name = "XD Movies"
     override val hasMainPage = true
     override var lang = "en"

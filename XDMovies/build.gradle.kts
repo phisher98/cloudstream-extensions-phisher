@@ -28,6 +28,6 @@ cloudstream {
         "Cartoon",
         "AnimeMovie"
     )
-    iconUrl = "https://new.xdmovies.wtf/assets/logo1.png"
+    iconUrl = "https://top.xdmovies.wtf/assets/logo1.png"
     isCrossPlatform = false
 }
