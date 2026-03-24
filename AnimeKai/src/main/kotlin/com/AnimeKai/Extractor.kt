@@ -27,7 +27,6 @@ class MegaUpTwoTwo : MegaUp() {
     override val requiresReferer = true
 }
 
-//Thanks to https://github.com/AzartX47/EncDecEndpoints
 open class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"

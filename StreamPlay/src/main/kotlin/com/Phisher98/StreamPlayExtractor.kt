@@ -6285,12 +6285,12 @@ object StreamPlayExtractor : StreamPlay() {
         val api = getDomains()?.hindmoviez ?: return
         if (id.isNullOrBlank()) return
         val url = "$api/?s=$id"
-        var response = app.get(url, timeout = 50L)
+        var response = app.get(url, timeout = 5000L)
         if (response.text.contains("Just a moment", true)) {
             response = cfMutex.withLock {
                 app.get(
                     url,
-                    timeout = 50L,
+                    timeout = 5000L,
                     interceptor = cloudflareKiller
                 )
             }
@@ -6300,13 +6300,13 @@ object StreamPlayExtractor : StreamPlay() {
         val entries = searchDoc.select("h2.entry-title > a")
 
         entries.amap { entry ->
-            val pageDoc = app.get(entry.attr("href"), timeout = 50L).document
+            val pageDoc = app.get(entry.attr("href"), timeout = 5000L).document
             val buttons = pageDoc.select("a.maxbutton")
 
             if (episode == null) {
                 // Movie
                 buttons.amap { btn ->
-                    val intermediateDoc = app.get(btn.attr("href"), timeout = 50L).document
+                    val intermediateDoc = app.get(btn.attr("href"), timeout = 5000L).document
                     val link = intermediateDoc.selectFirst("a.get-link-btn")
                         ?.attr("href")
                         ?: return@amap
@@ -6324,7 +6324,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     if (!headerText.contains("Season $season", ignoreCase = true)) return@amap
 
-                    val episodeDoc = app.get(btn.attr("href"), timeout = 50L).document
+                    val episodeDoc = app.get(btn.attr("href"), timeout = 5000L).document
                     val episodeLink = episodeDoc
                         .select("h3 > a")
                         .getOrNull(episode - 1)

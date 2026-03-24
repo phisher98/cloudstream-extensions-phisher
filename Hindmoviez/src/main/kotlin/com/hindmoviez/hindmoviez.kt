@@ -324,7 +324,7 @@ class Hindmoviez : MainAPI() {
         val links: List<String> = tryParseJson<List<String>>(data) ?: return true
 
         val allRequests = links.flatMap { pageUrl ->
-            val pageDoc = app.get(pageUrl).document
+            val pageDoc = app.get(pageUrl, timeout = 10000L).document
 
             val name: String = pageDoc.selectFirst("div.container p:contains(Name:)")
                 ?.text()
@@ -350,7 +350,7 @@ class Hindmoviez : MainAPI() {
 
         allRequests.amap { (btnUrl, extractedSpecs, fileSize) ->
             try {
-                val doc = app.get(btnUrl).document
+                val doc = app.get(btnUrl, timeout = 10000L).document
                 val quality: Int = getIndexQuality(
                     doc.selectFirst("div.container h2")?.text() ?: ""
                 )

@@ -1925,24 +1925,13 @@ fun String?.fixTitle(): String? {
     return this?.replace(Regex("[!%:']|( &)"), "")?.replace(" ", "-")?.lowercase()
         ?.replace("-–-", "-")
 }
-suspend fun getSessionAndCsrfforFlixindia(baseUrl: String): Pair<String, String>? {
-    val res = app.get(baseUrl)
-
-    val sessionId = res.cookies["PHPSESSID"] ?: return null
-
-    val csrf = Regex(
-        """window\.CSRF_TOKEN\s*=\s*['"]([a-f0-9]{64})['"]"""
-    ).find(res.text)?.groupValues?.get(1) ?: return null
-
-    return sessionId to csrf
-}
 
 suspend fun getHindMoviezLinks(
     source: String,
     url: String,
     callback: (ExtractorLink) -> Unit
 ) {
-    val response = app.get(url)
+    val response = app.get(url, timeout = 10000L)
     val doc = response.document
 
     val name = doc.selectFirst("div.container p:contains(Name:)")
@@ -1965,9 +1954,9 @@ suspend fun getHindMoviezLinks(
         // Primary links
         {
             val redirectUrl = doc.selectFirst("a.btn-info")?.attr("href") ?: return@runAllAsync
-            val redirectDoc = app.get(redirectUrl, referer = response.url).document
+            val redirectDoc = app.get(redirectUrl, referer = response.url, timeout = 10000L).document
 
-            redirectDoc.select("a.button").forEach { btn ->
+            redirectDoc.select("a.button").map { btn ->
                 callback(
                     newExtractorLink(
                         source,

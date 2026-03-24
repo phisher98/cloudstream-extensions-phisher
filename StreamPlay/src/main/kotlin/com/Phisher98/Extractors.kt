@@ -2789,7 +2789,6 @@ class Rapidairmax : MegaUp() {
     override val requiresReferer = true
 }
 
-//Thanks to https://github.com/AzartX47/EncDecEndpoints
 open class Rapidshare : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://rapidshare.cc"
