@@ -357,24 +357,30 @@ class FourKHDHub : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        if (data.isBlank()) return false
-        val links: List<String> = AppUtils.tryParseJson<List<String>>(data)?.distinct() ?: return false
+        val links = AppUtils.tryParseJson<List<String>>(data)?.asSequence()?.filter { it.isNotBlank() }?.distinct()?.toList()
+            ?: return false
+
         links.amap { raw ->
-            val resolved = runCatching {
-                if ("id=" in raw) getRedirectLinks(raw) else raw
-            }.getOrElse {
-                Log.e("Extractor", "Redirect failed: $raw — ${it.message}")
+            val resolved = try {
+                if (raw.contains("id=")) getRedirectLinks(raw) else raw
+            } catch (e: Exception) {
+                Log.e("Extractor", "Redirect failed: $raw — ${e.message}")
                 return@amap
             }
 
             if (resolved.isBlank()) return@amap
 
-            runCatching {
-                loadExtractor(resolved, name, subtitleCallback, callback)
-            }.onFailure {
-                Log.e("Extractor", "Extractor failed: $resolved — ${it.message}")
+            try {
+                if (resolved.contains("hubcloud", ignoreCase = true)) {
+                    HubCloud().getUrl(resolved, name, subtitleCallback, callback)
+                } else {
+                    loadExtractor(resolved, name, subtitleCallback, callback)
+                }
+            } catch (e: Exception) {
+                Log.e("Extractor", "Extractor failed: $resolved — ${e.message}")
             }
         }
+
         return true
     }
 }

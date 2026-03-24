@@ -321,47 +321,56 @@ class Hindmoviez : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links: List<String> = tryParseJson<List<String>>(data) ?: emptyList()
-        links.amap { pageUrl ->
+        val links: List<String> = tryParseJson<List<String>>(data) ?: return true
+
+        val allRequests = links.flatMap { pageUrl ->
             val pageDoc = app.get(pageUrl).document
-            pageDoc.select("a.btn").forEach { btn ->
-                val btnUrl = btn.absUrl("href")
-                if (btnUrl.isBlank()) return@forEach
-                val name = pageDoc.selectFirst("div.container p:contains(Name:)")
-                    ?.text()
-                    ?.substringAfter("Name:")
-                    ?.trim()
-                    .orEmpty()
 
+            val name: String = pageDoc.selectFirst("div.container p:contains(Name:)")
+                ?.text()
+                ?.substringAfter("Name:")
+                ?.trim()
+                .orEmpty()
 
-                val extractedSpecs = buildExtractedTitle(extractSpecs(name))
+            if (name.isBlank()) return@flatMap emptyList()
 
-                val fileSize = pageDoc.selectFirst("div.container p:contains(Size:)")
-                    ?.text()
-                    ?.substringAfter("Size:")
-                    ?.trim()
-                    .orEmpty()
+            val extractedSpecs: String = buildExtractedTitle(extractSpecs(name))
+            val fileSize: String = pageDoc.selectFirst("div.container p:contains(Size:)")
+                ?.text()
+                ?.substringAfter("Size:")
+                ?.trim()
+                .orEmpty()
 
+            pageDoc.select("a.btn")
+                .mapNotNull { it.absUrl("href").takeIf { url -> url.isNotBlank() } }
+                .map { btnUrl ->
+                    Triple(btnUrl, extractedSpecs, fileSize)
+                }
+        }
+
+        allRequests.amap { (btnUrl, extractedSpecs, fileSize) ->
+            try {
                 val doc = app.get(btnUrl).document
-                val quality = getIndexQuality(doc.select("div.container h2").text())
+                val quality: Int = getIndexQuality(
+                    doc.selectFirst("div.container h2")?.text() ?: ""
+                )
 
                 doc.select("a.button").forEach { link ->
-                    val servername = link.text()
                     val href = link.absUrl("href")
                     if (href.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
-                                servername,
+                                link.text(),
                                 "[HCloud] $extractedSpecs[$fileSize]",
                                 href
-                            )
-                            {
+                            ) {
                                 this.referer = btnUrl
                                 this.quality = quality
                             }
                         )
                     }
                 }
+            } catch (_: Exception) {
             }
         }
 
