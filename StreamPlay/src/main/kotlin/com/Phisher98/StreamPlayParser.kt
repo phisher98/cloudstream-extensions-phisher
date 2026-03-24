@@ -599,7 +599,6 @@ data class StremplaySource(
 )
 
 data class AnimeKaiResponse(
-    @JsonProperty("status") val status: Boolean,
     @JsonProperty("result") val result: String
 ) {
     fun getDocument(): Document {

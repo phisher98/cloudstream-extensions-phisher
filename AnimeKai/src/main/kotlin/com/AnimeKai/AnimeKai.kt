@@ -204,7 +204,6 @@ class AnimeKai : MainAPI() {
 
         val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded").parsedSafe<Response>()?.getDocument()
 
-
         val logoUrl = fetchTmdbLogoUrl(
             tmdbAPI = "https://api.themoviedb.org/3",
             apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
@@ -326,7 +325,6 @@ class AnimeKai : MainAPI() {
     }
 
     data class Response(
-        @JsonProperty("status") val status: Boolean,
         @JsonProperty("result") val result: String
     ) {
         fun getDocument(): Document {

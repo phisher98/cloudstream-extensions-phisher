@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 587
+version = 588
 
 android {
     buildFeatures {
