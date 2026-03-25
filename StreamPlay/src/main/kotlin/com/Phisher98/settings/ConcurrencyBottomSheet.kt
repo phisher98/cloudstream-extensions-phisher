@@ -13,7 +13,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class ConcurrencyBottomSheet(
-    private val plugin: StreamPlayPlugin,
+    plugin: StreamPlayPlugin,
     private val sharedPref: SharedPreferences
 ) : BottomSheetDialogFragment() {
 
@@ -21,8 +21,8 @@ class ConcurrencyBottomSheet(
 
     // Single source of truth with proper clamp
     private var currentValue = sharedPref
-        .getInt("provider_concurrency", 50)
-        .coerceIn(1, 100)
+        .getInt("provider_concurrency", 15)
+        .coerceIn(8, 50)
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -68,11 +68,11 @@ class ConcurrencyBottomSheet(
         val btnDecrease = view.findView<Button>("btn_decrease")
         val btnIncrease = view.findView<Button>("btn_increase")
         val btnClose = view.findView<Button>("btn_close")
-
+        tvValue.text = "$currentValue (recommended: 8–15)"
         fun updateUI() {
             tvValue.text = currentValue.toString()
             btnDecrease.isEnabled = currentValue > 1
-            btnIncrease.isEnabled = currentValue < 100
+            btnIncrease.isEnabled = currentValue < 20
         }
 
         btnDecrease.setOnClickListener {
@@ -84,7 +84,7 @@ class ConcurrencyBottomSheet(
         }
 
         btnIncrease.setOnClickListener {
-            if (currentValue < 100) {
+            if (currentValue < 20) {
                 currentValue++
                 saveValue()
                 updateUI()

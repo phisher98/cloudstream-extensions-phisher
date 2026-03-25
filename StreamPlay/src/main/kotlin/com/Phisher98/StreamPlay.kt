@@ -41,7 +41,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -656,24 +655,16 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val providersList = if (disabledProviderIds.isNullOrEmpty()) {
             allProviders
         } else {
-            ArrayList<Provider>(allProviders.size).apply {
-                allProviders.forEach { provider ->
-                    if (!disabledProviderIds.contains(provider.id)) add(provider)
-                }
-            }
+            allProviders.filterNot { disabledProviderIds.contains(it.id) }
         }
+
         if (providersList.isEmpty()) return@coroutineScope true
 
         val authToken = token.orEmpty()
-        val concurrencyLimit = (
-                sharedPref?.getInt("provider_concurrency", 20)
-                    ?.coerceIn(15, 25) ?: 20
-                ).coerceAtMost(providersList.size)
 
-        providersList.runLimitedAsync(concurrencyLimit) { provider ->
-            delay(100)
-            runCatching {
-                withTimeoutOrNull(15000) {
+        val executionList: List<suspend () -> Unit> = providersList.map { provider ->
+            suspend {
+                runCatching {
                     provider.invoke(
                         res,
                         subtitleCallback,
@@ -684,6 +675,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 }
             }
         }
+
+        runLimitedAsync(
+            concurrency = (sharedPref?.getInt("provider_concurrency", 15)
+                ?.coerceIn(8, 50) ?: 20),
+            *executionList.toTypedArray()
+        )
+
         true
     }
 
