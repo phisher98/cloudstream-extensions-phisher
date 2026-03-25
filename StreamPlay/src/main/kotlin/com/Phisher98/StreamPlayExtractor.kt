@@ -78,7 +78,9 @@ import kotlin.math.max
 
 
 val session = Session(Requests().baseClient)
-private val cfMutex = Mutex()
+val globalSemaphore = Semaphore(4)
+
+val webMutex = Mutex()
 private val streamPlayExtractorGson by lazy { Gson() }
 private val streamPlayExtractorMapper by lazy { jacksonObjectMapper() }
 private val nonWordSplitRegex = Regex("\\W+")
@@ -176,7 +178,7 @@ object StreamPlayExtractor : StreamPlay() {
         ).text
 
         val sourcesDoc = Jsoup.parse(sourcesHtml)
-        val semaphore = Semaphore(5)
+        val semaphore = Semaphore(3)
         sourcesDoc.select("li").amap { server ->
 
             semaphore.withPermit {
@@ -277,7 +279,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$multimoviesApi/episodes/$fixTitle-${season}x${episode}"
         }
 
-        val response = cfMutex.withLock {
+        val response = webMutex.withLock {
             app.get(url, interceptor = cloudflareKiller)
         }
 
@@ -1620,7 +1622,7 @@ object StreamPlayExtractor : StreamPlay() {
         val isMovie = dubtype == "Movie"
         val api = apis.random()
 
-        val globalLimit = 16
+        val globalLimit = 3
         val semaphore = Semaphore(globalLimit)
 
         animeIds?.mapNotNull { it }?.map { animeId ->
@@ -2299,8 +2301,9 @@ object StreamPlayExtractor : StreamPlay() {
         )
 
         sources.amap { source ->
-            try {
-                val jsonBody = """
+            globalSemaphore.withPermit {
+                try {
+                    val jsonBody = """
                     {
                         "data": {
                             "mediaId": $tmdbId,
@@ -2312,38 +2315,39 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 """.trimIndent()
 
-                val encryptResText = app.post(
-                    "$mappleAPI/api/encrypt",
-                    json = jsonBody,
-                    headers = headers
-                ).text
+                    val encryptResText = app.post(
+                        "$mappleAPI/api/encrypt",
+                        json = jsonBody,
+                        headers = headers
+                    ).text
 
-                val encryptRes = JSONObject(encryptResText)
-                val streamPath = encryptRes.getString("url")
-                val finalUrl = "$mappleAPI$streamPath&requestToken=$token"
+                    val encryptRes = JSONObject(encryptResText)
+                    val streamPath = encryptRes.getString("url")
+                    val finalUrl = "$mappleAPI$streamPath&requestToken=$token"
 
-                val streamsDataText = app.get(
-                    finalUrl,
-                    headers = headers
-                ).text
+                    val streamsDataText = app.get(
+                        finalUrl,
+                        headers = headers
+                    ).text
 
-                val streamsData = JSONObject(streamsDataText)
+                    val streamsData = JSONObject(streamsDataText)
 
-                if (streamsData.optBoolean("success")) {
-                    val data = streamsData.getJSONObject("data")
-                    val streamUrl = data.optString("stream_url")
+                    if (streamsData.optBoolean("success")) {
+                        val data = streamsData.getJSONObject("data")
+                        val streamUrl = data.optString("stream_url")
 
-                    if (streamUrl.isNotEmpty()) {
-                        M3u8Helper.generateM3u8(
-                            "Mapple [${source.uppercase()}]",
-                            streamUrl,
-                            "$mappleAPI/",
-                            headers = headers
-                        ).forEach(callback)
+                        if (streamUrl.isNotEmpty()) {
+                            M3u8Helper.generateM3u8(
+                                "Mapple [${source.uppercase()}]",
+                                streamUrl,
+                                "$mappleAPI/",
+                                headers = headers
+                            ).forEach(callback)
+                        }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -3055,14 +3059,14 @@ object StreamPlayExtractor : StreamPlay() {
         val url = if (season == null) {
             loaderUrl
         } else {
-            val mediaId = cfMutex.withLock {
+            val mediaId = webMutex.withLock {
                 app.get(loaderUrl, referer = "$moflixAPI/", interceptor = cloudflareKiller)
             }.parsedSafe<MoflixResponse>()?.title?.id
 
             "$moflixAPI/api/v1/titles/$mediaId/seasons/$season/episodes/$episode?loader=episodePage"
         }
 
-        val response = cfMutex.withLock {
+        val response = webMutex.withLock {
             app.get(url, referer = "$moflixAPI/", interceptor = cloudflareKiller)
         }
 
@@ -5588,7 +5592,7 @@ object StreamPlayExtractor : StreamPlay() {
         val url = XDmoviesAPI + matched.path
         val response = app.get(url).let {
             if (it.text.contains("Just a moment", true)) {
-                cfMutex.withLock {
+                webMutex.withLock {
                     app.get(url, interceptor = cloudflareKiller)
                 }
             } else it
@@ -6296,7 +6300,7 @@ object StreamPlayExtractor : StreamPlay() {
         val url = "$api/?s=$id"
         var response = app.get(url, timeout = 5000L)
         if (response.text.contains("Just a moment", true)) {
-            response = cfMutex.withLock {
+            response = webMutex.withLock {
                 app.get(
                     url,
                     timeout = 5000L,
@@ -6584,7 +6588,7 @@ object StreamPlayExtractor : StreamPlay() {
         val searchRes = app.get("$baseUrl/?s=$imdbId")
 
         val searchDoc = if (searchRes.text.contains("Just a moment", true)) {
-            cfMutex.withLock {
+            webMutex.withLock {
                 app.get("$baseUrl/?s=$imdbId", interceptor = cloudflareKiller)
             }.document
         } else {
@@ -6598,7 +6602,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                 val postRes = app.get(postUrl)
                 val postDoc = if (postRes.text.contains("Just a moment", true)) {
-                    cfMutex.withLock {
+                    webMutex.withLock {
                         app.get(postUrl, interceptor = cloudflareKiller)
                     }.document
                 } else {

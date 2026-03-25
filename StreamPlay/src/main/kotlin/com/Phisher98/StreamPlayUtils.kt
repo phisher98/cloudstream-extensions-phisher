@@ -81,13 +81,6 @@ val mimeType = arrayOf(
     "video/x-msvideo"
 )
 
-val M3U8_HEADERS = mapOf(
-    "User-Agent" to "Mozilla/5.0 (Android) ExoPlayer",
-    "Accept" to "*/*",
-    "Accept-Encoding" to "identity",
-    "Connection" to "keep-alive",
-)
-
 private val extractorCallbackScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 private val sharedObjectMapper by lazy { ObjectMapper() }
 private val sharedGson by lazy { Gson() }
@@ -106,25 +99,6 @@ suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: S
     return link
 }
 
-suspend fun getDirectGdrive(url: String): String {
-    val fixUrl = if (url.contains("&export=download")) {
-        url
-    } else {
-        "https://drive.google.com/uc?id=${
-            Regex("(?:\\?id=|/d/)(\\S+)/").find("$url/")?.groupValues?.get(1)
-        }&export=download"
-    }
-
-    val doc = app.get(fixUrl).document
-    val form = doc.select("form#download-form").attr("action")
-    val uc = doc.select("input#uc-download-link").attr("value")
-    return app.post(
-        form, data = mapOf(
-            "uc-download-link" to uc
-        )
-    ).url
-
-}
 
 suspend fun bypassHrefli(url: String): String? {
     fun Document.getFormUrl(): String {
@@ -339,81 +313,6 @@ fun getEpisodeSlug(
     return result
 }
 
-fun getTitleSlug(title: String? = null): Pair<String?, String?> {
-    val slug = title.createSlug()
-    return slug?.replace("-", "\\W") to title?.replace(" ", "_")
-}
-
-fun getIndexQuery(
-    title: String? = null,
-    year: Int? = null,
-    season: Int? = null,
-    episode: Int? = null
-): String {
-    val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
-    return (if (season == null) {
-        "$title ${year ?: ""}"
-    } else {
-        "$title S${seasonSlug}E${episodeSlug}"
-    }).trim()
-}
-
-fun searchIndex(
-    title: String? = null,
-    season: Int? = null,
-    episode: Int? = null,
-    year: Int? = null,
-    response: String,
-    isTrimmed: Boolean = true,
-): List<IndexMedia>? {
-    val files = tryParseJson<IndexSearch>(response)?.data?.files?.filter { media ->
-        matchingIndex(
-            media.name ?: return null,
-            media.mimeType ?: return null,
-            title ?: return null,
-            year,
-            season,
-            episode
-        )
-    }?.distinctBy { it.name }?.sortedByDescending { it.size?.toLongOrNull() ?: 0 } ?: return null
-
-    return if (isTrimmed) {
-        files.let { file ->
-            listOfNotNull(
-                file.find { it.name?.contains("2160p", true) == true },
-                file.find { it.name?.contains("1080p", true) == true }
-            )
-        }
-    } else {
-        files
-    }
-}
-
-fun matchingIndex(
-    mediaName: String?,
-    mediaMimeType: String?,
-    title: String?,
-    year: Int?,
-    season: Int?,
-    episode: Int?,
-    include720: Boolean = false
-): Boolean {
-    val (wSlug, dwSlug) = getTitleSlug(title)
-    val (seasonSlug, episodeSlug) = getEpisodeSlug(season, episode)
-    return (if (season == null) {
-        mediaName?.contains(Regex("(?i)(?:$wSlug|$dwSlug).*$year")) == true
-    } else {
-        mediaName?.contains(Regex("(?i)(?:$wSlug|$dwSlug).*S${seasonSlug}.?E${episodeSlug}")) == true
-    }) && mediaName?.contains(
-        if (include720) Regex("(?i)(2160p|1080p|720p)") else Regex("(?i)(2160p|1080p)")
-    ) == true && ((mediaMimeType in mimeType) || mediaName.contains(Regex("\\.mkv|\\.mp4|\\.avi")))
-}
-
-fun decodeIndexJson(json: String): String {
-    val slug = json.reversed().substring(24)
-    return base64Decode(slug.substring(0, slug.length - 20))
-}
-
 fun String?.createSlug(): String? {
     return this?.filter { it.isWhitespace() || it.isLetterOrDigit() }
         ?.trim()
@@ -423,16 +322,6 @@ fun String?.createSlug(): String? {
 
 fun getKisskhTitle(str: String?): String? {
     return str?.replace(Regex("[^a-zA-Z\\d]"), "-")
-}
-
-fun String.getFileSize(): Float? {
-    val size = Regex("(?i)(\\d+\\.?\\d+\\sGB|MB)").find(this)?.groupValues?.get(0)?.trim()
-    val num = Regex("(\\d+\\.?\\d+)").find(size ?: return null)?.groupValues?.get(0)?.toFloat()
-        ?: return null
-    return when {
-        size.contains("GB") -> num * 1000000
-        else -> num * 1000
-    }
 }
 
 fun getIndexQualityTags(str: String?, fullTag: Boolean = false): String {
@@ -466,24 +355,6 @@ suspend fun extractMdrive(url: String): List<String> {
         Log.e("Error Mdrive", "Error extracting links: ${e.localizedMessage}")
         emptyList()
     }
-}
-
-
-fun getQuality(str: String): Int {
-    return when (str) {
-        "360p" -> Qualities.P240.value
-        "480p" -> Qualities.P360.value
-        "720p" -> Qualities.P480.value
-        "1080p" -> Qualities.P720.value
-        "1080p Ultra" -> Qualities.P1080.value
-        else -> getQualityFromName(str)
-    }
-}
-
-fun String.encodeUrl(): String {
-    val url = URL(this)
-    val uri = URI(url.protocol, url.userInfo, url.host, url.port, url.path, url.query, url.ref)
-    return uri.toURL().toString()
 }
 
 fun getBaseUrl(url: String): String {
@@ -886,76 +757,10 @@ fun String.decodeHex(): ByteArray {
 
 
 object CryptoAES {
-
-    private const val KEY_SIZE = 32 // 256 bits
-    private const val IV_SIZE = 16 // 128 bits
-    private const val SALT_SIZE = 8 // 64 bits
     private const val HASH_CIPHER = "AES/CBC/PKCS7PADDING"
     private const val HASH_CIPHER_FALLBACK = "AES/CBC/PKCS5PADDING"
     private const val AES = "AES"
-    private const val KDF_DIGEST = "MD5"
 
-    /**
-     * Decrypt using CryptoJS defaults compatible method.
-     * Uses KDF equivalent to OpenSSL's EVP_BytesToKey function
-     *
-     * http://stackoverflow.com/a/29152379/4405051
-     * @param cipherText base64 encoded ciphertext
-     * @param password passphrase
-     */
-    fun decrypt(cipherText: String, password: String): String {
-        return try {
-            val ctBytes = base64DecodeArray(cipherText)
-            val saltBytes = Arrays.copyOfRange(ctBytes, SALT_SIZE, IV_SIZE)
-            val cipherTextBytes = Arrays.copyOfRange(ctBytes, IV_SIZE, ctBytes.size)
-            val md5 = MessageDigest.getInstance("MD5")
-            val keyAndIV = generateKeyAndIV(
-                KEY_SIZE,
-                IV_SIZE,
-                1,
-                saltBytes,
-                password.toByteArray(Charsets.UTF_8),
-                md5
-            )
-            decryptAES(
-                cipherTextBytes,
-                keyAndIV?.get(0) ?: ByteArray(KEY_SIZE),
-                keyAndIV?.get(1) ?: ByteArray(IV_SIZE),
-            )
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
-    fun decryptWithSalt(cipherText: String, salt: String, password: String): String {
-        return try {
-            val ctBytes = base64DecodeArray(cipherText)
-            val md5: MessageDigest = MessageDigest.getInstance("MD5")
-            val keyAndIV = generateKeyAndIV(
-                KEY_SIZE,
-                IV_SIZE,
-                1,
-                salt.decodeHex(),
-                password.toByteArray(Charsets.UTF_8),
-                md5,
-            )
-            decryptAES(
-                ctBytes,
-                keyAndIV?.get(0) ?: ByteArray(KEY_SIZE),
-                keyAndIV?.get(1) ?: ByteArray(IV_SIZE),
-            )
-        } catch (_: Exception) {
-            ""
-        }
-    }
-
-    /**
-     * Decrypt using CryptoJS defaults compatible method.
-     *
-     * @param cipherText base64 encoded ciphertext
-     * @param keyBytes key as a bytearray
-     * @param ivBytes iv as a bytearray
-     */
     fun decrypt(cipherText: String, keyBytes: ByteArray, ivBytes: ByteArray): String {
         return try {
             val cipherTextBytes = base64DecodeArray(cipherText)
@@ -965,29 +770,6 @@ object CryptoAES {
         }
     }
 
-    /**
-     * Encrypt using CryptoJS defaults compatible method.
-     *
-     * @param plainText plaintext
-     * @param keyBytes key as a bytearray
-     * @param ivBytes iv as a bytearray
-     */
-    fun encrypt(plainText: String, keyBytes: ByteArray, ivBytes: ByteArray): String {
-        return try {
-            val cipherTextBytes = plainText.toByteArray()
-            encryptAES(cipherTextBytes, keyBytes, ivBytes)
-        } catch (_: Exception) {
-            ""
-        }
-    }
-
-    /**
-     * Decrypt using CryptoJS defaults compatible method.
-     *
-     * @param cipherTextBytes encrypted text as a bytearray
-     * @param keyBytes key as a bytearray
-     * @param ivBytes iv as a bytearray
-     */
     private fun decryptAES(
         cipherTextBytes: ByteArray,
         keyBytes: ByteArray,
@@ -1005,104 +787,6 @@ object CryptoAES {
         } catch (_: Exception) {
             ""
         }
-    }
-
-    /**
-     * Encrypt using CryptoJS defaults compatible method.
-     *
-     * @param plainTextBytes encrypted text as a bytearray
-     * @param keyBytes key as a bytearray
-     * @param ivBytes iv as a bytearray
-     */
-    private fun encryptAES(
-        plainTextBytes: ByteArray,
-        keyBytes: ByteArray,
-        ivBytes: ByteArray
-    ): String {
-        return try {
-            val cipher = try {
-                Cipher.getInstance(HASH_CIPHER)
-            } catch (_: Throwable) {
-                Cipher.getInstance(HASH_CIPHER_FALLBACK)
-            }
-            val keyS = SecretKeySpec(keyBytes, AES)
-            cipher.init(Cipher.ENCRYPT_MODE, keyS, IvParameterSpec(ivBytes))
-            base64Encode(cipher.doFinal(plainTextBytes))
-        } catch (_: Exception) {
-            ""
-        }
-    }
-
-    /**
-     * Generates a key and an initialization vector (IV) with the given salt and password.
-     *
-     * https://stackoverflow.com/a/41434590
-     * This method is equivalent to OpenSSL's EVP_BytesToKey function
-     * (see https://github.com/openssl/openssl/blob/master/crypto/evp/evp_key.c).
-     * By default, OpenSSL uses a single iteration, MD5 as the algorithm and UTF-8 encoded password data.
-     *
-     * @param keyLength the length of the generated key (in bytes)
-     * @param ivLength the length of the generated IV (in bytes)
-     * @param iterations the number of digestion rounds
-     * @param salt the salt data (8 bytes of data or `null`)
-     * @param password the password data (optional)
-     * @param md the message digest algorithm to use
-     * @return an two-element array with the generated key and IV
-     */
-    private fun generateKeyAndIV(
-        keyLength: Int,
-        ivLength: Int,
-        iterations: Int,
-        salt: ByteArray,
-        password: ByteArray,
-        md: MessageDigest,
-    ): Array<ByteArray?>? {
-        val digestLength = md.digestLength
-        val requiredLength = (keyLength + ivLength + digestLength - 1) / digestLength * digestLength
-        val generatedData = ByteArray(requiredLength)
-        var generatedLength = 0
-        return try {
-            md.reset()
-
-            // Repeat process until sufficient data has been generated
-            while (generatedLength < keyLength + ivLength) {
-                // Digest data (last digest if available, password data, salt if available)
-                if (generatedLength > 0) md.update(
-                    generatedData,
-                    generatedLength - digestLength,
-                    digestLength
-                )
-                md.update(password)
-                md.update(salt, 0, SALT_SIZE)
-                md.digest(generatedData, generatedLength, digestLength)
-
-                // additional rounds
-                for (i in 1 until iterations) {
-                    md.update(generatedData, generatedLength, digestLength)
-                    md.digest(generatedData, generatedLength, digestLength)
-                }
-                generatedLength += digestLength
-            }
-
-            // Copy key and IV into separate byte arrays
-            val result = arrayOfNulls<ByteArray>(2)
-            result[0] = generatedData.copyOfRange(0, keyLength)
-            if (ivLength > 0) result[1] = generatedData.copyOfRange(keyLength, keyLength + ivLength)
-            result
-        } catch (e: Exception) {
-            throw e
-        } finally {
-            // Clean out temporary data
-            Arrays.fill(generatedData, 0.toByte())
-        }
-    }
-
-    // Stolen from AnimixPlay(EN) / GogoCdnExtractor
-    private fun String.decodeHex(): ByteArray {
-        check(length % 2 == 0) { "Must have an even length" }
-        return chunked(2)
-            .map { it.toInt(16).toByte() }
-            .toByteArray()
     }
 }
 
@@ -1677,13 +1361,6 @@ fun parseCinemaOSSources(jsonString: String): List<Map<String, String>> {
 
     return sourcesList
 }
-
-
-
-fun toHex(bytes: ByteArray): String {
-    return bytes.joinToString("") { "%02x".format(it) }
-}
-
 
 // Hex → ByteArray
 fun fromHex(hex: String): ByteArray {
@@ -2287,21 +1964,4 @@ suspend fun bypassXD(url: String): String? {
         allowRedirects = false,
         headers = cookieHeaders
     ).headers["location"]
-}
-
-suspend fun <T> Iterable<T>.runLimitedAsync(
-    limit: Int,
-    block: suspend (T) -> Unit
-) = coroutineScope {
-    val semaphore = Semaphore(limit)
-
-    forEach { item ->
-        launch(Dispatchers.IO) {
-            semaphore.withPermit {
-                try {
-                    block(item)
-                } catch (_: Throwable) {}
-            }
-        }
-    }
 }

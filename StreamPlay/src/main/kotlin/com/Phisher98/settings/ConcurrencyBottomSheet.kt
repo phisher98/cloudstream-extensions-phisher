@@ -21,7 +21,7 @@ class ConcurrencyBottomSheet(
 
     // Single source of truth with proper clamp
     private var currentValue = sharedPref
-        .getInt("provider_concurrency", 15)
+        .getInt("provider_concurrency", 20)
         .coerceIn(8, 50)
 
     private fun <T : View> View.findView(name: String): T {
@@ -68,11 +68,10 @@ class ConcurrencyBottomSheet(
         val btnDecrease = view.findView<Button>("btn_decrease")
         val btnIncrease = view.findView<Button>("btn_increase")
         val btnClose = view.findView<Button>("btn_close")
-        tvValue.text = "$currentValue (recommended: 8–15)"
         fun updateUI() {
             tvValue.text = currentValue.toString()
             btnDecrease.isEnabled = currentValue > 1
-            btnIncrease.isEnabled = currentValue < 20
+            btnIncrease.isEnabled = currentValue < 50
         }
 
         btnDecrease.setOnClickListener {
@@ -84,7 +83,7 @@ class ConcurrencyBottomSheet(
         }
 
         btnIncrease.setOnClickListener {
-            if (currentValue < 20) {
+            if (currentValue < 50) {
                 currentValue++
                 saveValue()
                 updateUI()
