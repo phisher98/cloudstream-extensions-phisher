@@ -1,7 +1,5 @@
 package com.phisher98
 
-import android.app.ActivityManager
-import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -10,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
-import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
@@ -27,7 +24,6 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
@@ -38,19 +34,20 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import kotlinx.coroutines.sync.withLock
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
-import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
     override var name = "StreamPlay"
@@ -669,20 +666,25 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         if (providersList.isEmpty()) return@coroutineScope true
 
         val authToken = token.orEmpty()
-
-        val concurrencyLimit = (sharedPref?.getInt("provider_concurrency", 50)?.coerceIn(1, 100) ?: 50)
-            .coerceAtMost(providersList.size)
+        val concurrencyLimit = (
+                sharedPref?.getInt("provider_concurrency", 20)
+                    ?.coerceIn(15, 25) ?: 20
+                ).coerceAtMost(providersList.size)
 
         providersList.runLimitedAsync(concurrencyLimit) { provider ->
-            provider.invoke(
-                res,
-                subtitleCallback,
-                callback,
-                authToken,
-                dahmerMoviesAPI
-            )
+            delay(100)
+            runCatching {
+                withTimeoutOrNull(15000) {
+                    provider.invoke(
+                        res,
+                        subtitleCallback,
+                        callback,
+                        authToken,
+                        dahmerMoviesAPI
+                    )
+                }
+            }
         }
-
         true
     }
 

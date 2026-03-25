@@ -115,7 +115,9 @@ object StreamPlayExtractor : StreamPlay() {
         ).document.selectFirst("iframe#iframesrc")?.attr("data-src") ?: return
 
         val ref = getBaseUrl(framesrc)
-        val id = framesrc.substringAfter("id=").substringBefore("&")
+        val id = framesrc.substringAfter("id=", "")
+            .substringBefore("&")
+            .takeIf { it.isNotBlank() } ?: return
 
         loadExtractor(
             "https://uqloads.xyz/e/$id",
@@ -147,11 +149,8 @@ object StreamPlayExtractor : StreamPlay() {
             append(MultiEmbedAPI)
             append("/?video_id=")
             append(imdbId)
-            if (season != null) {
-                append("&s=")
-                append(season)
-                append("&e=")
-                append(episode)
+            if (season != null && episode != null) {
+                append("&s=$season&e=$episode")
             }
         }
 
@@ -177,84 +176,86 @@ object StreamPlayExtractor : StreamPlay() {
         ).text
 
         val sourcesDoc = Jsoup.parse(sourcesHtml)
-
+        val semaphore = Semaphore(5)
         sourcesDoc.select("li").amap { server ->
 
-            val serverId = server.attr("data-server")
-            val videoId = server.attr("data-id")
+            semaphore.withPermit {
 
-            if (serverId.isBlank() || videoId.isBlank()) return@amap
+                val serverId = server.attr("data-server")
+                val videoId = server.attr("data-id")
 
-            val playUrl =
-                "https://streamingnow.mov/playvideo.php" +
-                        "?video_id=${videoId.substringBefore("=")}" +
-                        "&server_id=$serverId" +
-                        "&token=$token" +
-                        "&init=1"
+                if (serverId.isBlank() || videoId.isBlank()) return@amap
 
-            runCatching {
-                val playHtml = app.get(playUrl, headers = headers).text
-                val iframeUrl = Jsoup.parse(playHtml)
-                    .selectFirst("iframe.source-frame.show")
-                    ?.attr("src")
-                    ?: return@runCatching
+                val playUrl =
+                    "https://streamingnow.mov/playvideo.php" +
+                            "?video_id=${videoId.substringBefore("=")}" +
+                            "&server_id=$serverId" +
+                            "&token=$token" +
+                            "&init=1"
 
-                val iframeHtml = app.get(iframeUrl, headers = headers).text
-
-                val fileUrl =
-                    Jsoup.parse(iframeHtml)
+                runCatching {
+                    val playHtml = app.get(playUrl, headers = headers).text
+                    val iframeUrl = Jsoup.parse(playHtml)
                         .selectFirst("iframe.source-frame.show")
                         ?.attr("src")
-                        ?: Regex("""file:"(https?://[^"]+)"""")
-                            .find(iframeHtml)
-                            ?.groupValues
-                            ?.get(1)
                         ?: return@runCatching
 
-                when {
-                    fileUrl.contains(".m3u8", ignoreCase = true) || fileUrl.contains(
-                        ".json",
-                        ignoreCase = true
-                    ) -> {
+                    val iframeHtml = app.get(iframeUrl, headers = headers).text
 
-                        M3u8Helper.generateM3u8(
-                            "MultiEmbed VIP",
-                            fileUrl,
-                            MultiEmbedAPI
-                        ).forEach(callback)
-                    }
+                    val fileUrl =
+                        Jsoup.parse(iframeHtml)
+                            .selectFirst("iframe.source-frame.show")
+                            ?.attr("src")
+                            ?: Regex("""file:"(https?://[^"]+)"""")
+                                .find(iframeHtml)
+                                ?.groupValues
+                                ?.get(1)
+                            ?: return@runCatching
 
-                    else -> {
-                        val url = fileUrl.lowercase()
-                        when {
-                            "vidsrc" in url -> return@amap
+                    when {
+                        fileUrl.contains(".m3u8", ignoreCase = true) || fileUrl.contains(
+                            ".json",
+                            ignoreCase = true
+                        ) -> {
 
-                            "mixdrop" in url -> {
-                                MixDrop().getUrl(fileUrl)
-                            }
+                            M3u8Helper.generateM3u8(
+                                "MultiEmbed VIP",
+                                fileUrl,
+                                MultiEmbedAPI
+                            ).forEach(callback)
+                        }
 
-                            "streamwish" in url -> {
-                                StreamWishExtractor().getUrl(fileUrl)
-                            }
+                        else -> {
+                            val url = fileUrl.lowercase()
+                            when {
+                                "vidsrc" in url -> return@amap
 
-                            else -> {
-                                loadSourceNameExtractor(
-                                    "MultiEmbed",
-                                    fileUrl,
-                                    MultiEmbedAPI,
-                                    subtitleCallback,
-                                    callback = callback
-                                )
+                                "mixdrop" in url -> {
+                                    MixDrop().getUrl(fileUrl)
+                                }
+
+                                "streamwish" in url -> {
+                                    StreamWishExtractor().getUrl(fileUrl)
+                                }
+
+                                else -> {
+                                    loadSourceNameExtractor(
+                                        "MultiEmbed",
+                                        fileUrl,
+                                        MultiEmbedAPI,
+                                        subtitleCallback,
+                                        callback = callback
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-            }.onFailure {
-                // ignore broken servers
+                }.onFailure {
+                    // ignore broken servers
+                }
             }
         }
-
     }
 
 
@@ -268,7 +269,7 @@ object StreamPlayExtractor : StreamPlay() {
         val multimoviesApi = getDomains()?.multiMovies ?: return
         if (title.isNullOrBlank()) return
 
-        val fixTitle = title.createSlug()
+        val fixTitle = title.createSlug() ?: return
 
         val url = if (season == null) {
             "$multimoviesApi/movies/$fixTitle"
@@ -279,10 +280,11 @@ object StreamPlayExtractor : StreamPlay() {
         val response = cfMutex.withLock {
             app.get(url, interceptor = cloudflareKiller)
         }
+
         if (response.code != 200) return
 
         val req = response.document
-        if (req.body().text().contains("Just a moment", ignoreCase = true)) return
+        if (req.text().contains("Just a moment", ignoreCase = true)) return
 
         val playerOptions = req.select("ul#playeroptionsul li").map {
             Triple(
@@ -311,7 +313,10 @@ object StreamPlayExtractor : StreamPlay() {
 
                 val responseData = tryParseJson<ResponseHash>(postResponse.text) ?: return@runCatching
                 val embedUrl = responseData.embed_url
-                val link = embedUrl.substringAfter("\"").substringBefore("\"")
+                val link = embedUrl
+                    .substringAfter("\"", "")
+                    .substringBefore("\"")
+                    .takeIf { it.isNotBlank() } ?: return@runCatching
 
                 if (!link.contains("youtube", ignoreCase = true)) {
                     loadSourceNameExtractor(
@@ -334,7 +339,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title.createSlug()
+        val fixTitle = title?.createSlug() ?: return
         val url = if (season == null) {
             "$zshowAPI/movie/$fixTitle-$year"
         } else {
@@ -393,7 +398,7 @@ object StreamPlayExtractor : StreamPlay() {
                             it.embed_url,
                             key.toByteArray(),
                             false
-                        )?.fixBloat()
+                        )?.fixBloat() ?: return@amap
                     }
 
                     fixIframe -> Jsoup.parse(it.embed_url).select("IFRAME").attr("SRC")
@@ -654,11 +659,13 @@ object StreamPlayExtractor : StreamPlay() {
                 val safeLink = link ?: return@forEach
                 when {
                     safeLink.contains(".m3u8") || safeLink.contains(".mp4") -> {
+                        val safe = safeLink.takeIf { it.startsWith("http") } ?: return@forEach
+
                         callback.invoke(
                             newExtractorLink(
                                 "Kisskh",
                                 "Kisskh",
-                                fixUrl(safeLink, kissKhAPI),
+                                safe,
                                 INFER_TYPE
                             ) {
                                 referer = kissKhAPI
@@ -2435,10 +2442,12 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val topmoviesAPI = getDomains()?.topMovies ?: return
 
+        imdbId ?: return
+
         val url = if (season == null) {
-            "$topmoviesAPI/search/${imdbId.orEmpty()}"
+            "$topmoviesAPI/search/${imdbId}"
         } else {
-            "$topmoviesAPI/search/${imdbId.orEmpty()} Season $season"
+            "$topmoviesAPI/search/${imdbId} Season $season"
         }
 
         val hrefpattern = runCatching {
@@ -3475,7 +3484,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title.createSlug()
+        val fixTitle = title?.createSlug() ?: return
         val url = if (season == null) {
             "$PlaydesiAPI/$fixTitle"
         } else {
@@ -5641,7 +5650,7 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixTitle = title.createSlug()
+        val fixTitle = title?.createSlug() ?: return
         val doc = if (season == null || season == 1) {
             app.get("$kimcartoonAPI/Cartoon/$fixTitle").document
         } else {
