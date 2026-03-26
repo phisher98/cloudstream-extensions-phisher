@@ -1,4 +1,4 @@
-package com.animeworld
+package com.piratexplay
 
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -22,9 +22,9 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
-class AnimeWorld : MainAPI() {
-    override var mainUrl = "https://myanimeworld.in"
-    override var name = "AnimeWorld"
+class Piratexplay : MainAPI() {
+    override var mainUrl = "https://piratexplay.cc"
+    override var name = "Piratexplay"
     override val hasMainPage = true
     override var lang = "hi"
     override val hasDownloadSupport = true
@@ -131,8 +131,8 @@ class AnimeWorld : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        document.select("div.video iframe").forEach {
-            val link=it.attr("src").ifBlank { it.attr("data-src") }
+        document.select("iframe").forEach {
+            val link=it.attr("src").ifBlank { it.attr("data-src") }.substringAfterLast("url=")
             loadExtractor(link, mainUrl, subtitleCallback, callback)
         }
         return true
