@@ -22,7 +22,7 @@ cloudstream {
         "Cartoon"
     )
 
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animeworld.jpg"
+    iconUrl = "https://www.google.com/s2/favicons?domain=piratexplay.cc&sz=%size%"
 
     isCrossPlatform = true
 }
