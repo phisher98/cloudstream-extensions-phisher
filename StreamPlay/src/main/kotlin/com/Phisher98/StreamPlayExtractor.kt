@@ -315,10 +315,12 @@ object StreamPlayExtractor : StreamPlay() {
 
                 val responseData = tryParseJson<ResponseHash>(postResponse.text) ?: return@runCatching
                 val embedUrl = responseData.embed_url
+
                 val link = embedUrl
-                    .substringAfter("\"", "")
-                    .substringBefore("\"")
-                    .takeIf { it.isNotBlank() } ?: return@runCatching
+                    .trim()
+                    .removeSurrounding("\"")
+                    .takeIf { it.startsWith("http") }
+                    ?: return@runCatching
 
                 if (!link.contains("youtube", ignoreCase = true)) {
                     loadSourceNameExtractor(
@@ -3588,30 +3590,52 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val bollyflixAPI = getDomains()?.bollyflix ?: return
-        val res1 = app.get(
-            """$bollyflixAPI/search/${id ?: return} ${season ?: ""}""",
-            interceptor = wpRedisInterceptor
-        ).document
+
+        val query = buildString {
+            append("$bollyflixAPI/search/${id ?: return}")
+            if (season != null) append(" $season")
+        }
+
+        val res1 = app.get(query, timeout = 10000L).let {
+            if (
+                it.text.contains("Just a moment", true)
+            ) app.get(query, interceptor = cloudflareKiller)
+            else it
+        }.document
+
         val url = res1.selectFirst("div > article > a")?.attr("href") ?: return
-        val response = app.get(url, interceptor = wpRedisInterceptor)
-        if (response.code != 200) return
-        val res = response.document
+
+        val res = app.get(url, timeout = 10000L).let {
+            if (
+                it.text.contains("Just a moment", true)
+            ) app.get(url, interceptor = cloudflareKiller)
+            else it
+        }.document
+
         val hTag = if (season == null) "h5" else "h4"
         val sTag = if (season == null) "" else "Season $season"
         val entries =
             res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(480p|720p|1080p|2160p))")
                 .filter { element -> !element.text().contains("Download", true) }.takeLast(4)
-        entries.amap {
-            val href = it.nextElementSibling()?.select("a")?.attr("href") ?: return@amap
+        entries.forEach {
+            var href = it.nextElementSibling()?.select("a")?.attr("href") ?: return@forEach
+
+            if(href.contains("id=")) {
+                val token = href.substringAfter("id=")
+                val encodedurl =
+                    app.get("https://web.sidexfee.com/?id=$token").text.substringAfter("link\":\"")
+                        .substringBefore("\"};")
+                href = base64Decode(encodedurl.replace("\\/", "/"))
+            }
 
             if (season == null) {
-                loadSourceNameExtractor("Bollyflix", href, "", subtitleCallback, callback)
+                loadSourceNameExtractor("Bollyflix", href , "", subtitleCallback, callback)
             } else {
                 val episodeText = "Episode " + episode.toString().padStart(2, '0')
                 val link =
                     app.get(href).document.selectFirst("article h3 a:contains($episodeText)")!!
                         .attr("href")
-                loadSourceNameExtractor("Bollyflix", link, "", subtitleCallback, callback)
+                loadSourceNameExtractor("Bollyflix", link , "", subtitleCallback, callback)
             }
         }
     }
@@ -4914,9 +4938,9 @@ object StreamPlayExtractor : StreamPlay() {
             "tv"
         }
         val sourceUrl = if (season == null) {
-            "$cinemaOSApi/api/providerv2?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=&ry=&secret=$secretHash"
+            "$cinemaOSApi/api/providerv3?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&t=&ry=&secret=$secretHash"
         } else {
-            "$cinemaOSApi/api/providerv2?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=&ry=&secret=$secretHash"
+            "$cinemaOSApi/api/providerv3?type=$type&tmdbId=$tmdbId&imdbId=$imdbId&seasonId=$season&episodeId=$episode&t=&ry=&secret=$secretHash"
         }
         val sourceResponse =
             app.get(sourceUrl, headers = headers, timeout = 60).parsedSafe<CinemaOSReponse>()

@@ -1600,8 +1600,6 @@ open class GDMirrorbot : ExtractorApi() {
 
         sids.forEach { sid ->
             try {
-                Log.d("Phisher", "Processing SID: $sid")
-
                 val responseText = app.post(
                     "$host/embedhelper.php",
                     data = mapOf("sid" to sid),
