@@ -24,7 +24,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
@@ -43,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -73,14 +73,12 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
+import android.content.SharedPreferences
 
-
-val mimeType = arrayOf(
-    "video/x-matroska",
-    "video/mp4",
-    "video/x-msvideo"
+val sharedPref: SharedPreferences? = null
+val appGlobalSemaphore = Semaphore(
+    sharedPref?.getInt("provider_concurrency", 15)?.coerceIn(8, 50) ?: 20
 )
-
 private val extractorCallbackScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 private val sharedObjectMapper by lazy { ObjectMapper() }
 private val sharedGson by lazy { Gson() }
@@ -1964,4 +1962,24 @@ suspend fun bypassXD(url: String): String? {
         allowRedirects = false,
         headers = cookieHeaders
     ).headers["location"]
+}
+
+suspend fun safeGet(
+    url: String,
+    headers: Map<String, String>? = null,
+    referer: String? = null,
+    timeout: Long? = null,
+    interceptor: Interceptor? = null,
+    allowRedirects: Boolean = true, // kept for compatibility
+    cacheTime: Int = 0              // default added
+) = appGlobalSemaphore.withPermit {
+    app.get(
+        url = url,
+        headers = headers ?: emptyMap(),
+        referer = referer,
+        timeout = timeout ?: 10000L,
+        interceptor = interceptor,
+        allowRedirects = allowRedirects,
+        cacheTime = cacheTime
+    )
 }
