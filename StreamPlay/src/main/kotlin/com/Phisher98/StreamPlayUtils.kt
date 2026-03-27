@@ -1221,21 +1221,32 @@ private fun buildCanonicalString(
             canonicalUrl
 }
 
-fun vidrockEncode(tmdb: String, type: String, season: Int? = null, episode: Int? = null): String {
-    val base = if (type == "tv" && season != null && episode != null) {
-        "$tmdb-$season-$episode"
+fun vidrockEncode(
+    tmdb: Int? = null,
+    type: String,
+    season: Int? = null,
+    episode: Int? = null,
+): String {
+    val zw = base64Decode("eDdrOW1QcVQycld2WTh6QTViQzNuRjZoSjJsSzRtTjk=")
+    val s = if (type == "tv" && season != null && episode != null) {
+        "${tmdb}_${season}_${episode}"
     } else {
-        val map = mapOf(
-            '0' to 'a', '1' to 'b', '2' to 'c', '3' to 'd', '4' to 'e',
-            '5' to 'f', '6' to 'g', '7' to 'h', '8' to 'i', '9' to 'j'
-        )
-        tmdb.map { map[it] ?: it }.joinToString("")
-    }
-    val reversed = base.reversed()
-    val firstEncode = base64Encode(reversed.toByteArray())
-    val doubleEncode = base64Encode(firstEncode.toByteArray())
+        tmdb
+    }.toString()
+    val keyBytes = zw.toByteArray(Charsets.UTF_8)
+    val ivBytes = zw.substring(0, 16).toByteArray(Charsets.UTF_8)
+    val keySpec = SecretKeySpec(keyBytes, "AES")
+    val ivSpec = IvParameterSpec(ivBytes)
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec)
 
-    return doubleEncode
+    val encrypted = cipher.doFinal(s.toByteArray(Charsets.UTF_8))
+
+    val base64 = base64Encode(encrypted)
+    return base64
+        .replace("+", "-")
+        .replace("/", "_")
+        .replace("=", "")
 }
 
 fun cinemaOSGenerateHash(tmdbId: Int?, imdbId: String?, season: Int?, episode: Int?): String {

@@ -4842,7 +4842,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
     suspend fun invokevidrock(
         tmdbId: Int? = null,
         season: Int? = null,
@@ -4850,7 +4849,7 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit
     ) {
         val type = if (season == null) "movie" else "tv"
-        val encoded = vidrockEncode(tmdbId.toString(), type, season, episode)
+        val encoded = vidrockEncode(tmdbId, type, season, episode)
         val response = safeGet("$vidrock/api/$type/$encoded").text
         val sourcesJson = JSONObject(response)
 
@@ -4860,28 +4859,31 @@ object StreamPlayExtractor : StreamPlay() {
 
         sourcesJson.keys().asSequence().toList().amap { key ->
             val sourceObj = sourcesJson.optJSONObject(key) ?: return@amap
-            val rawUrl = sourceObj.optString("url", null)
+
+            val rawUrl = sourceObj.optString("url", "")
             val lang = sourceObj.optString("language", "Unknown")
             if (rawUrl.isNullOrBlank() || rawUrl == "null") return@amap
 
-            // Decode only if encoded
             val safeUrl = if (rawUrl.contains("%")) {
                 URLDecoder.decode(rawUrl, "UTF-8")
             } else rawUrl
+
+            val displayName = "Vidrock [$key] $lang"
 
             when {
                 safeUrl.contains("/playlist/") -> {
                     val playlistResponse = safeGet(safeUrl, headers = vidrockHeaders).text
                     val playlistArray = JSONArray(playlistResponse)
+
                     for (j in 0 until playlistArray.length()) {
                         val item = playlistArray.optJSONObject(j) ?: continue
-                        val itemUrl = item.optString("url", null) ?: continue
+                        val itemUrl = item.optString("url", "") ?: continue
                         val res = item.optInt("resolution", 0)
 
                         callback.invoke(
                             newExtractorLink(
-                                source = "Vidrock",
-                                name = "Vidrock $lang",
+                                source = "Vidrock-$key",
+                                name = displayName,
                                 url = itemUrl,
                                 type = INFER_TYPE
                             ) {
@@ -4892,12 +4894,11 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
 
-                // Handle MP4 direct file
                 safeUrl.contains(".mp4", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(
-                            source = "Vidrock",
-                            name = "Vidrock $lang MP4",
+                            source = "Vidrock-$key",
+                            name = "$displayName MP4",
                             url = safeUrl,
                             type = ExtractorLinkType.VIDEO
                         ) {
@@ -4906,10 +4907,9 @@ object StreamPlayExtractor : StreamPlay() {
                     )
                 }
 
-                // Handle HLS/m3u8
                 safeUrl.contains(".m3u8", ignoreCase = true) -> {
                     M3u8Helper.generateM3u8(
-                        source = "Vidrock",
+                        source = "Vidrock-$key",
                         streamUrl = safeUrl,
                         referer = "",
                         quality = Qualities.P1080.value,
@@ -4917,12 +4917,11 @@ object StreamPlayExtractor : StreamPlay() {
                     ).forEach(callback)
                 }
 
-                // Catch-all (just in case)
                 else -> {
                     callback.invoke(
                         newExtractorLink(
-                            source = "Vidrock",
-                            name = "Vidrock $lang",
+                            source = "Vidrock-$key",
+                            name = displayName,
                             url = safeUrl,
                             type = ExtractorLinkType.VIDEO
                         ) {
@@ -5393,6 +5392,9 @@ object StreamPlayExtractor : StreamPlay() {
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun invokeVidPlus(
         tmdbId: Int? = null,
+        title: String? = null,
+        imdbId: String? = null,
+        year: Int? = null,
         season: Int? = null,
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
@@ -5402,23 +5404,9 @@ object StreamPlayExtractor : StreamPlay() {
             "Referer" to vidPlusApi,
             "Origin" to vidPlusApi,
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
-            "X-Requested-With" to "XMLHttpRequest"
         )
-        val data = mapOf(
-            "id" to tmdbId,
-            "key" to "cGxheWVyLnZpZHNyYy5jb19zZWNyZXRLZXk="
-        )
-        val encoded = base64Encode(data.toJson().toByteArray())
-        val apiUrl = "$vidPlusApi/api/tmdb?params=cbc7.$encoded.9lu"
-        val response = safeGet(apiUrl, headers = headers).text
-        val jsonObject = JSONObject(response)
-        val dataJson = jsonObject.getJSONObject("data")
-        val imdbId = dataJson.getString("imdb_id")
-        val title = dataJson.getString("title")
-        val releaseDate = dataJson.getString("release_date")
-        val releaseYear = releaseDate.split("-")[0]
 
-        val requestArgs = listOf(title, releaseYear, imdbId).joinToString("*")
+        val requestArgs = listOf(title, year, imdbId).joinToString("*")
         val urlListMap = mutableMapOf<String, String>()
         val myMap = listOf(
             "Orion", "Minecloud", "Viet", "Crown", "Joker", "Soda", "Beta", "Gork",
@@ -5432,7 +5420,6 @@ object StreamPlayExtractor : StreamPlay() {
                 val serverUrl =
                     if (season == null) "$vidPlusApi/api/server?id=$tmdbId&sr=$serverId&args=$requestArgs"
                     else "$vidPlusApi/api/server?id=$tmdbId&sr=$serverId&ep=$episode&ss=$season&args=$requestArgs"
-
                 val apiResponse = safeGet(serverUrl, headers = headers, timeout = 20).text
 
                 if (apiResponse.contains("\"data\"", ignoreCase = true)) {

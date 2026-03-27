@@ -315,7 +315,7 @@ private val providers by lazy {
         },
         Provider("vidplus", "VidPlus") { res, _, callback, _, _ ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                invokeVidPlus(res.id, res.season,res.episode,  callback)
+                invokeVidPlus(res.id, res.title, res.imdbId, res.year, res.season, res.episode, callback)
             }
         },
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, _, _ ->
