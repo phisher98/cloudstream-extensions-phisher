@@ -5004,11 +5004,47 @@ object StreamPlayExtractor : StreamPlay() {
             if (season == null) "$vidlink/movie/$tmdbId" else "$vidlink/tv/$tmdbId/$season/$episode"
 
         val jsToClickPlay = """
-        (() => {
-            const btn = document.querySelector('.jw-icon-display.jw-button-color.jw-reset');
-            return btn ? (btn.click(), "clicked") : "button not found";
-        })();
-    """.trimIndent()
+(() => {
+    const clickPlay = () => {
+        const btn = document.querySelector('.jw-icon-display.jw-button-color.jw-reset');
+        if (btn) {
+            btn.click();
+            return "clicked";
+        }
+        return "no button";
+    };
+
+    // Try immediately
+    let result = clickPlay();
+
+    // Retry a few times (handles delayed UI render)
+    let attempts = 0;
+    const interval = setInterval(() => {
+        if (attempts++ > 10) {
+            clearInterval(interval);
+            return;
+        }
+        const r = clickPlay();
+        if (r === "clicked") {
+            clearInterval(interval);
+        }
+    }, 500);
+
+    // Hook fetch/XHR to ensure we catch autoplay API calls
+    const origFetch = window.fetch;
+    window.fetch = async (...args) => {
+        const res = await origFetch(...args);
+        return res;
+    };
+
+    const origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (...args) {
+        return origOpen.apply(this, args);
+    };
+
+    return result;
+})();
+""".trimIndent()
 
         val vidlinkRegex = Regex("""\.pro/api/b.*""")
 
@@ -5613,7 +5649,7 @@ object StreamPlayExtractor : StreamPlay() {
             "x-requested-with" to "XMLHttpRequest",
             "x-auth-token" to base64Decode("NzI5N3Nra2loa2Fqd25zZ2FrbGFrc2h1d2Q=")
         )
-        val searchData = safeGet("$XDmoviesAPI/php/search_api.php?query=$title&fuzzy=true", headers)
+        val searchData = safeGet("$XDmoviesAPI/php/search_api.php?query=$title&fuzzy=true", headers, timeout = 1000L)
             .parsedSafe<SearchData>() ?: return
         val matched = searchData.firstOrNull { it.tmdb_id == id } ?: return
         val url = XDmoviesAPI + matched.path
