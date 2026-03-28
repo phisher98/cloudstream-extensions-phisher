@@ -47,7 +47,7 @@ import java.text.Normalizer
 open class Movierulzhd : MainAPI() {
 
     override var mainUrl: String = runBlocking {
-        MovierulzhdPlugin.getDomains()?.movierulzhd ?: "https://1movierulzhd.pro"
+        MovierulzhdPlugin.getDomains()?.movierulzhd ?: "https://123moviesfree9.cloud"
     }
     var directUrl = ""
     override var name = "Movierulzhd"

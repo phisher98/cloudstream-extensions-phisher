@@ -25,7 +25,7 @@ import java.net.URI
 
 class TamilblastersProvider : MainAPI() {
     override var mainUrl: String = runBlocking {
-        TamilblastersPlugin.getDomains()?.tamilblasters ?: "https://www.1tamilblasters.business/"
+        TamilblastersPlugin.getDomains()?.tamilblasters ?: "https://www.1tamilblasters.company/"
     }
     private val streamhg = "https://cavanhabg.com"
     override var name = "Tamilblasters"
