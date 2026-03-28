@@ -34,7 +34,7 @@ class TamilblastersProvider : MainAPI() {
     override val hasMainPage = true
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "$mainUrl/page/$page"
+        val url = if (page == 1) mainUrl else "$mainUrl/page/$page"
         val document = app.get(url).document
         val home = document.select("div.article-content-col").mapNotNull {
             it.toSearchResult()
