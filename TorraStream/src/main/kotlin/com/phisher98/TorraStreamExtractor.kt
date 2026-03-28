@@ -375,25 +375,42 @@ suspend fun invokeAIOStreamsDebian(
     callback: (ExtractorLink) -> Unit,
     filtered: (ExtractorLink) -> Unit
 ) {
-    val mainurl = if (season == null) {
-        "${mainUrl.substringBeforeLast("/manifest.json")}/stream/movie/$id.json"
+    if (id.isNullOrEmpty()) return
+
+    val base = mainUrl.substringBeforeLast("/manifest.json")
+    val url = if (season == null) {
+        "$base/stream/movie/$id.json"
     } else {
-        "${mainUrl.substringBeforeLast("/manifest.json")}/stream/series/$id:$season:$episode.json"
+        "$base/stream/series/$id:$season:$episode.json"
     }
-    app.get(mainurl).parsedSafe<AIODebian>()?.streams?.map {
-        val qualityRegex = Regex("""\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""", RegexOption.IGNORE_CASE)
-        val qualityMatch = qualityRegex.find(it.name)?.value ?: "Unknown"
-        filtered.invoke(
-            newExtractorLink(
-                "Torrentio AIO Debian ${getIndexQuality(qualityMatch)}",
-                it.behaviorHints.filename,
-                it.url,
-                INFER_TYPE
-            ) {
-                this.referer = ""
-                this.quality = getIndexQuality(qualityMatch)
-            }
-        )
+
+    val res = app.get(url, timeout = 5000L).parsedSafe<AIODebian>() ?: return
+
+    val qualityRegex = Regex(
+        """\b(4K|2160p|1080p|720p|WEB[-\s]?DL|BluRay|HDRip|DVDRip)\b""",
+        RegexOption.IGNORE_CASE
+    )
+
+    res.streams.forEach { stream ->
+        val streamUrl = stream.url ?: return@forEach
+
+        val nameSource = listOfNotNull(stream.name, stream.description).joinToString(" ")
+        val qualityMatch = qualityRegex.find(nameSource)?.value ?: "Unknown"
+        val quality = getIndexQuality(qualityMatch)
+
+        val linkName = (stream.name ?: stream.behaviorHints?.filename ?: "[AIO Streams]")
+
+        val link = newExtractorLink(
+            "AIO Streams",
+            linkName,
+            streamUrl,
+            INFER_TYPE
+        ) {
+            this.referer = ""
+            this.quality = quality
+        }
+
+        filtered.invoke(link)
     }
 }
 

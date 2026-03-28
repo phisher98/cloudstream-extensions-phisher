@@ -112,41 +112,41 @@ data class MagnetStream(
 
 
 data class AIODebian(
-    val streams: List<AIODebianStream>,
+    val streams: List<AIODebianStream> = emptyList()
 )
 
 data class AIODebianStream(
-    val name: String,
-    val description: String,
-    val url: String,
-    val behaviorHints: AIODebianBehaviorHints,
-    val streamData: AIODebianStreamData,
+    val name: String? = null,
+    val description: String? = null,
+    val url: String? = null,
+    val behaviorHints: AIODebianBehaviorHints? = null,
+    val streamData: AIODebianStreamData? = null
 )
 
 data class AIODebianBehaviorHints(
-    val videoSize: Long,
-    val filename: String,
+    val videoSize: Long? = null,
+    val filename: String? = null
 )
 
 data class AIODebianStreamData(
-    val type: String,
-    val proxied: Boolean,
-    val indexer: String,
-    val duration: Long,
-    val library: Boolean,
-    val size: Long,
-    val torrent: AIODebianTorrent,
-    val addon: String,
-    val filename: String,
-    val service: Service,
-    val parsedFile: ParsedFile,
-    val id: String,
-    val folderName: String?,
+    val type: String? = null,
+    val proxied: Boolean? = null,
+    val indexer: String? = null,
+    val duration: Long? = null,
+    val library: Boolean? = null,
+    val size: Long? = null,
+    val torrent: AIODebianTorrent? = null,
+    val addon: String? = null,
+    val filename: String? = null,
+    val service: Service? = null,
+    val parsedFile: ParsedFile? = null,
+    val id: String? = null,
+    val folderName: String? = null
 )
 
 data class AIODebianTorrent(
-    val infoHash: String,
-    val seeders: Long,
+    val infoHash: String? = null,
+    val seeders: Long? = null
 )
 
 data class Service(

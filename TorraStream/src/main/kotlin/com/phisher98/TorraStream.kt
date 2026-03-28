@@ -52,7 +52,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override var lang = "en"
     override val supportedSyncNames = setOf(SyncIdName.Trakt)
     override val hasMainPage = true
-    override val hasQuickSearch = false
+    override val hasQuickSearch = true
 
     companion object {
         //const val MediafusionApi = "https://mediafusion.elfhosted.com/D-_ru4-xVDOkpYNgdQZ-gA6whxWtMNeLLsnAyhb82mkks4eJf4QTlrAksSeBnwFAbIGWQLaokCGFxxsHupxSVxZO8xhhB2UYnyc5nnLeDnIqiLajtkmaGJMB_ZHqMqSYIU2wcGhrw0s4hlXeRAfnnbDywHCW8DLF_ZZfOXYUGPzWS-91cvu7kA2xPs0lJtcqZO"
@@ -314,7 +314,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 addImdbId(res.external_ids?.imdb_id)
             }
         } else {
-            return newMovieLoadResponse(
+            newMovieLoadResponse(
                 title,
                 url,
                 TvType.Movie,
@@ -375,9 +375,11 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
             runAllAsync(
                 { invokeAIOStreamsDebian(key, id, season, episode, callback, filtered) }
             )
-        }
-
-        if (!key.isNullOrEmpty()) {
+        } else if (provider == "TorBox" && !key.isNullOrEmpty()) {
+            runAllAsync(
+                { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback, filtered) }
+            )
+        } else if (!key.isNullOrEmpty()) {
             runAllAsync(
                 { invokeTorrentioDebian(torrentioapiUrl, id, season, episode, callback, filtered) },
                 { invokeMeteorDebian(meteorUrl, id, season, episode, callback, filtered) }
@@ -393,12 +395,6 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
                 { if (dataObj.isAnime) invokeTorrentsDBAnime(TorrentsDB, kitsuId, season, episode, callback, filtered) },
                 { invokeKnaben(Knaben, isAnime, title, year, season, episode, callback, filtered) },
                 { invokeSubtitleAPI(id, season, episode, subtitleCallback) }
-            )
-        }
-
-        if (provider == "TorBox" && !key.isNullOrEmpty()) {
-            runAllAsync(
-                { invokeDebianTorbox(TorboxAPI, key, id, season, episode, callback, filtered) }
             )
         }
         return true
