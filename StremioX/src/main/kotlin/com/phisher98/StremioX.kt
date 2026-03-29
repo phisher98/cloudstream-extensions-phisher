@@ -346,11 +346,7 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixMainUrl = (mainUrl.takeIf { it.isNotBlank() }
-            ?: "https://torrentio.strem.fun/manifest.json"
-                ).fixSourceUrl()
-        Log.d("Phisher",mainUrl)
-
+        val fixMainUrl = (mainUrl.takeIf { it.isNotBlank() } ?: "https://torrentio.strem.fun/manifest.json").fixSourceUrl()
         val url = if (season == null) {
             "$fixMainUrl/stream/movie/$imdbId.json"
         } else {
