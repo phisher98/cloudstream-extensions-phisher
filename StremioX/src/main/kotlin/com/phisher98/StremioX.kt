@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.DubStatus
@@ -321,9 +322,10 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LoadData>(data)
-
         runAllAsync(
             {
+                Log.d("Phisher",res.imdbId.toString())
+
                 invokeMainSource(res.imdbId, res.season, res.episode, subtitleCallback, callback)
             },
             {
@@ -344,7 +346,11 @@ class StremioX(override var mainUrl: String, override var name: String) : TmdbPr
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixMainUrl = mainUrl.fixSourceUrl()
+        val fixMainUrl = (mainUrl.takeIf { it.isNotBlank() }
+            ?: "https://torrentio.strem.fun/manifest.json"
+                ).fixSourceUrl()
+        Log.d("Phisher",mainUrl)
+
         val url = if (season == null) {
             "$fixMainUrl/stream/movie/$imdbId.json"
         } else {
