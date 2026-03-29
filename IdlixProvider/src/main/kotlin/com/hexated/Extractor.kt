@@ -8,9 +8,8 @@ import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.getAndUnpack
-import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Jeniusplay : ExtractorApi() {
     override var name = "Jeniusplay"
@@ -31,18 +30,14 @@ class Jeniusplay : ExtractorApi() {
             data = mapOf("hash" to hash, "r" to "$referer"),
             referer = referer,
             headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        ).parsed<ResponseSource>().videoSource
+        ).parsed<ResponseSource>().videoSource.replace(".txt",".m3u8")
 
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                url = m3uLink,
-                ExtractorLinkType.M3U8
-            )
-        )
+        generateM3u8(name,
+            m3uLink,
+            mainUrl,
+        ).forEach(callback)
 
-        document.select("script").map { script ->
+        document.select("script").forEach { script ->
             if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
                 val subData =
                     getAndUnpack(script.data()).substringAfter("\"tracks\":[").substringBefore("],")
