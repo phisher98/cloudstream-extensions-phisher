@@ -1,7 +1,6 @@
 package com.AnimeKai
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
@@ -175,12 +174,12 @@ class AnimeKai : MainAPI() {
         val kitsuid = animeMetaData?.mappings?.kitsuid
         val tmdbid = animeMetaData?.mappings?.themoviedbId
 
-        val data = if (aniid != null) {
-            anilistAPICall(
-                "query (\$id: Int = ${aniid}) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
-            ).data.media ?: throw Exception("Unable to fetch media details")
-        } else {
-            null
+        val data = aniid?.let {
+            runCatching {
+                anilistAPICall(
+                    "query (\$id: Int = $aniid) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+                ).data.media
+            }.getOrNull()
         }
 
         val typeraw = document.select("div.entity-scroll div.info").text()
