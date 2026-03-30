@@ -2732,18 +2732,19 @@ object StreamPlayExtractor : StreamPlay() {
                         safeGet(page, referer = api, headers = headers).document
                     }.getOrNull() ?: return@amap
 
-                    val source = doc.selectFirst("button.btn:matches((?i)(V-Cloud|G-Direct))")
-                        ?.parent()
-                        ?.attr("href")
-                        ?: return@amap
+                    val sources = doc.select("button.btn:matches((?i)(V-Cloud|G-Direct))")
+                        .mapNotNull { it.parent()?.attr("href") }
+                        .filter { it.isNotBlank() }
 
-                    loadSourceNameExtractor(
-                        "VegaMovies",
-                        source,
-                        "",
-                        subtitleCallback,
-                        callback
-                    )
+                    sources.forEach { source ->
+                        loadSourceNameExtractor(
+                            "VegaMovies",
+                            source,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
+                    }
                 }
             return
         }
@@ -2774,18 +2775,21 @@ object StreamPlayExtractor : StreamPlay() {
                     .firstOrNull { it.text().contains(episodeText, true) }
                     ?: return@amap
 
-                val link = epNode.nextElementSibling()
-                    ?.selectFirst("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
-                    ?.attr("href")
-                    ?: return@amap
+                val links = epNode.nextElementSibling()
+                    ?.select("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
+                    ?.map { it.attr("href") }
+                    ?.filter { it.isNotBlank() }
+                    ?: emptyList()
 
-                loadSourceNameExtractor(
-                    "VegaMovies",
-                    link,
-                    "",
-                    subtitleCallback,
-                    callback
-                )
+                links.forEach { link ->
+                    loadSourceNameExtractor(
+                        "VegaMovies",
+                        link,
+                        "",
+                        subtitleCallback,
+                        callback
+                    )
+                }
             }
     }
 
@@ -2847,12 +2851,18 @@ object StreamPlayExtractor : StreamPlay() {
                         safeGet(page, referer = api, headers = headers).document
                     }.getOrNull() ?: return@amap
 
-                    val source = doc.selectFirst("button.btn:matches((?i)(V-Cloud|G-Direct))")
-                        ?.parent()
-                        ?.attr("href")
-                        ?: return@amap
-
-                    loadSourceNameExtractor("RogMovies", source, "", subtitleCallback, callback)
+                    val sources = doc.select("button.btn:matches((?i)(V-Cloud|G-Direct))")
+                        .mapNotNull { it.parent()?.attr("href") }
+                        .filter { it.isNotBlank() }
+                    sources.forEach { source ->
+                        loadSourceNameExtractor(
+                            "RogMovies",
+                            source,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
+                    }
                 }
             return
         }
@@ -2883,13 +2893,22 @@ object StreamPlayExtractor : StreamPlay() {
                     .firstOrNull { it.text().contains(episodeText, true) }
                     ?: return@amap
 
-                val link = epNode.nextElementSibling()
-                    ?.selectFirst("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
-                    ?.attr("href")
-                    ?: return@amap
+                val links = epNode.nextElementSibling()
+                    ?.select("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
+                    ?.map { it.attr("href") }
+                    ?.filter { it.isNotBlank() }
+                    ?: emptyList()
 
-                loadSourceNameExtractor("RogMovies", link, "", subtitleCallback, callback)
-            }
+                links.forEach { link ->
+                    loadSourceNameExtractor(
+                        "RogMovies",
+                        link,
+                        "",
+                        subtitleCallback,
+                        callback
+                    )
+                }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
