@@ -256,6 +256,55 @@ class AnimeKai : MainAPI() {
             }
         }
 
+
+        //Uncensored Episodes
+
+        var ucOffset = subEpisodes.size
+
+        epRes?.select("div.eplist a")?.forEach { ep ->
+
+            val slug = ep.attr("slug")
+            val lang = ep.attr("langs")
+
+            val isUC = slug.contains("uncen") || lang == "1"
+            if (!isUC) return@forEach
+
+            val originalEpNum = ep.attr("num").toIntOrNull() ?: return@forEach
+            val newEpisodeNum = ++ucOffset   // continue numbering
+
+            val episodeKey = originalEpNum.toString()
+
+            fun resolveTitle(ep: Element, episodeKey: String): String {
+                val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
+                val jsonTitle = titleMap?.get("en")
+                    ?: titleMap?.get("ja")
+                    ?: titleMap?.get("x-jat")
+                    ?: animeMetaData?.titles?.get("en")
+                    ?: animeMetaData?.titles?.get("ja")
+                    ?: animeMetaData?.titles?.get("x-jat")
+                    ?: ""
+
+                val attrTitle = ep.selectFirst("span")?.text() ?: ep.attr("title")
+                return jsonTitle.ifBlank { attrTitle }
+            }
+
+            val metaEp = animeMetaData?.episodes?.get(episodeKey)
+
+            val episode = newEpisode("sub|${ep.attr("token")}") {
+                val base = resolveTitle(ep, episodeKey)
+
+                this.name = "$base (UC)"
+                this.episode = newEpisodeNum   // shifted number
+                this.score = Score.from10(metaEp?.rating)
+                this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
+                this.description = metaEp?.overview ?: "No summary available"
+                this.addDate(metaEp?.airdate)
+                this.runTime = metaEp?.runtime
+            }
+
+            subEpisodes += episode
+        }
+
         val recommendations = document.select("div.aitem-col a").map { it.toRecommendResult() }
         val genres = document.select("div.detail a")
             .asSequence()
