@@ -600,6 +600,7 @@ class MovieBoxProvider : MainAPI() {
                     val xClientToken = generateXClientToken()
                     val xTrSignature = generateXTrSignature("GET", "application/json", "application/json", url)
                     val headers = mapOf(
+                        "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
                         "user-agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
                         "accept" to "application/json",
                         "content-type" to "application/json",
@@ -655,6 +656,7 @@ class MovieBoxProvider : MainAPI() {
                                 val xClientToken = generateXClientToken()
                                 val xTrSignature = generateXTrSignature("GET", "", "", subLink)
                                 val headers = mapOf(
+                                    "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
                                     "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
                                     "Accept" to "",
                                     "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
@@ -686,6 +688,7 @@ class MovieBoxProvider : MainAPI() {
                                 val xClientToken1 = generateXClientToken()
                                 val xTrSignature1 = generateXTrSignature("GET", "", "", subLink1)
                                 val headers1 = mapOf(
+                                    "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
                                     "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
                                     "Accept" to "",
                                     "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",

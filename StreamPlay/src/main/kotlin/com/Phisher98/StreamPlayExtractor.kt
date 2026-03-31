@@ -4534,6 +4534,7 @@ object StreamPlayExtractor : StreamPlay() {
                 "POST", "application/json", "application/json; charset=utf-8", url, jsonBody
             )
             val headers = mapOf(
+                "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
                 "user-agent" to "com.community.mbox.in/50020042 (Linux; Android 16)",
                 "accept" to "application/json",
                 "content-type" to "application/json",
