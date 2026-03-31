@@ -77,6 +77,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.collections.mapOf
 import kotlin.collections.orEmpty
 import kotlin.math.max
+import kotlin.text.isNullOrBlank
 
 
 val session = Session(Requests().baseClient)
@@ -4534,13 +4535,12 @@ object StreamPlayExtractor : StreamPlay() {
                 "POST", "application/json", "application/json; charset=utf-8", url, jsonBody
             )
             val headers = mapOf(
-                "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
-                "user-agent" to "com.community.mbox.in/50020042 (Linux; Android 16)",
+                "user-agent" to "com.community.oneroom/50020088 (Linux; U; Android 13; en_US; Subsystem for Android(TM); Build/TQ3A.230901.001; Cronet/145.0.7582.0)",
                 "accept" to "application/json",
                 "content-type" to "application/json",
                 "x-client-token" to xClientToken,
                 "x-tr-signature" to xTrSignature,
-                "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","sp_code":""}""",
+                "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"c631acc5ab65b8cffc5421aee171f14e","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"Windows","model":"Subsystem for Android(TM)","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
                 "x-client-status" to "0"
             )
 
@@ -4583,6 +4583,16 @@ object StreamPlayExtractor : StreamPlay() {
                         "x-tr-signature" to subjectXSign
                     )
                     val subjectRes = safeGet(subjectUrl, headers = subjectHeaders)
+
+                    val xUserHeader = subjectRes.headers["x-user"]
+
+                    var authtoken: String? = null
+
+                    if (!xUserHeader.isNullOrBlank()) {
+                        val xUserJson = mapper.readTree(xUserHeader)
+                        authtoken = xUserJson["token"]?.asText()
+                    }
+
                     if (subjectRes.code != 200) return@amap
 
                     val subjectJson = mapper.readTree(subjectRes.body.string())
@@ -4617,8 +4627,7 @@ object StreamPlayExtractor : StreamPlay() {
                             "application/json",
                             playUrl
                         )
-                        val playHeaders =
-                            headers + mapOf("x-client-token" to token, "x-tr-signature" to sign)
+                        val playHeaders = headers + mapOf("x-client-token" to token, "x-tr-signature" to sign)
 
                         val playRes = safeGet(playUrl, headers = playHeaders)
                         if (playRes.code != 200) continue

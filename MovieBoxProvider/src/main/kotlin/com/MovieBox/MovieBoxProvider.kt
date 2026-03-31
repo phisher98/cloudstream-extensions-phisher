@@ -552,13 +552,13 @@ class MovieBoxProvider : MainAPI() {
             val subjectXClientToken = generateXClientToken()
             val subjectXTrSignature = generateXTrSignature("GET", "application/json", "application/json", subjectUrl)
             val subjectHeaders = mapOf(
-                "user-agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
+                "user-agent" to "com.community.oneroom/50020088 (Linux; U; Android 13; en_US; Subsystem for Android(TM); Build/TQ3A.230901.001; Cronet/145.0.7582.0)",
                 "accept" to "application/json",
                 "content-type" to "application/json",
                 "connection" to "keep-alive",
                 "x-client-token" to subjectXClientToken,
                 "x-tr-signature" to subjectXTrSignature,
-                "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+                "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"c631acc5ab65b8cffc5421aee171f14e","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"Windows","model":"Subsystem for Android(TM)","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
                 "x-client-status" to "0"
             )
             
@@ -586,6 +586,14 @@ class MovieBoxProvider : MainAPI() {
                 }
             }
 
+            val xUserHeader = subjectResponse.headers["x-user"]
+
+            var token: String? = null
+
+            if (!xUserHeader.isNullOrBlank()) {
+                val xUserJson = mapper.readTree(xUserHeader)
+                token = xUserJson["token"]?.asText()
+            }
             
             // Always add the original subject ID first as the default source with proper language name
             subjectIds.add(0, Pair(originalSubjectId, originalLanguageName))
@@ -600,14 +608,13 @@ class MovieBoxProvider : MainAPI() {
                     val xClientToken = generateXClientToken()
                     val xTrSignature = generateXTrSignature("GET", "application/json", "application/json", url)
                     val headers = mapOf(
-                        "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
-                        "user-agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
+                        "user-agent" to "com.community.oneroom/50020088 (Linux; U; Android 13; en_US; Subsystem for Android(TM); Build/TQ3A.230901.001; Cronet/145.0.7582.0)",
                         "accept" to "application/json",
                         "content-type" to "application/json",
                         "connection" to "keep-alive",
                         "x-client-token" to xClientToken,
                         "x-tr-signature" to xTrSignature,
-                        "x-client-info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+                        "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"c631acc5ab65b8cffc5421aee171f14e","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"Windows","model":"Subsystem for Android(TM)","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
                         "x-client-status" to "0"
                     )
                     
@@ -656,10 +663,9 @@ class MovieBoxProvider : MainAPI() {
                                 val xClientToken = generateXClientToken()
                                 val xTrSignature = generateXTrSignature("GET", "", "", subLink)
                                 val headers = mapOf(
-                                    "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
-                                    "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
+                                    "user-agent" to "com.community.oneroom/50020088 (Linux; U; Android 13; en_US; Subsystem for Android(TM); Build/TQ3A.230901.001; Cronet/145.0.7582.0)",
                                     "Accept" to "",
-                                    "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
+                                    "x-client-info" to """{"package_name":"com.community.oneroom","version_name":"3.0.13.0325.03","version_code":50020088,"os":"android","os_version":"13","install_ch":"ps","device_id":"c631acc5ab65b8cffc5421aee171f14e","install_store":"ps","gaid":"1b2212c1-dadf-43c3-a0c8-bd6ce48ae22d","brand":"Windows","model":"Subsystem for Android(TM)","system_language":"en","net":"NETWORK_WIFI","region":"US","timezone":"Asia/Calcutta","sp_code":"","X-Play-Mode":"1","X-Idle-Data":"1","X-Family-Mode":"0","X-Content-Mode":"0"}""".trimIndent(),
                                     "X-Client-Status" to "0",
                                     "Content-Type" to "",
                                     "X-Client-Token" to xClientToken,
@@ -688,7 +694,6 @@ class MovieBoxProvider : MainAPI() {
                                 val xClientToken1 = generateXClientToken()
                                 val xTrSignature1 = generateXTrSignature("GET", "", "", subLink1)
                                 val headers1 = mapOf(
-                                    "Authorization" to "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg1MTE4NzQxNTI0OTA1ODU4NTYsImV4cCI6MTc4MjcxOTMwMiwiaWF0IjoxNzc0OTQzMDAyfQ.12qEwuX8T4MROKwewAr0qRN-3ba4qsfsaD3z_yPdHJU",
                                     "User-Agent" to "com.community.mbox.in/50020042 (Linux; U; Android 16; en_IN; sdk_gphone64_x86_64; Build/BP22.250325.006; Cronet/133.0.6876.3)",
                                     "Accept" to "",
                                     "X-Client-Info" to """{"package_name":"com.community.mbox.in","version_name":"3.0.03.0529.03","version_code":50020042,"os":"android","os_version":"16","device_id":"da2b99c821e6ea023e4be55b54d5f7d8","install_store":"ps","gaid":"d7578036d13336cc","brand":"google","model":"sdk_gphone64_x86_64","system_language":"en","net":"NETWORK_WIFI","region":"IN","timezone":"Asia/Calcutta","sp_code":""}""",
