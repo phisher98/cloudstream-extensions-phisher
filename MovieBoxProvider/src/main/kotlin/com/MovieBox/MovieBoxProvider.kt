@@ -483,7 +483,11 @@ class MovieBoxProvider : MainAPI() {
                 if (seasonResponse.code != 200) continue
 
                 val seasonRoot = mapper.readTree(seasonResponse.body.string())
-                val seasons = seasonRoot["data"]?.get("seasons") ?: continue
+                val seasons = seasonRoot["data"]?.get("seasons")
+
+                if (seasons == null || !seasons.isArray || seasons.size() == 0) {
+                    continue
+                }
 
                 seasons.forEach { season ->
                     val seasonNumber = season["se"]?.asInt() ?: 1
