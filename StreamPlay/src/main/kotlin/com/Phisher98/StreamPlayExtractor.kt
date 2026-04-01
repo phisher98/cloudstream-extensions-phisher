@@ -1178,8 +1178,7 @@ object StreamPlayExtractor : StreamPlay() {
             headers
         ).parsedSafe<animepahe>()?.data.orEmpty()
 
-        val reversedData = animeData.reversed()
-
+        val reversedData = animeData
         val targetIndex = (episode ?: 1) - 1
         if (targetIndex !in reversedData.indices) return
         val session = reversedData[targetIndex].session
