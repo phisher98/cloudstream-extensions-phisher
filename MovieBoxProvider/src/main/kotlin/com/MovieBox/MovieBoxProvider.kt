@@ -460,67 +460,101 @@ class MovieBoxProvider : MainAPI() {
         val IMDBRating = meta?.get("imdbRating")?.asText()
 
         if (type == TvType.TvSeries) {
-
-            val seasonUrl = "$mainUrl/wefeed-mobile-bff/subject-api/season-info?subjectId=$id"
-            val seasonSig = generateXTrSignature("GET", "application/json", "application/json", seasonUrl)
-            val seasonHeaders = headers.toMutableMap().apply {
-                put("x-tr-signature", seasonSig)
+            val allSubjectIds = mutableListOf<String>()
+            allSubjectIds.add(id)
+            data["dubs"]?.forEach {
+                val sid = it["subjectId"]?.asText()
+                if (!sid.isNullOrBlank() && sid !in allSubjectIds) {
+                    allSubjectIds.add(sid)
+                }
             }
 
-            val seasonResponse = app.get(seasonUrl, headers = seasonHeaders)
-            val episodes = mutableListOf<Episode>()
+            val episodeMap = mutableMapOf<Int, MutableSet<Int>>() // season -> episodes
 
-            if (seasonResponse.code == 200) {
-                val seasonBody = seasonResponse.body.string()
-                val seasonRoot = mapper.readTree(seasonBody)
-                val seasons = seasonRoot["data"]?.get("seasons")
+            for (subjectId in allSubjectIds) {
+                val seasonUrl = "$mainUrl/wefeed-mobile-bff/subject-api/season-info?subjectId=$subjectId"
+                val seasonSig = generateXTrSignature("GET", "application/json", "application/json", seasonUrl)
 
-                seasons?.forEach { season ->
+                val seasonHeaders = headers.toMutableMap().apply {
+                    put("x-tr-signature", seasonSig)
+                }
+
+                val seasonResponse = app.get(seasonUrl, headers = seasonHeaders)
+                if (seasonResponse.code != 200) continue
+
+                val seasonRoot = mapper.readTree(seasonResponse.body.string())
+                val seasons = seasonRoot["data"]?.get("seasons") ?: continue
+
+                seasons.forEach { season ->
                     val seasonNumber = season["se"]?.asInt() ?: 1
                     val maxEp = season["maxEp"]?.asInt() ?: 1
 
-                    for (episodeNumber in 1..maxEp) {
+                    val epSet = episodeMap.getOrPut(seasonNumber) { mutableSetOf() }
 
-                        val epMeta = metaVideos.firstOrNull {
-                            it["season"]?.asInt() == seasonNumber &&
-                                    it["episode"]?.asInt() == episodeNumber
-                        }
-                        val epName = epMeta?.get("name")?.asText()?: epMeta?.get("title")?.asText() ?.takeIf { it.isNotBlank() } ?: "S${seasonNumber}E${episodeNumber}"
-                        val epDesc = epMeta?.get("overview")?.asText() ?: epMeta?.get("description")?.asText() ?: "Season $seasonNumber Episode $episodeNumber"
-                        val epThumb = epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() } ?: coverUrl
-                        val runtime = epMeta?.get("runtime")?.asText()?.filter { it.isDigit() }?.toIntOrNull()
-                        val aired = epMeta?.get("released")?.asText()?.takeIf { it.isNotBlank() } ?: ""
-
-                        episodes.add(
-                            newEpisode("$id|$seasonNumber|$episodeNumber") {
-                                this.name = epName
-                                this.season = seasonNumber
-                                this.episode = episodeNumber
-                                this.posterUrl = epThumb
-                                this.description = epDesc
-                                this.runTime = runtime
-                                addDate(aired)
-                            }
-                        )
+                    for (ep in 1..maxEp) {
+                        epSet.add(ep)
                     }
                 }
             }
 
+            val episodes = mutableListOf<Episode>()
+
+            episodeMap.forEach { (seasonNumber, epSet) ->
+                epSet.sorted().forEach { episodeNumber ->
+
+                    val epMeta = metaVideos.firstOrNull {
+                        it["season"]?.asInt() == seasonNumber &&
+                                it["episode"]?.asInt() == episodeNumber
+                    }
+
+                    val epName = epMeta?.get("name")?.asText()
+                        ?: epMeta?.get("title")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: "S${seasonNumber}E${episodeNumber}"
+
+                    val epDesc = epMeta?.get("overview")?.asText()
+                        ?: epMeta?.get("description")?.asText()
+                        ?: "Season $seasonNumber Episode $episodeNumber"
+
+                    val epThumb = epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: coverUrl
+
+                    val runtime = epMeta?.get("runtime")?.asText()
+                        ?.filter { it.isDigit() }
+                        ?.toIntOrNull()
+
+                    val aired = epMeta?.get("released")?.asText()
+                        ?.takeIf { it.isNotBlank() } ?: ""
+
+                    episodes.add(
+                        newEpisode("$id|$seasonNumber|$episodeNumber") {
+                            this.name = epName
+                            this.season = seasonNumber
+                            this.episode = episodeNumber
+                            this.posterUrl = epThumb
+                            this.description = epDesc
+                            this.runTime = runtime
+                            addDate(aired)
+                        }
+                    )
+                }
+            }
+
+            // fallback
             if (episodes.isEmpty()) {
                 episodes.add(
                     newEpisode("$id|1|1") {
                         this.name = "Episode 1"
                         this.season = 1
                         this.episode = 1
-                        this.posterUrl = Poster
+                        this.posterUrl = coverUrl
                     }
                 )
             }
 
             return newTvSeriesLoadResponse(title, finalUrl, type, episodes) {
-                this.posterUrl =  coverUrl ?: Poster
+                this.posterUrl = coverUrl ?: Poster
                 this.backgroundPosterUrl = Background ?: backgroundUrl ?: Poster
-                try { this.logoUrl = logoUrl } catch(_:Throwable){}
+                try { this.logoUrl = logoUrl } catch(_: Throwable) {}
                 this.plot = Description ?: description
                 this.year = year
                 this.tags = tags
