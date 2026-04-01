@@ -1174,7 +1174,7 @@ object StreamPlayExtractor : StreamPlay() {
             ?.attr("content").toString().substringAfterLast("/")
 
         val animeData = safeGet(
-            "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_desc&page=1",
+            "https://animepaheproxy.phisheranimepahe.workers.dev/?url=$animepaheAPI/api?m=release&id=$id&sort=episode_asc&page=1",
             headers
         ).parsedSafe<animepahe>()?.data.orEmpty()
 
