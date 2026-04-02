@@ -17,7 +17,7 @@ import kotlinx.coroutines.sync.withPermit
 
 class AnimePahe : MainAPI() {
     companion object {
-        const val MAIN_URL = "https://animepahe.si"
+        const val MAIN_URL = "https://animepahe.org"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
         private const val Proxy="https://animepaheproxy.phisheranimepahe.workers.dev/?url="
         //var cookies: Map<String, String> = mapOf()
