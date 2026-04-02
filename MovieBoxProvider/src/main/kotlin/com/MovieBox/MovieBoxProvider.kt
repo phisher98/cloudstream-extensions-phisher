@@ -195,10 +195,8 @@ class MovieBoxProvider : MainAPI() {
         "1|1;classify=Hindi dub;genre=Action" to "Action (Movies)",
         "1|1;classify=Hindi dub;genre=Crime" to "Crime (Movies)",
         "1|1;classify=Hindi dub;genre=Comedy" to "Comedy (Movies)",
-        "1|1;classify=Hindi dub;genre=Romance" to "Romance (Movies)",
         "1|2;classify=Hindi dub;genre=Crime" to "Crime (Series)",
         "1|2;classify=Hindi dub;genre=Comedy" to "Comedy (Series)",
-        "1|2;classify=Hindi dub;genre=Romance" to "Romance (Series)",
         )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
