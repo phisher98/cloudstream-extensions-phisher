@@ -264,9 +264,11 @@ class AnimeKai : MainAPI() {
         epRes?.select("div.eplist a")?.forEach { ep ->
 
             val slug = ep.attr("slug")
-            val lang = ep.attr("langs")
+            val titleText = ep.text()
 
-            val isUC = slug.contains("uncen") || lang == "1"
+            val isUC = slug.contains("uncen", true) ||
+                    titleText.contains("uncensored", true) ||
+                    titleText.contains("(UC)", true)
             if (!isUC) return@forEach
 
             val originalEpNum = ep.attr("num").toIntOrNull() ?: return@forEach
