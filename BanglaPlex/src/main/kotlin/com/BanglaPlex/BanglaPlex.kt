@@ -7,7 +7,7 @@ import kotlinx.coroutines.runBlocking
 
 class Banglaplex : MainAPI() {
     override var mainUrl: String = runBlocking {
-        BanglaPlexProvider.getDomains()?.banglaplex ?: "https://banglaplex.top"
+        BanglaPlexProvider.getDomains()?.banglaplex ?: "https://banglaplex.click"
     }
     override var name                 = "Banglaplex"
     override val hasMainPage          = true
