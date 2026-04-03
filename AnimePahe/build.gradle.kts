@@ -1,6 +1,16 @@
 // use an integer for version numbers
-version = 17
+version = 18
 
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+}
+
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
+}
 
 cloudstream {
     language = "en"
@@ -24,5 +34,6 @@ cloudstream {
     )
     iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png"
 
-    isCrossPlatform = true
+    requiresResources = true
+    isCrossPlatform = false
 }
