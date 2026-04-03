@@ -1169,7 +1169,7 @@ object StreamPlayExtractor : StreamPlay() {
         val isMovie = dubtype == "Movie"
         val headers = mapOf("Cookie" to "__ddg2_=1234567890")
 
-        val id = safeGet("https://animepaheproxy.phisheranimepahe.workers.dev/?url=$url", headers)
+        val id = safeGet("https://animepaheproxy.phisheranimepahe.workers.dev/?url=${url.replace(".si",".org")}", headers)
             .document.selectFirst("meta[property=og:url]")
             ?.attr("content").toString().substringAfterLast("/")
 
