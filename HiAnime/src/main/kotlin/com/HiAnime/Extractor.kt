@@ -26,7 +26,7 @@ class Megacloud : ExtractorApi() {
             headers.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
 
             client.newCall(requestBuilder.build()).execute().use { response ->
-                if (response.isSuccessful) response.body.string() else null
+                if (response.isSuccessful) response.text else null
             }
         } catch (e: Exception) {
             Log.e("Megacloud", "Network request failed: ${e.localizedMessage}")

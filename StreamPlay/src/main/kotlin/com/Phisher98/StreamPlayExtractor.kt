@@ -4557,7 +4557,7 @@ object StreamPlayExtractor : StreamPlay() {
             if (response.code != 200) return false
 
             val mapper = streamPlayExtractorMapper
-            val root = mapper.readTree(response.body.string())
+            val root = mapper.readTree(response.text)
             val results = root["data"]?.get("results") ?: return false
 
             val matchingIds = mutableListOf<String>()
@@ -4603,7 +4603,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                     if (subjectRes.code != 200) return@amap
 
-                    val subjectJson = mapper.readTree(subjectRes.body.string())
+                    val subjectJson = mapper.readTree(subjectRes.text)
                     val subjectData = subjectJson["data"]
                     val subjectIds = mutableListOf<Pair<String, String>>()
                     var originalLanguageName = "Original"
@@ -4640,7 +4640,7 @@ object StreamPlayExtractor : StreamPlay() {
                         val playRes = safeGet(playUrl, headers = playHeaders)
                         if (playRes.code != 200) continue
 
-                        val playRoot = mapper.readTree(playRes.body.string())
+                        val playRoot = mapper.readTree(playRes.text)
                         val streams = playRoot["data"]?.get("streams") ?: continue
                         if (!streams.isArray) continue
 
@@ -4765,7 +4765,7 @@ object StreamPlayExtractor : StreamPlay() {
                                 val subRes = safeGet(subLink, headers = subHeaders)
                                 if (subRes.code != 200) continue
 
-                                val subRoot = mapper.readTree(subRes.body.string())
+                                val subRoot = mapper.readTree(subRes.text)
                                 val captions = subRoot["data"]?.get("extCaptions")
                                 if (captions != null && captions.isArray) {
                                     for (caption in captions) {
@@ -5095,7 +5095,7 @@ object StreamPlayExtractor : StreamPlay() {
         )
 
         val iframe = safeGet(url, interceptor = apifetch).url
-        val jsonString = safeGet(iframe).body.string()
+        val jsonString = safeGet(iframe).text
 
         val root: Vidlink = streamPlayExtractorMapper.readValue(jsonString)
         val playlistParts = root.stream.playlist.split("?")
@@ -5254,7 +5254,7 @@ object StreamPlayExtractor : StreamPlay() {
             url = "$mp4hydra/info2?v=8",
             headers = headers,
             requestBody = requestBody
-        ).body.string()
+        ).text
 
         val json = JSONObject(responseBody)
         val servers = json.optJSONObject("servers") ?: JSONObject()

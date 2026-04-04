@@ -147,7 +147,7 @@ class MPlayer : MainAPI() {
             "$webApi/search/resultv2?query=$query$endParam",
             referer = "$mainUrl/",
             requestBody = "{}".toRequestBody("application/json".toMediaType())
-        ).body.string()
+        ).text
 
         val result = mutableListOf<SearchResponse>()
         val root = JSONObject(response)

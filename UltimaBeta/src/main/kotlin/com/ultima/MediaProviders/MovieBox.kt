@@ -55,7 +55,7 @@ class MovieBoxMediaProvider : MediaProvider() {
             if (response.code != 200) return
 
             val mapper = jacksonObjectMapper()
-            val root = mapper.readTree(response.body.string())
+            val root = mapper.readTree(response.text)
             val results = root["data"]?.get("results") ?: return
 
             val matchingIds = mutableListOf<String>()
@@ -84,7 +84,7 @@ class MovieBoxMediaProvider : MediaProvider() {
                     val subjectRes = app.get(subjectUrl, headers = subjectHeaders)
                     if (subjectRes.code != 200) continue
 
-                    val subjectJson = mapper.readTree(subjectRes.body.string())
+                    val subjectJson = mapper.readTree(subjectRes.text)
                     val subjectData = subjectJson["data"]
                     val subjectIds = mutableListOf<Pair<String, String>>()
                     var originalLanguageName = "Original"
@@ -116,7 +116,7 @@ class MovieBoxMediaProvider : MediaProvider() {
                         val playRes = app.get(playUrl, headers = playHeaders)
                         if (playRes.code != 200) continue
 
-                        val playRoot = mapper.readTree(playRes.body.string())
+                        val playRoot = mapper.readTree(playRes.text)
                         val streams = playRoot["data"]?.get("streams") ?: continue
                         if (!streams.isArray) continue
 
@@ -200,7 +200,7 @@ class MovieBoxMediaProvider : MediaProvider() {
                                 val subRes = app.get(subLink, headers = subHeaders)
                                 if (subRes.code != 200) continue
 
-                                val subRoot = mapper.readTree(subRes.body.string())
+                                val subRoot = mapper.readTree(subRes.text)
                                 val captions = subRoot["data"]?.get("extCaptions")
                                 if (captions != null && captions.isArray) {
                                     for (caption in captions) {

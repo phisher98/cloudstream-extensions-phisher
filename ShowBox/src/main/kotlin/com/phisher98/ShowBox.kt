@@ -356,7 +356,7 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
             .build()
 
         client.newCall(request).execute().use { resp ->
-            return resp.body.string()
+            return resp.text
         }
     }
 

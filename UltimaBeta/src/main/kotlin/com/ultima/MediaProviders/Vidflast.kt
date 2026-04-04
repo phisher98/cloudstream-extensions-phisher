@@ -74,7 +74,7 @@ class VidFlastProvider : MediaProvider() {
         val apiServersUrl = "https://vidfast.pro/$staticPath/k33a7dwPZst1/$encodedFinal"
         val gson = Gson()
         val jsonMedia = "{}".toRequestBody("application/json".toMediaTypeOrNull())
-        val responseBody = app.post(apiServersUrl, headers = headers, requestBody = jsonMedia).body.string()
+        val responseBody = app.post(apiServersUrl, headers = headers, requestBody = jsonMedia).text
         val type = object : TypeToken<List<VidfastServerData>>() {}.type
         val apiResponse: List<VidfastServerData>? = gson.fromJson(responseBody, type)
 
@@ -86,7 +86,7 @@ class VidFlastProvider : MediaProvider() {
 
                 try {
                     val streamResponse = app.post(apiStream, headers = headers, requestBody = jsonMedia)
-                    val streamBody = streamResponse.body.string()
+                    val streamBody = streamResponse.text
                     val resultJson = JSONObject(streamBody)
 
                     val streamUrl = if (resultJson.has("url")) resultJson.getString("url") else null

@@ -261,7 +261,7 @@ class MovieBoxProvider : MainAPI() {
             val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
             val response = if (request.data.contains("|")) app.post(url, headers = headers, requestBody = requestBody) else app.get(url, headers = getheaders)
 
-            val responseBody = response.body.string()
+            val responseBody = response.text
             // Use Jackson to parse the new API response structure
             val data = try {
                 val mapper = jacksonObjectMapper()
@@ -320,7 +320,7 @@ class MovieBoxProvider : MainAPI() {
             requestBody = requestBody
         )
 
-        val responseBody = response.body.string()
+        val responseBody = response.text
         val mapper = jacksonObjectMapper()
         val root = mapper.readTree(responseBody)
         val results = root.get("data")?.get("results") ?: return newSearchResponseList(emptyList())
@@ -378,10 +378,10 @@ class MovieBoxProvider : MainAPI() {
 
         val response = app.get(finalUrl, headers = headers)
         if (response.code != 200) {
-            throw ErrorLoadingException("Failed to load data: ${response.body.string()}")
+            throw ErrorLoadingException("Failed to load data: ${response.text}")
         }
 
-        val body = response.body.string()
+        val body = response.text
         val mapper = jacksonObjectMapper()
         val root = mapper.readTree(body)
         val data = root["data"] ?: throw ErrorLoadingException("No data")
@@ -480,7 +480,7 @@ class MovieBoxProvider : MainAPI() {
                 val seasonResponse = app.get(seasonUrl, headers = seasonHeaders)
                 if (seasonResponse.code != 200) continue
 
-                val seasonRoot = mapper.readTree(seasonResponse.body.string())
+                val seasonRoot = mapper.readTree(seasonResponse.text)
                 val seasons = seasonRoot["data"]?.get("seasons")
 
                 if (seasons == null || !seasons.isArray || seasons.size() == 0) {
@@ -628,7 +628,7 @@ class MovieBoxProvider : MainAPI() {
             val subjectIds = mutableListOf<Pair<String, String>>() // Pair of (subjectId, language)
             var originalLanguageName = "Original"
             if (subjectResponse.code == 200) {
-                val subjectResponseBody = subjectResponse.body.string()
+                val subjectResponseBody = subjectResponse.text
                 val subjectRoot = mapper.readTree(subjectResponseBody)
                 val subjectData = subjectRoot["data"]
                 val dubs = subjectData?.get("dubs")
@@ -682,7 +682,7 @@ class MovieBoxProvider : MainAPI() {
 
                     val response = app.get(url, headers = headers)
                     if (response.code == 200) {
-                        val responseBody = response.body.string()
+                        val responseBody = response.text
                         val root = mapper.readTree(responseBody)
                         val playData = root["data"]
                         // Handle the new API response format with streams
@@ -808,7 +808,7 @@ class MovieBoxProvider : MainAPI() {
 
                             if (fallbackResponse.code == 200) {
 
-                                val fallbackRoot = mapper.readTree(fallbackResponse.body.string())
+                                val fallbackRoot = mapper.readTree(fallbackResponse.text)
                                 val detectors = fallbackRoot["data"]?.get("resourceDetectors")
 
                                 detectors?.forEach { detector ->

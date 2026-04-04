@@ -33,8 +33,8 @@ class AnimeKaiMediaProvider : MediaProvider() {
 
         try {
             // Perform the search requests sequentially but avoid redundant requests
-            val searchEnglish = app.get("$domain/ajax/anime/search?keyword=$title").body.string()
-            val searchRomaji = app.get("$domain/ajax/anime/search?keyword=$jptitle").body.string()
+            val searchEnglish = app.get("$domain/ajax/anime/search?keyword=$title").text
+            val searchRomaji = app.get("$domain/ajax/anime/search?keyword=$jptitle").text
 
             val resultsEng = parseAnimeKaiResults(searchEnglish)
             val resultsRom = parseAnimeKaiResults(searchRomaji)

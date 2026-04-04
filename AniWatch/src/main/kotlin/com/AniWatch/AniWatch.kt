@@ -172,7 +172,7 @@ class AniWatch : MainAPI() {
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
-        val responseBody = app.get("$mainUrl/ajax/v2/episode/list/$animeId").body.string()
+        val responseBody = app.get("$mainUrl/ajax/v2/episode/list/$animeId").text
         val epRes = responseBody.stringParse<Response>()?.getDocument()
         val malId = syncData?.malId ?: "0"
         val anilistId = syncData?.aniListId ?: "0"
