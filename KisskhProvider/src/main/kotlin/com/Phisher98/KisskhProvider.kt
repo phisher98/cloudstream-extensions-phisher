@@ -355,7 +355,7 @@ class KisskhProvider : MainAPI() {
                     .build()
                 val response = chain.proceed(request)
                 if (response.request.url.toString().contains(".txt")) {
-                    val responseBody = response.text
+                    val responseBody = response.body.toString()
                     val chunks = responseBody.split(CHUNK_REGEX1)
                         .filter(String::isNotBlank)
                         .map(String::trim)
