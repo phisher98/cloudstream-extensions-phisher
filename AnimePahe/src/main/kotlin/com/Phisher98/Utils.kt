@@ -127,7 +127,7 @@ class Pahe : ExtractorApi() {
             .build()
 
         val fContent = client.newCall(fContentRequest).execute()
-        val fContentString = fContent.toString()
+        val fContentString = fContent.body.toString()
 
         val (fullString, key, v1, v2) = kwikParamsRegex.find(fContentString)!!.destructured
         val decrypted = decrypt(fullString, key, v1.toInt(), v2.toInt())
