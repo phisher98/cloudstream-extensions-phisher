@@ -356,21 +356,26 @@ oFuZne+lYcCPMNDXdku6wKdf9gSnOSHOGMu8TvHcud4uIDYmFH5qabJL5GDoQi7Q
             .build()
 
         client.newCall(request).execute().use { resp ->
-            return resp.body.toString()
+            return resp.body.string()
         }
     }
 
 
     inline fun <reified T : Any> queryApiParsed(query: String): T {
+        val gson = Gson()
+        val json = queryApi(query, false)
+        // Detect HTML / blocked response
+        if (json.isBlank() || json.trim().startsWith("<")) {
+            val jsonAlt = queryApi(query, true)
+            return gson.fromJson(jsonAlt, T::class.java)
+        }
         return try {
-            val json = queryApi(query, false)
-            Gson().fromJson(json, T::class.java)
+            gson.fromJson(json, T::class.java)
         } catch (_: Exception) {
             val jsonAlt = queryApi(query, true)
-            Gson().fromJson(jsonAlt, T::class.java)
+            gson.fromJson(jsonAlt, T::class.java)
         }
     }
-
 
     fun getExpiryDate(): Long {
         // Current time + 12 hours
