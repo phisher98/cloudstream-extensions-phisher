@@ -382,8 +382,8 @@ private val providers by lazy {
         Provider("CineVood", "CineVood (Movies Only)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeCineVood(res.imdbId, subtitleCallback, callback)
         },
-        Provider("Filmyfiy", "Filmyfiy (Movies Only)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeFilmyfiy(res.title, subtitleCallback, callback)
+        Provider("Filmyfiy", "Filmyfiy (Movies Only)") { res, sub, cb, _, _ ->
+            if (!res.isAnime && res.season == null) invokeFilmyfiy(res.title, sub, cb)
         },
         Provider("2Embed", "2Embed") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invoke2embed(res.imdbId, res.season, res.episode, subtitleCallback, callback)

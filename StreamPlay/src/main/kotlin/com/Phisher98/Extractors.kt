@@ -3219,22 +3219,22 @@ class Filesdl : ExtractorApi() {
 
             when {
                 source.contains("hubcloud", ignoreCase = true) -> {
-                    HubCloud().getUrl(href, "FilmyCab", subtitleCallback, callback)
+                    HubCloud().getUrl(href, "Filmyfiy", subtitleCallback, callback)
                 }
 
                 source.contains("GDFLIX", ignoreCase = true) -> {
-                    GDFlix().getUrl(href, "FilmyCab", subtitleCallback, callback)
+                    GDFlix().getUrl(href, "Filmyfiy", subtitleCallback, callback)
                 }
 
                 source.contains("Gofile", ignoreCase = true) -> {
-                    Gofile().getUrl(href, "FilmyCab", subtitleCallback, callback)
+                    Gofile().getUrl(href, "Filmyfiy", subtitleCallback, callback)
                 }
 
                 source.contains("Fast Cloud", ignoreCase = true) || source.contains("Ultra Fast Download", ignoreCase = true)-> {
                     callback(
                         newExtractorLink(
                             source = "Fast Cloud",
-                            name = "FilmyCab [Fast Cloud]",
+                            name = "Filmyfiy [Fast Cloud]",
                             url = href,
                             type = INFER_TYPE
                         ) {
@@ -3265,7 +3265,7 @@ class Filesdl : ExtractorApi() {
                         callback(
                             newExtractorLink(
                                 source = "[FastDL] [VLC]",
-                                name = "FilmyCab [FastDL] [VLC]",
+                                name = "Filmyfiy [FastDL] [VLC]",
                                 url = finalUrl,
                                 type = INFER_TYPE
                             ) {
@@ -3274,7 +3274,7 @@ class Filesdl : ExtractorApi() {
                         )
                     } else {
                         loadSourceNameExtractor(
-                            "FilmyCab",
+                            "Filmyfiy",
                             url = finalUrl,
                             referer = "",
                             subtitleCallback = subtitleCallback,

@@ -6717,11 +6717,21 @@ object StreamPlayExtractor : StreamPlay() {
             }
     }
 
+
     suspend fun invokeFilmyfiy(
         title: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
+
+        fun cleanTitle(input: String): String {
+            return input
+                .lowercase()
+                .replace(Regex("\\(.*?\\)"), "") // remove (2012), (Hindi...)
+                .replace(Regex("[^a-z0-9 ]"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+        }
         val baseUrl = getDomains()?.filmyfiy ?: return
         val rawQuery = title?.trim() ?: return
         val query = rawQuery.lowercase().replace(Regex("[^a-z0-9]"), "")
@@ -6735,11 +6745,21 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             }"
         ).document
+
+        val queryClean = cleanTitle(rawQuery)
+
         searchDoc.select("div.A2 > a:nth-child(2)[href]").mapNotNull { a ->
             val href = a.attr("href").takeIf(String::isNotBlank)
-                ?.let { if (it.startsWith("http")) it else baseUrl + it } ?: return@mapNotNull null
-            val text = a.text().lowercase().replace(Regex("[^a-z0-9]"), "")
-            if (text.contains(query)) href else null
+                ?.let { if (it.startsWith("http")) it else baseUrl + it }
+                ?: return@mapNotNull null
+
+            val titleText = cleanTitle(a.text())
+
+            val isMatch = titleText == queryClean ||
+                    titleText.startsWith("$queryClean ") ||
+                    titleText.contains(" $queryClean ")
+
+            if (isMatch) href else null
         }.distinct().amap { postUrl ->
             val postDoc = safeGet(postUrl).document
             postDoc.select("div.dlbtn a[href]")
