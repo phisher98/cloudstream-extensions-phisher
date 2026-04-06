@@ -165,7 +165,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Rapidshare())
         registerExtractorAPI(HdStream4u())
         registerExtractorAPI(Hubstream())
-        registerExtractorAPI(Hubcdnn())
         registerExtractorAPI(HUBCDN())
         registerExtractorAPI(PixelDrainDev())
         registerExtractorAPI(Krakenfiles())

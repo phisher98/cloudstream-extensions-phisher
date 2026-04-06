@@ -2523,44 +2523,6 @@ class Hubdrive : ExtractorApi() {
     }
 }
 
-class HUBCDN : ExtractorApi() {
-    override val name = "HUBCDN"
-    override val mainUrl = "https://hubcdn.*"
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val doc = app.get(url).document
-        val scriptText = doc.selectFirst("script:containsData(var reurl)")?.data()
-
-        val encodedUrl = Regex("reurl\\s*=\\s*\"([^\"]+)\"")
-            .find(scriptText ?: "")
-            ?.groupValues?.get(1)
-            ?.substringAfter("?r=")
-
-        val decodedUrl = encodedUrl?.let { base64Decode(it) }?.substringAfterLast("link=")
-
-
-        if (decodedUrl != null) {
-            callback(
-                newExtractorLink(
-                    this.name,
-                    this.name,
-                    decodedUrl,
-                    INFER_TYPE,
-                )
-                {
-                    this.quality=Qualities.Unknown.value
-                }
-            )
-        }
-    }
-}
-
 internal class Molop : ExtractorApi() {
     override val name = "Molop"
     override val mainUrl = "https://molop.art"
@@ -2959,7 +2921,7 @@ open class Hblinks : ExtractorApi() {
     }
 }
 
-class Hubcdnn : ExtractorApi() {
+class HUBCDN : ExtractorApi() {
     override val name = "Hubcdn"
     override val mainUrl = "https://hubcdn.*"
     override val requiresReferer = true
@@ -2970,10 +2932,13 @@ class Hubcdnn : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.toString().let {
+        app.get(url).document.text().let {
             val encoded = Regex("r=([A-Za-z0-9+/=]+)").find(it)?.groups?.get(1)?.value
             if (!encoded.isNullOrEmpty()) {
                 val m3u8 = base64Decode(encoded).substringAfterLast("link=")
+                if (m3u8.contains("video-downloads.googleusercontent.com")) {
+                    return
+                }
                 callback.invoke(
                     newExtractorLink(
                         this.name,
@@ -2988,8 +2953,6 @@ class Hubcdnn : ExtractorApi() {
             } else {
                 Log.e("Error", "Encoded URL not found")
             }
-
-
         }
     }
 }
