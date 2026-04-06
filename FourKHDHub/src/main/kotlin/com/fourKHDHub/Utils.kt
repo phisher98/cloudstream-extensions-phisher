@@ -62,7 +62,6 @@ suspend fun getRedirectLinks(url: String): String {
 
         app.get("$wp?re=$data")
             .document
-            .body()
             .text()
             .trim()
     }.getOrElse {
