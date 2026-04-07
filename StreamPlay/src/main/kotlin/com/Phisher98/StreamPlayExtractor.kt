@@ -2364,7 +2364,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-
     suspend fun invokeVidzee(
         id: Int?,
         season: Int? = null,
@@ -2372,9 +2371,9 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val keyHex = "6966796f75736372617065796f75617265676179000000000000000000000000"
-        val keyBytes = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        val defaultReferer = "https://core.vidzee.wtf/"
+        val secret = base64Decode("cGxlYXNlZG9udHNjcmFwZW1lc2F5d2FsbGFoaQ==")
+        val keyBytes = secret.padEnd(32, '\u0000').toByteArray(Charsets.UTF_8)
+        val defaultReferer = "https://player.vidzee.wtf/"
 
         (1..8).toList().amap { sr ->
             try {
@@ -2407,30 +2406,34 @@ object StreamPlayExtractor : StreamPlay() {
                         val finalUrl = try {
                             decryptVidzeeUrl(encryptedLink, keyBytes)
                         } catch (e: Exception) {
-                            Log.e("VidzeeDecrypt", "Failed to decrypt link: $e")
+                            Log.e("VidzeeDecrypt", "Failed to decrypt link: ${e.message}")
                             encryptedLink
                         }
 
-                        URI(finalUrl)
-                        val headersMap = mutableMapOf<String, String>()
-                        headersMap.putAll(globalHeaders)
-                        val referer = headersMap["referer"] ?: defaultReferer
-                        val displayName =
-                            if (flag.isNotBlank()) "VidZee $name ($lang - $flag)" else " VidZee$name ($lang)"
+                        try {
+                            URI(finalUrl) // Validate URL
+                            val headersMap = mutableMapOf<String, String>()
+                            headersMap.putAll(globalHeaders)
+                            val referer = headersMap["referer"] ?: defaultReferer
+                            val displayName =
+                                if (flag.isNotBlank()) "VidZee $name ($lang - $flag)" else "VidZee $name ($lang)"
 
-                        callback.invoke(
-                            newExtractorLink(
-                                "VidZee",
-                                displayName,
-                                finalUrl,
-                                if (type.equals("hls", ignoreCase = true))
-                                    ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                            ) {
-                                this.referer = referer
-                                this.headers = headersMap
-                                this.quality = Qualities.P1080.value
-                            }
-                        )
+                            callback.invoke(
+                                newExtractorLink(
+                                    "VidZee",
+                                    displayName,
+                                    finalUrl,
+                                    if (type.equals("hls", ignoreCase = true))
+                                        ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                                ) {
+                                    this.referer = referer
+                                    this.headers = headersMap
+                                    this.quality = Qualities.P1080.value
+                                }
+                            )
+                        } catch (e: Exception) {
+                            Log.e("VidzeeUrl", "Invalid URL: $finalUrl - ${e.message}")
+                        }
                     }
                 }
 
@@ -2443,8 +2446,36 @@ object StreamPlayExtractor : StreamPlay() {
                 }
 
             } catch (e: Exception) {
-                Log.e("VidzeeApi", "Failed sr=$sr: $e")
+                Log.e("VidzeeApi", "Failed sr=$sr: ${e.message}")
             }
+        }
+    }
+
+    fun decryptVidzeeUrl(encryptedUrl: String, keyBytes: ByteArray): String {
+        try {
+            val decoded = String(base64DecodeArray(encryptedUrl))
+            val parts = decoded.split(":", limit = 2)
+            if (parts.size != 2) {
+                throw IllegalArgumentException("Invalid encrypted URL format")
+            }
+
+            val ivB64 = parts[0]
+            val ciphertextB64 = parts[1]
+
+            val iv = base64DecodeArray(ivB64)
+            val ciphertext = base64DecodeArray(ciphertextB64)
+
+            val keySpec = SecretKeySpec(keyBytes, 0, keyBytes.size, "AES")
+            val ivSpec = IvParameterSpec(iv)
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
+
+            val decrypted = cipher.doFinal(ciphertext)
+
+            return String(decrypted, Charsets.UTF_8)
+        } catch (e: Exception) {
+            Log.e("VidzeeDecrypt", "Decryption failed: ${e.message}")
+            throw e
         }
     }
 
@@ -5628,7 +5659,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeWebStreamr(
+    suspend fun invokeAIOStream(
         imdbId: String?,
         season: Int? = null,
         episode: Int? = null,
@@ -5636,12 +5667,12 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         if (imdbId.isNullOrBlank()) return
         val api = if (season == null) {
-            "$webStreamrAPI/stream/movie/$imdbId.json"
+            "$AIOAPI/stream/movie/$imdbId.json"
         } else {
-            "$webStreamrAPI/stream/series/$imdbId:$season:$episode.json"
+            "$AIOAPI/stream/series/$imdbId:$season:$episode.json"
         }
 
-        val response = safeGet(api, timeout = 10000L).parsedSafe<webStreamr>() ?: return
+        val response = safeGet(api, timeout = 20000L).parsedSafe<AIO>() ?: return
 
         response.streams.amap { stream ->
             val name = stream.name.replace(
@@ -5650,17 +5681,10 @@ object StreamPlayExtractor : StreamPlay() {
                     RegexOption.IGNORE_CASE
                 ), ""
             ).trim()
-            val headers = mutableMapOf<String, String>()
-
-            stream.behaviorHints.proxyHeaders?.request?.let { req ->
-                req.referer?.let { headers["Referer"] = it }
-                req.origin?.let { headers["Origin"] = it }
-                req.userAgent?.let { headers["User-Agent"] = it }
-            }
 
             callback.invoke(
                 newExtractorLink(
-                    "WebStreamr",
+                    "AIO Stream",
                     name,
                     stream.url,
                     INFER_TYPE
