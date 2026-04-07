@@ -1,7 +1,6 @@
 package com.phisher98
 
 
-import android.util.Log
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import org.json.JSONObject
@@ -49,7 +48,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
 
     private suspend fun cfKiller(url: String): NiceResponse {
         var doc = app.get(url)
-        if (doc.document.select("title").text() == "Just a moment...") {
+        if (doc.document.select("title").text() == "Just a moment") {
             doc = app.get(url, interceptor = CloudflareKiller())
         }
         return doc
