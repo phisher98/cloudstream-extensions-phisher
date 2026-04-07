@@ -2,7 +2,7 @@ package com.phisher98
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.AcraApplication
+import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
@@ -291,7 +291,7 @@ class StremioC(override var mainUrl: String, override var name: String) : MainAP
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val sites = AcraApplication.getKey<Array<CustomSite>>(USER_PROVIDER_API)?.toMutableList()
+        val sites = CloudStreamApp.getKey<Array<CustomSite>>(USER_PROVIDER_API)?.toMutableList()
             ?: mutableListOf()
         sites.filter { it.parentJavaClass == "StremioX" }.amap { site ->
             val res = app.get(

@@ -2,7 +2,7 @@ package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.AcraApplication
+import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64Encode
@@ -142,7 +142,7 @@ object WatchSyncUtils {
 
         /** Build JSON with all fields we want to sync */
         private suspend fun buildSyncJson(): String {
-            val context = AcraApplication.context
+            val context = CloudStreamApp.context
             val sharedPrefs = context?.getSharedPrefs()
 
             // Only keep keys that are not non-transferable
