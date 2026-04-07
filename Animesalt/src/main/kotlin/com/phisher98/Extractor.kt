@@ -81,7 +81,7 @@ open class AWSStream : ExtractorApi() {
             val extractedPack = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().orEmpty()
 
             JsUnpacker(extractedPack).unpack()?.let { unpacked ->
-                Regex(""""kind":\s*"captions"\s*,\s*"file":\s*"(https.*?\.jpg)""")
+                Regex(""""kind":\s*"captions"\s*,\s*"file":\s*"(https.*?)"""")
                     .find(unpacked)
                     ?.groupValues
                     ?.get(1)
