@@ -4,7 +4,7 @@ import com.phisher98.UltimaMediaProvidersUtils.invokeExtractors
 import com.phisher98.UltimaUtils.Category
 import com.phisher98.UltimaUtils.LinkData
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.AcraApplication
+import com.lagradost.cloudstream3.CloudStreamApp
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
@@ -52,7 +52,7 @@ open class MyAnimeList(val plugin: UltimaBetaPlugin) : MainAPI() {
 
     private suspend fun malAPICall(query: String): MalApiResponse {
         //val accountId = "${malApi.idPrefix}_account_${malApi.accountIndex}"
-        //val authToken = AcraApplication.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
+        //val authToken = CloudStreamApp.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
         val res =
                 app.get(query, headers = mapOf("Authorization" to "Bearer $"))
                         .parsedSafe<MalApiResponse>()

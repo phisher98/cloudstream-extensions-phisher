@@ -50,7 +50,7 @@ open class MyAnimeList(val plugin: UltimaPlugin) : MainAPI() {
 
     private suspend fun malAPICall(query: String): MalApiResponse {
         //val accountId = "${malApi.idPrefix}_account_${malApi.accountIndex}"
-        //val authToken = AcraApplication.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
+        //val authToken = CloudStreamApp.getKey<String>(accountId, MALApi.MAL_TOKEN_KEY)
         val res =
                 app.get(query, headers = mapOf("Authorization" to "Bearer $"))
                         .parsedSafe<MalApiResponse>()
