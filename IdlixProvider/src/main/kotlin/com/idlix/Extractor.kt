@@ -1,7 +1,6 @@
-package com.hexated
+package com.idlix
 
-import com.hexated.IdlixProvider.ResponseSource
-import com.hexated.IdlixProvider.Tracks
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.newSubtitleFile
@@ -53,7 +52,17 @@ class Jeniusplay : ExtractorApi() {
         }
     }
 
+    data class ResponseSource(
+        @JsonProperty("hls") val hls: Boolean,
+        @JsonProperty("videoSource") val videoSource: String,
+        @JsonProperty("securedLink") val securedLink: String?,
+    )
 
+    data class Tracks(
+        @JsonProperty("kind") val kind: String?,
+        @JsonProperty("file") val file: String,
+        @JsonProperty("label") val label: String?,
+    )
     private fun getLanguage(str: String): String {
         return when {
             str.contains("indonesia", true) || str
