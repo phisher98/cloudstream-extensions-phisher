@@ -207,7 +207,7 @@ private val providers by lazy {
             if (!res.isAnime) invokeMultiEmbed(res.imdbId, res.season, res.episode, subtitleCallback,callback)
         },
         Provider("vegamovies", "VegaMovies") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isBollywood) invokeVegamovies(res.imdbId, res.season, res.episode, subtitleCallback, callback)
+            if (!res.isBollywood) invokeVegamovies(res.title, res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("Rogmovies", "RogMovies") { res, subtitleCallback, callback, _, _ ->
             if (res.isBollywood) invokeRogmovies(res.title, res.imdbId, res.season, res.episode, subtitleCallback, callback)

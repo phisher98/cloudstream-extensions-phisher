@@ -2730,6 +2730,7 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     suspend fun invokeVegamovies(
+        title: String?=null,
         id: String? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -2741,17 +2742,30 @@ object StreamPlayExtractor : StreamPlay() {
 
         val headers = vegaHeaders // move to top-level val if reused
 
-        val searchUrl = "$api/search.php?q=$imdb"
+        suspend fun fetchResults(query: String): List<VegamoviesDocument> {
+            val url = "$api/search.php?q=${query.replace(" ", "%20")}"
+            return safeGet(url, referer = api, headers = headers)
+                .parsedSafe<VegamoviesResponse>()?.hits
+                ?.mapNotNull { it.document }
+                ?: emptyList()
+        }
 
-        val match = safeGet(searchUrl, referer = api, headers = headers)
-            .parsedSafe<VegamoviesResponse>()?.hits
-            ?.asSequence()
-            ?.mapNotNull { it.document }
-            ?.firstOrNull { it.imdb_id.equals(imdb, true) }
-            ?: return
+        val imdbMatch = fetchResults(imdb).firstOrNull {
+            it.imdb_id.equals(imdb, true)
+        }
+
+        val match = imdbMatch ?: run {
+            val t = title ?: return
+            val results = fetchResults(t)
+
+            results.firstOrNull {
+                it.post_title?.contains(t, ignoreCase = true) == true
+            } ?: results.firstOrNull()
+        } ?: return
 
         val permalink = match.permalink ?: return
         val mainDoc = safeGet(api + permalink, referer = api, headers = headers).document
+
 
         if (season == null) {
             mainDoc.select("button.dwd-button")
@@ -2763,7 +2777,7 @@ object StreamPlayExtractor : StreamPlay() {
                         safeGet(page, referer = api, headers = headers).document
                     }.getOrNull() ?: return@amap
 
-                    val sources = doc.select("button.btn:matches((?i)(V-Cloud|G-Direct))")
+                    val sources = doc.select("button.btn:matches((?i)(V-Cloud))")
                         .mapNotNull { it.parent()?.attr("href") }
                         .filter { it.isNotBlank() }
 
@@ -2790,7 +2804,7 @@ object StreamPlayExtractor : StreamPlay() {
                 generateSequence(it.nextElementSibling()) { el -> el.nextElementSibling() }
                     .takeWhile { el -> el.tagName() !in listOf("h3", "h5") }
                     .flatMap { el ->
-                        el.select("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))").asSequence()
+                        el.select("a:matches((?i)(V-Cloud|Single|Episode))").asSequence()
                     }
             }
             .map { it.attr("href") }
@@ -2807,7 +2821,7 @@ object StreamPlayExtractor : StreamPlay() {
                     ?: return@amap
 
                 val links = epNode.nextElementSibling()
-                    ?.select("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
+                    ?.select("a:matches((?i)(V-Cloud|Single|Episode))")
                     ?.map { it.attr("href") }
                     ?.filter { it.isNotBlank() }
                     ?: emptyList()
