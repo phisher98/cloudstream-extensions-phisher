@@ -24,6 +24,6 @@ cloudstream {
         "Movie",
         "TvSeries",
     )
-    iconUrl = "https://www.google.com/s2/favicons?domain=piratexplay.cc&sz=%size%"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/movies4u.png"
     isCrossPlatform = true
 }
