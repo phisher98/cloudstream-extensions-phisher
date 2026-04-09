@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 enum class ServerList(val link: Pair<String, Boolean>) {
-    SI("https://animepahe.si" to true),
+    SI("https://animepahe.pw" to true),
 
     ORG("https://animepahe.org" to true),
     BEST("https://animepahe.com" to true)
