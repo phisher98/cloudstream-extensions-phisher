@@ -1,5 +1,8 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -177,5 +180,51 @@ class Pahe : ExtractorApi() {
                 this.quality = getQualityFromName("")
             }
         )
+    }
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaImage(
+    @JsonProperty("coverType") val coverType: String?,
+    @JsonProperty("url") val url: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaEpisode(
+    @JsonProperty("episode") val episode: String?,
+    @JsonProperty("airDateUtc") val airDateUtc: String?,  // Keeping only one field
+    @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
+    @JsonProperty("image") val image: String?,
+    @JsonProperty("title") val title: Map<String, String>?,
+    @JsonProperty("overview") val overview: String?,
+    @JsonProperty("rating") val rating: String?,
+    @JsonProperty("finaleType") val finaleType: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaAnimeData(
+    @JsonProperty("titles") val titles: Map<String, String>?,
+    @JsonProperty("images") val images: List<MetaImage>?,
+    @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?,
+    @JsonProperty("mappings") val mappings: MetaMappings? = null
+)
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @JsonProperty("themoviedb_id") val themoviedbId: Int? = null,
+    @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+    @JsonProperty("imdb_id") val imdbId: String? = null,
+    @JsonProperty("mal_id") val malId: Int? = null,
+    @JsonProperty("anilist_id") val anilistId: Int? = null,
+    @JsonProperty("kitsu_id") val kitsuid: String? = null,
+)
+
+fun parseAnimeData(jsonString: String): MetaAnimeData? {
+    return try {
+        val objectMapper = ObjectMapper()
+        objectMapper.readValue(jsonString, MetaAnimeData::class.java)
+    } catch (_: Exception) {
+        null // Return null for invalid JSON instead of crashing
     }
 }
