@@ -20,7 +20,7 @@ import org.json.JSONObject
 import java.util.ArrayList
 
 class KisskhProvider : MainAPI() {
-    override var mainUrl = "https://kisskh.ovh"
+    override var mainUrl = "https://kisskh.ws"
     override var name = "Kisskh"
     override val hasMainPage = true
     override val hasDownloadSupport = true
