@@ -91,7 +91,7 @@ class Coflix : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBeforeLast("En") ?: "Unknown"
+        val title = document.selectFirst("header h1")?.text() ?: "Unknown"
         var poster = fixUrl(document.select("img.TPostBg").attr("src"))
         if (poster.isEmpty())
         {
