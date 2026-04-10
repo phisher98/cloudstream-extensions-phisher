@@ -1,9 +1,9 @@
-import com.android.build.gradle.BaseExtension
-import com.lagradost.cloudstream3.gradle.CloudstreamExtension
+import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 
 buildscript {
     repositories {
@@ -44,9 +44,9 @@ allprojects {
 
 fun Project.cloudstream(configuration: CloudstreamExtension.() -> Unit) = extensions.getByName<CloudstreamExtension>("cloudstream").configuration()
 
-fun Project.android(configuration: BaseExtension.() -> Unit) {
-    extensions.getByName<BaseExtension>("android").apply {
-        (extensions.findByName("java") as? JavaPluginExtension)?.apply {
+fun Project.android(configuration: LibraryExtension.() -> Unit) {
+    extensions.getByName<LibraryExtension>("android").apply {
+        project.extensions.findByType(JavaPluginExtension::class.java)?.apply {
             // Use Java 17 toolchain even if a higher JDK runs the build.
             // We still use Java 8 for now which higher JDKs have deprecated.
             toolchain {
@@ -60,7 +60,6 @@ fun Project.android(configuration: BaseExtension.() -> Unit) {
 
 subprojects {
     apply(plugin = "com.android.library")
-    apply(plugin = "kotlin-android")
     apply(plugin = "com.lagradost.cloudstream3.gradle")
 
     cloudstream {
@@ -70,10 +69,13 @@ subprojects {
 
     android {
         namespace = "com.phisher98"
+        compileSdk = 36
 
         defaultConfig {
             minSdk = 21
-            compileSdkVersion(36)
+        }
+
+        lint {
             targetSdk = 36
         }
 
