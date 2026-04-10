@@ -964,33 +964,35 @@ data class NuvioStreamsBehaviorHints(
 )
 
 data class AIO(
-    val streams: List<AIOStream>,
+    val streams: List<AIOStream>? = emptyList()
 )
 
 data class AIOStream(
-    val name: String,
-    val description: String,
-    val url: String,
-    val behaviorHints: AIOBehaviorHints,
+    val name: String? = null,
+    val description: String? = null,
+    val url: String? = null,
+    val behaviorHints: AIOBehaviorHints? = null
 )
 
 data class AIOBehaviorHints(
-    val notWebReady: Boolean?,
-    val bingeGroup: String,
-    val videoSize: Long,
-    val filename: String,
-    val proxyHeaders: ProxyHeaders?,
+    val notWebReady: Boolean? = null,
+    val bingeGroup: String? = null,
+    val videoSize: Long? = null,
+    val filename: String? = null,
+    val proxyHeaders: ProxyHeaders? = null
 )
 
 data class ProxyHeaders(
-    val request: Request,
+    val request: Request? = null
 )
 
 data class Request(
     @JsonProperty("Referer")
-    val referer: String,
-)
+    val referer: String? = null,
 
+    @JsonProperty("User-Agent")
+    val userAgent: String? = null
+)
 data class YflixResponse(
     @get:JsonProperty("result") val result: String
 ) {

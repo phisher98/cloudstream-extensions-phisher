@@ -5688,26 +5688,36 @@ object StreamPlayExtractor : StreamPlay() {
 
         val response = safeGet(api, timeout = 20000L).parsedSafe<AIO>() ?: return
 
-        response.streams.amap { stream ->
-            val name = stream.name.replace(
-                Regex(
-                    """\s*(2160p|1440p|1080p|720p|480p|360p|240p|4K)\b""",
-                    RegexOption.IGNORE_CASE
-                ), ""
-            ).trim()
+        response.streams
+            ?.asSequence()
+            ?.filter { !it.url.isNullOrBlank() }
+            ?.forEach { stream ->
 
-            callback.invoke(
-                newExtractorLink(
-                    "AIO Stream",
-                    name,
-                    stream.url,
-                    INFER_TYPE
-                ) {
-                    this.quality = getIndexQuality(stream.name)
-                    this.headers = headers
+                val rawName = stream.name ?: "AIO"
+                val cleanName = rawName.replace(
+                    Regex("""\s*(2160p|1440p|1080p|720p|480p|360p|240p|4K)\b""", RegexOption.IGNORE_CASE),
+                    ""
+                ).trim()
+
+                val headersMap = buildMap {
+                    stream.behaviorHints?.proxyHeaders?.request?.let {
+                        it.referer?.let { ref -> put("Referer", ref) }
+                        it.userAgent?.let { ua -> put("User-Agent", ua) }
+                    }
                 }
-            )
-        }
+
+                callback.invoke(
+                    newExtractorLink(
+                        "AIO Stream",
+                        cleanName,
+                        stream.url!!,
+                        INFER_TYPE
+                    ) {
+                        this.quality = getIndexQuality(rawName)
+                        this.headers = headersMap
+                    }
+                )
+            }
     }
 
     suspend fun invokeXDmovies(
