@@ -22,6 +22,10 @@ class Hubstream : VidStack() {
     override var mainUrl = "https://hubstream.*"
 }
 
+class Shikshakdaak : HubCloud() {
+    override var mainUrl: String = "https://shikshakdaak.com"
+}
+
 class Hubcdnn : ExtractorApi() {
     override val name = "Hubcdn"
     override val mainUrl = "https://hubcdn.*"
@@ -78,7 +82,7 @@ class Hubdrive : ExtractorApi() {
     }
 }
 
-class HubCloud : ExtractorApi() {
+open class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.foo"

@@ -981,7 +981,12 @@ open class PixelDrain : ExtractorApi() {
     }
 }
 
-class HubCloud : ExtractorApi() {
+
+class Shikshakdaak : HubCloud() {
+    override var mainUrl: String = "https://shikshakdaak.com"
+}
+
+open class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
     override var mainUrl: String = runBlocking {

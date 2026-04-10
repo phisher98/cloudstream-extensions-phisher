@@ -19,6 +19,10 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 
+class Shikshakdaak : HubCloud() {
+    override var mainUrl: String = "https://shikshakdaak.com"
+}
+
 class Filesdl : ExtractorApi() {
     override val name            = "Filesdl"
     override val mainUrl         = "https://new6.filesdl.site"
@@ -89,13 +93,13 @@ class M4ulinks : ExtractorApi() {
         callback: (ExtractorLink) -> Unit)
     {
         val res = app.get(url).document
-        res.select("div.downloads-btns-div a").map {
+        res.select("div.downloads-btns-div a").forEach {
             val href = it.attr("href")
             loadExtractor(href,"",subtitleCallback,callback)
         }
     }
 }
-class HubCloud : ExtractorApi() {
+open class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
     override val mainUrl = "https://hubcloud.foo"
