@@ -104,16 +104,16 @@ subprojects {
 
         // Other dependencies
         implementation(kotlin("stdlib"))
-        implementation("com.github.Blatzar:NiceHttp:0.4.16")
+        implementation("com.github.Blatzar:NiceHttp:0.4.17")
         implementation("org.jsoup:jsoup:1.22.1")
         implementation("androidx.annotation:annotation:1.10.0")
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
         implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-        implementation("org.mozilla:rhino:1.9.0")
+        implementation("org.mozilla:rhino:1.9.1")
         implementation("me.xdrop:fuzzywuzzy:1.4.0")
         implementation("com.google.code.gson:gson:2.13.2")
-        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
         implementation("com.github.vidstige:jadb:v1.2.1")
         implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
     }
