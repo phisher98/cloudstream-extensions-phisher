@@ -27,7 +27,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class Animesalt : MainAPI() {
-    override var mainUrl = "https://animesalt.cc"
+    override var mainUrl = "https://animesalt.ac"
     override var name = "Animesalt"
     override val hasMainPage = true
     override var lang = "hi"
@@ -56,7 +56,7 @@ class Animesalt : MainAPI() {
         {
             "$mainUrl/${request.data}/page/$page"
         }
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val home = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -95,9 +95,10 @@ class Animesalt : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title =document.selectFirst("h1")?.text()?: throw NotImplementedError("Unable to find title")
-        val poster = fixUrlNull(document.selectFirst("div.bgft img")?.attr("data-src"))
+        val poster = fixUrlNull(document.selectFirst("div.bd > div:nth-child(1) > img")?.attr("src"))
+        val backgroundposter = fixUrlNull(document.selectFirst("div.bgft img")?.attr("data-src"))
         val sections = listOf("Genres", "Languages")
         val tags: List<String> = sections.flatMap { label ->
             document.select("h4:contains($label)")
@@ -127,7 +128,7 @@ class Animesalt : MainAPI() {
                     )
                 )
 
-                seasonResponse.documentLarge.select("li article").forEachIndexed { index, ep ->
+                seasonResponse.document.select("li article").forEachIndexed { index, ep ->
                     val href = ep.select("a").attr("href")
                     val image = ep.select("div.post-thumbnail img").attr("src")
                     val spanText = ep.select("h2.entry-title").text()
@@ -149,6 +150,7 @@ class Animesalt : MainAPI() {
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -157,6 +159,7 @@ class Animesalt : MainAPI() {
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundposter
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -170,7 +173,7 @@ class Animesalt : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).documentLarge.select("#options-0 iframe").forEach { iframeElement ->
+        app.get(data).document.select("#options-0 iframe").forEach { iframeElement ->
             loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true

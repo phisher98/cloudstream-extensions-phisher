@@ -1,6 +1,5 @@
 package com.RingZ
 
-
 data class LoadURL(
     val url: String?=null ,
     val title: String?=null,

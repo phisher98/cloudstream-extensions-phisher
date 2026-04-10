@@ -7,14 +7,13 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.ResponseParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.net.URI
 import kotlin.reflect.KClass
@@ -56,28 +55,140 @@ inline fun <reified T : Any> tryParseJson(text: String): T? {
         null
     }
 }
+suspend fun resolveIframeSrc(initialUrl: String): String? {
+    return try {
+        if (initialUrl.isBlank()) return null
 
-suspend fun loadCustomExtractor(
-    name: String? = null,
+        val initialResponse = app.get(initialUrl, allowRedirects = false)
+
+        // Extract meta refresh (case-insensitive handling)
+        val metaContent = initialResponse.document
+            .selectFirst("meta[http-equiv=refresh]")
+            ?.attr("content")
+            ?.trim()
+
+        if (metaContent.isNullOrBlank()) {
+            println("⚠️ No refresh meta tag found")
+            return null
+        }
+
+        val rawRefreshUrl = metaContent
+            .substringAfter("url=", "")
+            .substringAfter("URL=", "")
+            .trim()
+            .removeSurrounding("'")
+            .removeSurrounding("\"")
+            .trim()
+
+        if (rawRefreshUrl.isBlank()) {
+            println("⚠️ Refresh URL empty")
+            return null
+        }
+
+        // Normalize refresh URL
+        val refreshUrl = when {
+            rawRefreshUrl.startsWith("http", true) -> rawRefreshUrl
+            rawRefreshUrl.startsWith("//") -> "https:$rawRefreshUrl"
+            rawRefreshUrl.startsWith("/") -> getBaseUrl(initialUrl) + rawRefreshUrl
+            else -> getBaseUrl(initialUrl).trimEnd('/') + "/" + rawRefreshUrl
+        }
+
+        if (!refreshUrl.startsWith("http")) {
+            println("⚠️ Invalid refresh URL: $refreshUrl")
+            return null
+        }
+
+        val refreshResponse = app.get(refreshUrl, allowRedirects = false)
+
+        // Merge all cookies safely
+        val cookieHeader = refreshResponse.headers
+            .values("set-cookie")
+            .joinToString("; ") { it.substringBefore(";") }
+
+        val redirectBaseUrl = getBaseUrl(refreshUrl)
+
+        val finalResponse = app.get(
+            redirectBaseUrl,
+            headers = if (cookieHeader.isNotBlank())
+                mapOf("cookie" to cookieHeader)
+            else emptyMap()
+        )
+
+        val rawIframe = finalResponse.document
+            .selectFirst("iframe")
+            ?.attr("src")
+            ?.trim()
+
+        if (rawIframe.isNullOrBlank()) {
+            println("⚠️ Iframe src not found")
+            return null
+        }
+
+        // Normalize iframe URL
+        val iframeSrc = when {
+            rawIframe.startsWith("http", true) -> rawIframe
+            rawIframe.startsWith("//") -> "https:$rawIframe"
+            rawIframe.startsWith("/") -> getBaseUrl(redirectBaseUrl) + rawIframe
+            else -> getBaseUrl(redirectBaseUrl).trimEnd('/') + "/" + rawIframe
+        }
+
+        if (!iframeSrc.startsWith("http")) {
+            println("⚠️ Invalid iframe URL: $iframeSrc")
+            return null
+        }
+
+        println("✅ Found iframe src: $iframeSrc")
+        iframeSrc
+
+    } catch (e: Exception) {
+        println("❌ Error resolving iframe: ${e.message}")
+        null
+    }
+}
+
+private fun getBaseUrl(url: String): String {
+    return try {
+        URI(url).let { "${it.scheme}://${it.host}" }
+    } catch (_: Exception) {
+        ""
+    }
+}
+
+private val extractorCallbackScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+suspend fun loadSourceNameExtractor(
+    source: String,
     url: String,
     referer: String? = null,
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit,
     quality: Int? = null,
+    size: String = ""
 ) {
+    val provider = source.trim().takeIf { it.isNotBlank() }
+    val sizePart = size.trim().takeIf { it.isNotBlank() }
+
     loadExtractor(url, referer, subtitleCallback) { link ->
-        CoroutineScope(Dispatchers.IO).launch {
-            callback.invoke(
+        extractorCallbackScope.launch {
+            val label = buildString {
+                provider?.let { append(it) }
+                if (link.name.isNotEmpty()) {
+                    if (isNotEmpty()) append(' ')
+                    append(link.name)
+                }
+                sizePart?.let {
+                    if (isNotEmpty()) append(' ')
+                    append(it)
+                }
+            }
+
+            callback(
                 newExtractorLink(
-                    name ?: link.source,
-                    name ?: link.name,
-                    link.url,
+                    link.source,
+                    label,
+                    link.url
                 ) {
-                    this.quality = when {
-                        link.name == "VidSrc" -> Qualities.P1080.value
-                        link.type == ExtractorLinkType.M3U8 -> link.quality
-                        else -> quality ?: link.quality
-                    }
+                    this.quality = quality ?: link.quality
                     this.type = link.type
                     this.referer = link.referer
                     this.headers = link.headers
@@ -85,44 +196,6 @@ suspend fun loadCustomExtractor(
                 }
             )
         }
-    }
-}
-
-
-suspend fun resolveIframeSrc(initialUrl: String): String? {
-    return try {
-        val initialResponse = app.get(initialUrl, allowRedirects = false)
-
-        val refreshUrl = initialResponse.documentLarge
-            .selectFirst("meta[http-equiv=refresh]")
-            ?.attr("content")
-            ?.substringAfter("url=")
-            ?.removeSurrounding("'", "'")
-            ?.trim()
-            .takeIf { !it.isNullOrEmpty() }
-            ?: run {
-                println("⚠️ No refresh meta tag found")
-                return null
-            }
-
-        val refreshResponse = app.get(refreshUrl, allowRedirects = false)
-        val cookieHeader = refreshResponse.headers["set-cookie"].orEmpty()
-        val redirectBaseUrl = getBaseUrl(refreshUrl)
-        val finalResponse = app.get(redirectBaseUrl, headers = mapOf("cookie" to cookieHeader))
-        val iframeSrc = finalResponse.documentLarge.selectFirst("iframe")?.attr("src")
-        println("✅ Found iframe src: $iframeSrc")
-        iframeSrc
-    } catch (e: Exception) {
-        println("❌ Error resolving iframe: ${e.message}")
-        e.printStackTrace()
-        null
-    }
-}
-private fun getBaseUrl(url: String): String {
-    return try {
-        URI(url).let { "${it.scheme}://${it.host}" }
-    } catch (_: Exception) {
-        ""
     }
 }
 

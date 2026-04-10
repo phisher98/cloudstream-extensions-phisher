@@ -1,6 +1,7 @@
 package com.phisher98
 
 import android.content.SharedPreferences
+import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
@@ -9,6 +10,7 @@ import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
@@ -39,8 +41,11 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
+import com.phisher98.TorraStream.Companion.Meteorfortheweebs
+import com.phisher98.TorraStream.Companion.TorboxAPI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
@@ -60,6 +65,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
     private val headerJSON =
         mapOf("Accept" to "application/json", "Content-Type" to "application/json")
     private val torrentioDebian= "https://torrentio.strem.fun"
+    private val TorrentsDB = "https://torrentsdb.com"
 
     private fun Any.toStringData(): String {
         return mapper.writeValueAsString(this)
@@ -128,7 +134,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                     false
                 )
             val homePageList =
-                repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
+                repo.library().getOrThrow()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)
@@ -153,10 +159,13 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val aniyear = data.startDate.year
         val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
+        val posterurl = data.coverImage.extraLarge
+        val backgroundUrl = data.bannerImage
 
         val jpTitle = data.title.romaji
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
+        val logoposter = animeMetaData?.images?.find { it.coverType == "Clearlogo" }?.url
 
         val href = LinkData(
             malId = ids.idMal,
@@ -209,18 +218,21 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         return if (data.format.contains("Movie",ignoreCase = true)) {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
+                addMalId(ids.idMal)
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeMetaData?.images
+                this.backgroundPosterUrl = backgroundUrl ?: animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl = posterurl ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
+                try { this.logoUrl = logoposter } catch(_:Throwable){}
                 this.tags = data.genres
             }
         } else {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
                 addAniListId(id.toInt())
+                addMalId(ids.idMal)
                 addEpisodes(DubStatus.Subbed, episodes)
                 this.year = data.startDate.year
                 this.plot = data.description
@@ -231,6 +243,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
                     ?: data.getCoverImage()
+                try { this.logoUrl = logoposter } catch(_:Throwable){}
                 this.tags = data.genres
                 this.showStatus = getStatus(data.status)
                 this.recommendations = data.recommendations?.edges
@@ -258,7 +271,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
         val provider = sharedPref.getString("debrid_provider", null)
         val key = sharedPref.getString("debrid_key", null)
         val mediaData = AppUtils.parseJson<LinkData>(data)
-        val episode = mediaData.episode
+        var episode = mediaData.episode
         val aniid = mediaData.aniId
         var kitsuId = -1
         var type = TvType.TvSeries
@@ -270,23 +283,34 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             if (mappings != null) {
                 kitsuId = mappings.optInt("kitsu_id", -1)
                 val rawtype = mappings.optString("type", "")
-                if (rawtype.contains("MOVIE", ignoreCase = true)) type = TvType.Movie
+                if (rawtype.contains("MOVIE", ignoreCase = true)) {
+                    type = TvType.Movie
+                    episode = 1
+                }
             }
             anidbEid = try { getAnidbEid(anijson, episode) } catch (_: Exception) { null }
 
         } catch (_: Exception) {
         }
+
         val debianapiUrl = buildApiUrl(sharedPref, torrentioDebian)
+        val meteorUrl = buildMeteorUrl(sharedPref, Meteorfortheweebs)
+
+        val filtered = filteredCallback(sharedPref, callback)
+
         if (!provider.isNullOrEmpty() && !key.isNullOrEmpty()) {
             if (kitsuId != -1) {
                 runAllAsync(
-                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback) }
+                    { invokeTorrentioAnimeDebian(debianapiUrl, type, kitsuId, episode, callback, filtered) },
+                    { invokeTorboxAnimeDebian(TorboxAPI, key, type, kitsuId, episode, callback, filtered) },
+                    { invokeMeteorAnimeDebian(meteorUrl, type, kitsuId, episode, callback, filtered) }
                 )
             }
         } else {
             runAllAsync(
                 { invokeAnimetosho(anidbEid, callback) },
-                { if (kitsuId != -1) invokeTorrentioAnime(torrentioDebian, type, kitsuId, episode, callback) }
+                { if (kitsuId != -1) invokeTorrentioAnimeType(torrentioDebian, type, kitsuId, episode, callback) },
+                { if (kitsuId != -1)  invokeTorrentsDBAnime(TorrentsDB, kitsuId, kitsuId, episode, callback, filtered) }
             )
         }
 
@@ -333,7 +357,7 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             fun totalEpisodes(): Int {
                 return nextAiringEpisode?.episode?.minus(1)
                     ?: episodes ?: airingSchedule?.nodes?.getOrNull(0)?.episode
-                    ?: throw Exception("Unable to calculate total episodes")
+                    ?: 0
             }
 
             fun getTitle(): String {
@@ -425,7 +449,8 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
             "type" to "ANIME",
             "format" to listOf(
                 if (type == TvType.AnimeMovie) "MOVIE" else "TV",
-                "ONA"
+                "ONA",
+                "OVA"
             )
         )
 
@@ -485,6 +510,81 @@ open class TorraStreamAnime(private val sharedPref: SharedPreferences) : MainAPI
 
         val query = params.joinToString("%7C")
         return "$mainUrl/$query"
+    }
+
+    fun buildMeteorUrl(sharedPref: SharedPreferences, baseUrl: String): String {
+
+        val debridProvider = sharedPref.getString("debrid_provider", "") ?: ""
+        val debridKey = sharedPref.getString("debrid_key", "") ?: ""
+        val languagesPref = sharedPref.getString("language", "") ?: ""
+        val limit = sharedPref.getString("limit", "0") ?: "0"
+        val sizeFilter = sharedPref.getString("sizefilter", "0") ?: "0"
+
+        // preferred languages
+        val preferredLanguages = JSONArray().apply {
+            if (languagesPref.isNotEmpty()) {
+                languagesPref.split(",").forEach { put(it.lowercase()) }
+            } else {
+                put("en")
+                put("multi")
+            }
+        }
+
+        val languages = JSONObject().apply {
+            put("preferred", preferredLanguages)
+            put("required", JSONArray())
+            put("exclude", JSONArray())
+        }
+
+        val json = JSONObject().apply {
+            put("debridService", debridProvider.lowercase())
+            put("debridApiKey", debridKey)
+            put("cachedOnly", true)
+            put("removeTrash", false)
+            put("removeSamples", false)
+            put("removeAdult", false)
+            put("exclude3D", false)
+            put("enableSeaDex", false)
+
+            put("minSeeders", 0)
+            put("maxResults", limit.toIntOrNull() ?: 0)
+            put("maxResultsPerRes", 0)
+            put("maxSize", sizeFilter.toIntOrNull() ?: 0)
+
+            put("resolutions", JSONArray())
+            put("languages", languages)
+
+            put(
+                "resultFormat",
+                JSONArray().apply {
+                    put("title")
+                    put("quality")
+                    put("size")
+                    put("audio")
+                }
+            )
+
+            put(
+                "sortOrder",
+                JSONArray().apply {
+                    put("pack")
+                    put("cached")
+                    put("seadex")
+                    put("resolution")
+                    put("size")
+                    put("quality")
+                    put("seeders")
+                    put("language")
+                }
+            )
+        }
+
+        val encoded = Base64.encodeToString(
+            json.toString().toByteArray(),
+            Base64.URL_SAFE or Base64.NO_WRAP
+        )
+
+        return "$baseUrl/$encoded"
     }
 
     fun getStatus(t: String?): ShowStatus {

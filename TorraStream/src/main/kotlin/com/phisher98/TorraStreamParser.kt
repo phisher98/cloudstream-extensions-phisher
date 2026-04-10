@@ -1,174 +1,30 @@
 package com.phisher98
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
-
-data class Torrentmovie(
-    val results: List<Result>,
-    val query: String,
-    val status: String,
-    val seo: List<Seo>,
-)
-
-data class Result(
-    val id: Long,
-    val name: String,
-    val type: String,
-    @JsonProperty("release_date")
-    val releaseDate: String,
-    val year: Long,
-    val description: String,
-    val genre: Any?,
-    val tagline: String,
-    val poster: String,
-    val backdrop: String,
-    val runtime: Long,
-    val trailer: Any?,
-    val budget: Any?,
-    val revenue: Any?,
-    val views: Long,
-    val popularity: Long,
-    @JsonProperty("imdb_id")
-    val imdbId: String,
-    @JsonProperty("tmdb_id")
-    val tmdbId: Long,
-    @JsonProperty("season_count")
-    val seasonCount: Long,
-    @JsonProperty("fully_synced")
-    val fullySynced: Boolean,
-    @JsonProperty("allow_update")
-    val allowUpdate: Boolean,
-    @JsonProperty("created_at")
-    val createdAt: String,
-    @JsonProperty("updated_at")
-    val updatedAt: String,
-    val language: String,
-    val country: Any?,
-    @JsonProperty("original_title")
-    val originalTitle: String,
-    @JsonProperty("affiliate_link")
-    val affiliateLink: Any?,
-    val certification: Any?,
-    @JsonProperty("episode_count")
-    val episodeCount: Long,
-    @JsonProperty("series_ended")
-    val seriesEnded: Boolean,
-    @JsonProperty("is_series")
-    val isSeries: Boolean,
-    @JsonProperty("show_videos")
-    val showVideos: Boolean,
-    val adult: Boolean,
-    @JsonProperty("screen_resolution_720p")
-    val screenResolution720p: String,
-    @JsonProperty("screen_resolution_1080p")
-    val screenResolution1080p: String,
-    @JsonProperty("screen_resolution_2160p")
-    val screenResolution2160p: String,
-    @JsonProperty("screen_resolution_3D")
-    val screenResolution3D: Any?,
-    val rating: String,
-    @JsonProperty("model_type")
-    val modelType: String,
-    @JsonProperty("vote_count")
-    val voteCount: Long,
-)
-
-data class Seo(
-    val property: String?,
-    val content: String?,
-    val nodeName: String,
-    val name: String?,
-    val rel: String?,
-    val href: String?,
-    @JsonProperty("_text")
-    val text: String?,
-)
 
 
 //TorBox
 
-
-data class TorBox(
-    val streams: List<TorBoxStream>,
+data class TorBoxDebian(
+    val streams: List<TorBoxDebianStream>,
 )
 
-data class TorBoxStream(
+data class TorBoxDebianStream(
     val name: String,
-    val url: String,
-    val hash: String,
-    @JsonProperty("is_cached")
-    val isCached: Boolean,
-    val language: String,
-    val size: Long,
     val description: String,
-    val year: Long?,
-    val behaviorHints: TorBoxBehaviorHints,
-    @JsonProperty("file_id")
-    val fileId: Long?,
-    val magnet: String?,
-    val nzb: String?,
-    val seeders: Long?,
-    val peers: Long?,
-    val quality: String?,
-    val resolution: String?,
-    @JsonProperty("is_your_media")
-    val isYourMedia: Boolean?,
-    val type: String?,
-    val season: Any?,
-    val episode: Any?,
-    @JsonProperty("user_search")
-    val userSearch: Boolean?,
-    val adult: Boolean?,
-    val files: List<File>?,
-    val hdr: List<String>?,
+    val behaviorHints: TorBoxDebianBehaviorHints,
+    val url: String,
 )
-data class TorBoxBehaviorHints(
+
+data class TorBoxDebianBehaviorHints(
     val notWebReady: Boolean,
+    val videoSize: Long,
     val filename: String,
     val bingeGroup: String,
     val videoHash: String?,
-    val videoSize: Long?,
 )
 
-data class File(
-    val id: Long,
-    val md5: String?,
-    val hash: String,
-    val name: String,
-    val size: Long,
-    val zipped: Boolean?,
-    @JsonProperty("s3_path")
-    val s3Path: String,
-    val infected: Boolean?,
-    val mimetype: String,
-    @JsonProperty("short_name")
-    val shortName: String,
-    @JsonProperty("absolute_path")
-    val absolutePath: String,
-    @JsonProperty("opensubtitles_hash")
-    val opensubtitlesHash: String?,
-)
-
-
-data class MediafusionResponse(
-    val streams: List<MediafusionStream>,
-)
-
-data class MediafusionStream(
-    val name: String,
-    val description: String,
-    val infoHash: String,
-    val fileIdx: Long?,
-    val behaviorHints: MediafusionBehaviorHints,
-    val sources: List<String>,
-)
-
-data class MediafusionBehaviorHints(
-    val bingeGroup: String,
-    val filename: String,
-    val videoSize: Long,
-)
 
 data class TBPResponse(
     val streams: List<TBPStream>,
@@ -183,23 +39,6 @@ data class TBPStream(
     val infoHash: String,
     val tag: String,
 )
-
-data class PeerflixResponse(
-    val streams: List<PeerflixStream>,
-)
-
-data class PeerflixStream(
-    val name: String,
-    val description: String,
-    val infoHash: String,
-    val sources: List<String>,
-    val fileIdx: Long?,
-    val language: String,
-    val quality: String,
-    val seed: Long,
-    val sizebytes: Long?,
-)
-
 data class SubtitlesAPI(
     val subtitles: List<Subtitle1>,
     val cacheMaxAge: Long,
@@ -264,22 +103,6 @@ data class AnimetoshoItem(
     @SerializedName("website_url")
     val websiteUrl: String?
 )
-data class AIO(
-    val streams: List<AIOStream>,
-)
-
-data class AIOStream(
-    val url: String,
-    val name: String,
-    val description: String,
-    val behaviorHints: AIOBehaviorHints,
-)
-
-data class AIOBehaviorHints(
-    val videoSize: Long,
-    val filename: String,
-    val bingeGroup: String,
-)
 
 data class MagnetStream(
     val title: String,
@@ -288,43 +111,42 @@ data class MagnetStream(
 )
 
 
-
 data class AIODebian(
-    val streams: List<AIODebianStream>,
+    val streams: List<AIODebianStream> = emptyList()
 )
 
 data class AIODebianStream(
-    val name: String,
-    val description: String,
-    val url: String,
-    val behaviorHints: AIODebianBehaviorHints,
-    val streamData: AIODebianStreamData,
+    val name: String? = null,
+    val description: String? = null,
+    val url: String? = null,
+    val behaviorHints: AIODebianBehaviorHints? = null,
+    val streamData: AIODebianStreamData? = null
 )
 
 data class AIODebianBehaviorHints(
-    val videoSize: Long,
-    val filename: String,
+    val videoSize: Long? = null,
+    val filename: String? = null
 )
 
 data class AIODebianStreamData(
-    val type: String,
-    val proxied: Boolean,
-    val indexer: String,
-    val duration: Long,
-    val library: Boolean,
-    val size: Long,
-    val torrent: AIODebianTorrent,
-    val addon: String,
-    val filename: String,
-    val service: Service,
-    val parsedFile: ParsedFile,
-    val id: String,
-    val folderName: String?,
+    val type: String? = null,
+    val proxied: Boolean? = null,
+    val indexer: String? = null,
+    val duration: Long? = null,
+    val library: Boolean? = null,
+    val size: Long? = null,
+    val torrent: AIODebianTorrent? = null,
+    val addon: String? = null,
+    val filename: String? = null,
+    val service: Service? = null,
+    val parsedFile: ParsedFile? = null,
+    val id: String? = null,
+    val folderName: String? = null
 )
 
 data class AIODebianTorrent(
-    val infoHash: String,
-    val seeders: Long,
+    val infoHash: String? = null,
+    val seeders: Long? = null
 )
 
 data class Service(
@@ -344,4 +166,297 @@ data class ParsedFile(
     val audioTags: List<String>,
     val audioChannels: List<String>,
     val languages: List<String>,
+)
+
+
+data class LoadData(
+    val title: String? = null,
+    val year: Int? =null,
+    val isAnime: Boolean = false,
+    val imdbId: String? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+)
+
+data class Data(
+    val id: Int? = null,
+    val type: String? = null,
+    val aniId: String? = null,
+    val malId: Int? = null,
+)
+
+data class Results(
+    @param:JsonProperty("results") val results: ArrayList<Media>? = arrayListOf(),
+)
+
+data class Media(
+    @param:JsonProperty("id") val id: Int? = null,
+    @param:JsonProperty("name") val name: String? = null,
+    @param:JsonProperty("title") val title: String? = null,
+    @param:JsonProperty("original_title") val originalTitle: String? = null,
+    @param:JsonProperty("media_type") val mediaType: String? = null,
+    @param:JsonProperty("poster_path") val posterPath: String? = null,
+    @param:JsonProperty("vote_average") val voteAverage: Double? = null,
+)
+
+data class Genres(
+    @get:JsonProperty("id") val id: Int? = null,
+    @get:JsonProperty("name") val name: String? = null,
+)
+
+data class Keywords(
+    @get:JsonProperty("id") val id: Int? = null,
+    @get:JsonProperty("name") val name: String? = null,
+)
+
+data class KeywordResults(
+    @get:JsonProperty("results") val results: ArrayList<Keywords>? = arrayListOf(),
+    @get:JsonProperty("keywords") val keywords: ArrayList<Keywords>? = arrayListOf(),
+)
+
+data class Seasons(
+    @get:JsonProperty("id") val id: Int? = null,
+    @get:JsonProperty("name") val name: String? = null,
+    @get:JsonProperty("season_number") val seasonNumber: Int? = null,
+    @get:JsonProperty("air_date") val airDate: String? = null,
+)
+
+data class Cast(
+    @get:JsonProperty("id") val id: Int? = null,
+    @get:JsonProperty("name") val name: String? = null,
+    @get:JsonProperty("original_name") val originalName: String? = null,
+    @get:JsonProperty("character") val character: String? = null,
+    @get:JsonProperty("known_for_department") val knownForDepartment: String? = null,
+    @get:JsonProperty("profile_path") val profilePath: String? = null,
+)
+
+data class Episodes(
+    @get:JsonProperty("id") val id: Int? = null,
+    @get:JsonProperty("name") val name: String? = null,
+    @get:JsonProperty("overview") val overview: String? = null,
+    @get:JsonProperty("air_date") val airDate: String? = null,
+    @get:JsonProperty("still_path") val stillPath: String? = null,
+    @get:JsonProperty("vote_average") val voteAverage: Double? = null,
+    @get:JsonProperty("episode_number") val episodeNumber: Int? = null,
+    @get:JsonProperty("season_number") val seasonNumber: Int? = null,
+    @get:JsonProperty("runtime") val runTime: Int? = null
+)
+
+data class MediaDetailEpisodes(
+    @get:JsonProperty("episodes") val episodes: ArrayList<Episodes>? = arrayListOf(),
+)
+
+data class Trailers(
+    @get:JsonProperty("key") val key: String? = null,
+    @get:JsonProperty("type") val type: String? = null,
+)
+
+data class ResultsTrailer(
+    @get:JsonProperty("results") val results: ArrayList<Trailers>? = arrayListOf(),
+)
+
+data class AltTitles(
+    @get:JsonProperty("iso_3166_1") val iso_3166_1: String? = null,
+    @get:JsonProperty("title") val title: String? = null,
+    @get:JsonProperty("type") val type: String? = null,
+)
+
+data class ResultsAltTitles(
+    @get:JsonProperty("results") val results: ArrayList<AltTitles>? = arrayListOf(),
+)
+
+data class ExternalIds(
+    @get:JsonProperty("imdb_id") val imdb_id: String? = null,
+    @get:JsonProperty("tvdb_id") val tvdb_id: Int? = null,
+)
+
+data class Credits(
+    @get:JsonProperty("cast") val cast: ArrayList<Cast>? = arrayListOf(),
+)
+
+data class ResultsRecommendations(
+    @get:JsonProperty("results") val results: ArrayList<Media>? = arrayListOf(),
+)
+
+data class LastEpisodeToAir(
+    @get:JsonProperty("episode_number") val episode_number: Int? = null,
+    @get:JsonProperty("season_number") val season_number: Int? = null,
+)
+
+data class ProductionCountries(
+    @get:JsonProperty("name") val name: String? = null,
+)
+
+data class MediaDetail(
+    @get:JsonProperty("id") val id: Int? = null,
+    @get:JsonProperty("imdb_id") val imdbId: String? = null,
+    @get:JsonProperty("title") val title: String? = null,
+    @get:JsonProperty("name") val name: String? = null,
+    @get:JsonProperty("original_title") val originalTitle: String? = null,
+    @get:JsonProperty("original_name") val originalName: String? = null,
+    @get:JsonProperty("poster_path") val posterPath: String? = null,
+    @get:JsonProperty("backdrop_path") val backdropPath: String? = null,
+    @get:JsonProperty("release_date") val releaseDate: String? = null,
+    @get:JsonProperty("first_air_date") val firstAirDate: String? = null,
+    @get:JsonProperty("overview") val overview: String? = null,
+    @get:JsonProperty("runtime") val runtime: Int? = null,
+    @get:JsonProperty("vote_average") val vote_average: Any? = null,
+    @get:JsonProperty("original_language") val original_language: String? = null,
+    @get:JsonProperty("status") val status: String? = null,
+    @get:JsonProperty("genres") val genres: ArrayList<Genres>? = arrayListOf(),
+    @get:JsonProperty("keywords") val keywords: KeywordResults? = null,
+    @get:JsonProperty("last_episode_to_air") val last_episode_to_air: LastEpisodeToAir? = null,
+    @get:JsonProperty("seasons") val seasons: ArrayList<Seasons>? = arrayListOf(),
+    @get:JsonProperty("videos") val videos: ResultsTrailer? = null,
+    @get:JsonProperty("external_ids") val external_ids: ExternalIds? = null,
+    @get:JsonProperty("credits") val credits: Credits? = null,
+    @get:JsonProperty("recommendations") val recommendations: ResultsRecommendations? = null,
+    @get:JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
+    @get:JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
+)
+
+data class TmdbDate(
+    val today: String,
+    val nextWeek: String,
+    val lastWeekStart: String,
+    val monthStart: String
+)
+
+data class CinemetaRes(
+    val meta: Meta? = null
+) {
+
+    data class Meta(
+        val id: String? = null,
+        val type: String? = null,
+        val name: String? = null,
+
+        @JsonProperty("imdb_id")
+        val imdbId: String? = null,
+
+        val slug: String? = null,
+
+        val director: String? = null,
+        val writer: String? = null,
+
+        val description: String? = null,
+        val year: String? = null,
+        val releaseInfo: String? = null,
+        val released: String? = null,
+        val runtime: String? = null,
+        val status: String? = null,
+        val country: String? = null,
+        val imdbRating: String? = null,
+        val genres: List<String>? = null,
+        val poster: String? = null,
+        @JsonProperty("_rawPosterUrl")
+        val rawPosterUrl: String? = null,
+
+        val background: String? = null,
+        val logo: String? = null,
+
+        val videos: List<Video>? = null,
+        val trailers: List<Trailer>? = null,
+        val trailerStreams: List<TrailerStream>? = null,
+        val links: List<Link>? = null,
+
+        val behaviorHints: BehaviorHints? = null,
+
+        @JsonProperty("app_extras")
+        val appExtras: AppExtras? = null,
+    ) {
+
+        data class BehaviorHints(
+            val defaultVideoId: Any? = null,
+            val hasScheduledVideos: Boolean? = null
+        )
+
+        data class Link(
+            val name: String? = null,
+            val category: String? = null,
+            val url: String? = null
+        )
+
+        data class Trailer(
+            val source: String? = null,
+            val type: String? = null,
+            val name: String? = null
+        )
+
+        data class TrailerStream(
+            val ytId: String? = null,
+            val title: String? = null
+        )
+
+        data class Video(
+            val id: String? = null,
+            val title: String? = null,
+            val season: Int? = null,
+            val episode: Int? = null,
+            val thumbnail: String? = null,
+            val overview: String? = null,
+            val released: String? = null,
+            val available: Boolean? = null,
+            val runtime: String? = null
+        )
+
+        data class AppExtras(
+            val cast: List<Cast>? = null,
+            val directors: List<Any?>? = null,
+            val writers: List<Any?>? = null,
+            val seasonPosters: List<String?>? = null,
+            val certification: String? = null
+        )
+
+        data class Cast(
+            val name: String? = null,
+            val character: String? = null,
+            val photo: String? = null
+        )
+    }
+}
+
+data class LinkData(
+    val id: Int? = null,
+    val imdbId: String? = null,
+    val tvdbId: Int? = null,
+    val type: String? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
+    val epid: Int? = null,
+    val aniId: String? = null,
+    val animeId: String? = null,
+    val title: String? = null,
+    val year: Int? = null,
+    val orgTitle: String? = null,
+    val isAnime: Boolean = false,
+    val airedYear: Int? = null,
+    val lastSeason: Int? = null,
+    val epsTitle: String? = null,
+    val jpTitle: String? = null,
+    val date: String? = null,
+    val airedDate: String? = null,
+    val isAsian: Boolean = false,
+    val isBollywood: Boolean = false,
+    val isCartoon: Boolean = false,
+    val alttitle: String? = null,
+    val nametitle: String? = null,
+    val isDub: Boolean = false,
+    val isMovie: Boolean? = false,
+)
+
+data class MeteorRoot(
+    val streams: List<MeteorStream>?
+)
+
+data class MeteorStream(
+    val name: String,
+    val description: String,
+    val url: String,
+    val behaviorHints: MeteorHints
+)
+
+data class MeteorHints(
+    val filename: String?,
+    val videoSize: Long?
 )

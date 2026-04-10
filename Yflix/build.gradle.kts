@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.konan.properties.Properties
 
 // use an integer for version numbers
-version = 1
+version = 11
 
 
 android {
@@ -18,12 +18,15 @@ android {
         buildConfigField("String", "KAIMEG", "\"${properties.getProperty("KAIMEG")}\"")
     }
 }
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
+}
 
 
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
-    description = "Movies & TV Series Etc"
+    description = "Movies & TV Series Etc\nSettings allow selecting domains such as 1Movies,SolarMovie and Sflix"
     authors = listOf("Phisher98")
     /**
      * Status int as the following:

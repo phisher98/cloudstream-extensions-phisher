@@ -40,7 +40,7 @@ class ElevenmoviesProvider : MediaProvider() {
             "$domain/tv/${data.tmdbId}/${data.season}/${data.episode}"
         }
 
-        val encodedToken = app.get(apiurl).documentLarge.selectFirst("script[type=application/json]")
+        val encodedToken = app.get(apiurl).document.selectFirst("script[type=application/json]")
             ?.data()
             ?.substringAfter("{\"data\":\"")
             ?.substringBefore("\",")
@@ -68,13 +68,13 @@ class ElevenmoviesProvider : MediaProvider() {
 
         val responseString = try {
             if (json.httpMethod.contains("GET")) {
-                val res = app.get(apiServerUrl, headers = headers).body.string()
+                val res = app.get(apiServerUrl, headers = headers).text
                 res
             } else {
                 val postHeaders = headers.toMutableMap()
                 postHeaders["X-Requested-With"] = "XMLHttpRequest"
                 postHeaders["User-Agent"] = USER_AGENT
-                val res = app.post(apiServerUrl, headers = postHeaders).body.string()
+                val res = app.post(apiServerUrl, headers = postHeaders).text
                 res
             }
         } catch (e: Exception) {
@@ -90,7 +90,7 @@ class ElevenmoviesProvider : MediaProvider() {
 
             val streamApiUrl = "$Elevenmovies/$staticPath/$serverToken"
             val streamResponseString = if (json.httpMethod == "GET") {
-                app.get(streamApiUrl, headers = headers).body.string()
+                app.get(streamApiUrl, headers = headers).text
             } else {
                 val postHeaders = mapOf(
                     "Referer" to Elevenmovies,
@@ -104,7 +104,7 @@ class ElevenmoviesProvider : MediaProvider() {
                     streamApiUrl,
                     headers = postHeaders,
                     requestBody = requestBody
-                ).body.string()
+                ).text
             }
             val streamRes =
                 Gson().fromJson(streamResponseString, ElevenmoviesStreamResponse::class.java)

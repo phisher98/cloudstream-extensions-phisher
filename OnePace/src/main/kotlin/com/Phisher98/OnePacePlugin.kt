@@ -14,5 +14,8 @@ class OnePacePlugin : BasePlugin() {
         registerExtractorAPI(Dhcplay())
         registerExtractorAPI(vidcloudupns())
         registerExtractorAPI(Animedekhoco())
+        registerExtractorAPI(MyAnimeworld())
+        registerExtractorAPI(AWSStream())
+        registerExtractorAPI(ascdn21())
     }
 }

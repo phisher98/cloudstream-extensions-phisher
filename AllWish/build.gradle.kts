@@ -22,7 +22,7 @@ cloudstream {
     language = "en"
 
     // random cc logo i found
-    iconUrl = "https://manga.all-wish.me/logo4.png"
+    iconUrl = "https://all-wish.me/assets/logo.png"
 
     isCrossPlatform = true
 }

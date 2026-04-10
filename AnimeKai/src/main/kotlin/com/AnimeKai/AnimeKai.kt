@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -43,7 +44,7 @@ import kotlin.random.Random
 class AnimeKai : MainAPI() {
     override var mainUrl = AnimeKaiPlugin.currentAnimeKaiServer
     override var name = "Animekai"
-    override val hasQuickSearch = false
+    override val hasQuickSearch = true
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
@@ -122,17 +123,19 @@ class AnimeKai : MainAPI() {
     }
 
 
-    override val mainPage =
-        mainPageOf(
+    override val mainPage = mainPageOf(
             "$mainUrl/browser?keyword=&status[]=releasing&sort=trending" to "Trending",
             "$mainUrl/browser?keyword=&status[]=releasing&sort=updated_date" to "Latest Episode",
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=sub&language[]=softsub" to "Recently SUB",
             "$mainUrl/browser?keyword=&type[]=tv&status[]=releasing&sort=added_date&language[]=dub" to "Recently DUB",
-            )
+    )
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query,1).items
+
+
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/browser?keyword=$query&page=$page"
-        val res = app.get(link).documentLarge
+        val res = app.get(link).document
         return res.select("div.aitem-wrapper div.aitem").map { it.toSearchResult() }.toNewSearchResponseList()
     }
 
@@ -150,7 +153,7 @@ class AnimeKai : MainAPI() {
             "Cookie" to "usertype=guest; session=Mv2Y6x1b2I8SEw3fj0eNDfQYJM3CTpH9KjJc3ACK; cf_clearance=z9kEgtOSx3us4aluy5_5MfYEL6Ei8RJ3jCbcFTD2R1E-1745122952-1.2.1.1-UYjW2QUhPKUmojZE3XUE.gqHf3g5O6lvdl0qDCNPb5IjjavrpZIOpbE64osKxLbcblCAWynfNLv6bKSO75WzURG.FqDtfcu_si3MrCHECNtbMJC.k9cuhqDRcsz8hHPgpQE2fY8rR1z5Z4HfGmCw2MWMT6GelsZW_RQrTMHUYtIqjaEiAtxfcg.O4v_RGPwio_2J2V3rP16JbWO8wRh_dObNvWSMwMW.t44PhOZml_xWuh7DH.EIxLu3AzI91wggYU9rw6JJkaWY.UBbvWB0ThZRPTAJZy_9wlx2QFyh80AXU2c5BPHwEZPQhTQHBGQZZ0BGZkzoAB8pYI3f3eEEpBUW9fEbEJ9uoDKs7WOow8g"
         )
 
-        val res = app.get("${request.data}&page=$page", headers).documentLarge
+        val res = app.get("${request.data}&page=$page", headers).document
         val items = res.select("div.aitem-wrapper div.aitem").map { it.toSearchResult() }
 
         return newHomePageResponse(request.name, items)
@@ -159,31 +162,57 @@ class AnimeKai : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val malid = document.select("div.watch-section").attr("data-mal-id")
-        val aniid = document.select("div.watch-section").attr("data-al-id")
+        val aniidRaw = document.select("div.watch-section").attr("data-al-id")
+        val aniid = aniidRaw.toIntOrNull()?.takeIf { it > 0 }
         val poster = document.select("div.poster img").attr("src")
-        val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=$aniid").toString()
-        val animeMetaData = parseAnimeData(syncMetaData)
+        val animeMetaData = aniid?.let {
+            val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=$it").text
+            parseAnimeData(syncMetaData)
+        }
+        val kitsuid = animeMetaData?.mappings?.kitsuid
+        val tmdbid = animeMetaData?.mappings?.themoviedbId
 
+        val data = aniid?.let {
+            runCatching {
+                anilistAPICall(
+                    "query (\$id: Int = $aniid) { Media(id: \$id, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } bannerImage episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+                ).data.media
+            }.getOrNull()
+        }
+
+        val typeraw = document.select("div.entity-scroll div.info").text()
+
+        val type = if (typeraw.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.Anime
+
+        val backgroundposter = data?.bannerImage ?: animeMetaData?.images?.find { it.coverType == "Fanart" }?.url ?: data?.coverImage?.extraLarge
+        ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val title = document.selectFirst("h1.title")?.text().orEmpty()
+
         val jptitle = document.selectFirst("h1.title")?.attr("data-jp").orEmpty()
         val plot= document.selectFirst("div.desc")?.text()
-        val backgroundposter = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
-            ?: document.selectFirst(".anisc-poster img")?.attr("src")
+
         val animeId = document.selectFirst("div.rate-box")?.attr("data-id")
         val subCount = document.selectFirst("#main-entity div.info span.sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst("#main-entity div.info span.dub")?.text()?.toIntOrNull()
-
         val subEpisodes = mutableListOf<Episode>()
         val dubEpisodes = mutableListOf<Episode>()
 
         val decoded = decode(animeId)
 
-        val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded")
-            .parsedSafe<Response>()?.getDocument()
+        val epRes = app.get("$mainUrl/ajax/episodes/list?ani_id=$animeId&_=$decoded").parsedSafe<Response>()?.getDocument()
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
 
         epRes?.select("div.eplist a")?.forEachIndexed { index, ep ->
+            val episodeNum = ep.ownText().toIntOrNull() ?: return@forEachIndexed
             // --- Helper to get best episode title ---
             fun resolveTitle(ep: Element, episodeKey: String): String {
                 val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
@@ -198,34 +227,84 @@ class AnimeKai : MainAPI() {
                 return jsonTitle.ifBlank { attrTitle }
             }
 
-            val episodeNum = index + 1
-            fun createEpisode(source: String, ep: Element, episodeNum: Int): Episode {
+            fun createEpisode(source: String, ep: Element): Episode {
                 val episodeKey = episodeNum.toString()
                 val metaEp = animeMetaData?.episodes?.get(episodeKey)
                 return newEpisode("$source|${ep.attr("token")}") {
-                    this.name = resolveTitle(ep, episodeKey)
+                    this.name = if (type == TvType.AnimeMovie) title else resolveTitle(ep, episodeKey)
                     this.episode = episodeNum
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
                     this.description = metaEp?.overview ?: "No summary available"
-                    this.addDate(metaEp?.airDateUtc)
+                    this.addDate(metaEp?.airdate)
                     this.runTime = metaEp?.runtime
                 }
             }
+
             // Sub episodes
             subCount?.let { subTotal ->
                 if (index < subTotal) {
-                    subEpisodes += createEpisode("sub", ep, episodeNum)
+                    subEpisodes += createEpisode("sub", ep)
                 }
             }
 
             // Dub episodes
             dubCount?.let { dubTotal ->
                 if (index < dubTotal) {
-                    val dubEpisodeNum = ep.attr("num").toIntOrNull() ?: episodeNum
-                    dubEpisodes += createEpisode("dub", ep, dubEpisodeNum)
+                    dubEpisodes += createEpisode("dub", ep)
                 }
             }
+        }
+
+
+        //Uncensored Episodes
+
+        var ucOffset = subEpisodes.size
+
+        epRes?.select("div.eplist a")?.forEach { ep ->
+
+            val slug = ep.attr("slug")
+            val titleText = ep.text()
+
+            val isUC = slug.contains("uncen", true) ||
+                    titleText.contains("uncensored", true) ||
+                    titleText.contains("(UC)", true)
+            if (!isUC) return@forEach
+
+            val originalEpNum = ep.attr("num").toIntOrNull() ?: return@forEach
+            val newEpisodeNum = ++ucOffset   // continue numbering
+
+            val episodeKey = originalEpNum.toString()
+
+            fun resolveTitle(ep: Element, episodeKey: String): String {
+                val titleMap = animeMetaData?.episodes?.get(episodeKey)?.title
+                val jsonTitle = titleMap?.get("en")
+                    ?: titleMap?.get("ja")
+                    ?: titleMap?.get("x-jat")
+                    ?: animeMetaData?.titles?.get("en")
+                    ?: animeMetaData?.titles?.get("ja")
+                    ?: animeMetaData?.titles?.get("x-jat")
+                    ?: ""
+
+                val attrTitle = ep.selectFirst("span")?.text() ?: ep.attr("title")
+                return jsonTitle.ifBlank { attrTitle }
+            }
+
+            val metaEp = animeMetaData?.episodes?.get(episodeKey)
+
+            val episode = newEpisode("sub|${ep.attr("token")}") {
+                val base = resolveTitle(ep, episodeKey)
+
+                this.name = "$base (UC)"
+                this.episode = newEpisodeNum   // shifted number
+                this.score = Score.from10(metaEp?.rating)
+                this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
+                this.description = metaEp?.overview ?: "No summary available"
+                this.addDate(metaEp?.airdate)
+                this.runTime = metaEp?.runtime
+            }
+
+            subEpisodes += episode
         }
 
         val recommendations = document.select("div.aitem-col a").map { it.toRecommendResult() }
@@ -242,6 +321,7 @@ class AnimeKai : MainAPI() {
             engName = title
             japName = jptitle
             posterUrl = poster
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             backgroundPosterUrl = backgroundposter
             addEpisodes(DubStatus.Subbed, subEpisodes)
             addEpisodes(DubStatus.Dubbed, dubEpisodes)
@@ -250,7 +330,8 @@ class AnimeKai : MainAPI() {
             this.plot = plot
             showStatus = status?.let { getStatus(it) }
             addMalId(malid.toIntOrNull())
-            addAniListId(aniid.toIntOrNull())
+            addAniListId(aniid)
+            try { addKitsuId(kitsuid) } catch(_:Throwable){}
         }
     }
 
@@ -294,7 +375,6 @@ class AnimeKai : MainAPI() {
     }
 
     data class Response(
-        @JsonProperty("status") val status: Boolean,
         @JsonProperty("result") val result: String
     ) {
         fun getDocument(): Document {

@@ -34,7 +34,7 @@ class Bluray : Pinoymoviepedia() {
     )
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
-        val document = request.documentLarge
+        val document = request.document
         //val directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()

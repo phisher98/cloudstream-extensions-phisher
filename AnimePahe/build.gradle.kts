@@ -1,6 +1,16 @@
 // use an integer for version numbers
-version = 14
+version = 20
 
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+}
+
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
+}
 
 cloudstream {
     language = "en"
@@ -22,7 +32,8 @@ cloudstream {
         "Anime",
         "OVA",
     )
-    iconUrl = "https://www.google.com/s2/favicons?domain=animepahe.ru/&sz=%size%"
+    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/animepahe.png"
 
-    isCrossPlatform = true
+    requiresResources = true
+    isCrossPlatform = false
 }

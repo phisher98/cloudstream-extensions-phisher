@@ -1,6 +1,23 @@
 // use an integer for version numbers
-version = 1
+import org.jetbrains.kotlin.konan.properties.Properties
 
+version = 3
+
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+    defaultConfig {
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        android.buildFeatures.buildConfig=true
+        buildConfigField("String", "iStreamFlare", "\"${properties.getProperty("iStreamFlare")}\"")
+        buildConfigField("String", "iStreamFlareSecretKey", "\"${properties.getProperty("iStreamFlareSecretKey")}\"")
+        buildConfigField("String", "iStreamFlareSalt", "\"${properties.getProperty("iStreamFlareSalt")}\"")
+
+    }
+}
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -31,5 +48,5 @@ cloudstream {
     )
     iconUrl="https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/streamflare.png"
 
-    isCrossPlatform = true
+    isCrossPlatform = false
 }

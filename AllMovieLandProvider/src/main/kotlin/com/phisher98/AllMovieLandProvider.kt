@@ -14,7 +14,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 class AllMovieLandProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://allmovieland.ac"
+    override var mainUrl = "https://allmovieland.you"
     override var name = "AllMovieLand"
     override val hasMainPage = true
     override var lang = "hi"
@@ -25,10 +25,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         TvType.Cartoon
     )
 
-    private var playerDomain: String? = ""
-    private var cookiesSSID: String? = ""
-    private var cookies = mapOf<String, String>()
-    private var tokenKey: String? = ""
+    private var sessionCookies: Map<String, String>? = null
 
     override val mainPage = mainPageOf(
         "$mainUrl/films/" to "Movies",
@@ -52,68 +49,89 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
             "$mainUrl/index.php?do=opensearch", //$mainUrl/engine/ajax/controller.php?mod=search
             requestBody = body,
             referer = "$mainUrl/",
-            cookies = cookies
+            cookies = ensureSession()
         )
     }
 
-    private suspend fun getDlJson(link: String, url: String): String {
-        val baseurl=getBaseUrl(link)
-        val doc = app.get(link, referer = url).documentLarge
-        val jsonString = Regex("""\{.*\}""").find(doc.select("body > script:last-child").toString())?.value.toString()
+    private suspend fun ensureSession(forceRefresh: Boolean = false): Map<String, String> {
+        if (sessionCookies == null || forceRefresh) {
+            val sessionId = app.get("$mainUrl/").cookies["PHPSESSID"].orEmpty()
+            sessionCookies = if (sessionId.isNotBlank()) {
+                mapOf("PHPSESSID" to sessionId)
+            } else {
+                emptyMap()
+            }
+        }
+        return sessionCookies.orEmpty()
+    }
+
+    private suspend fun getDocument(url: String, referer: String? = null) =
+        app.get(url, referer = referer, cookies = ensureSession()).document
+
+    private fun extractJsonObject(script: String): String? {
+        val start = script.indexOf('{')
+        val end = script.lastIndexOf('}')
+        if (start == -1 || end <= start) return null
+        return script.substring(start, end + 1)
+    }
+
+    private suspend fun getDlPayload(link: String, refererUrl: String, playerDomain: String): StreamPayload {
+        val baseurl = getBaseUrl(link)
+        val doc = app.get(link, referer = refererUrl, cookies = ensureSession()).document
+        val jsonString = extractJsonObject(doc.select("body > script:last-child").html()) ?: return StreamPayload(
+            playerDomain = playerDomain,
+            tokenKey = "",
+            items = emptyList()
+        )
         val json = parseJson<Getfile>(jsonString)
-        tokenKey = json.key
-        val jsonfile=if (json.file.startsWith("http")) json.file else baseurl+json.file
+        val tokenKey = json.key.orEmpty()
+        val jsonfile = if (json.file.startsWith("http")) json.file else baseurl + json.file
         val m3u8Langs = app.post(
             jsonfile,
             referer = link,
             headers = mapOf(
-                "X-CSRF-TOKEN" to "${json.key}",
+                "X-CSRF-TOKEN" to tokenKey,
             ),
-        ).toString()
-        return m3u8Langs.replace(Regex("(,)\\s*\\[]"), "")
+        ).text.replace(Regex("(,)\\s*\\[]"), "")
+        return StreamPayload(
+            playerDomain = playerDomain,
+            tokenKey = tokenKey,
+            items = parseJson<List<Extract>>(m3u8Langs)
+        )
     }
 
-    private suspend fun getM3u8(file: String?): String {
+    private suspend fun getM3u8(playerDomain: String, tokenKey: String, file: String?): String {
         return app.post(
             "$playerDomain/playlist/$file.txt",
             headers = mapOf(
-                "X-CSRF-TOKEN" to "$tokenKey",
+                "X-CSRF-TOKEN" to tokenKey,
             ),
             referer = "$mainUrl/"
-        ).toString()
+        ).text
     }
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        cookiesSSID = app.get("$mainUrl/").cookies["PHPSESSID"]
-        cookies = mapOf(
-            "PHPSESSID" to "$cookiesSSID"
-        )
+        val cookies = ensureSession()
         val document = if (page == 1) {
-            app.get(request.data, cookies = cookies).documentLarge
+            app.get(request.data, cookies = cookies).document
         } else {
-            app.get(request.data + "/page/$page/", cookies = cookies).documentLarge
+            app.get(request.data + "/page/$page/", cookies = cookies).document
         }
 
-        //Log.d("Document", request.data)
         val home = document.select("article.short-mid").mapNotNull {
-                    it.toHomeSearchResult()
+                    it.toSearchResult(cookies)
                 }
         return newHomePageResponse(arrayListOf(HomePageList(request.name, home)), hasNext = true)
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
-        //Log.d("mygodcookie",cookies.toString())
+    private fun Element.toSearchResult(cookies: Map<String, String>): SearchResponse? {
         val title = this.selectFirst("a > h3")?.text()?.trim() ?: return null
-        //Log.d("mybatitle", title)
         val href = fixUrl(this.select("a").attr("href"))
-        //Log.d("href", href)
         val posterUrl = fixUrlNull(mainUrl + this.select("div.new-short__poster > a.new-short__poster--link > img").attr("data-src"))
-        //Log.d("mygodposterUrl", posterUrl.toString())
         val checkType = this.select("span.new-short__cats").text()
-        //Log.d("mybacheck", checkType)
         val type = if (checkType.contains("films", true)) TvType.Movie
         else if (checkType.contains("series", true)) TvType.TvSeries
         else TvType.Cartoon
@@ -139,32 +157,20 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         }
     }
 
-    private fun Element.toHomeSearchResult(): SearchResponse? {
-        //Log.d("mygodcookie",cookies.toString())
-        val title = this.selectFirst("a > h3")?.text()?.trim() ?: return null
-        //Log.d("title", title)
-        val href = fixUrl(this.select("a").attr("href"))
-        //Log.d("href", href)
-        val posterUrl = fixUrlNull(mainUrl + this.select("div.new-short__poster > a.new-short__poster--link > img").attr("data-src"))
-        //Log.d("mygodposterUrl", posterUrl.toString())
-        return newMovieSearchResponse(title, href, TvType.Movie) {
-            this.posterUrl = posterUrl
-            posterHeaders = cookies
-        }
-    }
-
     override suspend fun search(query: String): List<SearchResponse> {
+        val cookies = ensureSession()
         val searchList = querySearchApi(
             query
-        ).documentLarge
+        ).document
 
         return searchList.select("article.short-mid").mapNotNull {
-            it.toSearchResult()
+            it.toSearchResult(cookies)
         }
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).documentLarge
+        val cookies = ensureSession()
+        val doc = getDocument(url)
         val title = doc.selectFirst("h1.fs__title")?.text()?.trim()
             ?: return null
         val poster = fixUrlNull(mainUrl + doc.selectFirst("img.fs__poster-img")?.attr("src"))
@@ -177,8 +183,6 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         }
         val isMovie    = tags.filter { it.contains("films", true) }.joinToString()
         val isTvSeries = tags.filter { it.contains("series", true) }.joinToString()
-        //val isCartoon  = tags.filter { it.contains("cartoon", true) }.joinToString()
-        //Log.d("mybaddesc", mycheckType.toString())
         val type = if (isMovie.contains("films", true)) TvType.Movie
         else if (isTvSeries.contains("series", true)) TvType.TvSeries
         else TvType.Cartoon
@@ -196,50 +200,52 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
                     Actor(it)
                 )
             }
-        val recommendations = doc.select("li.short-mid").mapNotNull {
-            it.toSearchResult()
-        }
+        val recommendations = doc.select("li.short-mid").mapNotNull { it.toSearchResult(cookies) }
         val idRegex = Regex("(src:.')+(\\D.*\\d)")
         val id = idRegex.find(doc.select("div.tabs__content script").toString())?.groups?.get(2)?.value
-        // Automating awful player domain changes
         val playerScript = doc.select("script:containsData(AwsIndStreamDomain)").toString()
 
         val domainRegex = Regex("const AwsIndStreamDomain.*'(.*)';")
-        playerDomain = domainRegex.find(playerScript)?.groups?.get(1)?.value
+        val playerDomain = domainRegex.find(playerScript)?.groups?.get(1)?.value ?: return null
         val embedLink = "$playerDomain/play/$id"
-        val jsonReceive = getDlJson(embedLink, url)
+        val streamPayload = getDlPayload(embedLink, url, playerDomain)
         var episodes: List<Episode> = listOf()
         var data = ""
         if (type == TvType.TvSeries) {
-            if (jsonReceive.contains("folder", true)) {
-                    //Log.d("mybadEmbed", jsonReceive)
-                    episodes = parseJson<ArrayList<Seasons>>(jsonReceive).map { Seasons ->
-                        val sNum = Seasons.id.toIntOrNull()
-                        //Log.d("mybadSnum", Snum.toString())
-                        Seasons.folder.map { ep ->
-                            val eNum = ep.episode.toIntOrNull()
-                            newEpisode(ep.folder.toJson())
-                            {
-                                this.name=ep.title
-                                this.episode=eNum
-                                this.season=sNum
-                                this.posterUrl=poster
-                            }
-                        }
-                    }.flatten()
-                } else {
-                    episodes = parseJson<Array<Extract>>(jsonReceive).map {
-                        newEpisode(jsonReceive.toJson())
-                        {
-                            this.name="1 episode"
-                            this.season=1
-                            this.episode=1
-                            this.posterUrl=poster
+            val folderJson = streamPayload.raw
+            if (folderJson.contains("folder", true)) {
+                episodes = parseJson<ArrayList<Seasons>>(folderJson).flatMap { season ->
+                    val sNum = season.id.toIntOrNull()
+                    season.folder.map { ep ->
+                        val eNum = ep.episode.toIntOrNull()
+                        newEpisode(
+                            EpisodePayload(
+                                playerDomain = streamPayload.playerDomain,
+                                tokenKey = streamPayload.tokenKey,
+                                links = ep.folder.map { file ->
+                                    Extract(title = file.title, id = file.id, file = file.file)
+                                }
+                            ).toJson()
+                        ) {
+                            this.name = ep.title
+                            this.episode = eNum
+                            this.season = sNum
+                            this.posterUrl = poster
                         }
                     }
+                }
+            } else {
+                episodes = streamPayload.items.map {
+                    newEpisode(streamPayload.toJson()) {
+                        this.name = "1 episode"
+                        this.season = 1
+                        this.episode = 1
+                        this.posterUrl = poster
+                    }
+                }
             }
         } else {
-            data = jsonReceive.toJson()
+            data = streamPayload.toJson()
         }
 
         return when (type) {
@@ -330,27 +336,46 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         @JsonProperty("id"      ) var id     : String?
     )
 
+    data class StreamPayload(
+        @JsonProperty("playerDomain") val playerDomain: String,
+        @JsonProperty("tokenKey") val tokenKey: String,
+        @JsonProperty("links") val items: List<Extract>,
+        @JsonProperty("raw") val raw: String = items.toJson(),
+    )
+
+    data class EpisodePayload(
+        @JsonProperty("playerDomain") val playerDomain: String,
+        @JsonProperty("tokenKey") val tokenKey: String,
+        @JsonProperty("links") val links: List<Extract>,
+    )
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        //Log.d("mybadembedlink", data)
-        val m3u8Links = parseJson<List<Extract>>(data.replace(Regex("""\[],"""), ""))
+        val payload = runCatching { parseJson<StreamPayload>(data) }.getOrNull()
+            ?: runCatching { parseJson<EpisodePayload>(data) }.getOrNull()?.let {
+                StreamPayload(it.playerDomain, it.tokenKey, it.links)
+            }
+            ?: return false
+        val m3u8Links = payload.items
         m3u8Links.forEach {
             safeApiCall {
-                callback.invoke(
-                    newExtractorLink(
-                        "AllMovieLand-${it.title}",
-                        "AllMovieLand-${it.title}",
-                        url = getM3u8(it.file),
-                        ExtractorLinkType.M3U8
-                    ) {
-                        this.referer = playerDomain.toString()
-                        this.quality = Qualities.Unknown.value
-                    }
+                val headers = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+                    "Accept" to "*/*",
+                    "Referer" to payload.playerDomain,
+                    "Origin" to payload.playerDomain
                 )
+
+                M3u8Helper.generateM3u8(
+                    "AllMovieLand-$lang",
+                    getM3u8(payload.playerDomain, payload.tokenKey, it.file),
+                    payload.playerDomain,
+                    headers = headers
+                ).forEach(callback)
             }
         }
         return true

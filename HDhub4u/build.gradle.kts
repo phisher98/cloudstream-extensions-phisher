@@ -1,9 +1,8 @@
 // use an integer for version numbers
-version = 32
+version = 44
 
 
 cloudstream {
-    //description = "Movie website in Bangladesh"
     authors = listOf("Phisher98")
 
     /**

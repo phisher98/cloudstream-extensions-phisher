@@ -25,6 +25,12 @@ class Ghbrisk : Filesim() {
     override val requiresReferer = true
 }
 
+class ascdn21 : AWSStream() {
+    override val name = "Zephyrflick"
+    override val mainUrl = "https://as-cdn21.top"
+    override val requiresReferer = true
+}
+
 class Zephyrflick : AWSStream() {
     override val name = "Zephyrflick"
     override val mainUrl = "https://play.zephyrflick.top"
@@ -55,13 +61,13 @@ open class AWSStream : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val extractedHash = url.substringAfterLast("/")
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val m3u8Url = "$mainUrl/player/index.php?data=$extractedHash&do=getVideo"
         val header = mapOf("x-requested-with" to "XMLHttpRequest")
         val formdata = mapOf("hash" to extractedHash, "r" to mainUrl)
         val response = app.post(m3u8Url, headers = header, data = formdata).parsedSafe<Response>()
         response?.videoSource?.let { m3u8 ->
-            callback(
+            callback.invoke(
                 newExtractorLink(
                     name,
                     name,
@@ -75,10 +81,11 @@ open class AWSStream : ExtractorApi() {
             val extractedPack = doc.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().orEmpty()
 
             JsUnpacker(extractedPack).unpack()?.let { unpacked ->
-                Regex(""""kind":\s*"captions"\s*,\s*"file":\s*"(https.*?\.srt)""")
+                Regex(""""kind":\s*"captions"\s*,\s*"file":\s*"(https.*?)"""")
                     .find(unpacked)
                     ?.groupValues
                     ?.get(1)
+                    ?.replace("\\", "")
                     ?.let { subtitleUrl ->
                         subtitleCallback.invoke(
                             newSubtitleFile(
@@ -133,7 +140,7 @@ open class MegaPlay : ExtractorApi() {
                 "Referer" to mainUrl
             )
 
-            val id = app.get(url, headers = headers).documentLarge.selectFirst("#megaplay-player")?.attr("data-id")
+            val id = app.get(url, headers = headers).document.selectFirst("#megaplay-player")?.attr("data-id")
 
             val apiUrl = "$mainUrl/stream/getSources?id=$id&id=$id"
             val gson = Gson()

@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -49,7 +50,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
 import okhttp3.OkHttpClient
-import okhttp3.Request
+import org.json.JSONObject
 
 class HiAnime : MainAPI() {
     override var mainUrl = HiAnimeProviderPlugin.currentHiAnimeServer
@@ -128,62 +129,55 @@ class HiAnime : MainAPI() {
                     "$mainUrl/completed?page=" to "Latest Completed",
             )
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val link = "$mainUrl/search?keyword=$query&page=$page"
-        val res = app.get(link).documentLarge
+        val res = app.get(link).document
 
         return res.select("div.flw-item").map { it.toSearchResult() }.toNewSearchResponseList()
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "${request.data}$page"
-        val httpRequest = Request.Builder()
-            .url(url)
-            .header("User-Agent", userAgent)
-            .get()
-            .build()
-        val response = client.newCall(httpRequest).execute()
-        val html = response.body.string()
-        response.close()
-        val document = Jsoup.parse(html)
+        val document = app.get("${request.data}$page").document
         val items = document.select("div.flw-item").map { it.toSearchResult() }
-
         return newHomePageResponse(request.name, items)
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val url1 = url.replace("watch/", "")
-        val request1 = Request.Builder().url(url1).header("User-Agent", userAgent).get().build()
-        val response1 = client.newCall(request1).execute()
-        val html1 = response1.body.string()
-        response1.close()
-        val doc = Jsoup.parse(html1)
-
-        val request2 = Request.Builder().url(url).header("User-Agent", userAgent).get().build()
-        val response2 = client.newCall(request2).execute()
-        val html2 = response2.body.string()
-        response2.close()
-        val document = Jsoup.parse(html2)
-
+        val document = app.get(url.replace("watch/", "")).document
 
         val syncData = tryParseJson<ZoroSyncData>(document.selectFirst("#syncData")?.data())
         val syncMetaData = app.get("https://api.ani.zip/mappings?mal_id=${syncData?.malId}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
-        val description = document.select("div.film-description > div").text().ifEmpty { doc.select("div.film-description div").text() }
+        val description = document.select("div.film-description > div").text().ifEmpty { document.select("div.film-description div").text() }
         val poster = document.select("#ani_detail div.film-poster img").attr("src")
-        val genres = doc.select("div.item.item-list:has(> span.item-head:contains(Genres)) a").map { it.text() }
+        val genres = document.select("div.item.item-list:has(> span.item-head:contains(Genres)) a").map { it.text() }
         val backgroundposter = animeMetaData?.images?.find { it.coverType == "Fanart" }?.url
             ?: document.selectFirst(".anisc-poster img")?.attr("src")
         val animeId = URI(url).path.split("-").last()
+        val kitsuid = animeMetaData?.mappings?.kitsuid
+        val tmdbid = animeMetaData?.mappings?.themoviedbId
+
+        val typeraw = document.select("div.film-stats div.tick").text()
+        val type = if (typeraw.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.Anime
+
+
         val subCount = document.selectFirst(".anisc-detail .tick-sub")?.text()?.toIntOrNull()
         val dubCount = document.selectFirst(".anisc-detail .tick-dub")?.text()?.toIntOrNull()
         val dubEpisodes = emptyList<Episode>().toMutableList()
         val subEpisodes = emptyList<Episode>().toMutableList()
-        val responseBody = app.get("$mainUrl/ajax/v2/episode/list/$animeId").body.string()
+        val responseBody = app.get("$mainUrl/ajax/v2/episode/list/$animeId").text
         val epRes = responseBody.stringParse<Response>()?.getDocument()
         val malId = syncData?.malId ?: "0"
         val anilistId = syncData?.aniListId ?: "0"
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
 
 
         epRes?.select(".ss-list > a[href].ssl-item.ep-item")?.forEachIndexed { index, ep ->
@@ -208,7 +202,7 @@ class HiAnime : MainAPI() {
             fun createEpisode(source: String): Episode {
                 val metaEp = animeMetaData?.episodes?.get(episodeKey)
                 return newEpisode("$source|$malId|$href") {
-                    this.name = resolveTitle(ep, episodeKey)
+                    this.name = if (type == TvType.AnimeMovie) title else resolveTitle(ep, episodeKey)
                     this.episode = episodeNum
                     this.score = Score.from10(metaEp?.rating)
                     this.posterUrl = metaEp?.image ?: animeMetaData?.images?.firstOrNull()?.url ?: ""
@@ -221,18 +215,13 @@ class HiAnime : MainAPI() {
             subCount?.let { if (index < it) subEpisodes += createEpisode("sub") }
             dubCount?.let { if (index < it) dubEpisodes += createEpisode("dub") }
         }
-        val actors =
-                document.select("div.block-actors-content div.bac-item").mapNotNull {
-                    it.getActorData()
-                }
-
-        val recommendations =
-                document.select("div.block_area_category div.flw-item").map { it.toSearchResult() }
-
+        val actors = document.select("div.block-actors-content div.bac-item").mapNotNull { it.getActorData() }
+        val recommendations = document.select("div.block_area_category div.flw-item").map { it.toSearchResult() }
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             engName = title
             posterUrl = poster
             backgroundPosterUrl = backgroundposter
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             this.tags = genres
             this.plot = description
             addEpisodes(DubStatus.Subbed, subEpisodes)
@@ -241,6 +230,7 @@ class HiAnime : MainAPI() {
             this.actors = actors
             addMalId(malId.toIntOrNull())
             addAniListId(anilistId.toIntOrNull())
+            try { addKitsuId(kitsuid) } catch(_:Throwable){}
             // adding info
             document.select(".anisc-info > .item").forEach { info ->
                 val infoType = info.select("span.item-head").text().removeSuffix(":")
@@ -403,7 +393,19 @@ class HiAnime : MainAPI() {
     data class MetaAnimeData(
         @JsonProperty("titles") val titles: Map<String, String>?,
         @JsonProperty("images") val images: List<MetaImage>?,
-        @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?
+        @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?,
+        @JsonProperty("mappings") val mappings: MetaMappings? = null
+    )
+
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class MetaMappings(
+        @JsonProperty("themoviedb_id") val themoviedbId: Int? = null,
+        @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+        @JsonProperty("imdb_id") val imdbId: String? = null,
+        @JsonProperty("mal_id") val malId: Int? = null,
+        @JsonProperty("anilist_id") val anilistId: Int? = null,
+        @JsonProperty("kitsu_id") val kitsuid: String? = null,
     )
 
     private fun parseAnimeData(jsonString: String): MetaAnimeData? {
@@ -454,5 +456,78 @@ class HiAnime : MainAPI() {
             }
         }
     }
+}
 
+suspend fun fetchTmdbLogoUrl(
+    tmdbAPI: String,
+    apiKey: String,
+    type: TvType,
+    tmdbId: Int?,
+    appLangCode: String?
+): String? {
+
+    if (tmdbId == null) return null
+
+    val url = if (type == TvType.AnimeMovie)
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+    else
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
+
+    val json = runCatching { JSONObject(app.get(url).text) }.getOrNull() ?: return null
+    val logos = json.optJSONArray("logos") ?: return null
+    if (logos.length() == 0) return null
+
+    val lang = appLangCode?.trim()?.lowercase()
+
+    fun path(o: JSONObject) = o.optString("file_path")
+    fun isSvg(o: JSONObject) = path(o).endsWith(".svg", true)
+    fun urlOf(o: JSONObject) = "https://image.tmdb.org/t/p/w500${path(o)}"
+
+    // Language match
+    var svgFallback: JSONObject? = null
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        val p = path(logo)
+        if (p.isBlank()) continue
+
+        val l = logo.optString("iso_639_1").trim().lowercase()
+        if (l == lang) {
+            if (!isSvg(logo)) return urlOf(logo)
+            if (svgFallback == null) svgFallback = logo
+        }
+    }
+    svgFallback?.let { return urlOf(it) }
+
+    // Highest voted fallback
+    var best: JSONObject? = null
+    var bestSvg: JSONObject? = null
+
+    fun voted(o: JSONObject) = o.optDouble("vote_average", 0.0) > 0 && o.optInt("vote_count", 0) > 0
+
+    fun better(a: JSONObject?, b: JSONObject): Boolean {
+        if (a == null) return true
+        val aAvg = a.optDouble("vote_average", 0.0)
+        val aCnt = a.optInt("vote_count", 0)
+        val bAvg = b.optDouble("vote_average", 0.0)
+        val bCnt = b.optInt("vote_count", 0)
+        return bAvg > aAvg || (bAvg == aAvg && bCnt > aCnt)
+    }
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        if (!voted(logo)) continue
+
+        if (isSvg(logo)) {
+            if (better(bestSvg, logo)) bestSvg = logo
+        } else {
+            if (better(best, logo)) best = logo
+        }
+    }
+
+    best?.let { return urlOf(it) }
+    bestSvg?.let { return urlOf(it) }
+
+    // No language match & no voted logos
+    return null
 }

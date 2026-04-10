@@ -17,7 +17,7 @@ class Topcartoons : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}").documentLarge
+        val document = app.get("$mainUrl/${request.data}").document
         val home     = document.select("article").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -40,7 +40,7 @@ class Topcartoons : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-            val document = app.get("${mainUrl}/?s=$query").documentLarge
+            val document = app.get("${mainUrl}/?s=$query").document
             val results = document.select("article").mapNotNull { it.toSearchResult() }
             return results
     }
@@ -48,7 +48,7 @@ class Topcartoons : MainAPI() {
     @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
-        val document = request.documentLarge
+        val document = request.document
         val title =document.selectFirst("div.header-content h1")?.text()?.trim().toString()
         val poster = document.select("a.blog-img img").attr("data-src")
         val description = document.selectFirst("div.entry-content")?.text()
@@ -70,7 +70,7 @@ class Topcartoons : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         val file=document.selectFirst("meta[property=og:video:url]")?.attr("content").toString()
         callback.invoke(
             newExtractorLink(

@@ -1,6 +1,15 @@
 // use an integer for version numbers
-version = 9
+version = 12
 
+android {
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+}
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
+}
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
@@ -17,12 +26,13 @@ cloudstream {
     * */
     status = 1
 
-    tvTypes = listOf("Movies", "TV Series")
+    tvTypes = listOf("Movies", "TvSeries")
 
     language = "en"
 
     iconUrl = "https://img.watch32.sx/xxrz/400x400/100/a9/5e/a95e15a880a9df3c045f6a5224daf576/a95e15a880a9df3c045f6a5224daf576.png"
 
-    isCrossPlatform = true
+    requiresResources = true
+    isCrossPlatform = false
 }
 

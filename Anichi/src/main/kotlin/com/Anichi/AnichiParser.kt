@@ -43,10 +43,20 @@ object AnichiParser {
     )
 
     data class AniMedia(
-            @JsonProperty("id") var id: Int? = null,
-            @JsonProperty("idMal") var idMal: Int? = null,
-            @JsonProperty("coverImage") var coverImage: CoverImage? = null,
-            @JsonProperty("bannerImage") var bannerImage: String? = null,
+        @JsonProperty("id") val id: Int,
+        @JsonProperty("idMal") val idMal: Int?,
+        @JsonProperty("seasonYear") val seasonYear: Int?,
+        @JsonProperty("format") val format: String?,
+        @JsonProperty("title") val title: Title?,
+        @JsonProperty("synonyms") val synonyms: List<String>?,
+        @JsonProperty("coverImage") val coverImage: CoverImage?,
+        @JsonProperty("bannerImage") val bannerImage: String?
+    )
+
+    data class Title(
+        @JsonProperty("romaji") val romaji: String?,
+        @JsonProperty("english") val english: String?,
+        @JsonProperty("native") val native: String?
     )
 
     data class AniPage(@JsonProperty("media") var media: ArrayList<AniMedia> = arrayListOf())
@@ -205,6 +215,16 @@ object AnichiParser {
 
 }
 
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @JsonProperty("themoviedb_id") val themoviedbId: String? = null,
+    @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+    @JsonProperty("imdb_id") val imdbId: String? = null,
+    @JsonProperty("mal_id") val malId: Int? = null,
+    @JsonProperty("anilist_id") val anilistId: Int? = null,
+)
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Image(
     @JsonProperty("coverType") val coverType: String?,
@@ -227,7 +247,8 @@ data class EpisodeInfo(
 data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>?,
     @JsonProperty("images") val images: List<Image>?,
-    @JsonProperty("episodes") val episodes: Map<String, EpisodeInfo>?
+    @JsonProperty("episodes") val episodes: Map<String, EpisodeInfo>?,
+    @JsonProperty("mappings") val mappings: MetaMappings? = null
 )
 
 data class AnichiDownload(

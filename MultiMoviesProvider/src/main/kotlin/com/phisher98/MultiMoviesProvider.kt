@@ -36,7 +36,7 @@ import org.jsoup.nodes.Element
 
 class MultiMoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl: String = runBlocking {
-        MultiMoviesProviderPlugin.getDomains()?.MultiMovies ?: "https://multimovies.cheap"
+        MultiMoviesProviderPlugin.getDomains()?.MultiMovies ?: "https://multimovies.autos"
     }
     override var name = "MultiMovies"
     override val hasMainPage = true
@@ -74,9 +74,9 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         request: MainPageRequest
     ): HomePageResponse {
         val document = if (page == 1) {
-            app.get("$mainUrl/${request.data}").documentLarge
+            app.get("$mainUrl/${request.data}").document
         } else {
-            app.get("$mainUrl/${request.data}" + "page/$page/").documentLarge
+            app.get("$mainUrl/${request.data}" + "page/$page/").document
         }
         val home = if (request.data.contains("/movies")) {
             document.select("#archive-content > article").mapNotNull {
@@ -109,7 +109,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/?s=$query").documentLarge
+        val document = app.get("$mainUrl/?s=$query").document
         return document.select("div.result-item").mapNotNull {
             val title =
                 it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
@@ -157,14 +157,13 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
     )
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val titleL = doc.selectFirst("div.sheader > div.data > h1")?.text()?.trim() ?: return null
         val titleRegex = Regex("(^.*\\)\\d*)")
         val titleClean = titleRegex.find(titleL)?.groups?.get(1)?.value.toString()
         val title = if (titleClean == "null") titleL else titleClean
-        val poster = fixUrlNull(
-            doc.select("div.g-item a").attr("href")
-        )
+        val poster = fixUrlNull(doc.select("div.poster img").attr("src"))
+        val bgposter = fixUrlNull(doc.select("div.g-item a").attr("href"))
         val tags = doc.select("div.sgeneros > a").map { it.text() }
         val year = doc.selectFirst("span.date")?.text()?.substringAfter(",")?.trim()?.toInt()
         val description = doc.selectFirst("#info div.wp-content p")?.text()?.trim()
@@ -226,6 +225,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                 url
             ) {
                 this.posterUrl = poster?.trim()
+                this.backgroundPosterUrl = bgposter ?:poster
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -238,6 +238,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         } else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster?.trim()
+                this.backgroundPosterUrl = bgposter ?:poster
                 this.year = year
                 this.plot = description
                 this.tags = tags
@@ -256,7 +257,7 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val req = app.get(data).documentLarge
+        val req = app.get(data).document
         req.select("ul#playeroptionsul li").map {
                 Triple(
                     it.attr("data-post"),
@@ -276,11 +277,16 @@ class MultiMoviesProvider : MainAPI() { // all providers must be an instance of 
                     referer = mainUrl,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).parsed<ResponseHash>().embed_url
-                val link = source.substringAfter("\"").substringBefore("\"").trim()
+                val link = Regex("""SRC="(https?:[^"]+)""" , RegexOption.IGNORE_CASE)
+                    .find(source)
+                    ?.groupValues?.getOrNull(1)
+                    ?.replace("\t", "")
+                    ?.trim()
+                    ?: source.substringAfter("\"").substringBefore("\"").trim()
                 when {
                     !link.contains("youtube") -> {
                         if (link.contains("deaddrive.xyz")) {
-                            app.get(link).documentLarge.select("ul.list-server-items > li").map {
+                            app.get(link).document.select("ul.list-server-items > li").map {
                                 val server = it.attr("data-video")
                                 loadExtractor(server, referer = mainUrl, subtitleCallback, callback)
                             }

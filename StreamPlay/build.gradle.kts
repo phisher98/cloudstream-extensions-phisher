@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 465
+version = 609
 
 android {
     buildFeatures {
@@ -51,7 +51,14 @@ android {
         buildConfigField("String", "KAIENC", "\"${properties.getProperty("KAIENC")}\"")
         buildConfigField("String", "Nuviostreams", "\"${properties.getProperty("Nuviostreams")}\"")
         buildConfigField("String", "VideasyDEC", "\"${properties.getProperty("VideasyDEC")}\"")
+        buildConfigField("String", "YFXENC", "\"${properties.getProperty("YFXENC")}\"")
+        buildConfigField("String", "YFXDEC", "\"${properties.getProperty("YFXDEC")}\"")
+        buildConfigField("String", "NuvFeb", "\"${properties.getProperty("NuvFeb")}\"")
     }
+}
+
+dependencies {
+    implementation("com.google.android.material:material:1.13.0")
 }
 
 cloudstream {
@@ -89,6 +96,6 @@ dependencies {
     // FIXME remove this when crossplatform is fully supported
     val cloudstream by configurations
     implementation("com.google.android.material:material:1.13.0")
-    implementation("androidx.browser:browser:1.9.0")
+    implementation("androidx.browser:browser:1.10.0")
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }

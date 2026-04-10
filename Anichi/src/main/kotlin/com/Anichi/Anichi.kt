@@ -1,8 +1,6 @@
 package com.Anichi
 
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.Anichi.AnichiExtractors.invokeInternalSources
 import com.Anichi.AnichiParser.AnichiLoadData
 import com.Anichi.AnichiParser.AnichiQuery
@@ -48,17 +46,19 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.nicehttp.RequestBodyTypes
 import com.phisher98.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import java.time.LocalDate
+import java.util.Calendar
 
 open class Anichi : MainAPI() {
     override var name = "Anichi"
     override val instantLinkLoading = true
-    override val hasQuickSearch = false
+    override val hasQuickSearch = true
     override val hasMainPage = true
 
     private fun getStatus(t: String): ShowStatus {
@@ -76,67 +76,91 @@ open class Anichi : MainAPI() {
     private val animeRecentTitle = "Latest Anime"
     private val donghuaRecentTitle = "Latest Donghua"
     private val movieTitle = "Movie"
-    @RequiresApi(Build.VERSION_CODES.O)
-    val currentYear = LocalDate.now().year  // Get the current year
+    val calendar: Calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH) + 1
+
+    val season = when (month) {
+        in 1..3 -> "Winter"
+        in 4..6 -> "Spring"
+        in 7..9 -> "Summer"
+        else -> "Fall"
+    }
+
     @SuppressLint("NewApi")
     override val mainPage = mainPageOf(
-        """$apiUrl?variables={"search":{"season":"Spring","year":$currentYear},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to "New Series",
-        """$apiUrl?variables={"search":{},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to animeRecentTitle,
-        """$apiUrl?variables={"search":{},"limit":26,"page":1,"translationType":"sub","countryOrigin":"CN"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to donghuaRecentTitle,
+        """$apiUrl?variables={"search":{"season":"$season","year":$year},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to "New Series",
+        """$apiUrl?variables={"search":{},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to animeRecentTitle,
+        """$apiUrl?variables={"search":{},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"CN"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to donghuaRecentTitle,
         """$apiUrl?variables={"type":"anime","size":30,"dateRange":1,"page":%d,"allowAdult":${settingsForProvider.enableAdult},"allowUnknown":false}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$popularHash"}}""" to popularTitle,
-        """$apiUrl?variables={"search":{"types":["Movie"]},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to movieTitle,
+        """$apiUrl?variables={"search":{"types":["Movie"]},"limit":26,"page":%d,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}""" to movieTitle,
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
 
-        val url = request.data.format(page)
-        val res = app.get(url, headers = headers).parsedSafe<AnichiQuery>()?.data
+        val url = if (request.data.contains("%d")) {
+            request.data.format(page)
+        } else {
+            request.data
+        }
+
+        val res = fetchQuery(url)?.data
         val query = res?.shows ?: res?.queryPopular ?: res?.queryListForTag
+
         val card =
-                if (request.name == popularTitle) query?.recommendations?.map { it.anyCard }
-                else query?.edges
-        val home =
-                card
-                        ?.filter {
-                            // filtering in case there is an anime with 0 episodes available on the
-                            // site.
-                            !(it?.availableEpisodes?.raw == 0 &&
-                                    it.availableEpisodes.sub == 0 &&
-                                    it.availableEpisodes.dub == 0)
-                        }
-                        ?.mapNotNull { media -> media?.toSearchResponse() }
-                        ?: emptyList()
+            if (request.name == popularTitle) query?.recommendations?.map { it.anyCard }
+            else query?.edges
+
+        val home = card
+            ?.filter {
+                // filtering in case there is an anime with 0 episodes available on the // site.
+                !(it?.availableEpisodes?.raw == 0 &&
+                        it.availableEpisodes.sub == 0 &&
+                        it.availableEpisodes.dub == 0)
+            }
+            ?.mapNotNull { media -> media?.toSearchResponse() }
+            ?: emptyList()
+
         return newHomePageResponse(
-                list =
-                        HomePageList(
-                                name = request.name,
-                                list = home,
-                        ),
-                hasNext = request.name != movieTitle
+            list = HomePageList(
+                name = request.name,
+                list = home,
+            ),
+            hasNext = home.isNotEmpty() // better pagination handling
         )
     }
 
+    private suspend fun fetchQuery(url: String): AnichiQuery? =
+        app.get(url, headers = headers).parsedSafe()
+
+    private fun getPosterUrl(thumbnail: String?): String? {
+        return thumbnail?.let {
+            if (it.startsWith("http")) it
+            else "https://wp.youtube-anime.com/aln.youtube-anime.com/$it"
+        }
+    }
+
     private fun Edges.toSearchResponse(): AnimeSearchResponse? {
-        val posterUrl = if (thumbnail?.startsWith("http") == true) thumbnail else "https://wp.youtube-anime.com/aln.youtube-anime.com/$thumbnail"
         return newAnimeSearchResponse(
                 name ?: englishName ?: nativeName ?: "",
                 Id ?: return null,
                 fix = false
         ) {
-            this.posterUrl = posterUrl
+            this.posterUrl = getPosterUrl(thumbnail)
             this.year = airedStart?.year
             this.otherName = englishName
             addDub(availableEpisodes?.dub)
             addSub(availableEpisodes?.sub)
         }
     }
+
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(
         withContext(
             Dispatchers.IO
         ) {
             URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
-        }
-    )
+        },1
+    )?.items
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
         val encodedQuery = withContext(Dispatchers.IO) {
@@ -144,16 +168,10 @@ open class Anichi : MainAPI() {
         }
         val link =
                 """$apiUrl?variables={"search":{"query":"$encodedQuery"},"limit":26,"page":$page,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$maipageshaHash"}}"""
-        val res: String =
-            app.get(link, headers = headers).text.takeUnless {
-                it.contains("PERSISTED_QUERY_NOT_FOUND")
-            }
-                ?: app.get(link, headers = headers).text.takeUnless {
-                    it.contains("PERSISTED_QUERY_NOT_FOUND")
-                }
-                ?: return null
-
-        val response = parseJson<AnichiQuery>(res)
+        val responseText = app.get(link, headers = headers).text
+            .takeUnless { it.contains("PERSISTED_QUERY_NOT_FOUND") }
+            ?: return null
+        val response = parseJson<AnichiQuery>(responseText)
 
         val results =
                 response.data?.shows?.edges?.filter {
@@ -163,16 +181,7 @@ open class Anichi : MainAPI() {
                             it.availableEpisodes.dub == 0)
                 }
 
-        return results?.map {
-            val posterUrl = if (it.thumbnail?.startsWith("http") == true) it.thumbnail else "https://wp.youtube-anime.com/aln.youtube-anime.com/${it.thumbnail}"
-            newAnimeSearchResponse(it.name ?: "", "${it.Id}", fix = false) {
-                this.posterUrl = posterUrl
-                this.year = it.airedStart?.year
-                this.otherName = it.englishName
-                addDub(it.availableEpisodes?.dub)
-                addSub(it.availableEpisodes?.sub)
-            }
-        }?.toNewSearchResponseList()
+        return results?.mapNotNull { it.toSearchResponse() }?.toNewSearchResponseList()
     }
 
     override suspend fun getLoadUrl(name: SyncIdName, id: String): String? {
@@ -185,7 +194,7 @@ open class Anichi : MainAPI() {
                 }
         val media = app.get("$jikanApi/anime/$malId").parsedSafe<JikanResponse>()?.data
         val link = """$apiUrl?variables={"search":{"allowAdult":false,"allowUnknown":false,"query":"${media?.title}"},"limit":26,"page":1,"translationType":"sub","countryOrigin":"ALL"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$mainHash"}}"""
-        val res = app.get(link, headers = headers).parsedSafe<AnichiQuery>()?.data?.shows?.edges
+        val res = fetchQuery(link)?.data?.shows?.edges
         return res
                 ?.find {
                     (it.name.equals(media?.title, true) ||
@@ -198,6 +207,7 @@ open class Anichi : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse? {
         val id = url.substringAfterLast("/")
+
         // lazy to format
         val body =
                 """
@@ -224,53 +234,59 @@ open class Anichi : MainAPI() {
                         showData.season?.quarter,
                         showData.type
                 )
-        val syncData = app.get("https://api.ani.zip/mappings?mal_id=${trackers?.idMal}").toString()
-        val animeMetadata = parseAnimeData(syncData)
 
-        val poster = animeMetadata?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: showData.thumbnail
-        val episodes = showData.availableEpisodesDetail?.let { detail ->
-            val id = showData.Id ?: return@let null
-
-            // 🔹 Helper to safely get episode metadata
-            fun getEpMeta(epNum: Int?): EpisodeInfo? =
-                epNum?.let { animeMetadata?.episodes?.get(it.toString()) }
-
-            val sub = detail.sub.map { eps ->
-                val epNum = eps.toIntOrNull()
-                val meta = getEpMeta(epNum)
-
-                newEpisode(
-                    AnichiLoadData(id, "sub", eps, trackers?.idMal).toJson()
-                ) {
-                    this.episode = epNum
-                    this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
-                    this.score = Score.from10(meta?.rating)
-                    this.posterUrl = meta?.image ?: showData.thumbnail
-                    this.description = meta?.overview ?: "No summary available"
-                    this.addDate(meta?.airDateUtc)
-                    this.runTime = meta?.runtime
+        val (data, animeMetadata) = coroutineScope {
+            val anilistDeferred = async {
+                trackers?.id?.let { aniId ->
+                    anilistAPICall(
+                        "query { Media(id: $aniId, type: ANIME) { id title { romaji english } startDate { year } genres description averageScore status bannerImage coverImage { extraLarge large medium } episodes format nextAiringEpisode { episode } airingSchedule { nodes { episode } } recommendations { edges { node { id mediaRecommendation { id title { romaji english } coverImage { extraLarge large medium } } } } } } }"
+                    ).data.media
                 }
             }
-
-            val dub = detail.dub.map { eps ->
-                val epNum = eps.toIntOrNull()
-                val meta = getEpMeta(epNum)
-                newEpisode(
-                    AnichiLoadData(id, "dub", eps, trackers?.idMal).toJson()
-                ) {
-                    this.episode = epNum
-                    this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
-                    this.score = Score.from10(meta?.rating)
-                    this.posterUrl = meta?.image ?: showData.thumbnail
-                    this.description = meta?.overview ?: "No summary available"
-                    this.addDate(meta?.airDateUtc)
-                    this.runTime = meta?.runtime
+            val metadataDeferred = async {
+                trackers?.idMal?.let { malId ->
+                    parseAnimeData(app.get("https://api.ani.zip/mappings?mal_id=$malId").text)
                 }
             }
-
-            Pair(sub.reversed(), dub.reversed())
+            anilistDeferred.await() to metadataDeferred.await()
         }
+        val fanart = animeMetadata?.images
+            ?.firstOrNull { it.coverType.equals("Fanart", ignoreCase = true) }
+            ?.url
 
+        val backgroundposter = fanart ?: data?.bannerImage ?: trackers?.coverImage?.large
+
+        val logotvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
+
+        val tmdbid = animeMetadata?.mappings?.themoviedbId?.toIntOrNull()
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = logotvType,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
+
+        val poster = showData.thumbnail
+        fun buildEpisodes(episodeNumbers: List<String>, dubStatus: String) = episodeNumbers.map { eps ->
+            val epNum = eps.toIntOrNull()
+            val meta = epNum?.let { animeMetadata?.episodes?.get(it.toString()) }
+            newEpisode(
+                AnichiLoadData(id, dubStatus, eps, trackers?.idMal).toJson()
+            ) {
+                this.episode = epNum
+                this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
+                this.score = Score.from10(meta?.rating)
+                this.posterUrl = meta?.image ?: showData.thumbnail
+                this.description = meta?.overview ?: "No summary available"
+                this.addDate(meta?.airDateUtc)
+                this.runTime = meta?.runtime
+            }
+        }
+        val episodes = showData.availableEpisodesDetail?.let { detail ->
+            Pair(buildEpisodes(detail.sub, "sub").reversed(), buildEpisodes(detail.dub, "dub").reversed())
+        }
         val (subEpisodes, dubEpisodes) = episodes ?: Pair(emptyList(), emptyList())
         val characters =
                 showData.characters?.map {
@@ -286,13 +302,17 @@ open class Anichi : MainAPI() {
                     Pair(Actor(name, image), role)
                 }
 
-        return newAnimeLoadResponse(title ?: "", url, TvType.Anime) {
-            engName = showData.altNames?.firstOrNull()
-            posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
-            score = Score.from100(showData.averageScore)
-            tags = showData.genres
-            year = showData.airedStart?.year
-            duration = showData.episodeDuration?.div(60_000)
+        val tvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
+
+        return newAnimeLoadResponse(title ?: "", url, tvType) {
+            this.engName = showData.altNames?.firstOrNull()
+            this.posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
+            this.backgroundPosterUrl = backgroundposter ?: trackers?.coverImage?.extraLarge
+            try { this.logoUrl = logoUrl } catch(_:Throwable){}
+            this.score = Score.from100(showData.averageScore)
+            this.tags = showData.genres
+            this.year = showData.airedStart?.year
+            this.duration = showData.episodeDuration?.div(60_000)
             addTrailer(
                     showData.prevideos.filter { it.isNotBlank() }.map {
                         "https://www.youtube.com/watch?v=$it"
@@ -337,15 +357,12 @@ open class Anichi : MainAPI() {
         const val anilistApi = "https://graphql.anilist.co"
         const val jikanApi = "https://api.jikan.moe/v4"
 
-        private const val mainHash =
-                "e42a4466d984b2c0a2cecae5dd13aa68867f634b16ee0f17b380047d14482406"
-        private const val popularHash =
-                "31a117653812a2547fd981632e8c99fa8bf8a75c4ef1a77a1567ef1741a7ab9c"
+        private const val mainHash = "e42a4466d984b2c0a2cecae5dd13aa68867f634b16ee0f17b380047d14482406"
+        private const val popularHash = "60f50b84bb545fa25ee7f7c8c0adbf8f5cea40f7b1ef8501cbbff70e38589489"
         //private const val slugHash = "bf603205eb2533ca21d0324a11f623854d62ed838a27e1b3fcfb712ab98b03f4"
-        private const val detailHash =
-                "bb263f91e5bdd048c1c978f324613aeccdfe2cbc694a419466a31edb58c0cc0b"
-        const val serverHash = "5f1a64b73793cc2234a389cf3a8f93ad82de7043017dd551f38f65b89daa65e0"
-        const val maipageshaHash="06327bc10dd682e1ee7e07b6db9c16e9ad2fd56c1b769e47513128cd5c9fc77a"
+        private const val detailHash = "bb263f91e5bdd048c1c978f324613aeccdfe2cbc694a419466a31edb58c0cc0b"
+        const val serverHash = "d405d0edd690624b66baba3068e0edc3ac90f1597d898a1ec8db4e5c43c00fec"
+        const val maipageshaHash="a24c500a1b765c68ae1d8dd85174931f661c71369c89b92b88b75a725afc471c"
         val headers =
                 mapOf(
                         "app-version" to "android_c-247",

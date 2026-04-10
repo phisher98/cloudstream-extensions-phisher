@@ -1,22 +1,20 @@
 package com.Desicinemas
 
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
-class Tvlogyflow(val source:String) : ExtractorApi() {
+class Tvlogyflow(val source: String) : ExtractorApi() {
     override val mainUrl = "https://flow.tvlogy.to"
     override val name = "Tvlogy"
     override val requiresReferer = false
+
+    private val proxyUrl = "https://proxy.phisher2.workers.dev/?url="
 
     override suspend fun getUrl(
         url: String,
@@ -24,54 +22,98 @@ class Tvlogyflow(val source:String) : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get("https://proxy.phisher2.workers.dev/?url=$url", referer = mainUrl).text
-        if (doc.contains(".m3u8")) {
-            Regex("\"src\":\"(.*?)\",\"").find(doc)?.groupValues?.get(1)?.let {
+
+        fun extractJuicy(doc: String): String? {
+            return try {
+                val juicy = Regex("""JuicyCodes\.Run\("(.*?)"\);""")
+                    .find(doc)?.groupValues?.getOrNull(1)
+                    ?: return null
+
+                val encoded = juicy
+                    .replace("\"", "")
+                    .replace("+", "")
+                    .replace("\\s".toRegex(), "")
+
+                val decoded = base64Decode(encoded)
+                var unpacked = decoded
+
+                val packedMatch = Regex("""\}\('(.*)',\d+,\d+,'(.*)'\.split""")
+                    .find(decoded)
+
+                if (packedMatch != null) {
+                    val payload = packedMatch.groupValues[1]
+                    val symtab = packedMatch.groupValues[2].split("|")
+
+                    unpacked = Regex("""\b(\w+)\b""")
+                        .replace(payload) { match ->
+                            val index = match.value.toIntOrNull(36)
+                            if (index != null && index < symtab.size) symtab[index] else match.value
+                        }
+                }
+
+                Regex("""file":\s*"(.*?)"""")
+                    .find(unpacked)
+                    ?.groupValues?.getOrNull(1)
+
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        fun extractDirect(doc: String): String? {
+            return Regex(""""src"\s*:\s*"(https?://.*?\.m3u8.*?)"""")
+                .find(doc)
+                ?.groupValues
+                ?.getOrNull(1)
+        }
+
+        suspend fun process(doc: String): Boolean {
+            val direct = extractDirect(doc)
+            if (!direct.isNullOrEmpty()) {
                 callback(
                     newExtractorLink(
                         "$name $source",
                         name,
-                        url = it,
+                        direct,
                         type = INFER_TYPE
                     ) {
-                        this.referer = url
-                        this.quality = Qualities.Unknown.value
+                        this.referer = mainUrl
+                        this.quality = Qualities.P720.value
                     }
                 )
+                return true
             }
-        } else {
-            val encoded = doc.substringAfter("JuicyCodes.Run(\"").substringBefore("\");")
-                .replace("\"", "")
-                .replace("+", "")
-                .replace("\\s".toRegex(), "")
-            val script = base64Decode(encoded)
-            val unpacked = JsUnpacker(script).unpack().toString()
 
-            val matches = Regex("file\":\\s*\"(.*?)\"").findAll(unpacked)
-            matches.forEach { match ->
-                val matched = match.groupValues[1]
-                Log.d("Phisher",matched.toString())
-
-                when {
-                    !matched.contains(".vtt") -> {
-                        generateM3u8(
-                            name,
-                            url,
-                            mainUrl
-                        ).forEach(callback)
+            val juicy = extractJuicy(doc)
+            if (!juicy.isNullOrEmpty()) {
+                callback(
+                    newExtractorLink(
+                        "$name $source",
+                        name,
+                        juicy,
+                        type = INFER_TYPE
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = Qualities.P720.value
                     }
-
-                    matched.contains(".vtt") -> {
-                        subtitleCallback(newSubtitleFile("Subtitles", url))
-                    }
-                }
+                )
+                return true
             }
+
+            return false
         }
 
+        try {
+            val directDoc = app.get(url, referer = mainUrl).text
+            if (process(directDoc)) return
+        } catch (_: Exception) {}
+
+        try {
+            val proxyDoc = app.get("$proxyUrl$url", referer = mainUrl).text
+            process(proxyDoc)
+        } catch (_: Exception) {}
     }
 }
-
-
 
 class Tvlogy(private val source:String) : ExtractorApi() {
     override val mainUrl = "https://tvlogy.to"

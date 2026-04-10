@@ -1,7 +1,15 @@
 package com.phisher98
 
+
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import org.json.JSONObject
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.JsonNode
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addSimklId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
@@ -12,8 +20,6 @@ import com.lagradost.nicehttp.NiceResponse
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.jsoup.nodes.Document
-import java.net.URI
 
 class UHDmoviesProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl: String = runBlocking {
@@ -32,17 +38,17 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         "" to "Home",
         "movies/" to "Movies",
         "tv-series/" to "TV Series",
-        "tv-shows/" to "TV Shows",
-        "movies/dual-audio-movies/" to "Dual Audio Movies",
         "movies/collection-movies/" to "Hollywood",
-        "tv-shows/netflix/" to "Netflix",
         "web-series/" to "Web Series",
+        "tv-shows/netflix/" to "Netflix",
         "amazon-prime/" to "Amazon Prime",
+        "4k-hdr/" to "4K HDR",
+        "imax/" to "IMAX",
     )
 
     private suspend fun cfKiller(url: String): NiceResponse {
         var doc = app.get(url)
-        if (doc.documentLarge.select("title").text() == "Just a moment...") {
+        if (doc.document.select("title").text() == "Just a moment") {
             doc = app.get(url, interceptor = CloudflareKiller())
         }
         return doc
@@ -53,9 +59,9 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         request: MainPageRequest
     ): HomePageResponse {
         val document = if (page == 1) {
-            cfKiller("$mainUrl/${request.data}").documentLarge
+            cfKiller("$mainUrl/${request.data}").document
         } else {
-            cfKiller("$mainUrl/${request.data}" + "/page/$page/").documentLarge
+            cfKiller("$mainUrl/${request.data}" + "/page/$page/").document
         }
 
         val home = document.select("article.gridlove-post").mapNotNull {
@@ -85,7 +91,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = cfKiller("$mainUrl?s=$query ").documentLarge
+        val document = cfKiller("$mainUrl?s=$query ").document
 
         return document.select("article.gridlove-post").mapNotNull {
             it.toSearchResult()
@@ -98,62 +104,129 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
     )
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val titleRaw = doc.select("div.gridlove-content div.entry-header h1.entry-title").text().trim().removePrefix("Download ")
         val titleRegex = Regex("(^.*\\)\\d*)")
-        val title = titleRegex.find(titleRaw)?.groups?.get(1)?.value ?: titleRaw
-        val poster = fixUrlNull(doc.selectFirst("div.entry-content  p  img")?.attr("src"))
+        val title = titleRegex.find(titleRaw)?.groupValues?.get(1)?.trim()?.substringBefore("(")?.substringBefore("Season")?.substringBefore("S0") ?: titleRaw.substringBefore("(").substringBefore("Season").substringBefore("S0")
+        val img = doc.selectFirst("div.entry-content > p img")
+        val poster = img?.attr("src")
+        val collectionposter = doc.select("meta[property=og:image]").attr("content")
         val yearRegex = Regex("(?<=\\()[\\d(\\]]+(?!=\\))")
-        val year = yearRegex.find(title)?.value?.toIntOrNull()
+        val year = yearRegex.find(titleRaw)?.value?.toIntOrNull()
         val tags = doc.select("div.entry-category > a.gridlove-cat").map { it.text() }
         val tvTags = doc.selectFirst("h1.entry-title")?.text() ?:""
         val type = if (tvTags.contains("Season") || tvTags.contains("S0")) TvType.TvSeries else TvType.Movie
-        val trailer=doc.select("p iframe").attr("src")
+        val ids = fetchIds(
+            title,
+            year,
+            type == TvType.TvSeries
+        )
+        val meta = if (!ids.imdbId.isNullOrBlank()) fetchMetaData(ids.imdbId, type) else null
+        val metaVideos = meta?.get("videos")?.toList() ?: emptyList()
+
+        val Background = meta?.get("background")?.asText() ?: poster
+        val Description = meta?.get("description")?.asText() ?: ""
+        val IMDBRating = meta?.get("imdbRating")?.asText()
+        val trailer = doc.select("p iframe").attr("src")
+        val logoUrl = meta?.get("logo")?.asText()
+
+        val simklId = ids.imdbId?.let {
+            fetchSimklId(it, isSeries = type == TvType.TvSeries)
+        }
+
         return if (type == TvType.TvSeries) {
-            val episodes = mutableListOf<Episode>()
             var pTags = doc.select("p:has(a:contains(Episode))")
             if (pTags.isEmpty())
             {
                 pTags = doc.select("div:has(a:contains(Episode))")
             }
-            val seasonList = mutableListOf<Pair<String, Int>>()
-            var season = 1
+
+            val tvSeriesEpisodes = mutableListOf<Episode>()
+            val episodesMap: MutableMap<Pair<Int, Int>, List<String>> = mutableMapOf()
+
             pTags.mapNotNull { pTag ->
                 val prevPtag = pTag.previousElementSibling()
                 val details = prevPtag ?. text() ?: ""
                 val realSeason = Regex("""(?:Season |S0)(\d+)""").find(details) ?. groupValues
-                    ?. get(1) ?: ""
-                val qualityRegex = """(1080p|720p|480p|2160p|4K|[0-9]*0p)""".toRegex(RegexOption.IGNORE_CASE)
-                val quality = qualityRegex.find(details) ?. groupValues ?. get(1) ?: ""
-                if(realSeason.isNotEmpty() && quality.isNotEmpty()) {
-                    val sizeRegex = Regex("""\d+(?:\.\d+)?\s*(?:MB|GB)\b""")
-                    val size = sizeRegex.find(details) ?. value ?: ""
-                    seasonList.add("S$realSeason $quality $size" to season)
-                }
-                else {
-                    seasonList.add(details to season)
-                }
+                    ?. get(1) ?.toIntOrNull() ?: 0
                 val aTags = pTag.select("a:contains(Episode)")
+
                 aTags.mapNotNull { aTag ->
-                    val aTagText = aTag.text()
-                    val link = aTag.attr("href")
-                    episodes.add(
-                        newEpisode(link)
-                        {
-                            this.name=aTagText
-                            this.season=season
-                            this.episode=aTags.indexOf(aTag) + 1
+                    val realEp = Regex("""Episode\s+(\d+)""").find(aTag.toString()) ?. groupValues ?. get(1) ?.toIntOrNull() ?: 0
+                    val epUrl = aTag.attr("href")
+                    val key = Pair(realSeason, realEp)
+
+                    if(!epUrl.isEmpty()) {
+                        if (episodesMap.containsKey(key)) {
+                            val currentList = episodesMap[key] ?: emptyList()
+                            val newList = currentList.toMutableList()
+                            newList.add(epUrl)
+                            episodesMap[key] = newList
+                        } else {
+                            episodesMap[key] = mutableListOf(epUrl)
                         }
+                    }
+
+                }
+            }
+
+            for ((key, value) in episodesMap) {
+                if(key.first == 0 || key.second == 0) continue
+
+                val epMeta = metaVideos.firstOrNull {
+                    it["season"]?.asInt() == key.first &&
+                        it["episode"]?.asInt() == key.second
+                }
+
+                val data = value.map { source->
+                    UHDLinks(
+                        "UHD",
+                        source
                     )
                 }
-                season++
+
+                val epName =
+                    epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: "Episode ${key.second}"
+
+                val epDesc =
+                    epMeta?.get("overview")?.asText()
+                        ?: epMeta?.get("description")?.asText()
+                        ?: ""
+
+                val epThumb =
+                    epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: ""
+
+                val aired =
+                    epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() }
+                        ?: ""
+                tvSeriesEpisodes.add(
+                    newEpisode(data) {
+                        this.name = epName
+                        this.season = key.first
+                        this.episode = key.second
+                        this.posterUrl = epThumb
+                        this.description = epDesc
+                        addDate(aired)
+                    }
+                )
             }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster ?. trim()
+
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, tvSeriesEpisodes) {
+                this.posterUrl = poster?.trim() ?: collectionposter
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.tags = tags
-                this.seasonNames = seasonList.map {(name, int) -> SeasonData(int, name)}
                 addTrailer(trailer)
+                addImdbId(ids.imdbId)
+                addTMDbId(ids.tmdbId.toString())
+                addSimklId(simklId)
+                this.backgroundPosterUrl = Background ?: collectionposter
+                this.plot = Description
+                this.year = year
+                this.tags = tags
+                this.score = Score.from10(IMDBRating)
             }
         } else {
             val iframeRegex = Regex("""\[.*]""")
@@ -167,52 +240,23 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                 )
             }
             newMovieLoadResponse(title, url, TvType.Movie, data) {
-                this.posterUrl = poster?.trim()
+                this.posterUrl = poster?.trim() ?: collectionposter
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.tags = tags
                 addTrailer(trailer)
+                addImdbId(ids.imdbId)
+                addTMDbId(ids.tmdbId.toString())
+                addSimklId(simklId)
+                this.backgroundPosterUrl = Background ?: collectionposter
+                this.plot = Description
+                this.year = year
+                this.tags = tags
+                this.score = Score.from10(IMDBRating)
             }
         }
     }
 
-    private fun getBaseUrl(url: String): String {
-        return URI(url).let {
-            "${it.scheme}://${it.host}"
-        }
-    }
-
-    fun fixUrl(url: String, domain: String): String {
-        if (url.startsWith("http")) {
-            return url
-        }
-        if (url.isEmpty()) {
-            return ""
-        }
-
-        val startsWithNoHttp = url.startsWith("//")
-        if (startsWithNoHttp) {
-            return "https:$url"
-        } else {
-            if (url.startsWith('/')) {
-                return domain + url
-            }
-            return "$domain/$url"
-        }
-    }
-
-    fun Document.getMirrorLink(): String? {
-        return this.select("div.mb-4 a").randomOrNull()
-            ?.attr("href")
-    }
-
-    private fun Document.getMirrorServer(server: Int): String {
-        return this.select("div.text-center a:contains(Server $server)").attr("href")
-    }
-
-
-    data class UHDBackupUrl(
-        @JsonProperty("url") val url: String? = null,
-    )
 
     override suspend fun loadLinks(
         data: String,
@@ -248,3 +292,72 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         return@coroutineScope true
     }
 }
+
+suspend fun fetchIds(
+    title: String,
+    year: Int?,
+    isSeries: Boolean
+): IdResult {
+    val TMDB_API = "https://api.themoviedb.org/3"
+    val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
+
+    val type = if (isSeries) "tv" else "movie"
+
+    val searchUrl = buildString {
+        append("$TMDB_API/search/$type")
+        append("?api_key=$TMDB_API_KEY")
+        append("&query=${title.urlEncode()}")
+        if (year != null) {
+            append(if (isSeries) "&first_air_date_year=$year" else "&year=$year")
+        }
+    }
+
+    val searchJson = JSONObject(app.get(searchUrl).text)
+    val results = searchJson.optJSONArray("results")
+    val tmdbId = results?.optJSONObject(0)?.optInt("id")
+
+    val imdbId = tmdbId?.let { id ->
+        val extUrl = "$TMDB_API/$type/$id/external_ids?api_key=$TMDB_API_KEY"
+        val extJson = JSONObject(app.get(extUrl).text)
+        extJson.optString("imdb_id").takeIf { it.isNotBlank() }
+    }
+
+    return IdResult(
+        tmdbId = tmdbId,
+        imdbId = imdbId
+    )
+}
+
+data class IdResult(
+    val tmdbId: Int?,
+    val imdbId: String?
+)
+
+fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+
+private suspend fun fetchMetaData(imdbId: String?, type: TvType): JsonNode? {
+    if (imdbId.isNullOrBlank()) return null
+
+    val metaType = if (type == TvType.TvSeries) "series" else "movie"
+    val url = "https://v3-cinemeta.strem.io/meta/$metaType/$imdbId.json"
+
+    return try {
+        val resp = app.get(url).text
+        mapper.readTree(resp)["meta"]
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private suspend fun fetchSimklId(
+    imdbId: String,
+    isSeries: Boolean
+): Int? = runCatching {
+    val type = if (isSeries) "tv" else "movies"
+    val url = "https://api.simkl.com/$type/$imdbId?client_id=${BuildConfig.SIMKL_CLIENT_ID}"
+
+    JSONObject(app.get(url).text)
+        .optJSONObject("ids")
+        ?.optInt("simkl")
+        ?.takeIf { it != 0 }
+}.getOrNull()

@@ -3,18 +3,23 @@ package com.phisher98.settings
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.content.res.Resources
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.view.*
-import android.widget.*
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.BuildConfig
-import com.phisher98.StreamPlayPlugin
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Switch
 import androidx.core.content.edit
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
-import com.phisher98.*
+import com.phisher98.BuildConfig
+import com.phisher98.StreamPlay
+import com.phisher98.StreamPlayAnime
+import com.phisher98.StreamPlayPlugin
+import com.phisher98.StreamPlayStremioCatelog
+import com.phisher98.StreamPlayStremioCatelogFrag
 
 class ToggleFragment(
     plugin: StreamPlayPlugin,
@@ -50,18 +55,55 @@ class ToggleFragment(
         this.background = res.getDrawable(outlineId, null)
     }
 
+    private fun loadStremioLinks(): List<StreamPlayStremioCatelogFrag.LinkItem> {
+        val json = sharedPref.getString("streamplay_stremio_saved_links", null)
+            ?: return emptyList()
+
+        val list = mutableListOf<StreamPlayStremioCatelogFrag.LinkItem>()
+
+        return try {
+            val arr = org.json.JSONArray(json)
+
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+
+                list.add(
+                    StreamPlayStremioCatelogFrag.LinkItem(
+                        id = obj.optLong("id", System.currentTimeMillis()),
+                        name = obj.optString("name", ""),
+                        link = obj.optString("link", ""),
+                        type = obj.optString("type", "StremioC")
+                    )
+                )
+            }
+
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val root = getLayout("fragment_toggle_extensions", inflater, container)
         val extensionList = root.findView<LinearLayout>("toggle_list_container")
-
-        val apis = listOf(
-            StreamPlay(sharedPref),
-            StreamPlayLite(),
-            StreamPlayTorrent(),
-            StreamPlayAnime(),
-            StreamplayTorrentAnime()
-        )
+        val stremioLinks = loadStremioLinks()
+        val apis = buildList {
+            add(StreamPlay(sharedPref))
+            add(StreamPlayAnime())
+            if (stremioLinks.isNotEmpty())
+            {
+                stremioLinks.forEach { link ->
+                    add(
+                        StreamPlayStremioCatelog(
+                            link.link,   // mainUrl
+                            link.name,   // unique name shown in UI
+                            sharedPref
+                        )
+                    )
+                }
+            }
+        }
 
         val savedKey = "enabled_plugins_saved"
         val savedSet = sharedPref.getStringSet(savedKey, null)

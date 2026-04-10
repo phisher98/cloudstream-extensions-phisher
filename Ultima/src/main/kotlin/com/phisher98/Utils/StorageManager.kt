@@ -2,14 +2,13 @@ package com.phisher98
 
 // import com.phisher98.UltimaUtils.Provider
 
-import com.lagradost.api.Log
 import com.phisher98.UltimaUtils.ExtensionInfo
 import com.phisher98.UltimaUtils.MediaProviderState
 import com.phisher98.UltimaUtils.SectionInfo
 import com.phisher98.WatchSyncUtils.WatchSyncCreds
 import com.lagradost.cloudstream3.APIHolder.allProviders
-import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
-import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 
 object UltimaStorageManager {
 
@@ -105,10 +104,23 @@ object UltimaStorageManager {
             ?: return currentProviderNames.map { MediaProviderState(it, enabled = true, null) }.toTypedArray()
 
         val storedNames = stored.map { it.name }.sorted()
-        if (currentProviderNames.sorted() == storedNames) return stored
+        if (currentProviderNames.sorted() == storedNames) {
+            return stored.map { state ->
+                MediaProviderState(
+                    name = state.name,
+                    enabled = state.enabled,
+                    customDomain = state.customDomain,
+                )
+            }.toTypedArray()
+        }
 
         return currentProviderNames.map { name ->
-            stored.find { it.name == name } ?: MediaProviderState(name, enabled = true,  null)
+            val match = stored.find { it.name == name }
+            MediaProviderState(
+                name = name,
+                enabled = match?.enabled ?: true,
+                customDomain = match?.customDomain
+            )
         }.toTypedArray()
     }
 

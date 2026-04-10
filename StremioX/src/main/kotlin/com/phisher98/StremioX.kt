@@ -1,12 +1,15 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
+import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainPageRequest
@@ -17,9 +20,11 @@ import com.lagradost.cloudstream3.ShowStatus
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
+import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -39,9 +44,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.SubsExtractors.invokeOpenSubs
 import com.phisher98.SubsExtractors.invokeWatchsomuch
 
-class StremioX : TmdbProvider() {
-    override var mainUrl = "https://torrentio.strem.fun"
-    override var name = "StremioX"
+class StremioX(override var mainUrl: String, override var name: String) : TmdbProvider() {
     override val hasMainPage = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(TvType.Others)
@@ -49,6 +52,7 @@ class StremioX : TmdbProvider() {
     companion object {
         const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
         private const val tmdbAPI = "https://api.themoviedb.org/3"
+        private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         private const val apiKey = BuildConfig.TMDB_API
 
         fun getType(t: String?): TvType {
@@ -86,7 +90,7 @@ class StremioX : TmdbProvider() {
 
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
     private fun getOriImageUrl(link: String?): String? {
@@ -117,7 +121,7 @@ class StremioX : TmdbProvider() {
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         return app.get(
@@ -145,10 +149,13 @@ class StremioX : TmdbProvider() {
         val releaseDate = res.releaseDate ?: res.firstAirDate
         val year = releaseDate?.split("-")?.first()?.toIntOrNull()
         val genres = res.genres?.mapNotNull { it.name }
-        val isAnime =
-            genres?.contains("Animation") == true && (res.original_language == "zh" || res.original_language == "ja")
+        val isAnime = genres?.contains("Animation") == true && (res.original_language == "zh" || res.original_language == "ja")
         val keywords = res.keywords?.results?.mapNotNull { it.name }.orEmpty()
             .ifEmpty { res.keywords?.keywords?.mapNotNull { it.name } }
+
+        val isCartoon = genres?.contains("Animation") ?: false
+        val isAsian = !isAnime && (res.original_language == "zh" || res.original_language == "ko")
+        val isBollywood = res.production_countries?.any { it.name == "India" } ?: false
 
         val actors = res.credits?.cast?.mapNotNull { cast ->
             ActorData(
@@ -163,6 +170,19 @@ class StremioX : TmdbProvider() {
 
         val trailer =
             res.videos?.results?.map { "https://www.youtube.com/watch?v=${it.key}" }?.randomOrNull()
+
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = res.id,
+            appLangCode = "en"
+        )
+
+        val animeType = if (data.type?.contains("tv", ignoreCase = true) == true) "series" else "movie"
+        val imdbId = res.external_ids?.imdb_id.orEmpty()
+        val cineRes = app.get("$Cinemeta/meta/$animeType/$imdbId.json").parsedSafe<CinemetaRes>()
 
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.mapNotNull { season ->
@@ -184,11 +204,79 @@ class StremioX : TmdbProvider() {
                         }
                     }
             }?.flatten() ?: listOf()
+
+            if (isAnime) {
+                val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
+                val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
+                    ?: cineRes?.meta?.name
+                val syncMetaData = app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").toString()
+                val animeMetaData = parseAnimeData(syncMetaData)
+                val kitsuid = animeMetaData?.mappings?.kitsuid
+                fun buildEpisodeList(isDub: Boolean) = animeVideos.map { video ->
+                    val videoYear = video.released?.split("-")?.firstOrNull()?.toIntOrNull()
+                        ?: cineRes?.meta?.year?.toIntOrNull() ?: 0
+
+                    newEpisode(
+                        LinkData(
+                            id = data.id,
+                            imdbId = imdbId,
+                            tvdbId = res.external_ids?.tvdb_id,
+                            type = data.type,
+                            season = video.season,
+                            episode = video.episode,
+                            title = title,
+                            year = videoYear,
+                            orgTitle = "",
+                            isAnime = true,
+                            airedYear = year,
+                            epsTitle = video.title,
+                            jpTitle = jpTitle,
+                            date = video.released,
+                            airedDate = res.releaseDate ?: res.firstAirDate,
+                            isAsian = isAsian,
+                            isBollywood = isBollywood,
+                            isCartoon = isCartoon,
+                            alttitle = res.title,
+                            nametitle = res.name,
+                            isDub = isDub
+                        ).toJson()
+                    ) {
+                        this.name = video.title + if (isUpcoming(video.released)) " • [UPCOMING]" else ""
+                        this.season = video.season
+                        this.episode = video.episode
+                        this.posterUrl = video.thumbnail
+                        this.description = video.overview
+                        addDate(video.released)
+                    }
+                }
+
+                return newAnimeLoadResponse(title, url, TvType.Anime) {
+                    addEpisodes(DubStatus.Subbed, buildEpisodeList(isDub = false))
+                    this.posterUrl = poster
+                    this.backgroundPosterUrl = bgPoster
+                    try { this.logoUrl = logoUrl } catch(_:Throwable){}
+                    this.year = year
+                    this.plot = res.overview
+                    this.tags = keywords?.map { it.replaceFirstChar { c -> c.titlecase() } }
+                        ?.takeIf { it.isNotEmpty() } ?: genres
+                    this.score = Score.from10(res.vote_average.toString())
+                    this.showStatus = getStatus(res.status)
+                    this.recommendations = recommendations
+                    this.actors = actors
+                    addTrailer(trailer)
+                    try { addKitsuId(kitsuid) } catch(_:Throwable){}
+                    this.contentRating = cineRes?.meta?.appExtras?.certification
+                    addImdbId(imdbId)
+                }
+            }
+
+
             newTvSeriesLoadResponse(
-                title, url, if (isAnime) TvType.Anime else TvType.TvSeries, episodes
+                title, url, TvType.TvSeries, episodes
             ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = bgPoster
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = year
                 this.plot = res.overview
                 this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
@@ -210,6 +298,7 @@ class StremioX : TmdbProvider() {
             ) {
                 this.posterUrl = poster
                 this.comingSoon = isUpcoming(releaseDate)
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.backgroundPosterUrl = bgPoster
                 this.year = year
                 this.plot = res.overview
@@ -233,9 +322,10 @@ class StremioX : TmdbProvider() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val res = parseJson<LoadData>(data)
-
         runAllAsync(
             {
+                Log.d("Phisher",res.imdbId.toString())
+
                 invokeMainSource(res.imdbId, res.season, res.episode, subtitleCallback, callback)
             },
             {
@@ -256,7 +346,7 @@ class StremioX : TmdbProvider() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val fixMainUrl = mainUrl.fixSourceUrl()
+        val fixMainUrl = (mainUrl.takeIf { it.isNotBlank() } ?: "https://torrentio.strem.fun/manifest.json").fixSourceUrl()
         val url = if (season == null) {
             "$fixMainUrl/stream/movie/$imdbId.json"
         } else {
@@ -437,8 +527,8 @@ class StremioX : TmdbProvider() {
     )
 
     data class ExternalIds(
-        @JsonProperty("imdb_id") val imdb_id: String? = null,
-        @JsonProperty("tvdb_id") val tvdb_id: String? = null,
+        @get:JsonProperty("imdb_id") val imdb_id: String? = null,
+        @get:JsonProperty("tvdb_id") val tvdb_id: Int? = null,
     )
 
     data class Credits(
@@ -455,29 +545,168 @@ class StremioX : TmdbProvider() {
     )
 
     data class MediaDetail(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("imdb_id") val imdbId: String? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("original_title") val originalTitle: String? = null,
-        @JsonProperty("original_name") val originalName: String? = null,
-        @JsonProperty("poster_path") val posterPath: String? = null,
-        @JsonProperty("backdrop_path") val backdropPath: String? = null,
-        @JsonProperty("release_date") val releaseDate: String? = null,
-        @JsonProperty("first_air_date") val firstAirDate: String? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("runtime") val runtime: Int? = null,
-        @JsonProperty("vote_average") val vote_average: Any? = null,
-        @JsonProperty("original_language") val original_language: String? = null,
-        @JsonProperty("status") val status: String? = null,
-        @JsonProperty("genres") val genres: ArrayList<Genres>? = arrayListOf(),
-        @JsonProperty("keywords") val keywords: KeywordResults? = null,
-        @JsonProperty("last_episode_to_air") val last_episode_to_air: LastEpisodeToAir? = null,
-        @JsonProperty("seasons") val seasons: ArrayList<Seasons>? = arrayListOf(),
-        @JsonProperty("videos") val videos: ResultsTrailer? = null,
-        @JsonProperty("external_ids") val external_ids: ExternalIds? = null,
-        @JsonProperty("credits") val credits: Credits? = null,
-        @JsonProperty("recommendations") val recommendations: ResultsRecommendations? = null,
+        @get:JsonProperty("id") val id: Int? = null,
+        @get:JsonProperty("imdb_id") val imdbId: String? = null,
+        @get:JsonProperty("title") val title: String? = null,
+        @get:JsonProperty("name") val name: String? = null,
+        @get:JsonProperty("original_title") val originalTitle: String? = null,
+        @get:JsonProperty("original_name") val originalName: String? = null,
+        @get:JsonProperty("poster_path") val posterPath: String? = null,
+        @get:JsonProperty("backdrop_path") val backdropPath: String? = null,
+        @get:JsonProperty("release_date") val releaseDate: String? = null,
+        @get:JsonProperty("first_air_date") val firstAirDate: String? = null,
+        @get:JsonProperty("overview") val overview: String? = null,
+        @get:JsonProperty("runtime") val runtime: Int? = null,
+        @get:JsonProperty("vote_average") val vote_average: Any? = null,
+        @get:JsonProperty("original_language") val original_language: String? = null,
+        @get:JsonProperty("status") val status: String? = null,
+        @get:JsonProperty("genres") val genres: ArrayList<Genres>? = arrayListOf(),
+        @get:JsonProperty("keywords") val keywords: KeywordResults? = null,
+        @get:JsonProperty("last_episode_to_air") val last_episode_to_air: LastEpisodeToAir? = null,
+        @get:JsonProperty("seasons") val seasons: ArrayList<Seasons>? = arrayListOf(),
+        @get:JsonProperty("videos") val videos: ResultsTrailer? = null,
+        @get:JsonProperty("external_ids") val external_ids: ExternalIds? = null,
+        @get:JsonProperty("credits") val credits: Credits? = null,
+        @get:JsonProperty("recommendations") val recommendations: ResultsRecommendations? = null,
+        @get:JsonProperty("alternative_titles") val alternative_titles: ResultsAltTitles? = null,
+        @get:JsonProperty("production_countries") val production_countries: ArrayList<ProductionCountries>? = arrayListOf(),
+    )
+
+    data class ResultsAltTitles(
+        @get:JsonProperty("results") val results: ArrayList<AltTitles>? = arrayListOf(),
+    )
+
+    data class AltTitles(
+        @get:JsonProperty("iso_3166_1") val iso_3166_1: String? = null,
+        @get:JsonProperty("title") val title: String? = null,
+        @get:JsonProperty("type") val type: String? = null,
+    )
+
+    data class ProductionCountries(
+        @get:JsonProperty("name") val name: String? = null,
+    )
+
+    data class CinemetaRes(
+        val meta: Meta? = null
+    ) {
+
+        data class Meta(
+            val id: String? = null,
+            val type: String? = null,
+            val name: String? = null,
+
+            @JsonProperty("imdb_id")
+            val imdbId: String? = null,
+
+            val slug: String? = null,
+
+            val director: String? = null,
+            val writer: String? = null,
+
+            val description: String? = null,
+            val year: String? = null,
+            val releaseInfo: String? = null,
+            val released: String? = null,
+            val runtime: String? = null,
+            val status: String? = null,
+            val country: String? = null,
+            val imdbRating: String? = null,
+            val genres: List<String>? = null,
+            val poster: String? = null,
+            @JsonProperty("_rawPosterUrl")
+            val rawPosterUrl: String? = null,
+
+            val background: String? = null,
+            val logo: String? = null,
+
+            val videos: List<Video>? = null,
+            val trailers: List<Trailer>? = null,
+            val trailerStreams: List<TrailerStream>? = null,
+            val links: List<Link>? = null,
+
+            val behaviorHints: BehaviorHints? = null,
+
+            @JsonProperty("app_extras")
+            val appExtras: AppExtras? = null,
+        ) {
+
+            data class BehaviorHints(
+                val defaultVideoId: Any? = null,
+                val hasScheduledVideos: Boolean? = null
+            )
+
+            data class Link(
+                val name: String? = null,
+                val category: String? = null,
+                val url: String? = null
+            )
+
+            data class Trailer(
+                val source: String? = null,
+                val type: String? = null,
+                val name: String? = null
+            )
+
+            data class TrailerStream(
+                val ytId: String? = null,
+                val title: String? = null
+            )
+
+            data class Video(
+                val id: String? = null,
+                val title: String? = null,
+                val season: Int? = null,
+                val episode: Int? = null,
+                val thumbnail: String? = null,
+                val overview: String? = null,
+                val released: String? = null,
+                val available: Boolean? = null,
+                val runtime: String? = null
+            )
+
+            data class AppExtras(
+                val cast: List<Cast>? = null,
+                val directors: List<Any?>? = null,
+                val writers: List<Any?>? = null,
+                val seasonPosters: List<String?>? = null,
+                val certification: String? = null
+            )
+
+            data class Cast(
+                val name: String? = null,
+                val character: String? = null,
+                val photo: String? = null
+            )
+        }
+    }
+
+    data class LinkData(
+        val id: Int? = null,
+        val imdbId: String? = null,
+        val tvdbId: Int? = null,
+        val type: String? = null,
+        val season: Int? = null,
+        val episode: Int? = null,
+        val epid: Int? = null,
+        val aniId: String? = null,
+        val animeId: String? = null,
+        val title: String? = null,
+        val year: Int? = null,
+        val orgTitle: String? = null,
+        val isAnime: Boolean = false,
+        val airedYear: Int? = null,
+        val lastSeason: Int? = null,
+        val epsTitle: String? = null,
+        val jpTitle: String? = null,
+        val date: String? = null,
+        val airedDate: String? = null,
+        val isAsian: Boolean = false,
+        val isBollywood: Boolean = false,
+        val isCartoon: Boolean = false,
+        val alttitle: String? = null,
+        val nametitle: String? = null,
+        val isDub: Boolean = false,
+        val isMovie: Boolean? = false,
     )
 
 }

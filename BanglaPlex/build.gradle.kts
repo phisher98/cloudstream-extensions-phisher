@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 2
+version = 3
 
 
 cloudstream {
@@ -23,7 +23,7 @@ cloudstream {
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("Movie","TvSeries")
 
-    iconUrl="https://www.google.com/s2/favicons?domain=banglaplex.top&sz=%size%"
+    iconUrl="https://www.google.com/s2/favicons?domain=banglaplex.click&sz=%size%"
 
     isCrossPlatform = true
 }

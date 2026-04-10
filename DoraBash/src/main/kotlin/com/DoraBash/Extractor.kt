@@ -18,7 +18,7 @@ open class Vtbe : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url,referer=mainUrl).documentLarge
+        val response = app.get(url,referer=mainUrl).document
         val extractedpack =response.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
         JsUnpacker(extractedpack).unpack()?.let { unPacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unPacked)?.groupValues?.get(1)?.let { link ->
@@ -48,7 +48,7 @@ class waaw : StreamSB() {
     override var mainUrl = "https://waaw.to"
 }
 
-class FileMoonSx : Filesim() {
-    override val mainUrl = "https://filemoon.sx"
+class FileMoonIN : Filesim() {
+    override val mainUrl = "https://filemoon.in"
     override val name = "FileMoonSx"
 }

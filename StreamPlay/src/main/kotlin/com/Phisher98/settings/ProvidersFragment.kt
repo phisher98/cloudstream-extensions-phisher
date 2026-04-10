@@ -10,15 +10,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
-import android.widget.SearchView
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.edit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import androidx.core.view.isNotEmpty
+import androidx.core.widget.addTextChangedListener
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import androidx.core.view.isVisible
 
 
 private val PREFS_PROFILES = "provider_profiles"
@@ -36,6 +39,7 @@ class ProvidersFragment(
     private lateinit var container: LinearLayout
     private var providers: List<Provider> = emptyList()
     private val PREFS_DISABLED = "disabled_providers"
+    private lateinit var tvProviderCount: TextView
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -78,12 +82,18 @@ class ProvidersFragment(
             }
         }
     }
+    @SuppressLint("SetTextI18n")
+    private fun updateProviderCount() {
+        val enabled = providers.count { !adapter.isDisabled(it.id) }
+        val total = providers.size
+        tvProviderCount.text = "$enabled / $total enabled"
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        tvProviderCount = view.findView("tv_provider_count")
         btnSave = view.findView("btn_save")
         btnSave.setImageDrawable(getDrawable("save_icon"))
         btnSave.makeTvCompatible()
@@ -96,12 +106,41 @@ class ProvidersFragment(
         container.makeTvCompatible()
         providers = buildProviders().sortedBy { it.name.lowercase() }
 
+        //Search
+
+        val etSearch = view.findView<EditText>("ext_search")
+        etSearch.addTextChangedListener { text ->
+            val query = text.toString().lowercase().trim()
+            val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+            for (i in 0 until container.childCount) {
+                val item = container.getChildAt(i)
+                val chk = item.findViewById<CheckBox>(chkId)
+                item.visibility = if (query.isEmpty() || chk.text.toString().lowercase().contains(query)) {
+                    View.VISIBLE
+                } else {
+                    View.GONE
+                }
+            }
+        }
+
+        etSearch.setOnEditorActionListener { _, _, _ ->
+            for (i in 0 until container.childCount) {
+                val item = container.getChildAt(i)
+                if (item.isVisible) {
+                    item.requestFocus()
+                    break
+                }
+            }
+            true
+        }
+
         // --- Load disabled providers ---
         val savedDisabled = sharedPref.getStringSet(PREFS_DISABLED, emptySet()) ?: emptySet()
 
         adapter = ProviderAdapter(providers, savedDisabled) { disabled ->
             sharedPref.edit { putStringSet(PREFS_DISABLED, disabled) }
             updateUI()
+            updateProviderCount()
         }
 
         val chkId = res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -124,6 +163,7 @@ class ProvidersFragment(
             }
 
             container.addView(item)
+            updateProviderCount()
         }
         container.post {
             if (container.isNotEmpty()) {
@@ -211,29 +251,6 @@ class ProvidersFragment(
             }
             dialog.show()
         }
-
-        val searchView = view.findView<SearchView>("search_provider")
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean = false
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                val query = newText.orEmpty().trim().lowercase()
-
-                for (i in 0 until container.childCount) {
-                    val item = container.getChildAt(i)
-                    val chk = item.findViewById<CheckBox>(
-                        res.getIdentifier("chk_provider", "id", BuildConfig.LIBRARY_PACKAGE_NAME)
-                    )
-                    val isVisible = chk.text.toString().lowercase().contains(query)
-                    item.visibility = if (isVisible) View.VISIBLE else View.GONE
-                }
-
-                return true
-            }
-        })
-
-        //
     }
 
     private fun updateUI() {
@@ -242,6 +259,7 @@ class ProvidersFragment(
             val chk = container.getChildAt(i).findViewById<CheckBox>(chkId)
             chk.isChecked = !adapter.isDisabled(providers[i].id)
         }
+        updateProviderCount()
     }
 
     private fun dismissFragment() {
@@ -285,13 +303,21 @@ class ProvidersFragment(
         val encoded = sharedPref.getString(PREFS_PROFILES, "") ?: return emptyMap()
         if (encoded.isEmpty()) return emptyMap()
 
-        return encoded.split("|").mapNotNull { entry ->
-            val parts = entry.split(":")
-            if (parts.size < 2) return@mapNotNull null
-            val name = parts[0]
-            val ids = if (parts[1].isEmpty()) emptySet() else parts[1].split(",").toSet()
-            name to ids
-        }.toMap()
+        return buildMap {
+            encoded.split("|").forEach { entry ->
+                val separatorIndex = entry.indexOf(':')
+                if (separatorIndex < 0) return@forEach
+
+                val name = entry.substring(0, separatorIndex)
+                val idsPart = entry.substring(separatorIndex + 1)
+                val ids = if (idsPart.isEmpty()) {
+                    emptySet()
+                } else {
+                    idsPart.split(",").toSet()
+                }
+                put(name, ids)
+            }
+        }
     }
 
     private fun loadProfile(name: String) {

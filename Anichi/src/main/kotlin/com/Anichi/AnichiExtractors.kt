@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
@@ -27,29 +28,29 @@ import com.lagradost.cloudstream3.utils.getPacked
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.net.URI
 
 object AnichiExtractors : Anichi() {
 
-    fun invokeInternalSources(
+    suspend fun invokeInternalSources(
         hash: String,
         dubStatus: String,
         episode: String,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
-    ) = runBlocking {
+    ) = coroutineScope {
         val fullApiUrl = """$apiUrl?variables={"showId":"$hash","translationType":"$dubStatus","episodeString":"$episode"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$serverHash"}}"""
 
         val apiResponse = try {
             app.get(fullApiUrl, headers = headers).parsed<LinksQuery>()
         } catch (e: Exception) {
             e.printStackTrace()
-            return@runBlocking
+            return@coroutineScope
         }
 
-        val sources = apiResponse.data?.episode?.sourceUrls ?: return@runBlocking
+        val sources = apiResponse.data?.episode?.sourceUrls ?: return@coroutineScope
 
         sources.forEach { source ->
             launch {
@@ -102,6 +103,16 @@ object AnichiExtractors : Anichi() {
                                         "https://static.crunchyroll.com/",
                                         host
                                     ).forEach(callback)
+                                }
+
+                                source.sourceName?.contains("Uns") == true -> {
+                                    loadCustomExtractor(
+                                        "Allanime VidStack",
+                                        fixedLink,
+                                        "",
+                                        subtitleCallback,
+                                        callback
+                                    )
                                 }
 
                                 server.hls == null -> {
@@ -220,11 +231,11 @@ open class StreamWishExtractor : ExtractorApi() {
 
         val script = when {
             !getPacked(response.text).isNullOrEmpty() -> getAndUnpack(response.text)
-            response.documentLarge.select("script").any { it.html().contains("jwplayer(\"vplayer\").setup(") } ->
-                response.documentLarge.select("script").firstOrNull {
+            response.document.select("script").any { it.html().contains("jwplayer(\"vplayer\").setup(") } ->
+                response.document.select("script").firstOrNull {
                     it.html().contains("jwplayer(\"vplayer\").setup(")
                 }?.html()
-            else -> response.documentLarge.selectFirst("script:containsData(sources:)")?.data()
+            else -> response.document.selectFirst("script:containsData(sources:)")?.data()
         }
 
         var m3u8: String? = null
@@ -298,11 +309,11 @@ class FilemoonV2 : ExtractorApi() {
         )
 
 
-        val href = app.get(url,headers).documentLarge.selectFirst("iframe")?.attr("src") ?: ""
+        val href = app.get(url,headers).document.selectFirst("iframe")?.attr("src") ?: ""
         val scriptContent = app.get(
             href,
             headers = mapOf("Accept-Language" to "en-US,en;q=0.5", "sec-fetch-dest" to "iframe")
-        ).documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
+        ).document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data().toString()
 
         val m3u8 = JsUnpacker(scriptContent).unpack()?.let { unpacked ->
             Regex("sources:\\[\\{file:\"(.*?)\"").find(unpacked)?.groupValues?.get(1)
@@ -341,4 +352,8 @@ class FilemoonV2 : ExtractorApi() {
             }
         }
     }
+}
+
+class Allanimeups : VidStack() {
+    override var mainUrl = "https://allanime.uns.bio"
 }

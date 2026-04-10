@@ -7,7 +7,7 @@ import kotlinx.coroutines.runBlocking
 
 class Banglaplex : MainAPI() {
     override var mainUrl: String = runBlocking {
-        BanglaPlexProvider.getDomains()?.banglaplex ?: "https://banglaplex.top"
+        BanglaPlexProvider.getDomains()?.banglaplex ?: "https://banglaplex.click"
     }
     override var name                 = "Banglaplex"
     override val hasMainPage          = true
@@ -28,7 +28,7 @@ class Banglaplex : MainAPI() {
         val res=app.get("$mainUrl/${request.data}.html")
         if (res.code==200) {
             if (page == 1) {
-                val document = app.get("$mainUrl/${request.data}.html").documentLarge
+                val document = app.get("$mainUrl/${request.data}.html").document
                 val home = document.select("div.movie-container > div.col-md-2")
                     .mapNotNull { it.toSearchResult() }
 
@@ -42,7 +42,7 @@ class Banglaplex : MainAPI() {
                 )
             } else {
                 val newpagenumber = page * 12
-                val document = app.get("$mainUrl/${request.data}/$newpagenumber.html").documentLarge
+                val document = app.get("$mainUrl/${request.data}/$newpagenumber.html").document
                 val home = document.select("div.movie-container > div.col-md-2")
                     .mapNotNull { it.toSearchResult() }
 
@@ -63,21 +63,33 @@ class Banglaplex : MainAPI() {
         val title     = fixTitle(this.select("div.movie-img > div.movie-title > h3 >a").text()).trim()
         val href      = fixUrl(this.select("div.movie-img > div.movie-title > h3 >a").attr("href"))
         val posterUrl = fixUrlNull(this.select("div > div.latest-movie-img-container").attr("style")).toString().substringAfter("url('").substringBefore("')")
+        val quality = this.select("span.label.label-primary").text()
+        val score = this.selectFirst("span.label.label-imdb")?.ownText()?.substringAfter("IMDB")?.trim()
 
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.quality = getQualityFromString(quality)
+            this.score = Score.from10(score)
         }
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList {
-        val newpagenumber=page*12
-        val document = app.get("${mainUrl}/search?q=$query&per_page=$newpagenumber").documentLarge
-        val results = document.select("div.movie-container > div.col-md-2").mapNotNull { it.toSearchResult() }
+    override suspend fun search(query: String, page: Int): SearchResponseList {
+        val url = if (page == 1) {
+            "$mainUrl/search?q=$query"
+        } else {
+            val newPageNumber = page * 12
+            "$mainUrl/search?q=$query&per_page=$newPageNumber"
+        }
+
+        val document = app.get(url).document
+        val results = document.select("div.movie-container > div.col-md-2")
+            .mapNotNull { it.toSearchResult() }
+
         return results.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString().substringBefore(" | Watch Online")
         val poster      = document.select("#info > div > div > img").attr("src")
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim()
@@ -89,16 +101,16 @@ class Banglaplex : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         document.select("div.video-embed-container > iframe").attr("src").let {
             loadExtractor(it,mainUrl,subtitleCallback, callback) }
         val downloadURLs=document.select("#download a ").attr("href")
          if (downloadURLs.isNotEmpty())
          {
-            val tokenres= app.get(downloadURLs).documentLarge
+            val tokenres= app.get(downloadURLs).document
             val csrftoken=tokenres.selectFirst("form input")?.attr("name")
             val csrftokenvakue=tokenres.selectFirst("form input")?.attr("name")
-            app.post(downloadURLs, data = mapOf("$csrftoken" to "$csrftokenvakue")).documentLarge.select("div.row > div.col-sm-8 > a").amap {
+            app.post(downloadURLs, data = mapOf("$csrftoken" to "$csrftokenvakue")).document.select("div.row > div.col-sm-8 > a").amap {
                 val href=it.attr("href")
                 if (href.contains("xcloud",ignoreCase = true))
                 {

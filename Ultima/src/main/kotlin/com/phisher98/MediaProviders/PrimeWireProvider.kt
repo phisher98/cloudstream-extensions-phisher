@@ -33,7 +33,7 @@ class PrimeWireProvider : MediaProvider() {
             "$domain/embed/tv?imdb=${data.imdbId}&season=${data.season}&episode=${data.episode}"
         }
 
-        val doc = app.get(apiurl, timeout = 10).documentLarge
+        val doc = app.get(apiurl, timeout = 10).document
         val userData = doc.select("#user-data")
         val decryptedLinks = decryptLinks(userData.attr("v"))
         for (link in decryptedLinks) {

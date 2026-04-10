@@ -127,8 +127,9 @@ class SettingsFragment(
                 val cookies = cookieManager.getCookie(url ?: "")
 
                 val token = cookies?.split(";")
+                    ?.asSequence()
                     ?.map { it.trim() }
-                    ?.find { it.startsWith("ui=") }
+                    ?.firstOrNull { it.startsWith("ui=") }
                     ?.removePrefix("ui=")
 
                 if (!token.isNullOrEmpty() && view != null) {

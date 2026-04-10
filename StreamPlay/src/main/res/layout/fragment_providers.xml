@@ -1,169 +1,231 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/scroll_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#121212"
-    android:padding="16dp"
-    android:focusable="true"
-    android:focusableInTouchMode="true">
+    android:layoutDirection="ltr">
 
     <LinearLayout
         android:id="@+id/root_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:descendantFocusability="afterDescendants">
+        android:paddingStart="?android:attr/listPreferredItemPaddingStart"
+        android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
+        android:paddingBottom="20dp"
+        tools:background="@color/cardview_dark_background">
 
-        <!-- Header Title -->
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select Sources"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:focusable="false"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Top Buttons Row -->
+        <!-- HEADER -->
         <LinearLayout
-            android:id="@+id/buttons_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="10dp">
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="6dp">
 
-            <Button
-                android:id="@+id/btn_select_all"
+            <TextView
+                android:id="@+id/tv_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="SELECT ALL"
-                android:textAllCaps="true"
-                android:backgroundTint="#1F6FEB"
-                android:textColor="#FFFFFF"
-                android:focusable="true"
-                android:nextFocusRight="@id/btn_deselect_all" />
-
-            <Button
-                android:id="@+id/btn_deselect_all"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="SELECT NONE"
-                android:textAllCaps="true"
-                android:backgroundTint="#BB2D3B"
-                android:textColor="#FFFFFF"
-                android:layout_marginStart="8dp"
-                android:focusable="true"
-                android:nextFocusLeft="@id/btn_select_all" />
+                android:text="Select Sources"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:focusable="false"/>
 
             <ImageButton
                 android:id="@+id/btn_save"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:padding="8dp"
+                android:padding="6dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:scaleType="centerInside" />
-
+                android:focusable="true"
+                android:contentDescription="Save"/>
         </LinearLayout>
 
-        <!-- Subtext -->
-        <TextView
-            android:id="@+id/tv_subtext"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Enable or Disable Sources"
-            android:textSize="14sp"
-            android:textColor="#CCCCCC"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Divider -->
+        <!-- DIVIDER -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#333333"
-            android:layout_marginBottom="12dp" />
+            android:background="#33FFFFFF"
+            android:layout_marginBottom="12dp"/>
 
-        <!-- Profile Buttons Row -->
+        <!-- DESCRIPTION + COUNTER -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/tv_subtext"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Enable or Disable Sources"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/tv_provider_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 / 0 enabled"
+                android:textSize="13sp"
+                android:alpha="0.8"
+                tools:text="18 / 32 enabled"/>
+        </LinearLayout>
+
+        <!-- SELECT ALL / NONE -->
+        <LinearLayout
+            android:id="@+id/buttons_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="14dp">
+
+            <Button
+                android:id="@+id/btn_select_all"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="SELECT ALL"
+                android:textAllCaps="true"
+                android:backgroundTint="#1F6FEB"
+                android:focusable="true"
+                android:nextFocusRight="@id/btn_deselect_all"/>
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="wrap_content"/>
+
+            <Button
+                android:id="@+id/btn_deselect_all"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="SELECT NONE"
+                android:textAllCaps="true"
+                android:backgroundTint="#BB2D3B"
+                android:focusable="true"
+                android:nextFocusLeft="@id/btn_select_all"/>
+        </LinearLayout>
+
+        <!-- DIVIDER -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33FFFFFF"
+            android:layout_marginBottom="14dp"/>
+
+        <!-- PROFILE BUTTONS -->
         <LinearLayout
             android:id="@+id/profile_buttons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="14dp"
+            android:gravity="center_vertical">
 
             <Button
                 android:id="@+id/btn_save_profile"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="SAVE PROFILE"
                 android:textAllCaps="true"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:lineSpacingExtra="0dp"
+                android:maxLines="2"
                 android:backgroundTint="#1E88E5"
-                android:textColor="#FFFFFF"
-                android:focusable="true"
-                android:layout_marginEnd="8dp" />
+                android:focusable="true"/>
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="wrap_content"/>
 
             <Button
                 android:id="@+id/btn_load_profile"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="LOAD PROFILE"
                 android:textAllCaps="true"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:lineSpacingExtra="0dp"
+                android:maxLines="2"
                 android:backgroundTint="#2E7D32"
-                android:textColor="#FFFFFF"
-                android:focusable="true"
-                android:layout_marginEnd="8dp" />
+                android:focusable="true"/>
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="wrap_content"/>
 
             <Button
                 android:id="@+id/btn_delete_profile"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
                 android:text="DELETE PROFILE"
                 android:textAllCaps="true"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:lineSpacingExtra="0dp"
+                android:maxLines="2"
                 android:backgroundTint="#C62828"
-                android:textColor="#FFFFFF"
-                android:focusable="true" />
+                android:focusable="true"
+                android:nextFocusDown="@id/ext_search"/>
+
         </LinearLayout>
 
-        <SearchView
-            android:id="@+id/search_provider"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:queryHint="Search providers..."
-            android:iconifiedByDefault="false"
-            android:background="@android:color/transparent"
-            android:layout_marginBottom="8dp"
-            android:layout_marginTop="4dp"
-            android:focusable="true"
-            android:imeOptions="actionDone"
-            android:inputType="text" />
-
-        <!-- Divider -->
+        <!-- DIVIDER -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#333333"
-            android:layout_marginBottom="12dp" />
+            android:background="#33FFFFFF"
+            android:layout_marginBottom="12dp"/>
 
-        <!-- Providers List -->
+        <!-- SEARCH -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@android:drawable/ic_menu_search"
+                android:layout_marginEnd="8dp"
+                android:focusable="false"/>
+
+            <EditText
+                android:id="@+id/ext_search"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:hint="Search sources..."
+                android:inputType="text"
+                android:imeOptions="actionSearch|flagNoExtractUi"
+                android:maxLines="1"
+                android:background="?android:attr/editTextBackground"
+                android:nextFocusUp="@id/btn_select_all"
+                android:nextFocusDown="@id/list_container"/>
+        </LinearLayout>
+
+        <!-- PROVIDERS LIST -->
         <LinearLayout
             android:id="@+id/list_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:dividerPadding="4dp"
-            android:showDividers="none"
-            android:focusable="false" />
+            android:focusable="false"/>
+
     </LinearLayout>
 
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

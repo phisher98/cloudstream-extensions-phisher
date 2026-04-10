@@ -41,6 +41,8 @@ class HDhub4uPlugin: BasePlugin() {
         }
 
         data class Domains(
+            @JsonProperty("hubcloud")
+            val hubcloud: String,
             @JsonProperty("HDHUB4u")
             val HDHUB4u: String,
         )

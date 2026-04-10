@@ -1,12 +1,11 @@
 // use an integer for version numbers
-version = 12
-
+version = 30
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "Watch Latest Movies"
-    language    = "hi"
+    language    = "en"
     authors = listOf("Phisher98")
 
     /**
@@ -16,7 +15,7 @@ cloudstream {
     * 2: Slow
     * 3: Beta only
     * */
-    status = 1 // will be 3 if unspecified
+    status = 0 // will be 3 if unspecified
 
     // List of video source types. Users are able to filter for extensions in a given category.
     // You can find a list of available types here:
@@ -29,6 +28,6 @@ cloudstream {
         "Cartoon",
         "AnimeMovie"
     )
-    iconUrl = "https://xdmovies.site/assets/logo1.png"
-    isCrossPlatform = true
+    iconUrl = "https://top.xdmovies.wtf/assets/logo1.png"
+    isCrossPlatform = false
 }

@@ -17,7 +17,7 @@ import kotlin.math.max
 
 class AnimeKaiMediaProvider : MediaProvider() {
     override val name = "AnimeKai"
-    override val domain = "https://animekai.bz"
+    override val domain = "https://anikai.to"
     override val categories = listOf(Category.ANIME)
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -33,8 +33,8 @@ class AnimeKaiMediaProvider : MediaProvider() {
 
         try {
             // Perform the search requests sequentially but avoid redundant requests
-            val searchEnglish = app.get("$domain/ajax/anime/search?keyword=$title").body.string()
-            val searchRomaji = app.get("$domain/ajax/anime/search?keyword=$jptitle").body.string()
+            val searchEnglish = app.get("$domain/ajax/anime/search?keyword=$title").text
+            val searchRomaji = app.get("$domain/ajax/anime/search?keyword=$jptitle").text
 
             val resultsEng = parseAnimeKaiResults(searchEnglish)
             val resultsRom = parseAnimeKaiResults(searchRomaji)
@@ -61,7 +61,7 @@ class AnimeKaiMediaProvider : MediaProvider() {
                 val href = "$domain/watch/$matchedId"
 
                 // Fetch anime details and episode list
-                val animeId = app.get(href).documentLarge.selectFirst("div.rate-box")?.attr("data-id")
+                val animeId = app.get(href).document.selectFirst("div.rate-box")?.attr("data-id")
                 val decoded = app.get("${BuildConfig.KAISVA}/?f=e&d=$animeId")
                 val epRes = app.get("$domain/ajax/episodes/list?ani_id=$animeId&_=$decoded")
                     .parsedSafe<AnimeKaiResponse>()?.getDocument()
@@ -127,22 +127,6 @@ fun extractVideoUrlFromJsonAnimekai(jsonData: String): String {
     val jsonObject = JSONObject(jsonData)
     return jsonObject.getString("url")
 }
-
-data class AnimeKaiM3U8(
-    val sources: List<AnimekaiSource>,
-    val tracks: List<AnimekaiTrack>,
-    val download: String,
-)
-data class AnimekaiSource(
-    val file: String,
-)
-
-data class AnimekaiTrack(
-    val file: String,
-    val label: String?,
-    val kind: String,
-    val default: Boolean?,
-)
 
 data class AnimeKaiResponse(
     @JsonProperty("status") val status: Boolean,

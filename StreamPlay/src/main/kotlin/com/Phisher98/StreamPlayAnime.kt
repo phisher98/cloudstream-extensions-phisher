@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
@@ -50,7 +51,10 @@ import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeHianime
+import com.phisher98.StreamPlayExtractor.invokeKaido
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
+import com.phisher98.StreamPlayExtractor.invokeSudatchi
+import com.phisher98.StreamPlayExtractor.invokekuudere
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Calendar
@@ -138,7 +142,7 @@ class StreamPlayAnime : MainAPI() {
                     false
                 )
             val homePageList =
-                repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
+                repo.library().getOrThrow()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(activity ?: return@mapNotNull null)
@@ -161,20 +165,38 @@ class StreamPlayAnime : MainAPI() {
 
         val anititle = data.getTitle()
         val aniyear = data.startDate.year
+        val posterurl = data.coverImage.extraLarge
+        val backgroundUrl = data.bannerImage
+
         val anitype = if (data.format!!.contains("MOVIE", ignoreCase = true)) TvType.AnimeMovie else TvType.TvSeries
         val ids = tmdbToAnimeId(anititle, aniyear, anitype)
+
         val jpTitle = data.title.romaji
 
         val syncMetaData = app.get("https://api.ani.zip/mappings?anilist_id=${ids.id}").toString()
         val animeMetaData = parseAnimeData(syncMetaData)
+        val tmdbid = animeMetaData?.mappings?.themoviedbId?.toIntOrNull()
+        val kitsuid = animeMetaData?.mappings?.kitsuid
 
+        val type = if (data.format.contains("Movie",ignoreCase = true)) TvType.Movie else TvType.TvSeries
+
+        val logoUrl = fetchTmdbLogoUrl(
+            tmdbAPI = "https://api.themoviedb.org/3",
+            apiKey = "98ae14df2b8d8f8f8136499daf79f0e0",
+            type = type,
+            tmdbId = tmdbid,
+            appLangCode = "en"
+        )
+        val anidbEid = getAnidbEid(syncMetaData, 1) ?: 0
         val href = LinkData(
             malId = ids.idMal,
             aniId = ids.id,
             title = data.getTitle(),
             jpTitle = jpTitle,
             year = data.startDate.year,
-            isAnime = true
+            isAnime = true,
+            anidbEid = anidbEid,
+            episode = 1
         ).toStringData()
 
         // --- Helper to get best episode title ---
@@ -190,6 +212,7 @@ class StreamPlayAnime : MainAPI() {
         }
 
         fun createEpisode(i: Int, isDub: Boolean): Episode {
+            val anidbEid = getAnidbEid(syncMetaData, i) ?: 0
             val epData = animeMetaData?.episodes?.get(i.toString())
             val linkData = LinkData(
                 malId = ids.idMal,
@@ -200,7 +223,8 @@ class StreamPlayAnime : MainAPI() {
                 season = 1,
                 episode = i,
                 isAnime = true,
-                isDub = isDub
+                isDub = isDub,
+                anidbEid = anidbEid
             ).toStringData()
 
             return newEpisode(linkData) {
@@ -211,7 +235,7 @@ class StreamPlayAnime : MainAPI() {
                 this.description = epData?.overview ?: "No summary available"
                 this.score = Score.from10(epData?.rating)
                 this.runTime = epData?.runtime
-                this.addDate(epData?.airDateUtc)
+                this.addDate(epData?.airdate)
             }
         }
 
@@ -222,13 +246,14 @@ class StreamPlayAnime : MainAPI() {
             newMovieLoadResponse(data.getTitle(), url, TvType.AnimeMovie, href) {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
+                try { addKitsuId(kitsuid) } catch(_:Throwable){}
                 this.year = data.startDate.year
                 this.plot = data.description
-                this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeMetaData?.images
+                this.backgroundPosterUrl = backgroundUrl ?: animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
+                this.posterUrl =  posterurl ?: data.getCoverImage() ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
-                    ?: data.getCoverImage()
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
             }
@@ -236,16 +261,16 @@ class StreamPlayAnime : MainAPI() {
             newAnimeLoadResponse(data.getTitle(), url, TvType.Anime) {
                 addAniListId(id.toInt())
                 addMalId(ids.idMal)
+                try { addKitsuId(kitsuid) } catch(_:Throwable){}
                 addEpisodes(DubStatus.Subbed, episodes)
                 addEpisodes(DubStatus.Dubbed, episodesDub)
-
+                try { this.logoUrl = logoUrl } catch(_:Throwable){}
                 this.year = data.startDate.year
                 this.plot = data.description
                 this.backgroundPosterUrl = animeMetaData?.images?.firstOrNull { it.coverType == "Fanart" }?.url ?: data.bannerImage
-                this.posterUrl = animeMetaData?.images
+                this.posterUrl = data.getCoverImage() ?: animeMetaData?.images
                     ?.firstOrNull { it.coverType.equals("Poster", ignoreCase = true) }
                     ?.url
-                    ?: data.getCoverImage()
                 this.tags = data.genres
                 this.score = Score.from100(data.averageScore)
                 this.showStatus = getStatus(data.status)
@@ -276,6 +301,8 @@ class StreamPlayAnime : MainAPI() {
         val episode = mediaData.episode
         val jpTitle = mediaData.jpTitle
         val anititle = mediaData.title
+        val anidbEid = mediaData.anidbEid
+        val aniid = mediaData.aniId
         val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
@@ -283,28 +310,34 @@ class StreamPlayAnime : MainAPI() {
         val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val aniXL = malsync?.AniXL?.values?.firstNotNullOfOrNull { it["url"] }
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
-        val dubStatus = if (mediaData.isDub) "DUB" else "SUB"
+
+        val dubStatus: String? =
+            if (mediaData.season == null) "Movie"
+            else if (mediaData.isDub) "DUB"
+            else "SUB"
 
         runAllAsync(
             { invokeHianime(zoro?.keys?.toList(), episode, subtitleCallback, callback, dubStatus) },
+            { invokeKaido(zoro?.keys?.toList(), episode, subtitleCallback, callback, dubStatus) },
             {
                 malsync?.animepahe?.values?.firstNotNullOfOrNull { it["url"] }?.let {
                     invokeAnimepahe(it, episode, subtitleCallback, callback, dubStatus)
                 }
             },
-            { invokeAnizone(jpTitle, episode, callback, dubStatus) },
+
+            { invokeAnizone(jpTitle,zorotitle, episode, callback, dubStatus) },
             { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
-            { invokeKickAssAnime(kaasSlug, episode, subtitleCallback, callback, dubStatus) },
+            { invokeKickAssAnime(zorotitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnimeKai(jpTitle, zorotitle, episode, subtitleCallback, callback, dubStatus) },
             {
                 malId?.let {
                     invokeAnimetosho(
                         it,
-                        season,
                         episode,
                         subtitleCallback,
                         callback,
-                        dubStatus
+                        dubStatus,
+                        anidbEid
                     )
                 }
             },
@@ -312,7 +345,20 @@ class StreamPlayAnime : MainAPI() {
                 if (aniXL != null) {
                     invokeAniXL(aniXL, episode, callback, dubStatus)
                 }
-            }
+            },
+            {
+                invokeSudatchi(aniid, episode, subtitleCallback, callback)
+            },
+            {
+                invokekuudere(
+                    anititle ?: zorotitle,
+                    season,
+                    episode,
+                    subtitleCallback,
+                    callback,
+                    dubStatus
+                )
+            },
         )
         return true
     }
@@ -363,8 +409,9 @@ class StreamPlayAnime : MainAPI() {
 
             fun totalEpisodes(): Int {
                 return nextAiringEpisode?.episode?.minus(1)
-                    ?: episodes ?: airingSchedule?.nodes?.getOrNull(0)?.episode
-                    ?: throw Exception("Unable to calculate total episodes")
+                    ?: episodes
+                    ?: airingSchedule?.nodes?.getOrNull(0)?.episode
+                    ?: 0
             }
 
             fun getTitle(): String {
@@ -403,6 +450,7 @@ class StreamPlayAnime : MainAPI() {
         @JsonProperty("isBollywood") val isBollywood: Boolean = false,
         @JsonProperty("isCartoon") val isCartoon: Boolean = false,
         @JsonProperty("isDub") val isDub: Boolean = false,
+        @JsonProperty("anidbEid") val anidbEid: Int? = null,
         )
 
     data class Media(
@@ -455,7 +503,8 @@ class StreamPlayAnime : MainAPI() {
             "type" to "ANIME",
             "format" to listOf(
                 if (type == TvType.AnimeMovie) "MOVIE" else "TV",
-                "ONA"
+                "ONA",
+                "OVA"
             )
         )
 
@@ -469,13 +518,14 @@ class StreamPlayAnime : MainAPI() {
             ?.data
             ?.let { it.Page?.media ?: it.media }
             ?.firstOrNull()
+
         return AniIds(res?.id, res?.idMal)
     }
 
     private fun extractSeason(title: String): Int? {
         val regex = Regex("""(?i)(?:season\s*(\d+)|(\d+)(?:st|nd|rd|th)?\s*season)""")
         val match = regex.find(title)
-        val seasonStr = match?.groups?.get(1)?.value ?: match?.groups?.get(2)?.value
-        return seasonStr?.toIntOrNull()
+        val seasonStr = match?.groups?.get(1)?.value ?: match?.groups?.get(2)?.value ?: "1"
+        return seasonStr.toIntOrNull()
     }
 }

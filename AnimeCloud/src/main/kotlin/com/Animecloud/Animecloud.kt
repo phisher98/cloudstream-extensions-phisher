@@ -1,6 +1,5 @@
 package com.Animecloud
 
-import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbUrl
@@ -15,38 +14,57 @@ class Animecloud : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime)
 
     override val mainPage = mainPageOf(
-        "hot/1" to "Trending",
-        "genre/Action" to "Action",
-        "genre/Drama" to "Drama",
-        "genre/Komödie" to "Comedy",
-        "genre/Mystery" to "Mystery",
-        "genre/Romanze" to "Romanze",
-        "genre/Abenteuer" to "Abenteuer",
-        "genre/EngSub" to "EngSub",
+        "best-last-7d?page=" to "Trending",
+        "genre?genere=Action&page=" to "Action",
+        "genre?genere=Drama&page=" to "Drama",
+        "genre?genere=Komödie&page=" to "Comedy",
+        "genre?genere=Mystery&page=" to "Mystery",
+        "genre?genere=Romanze&page=" to "Romanze",
+        "genre?genere=Abenteuer&page=" to "Abenteuer",
+        "genre?genere=EngSub&page=" to "EngSub",
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}?page=$page").documentLarge
-        val home     = document.select("#__nuxt div.grid a").mapNotNull { it.toSearchResult() }
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse {
+
+        val url = "$mainUrl/api/animes/${request.data}$page"
+
+        val response = app.get(url).parsedSafe<Home>()
+            ?: return newHomePageResponse(
+                list = HomePageList(
+                    name = request.name,
+                    list = emptyList(),
+                    isHorizontalImages = false
+                ),
+                hasNext = false
+            )
+
+        val home = response.data.map { it.toSearchResult() }
 
         return newHomePageResponse(
-            list    = HomePageList(
-                name               = request.name,
-                list               = home,
+            list = HomePageList(
+                name = request.name,
+                list = home,
                 isHorizontalImages = false
             ),
-            hasNext = true
+            hasNext = page < response.pages
         )
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val title     = this.select("span strong").text()
-        val href      = this.attr("href")
-        val posterUrl = fixUrlNull(this.select("img").attr("data-src"))
-        return newMovieSearchResponse(title, href, TvType.Movie) {
-            this.posterUrl = posterUrl
+    private fun HomeDaum.toSearchResult(): SearchResponse {
+        val href = "$mainUrl/api/anime?slug=${this.slug}"
+        val posterslug= this.poster
+        return newMovieSearchResponse(
+            name = this.title,
+            url = href,
+            type = TvType.Movie
+        ) {
+            posterUrl = fixUrlNull("$mainUrl/img/posters/${posterslug}")
         }
     }
+
 
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
@@ -57,8 +75,8 @@ class Animecloud : MainAPI() {
 
     private fun Daum.toSearchResponse(): SearchResponse {
         val title=this.title
-        val poster= "$mainUrl/img/posters/${this.poster}"
-        val href="${mainUrl}/anime/${this.slug}"
+        val poster= fixUrlNull("$mainUrl/img/posters/${this.poster}")
+        val href= "$mainUrl/api/anime?slug=${this.slug}"
         return newAnimeSearchResponse(
             title,
             href,
@@ -69,14 +87,14 @@ class Animecloud : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
-        val animeslug=url.substringAfterLast("/")
-        val title = document.selectFirst("#__nuxt h1")?.ownText()?.trim().toString()
-        val imdburl=document.selectFirst("div.flex.flex-col.gap-4.w-full > div:nth-child(6) > a.btn.btn-warning.btn-sm")?.attr("href")
-        val poster = document.select("#__nuxt img.fixed").attr("data-src")
-        val description = document.selectFirst("div.flex.flex-col.gap-4.w-full > p > span")?.text()?.trim()
-        val genres=document.select("div.flex.flex-wrap.gap-2 a.badge").map { it.text() }
-        val animeSeasons= app.get("${mainUrl}/api/anime?slug=$animeslug").parsedSafe<EpisodeParser>()?.data?.animeSeasons
+        val document= app.get(url).parsedSafe<EpisodeParser>()?.data
+        val title = document?.title ?: "Unknown"
+        val imdburl=document?.imdb
+        val poster= fixUrlNull("$mainUrl/img/posters/${document?.poster}")
+        val backgroundurl = "$mainUrl/img/posters/bg-${document?.backdrop}.webp"
+        val description = document?.desc
+        val genres=document?.generes
+        val animeSeasons= document?.animeSeasons
         val episodes = mutableListOf<Episode>()
         animeSeasons?.map { info->
              var season:String
@@ -86,7 +104,7 @@ class Animecloud : MainAPI() {
                  val episode=it.episode?.toIntOrNull()
                  val epname="Episode $episode "
                  val epposter="${mainUrl}/img/thumbs/${it.image}"
-                 val animename=url.substringAfterLast("/")
+                 val animename=url.substringAfterLast("slug=")
                  val searchSeason = if (season == "0") "Filme" else season
                  val href = "$mainUrl/api/anime/episode?slug=$animename&season=$searchSeason&episode=$episode"
                  episodes+= newEpisode(href)
@@ -100,6 +118,7 @@ class Animecloud : MainAPI() {
         }
         return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
                 this.posterUrl = poster
+                this.backgroundPosterUrl = backgroundurl
                 this.plot = description
                 this.tags = genres
                 addImdbUrl(imdburl)

@@ -50,7 +50,7 @@ class Showflixarchives : ExtractorApi() {
     ) {
         Log.d("Phisher1 ","I'm here")
 
-        val doc = app.get(url).documentLarge
+        val doc = app.get(url).document
         val links = doc.select("a[href]")
         Log.d("Phisher1 ","$links")
 
@@ -86,7 +86,7 @@ class GDFlix : ExtractorApi() {
     ) {
         val newUrl = try {
             app.get(url)
-                .documentLarge
+                .document
                 .selectFirst("meta[http-equiv=refresh]")
                 ?.attr("content")
                 ?.substringAfter("url=")
@@ -95,7 +95,7 @@ class GDFlix : ExtractorApi() {
             return
         } ?: url
 
-        val document = app.get(newUrl).documentLarge
+        val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -117,10 +117,10 @@ class GDFlix : ExtractorApi() {
                 text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
-                        app.get("https://new6.gdflix.dad$link").documentLarge
+                        app.get("https://new6.gdflix.dad$link").document
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-                                app.get(serverUrl).documentLarge
+                                app.get(serverUrl).document
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -148,7 +148,7 @@ class GDFlix : ExtractorApi() {
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.documentLarge
+                                val indexbotDoc = indexbotResponse.document
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -212,7 +212,7 @@ class GDFlix : ExtractorApi() {
 
                 text.contains("GoFile",ignoreCase = true) -> {
                     try {
-                        app.get(anchor.attr("href")).documentLarge
+                        app.get(anchor.attr("href")).document
                             .select(".row .row a").amap { gofileAnchor ->
                                 val link = gofileAnchor.attr("href")
                                 if (link.contains("gofile")) {
@@ -245,7 +245,7 @@ class GDFlix : ExtractorApi() {
             val types = listOf("type=1", "type=2")
             types.map { type ->
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .documentLarge.select("a.btn-success").attr("href")
+                    .document.select("a.btn-success").attr("href")
 
                 if (source?.isNotEmpty() == true) {
                     callback.invoke(
@@ -344,7 +344,7 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun CFType1(url: String): List<String> {
         return runCatching {
-            app.get("$url?type=1").documentLarge
+            app.get("$url?type=1").document
                 .select("a.btn-success")
                 .mapNotNull { it.attr("href").takeIf { href -> href.startsWith("http") } }
         }.getOrElse {
@@ -355,7 +355,7 @@ open class Driveseed : ExtractorApi() {
 
     private suspend fun resumeCloudLink(baseUrl: String, path: String): String? {
         return runCatching {
-            app.get(baseUrl + path).documentLarge
+            app.get(baseUrl + path).document
                 .selectFirst("a.btn-success")?.attr("href")
                 ?.takeIf { it.startsWith("http") }
         }.getOrElse {
@@ -367,7 +367,7 @@ open class Driveseed : ExtractorApi() {
     private suspend fun resumeBot(url: String): String? {
         return runCatching {
             val response = app.get(url)
-            val docString = response.documentLarge.toString()
+            val docString = response.document.toString()
             val ssid = response.cookies["PHPSESSID"].orEmpty()
             val token = Regex("formData\\.append\\('token', '([a-f0-9]+)'\\)").find(docString)?.groupValues?.getOrNull(1).orEmpty()
             val path = Regex("fetch\\('/download\\?id=([a-zA-Z0-9/+]+)'").find(docString)?.groupValues?.getOrNull(1).orEmpty()
@@ -422,14 +422,14 @@ open class Driveseed : ExtractorApi() {
 
         val document = try {
             if (url.contains("r?key=")) {
-                val temp = app.get(url).documentLarge.selectFirst("script")
+                val temp = app.get(url).document.selectFirst("script")
                     ?.data()
                     ?.substringAfter("replace(\"")
                     ?.substringBefore("\")")
                     .orEmpty()
-                app.get(mainUrl + temp).documentLarge
+                app.get(mainUrl + temp).document
             } else {
-                app.get(url).documentLarge
+                app.get(url).document
             }
         } catch (e: Exception) {
             Log.e("Driveseed", "getUrl page load error: ${e.message}")

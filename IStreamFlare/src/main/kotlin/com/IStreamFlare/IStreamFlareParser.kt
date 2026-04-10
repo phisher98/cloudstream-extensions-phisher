@@ -1,45 +1,86 @@
 package com.IStreamFlare
 
 import com.google.gson.annotations.SerializedName
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64DecodeArray
+import com.phisher98.BuildConfig
+import javax.crypto.Cipher
+import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 data class HomeRes(
-    val id: String,
     @SerializedName("TMDB_ID")
-    val tmdbId: String,
-    val name: String,
-    val description: String,
-    val genres: String,
-    @SerializedName("release_date")
-    val releaseDate: String,
-    val runtime: String?,
-    val poster: String,
-    val banner: String,
-    @SerializedName("youtube_trailer")
-    val youtubeTrailer: String,
-    val downloadable: String,
-    val type: String,
-    val status: String,
+    val tmdbId: String?,
+
+    @SerializedName("banner")
+    val banner: String?,
+
     @SerializedName("content_type")
     val contentType: String,
+
     @SerializedName("custom_tag")
-    val customTag: CustomTag?
-) {
-    data class CustomTag(
-        val id: String,
-        @SerializedName("custom_tags_id")
-        val customTagsId: String,
-        @SerializedName("content_id")
-        val contentId: String,
-        @SerializedName("content_type")
-        val contentType: String,
-        @SerializedName("custom_tags_name")
-        val customTagsName: String,
-        @SerializedName("background_color")
-        val backgroundColor: String,
-        @SerializedName("text_color")
-        val textColor: String
-    )
-}
+    val customTag: CustomTag?,
+
+    @SerializedName("description")
+    val description: String?,
+
+    @SerializedName("downloadable")
+    val downloadable: String?,
+
+    @SerializedName("genres")
+    val genres: String?,
+
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("name")
+    val name: String,
+
+    @SerializedName("poster")
+    val poster: String?,
+
+    @SerializedName("release_date")
+    val releaseDate: String?,
+
+    @SerializedName("runtime")
+    val runtime: String?,
+
+    @SerializedName("status")
+    val status: String?,
+
+    @SerializedName("type")
+    val type: String?,
+
+    @SerializedName("youtube_trailer")
+    val youtubeTrailer: String?,
+    @SerializedName("url") val url: String?,
+)
+
+data class CustomTag(
+    @SerializedName("background_color")
+    val backgroundColor: String?,
+
+    @SerializedName("content_id")
+    val contentId: String?,
+
+    @SerializedName("content_type")
+    val contentType: String?,
+
+    @SerializedName("custom_tags_id")
+    val customTagsId: String?,
+
+    @SerializedName("custom_tags_name")
+    val customTagsName: String?,
+
+    @SerializedName("id")
+    val id: String?,
+
+    @SerializedName("text_color")
+    val textColor: String?
+)
 
 
 data class StreamLinks(
@@ -116,16 +157,10 @@ data class EpisodesRes(
 
 data class LoadDataObject(
     val id: String,
-    val tmdbId: String,
+    val tmdbId: String?,
     val contentType: String?,
+    val url: String?
 )
-
-data class IMDB(
-    @SerializedName("imdb_id")
-    val imdbId: String? = null
-)
-
-
 
 data class Meta(
     val id: String?,
@@ -164,4 +199,45 @@ data class EpisodeDetails(
 
 data class ResponseData(
     val meta: Meta?
+)
+
+private val SECRET_KEY = base64Decode(BuildConfig.iStreamFlareSecretKey)
+private const val SALT = BuildConfig.iStreamFlareSalt
+
+fun decryptPayload(encryptedBase64: String): String {
+    val decoded = base64DecodeArray(encryptedBase64)
+    require(decoded.size >= 28) { "Invalid encrypted payload" }
+
+    val iv = decoded.copyOfRange(0, 12)
+    val tag = decoded.copyOfRange(12, 28)
+    val ciphertext = decoded.copyOfRange(28, decoded.size)
+
+    val key = deriveKey()
+
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+    cipher.init(
+        Cipher.DECRYPT_MODE,
+        key,
+        GCMParameterSpec(128, iv)
+    )
+
+    // Java uses ciphertext || tag
+    val plaintext = cipher.doFinal(ciphertext + tag)
+    return String(plaintext, Charsets.UTF_8)
+}
+
+private fun deriveKey(): SecretKey {
+    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+    val spec = PBEKeySpec(
+        SECRET_KEY.toCharArray(),
+        SALT.toByteArray(Charsets.UTF_8),
+        10_000,
+        256
+    )
+    return SecretKeySpec(factory.generateSecret(spec).encoded, "AES")
+}
+
+data class Response(
+    val encrypted: Boolean,
+    val data: String,
 )

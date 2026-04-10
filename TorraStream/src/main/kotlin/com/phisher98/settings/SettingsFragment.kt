@@ -18,7 +18,7 @@ import com.phisher98.BuildConfig
 import com.phisher98.TorraStreamProvider
 
 class SettingsFragment(
-    private val plugin: TorraStreamProvider,
+    plugin: TorraStreamProvider,
     private val sharedPref: SharedPreferences
 ) : BottomSheetDialogFragment() {
 
@@ -268,7 +268,7 @@ class SettingsFragment(
                 .setTitle("Reset")
                 .setMessage("This will delete all saved settings.")
                 .setPositiveButton("Reset") { _, _ ->
-                    sharedPref.edit().clear().commit()
+                    sharedPref.edit(commit = true) { clear() }
                     selectedProviders.fill(false)
                     updateProviderText()
                     selectedLanguages.fill(false)

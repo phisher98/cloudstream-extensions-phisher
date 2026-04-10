@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -17,20 +18,24 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URI
 
 class TamilblastersProvider : MainAPI() {
-    override var mainUrl = "https://www.1tamilblasters.casa/"
-    private val streamhg = "https://tryzendm.com"
+    override var mainUrl: String = runBlocking {
+        TamilblastersPlugin.getDomains()?.tamilblasters ?: "https://www.1tamilblasters.company/"
+    }
+    private val streamhg = "https://cavanhabg.com"
     override var name = "Tamilblasters"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override var lang = "ta"
     override val hasMainPage = true
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "$mainUrl/page/$page"
-        val document = app.get(url).documentLarge
+        val url = if (page == 1) mainUrl else "$mainUrl/page/$page"
+        val document = app.get(url).document
         val home = document.select("div.article-content-col").mapNotNull {
             it.toSearchResult()
         }
@@ -47,7 +52,7 @@ class TamilblastersProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val searchDoc = app.get("$mainUrl/?s=$query").documentLarge
+        val searchDoc = app.get("$mainUrl/?s=$query").document
         return searchDoc.select("div.article-content-col").mapNotNull {
             it.toSearchResult()
         }
@@ -56,7 +61,7 @@ class TamilblastersProvider : MainAPI() {
     data class VideoEntry(val title: String, val url: String)
 
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val ogdesc = document.selectFirst("meta[property='og:description']")?.attr("content") ?: return null
         val title = ogdesc.substringAfter("Name:").substringBefore("(").trim()
         val year = "\\((\\d{4})\\)".toRegex().find(ogdesc)?.groupValues?.get(1)?.toIntOrNull()
@@ -103,14 +108,28 @@ class TamilblastersProvider : MainAPI() {
                 return true
             }
         } else {
-            val doc = app.get(data).documentLarge
-            doc.select("iframe").mapNotNull { iframe ->
-                var streamurl = iframe.attr("src")
-                if (streamurl.contains("hg")) {
-                    val secondPart = streamurl.substringAfter("/e")
-                    streamurl = "$streamhg/e/$secondPart"
+            val doc = app.get(data).document
+            doc.select("iframe").amap { iframe ->
+                val streamurl = iframe.attr("src")
+                val host = runCatching {
+                    URI(streamurl).host?.lowercase()
+                }.getOrNull() ?: ""
+
+                if (host.contains("hg")) {
+                    Hgcloud().getUrl(
+                        streamurl,
+                        mainUrl,
+                        subtitleCallback,
+                        callback
+                    )
+                } else {
+                    loadExtractor(
+                        streamurl,
+                        mainUrl,
+                        subtitleCallback,
+                        callback
+                    )
                 }
-                loadExtractor(streamurl, "$mainUrl/", subtitleCallback, callback)
             }
             return true
         }

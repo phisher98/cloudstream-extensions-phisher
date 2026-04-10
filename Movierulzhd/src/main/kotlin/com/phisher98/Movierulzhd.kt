@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
@@ -20,7 +21,6 @@ import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.fixTitle
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
-import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -42,11 +42,12 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import org.jsoup.nodes.Element
 import java.net.URI
+import java.text.Normalizer
 
 open class Movierulzhd : MainAPI() {
 
     override var mainUrl: String = runBlocking {
-        MovierulzhdPlugin.getDomains()?.movierulzhd ?: "https://1movierulzhd.pro"
+        MovierulzhdPlugin.getDomains()?.movierulzhd ?: "https://123moviesfree9.cloud"
     }
     var directUrl = ""
     override var name = "Movierulzhd"
@@ -77,7 +78,7 @@ open class Movierulzhd : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if(page == 1) "$mainUrl/${request.data}/" else "$mainUrl/${request.data}/page/$page/"
-        val document = app.get(url, timeout = 20L).documentLarge
+        val document = app.get(url).document
         val home =
             document.select("div.items.normal article, div#archive-content article, div.items.full article").mapNotNull {
                 it.toSearchResult()
@@ -85,7 +86,7 @@ open class Movierulzhd : MainAPI() {
         return newHomePageResponse(request.name, home)
     }
 
-    private fun getProperLink(uri: String): String {
+    fun getProperLink(uri: String): String {
         return when {
             uri.contains("/episodes/") -> {
                 var title = uri.substringAfter("$mainUrl/episodes/")
@@ -115,16 +116,18 @@ open class Movierulzhd : MainAPI() {
                 posterUrl = fixUrlNull(this.select("div.poster img").attr("data-wpfc-original-src"))
             }
         }
-        val quality = getQualityFromString(this.select("span.quality").text())
+        val quality = getSearchQuality(this.select("span.quality").text())
+        val score = this.select("div.rating").text()
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
             this.quality = quality
+            this.score = Score.from10(score)
         }
 
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search/$query").documentLarge
+        val document = app.get("$mainUrl/search/$query").document
         return document.select("div.result-item").map {
             val title =
                 it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
@@ -138,7 +141,7 @@ open class Movierulzhd : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val request = app.get(url)
-        val document = request.documentLarge
+        val document = request.document
         directUrl = getBaseUrl(request.url)
         val title =
             document.selectFirst("div.data > h1")?.text()?.trim().toString()
@@ -288,7 +291,7 @@ open class Movierulzhd : MainAPI() {
                 }
             } else {
                 try {
-                    val document = app.get(data).documentLarge
+                    val document = app.get(data).document
                     val items = document.select("ul#playeroptionsul > li").map {
                         Triple(
                             it.attr("data-post"),
@@ -315,8 +318,7 @@ open class Movierulzhd : MainAPI() {
                                 {
                                     VidStack().getUrl(source,"",subtitleCallback,callback)
                                 }
-                                else
-                                loadExtractor(source, subtitleCallback, callback)
+                                else loadExtractor(source, subtitleCallback, callback)
                             }
                         } catch (e: Exception) {
                             println("Error loading item: ${e.message}")
@@ -435,7 +437,46 @@ open class Movierulzhd : MainAPI() {
         val nume: String? = null,
     )
 
+    /**
+     * Determines the search quality based on the presence of specific keywords in the input string.
+     *
+     * @param check The string to check for keywords.
+     * @return The corresponding `SearchQuality` enum value, or `null` if no match is found.
+     */
+    fun getSearchQuality(check: String?): SearchQuality? {
+        val s = check ?: return null
+        val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+        val patterns = listOf(
+            Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
 
+            // CAM / THEATRE SOURCES FIRST
+            Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+            Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+            Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+
+            // WEB / RIP
+            Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+
+            // BLURAY
+            Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+
+            // RESOLUTIONS
+            Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+            Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+            Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+
+            // GENERIC HD LAST
+            Regex("\\b(hdrip|hdtv|HD)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+
+            Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+            Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+            Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+        )
+
+
+        for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
+        return null
+    }
 
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,

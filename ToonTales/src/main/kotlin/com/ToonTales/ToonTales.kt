@@ -22,7 +22,7 @@ class ToonTales : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}/?page=$page").documentLarge
+        val document = app.get("$mainUrl/${request.data}/?page=$page").document
         val home     = document.select("section > div.item").mapNotNull { it.toSearchResult() }
 
         return newHomePageResponse(
@@ -48,7 +48,7 @@ class ToonTales : MainAPI() {
         val searchResponse = mutableListOf<SearchResponse>()
 
         for (i in 1..3) {
-            val document = app.get("${mainUrl}/?s=$query&paged=$i").documentLarge
+            val document = app.get("${mainUrl}/?s=$query&paged=$i").document
 
             val results = document.select("#movies-a > ul > li").mapNotNull { it.toSearchResult() }
 
@@ -66,7 +66,7 @@ class ToonTales : MainAPI() {
 
     @Suppress("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url, referer = url).documentLarge
+        val document = app.get(url, referer = url).document
         val title       = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim().toString()
         val poster = document.selectFirst("meta[property=og:image]")?.attr("content")?.trim().toString()
         val description = document.selectFirst("meta[property=og:description]")?.attr("content")?.trim().toString()
@@ -77,7 +77,7 @@ class ToonTales : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         val file=document.selectFirst("script:containsData(file)")?.data().toString().substringAfter("file: \"").substringBefore("\"")
 
         callback.invoke(

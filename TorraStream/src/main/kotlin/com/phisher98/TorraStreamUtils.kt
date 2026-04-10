@@ -1,14 +1,23 @@
 package com.phisher98
 
+import android.content.SharedPreferences
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.annotations.SerializedName
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.json.JSONObject
 import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "") ?. groupValues ?. getOrNull(1) ?. toIntOrNull()
@@ -107,7 +116,15 @@ fun parseAnimeData(jsonString: String): MetaAnimeData? {
     }
 }
 
-
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @JsonProperty("themoviedb_id") val themoviedbId: String? = null,
+    @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+    @JsonProperty("imdb_id") val imdbId: String? = null,
+    @JsonProperty("mal_id") val malId: Int? = null,
+    @JsonProperty("anilist_id") val anilistId: Int? = null,
+    @JsonProperty("kitsu_id") val kitsuid: String? = null,
+)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ImageData(
     @JsonProperty("coverType") val coverType: String?,
@@ -134,6 +151,7 @@ data class MetaAnimeData(
     @JsonProperty("titles") val titles: Map<String, String>? = null,
     @JsonProperty("images") val images: List<ImageData>? = null,
     @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>? = null,
+    @JsonProperty("mappings") val mappings: MetaMappings? = null
 )
 
 fun parseStreamsToMagnetLinks(jsonString: String): List<MagnetStream> {
@@ -178,4 +196,167 @@ fun extractResolutionFromDescription(description: String?): String? {
     if (description.isNullOrBlank()) return null
     val regex = Regex("""\b(2160p|1440p|1080p|720p|480p|360p)\b""", RegexOption.IGNORE_CASE)
     return regex.find(description)?.value
+}
+
+fun getDate(): TmdbDate {
+    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val calendar = Calendar.getInstance()
+
+    // Today
+    val today = formatter.format(calendar.time)
+
+    // Next week
+    calendar.add(Calendar.WEEK_OF_YEAR, 1)
+    val nextWeek = formatter.format(calendar.time)
+
+    // Last week's Monday
+    calendar.time = Date()
+    calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    calendar.add(Calendar.WEEK_OF_YEAR, -1)
+    val lastWeekStart = formatter.format(calendar.time)
+
+    // Start of current month
+    calendar.time = Date()
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    val monthStart = formatter.format(calendar.time)
+
+    return TmdbDate(today, nextWeek, lastWeekStart, monthStart)
+}
+
+suspend fun fetchTmdbLogoUrl(
+    tmdbAPI: String,
+    apiKey: String,
+    type: TvType,
+    tmdbId: Int?,
+    appLangCode: String?
+): String? {
+
+    if (tmdbId == null) return null
+
+    val url = if (type == TvType.Movie)
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+    else
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
+
+    val json = runCatching { JSONObject(app.get(url).text) }.getOrNull() ?: return null
+    val logos = json.optJSONArray("logos") ?: return null
+    if (logos.length() == 0) return null
+
+    val lang = appLangCode?.trim()?.lowercase()
+
+    fun path(o: JSONObject) = o.optString("file_path")
+    fun isSvg(o: JSONObject) = path(o).endsWith(".svg", true)
+    fun urlOf(o: JSONObject) = "https://image.tmdb.org/t/p/w500${path(o)}"
+
+    // Language match
+    var svgFallback: JSONObject? = null
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        val p = path(logo)
+        if (p.isBlank()) continue
+
+        val l = logo.optString("iso_639_1").trim().lowercase()
+        if (l == lang) {
+            if (!isSvg(logo)) return urlOf(logo)
+            if (svgFallback == null) svgFallback = logo
+        }
+    }
+    svgFallback?.let { return urlOf(it) }
+
+    // Highest voted fallback
+    var best: JSONObject? = null
+    var bestSvg: JSONObject? = null
+
+    fun voted(o: JSONObject) = o.optDouble("vote_average", 0.0) > 0 && o.optInt("vote_count", 0) > 0
+
+    fun better(a: JSONObject?, b: JSONObject): Boolean {
+        if (a == null) return true
+        val aAvg = a.optDouble("vote_average", 0.0)
+        val aCnt = a.optInt("vote_count", 0)
+        val bAvg = b.optDouble("vote_average", 0.0)
+        val bCnt = b.optInt("vote_count", 0)
+        return bAvg > aAvg || (bAvg == aAvg && bCnt > aCnt)
+    }
+
+    for (i in 0 until logos.length()) {
+        val logo = logos.optJSONObject(i) ?: continue
+        if (!voted(logo)) continue
+
+        if (isSvg(logo)) {
+            if (better(bestSvg, logo)) bestSvg = logo
+        } else {
+            if (better(best, logo)) best = logo
+        }
+    }
+
+    best?.let { return urlOf(it) }
+    bestSvg?.let { return urlOf(it) }
+
+    // No language match & no voted logos
+    return null
+}
+
+data class TorrentsDBResponse(
+    val streams: List<TorrentsDBStream>?
+)
+
+data class TorrentsDBStream(
+    val name: String?,
+    val title: String?,
+    val infoHash: String,
+    val fileIdx: Int?,
+    val behaviorHints: TorrentsDBBehaviorHints?,
+    val sources: List<String>?
+)
+
+data class TorrentsDBBehaviorHints(
+    val bingeGroup: String?,
+    val filename: String?
+)
+
+fun filteredCallback(
+    sharedPref: SharedPreferences,
+    callback: (ExtractorLink) -> Unit
+): (ExtractorLink) -> Unit {
+
+    val excludedQualities = sharedPref.getString("qualityfilter", "")
+        ?.lowercase()
+        ?.split(",")
+        ?.filter { it.isNotBlank() }
+        ?: emptyList()
+
+    val maxSize = sharedPref.getString("sizefilter", "")?.toDoubleOrNull()
+    val limit = sharedPref.getString("limit", "")?.toIntOrNull() ?: 0
+    var resultCount = 0
+
+    return fun(link: ExtractorLink) {
+
+        if (limit in 1..resultCount) return
+
+        val detectedQuality = when (link.quality) {
+            in 2000..3000 -> "4k"
+            in 1080..1999 -> "1080p"
+            in 720..1079 -> "720p"
+            in 480..719 -> "480p"
+            else -> "other"
+        }
+
+        if (detectedQuality in excludedQualities) return
+
+        val sizeMatch = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB)""", RegexOption.IGNORE_CASE)
+            .find(link.name)
+
+        val sizeValue = sizeMatch?.groupValues?.get(1)?.replace(',', '.')?.toDoubleOrNull()
+        val sizeUnit = sizeMatch?.groupValues?.get(2)
+
+        val sizeGB = when (sizeUnit?.uppercase()) {
+            "GB" -> sizeValue
+            "MB" -> sizeValue?.div(1024)
+            else -> null
+        }
+        if (maxSize != null && sizeGB != null && sizeGB > maxSize) return
+        callback(link)
+        resultCount++
+    }
 }

@@ -1,5 +1,8 @@
 package com.phisher98
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -49,13 +52,13 @@ suspend fun loadCustomExtractor(
 
 class Kwik : ExtractorApi() {
     override val name            = "Kwik"
-    override val mainUrl         = "https://kwik.si"
+    override val mainUrl         = "https://kwik.cx"
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val res = app.get(url,referer=url)
         val script =
-            res.documentLarge.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
+            res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)
         val m3u8 =Regex("source=\\s*'(.*?m3u8.*?)'").find(unpacked)?.groupValues?.getOrNull(1) ?:""
         callback.invoke(
@@ -65,9 +68,9 @@ class Kwik : ExtractorApi() {
                 url = m3u8,
                 INFER_TYPE
             ) {
-                this.referer = ""
+                this.referer = mainUrl
                 this.quality = getQualityFromName("")
-                this.headers= mapOf("origin" to "https://www.miruro.tv")
+                this.headers= mapOf("origin" to mainUrl)
             }
         )
     }
@@ -127,7 +130,7 @@ class Pahe : ExtractorApi() {
             .build()
 
         val fContent = client.newCall(fContentRequest).execute()
-        val fContentString = fContent.body.string()
+        val fContentString = fContent.body.toString()
 
         val (fullString, key, v1, v2) = kwikParamsRegex.find(fContentString)!!.destructured
         val decrypted = decrypt(fullString, key, v1.toInt(), v2.toInt())
@@ -173,9 +176,55 @@ class Pahe : ExtractorApi() {
                 url = location,
                 INFER_TYPE
             ) {
-                this.referer = ""
+                this.referer = "https://kwik.cx/"
                 this.quality = getQualityFromName("")
             }
         )
+    }
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaImage(
+    @JsonProperty("coverType") val coverType: String?,
+    @JsonProperty("url") val url: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaEpisode(
+    @JsonProperty("episode") val episode: String?,
+    @JsonProperty("airDateUtc") val airDateUtc: String?,  // Keeping only one field
+    @JsonProperty("runtime") val runtime: Int?,     // Keeping only one field
+    @JsonProperty("image") val image: String?,
+    @JsonProperty("title") val title: Map<String, String>?,
+    @JsonProperty("overview") val overview: String?,
+    @JsonProperty("rating") val rating: String?,
+    @JsonProperty("finaleType") val finaleType: String?
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaAnimeData(
+    @JsonProperty("titles") val titles: Map<String, String>?,
+    @JsonProperty("images") val images: List<MetaImage>?,
+    @JsonProperty("episodes") val episodes: Map<String, MetaEpisode>?,
+    @JsonProperty("mappings") val mappings: MetaMappings? = null
+)
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MetaMappings(
+    @JsonProperty("themoviedb_id") val themoviedbId: Int? = null,
+    @JsonProperty("thetvdb_id") val thetvdbId: Int? = null,
+    @JsonProperty("imdb_id") val imdbId: String? = null,
+    @JsonProperty("mal_id") val malId: Int? = null,
+    @JsonProperty("anilist_id") val anilistId: Int? = null,
+    @JsonProperty("kitsu_id") val kitsuid: String? = null,
+)
+
+fun parseAnimeData(jsonString: String): MetaAnimeData? {
+    return try {
+        val objectMapper = ObjectMapper()
+        objectMapper.readValue(jsonString, MetaAnimeData::class.java)
+    } catch (_: Exception) {
+        null // Return null for invalid JSON instead of crashing
     }
 }

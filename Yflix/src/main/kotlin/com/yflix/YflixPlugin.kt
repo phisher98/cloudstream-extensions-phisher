@@ -1,0 +1,76 @@
+package com.yflix
+
+import android.content.Context
+import androidx.appcompat.app.AppCompatActivity
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
+import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.Plugin
+
+enum class ServerList(val link: Pair<String, Boolean>) {
+    Yflix("https://yflix.to" to true),
+    Moviesz("https://1movies.bz" to true),
+    SOLARMovie("https://solarmovie.fi" to true),
+    Sfix("https://sflix.fi" to true),
+    Movhub("https://movhub.ws" to true),
+    FlixTor("https://flixtor.mov" to true),
+    LookMovie("https://lookmovie.fi" to true),
+    Bflix("https://bflix.la" to true),
+    MyFlixer("https://myflixer.fi" to true),
+    Movies123Free("https://123moviesfree.bz" to true),
+    HuraWatch("https://hurawatch.la" to true),
+    Soap2Day("https://soap2day.fi" to true),
+    MyflixerBz("https://myflixer.bz" to true),
+    Watchseries("https://watchseries.st" to true),
+}
+
+
+@CloudstreamPlugin
+class YflixPlugin : Plugin() {
+    override fun load(context: Context) {
+        registerMainAPI(Yflix())
+        registerExtractorAPI(MegaUp())
+        registerExtractorAPI(Fourspromax())
+        registerExtractorAPI(Rapidairmax())
+        registerExtractorAPI(rapidshare())
+
+        this.openSettings = { ctx ->
+            val activity = ctx as AppCompatActivity
+            val frag = BottomFragment(this)
+            frag.show(activity.supportFragmentManager, "")
+        }
+    }
+
+    companion object {
+        private val serverNameMap = mapOf(
+            ServerList.Yflix.link.first to "YFlix",
+            ServerList.Moviesz.link.first to "1Movies",
+            ServerList.SOLARMovie.link.first to "SolarMovie",
+            ServerList.Sfix.link.first to "SFlix",
+            ServerList.Movhub.link.first to "Movhub",
+            ServerList.FlixTor.link.first to "FlixTor",
+            ServerList.LookMovie.link.first to "LookMovie",
+            ServerList.Bflix.link.first to "BFlix",
+            ServerList.MyFlixer.link.first to "MyFlixer",
+            ServerList.Movies123Free.link.first to "123MoviesFree",
+            ServerList.HuraWatch.link.first to "HuraWatch",
+            ServerList.Soap2Day.link.first to "Soap2Day",
+            ServerList.MyflixerBz.link.first to "MyflixerBz",
+            ServerList.Watchseries.link.first to "Watchseries",
+        )
+        var currentYflixServer: String
+            get() = getKey("Yflix_CURRENT_SERVER") ?: ServerList.Yflix.link.first
+            set(value) {
+                setKey("Yflix_CURRENT_SERVER", value)
+            }
+
+        fun getCurrentServerName(): String {
+            return serverNameMap[currentYflixServer] ?: currentYflixServer
+        }
+
+        fun getServerName(url: String): String {
+            return serverNameMap[url] ?: url
+        }
+    }
+}
+

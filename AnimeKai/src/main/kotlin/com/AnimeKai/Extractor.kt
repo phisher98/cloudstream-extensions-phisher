@@ -22,7 +22,11 @@ class Fourspromax : MegaUp() {
     override val requiresReferer = true
 }
 
-//Thanks to https://github.com/AzartX47/EncDecEndpoints
+class MegaUpTwoTwo : MegaUp() {
+    override var mainUrl = "https://megaup22.online"
+    override val requiresReferer = true
+}
+
 open class MegaUp : ExtractorApi() {
     override var name = "MegaUp"
     override var mainUrl = "https://megaup.live"

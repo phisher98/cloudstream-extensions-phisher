@@ -1,7 +1,5 @@
 package com.Anichi
 
-import com.lagradost.cloudstream3.extractors.Okrulink
-import com.lagradost.cloudstream3.extractors.Vidguardto2
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 
@@ -12,7 +10,6 @@ class AnichiPlugin : BasePlugin() {
         registerExtractorAPI(swiftplayers())
         registerExtractorAPI(StreamWishExtractor())
         registerExtractorAPI(FilemoonV2())
-        registerExtractorAPI(Vidguardto2())
-        registerExtractorAPI(Okrulink())
+        registerExtractorAPI(Allanimeups())
     }
 }

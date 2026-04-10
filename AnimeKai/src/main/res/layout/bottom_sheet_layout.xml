@@ -25,7 +25,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Animekai Settings"
+                android:text="Extension Settings"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -56,16 +56,6 @@
             android:layout_marginBottom="10dp"
             android:layout_marginTop="10dp" />
 
-        <ImageView
-            android:src="@android:drawable/divider_horizontal_dark"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scaleType="fitXY"
-            android:paddingLeft="2dp"
-            android:paddingRight="2dp"
-            android:layout_marginBottom="10dp"
-            android:layout_marginTop="10dp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -76,7 +66,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingBottom="10dp"
-                android:text="AnimeKai Servers"
+                android:text="AnimeKai Domains"
                 android:textSize="17sp"
                 android:textStyle="bold" />
 

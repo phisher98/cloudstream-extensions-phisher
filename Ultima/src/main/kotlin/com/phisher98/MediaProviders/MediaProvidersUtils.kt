@@ -17,7 +17,6 @@ import com.lagradost.cloudstream3.extractors.Mp4Upload
 import com.lagradost.cloudstream3.extractors.Rabbitstream
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
-import com.lagradost.cloudstream3.extractors.Vidplay
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.utils.AppUtils
@@ -44,7 +43,6 @@ import org.json.JSONObject
 import java.net.URI
 import java.net.URL
 import java.net.URLEncoder
-import kotlin.io.encoding.Base64
 
 abstract class MediaProvider {
     abstract val name: String
@@ -103,7 +101,6 @@ object UltimaMediaProvidersUtils {
                     VegaMoviesProvider(),
                     VidsrcccProvider(),
                     Watch32Provider(),
-                    XPrimeProvider(),
                     PrimeWireProvider(),
                     MovieBoxMediaProvider()
             )
@@ -127,8 +124,6 @@ object UltimaMediaProvidersUtils {
     enum class ServerName {
         MyCloud,
         Mp4upload,
-        Streamtape,
-        Vidplay,
         Filemoon,
         Jeniusplay,
         Uqload,
@@ -233,12 +228,6 @@ object UltimaMediaProvidersUtils {
         try {
             val domain = referer ?: getBaseUrl(url)
             when (serverName) {
-                ServerName.Vidplay ->
-                        AnyVidplay(providerName, dubStatus, domain)
-                                .getUrl(url, domain, subtitleCallback, callback)
-                ServerName.MyCloud ->
-                        AnyMyCloud(providerName, dubStatus, domain)
-                                .getUrl(url, domain, subtitleCallback, callback)
                 ServerName.Filemoon ->
                         AnyFileMoon(providerName, dubStatus, domain)
                                 .getUrl(url, null, subtitleCallback, callback)
@@ -323,65 +312,6 @@ class AnyFileMoon(provider: String?, dubType: String?, domain: String = "") : Fi
     override val requiresReferer = false
 }
 
-@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
-class AnyMyCloud(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
-    override val name =
-            (if (provider != null) "$provider: " else "") +
-                    "MyCloud" +
-                    (if (dubType != null) ": $dubType" else "")
-    override val mainUrl = domain
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ) {
-        val encIFrameUrl = app.get(url).url.split("#").getOrNull(1) ?: return
-        val fileLink = Base64.UrlSafe.decode(encIFrameUrl).toString(Charsets.UTF_8)
-        callback.invoke(
-            newExtractorLink(
-                name,
-                name,
-                fileLink,
-                INFER_TYPE
-            )
-            {
-                quality = Qualities.Unknown.value
-            }
-        )
-    }
-}
-
-class AnyVidplay(provider: String?, dubType: String?, domain: String = "") : Vidplay() {
-    override val name =
-            (if (provider != null) "$provider: " else "") +
-                    "Vidplay" +
-                    (if (dubType != null) ": $dubType" else "")
-    override val mainUrl = domain
-    override val requiresReferer = false
-
-    override suspend fun getUrl(
-            url: String,
-            referer: String?,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ) {
-        val iFramePage = app.get(url, referer = referer).documentLarge
-        val jsData = iFramePage.selectFirst("script:containsData(jwplayer)") ?: return
-        val fileLink = Regex("""file": `(.*)`""").find(jsData.html())?.groupValues?.get(1) ?: return
-        newExtractorLink(
-            name,
-            name,
-            fileLink,
-            INFER_TYPE
-        )
-        {
-            quality = Qualities.Unknown.value
-        }
-    }
-}
 
 class AnyMp4Upload(provider: String?, dubType: String?, domain: String = "") : Mp4Upload() {
     override var name =
@@ -464,7 +394,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                 if ("hubcloud.php" in realUrl) {
                     realUrl
                 } else {
-                    val rawHref = app.get(realUrl).documentLarge.select("#download").attr("href")
+                    val rawHref = app.get(realUrl).document.select("#download").attr("href")
                     if (rawHref.startsWith("http", ignoreCase = true)) {
                         rawHref
                     } else {
@@ -481,7 +411,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                 return
             }
 
-            val document = app.get(href).documentLarge
+            val document = app.get(href).document
             val size = document.selectFirst("i#size")?.text().orEmpty()
             val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
@@ -558,7 +488,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                             ) { this.quality = quality }
                         )
                     }
-
+                    /*
                     text.contains("10Gbps", ignoreCase = true) -> {
                         var currentLink = link
                         var redirectUrl: String? = null
@@ -582,7 +512,7 @@ class AnyHubCloud(provider: String?, dubType: String?, domain: String = "") : Ex
                             ) { this.quality = quality }
                         )
                     }
-
+                    */
                     else -> {
                         loadExtractor(link, "", subtitleCallback, callback)
                     }
@@ -951,7 +881,7 @@ class ZoroExtractor(provider: String?, dubType: String?, domain: String = "") : 
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ) {
-        val iFramePage = app.get(url, referer = referer).documentLarge
+        val iFramePage = app.get(url, referer = referer).document
         val jsData =
                 iFramePage
                         .selectFirst("script:containsData(JsonData)")
@@ -995,7 +925,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
     ) {
         val newUrl = try {
             app.get(url)
-                .documentLarge
+                .document
                 .selectFirst("meta[http-equiv=refresh]")
                 ?.attr("content")
                 ?.substringAfter("url=")
@@ -1004,7 +934,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
             return
         } ?: url
 
-        val document = app.get(newUrl).documentLarge
+        val document = app.get(newUrl).document
         val fileName = document.select("ul > li.list-group-item:contains(Name)").text()
             .substringAfter("Name : ")
         val fileSize = document.select("ul > li.list-group-item:contains(Size)").text()
@@ -1026,10 +956,10 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
                 text.contains("Index Links",ignoreCase = true) -> {
                     try {
                         val link = anchor.attr("href")
-                        app.get("https://new6.gdflix.dad$link").documentLarge
+                        app.get("https://new6.gdflix.dad$link").document
                             .select("a.btn.btn-outline-info").amap { btn ->
                                 val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-                                app.get(serverUrl).documentLarge
+                                app.get(serverUrl).document
                                     .select("div.mb-4 > a").amap { sourceAnchor ->
                                         val sourceurl = sourceAnchor.attr("href")
                                         callback.invoke(
@@ -1057,7 +987,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
 
                             if (indexbotResponse.isSuccessful) {
                                 val cookiesSSID = indexbotResponse.cookies["PHPSESSID"]
-                                val indexbotDoc = indexbotResponse.documentLarge
+                                val indexbotDoc = indexbotResponse.document
 
                                 val token = Regex("""formData\.append\('token', '([a-f0-9]+)'\)""")
                                     .find(indexbotDoc.toString())?.groupValues?.get(1).orEmpty()
@@ -1121,7 +1051,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
 
                 text.contains("GoFile",ignoreCase = true) -> {
                     try {
-                        app.get(anchor.attr("href")).documentLarge
+                        app.get(anchor.attr("href")).document
                             .select(".row .row a").amap { gofileAnchor ->
                                 val link = gofileAnchor.attr("href")
                                 if (link.contains("gofile")) {
@@ -1162,7 +1092,7 @@ class AnyGDFlix(provider: String?, dubType: String?, domain: String = "") : Extr
             val types = listOf("type=1", "type=2")
             types.map { type ->
                 val sourceurl = app.get("${newUrl.replace("file", "wfile")}?$type")
-                    .documentLarge.select("a.btn-success").attr("href")
+                    .document.select("a.btn-success").attr("href")
 
                 if (referer?.isNotEmpty() == true) {
                     callback.invoke(
@@ -1379,16 +1309,16 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
 
         if (href.contains("api/index.php")) {
             href = runCatching {
-                app.get(url).documentLarge.selectFirst("div.main h4 a")?.attr("href")
+                app.get(url).document.selectFirst("div.main h4 a")?.attr("href")
             }.getOrNull() ?: return
         }
 
-        val doc = runCatching { app.get(href).documentLarge }.getOrNull() ?: return
+        val doc = runCatching { app.get(href).document }.getOrNull() ?: return
         val scriptTag = doc.selectFirst("script:containsData(url)")?.data() ?: ""
         val urlValue = Regex("var url = '([^']*)'").find(scriptTag)?.groupValues?.getOrNull(1).orEmpty()
         if (urlValue.isEmpty()) return
 
-        val document = runCatching { app.get(urlValue).documentLarge }.getOrNull() ?: return
+        val document = runCatching { app.get(urlValue).document }.getOrNull() ?: return
         val size = document.selectFirst("i#size")?.text().orEmpty()
         val header = document.selectFirst("div.card-header")?.text().orEmpty()
 
@@ -1453,7 +1383,7 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
                         ) { this.quality = quality }
                     )
                 }
-
+                /*
                 text.contains("10Gbps", ignoreCase = true) -> {
                     var currentLink = link
                     var redirectUrl: String? = null
@@ -1477,7 +1407,7 @@ class AnyVcloud(provider: String?, dubType: String?, domain: String = "") : Extr
                         ) { this.quality = quality }
                     )
                 }
-
+                */
                 text.contains("S3 Server", ignoreCase = true) -> {
                     callback.invoke(
                         newExtractorLink(

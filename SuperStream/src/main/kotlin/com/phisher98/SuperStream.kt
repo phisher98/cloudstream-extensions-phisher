@@ -35,16 +35,17 @@ import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.runAllAsync
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.phisher98.SuperStreamExtractor.invokeSubtitleAPI
 import com.phisher98.SuperStreamExtractor.invokeSuperstream
+import com.phisher98.SuperStreamExtractor.invokeSuperstreamFeb
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -70,7 +71,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
 
     companion object {
         /** TOOLS */
-        private const val Cinemeta = "https://v3-cinemeta.strem.io"
+        private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
         private const val REMOTE_PROXY_LIST = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Proxylist.txt"
         private const val apiKey = BuildConfig.TMDB_API
@@ -173,7 +174,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
         )
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
     }
 
     private fun getOriImageUrl(link: String?): String? {
@@ -197,7 +198,7 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
             ).parsedSafe<HTML>()
 
             val document = Jsoup.parse(htmlResponse?.html.orEmpty())
-            val parsedHtmlContent = document.select("div.list_scroll > div > div")
+            val parsedHtmlContent = document.select("div.list_scroll > div > div,tbody tr")
             val filesFromHtml = parsedHtmlContent.mapNotNull { div ->
                 div.toSearchResponse()
              }
@@ -209,7 +210,8 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                         filesFromHtml,
                         true
                     )
-                )
+                ),
+                false
             )
         }
         else {
@@ -237,20 +239,43 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
     }
 
 
-    private fun Element.toSearchResponse(): SearchResponse {
-        val title=this.select("p.file_name_show").text()
-        val poster=this.select("div.file_icon").attr("style").substringAfter("(").substringBefore(")")
-        val href="$febbox/console/share_file_comment?fid="+this.select("div").attr("data-id")
-        return newMovieSearchResponse(
-            title,
+    private suspend fun Element.toSearchResponse(): SearchResponse? {
+
+        val title = this.select("p.file_name_show").text()
+        val poster = this.select("div.file_icon img").attr("src")
+
+        var fid = this.select("div").attr("data-id")
+
+        // fallback if fid missing
+        if (fid.isBlank()) {
+            fid = this.parent()?.selectFirst("td[data-id]")?.attr("data-id").orEmpty()
+        }
+        if (fid.isBlank()) return null
+
+        val isDir = this.parent()?.selectFirst("td[data-id]")?.attr("data-is-dir") == "1"
+
+        val href = "$febbox/console/share_file_comment?fid=$fid"
+
+        val posterRes = app.get(
             href,
-            TvType.Movie,
-        ) {
-            this.posterUrl = poster
+            headers = mapOf("cookie" to (token ?: ""))
+        ).parsedSafe<FebboxPosterResponse>()
+
+        val finalPoster = posterRes?.file?.thumb_big ?: posterRes?.file?.thumb ?: posterRes?.file?.thumb_small ?: poster
+
+        return if (isDir) {
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.posterUrl = finalPoster.ifEmpty { "https://www.febbox.com/static/index_img/file_type/dir_icon2.png" }
+            }
+        } else
+        {
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = finalPoster.ifEmpty { "https://www.febbox.com/static/index_img/file_type/dir_icon2.png" }
+            }
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
         val tmdbAPI = getApiBase()
@@ -261,22 +286,54 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        if (url.startsWith("$febbox/console/share_file_comment?fid")) {
-            val gson = Gson()
+        if (url.contains("share_file_comment?fid")) {
             val jsonString = app.get(url, headers = mapOf("cookie" to (token ?: ""))).text
-            val response = gson.fromJson(jsonString, PersonalComments::class.java)
-            val media = response?.file
+            val response = Gson().fromJson(jsonString, PersonalComments::class.java)
+            val media = response?.file ?: return null
 
-            if (media != null) {
-                return newMovieLoadResponse(
-                    media.file_name,
-                    "$febbox|"+media.fid.toString(),
-                    TvType.Movie,
-                    "$febbox|"+media.fid
-                ) {
-                    this.posterUrl = media.thumb_big
-                    this.plot = "Added: ${media.add_time} | Updated: ${media.update_time} | Size: ${media.file_size}"
+            // folder detection
+            if (media.is_dir == 1) {
+                val folderRes = app.get(
+                    "$febbox/console/index_ajax?parent_id=${media.fid}",
+                    headers = mapOf("cookie" to (token ?: ""))
+                ).parsedSafe<Map<String, Any>>() ?: return null
+
+                val data = folderRes["data"] as? Map<*, *> ?: return null
+                val listHtml = data["list"]?.toString() ?: return null
+
+                val doc = Jsoup.parse("<table>$listHtml</table>")
+
+                val episodes = doc.select("tr").mapIndexedNotNull { index, row ->
+
+                    val epFid = row.selectFirst("td[data-id]")?.attr("data-id") ?: return@mapIndexedNotNull null
+                    val name = row.selectFirst("p.file_name_show")?.text() ?: return@mapIndexedNotNull null
+                    val thumb = row.selectFirst("div.file_icon img")?.attr("src")
+                    newEpisode("$febbox|$epFid") {
+                        this.name = name
+                        this.episode = index + 1
+                        this.posterUrl = thumb
+                    }
                 }
+
+                return newTvSeriesLoadResponse(
+                    media.file_name,
+                    "$febbox|folder|${media.fid}",
+                    TvType.TvSeries,
+                    episodes
+                ) {
+                    this.posterUrl = media.thumb_big?.ifEmpty { "https://wallpapers.com/images/hd/netflix-background-gs7hjuwvv2g0e9fj.jpg" }
+                    this.plot = "Added: ${media.add_time} | Updated: ${media.update_time}"
+                }
+            }
+
+            return newMovieLoadResponse(
+                media.file_name,
+                "$febbox|${media.fid}",
+                TvType.Movie,
+                "$febbox|${media.fid}"
+            ) {
+                this.posterUrl = media.thumb_big?.ifEmpty { "https://wallpapers.com/images/hd/netflix-background-gs7hjuwvv2g0e9fj.jpg" }
+                this.plot = "Added: ${media.add_time} | Updated: ${media.update_time} | Size: ${media.file_size}"
             }
         }
         val tmdbAPI = getApiBase()
@@ -332,7 +389,6 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
-                        Log.d("Phisher",eps.toJson())
                         newEpisode(
                             LinkData(
                                 data.id,
@@ -506,34 +562,61 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
     ): Boolean {
         Log.d("Phisher",data.toJson())
 
-        if (data.startsWith(febbox))
-        {
-            val fid=data.substringAfterLast("|")
+        if (data.startsWith(febbox)) {
+
+            val fid = data.substringAfterLast("|")
+
             val postdata = mapOf(
                 "fid" to fid,
                 "share" to "",
                 "imdb_id" to "",
                 "quality" to ""
             )
-            val source = app.post(url = "$febbox/console/player", data = postdata, headers = mapOf("cookie" to (token ?: ""))).text
+
+            val source = app.post(
+                url = "$febbox/console/player",
+                data = postdata,
+                headers = mapOf("cookie" to (token ?: ""))
+            ).text
+
             val regex = """\{"type":"([^"]+)","file":"([^"]+)","label":"([^"]+)"\}"""
             val pattern = Pattern.compile(regex)
             val matcher = pattern.matcher(source)
+
+            var found = false
+
             while (matcher.find()) {
-                val file = matcher.group(2)
-                    ?.replace("\\/", "/")
+                found = true
+
+                val file = matcher.group(2)?.replace("\\/", "/")
                 val label = matcher.group(3)
-                if (file!=null)
+
+                if (file != null) {
+                    callback.invoke(
+                        newExtractorLink(
+                            "$name $label",
+                            "$name $label",
+                            file,
+                            INFER_TYPE
+                        )
+                    )
+                }
+            }
+
+            // fallback if player API gives nothing
+            if (!found) {
+                val res = app.get("$febbox/console/file_download?fids=[\"$fid\"]&share=", headers = mapOf("cookie" to (token ?: ""))).parsedSafe<Map<String, Any>>()
+                val list = res?.get("data") as? List<*> ?: return false
+                val first = list.firstOrNull() as? Map<*, *> ?: return false
+                val url = first["download_url"]?.toString() ?: return false
+
                 callback.invoke(
                     newExtractorLink(
-                        "$name $label",
-                        "$name $label",
-                        file,
+                        name,
+                        name,
+                        url,
                         INFER_TYPE
                     )
-                    {
-                        this.quality= Qualities.P1080.value
-                    }
                 )
             }
         }
@@ -554,6 +637,18 @@ open class SuperStream(sharedPref: SharedPreferences? = null) : TmdbProvider() {
                         invokeSuperstream(
                             token,
                             res.imdbId,
+                            res.season,
+                            res.episode,
+                            callback
+                        )
+                    }
+                },
+                {
+                    if (res.id!==null)
+                    {
+                        invokeSuperstreamFeb(
+                            token,
+                            res.id,
                             res.season,
                             res.episode,
                             callback

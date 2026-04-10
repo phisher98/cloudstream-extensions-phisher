@@ -4,6 +4,23 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 //SuperStream
 
+data class FebResponse(
+    val success: Boolean?,
+    val versions: List<Version>?
+)
+
+data class Version(
+    val name: String?,
+    val links: List<Link>?
+)
+
+data class Link(
+    val url: String?,
+    val quality: String?,
+    val name: String?,
+    val size: String?
+)
+
 data class ER(
     @JsonProperty("code") val code: Int? = null,
     @JsonProperty("msg") val msg: String? = null,
@@ -268,3 +285,12 @@ data class CinemetaRes(
         )
     }
 }
+data class FebboxPosterResponse(
+    val file: FebboxFile
+)
+
+data class FebboxFile(
+    val thumb_small: String?,
+    val thumb: String?,
+    val thumb_big: String?
+)

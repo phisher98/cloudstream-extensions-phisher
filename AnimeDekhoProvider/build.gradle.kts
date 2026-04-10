@@ -1,4 +1,4 @@
-version = 59
+version = 61
 
 cloudstream {
     language = "hi"
@@ -18,7 +18,7 @@ cloudstream {
         "Cartoon"
     )
 
-    iconUrl = "https://animedekho.co/wp-content/uploads/2023/07/AnimeDekho-Logo-300x-1.png"
+    iconUrl = "https://animedekho.app/wp-content/uploads/2023/07/AnimeDekho-Logo-300x-1.png"
 
     isCrossPlatform = true
 }

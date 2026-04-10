@@ -1,14 +1,38 @@
 package com.animez
 
 import android.annotation.SuppressLint
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.DubStatus
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
+import com.lagradost.cloudstream3.ShowStatus
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDubStatus
+import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.amap
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newAnimeLoadResponse
+import com.lagradost.cloudstream3.newAnimeSearchResponse
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -35,7 +59,7 @@ open class Animez : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}$page").documentLarge
+        val document = app.get("$mainUrl/${request.data}$page").document
         val home = document.select("article").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -47,13 +71,14 @@ open class Animez : MainAPI() {
         val num= this.selectFirst("span.mli-eps")!!.text().toIntOrNull()
         return newAnimeSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            posterHeaders = mapOf("Referer" to mainUrl)
             addDubStatus(num != null, num != null, num, num)
         }
 
     }
 
     override suspend fun search(query: String,page: Int): SearchResponseList? {
-        val document = app.get("$mainUrl/?act=search&f[keyword]=$query&&pageNum=$page").documentLarge
+        val document = app.get("$mainUrl/?act=search&f[keyword]=$query&&pageNum=$page").document
         return document.select("article").map {
             it.toSearchResult()
         }.toNewSearchResponseList()
@@ -70,7 +95,7 @@ open class Animez : MainAPI() {
 
     @SuppressLint("SuspiciousIndentation")
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).documentLarge
+        val document = app.get(url).document
         val title = document.select("article.TPost.Single h2").text().trim()
         val poster = document.select("meta[property=og:image]").attr("content")
         val tags = document.select("div.mvici-left > ul > li:nth-child(4) a").map { it.text() }
@@ -89,6 +114,7 @@ open class Animez : MainAPI() {
             val recPosterUrl = it.selectFirst("img")?.getImageAttr()
             newAnimeSearchResponse(recName, recHref, TvType.Anime) {
                 this.posterUrl = recPosterUrl
+                posterHeaders = mapOf("Referer" to mainUrl)
             }
         }
 
@@ -100,7 +126,7 @@ open class Animez : MainAPI() {
                 .mapNotNull { regex.find(it.attr("onclick"))?.groupValues?.get(1)?.toIntOrNull() }
                 .maxOrNull()
                 if (lastPageNum != null) {
-                    runBlocking {
+                    run {
                     val malid = document.select("h2.SubTitle").attr("data-manga").takeIf { it.isNotEmpty() }
                     if (!malid.isNullOrEmpty()) {
                         coroutineScope {
@@ -173,6 +199,7 @@ open class Animez : MainAPI() {
                 this.tags = tags
                 this.score = Score.from10(rating)
                 this.recommendations = recommendations
+                posterHeaders = mapOf("Referer" to mainUrl)
                 addTrailer(trailer)
                 addEpisodes(DubStatus.Subbed, subEpisodes.reversed())
                 addEpisodes(DubStatus.Dubbed, dubEpisodes.reversed())
@@ -184,6 +211,7 @@ open class Animez : MainAPI() {
                 this.year = year
                 this.plot = description
                 this.tags = tags
+                posterHeaders = mapOf("Referer" to mainUrl)
                 this.score = Score.from10(rating)
                 this.recommendations = recommendations
                 addTrailer(trailer)
@@ -198,7 +226,7 @@ open class Animez : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).documentLarge
+        val document = app.get(data).document
         val token=document.select("iframe").attr("src").substringAfter("/embed/")
         document.select("#list_sv a").map {
             val host=it.attr("data-link")
