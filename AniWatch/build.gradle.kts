@@ -20,6 +20,5 @@ cloudstream {
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=aniwatchtv.to&sz=%size%"
-    requiresResources = true
     isCrossPlatform = false
 }

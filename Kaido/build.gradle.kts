@@ -22,6 +22,5 @@ cloudstream {
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=kaido.to&sz=%size%"
-    requiresResources = true
     isCrossPlatform = false
 }
