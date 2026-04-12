@@ -1,5 +1,6 @@
 package com.Aniworld
 
+import android.content.SharedPreferences
 import com.Aniworld.AniworldPlugin.ByseSX
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.AnimeSearchResponse
@@ -40,11 +41,12 @@ import org.json.JSONTokener
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-open class Aniworld : MainAPI() {
+open class Aniworld(sharedPref: SharedPreferences?=null) : MainAPI() {
     override var mainUrl = "https://aniworld.to"
     override var name = "Aniworld"
     override val hasMainPage = true
     override var lang = "de"
+    open val token = sharedPref?.getString("serienstream_token", null)
 
     override val supportedTypes = setOf(
         TvType.Anime,
@@ -219,7 +221,7 @@ open class Aniworld : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data,headers = mapOf("cookie" to "$token")).document
         document
             .select("div.hosterSiteVideo ul li, #episode-links button.link-box")
             .mapNotNull { el ->
@@ -249,7 +251,7 @@ open class Aniworld : MainAPI() {
             }
             .filter { it.third != "Vidoza" }
             .amap { (langKey, link, providerName) ->
-                val response = app.get(link, allowRedirects = false)
+                val response = app.get(link, allowRedirects = false,headers = mapOf("cookie" to "$token"))
                 val redirectUrl = response.headers["Location"] ?: return@amap
 
                 val lang = langKey.getLanguage(document) ?: langKey

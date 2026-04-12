@@ -3,6 +3,7 @@ package com.Aniworld
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
+import androidx.appcompat.app.AppCompatActivity
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -21,12 +22,18 @@ import javax.crypto.spec.SecretKeySpec
 @CloudstreamPlugin
 class AniworldPlugin: Plugin() {
     override fun load(context: Context) {
+        val sharedPref = context.getSharedPreferences("serienstream_token", Context.MODE_PRIVATE)
         // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(Aniworld())
-        registerMainAPI(Serienstream())
+        registerMainAPI(Aniworld(sharedPref))
+        registerMainAPI(Serienstream(sharedPref))
         registerExtractorAPI(Dooood())
         registerExtractorAPI(Vidmoly())
         registerExtractorAPI(FileMoon())
+        val activity = context as AppCompatActivity
+        openSettings = {
+            val frag = SettingsFragment(this, sharedPref)
+            frag.show(activity.supportFragmentManager, "Frag")
+        }
     }
 
     open class ByseSX : ExtractorApi() {

@@ -1,5 +1,6 @@
 package com.Aniworld
 
+import android.content.SharedPreferences
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -9,13 +10,15 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newHomePageResponse
 
-class Serienstream : Aniworld() {
+class Serienstream(sharedPref: SharedPreferences?=null) : Aniworld() {
     override var mainUrl = "https://serienstream.to"
     override var name = "Serienstream"
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
     )
+
+    override val token = sharedPref?.getString("serienstream_token", null)
 
     override val mainPage = mainPageOf(
         "genre/action" to "Action",
@@ -50,7 +53,7 @@ class Serienstream : Aniworld() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val document = app.get("$mainUrl/${request.data}?page=$page").document
+        val document = app.get("$mainUrl/${request.data}?page=$page", headers = mapOf("cookie" to "$token")).document
 
         val items = arrayListOf<HomePageList>()
 
