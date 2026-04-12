@@ -32,6 +32,7 @@ class Watch32 : MainAPI() {
     override var mainUrl = Watch32Plugin.currentWatch32Server
     override var name = Watch32Plugin.getCurrentServerName()
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+    override val hasChromecastSupport = true
     override var lang = "en"
     override val hasMainPage = true
 

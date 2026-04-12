@@ -48,6 +48,7 @@ class Cinemacity : MainAPI() {
     override var lang = "en"
     override val hasMainPage = true
     override val hasDownloadSupport = false
+    override val hasChromecastSupport = true
     override val hasQuickSearch = false
     override val supportedTypes = setOf(
         TvType.Movie, TvType.TvSeries

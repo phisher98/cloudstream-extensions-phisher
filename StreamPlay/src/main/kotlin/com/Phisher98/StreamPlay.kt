@@ -52,6 +52,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override var name = "StreamPlay"
     override val hasMainPage = true
     override val instantLinkLoading = true
+    override val hasChromecastSupport = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(
         TvType.Movie,
