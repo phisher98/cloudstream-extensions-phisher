@@ -135,6 +135,14 @@ class StreamPlayStremioCatelog(
             ?.getStringSet("disabled_providers", emptySet())
             ?.toSet() ?: emptySet()
         val providersList = buildProviders().filter { it.id !in disabledProviderIds }
+        val stremioAddons = StreamPlayStremioAddonSettings.getDynamicStremioMap(
+            sharedPref,
+            imdb,
+            resolved.season,
+            resolved.episode,
+            subtitleCallback,
+            callback
+        ).values
         val authToken = token
         runLimitedAsync( concurrency = 10,
             {
@@ -165,7 +173,8 @@ class StreamPlayStremioCatelog(
                         // provider failure shouldn't kill others
                     }
                 }
-            }.toTypedArray()
+            }.toTypedArray(),
+            *stremioAddons.toTypedArray()
         )
 
         return true

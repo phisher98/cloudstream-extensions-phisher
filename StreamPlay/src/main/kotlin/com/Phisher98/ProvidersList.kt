@@ -68,7 +68,6 @@ import com.phisher98.StreamPlayExtractor.invokeVidsrccc
 import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
-import com.phisher98.StreamPlayExtractor.invokeAIOStream
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.invokeXDmovies
 import com.phisher98.StreamPlayExtractor.invokeYflix
@@ -375,9 +374,6 @@ private val providers by lazy {
         },
         Provider("SubtitleAPI", "SubtitleAPI (Subtitles)") { res, subtitleCallback, _, _, _ ->
             invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)
-        },
-        Provider("AIOStream", "AIOStream") { res, _, callback, _, _ ->
-            invokeAIOStream(res.imdbId, res.season,res.episode, callback)
         },
         Provider("CineVood", "CineVood (Movies Only)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeCineVood(res.imdbId, subtitleCallback, callback)

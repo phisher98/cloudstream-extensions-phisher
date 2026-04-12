@@ -176,6 +176,36 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Stramio Stream Addons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_rowWeight="1"
+                android:text="Stramio Addons"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="right">
+
+                <ImageView
+                    android:id="@+id/stremioaddonstreams"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:focusable="true"
+                    android:nextFocusUp="@id/stremioaddons" />
+            </LinearLayout>
+        </LinearLayout>
+
         <!-- Toggle Extensions (5th - Features) -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -202,7 +232,7 @@
                     android:layout_height="wrap_content"
                     android:padding="5dp"
                     android:focusable="true"
-                    android:nextFocusUp="@id/stremioaddons" />
+                    android:nextFocusUp="@id/stremioaddonstreams" />
             </LinearLayout>
         </LinearLayout>
 

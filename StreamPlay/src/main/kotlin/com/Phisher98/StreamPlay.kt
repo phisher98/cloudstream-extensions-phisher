@@ -235,7 +235,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val sudatchi = "https://sudatchi.com"
         const val m4uhdAPI = "https://ww3.m4ufree.lat"
         const val mappleAPI = "https://mapple.uk"
-        const val AIOAPI = """https://aiostreamsfortheweebs.midnightignite.me/stremio/edc02349-ee08-4eba-a55f-73810e1f5062/eyJpIjoicjJXbWlkSWhGY29ibDJ4dU5tY20xUT09IiwiZSI6IndROWhNblN6ZHJHYjhKLzlXV0crMXc9PSIsInQiOiJhIn0"""
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val kuudere = "https://kuudere.to"
         const val levidia = "https://www.levidia.ch"
@@ -648,9 +647,16 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     ): Boolean = coroutineScope {
 
         val res = parseJson<LinkData>(data)
-        val allProviders = buildProviders()
-        if (allProviders.isEmpty()) return@coroutineScope true
+        val stremioAddons = StreamPlayStremioAddonSettings.getDynamicStremioMap(
+            sharedPref,
+            res.imdbId,
+            res.season,
+            res.episode,
+            subtitleCallback,
+            callback
+        ).values
 
+        val allProviders = buildProviders()
         val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", null)
         val providersList = if (disabledProviderIds.isNullOrEmpty()) {
             allProviders
@@ -658,7 +664,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             allProviders.filterNot { disabledProviderIds.contains(it.id) }
         }
 
-        if (providersList.isEmpty()) return@coroutineScope true
+        if (providersList.isEmpty() && stremioAddons.isEmpty()) return@coroutineScope true
 
         val authToken = token.orEmpty()
 
@@ -673,8 +679,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                         dahmerMoviesAPI
                     )
                 }
+                Unit
             }
-        }
+        } + stremioAddons
 
         runLimitedAsync(
             concurrency = (sharedPref?.getInt("provider_concurrency", 15)

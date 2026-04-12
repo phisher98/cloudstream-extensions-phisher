@@ -5673,53 +5673,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeAIOStream(
-        imdbId: String?,
-        season: Int? = null,
-        episode: Int? = null,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        if (imdbId.isNullOrBlank()) return
-        val api = if (season == null) {
-            "$AIOAPI/stream/movie/$imdbId.json"
-        } else {
-            "$AIOAPI/stream/series/$imdbId:$season:$episode.json"
-        }
-
-        val response = safeGet(api, timeout = 20000L).parsedSafe<AIO>() ?: return
-
-        response.streams
-            ?.asSequence()
-            ?.filter { !it.url.isNullOrBlank() }
-            ?.forEach { stream ->
-
-                val rawName = stream.name ?: "AIO"
-                val cleanName = rawName.replace(
-                    Regex("""\s*(2160p|1440p|1080p|720p|480p|360p|240p|4K)\b""", RegexOption.IGNORE_CASE),
-                    ""
-                ).trim()
-
-                val headersMap = buildMap {
-                    stream.behaviorHints?.proxyHeaders?.request?.let {
-                        it.referer?.let { ref -> put("Referer", ref) }
-                        it.userAgent?.let { ua -> put("User-Agent", ua) }
-                    }
-                }
-
-                callback.invoke(
-                    newExtractorLink(
-                        "AIO Stream",
-                        cleanName,
-                        stream.url!!,
-                        INFER_TYPE
-                    ) {
-                        this.quality = getIndexQuality(rawName)
-                        this.headers = headersMap
-                    }
-                )
-            }
-    }
-
     suspend fun invokeXDmovies(
         title: String? = null,
         id: Int? = null,
