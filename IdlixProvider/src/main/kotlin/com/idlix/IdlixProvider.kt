@@ -302,17 +302,15 @@ class IdlixProvider : MainAPI() {
         val aclrRes = app.get("$mainUrl/pagead/ad_frame.js?_=$ts").text
         val aclr = Regex("""__aclr\s*=\s*"([a-f0-9]+)"""")
             .find(aclrRes)
-            ?.groupValues?.get(1)
-            ?: return false
+            ?.groupValues?.getOrNull(1)
 
 
         val challengejson = """
-        {
-            "contentType": "$contentType",
-            "contentId": "$contentId",
-            "clearance": "$aclr"
-        }
-        """.trimIndent()
+{
+    "contentType": "$contentType",
+    "contentId": "$contentId"${if (aclr != null) ",\n    \"clearance\": \"$aclr\"" else ""}
+}
+""".trimIndent()
 
         val headers = mapOf(
             "accept" to "*/*",
