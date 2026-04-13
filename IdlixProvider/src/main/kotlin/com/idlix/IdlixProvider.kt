@@ -1,5 +1,6 @@
 package com.idlix
 
+import android.util.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -23,6 +24,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -36,6 +38,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.security.MessageDigest
 import java.text.Normalizer
 
@@ -326,7 +329,6 @@ class IdlixProvider : MainAPI() {
             headers = headers
         ).parsedSafe<ChallengeResponse>() ?: return false
 
-
         val nonce = solvePow(
             challengeRes.challenge,
             challengeRes.difficulty
@@ -350,8 +352,24 @@ class IdlixProvider : MainAPI() {
                 "referer" to mainUrl,
                 "user-agent" to USER_AGENT,
             )
-        ).parsedSafe<SolveResponse>() ?: return false
-        val finalUrl = app.get("$mainUrl${solveRes.embedUrl}").document.select("iframe").attr("src")
+        ).text
+
+        val json = JSONObject(solveRes)
+
+        val embedUrl = when {
+            json.has("embedUrl") -> json.optString("embedUrl")
+            json.has("url") -> json.optString("url")
+            else -> null
+        } ?: return false
+
+        val iframeurl = WebViewResolver(
+            interceptUrl = Regex("""/video/"""),
+            additionalUrls = listOf(Regex("""/video/""")),
+            useOkhttp = false,
+            timeout = 15_000L
+        )
+
+        val finalUrl = app.get("$mainUrl${embedUrl}", interceptor = iframeurl).url
         loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
         return true
     }
