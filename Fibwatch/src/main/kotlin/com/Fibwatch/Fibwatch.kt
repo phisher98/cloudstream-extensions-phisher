@@ -21,7 +21,7 @@ import kotlinx.coroutines.sync.withPermit
 
 open class Fibwatch : MainAPI() {
     override var mainUrl: String = runBlocking {
-         "https://fibwatch.top"
+        FibwatchPlugin.getDomains()?.fibwatch ?: "https://fibwatch.top"
     }
     override var name = "FibWatch"
     override val hasMainPage = true
