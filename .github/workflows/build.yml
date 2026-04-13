@@ -45,9 +45,6 @@ jobs:
         with:
           cache-read-only: false
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-
       - name: Access Secrets
         env:
           TMDB_API: ${{ secrets.TMDB_API }}
