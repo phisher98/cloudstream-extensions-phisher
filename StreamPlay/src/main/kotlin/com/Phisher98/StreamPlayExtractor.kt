@@ -1028,23 +1028,25 @@ object StreamPlayExtractor : StreamPlay() {
 
         val id = matched.id
         val langTypes = listOf("sub", "dub")
+        val headers =
+            mapOf(
+                "app-version" to "android_c-247",
+                "from-app" to BuildConfig.ANICHI_APP,
+                "platformstr" to "android_c",
+                "Referer" to "https://allmanga.to"
+            )
 
         langTypes.amap { lang ->
             if (isMovie || (dubtype != null && lang.contains(dubtype, ignoreCase = true))) {
                 val epQuery =
                     """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$lang","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
-                val episodeLinks = safeGet(epQuery, referer = privatereferer)
+                val episodeLinks = safeGet(epQuery, referer = privatereferer, headers = headers)
                     .parsedSafe<AnichiEP>()
                     ?.data?.episode?.sourceUrls ?: return@amap
 
                 episodeLinks.amap { source ->
                     safeApiCall {
                         val sourceUrl = source.sourceUrl
-                        val headers = mapOf(
-                            "app-version" to "android_c-247",
-                            "platformstr" to "android_c",
-                            "Referer" to privatereferer
-                        )
 
                         if (sourceUrl.startsWith("http")) {
                             val host = sourceUrl.getHost()
