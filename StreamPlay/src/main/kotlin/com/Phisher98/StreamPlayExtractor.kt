@@ -1580,6 +1580,7 @@ object StreamPlayExtractor : StreamPlay() {
         val japaneseTitle: String? = null
     )
 
+    /*
     suspend fun invokeHianime(
         animeIds: List<String?>?,
         episode: Int?,
@@ -1596,6 +1597,8 @@ object StreamPlayExtractor : StreamPlay() {
         callback = callback,
         dubtype = dubtype
     )
+
+     */
 
     suspend fun invokeKaido(
         animeIds: List<String?>?,
@@ -5382,10 +5385,10 @@ object StreamPlayExtractor : StreamPlay() {
         episode: Int? = null,
         callback: (ExtractorLink) -> Unit,
     ) {
-        if (tmdbId == null) {
-            println("VidFast: tmdbId is null")
-            return
-        }
+        if (tmdbId == null) return
+
+        val api = "https://enc-dec.app/api"
+        val version = "1"
 
         val requestUrl = if (season == null) {
             "$vidfastProApi/movie/$tmdbId"
@@ -5393,111 +5396,94 @@ object StreamPlayExtractor : StreamPlay() {
             "$vidfastProApi/tv/$tmdbId/$season/$episode"
         }
 
-        val headers = mapOf(
+        val baseHeaders = mutableMapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
             "Referer" to "$vidfastProApi/",
             "X-Requested-With" to "XMLHttpRequest"
         )
 
-        val pageText = safeGet(requestUrl, headers = headers, timeout = 20).text
+        val pageText = runCatching {
+            safeGet(requestUrl, headers = baseHeaders).text
+        }.getOrNull() ?: return
 
         val encodedText = Regex("""\\"en\\":\\"(.*?)\\"""")
             .find(pageText)
             ?.groupValues
-            ?.getOrNull(1)
+            ?.getOrNull(1) ?: return
 
-        if (encodedText.isNullOrBlank()) {
-            println("VidFast: Failed to extract 'en' value")
-            return
-        }
+        val encJson = runCatching {
+            safeGet("$api/enc-vidfast?text=$encodedText&version=$version")
+                .parsedSafe<VidFastRes>()
+        }.getOrNull() ?: return
 
-        val decodeApiUrl = "https://enc-dec.app/api/enc-vidfast?text=$encodedText"
-        val decodeResponse = safeGet(decodeApiUrl, timeout = 20).text
+        val result = encJson.result
+        val serversUrl = result.servers
+        val streamBase = result.stream
+        val token = result.token
 
-        val apiJson = runCatching { JSONObject(decodeResponse) }.getOrNull()
-        if (apiJson == null) {
-            println("VidFast: Failed to parse API JSON")
-            return
-        }
+        if (serversUrl.isBlank() || streamBase.isBlank()) return
 
-        val result = apiJson.optJSONObject("result")
-        if (result == null) {
-            println("VidFast: API result is null")
-            return
-        }
+        baseHeaders["X-CSRF-Token"] = token
 
-        val serversUrl = result.optString("servers")
-        val streamBaseUrl = result.optString("stream")
-        val token = result.optString("token")
+        val serversEncrypted = runCatching {
+            app.post(serversUrl, headers = baseHeaders).text
+        }.getOrNull() ?: return
 
-        if (serversUrl.isBlank() || streamBaseUrl.isBlank()) {
-            println("VidFast: Servers or streamBase is blank")
-            return
-        }
+        if (serversEncrypted.isBlank()) return
 
-        val serverHeaders = mapOf(
-            "User-Agent" to headers["User-Agent"].orEmpty(),
-            "Referer" to "$vidfastProApi/",
-            "X-Requested-With" to "XMLHttpRequest",
-            "X-CSRF-Token" to token
-        )
+        val serversRoot = runCatching {
+            app.post(
+                "$api/dec-vidfast",
+                json = mapOf("text" to serversEncrypted, "version" to version)
+            ).parsedSafe<VidFastServers>()
+        }.getOrNull() ?: return
 
-        val serversText = safeGet(serversUrl, headers = serverHeaders, timeout = 20).text
-        val serversArray = runCatching { JSONArray(serversText) }.getOrNull()
-        if (serversArray == null) {
-            println("VidFast: Failed to parse servers JSON")
-            return
-        }
+        val serversList = serversRoot.result
+        if (serversList.isEmpty()) return
 
         val quality = Qualities.P1080.value
 
-        (0 until serversArray.length()).mapNotNull { i ->
+        for ((index, server) in serversList.withIndex()) {
 
-            val serverObj = serversArray.getJSONObject(i)
-            val serverName = serverObj.optString("name", "Server ${i + 1}")
-            val serverData = serverObj.optString("data")
+            val name = server.name.ifBlank { "Server ${index + 1}" }
+            val data = server.data
+            if (data.isBlank()) continue
 
-            if (serverData.isBlank()) {
-                println("VidFast: Server data blank, skipping")
-                return@mapNotNull
+            val streamUrl = "$streamBase/$data"
+
+            val streamEncrypted = runCatching {
+                app.post(streamUrl, headers = baseHeaders).text
+            }.getOrNull()
+
+            if (streamEncrypted.isNullOrBlank()) {
+                continue
             }
 
-            val streamUrl = "$streamBaseUrl/$serverData"
-            val streamText = safeGet(streamUrl, headers = serverHeaders, timeout = 20).text
+            val streamRoot = runCatching {
+                app.post(
+                    "$api/dec-vidfast",
+                    json = mapOf("text" to streamEncrypted, "version" to version)
+                ).parsedSafe<VidFastServersStreamRoot>()
+            }.getOrNull() ?: continue
 
-            val streamJson = runCatching { JSONObject(streamText) }.getOrNull()
-            if (streamJson == null) {
-                println("VidFast: Failed to parse stream JSON")
-                return@mapNotNull
-            }
-
-            val finalUrl = streamJson.optString("url")
-
-            if (finalUrl.isBlank()) {
-                println("VidFast: Final URL blank, trying next server")
-                return@mapNotNull
-            }
+            val finalUrl = streamRoot.result.url
+            if (finalUrl.isNullOrBlank()) continue
 
             val subtitles = mutableListOf<SubtitleFile>()
             val seen = mutableSetOf<String>()
-            val tracksArray = streamJson.optJSONArray("tracks")
 
-            if (tracksArray != null) {
-                for (j in 0 until tracksArray.length()) {
-                    val track = tracksArray.getJSONObject(j)
-                    val file = track.optString("file")
-                    val label = track.optString("label")
-
-                    if (file.isNotBlank() && label.isNotBlank() && seen.add(file)) {
-                        subtitles.add(newSubtitleFile(label, file))
-                    }
+            streamRoot.result.tracks?.forEach { track ->
+                val file = track.file
+                val label = track.label
+                if (!file.isNullOrBlank() && !label.isNullOrBlank() && seen.add(file)) {
+                    subtitles.add(newSubtitleFile(label, file))
                 }
             }
 
-            callback.invoke(
+            callback(
                 newExtractorLink(
                     "VidFastPro",
-                    "VidFastPro [$serverName]",
+                    "VidFastPro [$name]",
                     finalUrl
                 ) {
                     this.referer = "$vidfastProApi/"
@@ -6977,9 +6963,67 @@ object StreamPlayExtractor : StreamPlay() {
         extractLinks(episodeDoc)
     }
 
+    suspend fun invokeXpass(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val baseRef = "$xpassAPI/"
+        val embedUrl = if (season == null) {
+            "$xpassAPI/e/movie/$tmdbId"
+        } else {
+            "$xpassAPI/e/tv/$tmdbId/$season/$episode"
+        }
+
+        val html = app.get(embedUrl, referer = baseRef).text
+        val backups = extractXpassBackups(html)
+
+        Log.d("Xpass", "backups: $backups")
+
+        backups.amap { (name, url) ->
+            val fullUrl = if (url.startsWith("http")) url else xpassAPI + url
+            Log.d("Xpass", "fullUrl: $fullUrl")
+
+            val json = runCatching { app.get(fullUrl).text }.getOrNull() ?: return@amap
+
+            val sources = runCatching {
+                JSONObject(json)
+                    .optJSONArray("playlist")
+                    ?.optJSONObject(0)
+                    ?.optJSONArray("sources")
+            }.getOrNull() ?: return@amap
+
+            val sourceCount = sources.length()
+
+            for (i in 0 until sourceCount) {
+                val source = sources.optJSONObject(i) ?: continue
+
+                val file = source.optString("file").takeIf {
+                    it.isNotBlank() && it.startsWith("http")
+                } ?: continue
+
+                val type = source.optString("type")
+                val isM3u8 = type.contains("hls", true) || file.contains(".m3u8")
+
+                if (isM3u8) {
+                    M3u8Helper.generateM3u8(
+                        "Xpass [$name]",
+                        file,
+                        baseRef
+                    ).forEach(callback)
+                } else {
+                    callback(
+                        newExtractorLink(
+                            "Xpass [$name]",
+                            "Xpass [$name]",
+                            file
+                        ) {
+                            this.referer = baseRef
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
-
-
-
-
-

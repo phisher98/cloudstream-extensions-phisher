@@ -239,7 +239,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val kuudere = "https://kuudere.to"
         const val levidia = "https://www.levidia.ch"
-
+        const val xpassAPI = "https://play.xpass.top"
 
         fun getType(t: String?): TvType {
             return when (t) {

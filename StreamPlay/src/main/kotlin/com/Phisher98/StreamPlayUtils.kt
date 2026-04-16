@@ -1994,3 +1994,15 @@ suspend fun safeGet(
         cacheTime = cacheTime
     )
 }
+
+fun extractXpassBackups(html: String): List<Pair<String, String>> {
+    val raw = Regex("""var backups=(\[.*?]);""", RegexOption.DOT_MATCHES_ALL)
+        .find(html)?.groupValues?.get(1) ?: return emptyList()
+    val array = JSONArray(raw)
+    return (0 until array.length()).mapNotNull { i ->
+        val obj  = array.getJSONObject(i)
+        val name = obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val url  = obj.optString("url").takeIf  { it.isNotBlank() } ?: return@mapNotNull null
+        Pair(name, url)
+    }
+}

@@ -932,12 +932,48 @@ data class PrimeSrcServer(
     val fileName: String?,
 )
 
-data class VidFastServer(
+
+data class VidFastRes(
+    val status: Long,
+    val result: VidFastResult,
+    val info: String,
+)
+
+data class VidFastResult(
+    val servers: String,
+    val stream: String,
+    val token: String,
+)
+
+data class VidFastServers(
+    val status: Long,
+    val result: List<VidFastServersResult>,
+    val info: String,
+)
+
+data class VidFastServersResult(
     val name: String,
     val description: String,
     val image: String,
     val data: String,
 )
+data class VidFastServersStreamRoot(
+    val status: Long,
+    val result: VidFastServersStreamResult,
+    val info: String?
+)
+
+data class VidFastServersStreamResult(
+    val url: String?,
+    val tracks: List<VidFastServersTrack>?,
+    val noReferrer: Boolean?
+)
+
+data class VidFastServersTrack(
+    val file: String?,
+    val label: String?
+)
+
 
 data class KeyIvResult(
     val keyBytes: ByteArray,

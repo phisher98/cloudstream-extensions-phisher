@@ -24,7 +24,6 @@ import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFilmyfiy
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeHexa
-import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeHindmoviez
 import com.phisher98.StreamPlayExtractor.invokeKaido
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
@@ -79,6 +78,7 @@ import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokemp4hydra
 import com.phisher98.StreamPlayExtractor.invokevidrock
 import com.phisher98.StreamPlayExtractor.invokeTokyoInsider
+import com.phisher98.StreamPlayExtractor.invokeXpass
 import com.phisher98.StreamPlayExtractor.invokekuudere
 import com.phisher98.StreamPlayExtractor.resolveAnimeIds
 
@@ -110,11 +110,13 @@ private val providers by lazy {
         Provider("uhdmovies", "UHD Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
+        /*
         Provider("hianime", "HiAnime") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
                 invokeHianime(getAnimeIds(res).zoroIds, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
+         */
         Provider("kaido", "Kaido") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
                 invokeKaido(getAnimeIds(res).zoroIds, res.episode, subtitleCallback, callback, getDubStatus(res))
@@ -389,6 +391,9 @@ private val providers by lazy {
         },
         Provider("levidia", "Levidia") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeLevidia(res.title, res.year, res.season, res.episode, subtitleCallback, callback, )
+        },
+        Provider("Xpass", "Xpass") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeXpass(res.id, res.season, res.episode, callback, )
         }
     )
 }
