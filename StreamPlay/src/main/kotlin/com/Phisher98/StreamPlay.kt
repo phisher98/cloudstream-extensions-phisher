@@ -171,16 +171,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val jikanAPI = "https://api.jikan.moe/v4"
 
         /** ALL SOURCES */
-        const val MOVIE_API = BuildConfig.MOVIE_API
-        val hianimeAPIs = listOf(
-            "https://hianime.vc",
-            "https://hianime.ps",
-            "https://hianimez.is",
-            "https://hianime.nz",
-            "https://hianime.bz",
-            "https://hianime.cx",
-            "https://hianime.do"
-        )
 
         val animekaiAPIs = listOf(
             "https://animekai.fi",
@@ -209,7 +199,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val WyZIESUBAPI = "https://sub.wyzie.ru"
         const val RiveStreamAPI = "https://rivestream.org"
         const val PrimeSrcApi = "https://primesrc.me"
-        const val Film1kApi = "https://www.film1k.com"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
         const val NuvFeb = BuildConfig.NuvFeb

@@ -20,7 +20,6 @@ import com.phisher98.StreamPlayExtractor.invokeCinemaOS
 import com.phisher98.StreamPlayExtractor.invokeDahmerMovies
 import com.phisher98.StreamPlayExtractor.invokeDooflix
 import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
-import com.phisher98.StreamPlayExtractor.invokeFilm1k
 import com.phisher98.StreamPlayExtractor.invokeFilmyfiy
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeHexa
@@ -232,9 +231,6 @@ private val providers by lazy {
         },
         Provider("primesrc", "PrimeSrc") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback)
-        },
-        Provider("film1k", "Film1k") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeFilm1k(res.title, res.season, res.year, subtitleCallback, callback)
         },
         Provider("superstream", "SuperStream") { res, _, callback, token, _ ->
             val status = getDubStatus(res)
