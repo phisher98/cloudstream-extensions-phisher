@@ -27,7 +27,6 @@ import com.phisher98.StreamPlayExtractor.invokeHexa
 import com.phisher98.StreamPlayExtractor.invokeHindmoviez
 import com.phisher98.StreamPlayExtractor.invokeKaido
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
-import com.phisher98.StreamPlayExtractor.invokeKimcartoon
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
 import com.phisher98.StreamPlayExtractor.invokeLevidia
@@ -35,7 +34,6 @@ import com.phisher98.StreamPlayExtractor.invokeM4uhd
 import com.phisher98.StreamPlayExtractor.invokeMapple
 import com.phisher98.StreamPlayExtractor.invokeMoflix
 import com.phisher98.StreamPlayExtractor.invokeMovieBox
-import com.phisher98.StreamPlayExtractor.invokeMoviehubAPI
 import com.phisher98.StreamPlayExtractor.invokeMovies4u
 import com.phisher98.StreamPlayExtractor.invokeMoviesApi
 import com.phisher98.StreamPlayExtractor.invokeMoviesdrive
@@ -50,7 +48,6 @@ import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
-import com.phisher98.StreamPlayExtractor.invokeShowflix
 import com.phisher98.StreamPlayExtractor.invokeSoapy
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeSuperstream
@@ -68,13 +65,11 @@ import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
-import com.phisher98.StreamPlayExtractor.invokeXDmovies
 import com.phisher98.StreamPlayExtractor.invokeYflix
 import com.phisher98.StreamPlayExtractor.invokeZoechip
 import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokecinemacity
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
-import com.phisher98.StreamPlayExtractor.invokemorph
 import com.phisher98.StreamPlayExtractor.invokemp4hydra
 import com.phisher98.StreamPlayExtractor.invokevidrock
 import com.phisher98.StreamPlayExtractor.invokeTokyoInsider
@@ -198,9 +193,6 @@ private val providers by lazy {
         Provider("ridomovies", "RidoMovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeRidomovies(res.id, res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("moviehubapi", "MovieHub API") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeMoviehubAPI(res.id, res.season, res.episode, subtitleCallback, callback)
-        },
         Provider("allmovieland", "AllMovieland") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeAllMovieland(res.imdbId, res.season, res.episode, callback)
         },
@@ -218,9 +210,6 @@ private val providers by lazy {
         },
         Provider("zshow", "ZShow") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeZshow(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
-        },
-        Provider("showflix", "ShowFlix (South Indian)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeShowflix(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("moflix", "Moflix") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeMoflix(res.id, res.season, res.episode, callback)
@@ -284,9 +273,6 @@ private val providers by lazy {
         Provider("moviebox", "MovieBox (Multi)") { res, subtitleCallback, callback, _, _ ->
             invokeMovieBox(res.title, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("morph", "Morph") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokemorph(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
-        },
         Provider("vidrock", "Vidrock") { res, _, callback, _, _ ->
             if (!res.isAnime) invokevidrock(res.id, res.season, res.episode, callback)
         },
@@ -327,12 +313,6 @@ private val providers by lazy {
         },
         Provider("VidEasy", "VidEasy") { res, subtitleCallback, callback, _, _ ->
             invokeVideasy(res.title,res.id, res.imdbId, res.year, res.season,res.episode, subtitleCallback, callback )
-        },
-        Provider("XDMovies", "XDMovies") { res, subtitleCallback, callback, _, _ ->
-            invokeXDmovies(res.title,res.id, res.season, res.episode,  callback, subtitleCallback)
-        },
-        Provider("KimCartoon", "KimCartoon") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeKimcartoon(res.title, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("YFlix", "YFlix") { res, subtitleCallback, callback, _, _ ->
             val status = getDubStatus(res)

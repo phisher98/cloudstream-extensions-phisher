@@ -1894,8 +1894,6 @@ open class GDFlix : ExtractorApi() {
             ?: ""
 
         document.select("div.text-center a").amap { anchor ->
-
-
             val text = anchor.text()
             val link = anchor.attr("href")
 
@@ -1911,35 +1909,6 @@ open class GDFlix : ExtractorApi() {
                     )
                 }
 
-                text.contains("Index Links", true) -> {
-                    try {
-
-                        app.get("https://new6.gdflix.dad$link").document
-                            .select("a.btn.btn-outline-info")
-                            .amap { btn ->
-
-                                val serverUrl = "https://new6.gdflix.dad" + btn.attr("href")
-
-                                app.get(serverUrl).document
-                                    .select("div.mb-4 > a")
-                                    .amap { sourceAnchor ->
-
-                                        val sourceurl = sourceAnchor.attr("href")
-
-                                        callback.invoke(
-                                            newExtractorLink(
-                                                "GDFlix [Index]",
-                                                "$sourcename GDFlix [Index] [$fileSize]",
-                                                sourceurl
-                                            ) { this.quality = quality }
-                                        )
-                                    }
-                            }
-
-                    } catch (e: Exception) {
-                        Log.d("GDFlix Index", e.toString())
-                    }
-                }
 
                 text.contains("Instant DL") -> {
                     try {

@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 612
+version = 613
 
 android {
     buildFeatures {
@@ -22,8 +22,6 @@ android {
         buildConfigField("String", "MOVIE_API", "\"${properties.getProperty("MOVIE_API")}\"")
         buildConfigField("String", "ANICHI_API", "\"${properties.getProperty("ANICHI_API")}\"")
         buildConfigField("String", "Whvx_API", "\"${properties.getProperty("Whvx_API")}\"")
-        buildConfigField("String", "CatflixAPI", "\"${properties.getProperty("CatflixAPI")}\"")
-        buildConfigField("String", "ConsumetAPI", "\"${properties.getProperty("ConsumetAPI")}\"")
         buildConfigField("String", "FlixHQAPI", "\"${properties.getProperty("FlixHQAPI")}\"")
         buildConfigField("String", "WhvxAPI", "\"${properties.getProperty("WhvxAPI")}\"")
         buildConfigField("String", "WhvxT", "\"${properties.getProperty("WhvxT")}\"")
