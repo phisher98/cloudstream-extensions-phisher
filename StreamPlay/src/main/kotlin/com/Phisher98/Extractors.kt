@@ -1296,20 +1296,6 @@ open class Driveseed : ExtractorApi() {
         }
     }
 
-    private suspend fun instantLink(finalLink: String): String? {
-        return runCatching {
-            val response = app.get(finalLink)
-            val resolvedUrl = response.url
-            val extracted = resolvedUrl
-                .substringAfter("url=", missingDelimiterValue = "")
-                .takeIf { it.isNotBlank() }
-            extracted
-        }.getOrElse {
-            Log.e("Driveseed", "InstantLink error: ${it.message}")
-            null
-        }
-    }
-
     override suspend fun getUrl(
         url: String,
         referer: String?,
@@ -1356,20 +1342,6 @@ open class Driveseed : ExtractorApi() {
 
             if (href.isNotBlank()) {
                 when {
-                    text.contains("Instant Download", ignoreCase = true) -> {
-                        instantLink(href)?.let { link ->
-                            callback(
-                                newExtractorLink(
-                                    "$name Instant(Download)",
-                                    "$name [Instant(Download)] $labelExtras",
-                                    url = link
-                                ) {
-                                    this.quality = getIndexQuality(qualityText)
-                                }
-                            )
-                        }
-                    }
-
                     text.contains("Resume Worker Bot", ignoreCase = true) -> {
                         resumeBot(href)?.let { link ->
                             callback(

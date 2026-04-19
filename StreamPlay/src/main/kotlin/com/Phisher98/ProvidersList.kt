@@ -54,7 +54,6 @@ import com.phisher98.StreamPlayExtractor.invokeTopMovies
 import com.phisher98.StreamPlayExtractor.invokeUhdmovies
 import com.phisher98.StreamPlayExtractor.invokeVegamovies
 import com.phisher98.StreamPlayExtractor.invokeVidFast
-import com.phisher98.StreamPlayExtractor.invokeVidPlus
 import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVideasy
 import com.phisher98.StreamPlayExtractor.invokeVidlink
@@ -292,11 +291,6 @@ private val providers by lazy {
         },
         Provider("vidfast", "VidFast") { res, _, callback, _, _ ->
             invokeVidFast(res.id, res.season,res.episode, callback)
-        },
-        Provider("vidplus", "VidPlus") { res, _, callback, _, _ ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                invokeVidPlus(res.id, res.title, res.imdbId, res.year, res.season, res.episode, callback)
-            }
         },
         Provider("toonstream", "Toonstream (Hindi Anime)") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime || res.isCartoon) invokeToonstream(res.title, res.season, res.episode, subtitleCallback, callback)
