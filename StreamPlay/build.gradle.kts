@@ -2,7 +2,7 @@
 
 import org.jetbrains.kotlin.konan.properties.Properties
 
-version = 613
+version = 614
 
 android {
     buildFeatures {
@@ -14,30 +14,13 @@ android {
         properties.load(project.rootProject.file("local.properties").inputStream())
         android.buildFeatures.buildConfig=true
         buildConfigField("String", "TMDB_API", "\"${properties.getProperty("TMDB_API")}\"")
-        buildConfigField("String", "CINEMATV_API", "\"${properties.getProperty("CINEMATV_API")}\"")
-        buildConfigField("String", "SFMOVIES_API", "\"${properties.getProperty("SFMOVIES_API")}\"")
         buildConfigField("String", "ZSHOW_API", "\"${properties.getProperty("ZSHOW_API")}\"")
-        buildConfigField("String", "DUMP_API", "\"${properties.getProperty("DUMP_API")}\"")
-        buildConfigField("String", "DUMP_KEY", "\"${properties.getProperty("DUMP_KEY")}\"")
-        buildConfigField("String", "MOVIE_API", "\"${properties.getProperty("MOVIE_API")}\"")
         buildConfigField("String", "ANICHI_API", "\"${properties.getProperty("ANICHI_API")}\"")
-        buildConfigField("String", "Whvx_API", "\"${properties.getProperty("Whvx_API")}\"")
-        buildConfigField("String", "FlixHQAPI", "\"${properties.getProperty("FlixHQAPI")}\"")
-        buildConfigField("String", "WhvxAPI", "\"${properties.getProperty("WhvxAPI")}\"")
-        buildConfigField("String", "WhvxT", "\"${properties.getProperty("WhvxT")}\"")
-        buildConfigField("String", "SharmaflixApikey", "\"${properties.getProperty("SharmaflixApikey")}\"")
-        buildConfigField("String", "SharmaflixApi", "\"${properties.getProperty("SharmaflixApi")}\"")
-        buildConfigField("String", "Theyallsayflix", "\"${properties.getProperty("Theyallsayflix")}\"")
-        buildConfigField("String", "GojoAPI", "\"${properties.getProperty("GojoAPI")}\"")
-        buildConfigField("String", "HianimeAPI", "\"${properties.getProperty("HianimeAPI")}\"")
-        buildConfigField("String", "Vidsrccc", "\"${properties.getProperty("Vidsrccc")}\"")
-        buildConfigField("String", "WASMAPI", "\"${properties.getProperty("WASMAPI")}\"")
         buildConfigField("String", "KissKh", "\"${properties.getProperty("KissKh")}\"")
         buildConfigField("String", "KisskhSub", "\"${properties.getProperty("KisskhSub")}\"")
         buildConfigField("String", "SUPERSTREAM_THIRD_API", "\"${properties.getProperty("SUPERSTREAM_THIRD_API")}\"")
         buildConfigField("String", "SUPERSTREAM_FOURTH_API", "\"${properties.getProperty("SUPERSTREAM_FOURTH_API")}\"")
         buildConfigField("String", "SUPERSTREAM_FIRST_API", "\"${properties.getProperty("SUPERSTREAM_FIRST_API")}\"")
-        buildConfigField("String", "StreamPlayAPI", "\"${properties.getProperty("StreamPlayAPI")}\"")
         buildConfigField("String", "PROXYAPI", "\"${properties.getProperty("PROXYAPI")}\"")
         buildConfigField("String", "KAISVA", "\"${properties.getProperty("KAISVA")}\"")
         buildConfigField("String", "MOVIEBOX_SECRET_KEY_ALT", "\"${properties.getProperty("MOVIEBOX_SECRET_KEY_ALT")}\"")

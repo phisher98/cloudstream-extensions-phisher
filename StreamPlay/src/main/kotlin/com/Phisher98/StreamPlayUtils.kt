@@ -74,6 +74,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
 import android.content.SharedPreferences
+import java.math.BigInteger
 
 val sharedPref: SharedPreferences? = null
 val appGlobalSemaphore = Semaphore(
@@ -89,14 +90,6 @@ private val tmdbDateFormatter = object : ThreadLocal<SimpleDateFormat>() {
 }
 
 private fun getTmdbDateFormatter(): SimpleDateFormat = tmdbDateFormatter.get()!!
-
-suspend fun extractMovieAPIlinks(serverid: String, movieid: String, MOVIE_API: String): String {
-    val link =
-        app.get("$MOVIE_API/ajax/get_stream_link?id=$serverid&movie=$movieid").document.toString()
-            .substringAfter("link\":\"").substringBefore("\",")
-    return link
-}
-
 
 suspend fun bypassHrefli(url: String): String? {
     fun Document.getFormUrl(): String {
@@ -2004,5 +1997,26 @@ fun extractXpassBackups(html: String): List<Pair<String, String>> {
         val name = obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
         val url  = obj.optString("url").takeIf  { it.isNotBlank() } ?: return@mapNotNull null
         Pair(name, url)
+    }
+}
+
+//mapple
+fun solvePowChallenge(challenge: String, difficulty: Int): String? {
+    val target = BigInteger.ONE.shiftLeft(256 - difficulty)
+    val md = MessageDigest.getInstance("SHA-256")
+
+    var nonce = 0L
+    while (true) {
+        val input = challenge + nonce.toString()
+        val hashBytes = md.digest(input.toByteArray())
+        val hashInt = BigInteger(1, hashBytes)
+
+        if (hashInt < target) {
+            return nonce.toString()
+        }
+
+        nonce++
+        md.reset()
+        if (nonce > 10_000_000) return null
     }
 }

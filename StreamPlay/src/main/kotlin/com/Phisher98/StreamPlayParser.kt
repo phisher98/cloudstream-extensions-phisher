@@ -188,10 +188,6 @@ data class IndexData(
     @JsonProperty("files") val files: ArrayList<IndexMedia>? = arrayListOf(),
 )
 
-data class IndexSearch(
-    @JsonProperty("data") val data: IndexData? = null,
-)
-
 data class JikanExternal(
     @JsonProperty("name") val name: String? = null,
     @JsonProperty("url") val url: String? = null,
@@ -298,11 +294,6 @@ data class AllMovielandPlaylist(
     @JsonProperty("href") val href: String? = null,
 )
 
-data class ShowflixSearchMovies(
-    @JsonProperty("results")
-    val resultsMovies: ArrayList<ShowflixResultsMovies>? = arrayListOf()
-)
-
 data class ShowflixResultsMovies(
     @JsonProperty("objectId")
     val objectId: String? = null,
@@ -334,11 +325,6 @@ data class ShowflixResultsMovies(
     val createdAt: String? = null,
     @JsonProperty("updatedAt")
     val updatedAt: String? = null
-)
-
-data class ShowflixSearchSeries(
-    @JsonProperty("results")
-    val resultsSeries: ArrayList<ShowflixResultsSeries>? = arrayListOf()
 )
 
 data class ShowflixResultsSeries(
@@ -550,53 +536,6 @@ data class SubtitleKAA(
     val src: String,
 )
 
-//
-//StremplayAPI
-
-data class StremplayAPI(
-    val name: String,
-    val fields: StremplayFields,
-    val createTime: String,
-    val updateTime: String,
-)
-
-data class StremplayFields(
-    val links: StremplayLinks,
-)
-
-data class StremplayLinks(
-    val arrayValue: StremplayArrayValue,
-)
-
-data class StremplayArrayValue(
-    val values: List<StremplayValue>,
-)
-
-data class StremplayValue(
-    val mapValue: StremplayMapValue,
-)
-
-data class StremplayMapValue(
-    val fields: StremplayFields2,
-)
-
-data class StremplayFields2(
-    val href: StremplayHref,
-    val quality: StremplayQuality,
-    val source: StremplaySource,
-)
-
-data class StremplayHref(
-    val stringValue: String,
-)
-
-data class StremplayQuality(
-    val stringValue: String,
-)
-
-data class StremplaySource(
-    val stringValue: String,
-)
 
 data class AnimeKaiResponse(
     @JsonProperty("result") val result: String
@@ -646,36 +585,6 @@ data class Headers(
 
 data class AnichiVideoApiResponse(@JsonProperty("links") val links: List<AnichiLinks>)
 
-
-data class ElevenmoviesServerEntry(
-    val name: String,
-    val description: String,
-    val image: String,
-    val data: String,
-)
-
-data class ElevenmoviesStreamResponse(
-    val url: String?,
-    val tracks: List<ElevenmoviesSubtitle>?
-)
-
-data class ElevenmoviesSubtitle(
-    val label: String?,
-    val file: String?
-)
-
-data class Elevenmoviesjson(
-    val src: String,
-    val dst: String,
-    val static_path: String,
-    val http_method: String,
-    val key_hex: String,
-    val iv_hex: String,
-    val xor_key: String,
-    val content_types: String,
-)
-
-
 //Domains Parser
 
 data class DomainsParser(
@@ -709,30 +618,6 @@ data class DomainsParser(
     val movienestbd: String,
     val movies4u: String,
     val cinevood: String,
-)
-
-//OXXFile
-
-data class oxxfile(
-    val id: String,
-    val code: String,
-    val fileName: String,
-    val size: Long,
-    val driveLinks: List<DriveLink>,
-    val metadata: Metadata,
-    val createdAt: String,
-    val views: Long,
-    val status: String,
-    val gdtotLink: String?, // formerly Any?
-    val gdtotName: String?, // formerly Any?
-    val hubcloudLink: String,
-    val filepressLink: String,
-    val vikingLink: String?, // formerly Any?
-    val pixeldrainLink: String?, // formerly Any?
-    @SerializedName("credential_index")
-    val credentialIndex: Long,
-    val duration: String?, // safer to assume it's String for now
-    val userName: String,
 )
 
 data class DriveLink(
@@ -857,26 +742,10 @@ data class Watch32(
     val link: String,
 )
 
-data class Morph(
-    @JsonProperty("error_code")
-    val errorCode: Long,
-    val message: String,
-    val data: List<MorphDaum>,
-)
-
 data class MorphDaum(
     val title: String,
     val link: String,
 )
-
-data class CinemaOsSecretKeyRequest(
-    val tmdbId: String,
-
-    val imdbId: String,
-    val seasonId: String,
-    val episodeId: String
-)
-
 
 data class CinemaOSReponse(
     val data: CinemaOSReponseData,
@@ -890,27 +759,14 @@ data class CinemaOSReponseData(
     val salt: String,
 )
 
-data class CinemaOsAuthResponse(
-    val token: String,
-    val expiresIn: Long,
-)
-
-
-data class Vidlink(
-    val sourceId: String,
-    val stream: VidlinkStream,
+//Vidlink
+data class VidlinkResponse(
+    @SerializedName("stream") val stream: VidlinkStream
 )
 
 data class VidlinkStream(
-    val id: String,
-    val type: String,
-    val playlist: String,
-    val flags: List<String>,
-    val captions: List<VidlinkCaption>,
-    @JsonProperty("TTL")
-    val ttl: Long,
+    @SerializedName("playlist") val playlist: String
 )
-
 data class VidlinkCaption(
     val id: String,
     val url: String,
@@ -974,14 +830,6 @@ data class VidFastServersTrack(
     val label: String?
 )
 
-
-data class KeyIvResult(
-    val keyBytes: ByteArray,
-    val ivBytes: ByteArray,
-    val keyHex: String,
-    val ivHex: String
-)
-
 data class NuvioStreams(
     val streams: List<NuvioStreamsStream>,
 )
@@ -999,36 +847,6 @@ data class NuvioStreamsBehaviorHints(
     val notWebReady: Boolean,
 )
 
-data class AIO(
-    val streams: List<AIOStream>? = emptyList()
-)
-
-data class AIOStream(
-    val name: String? = null,
-    val description: String? = null,
-    val url: String? = null,
-    val behaviorHints: AIOBehaviorHints? = null
-)
-
-data class AIOBehaviorHints(
-    val notWebReady: Boolean? = null,
-    val bingeGroup: String? = null,
-    val videoSize: Long? = null,
-    val filename: String? = null,
-    val proxyHeaders: ProxyHeaders? = null
-)
-
-data class ProxyHeaders(
-    val request: Request? = null
-)
-
-data class Request(
-    @JsonProperty("Referer")
-    val referer: String? = null,
-
-    @JsonProperty("User-Agent")
-    val userAgent: String? = null
-)
 data class YflixResponse(
     @get:JsonProperty("result") val result: String
 ) {
@@ -1070,19 +888,6 @@ data class EmbedmasterSourceItem(
     val sourceIcon: Long? = null,
     @JsonProperty("source_url")
     val sourceUrl: String,
-)
-
-data class VideasySource(
-    val key: String,
-    val name: String,
-    val language: String,
-    val movieOnly: Boolean = false
-)
-
-data class BidSrcResponse(
-    val total: Long,
-    val sources: List<String>,
-    val servers: List<Server>,
 )
 
 data class Server(

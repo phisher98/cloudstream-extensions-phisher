@@ -27,7 +27,6 @@ import com.phisher98.StreamPlayExtractor.invokeHindmoviez
 import com.phisher98.StreamPlayExtractor.invokeKaido
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeKisskh
-import com.phisher98.StreamPlayExtractor.invokeKisskhAsia
 import com.phisher98.StreamPlayExtractor.invokeLevidia
 import com.phisher98.StreamPlayExtractor.invokeM4uhd
 import com.phisher98.StreamPlayExtractor.invokeMapple
@@ -240,6 +239,7 @@ private val providers by lazy {
             if (res.imdbId != null && token.isNotEmpty()) {
                 invokeSuperstream(
                     token,
+                    res.imdbId,
                     res.id,
                     res.season,
                     res.episode,
@@ -275,8 +275,8 @@ private val providers by lazy {
         Provider("soapy", "Soapy") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeSoapy(res.id, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("vidlink", "Vidlink") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeVidlink(res.id, res.season, res.episode, subtitleCallback, callback)
+        Provider("vidlink", "Vidlink") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokeVidlink(res.id, res.season, res.episode, callback)
         },
         Provider("kisskh", "KissKH (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeKisskh(res.title, res.season, res.episode, res.lastSeason, subtitleCallback, callback)
@@ -286,9 +286,6 @@ private val providers by lazy {
         },
         Provider("dahmermovies", "DahmerMovies") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeDahmerMovies(res.title, res.year, res.season, res.episode, callback)
-        },
-        Provider("KisskhAsia", "KissKhAsia (Asian Drama)") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeKisskhAsia(res.id, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("mp4hydra", "MP4Hydra") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokemp4hydra(res.title, res.year,res.season, res.episode, subtitleCallback, callback)

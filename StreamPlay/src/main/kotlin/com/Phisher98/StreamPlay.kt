@@ -189,7 +189,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val allmovielandAPI = "https://allmovieland.io"
         const val vidsrctoAPI = "https://vidsrc.cc"
         const val animetoshoAPI = "https://animetosho.org"
-        const val showflixAPI = "https://showflix.store"
         const val moflixAPI = "https://moflix-stream.xyz"
         const val zoechipAPI = "https://zoechip.gg"
         const val nepuAPI = "https://nepu.to"
@@ -214,8 +213,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vidfastProApi = "https://vidfast.pro"
         const val vidPlusApi = "https://player.vidplus.pro"
         const val videasyAPI = "https://api.videasy.net"
-        const val XDmoviesAPI = "https://top.xdmovies.wtf"
-        const val kimcartoonAPI = "https://kimcartoon.si"
         const val yFlix = "https://yflix.to"
         const val moviesClubApi = "https://moviesapi.club"
         const val cinemacity = "https://cinemacity.cc"
@@ -270,9 +267,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
     private fun getImageUrl(link: String?): String? {
         if (link == null) return null
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
+        return if (link.startsWith("/")) { "https://image.tmdb.org/t/p/w780/$link"
+        } else link
     }
-
 
     private suspend fun resolveApiBase(): String {
         // If already cached in memory, skip everything
@@ -297,7 +294,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
     private fun getOriImageUrl(link: String?): String? {
         if (link == null) return null
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/original/$link" else link
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w780/$link" else link
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
