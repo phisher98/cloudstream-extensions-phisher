@@ -62,24 +62,16 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
-import java.math.BigInteger
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Locale
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.collections.mapOf
-import kotlin.collections.orEmpty
 import kotlin.math.max
-import kotlin.text.isNullOrBlank
 
 
 val session = Session(Requests().baseClient)
@@ -93,6 +85,7 @@ private val normalizeAlphaNumSpaceRegex = Regex("[^a-z0-9 ]")
 private val normalizeAlphaNumRegex = Regex("[^a-z0-9]")
 private val wyzieSubListType by lazy { object : TypeToken<List<WyZIESUB>>() {}.type }
 
+
 object StreamPlayExtractor : StreamPlay() {
 
     private val cloudflareKiller by lazy { CloudflareKiller() }
@@ -104,6 +97,8 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        if (imdbId.isNullOrBlank()) return
+
         val url = if (season == null) {
             "$twoEmbedAPI/embed/$imdbId"
         } else {
@@ -3374,7 +3369,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val searchResponse =
             safeGet("$ridomoviesAPI/core/api/search?q=$imdbId", interceptor = wpRedisInterceptor)
-        if (searchResponse.code != 200) return  // Early return if not 200
+        if (searchResponse.code != 200) return
 
         val mediaSlug = searchResponse.parsedSafe<RidoSearch>()
             ?.data?.items?.find { it.contentable?.tmdbId == tmdbId || it.contentable?.imdbId == imdbId }
@@ -4025,8 +4020,7 @@ object StreamPlayExtractor : StreamPlay() {
             "$PrimeSrcApi/api/v1/s?imdb=$imdbId&season=$season&episode=$episode&type=tv"
         }
 
-        val serverList =
-            safeGet(url, timeout = 30, headers = headers).parsedSafe<PrimeSrcServerList>()
+        val serverList = safeGet(url, timeout = 30, headers = headers).parsedSafe<PrimeSrcServerList>()
         serverList?.servers?.amap {
             val rawServerJson =
                 safeGet("$PrimeSrcApi/api/v1/l?key=${it.key}", timeout = 30, headers = headers).text

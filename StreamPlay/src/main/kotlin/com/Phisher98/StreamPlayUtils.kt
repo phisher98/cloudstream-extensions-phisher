@@ -1443,6 +1443,8 @@ fun hasHost(url: String): Boolean {
 /**
  * Run multiple suspend functions concurrently with a limit on simultaneous executions.
  *
+ * OPTIMIZED: Now uses StreamPlayConcurrency for better performance
+ *
  * @param concurrency Limit of concurrent tasks.
  * @param tasks Vararg of suspend functions to execute.
  */
@@ -1450,20 +1452,26 @@ suspend fun runLimitedAsync(
     concurrency: Int = 5,
     vararg tasks: suspend () -> Unit
 ) = coroutineScope {
-    val semaphore = Semaphore(concurrency)
+    // Use enhanced concurrency system if available
+    try {
+        StreamPlayConcurrency.runLimitedAsync(concurrency, *tasks)
+    } catch (e: Exception) {
+        // Fallback to original implementation if StreamPlayConcurrency not available
+        val semaphore = Semaphore(concurrency)
 
-    tasks.map { task ->
-        async(Dispatchers.IO) {
-            semaphore.withPermit {
-                try {
-                    task()
-                } catch (e: Exception) {
-                    // Log error but continue
-                    Log.e("runLimitedAsync", "Task failed: ${e.message}")
+        tasks.map { task ->
+            async(Dispatchers.IO) {
+                semaphore.withPermit {
+                    try {
+                        task()
+                    } catch (e: Exception) {
+                        // Log error but continue
+                        Log.e("runLimitedAsync", "Task failed: ${e.message}")
+                    }
                 }
             }
-        }
-    }.awaitAll()
+        }.awaitAll()
+    }
 }
 
 

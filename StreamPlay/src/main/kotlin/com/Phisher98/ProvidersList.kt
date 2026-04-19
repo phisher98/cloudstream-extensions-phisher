@@ -94,8 +94,37 @@ private fun getDubStatus(res: StreamPlay.LinkData): String {
     }
 }
 
-private suspend fun getAnimeIds(res: StreamPlay.LinkData) =
-    resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+private suspend fun getAnimeIds(res: StreamPlay.LinkData): StreamPlayExtractor.AnimeResolvedIds {
+    val cacheKey = "${res.title}_${res.date ?: res.airedDate}_${res.season ?: 0}"
+
+    val cached = StreamPlayCache.getCachedAnimeIds(cacheKey)
+    if (cached != null) {
+        return StreamPlayExtractor.AnimeResolvedIds(
+            malId = cached.malId?.toIntOrNull(),
+            anidbEid = 0,
+            zoroIds = cached.zoroId?.split(",")?.filter { it.isNotBlank() },
+            zoroTitle = null,
+            aniXL = null,
+            kaasSlug = null,
+            animepaheUrl = null,
+            tmdbYear = null
+        )
+    }
+
+    val ids = resolveAnimeIds(res.title, res.date, res.airedDate, res.season, res.episode)
+
+    StreamPlayCache.cacheAnimeIds(
+        cacheKey,
+        StreamPlayCache.AnimeIdMapping(
+            anilistId = null,
+            malId = ids.malId?.toString(),
+            kitsuId = null,
+            zoroId = ids.zoroIds?.joinToString(",")
+        )
+    )
+
+    return ids
+}
 
 private val providers by lazy {
     listOf(

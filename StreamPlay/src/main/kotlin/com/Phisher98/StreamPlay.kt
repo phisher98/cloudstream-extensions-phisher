@@ -80,25 +80,29 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         private const val TAG = "StreamPlay"
 
         suspend fun getApiBase(): String {
+            StreamPlayCache.getCachedApiBase()?.let {
+                currentBaseUrl = it
+                return it
+            }
+
             currentBaseUrl?.let { return it }
             return apiMutex.withLock {
                 currentBaseUrl?.let { return it }
 
-                // 1. Try Official Fast
                 if (checkConnectivity(OFFICIAL_TMDB_URL)) {
                     Log.d(TAG, "✅ Using official TMDB API")
                     currentBaseUrl = OFFICIAL_TMDB_URL
+                    StreamPlayCache.cacheApiBase(OFFICIAL_TMDB_URL, success = true)
                     return OFFICIAL_TMDB_URL
                 }
 
-                // 2. Fetch Proxies
                 val proxies = fetchProxyList()
                 if (proxies.isEmpty()) {
                     Log.e(TAG, "❌ No proxies found, falling back to official")
+                    StreamPlayCache.cacheApiBase(OFFICIAL_TMDB_URL, success = false)
                     return OFFICIAL_TMDB_URL
                 }
 
-                // 3. Parallel Race: Check all proxies at the same time
                 val workingProxy = coroutineScope {
                     val deferredChecks = proxies.map { proxy ->
                         async {
@@ -111,12 +115,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 if (workingProxy != null) {
                     Log.d(TAG, "✅ Switched to proxy: $workingProxy")
                     currentBaseUrl = workingProxy
+                    StreamPlayCache.cacheApiBase(workingProxy, success = true)
                     return workingProxy
                 }
 
-                // 4. Ultimate Fallback
                 Log.e(TAG, "❌ All proxies failed, fallback to official")
                 currentBaseUrl = OFFICIAL_TMDB_URL
+                StreamPlayCache.cacheApiBase(OFFICIAL_TMDB_URL, success = false)
                 OFFICIAL_TMDB_URL
             }
         }
@@ -272,20 +277,19 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     private suspend fun resolveApiBase(): String {
-        // If already cached in memory, skip everything
+        StreamPlayCache.getCachedApiBase()?.let {
+            currentBaseUrl = it
+            return it
+        }
+
         currentBaseUrl?.let { return it }
 
         return try {
-            val cached = sharedPref?.getString("cached_api_base", null)
-            if (cached != null && checkConnectivity(cached)) {
-                currentBaseUrl = cached
-                cached
-            } else {
-                sharedPref?.edit { remove("cached_api_base") }
-                currentBaseUrl = null
-                getApiBase().also { sharedPref?.edit { putString("cached_api_base", it) } }
+            getApiBase().also {
+                sharedPref?.edit { putString("cached_api_base", it) }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Error resolving API base: ${e.message}")
             sharedPref?.edit { remove("cached_api_base") }
             currentBaseUrl = null
             getApiBase()
@@ -338,7 +342,18 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         val data = parseJson<Data>(url)
         val type = getType(data.type)
-        val append = "alternative_titles,credits,external_ids,videos,recommendations"
+
+        val cacheKey = "metadata_${data.id}_${data.type}_$langCode"
+        val cached = StreamPlayCache.getCachedMetadata(cacheKey)
+        if (cached != null) {
+            try {
+                return parseJson<LoadResponse>(cached)
+            } catch (e: Exception) {
+                Log.e("StreamPlay", "Failed to parse cached metadata: ${e.message}")
+            }
+        }
+
+        val append = "alternative_titles,credits,external_ids,videos,recommendations,images"
 
         val resUrl = if (type == TvType.Movie) {
             "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
@@ -346,11 +361,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
         }
 
-        val enResUrl = if (type == TvType.Movie) {
-            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US"
-        } else {
-            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US"
-        }
+        // English data only if different from current language
+        val enResUrl = if (langCode != "en-US") {
+            if (type == TvType.Movie) {
+                "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US"
+            } else {
+                "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US"
+            }
+        } else null
 
         var res: MediaDetail? = null
         var enRes: MediaDetail? = null
@@ -359,12 +377,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         coroutineScope {
             val resDeferred = async {
-                withTimeoutOrNull(5000) {
+                withTimeoutOrNull(8000) {
                     app.get(resUrl).parsedSafe<MediaDetail>()
                 }
             }
+
             val enResDeferred = async {
-                if (langCode == "en-US") null
+                if (enResUrl == null) null
                 else withTimeoutOrNull(5000) {
                     app.get(enResUrl).parsedSafe<MediaDetail>()
                 }
@@ -384,12 +403,14 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             }
 
             val cineDeferred = async {
-                withTimeoutOrNull(3000) {
-                    val tempRes = resDeferred.await()
-                    val cinetype = if (type == TvType.TvSeries) "series" else "movie"
-                    app.get("$Cinemeta/meta/$cinetype/${tempRes?.external_ids?.imdb_id}.json")
-                        .parsedSafe<CinemetaRes>()
-                }
+                val tempRes = resDeferred.await()
+                if (tempRes?.external_ids?.imdb_id != null) {
+                    withTimeoutOrNull(3000) {
+                        val cinetype = if (type == TvType.TvSeries) "series" else "movie"
+                        app.get("$Cinemeta/meta/$cinetype/${tempRes.external_ids.imdb_id}.json")
+                            .parsedSafe<CinemetaRes>()
+                    }
+                } else null
             }
 
             res = resDeferred.await() ?: throw ErrorLoadingException("Invalid Json Response")
@@ -632,8 +653,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean = coroutineScope {
-
         val res = parseJson<LinkData>(data)
+
         val stremioAddons = StreamPlayStremioAddonSettings.getDynamicStremioMap(
             sharedPref,
             res.imdbId,
@@ -645,37 +666,87 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         val allProviders = buildProviders()
         val disabledProviderIds = sharedPref?.getStringSet("disabled_providers", null)
-        val providersList = if (disabledProviderIds.isNullOrEmpty()) {
+
+        val activeProviders = if (disabledProviderIds.isNullOrEmpty()) {
             allProviders
         } else {
             allProviders.filterNot { disabledProviderIds.contains(it.id) }
         }
 
-        if (providersList.isEmpty() && stremioAddons.isEmpty()) return@coroutineScope true
+        val prioritizedProviders = activeProviders.sortedByDescending { provider ->
+            StreamPlayCache.getProviderPriorityScore(provider.id)
+        }
+
+        val brokenCount = activeProviders.count {
+            StreamPlayCache.getProviderStats(it.id).isCircuitBroken
+        }
+        if (brokenCount > 0) {
+            Log.d(TAG, "📉 $brokenCount slow/failing providers moved to end of queue")
+        }
+
+        if (prioritizedProviders.isEmpty() && stremioAddons.isEmpty()) return@coroutineScope true
 
         val authToken = token.orEmpty()
+        val concurrency = sharedPref?.getInt("provider_concurrency", 15)?.coerceIn(8, 50) ?: 20
 
-        val executionList: List<suspend () -> Unit> = providersList.map { provider ->
+        val totalProviders = prioritizedProviders.size + stremioAddons.size
+        val linksFound = java.util.concurrent.atomic.AtomicInteger(0)
+        val providersCompleted = java.util.concurrent.atomic.AtomicInteger(0)
+
+        Log.d(TAG, "🚀 Starting $totalProviders providers (concurrency: $concurrency, prioritized by success rate)")
+
+        val wrappedCallback: (ExtractorLink) -> Unit = { link ->
+            callback(link)
+        }
+
+        val executionList: List<suspend () -> Unit> = prioritizedProviders.map { provider ->
             suspend {
+                val startTime = System.currentTimeMillis()
+                var success = false
+
                 runCatching {
-                    provider.invoke(
-                        res,
-                        subtitleCallback,
-                        callback,
-                        authToken,
-                        dahmerMoviesAPI
-                    )
+                    provider.invoke(res, subtitleCallback, wrappedCallback, authToken, dahmerMoviesAPI)
+                    success = true
+                }.onFailure { e ->
+                    Log.w(TAG, "Provider ${provider.id} failed, retrying: ${e.message}")
+                    kotlinx.coroutines.delay(2000)
+                    runCatching {
+                        provider.invoke(res, subtitleCallback, wrappedCallback, authToken, dahmerMoviesAPI)
+                        success = true
+                        Log.d(TAG, "✅ Retry succeeded: ${provider.id}")
+                    }.onFailure { retryError ->
+                        Log.e(TAG, "Provider ${provider.id} failed after retry: ${retryError.message}")
+                    }
+                }
+
+                val duration = System.currentTimeMillis() - startTime
+                StreamPlayCache.recordProviderExecution(provider.id, success, duration)
+
+                val completed = providersCompleted.incrementAndGet()
+                if (completed % 10 == 0 || completed == totalProviders) {
+                    Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers | ${linksFound.get()} links")
                 }
                 Unit
             }
-        } + stremioAddons
+        } + stremioAddons.map { addon ->
+            suspend {
+                runCatching {
+                    addon()
+                }
+                val completed = providersCompleted.incrementAndGet()
+                if (completed % 10 == 0 || completed == totalProviders) {
+                    Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers | ${linksFound.get()} links")
+                }
+                Unit
+            }
+        }
 
         runLimitedAsync(
-            concurrency = (sharedPref?.getInt("provider_concurrency", 15)
-                ?.coerceIn(8, 50) ?: 20),
+            concurrency = concurrency,
             *executionList.toTypedArray()
         )
 
+        Log.d(TAG, "✅ Finished: $totalProviders providers checked, ${linksFound.get()} links found")
         true
     }
 

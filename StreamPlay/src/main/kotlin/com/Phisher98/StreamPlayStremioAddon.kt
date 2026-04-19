@@ -101,7 +101,9 @@ suspend fun invokeStremioTorrentsGlobal(
 ) {
     if (imdbId.isNullOrBlank()) return
     val url = if (season == null) "$api/stream/movie/$imdbId.json" else "$api/stream/series/$imdbId:$season:$episode.json"
-    val res = app.get(url, timeout = 50000L).parsedSafe<StreamPlayStremioResponse>()
+    // OPTIMIZED: Reduced timeout from 50s to 15s with adaptive behavior
+    val timeout = StreamPlayConcurrency.getAdaptiveTimeout("stremio_$sourceName", 15000L)
+    val res = app.get(url, timeout = timeout).parsedSafe<StreamPlayStremioResponse>()
 
     res?.streams?.forEach { stream ->
         val title = stream.description ?: stream.title ?: stream.name ?: ""
@@ -131,7 +133,9 @@ suspend fun invokeStreamioStreamsGlobal(
 ) {
     if (imdbId.isNullOrBlank()) return
     val url = if (season == null) "$api/stream/movie/$imdbId.json" else "$api/stream/series/$imdbId:$season:$episode.json"
-    val res = app.get(url, timeout = 50000L).parsedSafe<StreamPlayStremioResponse>()
+    // OPTIMIZED: Reduced timeout from 50s to 15s with adaptive behavior
+    val timeout = StreamPlayConcurrency.getAdaptiveTimeout("stremio_$sourceName", 15000L)
+    val res = app.get(url, timeout = timeout).parsedSafe<StreamPlayStremioResponse>()
 
     res?.streams?.forEach { s ->
         val title = s.description ?: s.title ?: s.name ?: ""
@@ -181,7 +185,9 @@ suspend fun invokeStremioSubtitlesGlobal(
 ) {
     if (imdbId.isNullOrBlank()) return
     val url = if (season != null) "$api/subtitles/series/$imdbId:$season:$episode.json" else "$api/subtitles/movie/$imdbId.json"
-    val subtitleResponse = app.get(url, timeout = 50000L).parsedSafe<StreamPlayStremioSubtitleResponse>()
+    // OPTIMIZED: Reduced timeout from 50s to 15s for subtitles
+    val timeout = StreamPlayConcurrency.getAdaptiveTimeout("stremio_sub_$sourceName", 15000L)
+    val subtitleResponse = app.get(url, timeout = timeout).parsedSafe<StreamPlayStremioSubtitleResponse>()
     subtitleResponse?.subtitles?.forEach { emitStremioSubtitle(it, subtitleCallback) }
 }
 

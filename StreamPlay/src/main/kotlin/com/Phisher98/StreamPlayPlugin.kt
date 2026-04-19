@@ -37,6 +37,26 @@ class StreamPlayPlugin: Plugin() {
     override fun load(context: Context) {
 
         val sharedPref = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
+
+        // Initialize StreamPlay optimizations
+        Log.d("StreamPlay", "🚀 Initializing StreamPlay optimizations...")
+
+        // Load provider stats from SharedPreferences
+        StreamPlayCache.loadProviderStats(sharedPref)
+
+        // Detect device profile and adjust concurrency
+        val deviceProfile = StreamPlayConcurrency.detectDeviceProfile(context)
+        Log.d("StreamPlay", "📱 Device profile: $deviceProfile")
+
+        // Set recommended concurrency if not already set
+        val currentConcurrency = sharedPref.getInt("provider_concurrency", -1)
+        if (currentConcurrency == -1) {
+            val recommended = deviceProfile.recommendedConcurrency
+            sharedPref.edit {
+                putInt("provider_concurrency", recommended)
+            }
+            Log.d("StreamPlay", "⚙️ Set recommended concurrency: $recommended")
+        }
         val mainApis = listOf(
             StreamPlay(sharedPref),
             StreamPlayAnime()
