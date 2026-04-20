@@ -202,7 +202,9 @@ class Moontv : MainAPI() {
 
             val movieCastList = parseCredits(movieCreditsJsonText)
 
-            return newMovieLoadResponse(title.title, url, TvType.Movie, title.id) {
+            return newMovieLoadResponse(title.title, url, TvType.Movie, api.result.seasons?.firstOrNull()
+                ?.episodes?.firstOrNull()?.id )
+            {
                 this.posterUrl = title.poster.medium ?: poster
                 this.backgroundPosterUrl = bgurl ?: title.backdrop.medium ?: backgroundPoster ?: poster
                 try { this.logoUrl = logoPath } catch(_: Throwable) {}
