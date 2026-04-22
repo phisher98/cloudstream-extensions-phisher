@@ -23,6 +23,7 @@ import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
@@ -31,7 +32,6 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.phisher98.BuildConfig
-import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
@@ -141,8 +141,6 @@ class AnimeKai : MainAPI() {
 
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        delay(Random.nextLong(1000, 2000))
-
         val headers = mapOf(
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -366,7 +364,9 @@ class AnimeKai : MainAPI() {
                 .parsed<Response>().result
             val decodeiframe= decodeReverse(result)
 
-            val iframe = extractVideoUrlFromJson(decodeiframe)
+            val iframesrc = extractVideoUrlFromJson(decodeiframe)
+            val iframe = app.get(iframesrc, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
+
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
             loadExtractor(iframe, name, subtitleCallback, callback)

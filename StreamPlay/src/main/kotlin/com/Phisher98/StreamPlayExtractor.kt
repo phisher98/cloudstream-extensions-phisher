@@ -1489,7 +1489,8 @@ object StreamPlayExtractor : StreamPlay() {
                                     .parsed<AnimeKaiResponse>().result
 
                             val decodeiframe = decodeReverse(result)
-                            val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
+                            val iframesrc = extractVideoUrlFromJsonAnimekai(decodeiframe)
+                            val iframe = app.get(iframesrc, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
 
                             val nameSuffix = when {
                                 type.contains("soft", ignoreCase = true) -> " [Soft Sub]"
@@ -3599,52 +3600,37 @@ object StreamPlayExtractor : StreamPlay() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val bollyflixAPI = getDomains()?.bollyflix ?: return
+        val res1 = safeGet("$bollyflixAPI/search/$id").document
 
-        val query = buildString {
-            append("$bollyflixAPI/search/${id ?: return}")
-            if (season != null) append(" $season")
-        }
+        res1.select("div > article > a").forEach {
+            val url = it.attr("href")
+            val res = safeGet(url).document
+            val hTag = if (season == null) "h5" else "h4"
+            val sTag = if (season == null) "" else "Season $season"
+            val entries =
+                res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(480p|720p|1080p|2160p))")
+                    .filter { element -> !element.text().contains("Download", true) }.takeLast(4)
 
-        val res1 = safeGet(query, timeout = 10000L).let {
-            if (
-                it.text.contains("Just a moment", true)
-            ) safeGet(query, interceptor = cloudflareKiller)
-            else it
-        }.document
+            entries.forEach {
+                var href = it.nextElementSibling()?.select("a")?.attr("href") ?: return@forEach
 
-        val url = res1.selectFirst("div > article > a")?.attr("href") ?: return
+                if(href.contains("id=")) {
+                    val token = href.substringAfter("id=")
+                    val encodedurl =
+                        app.get("https://web.sidexfee.com/?id=$token").text.substringAfter("link\":\"")
+                            .substringBefore("\"};")
+                    href = base64Decode(encodedurl)
+                }
 
-        val res = safeGet(url, timeout = 10000L).let {
-            if (
-                it.text.contains("Just a moment", true)
-            ) safeGet(url, interceptor = cloudflareKiller)
-            else it
-        }.document
-
-        val hTag = if (season == null) "h5" else "h4"
-        val sTag = if (season == null) "" else "Season $season"
-        val entries =
-            res.select("div.thecontent.clearfix > $hTag:matches((?i)$sTag.*(480p|720p|1080p|2160p))")
-                .filter { element -> !element.text().contains("Download", true) }.takeLast(4)
-        entries.forEach {
-            var href = it.nextElementSibling()?.select("a")?.attr("href") ?: return@forEach
-
-            if(href.contains("id=")) {
-                val token = href.substringAfter("id=")
-                val encodedurl =
-                    safeGet("https://web.sidexfee.com/?id=$token").text.substringAfter("link\":\"")
-                        .substringBefore("\"};")
-                href = base64Decode(encodedurl.replace("\\/", "/"))
-            }
-
-            if (season == null) {
-                loadSourceNameExtractor("Bollyflix", href , "", subtitleCallback, callback)
-            } else {
-                val episodeText = "Episode " + episode.toString().padStart(2, '0')
-                val link =
-                    safeGet(href).document.selectFirst("article h3 a:contains($episodeText)")!!
-                        .attr("href")
-                loadSourceNameExtractor("Bollyflix", link , "", subtitleCallback, callback)
+                if (season == null) {
+                    loadSourceNameExtractor("Bollyflix", href , "", subtitleCallback, callback)
+                } else {
+                    val episodeText = "Episode " + episode.toString().padStart(2, '0')
+                    val link =
+                        app.get(href).document.selectFirst("article h3 a:contains($episodeText)")!!
+                            .attr("href")
+                    loadSourceNameExtractor("Bollyflix", link , "", subtitleCallback, callback)
+                }
             }
         }
     }
@@ -5373,7 +5359,8 @@ object StreamPlayExtractor : StreamPlay() {
                     }
 
                     val iframeUrl = try {
-                        yflixextractVideoUrlFromJson(decodedIframePayload)
+                        val iframe = yflixextractVideoUrlFromJson(decodedIframePayload)
+                        app.get(iframe, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
                     } catch (e: Exception) {
                         Log.d("Yflix", "Failed to extract video url for lid=$lid : ${e.message}")
                         null
