@@ -12,7 +12,6 @@ import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
@@ -179,14 +178,14 @@ object StreamPlayExtractor : StreamPlay() {
 
         val sourcesDoc = Jsoup.parse(sourcesHtml)
         val semaphore = Semaphore(3)
-        sourcesDoc.select("li").amap { server ->
+        sourcesDoc.select("li").safeAmap { server ->
 
             semaphore.withPermit {
 
                 val serverId = server.attr("data-server")
                 val videoId = server.attr("data-id")
 
-                if (serverId.isBlank() || videoId.isBlank()) return@amap
+                if (serverId.isBlank() || videoId.isBlank()) return@safeAmap
 
                 val playUrl =
                     "https://streamingnow.mov/playvideo.php" +
@@ -230,7 +229,7 @@ object StreamPlayExtractor : StreamPlay() {
                         else -> {
                             val url = fileUrl.lowercase()
                             when {
-                                "vidsrc" in url -> return@amap
+                                "vidsrc" in url -> return@safeAmap
 
                                 "mixdrop" in url -> {
                                     MixDrop().getUrl(fileUrl)
@@ -296,8 +295,8 @@ object StreamPlayExtractor : StreamPlay() {
             )
         }
 
-        playerOptions.amap { (postId, nume, type) ->
-            if (nume.contains("trailer", ignoreCase = true)) return@amap
+        playerOptions.safeAmap { (postId, nume, type) ->
+            if (nume.contains("trailer", ignoreCase = true)) return@safeAmap
 
             runCatching {
                 val postResponse = app.post(
@@ -376,7 +375,7 @@ object StreamPlayExtractor : StreamPlay() {
         val document = res.document
         document.select("ul#playeroptionsul > li").map {
             Triple(it.attr("data-post"), it.attr("data-nume"), it.attr("data-type"))
-        }.amap { (id, nume, type) ->
+        }.safeAmap { (id, nume, type) ->
             val json = app.post(
                 url = "$referer/wp-admin/admin-ajax.php",
                 data = mapOf(
@@ -396,19 +395,19 @@ object StreamPlayExtractor : StreamPlay() {
                 when {
                     encrypt -> {
                         val meta =
-                            tryParseJson<ZShowEmbed>(it.embed_url)?.meta ?: return@amap
-                        val key = generateWpKey(it.key ?: return@amap, meta)
+                            tryParseJson<ZShowEmbed>(it.embed_url)?.meta ?: return@safeAmap
+                        val key = generateWpKey(it.key ?: return@safeAmap, meta)
                         cryptoAESHandler(
                             it.embed_url,
                             key.toByteArray(),
                             false
-                        )?.fixBloat() ?: return@amap
+                        )?.fixBloat() ?: return@safeAmap
                     }
 
                     fixIframe -> Jsoup.parse(it.embed_url).select("IFRAME").attr("SRC")
                     else -> it.embed_url
                 }
-            } ?: return@amap
+            } ?: return@safeAmap
             when {
                 !source.contains("youtube") -> {
                     loadDisplaySourceNameExtractor(
@@ -1007,15 +1006,15 @@ object StreamPlayExtractor : StreamPlay() {
                 "Referer" to "https://allmanga.to"
             )
 
-        langTypes.amap { lang ->
+        langTypes.safeAmap { lang ->
             if (isMovie || (dubtype != null && lang.contains(dubtype, ignoreCase = true))) {
                 val epQuery =
                     """${BuildConfig.ANICHI_API}?variables={"showId":"$id","translationType":"$lang","episodeString":"${episode ?: 1}"}&extensions={"persistedQuery":{"version":1,"sha256Hash":"$ephash"}}"""
                 val episodeLinks = safeGet(epQuery, referer = privatereferer, headers = headers)
                     .parsedSafe<AnichiEP>()
-                    ?.data?.episode?.sourceUrls ?: return@amap
+                    ?.data?.episode?.sourceUrls ?: return@safeAmap
 
-                episodeLinks.amap { source ->
+                episodeLinks.safeAmap { source ->
                     safeApiCall {
                         val sourceUrl = source.sourceUrl
 
@@ -1160,7 +1159,7 @@ object StreamPlayExtractor : StreamPlay() {
             headers
         ).document
 
-        document.select("#resolutionMenu button").amap {
+        document.select("#resolutionMenu button").safeAmap {
             val dubText = it.select("span").text().lowercase()
             val type = if ("eng" in dubText) "DUB" else "SUB"
 
@@ -1190,7 +1189,7 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
 
-        document.select("div#pickDownload > a").amap {
+        document.select("div#pickDownload > a").safeAmap {
             val qualityRegex = Regex("""(.+?)\s+·\s+(\d{3,4}p)""")
 
             val href = it.attr("href")
@@ -1766,7 +1765,7 @@ object StreamPlayExtractor : StreamPlay() {
             else -> return // null or invalid → block
         }
 
-        locales.amap { locale ->
+        locales.safeAmap { locale ->
             val json = safeGet(
                 "$KickassAPI/api/show/$slug/episodes?ep=1&lang=$locale",
                 timeout = 5000L
@@ -1778,12 +1777,12 @@ object StreamPlayExtractor : StreamPlay() {
                 it.episode_number.toString()
                     .substringBefore(".")
                     .toIntOrNull() == episode
-            }?.slug ?: return@amap
+            }?.slug ?: return@safeAmap
 
             val href = "$KickassAPI/api/show/$slug/episode/ep-$episode-$matchedSlug"
-            val servers = safeGet(href).parsedSafe<ServersResKAA>()?.servers ?: return@amap
+            val servers = safeGet(href).parsedSafe<ServersResKAA>()?.servers ?: return@safeAmap
 
-            servers.amap { server ->
+            servers.safeAmap { server ->
                 if (server.name.contains("VidStreaming")) {
                     val host = getBaseUrl(server.src)
                     val headers = mapOf(
@@ -1827,12 +1826,12 @@ object StreamPlayExtractor : StreamPlay() {
                     }
 
                     val (sig, timeStamp, route) = getSignature(html, server.name, query, key)
-                        ?: return@amap
+                        ?: return@safeAmap
                     val sourceUrl = "$host$route?id=$query&e=$timeStamp&s=$sig"
 
                     val encJson =
                         safeGet(sourceUrl, headers = headers).parsedSafe<EncryptedKAA>()?.data
-                            ?: return@amap
+                            ?: return@safeAmap
 
                     val (encryptedData, ivHex) = encJson
                         .substringAfter(":\"")
@@ -1840,7 +1839,7 @@ object StreamPlayExtractor : StreamPlay() {
                         .split(":")
                     val decrypted = tryParseJson<m3u8KAA>(
                         CryptoAES.decrypt(encryptedData, key, ivHex.decodeHex()).toJson()
-                    ) ?: return@amap
+                    ) ?: return@safeAmap
 
                     val m3u8 = httpsify(decrypted.hls)
                     val videoHeaders = mapOf(
@@ -2056,18 +2055,18 @@ object StreamPlayExtractor : StreamPlay() {
             .distinct()
             .toList()
 
-        links.amap { link ->
+        links.safeAmap { link ->
             val driveLink = try {
                 if (link.contains("driveleech", true) || link.contains("driveseed", true)) {
                     val text = safeGet(link).text
                     val fileId = redirectRegex.find(text)?.groupValues?.getOrNull(1)
-                        ?: return@amap
+                        ?: return@safeAmap
                     getBaseUrl(link) + fileId
                 } else {
-                    bypassHrefli(link) ?: return@amap
+                    bypassHrefli(link) ?: return@safeAmap
                 }
             } catch (_: Exception) {
-                return@amap
+                return@safeAmap
             }
 
             loadSourceNameExtractor(
@@ -2096,7 +2095,7 @@ object StreamPlayExtractor : StreamPlay() {
         )
         val response = safeGet(url, headers = headers, timeout = 10000L)
         if (response.code != 200) return
-        response.parsedSafe<SubtitlesAPI>()?.subtitles?.amap { it ->
+        response.parsedSafe<SubtitlesAPI>()?.subtitles?.safeAmap { it ->
             val lan = getLanguage(it.lang)
             val suburl = it.url
             subtitleCallback.invoke(
@@ -2177,7 +2176,7 @@ object StreamPlayExtractor : StreamPlay() {
         val firstPass = quote(title)
         val encTitle = quote(firstPass)
 
-        servers.amap { server ->
+        servers.safeAmap { server ->
             val url = if (season == null) {
                 "$videasyAPI/$server/sources-with-title?title=$encTitle&mediaType=movie&year=$year&tmdbId=$tmdbId&imdbId=$imdbId"
             } else {
@@ -2340,7 +2339,7 @@ object StreamPlayExtractor : StreamPlay() {
             "magnolia"
         )
 
-        sources.amap { source ->
+        sources.safeAmap { source ->
             try {
                 val streamUrl =
                     "$base/api/stream?mediaId=$tmdbId&mediaType=$mediaType&tv_slug=$tvSlug" +
@@ -2349,7 +2348,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                 val streamRes = JSONObject(safeGet(streamUrl, headers = headers).text)
 
-                if (!streamRes.optBoolean("success")) return@amap
+                if (!streamRes.optBoolean("success")) return@safeAmap
 
                 val m3u8 = streamRes
                     .getJSONObject("data")
@@ -2384,7 +2383,7 @@ object StreamPlayExtractor : StreamPlay() {
         val keyBytes = secret.padEnd(32, '\u0000').toByteArray(Charsets.UTF_8)
         val defaultReferer = "https://player.vidzee.wtf/"
 
-        (1..8).toList().amap { sr ->
+        (1..8).toList().safeAmap { sr ->
             try {
                 val apiUrl = if (season == null) {
                     "https://player.vidzee.wtf/api/server?id=$id&sr=$sr"
@@ -2525,16 +2524,16 @@ object StreamPlayExtractor : StreamPlay() {
             val detailPageUrls = res.select("a.maxbutton-download-links")
                 .mapNotNull { it.attr("href").takeIf { it.isNotBlank() } }
 
-            detailPageUrls.amap { detailPageUrl ->
+            detailPageUrls.safeAmap { detailPageUrl ->
                 val detailPageDocument =
-                    runCatching { safeGet(detailPageUrl).document }.getOrNull() ?: return@amap
+                    runCatching { safeGet(detailPageUrl).document }.getOrNull() ?: return@safeAmap
 
                 val driveLinks = detailPageDocument.select("a.maxbutton-fast-server-gdrive")
                     .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
 
-                driveLinks.amap { driveLink ->
+                driveLinks.safeAmap { driveLink ->
                     val finalLink = if (driveLink.contains("unblockedgames")) {
-                        bypassHrefli(driveLink) ?: return@amap
+                        bypassHrefli(driveLink) ?: return@safeAmap
                     } else {
                         driveLink
                     }
@@ -2552,19 +2551,19 @@ object StreamPlayExtractor : StreamPlay() {
             val detailPageUrls = res.select("a.maxbutton-g-drive")
                 .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
 
-            detailPageUrls.amap { detailPageUrl ->
+            detailPageUrls.safeAmap { detailPageUrl ->
                 val detailPageDocument =
-                    runCatching { safeGet(detailPageUrl).document }.getOrNull() ?: return@amap
+                    runCatching { safeGet(detailPageUrl).document }.getOrNull() ?: return@safeAmap
 
                 val episodeLink = detailPageDocument.select("span strong")
                     .firstOrNull {
                         it.text().matches(Regex(".*Episode\\s+$episode.*", RegexOption.IGNORE_CASE))
                     }
                     ?.parent()?.closest("a")?.attr("href")
-                    ?.takeIf(String::isNotBlank) ?: return@amap
+                    ?.takeIf(String::isNotBlank) ?: return@safeAmap
 
                 val finalLink = if (episodeLink.contains("unblockedgames")) {
-                    bypassHrefli(episodeLink) ?: return@amap
+                    bypassHrefli(episodeLink) ?: return@safeAmap
                 } else {
                     episodeLink
                 }
@@ -2591,131 +2590,56 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val MoviesmodAPI = getDomains()?.moviesmod ?: return
         invokeModflix(
-            title = title,
-            imdbId = imdbId,
-            season = season,
-            episode = episode,
-            subtitleCallback = subtitleCallback,
-            callback = callback,
-            api = MoviesmodAPI
+            imdbId,
+            season,
+            episode,
+            subtitleCallback,
+            callback,
+            MoviesmodAPI
         )
     }
 
 
-    private suspend fun invokeModflix(
-        title: String?,
-        imdbId: String? = null,
+    suspend fun invokeModflix(
+        id: String? = null,
         season: Int? = null,
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
         api: String
     ) {
-        fun buildSearch(query: String?) =
-            query?.takeIf { it.isNotBlank() }?.let {
-                "$api/search/${URLEncoder.encode(
-                    if (season == null) it else "$it Season $season",
-                    "UTF-8"
-                )}"
+        val url: String = if (season == null) {
+            "$api/search/$id"
+        } else {
+            "$api/search/$id $season"
+        }
+        val href = safeGet(url).document.selectFirst("#content_box article > a")?.attr("href")
+
+        val hTag = if (season == null) "h4" else "h3"
+        val aTag = if (season == null) "Download" else "Episode"
+        val sTag = if (season == null) "" else "(S0$season|Season $season)"
+        val res = app.get(
+            href ?: return,
+        ).document
+
+        val entries = res.select("div.thecontent $hTag:matches((?i)$sTag.*(480p|720p|1080p|2160p))")
+            .filter { element ->
+                val text = element.text()
+                !text.contains("MoviesMod", true)
             }
 
-        val searchUrls = listOfNotNull(
-            buildSearch(imdbId),
-            buildSearch(title)
-        )
+        entries.safeAmap {
+            val link =
+                it.nextElementSibling()?.select("a:contains($aTag)")?.attr("href")
+                    ?.substringAfter("=") ?: ""
+            val selector =
+                if (season == null) "p a.maxbutton" else "h3 a:matches(Episode $episode)"
 
-        val href = searchUrls
-            .amap { url ->
-                runCatching {
-                    safeGet(url).document
-                        .selectFirst("#content_box article a")
-                        ?.attr("href")
-                        ?.takeIf { it.isNotBlank() }
-                }.getOrNull()
+            if (link.isNotEmpty()) {
+                val source = app.get(link).document.selectFirst(selector)?.attr("href") ?: return@safeAmap
+                val bypassedLink = bypassHrefli(source).toString()
+                loadSourceNameExtractor("Moviesmod", bypassedLink, "", subtitleCallback, callback)
             }
-            .firstOrNull { it != null }
-            ?: return Log.e("Modflix", "No valid result found")
-
-        val document = runCatching {
-            safeGet(
-                href,
-                headers = mapOf(
-                    "User-Agent" to "Mozilla/5.0"
-                ),
-                interceptor = wpRedisInterceptor
-            ).document
-        }.getOrElse {
-            Log.e("Modflix", "Page load failed: ${it.message}")
-            return
-        }
-
-        if (season == null) {
-            document.select("a[class*=maxbutton][href]")
-                .map { it.attr("href") }
-                .filter { it.isNotBlank() }
-                .distinct()
-                .amap { url ->
-                    val detailDoc = runCatching { safeGet(url).document }.getOrNull() ?: return@amap
-
-                    detailDoc.select("a.maxbutton-fast-server-gdrive")
-                        .map { it.attr("href") }
-                        .filter { it.isNotBlank() }
-                        .distinct()
-                        .forEach { link ->
-                            val final = if (link.contains("unblockedgames", true)) {
-                                bypassHrefli(link) ?: return@forEach
-                            } else link
-
-                            loadSourceNameExtractor(
-                                "MoviesMod",
-                                final,
-                                "$api/",
-                                subtitleCallback,
-                                callback
-                            )
-                        }
-                }
-            return
-        }
-
-        val seasonRegex = Regex("Season\\s+$season\\b", RegexOption.IGNORE_CASE)
-        val episodeText = "Episode $episode"
-
-        document.select("div.thecontent").forEach { content ->
-            val seasonNode = content.select("h3")
-                .firstOrNull { seasonRegex.containsMatchIn(it.text()) }
-                ?: return@forEach
-
-            generateSequence(seasonNode.nextElementSibling()) { it.nextElementSibling() }
-                .takeWhile { it.tagName() != "h3" } // stop at next section
-                .flatMap { it.select("a.maxbutton-episode-links").asSequence() }
-                .map { it.attr("href") }
-                .filter { it.isNotBlank() }
-                .distinct()
-                .toList()
-                .amap { url ->
-                    val detailDoc = runCatching { safeGet(url).document }.getOrNull() ?: return@amap
-
-                    val link = detailDoc.select("span strong")
-                        .firstOrNull { it.text().contains(episodeText, true) }
-                        ?.parent()
-                        ?.closest("a")
-                        ?.attr("href")
-                        ?.takeIf { it.isNotBlank() }
-                        ?: return@amap
-
-                    val final = if (link.contains("unblockedgames", true)) {
-                        bypassHrefli(link) ?: return@amap
-                    } else link
-
-                    loadSourceNameExtractor(
-                        "MoviesMod",
-                        final,
-                        "$api/",
-                        subtitleCallback,
-                        callback
-                    )
-                }
         }
     }
 
@@ -2781,10 +2705,10 @@ object StreamPlayExtractor : StreamPlay() {
                 .mapNotNull { it.parent()?.attr("href") }
                 .filter { it.isNotBlank() }
                 .distinct()
-                .amap { page ->
+                .safeAmap { page ->
                     val doc = runCatching {
                         safeGet(page, referer = api, headers = headers).document
-                    }.getOrNull() ?: return@amap
+                    }.getOrNull() ?: return@safeAmap
 
                     val sources = doc.select("button.btn:matches((?i)(V-Cloud))")
                         .mapNotNull { it.parent()?.attr("href") }
@@ -2820,14 +2744,14 @@ object StreamPlayExtractor : StreamPlay() {
             .filter { it.isNotBlank() }
             .distinct()
             .toList()
-            .amap { page ->
+            .safeAmap { page ->
                 val doc = runCatching {
                     safeGet(page, referer = api, headers = headers).document
-                }.getOrNull() ?: return@amap
+                }.getOrNull() ?: return@safeAmap
 
                 val epNode = doc.select("h4")
                     .firstOrNull { it.text().contains(episodeText, true) }
-                    ?: return@amap
+                    ?: return@safeAmap
 
                 val links = epNode.nextElementSibling()
                     ?.select("a:matches((?i)(V-Cloud|Single|Episode))")
@@ -2900,10 +2824,10 @@ object StreamPlayExtractor : StreamPlay() {
                 .mapNotNull { it.parent()?.attr("href") }
                 .filter { it.isNotBlank() }
                 .distinct()
-                .amap { page ->
+                .safeAmap { page ->
                     val doc = runCatching {
                         safeGet(page, referer = api, headers = headers).document
-                    }.getOrNull() ?: return@amap
+                    }.getOrNull() ?: return@safeAmap
 
                     val sources = doc.select("button.btn:matches((?i)(V-Cloud|G-Direct))")
                         .mapNotNull { it.parent()?.attr("href") }
@@ -2938,14 +2862,14 @@ object StreamPlayExtractor : StreamPlay() {
             .filter { it.isNotBlank() }
             .distinct()
             .toList()
-            .amap { page ->
+            .safeAmap { page ->
                 val doc = runCatching {
                     safeGet(page, referer = api, headers = headers).document
-                }.getOrNull() ?: return@amap
+                }.getOrNull() ?: return@safeAmap
 
                 val epNode = doc.select("h4")
                     .firstOrNull { it.text().contains(episodeText, true) }
-                    ?: return@amap
+                    ?: return@safeAmap
 
                 val links = epNode.nextElementSibling()
                     ?.select("a:matches((?i)(V-Cloud|Single|Episode|G-Direct))")
@@ -3010,23 +2934,23 @@ object StreamPlayExtractor : StreamPlay() {
 
         val servers = serversJson.optJSONArray("data") ?: return
 
-        (0 until servers.length()).toList().amap { i ->
-            val server = servers.optJSONObject(i) ?: return@amap
+        (0 until servers.length()).toList().safeAmap { i ->
+            val server = servers.optJSONObject(i) ?: return@safeAmap
 
             val name = server.optString("name")
             val hash = server.optString("hash")
-            if (hash.isEmpty()) return@amap
+            if (hash.isEmpty()) return@safeAmap
 
 
             val sourceText = safeGet("$vidsrctoAPI/api/source/$hash").text
-            if (sourceText.startsWith("<")) return@amap
+            if (sourceText.startsWith("<")) return@safeAmap
 
             val sourceJson = JSONObject(sourceText)
-            if (!sourceJson.optBoolean("success")) return@amap
+            if (!sourceJson.optBoolean("success")) return@safeAmap
 
-            val data = sourceJson.optJSONObject("data") ?: return@amap
+            val data = sourceJson.optJSONObject("data") ?: return@safeAmap
             val source = data.optString("source")
-            if (source.isEmpty() || source.contains(".vidbox")) return@amap
+            if (source.isEmpty() || source.contains(".vidbox")) return@safeAmap
 
             callback.invoke(
                 newExtractorLink(
@@ -3162,9 +3086,9 @@ object StreamPlayExtractor : StreamPlay() {
                 "full",
                 true
             )
-        }?.amap { iframe ->
+        }?.safeAmap { iframe ->
             val response =
-                safeGet(iframe.src ?: return@amap, referer = "$moflixAPI/")
+                safeGet(iframe.src ?: return@safeAmap, referer = "$moflixAPI/")
             val host = getBaseUrl(iframe.src)
             val doc = response.document.selectFirst("script:containsData(sources:)")
                 ?.data()
@@ -3176,12 +3100,12 @@ object StreamPlayExtractor : StreamPlay() {
             val m3u8 = Regex("file:\\s*\"(.*?m3u8.*?)\"").find(
                 script
             )?.groupValues?.getOrNull(1)
-            if (m3u8?.haveDub("$host/") == false) return@amap
+            if (m3u8?.haveDub("$host/") == false) return@safeAmap
             callback.invoke(
                 newExtractorLink(
                     "Moflix",
                     "Moflix [${iframe.name}]",
-                    url = m3u8 ?: return@amap,
+                    url = m3u8 ?: return@safeAmap,
                     INFER_TYPE
                 ) {
                     this.referer = "$host/"
@@ -3389,8 +3313,8 @@ object StreamPlayExtractor : StreamPlay() {
         val videoResponse = safeGet(url, interceptor = wpRedisInterceptor)
         if (videoResponse.code != 200) return  // Early return if not 200
 
-        videoResponse.parsedSafe<RidoResponses>()?.data?.amap { link ->
-            val iframe = Jsoup.parse(link.url ?: return@amap).select("iframe").attr("data-src")
+        videoResponse.parsedSafe<RidoResponses>()?.data?.safeAmap { link ->
+            val iframe = Jsoup.parse(link.url ?: return@safeAmap).select("iframe").attr("data-src")
             if (iframe.startsWith("https://closeload.top")) {
                 val unpacked = getAndUnpack(
                     safeGet(
@@ -3466,7 +3390,7 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             } ?: return@runCatching
 
-            servers.amap { (server, lang) ->
+            servers.safeAmap { (server, lang) ->
                 runCatching {
                     val playlistResponse = app.post(
                         "$host/playlist/$server.txt",
@@ -3511,10 +3435,10 @@ object StreamPlayExtractor : StreamPlay() {
         if (response.code != 200) return
         val document = response.document
 
-        document.select("div.entry-content > p a").amap {
+        document.select("div.entry-content > p a").safeAmap {
             val link = it.attr("href")
             val iframeResponse = safeGet(link)
-            if (iframeResponse.code != 200) return@amap
+            if (iframeResponse.code != 200) return@safeAmap
             val trueUrl = iframeResponse.document.selectFirst("iframe")?.attr("src").orEmpty()
             if (trueUrl.isNotBlank()) {
                 loadExtractor(trueUrl, subtitleCallback, callback)
@@ -3556,8 +3480,8 @@ object StreamPlayExtractor : StreamPlay() {
                 .map { it.attr("href") }
                 .filter { it.isNotBlank() }
                 .distinct()
-                .amap { href ->
-                    val servers = runCatching { extractMdrive(href) }.getOrNull() ?: return@amap
+                .safeAmap { href ->
+                    val servers = runCatching { extractMdrive(href) }.getOrNull() ?: return@safeAmap
                     servers.forEach { server ->
                         loadSourceNameExtractor("MoviesDrive", server, "", subtitleCallback, callback)
                     }
@@ -3575,11 +3499,11 @@ object StreamPlayExtractor : StreamPlay() {
             .filter { it.isNotBlank() }
             .distinct()
             .toList()
-            .amap { seasonPage ->
+            .safeAmap { seasonPage ->
                 val doc = safeGet(seasonPage).document
 
                 val epNode = doc.select("h5").firstOrNull { it.text().contains(episodeRegex) }
-                    ?: return@amap
+                    ?: return@safeAmap
 
                 val links = listOfNotNull(
                     epNode.nextElementSibling()?.selectFirst("a")?.attr("href"),
@@ -3691,13 +3615,13 @@ object StreamPlayExtractor : StreamPlay() {
             }.getOrNull() ?: return
 
             val sourceButtons = serverDoc.select("li.nav-item a")
-            sourceButtons.toList().amap { source ->
+            sourceButtons.toList().safeAmap { source ->
                 val sourceId = source.attr("data-id")
 
                 val iframeUrl = runCatching {
                     safeGet("$Watch32/ajax/episode/sources/$sourceId")
                         .parsedSafe<Watch32>()?.link
-                }.getOrNull() ?: return@amap
+                }.getOrNull() ?: return@safeAmap
                 loadDisplaySourceNameExtractor(
                     "Watch32",
                     "Watch32",
@@ -3713,16 +3637,16 @@ object StreamPlayExtractor : StreamPlay() {
                     .document
                     .select("li.nav-item a")
             }.getOrNull() ?: return
-            episodeLinks.amap { ep ->
+            episodeLinks.safeAmap { ep ->
                 val dataId = ep.attr("data-id")
-                if (dataId.isBlank()) return@amap
+                if (dataId.isBlank()) return@safeAmap
 
                 val iframeUrl = runCatching {
                     safeGet("$Watch32/ajax/episode/sources/$dataId")
                         .parsedSafe<Watch32>()?.link
                 }.getOrNull()
 
-                if (iframeUrl.isNullOrBlank()) return@amap
+                if (iframeUrl.isNullOrBlank()) return@safeAmap
 
                 loadDisplaySourceNameExtractor(
                     "Watch32",
@@ -3781,7 +3705,7 @@ object StreamPlayExtractor : StreamPlay() {
             ).text
         } ?: return
 
-        sourceList?.data?.amap { source ->
+        sourceList?.data?.safeAmap { source ->
             try {
                 val streamUrl = if (season == null) {
                     "$RiveStreamAPI/api/backendfetch?requestID=movieVideoProvider&id=$id&service=$source&secretKey=$secretKey"
@@ -3791,12 +3715,12 @@ object StreamPlayExtractor : StreamPlay() {
 
                 val responseString = retry {
                     safeGet(streamUrl, headers, timeout = 10).text
-                } ?: return@amap
+                } ?: return@safeAmap
 
                 try {
                     val json = JSONObject(responseString)
                     val sourcesArray =
-                        json.optJSONObject("data")?.optJSONArray("sources") ?: return@amap
+                        json.optJSONObject("data")?.optJSONArray("sources") ?: return@safeAmap
 
                     for (i in 0 until sourcesArray.length()) {
                         val src = sourcesArray.getJSONObject(i)
@@ -4007,7 +3931,7 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
         val serverList = safeGet(url, timeout = 30, headers = headers).parsedSafe<PrimeSrcServerList>()
-        serverList?.servers?.amap {
+        serverList?.servers?.safeAmap {
             val rawServerJson =
                 safeGet("$PrimeSrcApi/api/v1/l?key=${it.key}", timeout = 30, headers = headers).text
             val jsonObject = JSONObject(rawServerJson)
@@ -4172,8 +4096,8 @@ object StreamPlayExtractor : StreamPlay() {
             doc.select("div.download-item a")
                 .map { it.attr("href") }
                 .distinct()
-                .amap { href ->
-                    val source = runCatching { getRedirectLinks(href) }.getOrNull() ?: return@amap
+                .safeAmap { href ->
+                    val source = runCatching { getRedirectLinks(href) }.getOrNull() ?: return@safeAmap
                     loadSourceNameExtractor("4Khdhub", source, "", subtitleCallback, callback)
                 }
             return
@@ -4193,8 +4117,8 @@ object StreamPlayExtractor : StreamPlay() {
             .map { it.attr("href") }
             .distinct()
             .toList()
-            .amap { href ->
-                val source = runCatching { getRedirectLinks(href) }.getOrNull() ?: return@amap
+            .safeAmap { href ->
+                val source = runCatching { getRedirectLinks(href) }.getOrNull() ?: return@safeAmap
                 loadSourceNameExtractor("4KHDHub", source, "", subtitleCallback, callback)
             }
     }
@@ -4288,7 +4212,7 @@ object StreamPlayExtractor : StreamPlay() {
         } else posts
 
 
-        matchedPosts.amap { el ->
+        matchedPosts.safeAmap { el ->
             val doc = safeGet(el).document
 
             if (season == null) {
@@ -4422,9 +4346,9 @@ object StreamPlayExtractor : StreamPlay() {
         // If ajax link failed, fallback to legacy anchors
         if (link.isNullOrEmpty()) {
             val type = if (episode != null) "(Combined)" else ""
-            document.select("a[href*=dwo]").amap { anchor ->
+            document.select("a[href*=dwo]").safeAmap { anchor ->
                 val innerDoc = safeGet(anchor.attr("href")).document
-                innerDoc.select("div > p > a").amap {
+                innerDoc.select("div > p > a").safeAmap {
                     val href = it.attr("href")
                     if (href.contains("GDFlix")) {
                         val redirectedUrl = (1..10).firstNotNullOfOrNull {
@@ -4511,7 +4435,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             var foundLinks = false
 
-            matchingIds.amap { id ->
+            matchingIds.safeAmap { id ->
                 try {
                     val subjectUrl = "$movieBox/wefeed-mobile-bff/subject-api/get?subjectId=$id"
                     val subjectXToken = generateXClientToken()
@@ -4536,7 +4460,7 @@ object StreamPlayExtractor : StreamPlay() {
                         authtoken = xUserJson["token"]?.asText()
                     }
 
-                    if (subjectRes.code != 200) return@amap
+                    if (subjectRes.code != 200) return@safeAmap
 
                     val subjectJson = mapper.readTree(subjectRes.text)
                     val subjectData = subjectJson["data"]
@@ -4721,7 +4645,7 @@ object StreamPlayExtractor : StreamPlay() {
                         }
                     }
                 } catch (_: Exception) {
-                    return@amap
+                    return@safeAmap
                 }
             }
 
@@ -4740,7 +4664,7 @@ object StreamPlayExtractor : StreamPlay() {
     ) {
         val players = listOf("juliet", "romio")
 
-        players.amap { selectedPlayer ->
+        players.safeAmap { selectedPlayer ->
             val url = if (season == null) {
                 "$soapy/embed/movies.php?tmdbid=$tmdbId&player=$selectedPlayer"
             } else {
@@ -4767,12 +4691,12 @@ object StreamPlayExtractor : StreamPlay() {
             "Origin" to vidrock
         )
 
-        sourcesJson.keys().asSequence().toList().amap { key ->
-            val sourceObj = sourcesJson.optJSONObject(key) ?: return@amap
+        sourcesJson.keys().asSequence().toList().safeAmap { key ->
+            val sourceObj = sourcesJson.optJSONObject(key) ?: return@safeAmap
 
             val rawUrl = sourceObj.optString("url", "")
             val lang = sourceObj.optString("language", "Unknown")
-            if (rawUrl.isNullOrBlank() || rawUrl == "null") return@amap
+            if (rawUrl.isNullOrBlank() || rawUrl == "null") return@safeAmap
 
             val safeUrl = if (rawUrl.contains("%")) {
                 URLDecoder.decode(rawUrl, "UTF-8")
@@ -4875,7 +4799,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val json = parseCinemaOSSources(decryptedJson)
 
-        json.amap {
+        json.safeAmap {
             val extractorLinkType = if (it["type"]?.contains("hls", true) ?: false) {
                 ExtractorLinkType.M3U8
             } else if (it["type"]?.contains("dash", true) ?: false) {
@@ -5007,7 +4931,7 @@ object StreamPlayExtractor : StreamPlay() {
                 val src = video.optString("src")
                 video.optString("label", "")
 
-                serverUrls.amap { (serverName, serverUrl) ->
+                serverUrls.safeAmap { (serverName, serverUrl) ->
                     val fullUrl =
                         if (src.startsWith("http")) src else serverUrl.trimEnd('/') + "/" + src.trimStart(
                             '/'
@@ -5041,7 +4965,7 @@ object StreamPlayExtractor : StreamPlay() {
 
             val src = matchedVideo.optString("src")
 
-            serverUrls.amap { (serverName, serverUrl) ->
+            serverUrls.safeAmap { (serverName, serverUrl) ->
                 val fullUrl =
                     if (src.startsWith("http")) src else serverUrl.trimEnd('/') + "/" + src.trimStart(
                         '/'
@@ -5187,12 +5111,12 @@ object StreamPlayExtractor : StreamPlay() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val toonStreamAPI = getDomains()?.toonstream ?: return
+        val toonStresafeAmapI = getDomains()?.toonstream ?: return
 
         val safeTitle = title?.takeIf { it.isNotBlank() } ?: return
 
         val url = buildString {
-            append(toonStreamAPI)
+            append(toonStresafeAmapI)
             append(
                 if (season == null) "/movies/${safeTitle.createSlug()}/"
                 else "/episode/${safeTitle.createSlug()}-${season}x${episode}/"
@@ -5200,10 +5124,10 @@ object StreamPlayExtractor : StreamPlay() {
         }
 
         runCatching {
-            val document = safeGet(url, referer = toonStreamAPI).document
+            val document = safeGet(url, referer = toonStresafeAmapI).document
             document.selectFirst("div.video > iframe")?.attr("data-src")?.let { src ->
                 val innerDoc = safeGet(src).document
-                innerDoc.select("div.Video > iframe").amap { iframe ->
+                innerDoc.select("div.Video > iframe").safeAmap { iframe ->
                     loadSourceNameExtractor(
                         "ToonStream",
                         iframe.attr("src"),
@@ -5244,7 +5168,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val response = safeGet(api, timeout = 10000L).parsedSafe<NuvioStreams>() ?: return
 
-        response.streams.amap { stream ->
+        response.streams.safeAmap { stream ->
             callback.invoke(
                 newExtractorLink(
                     stream.name.substringAfter("[").substringBefore("]").substringBefore("-"),
@@ -5322,12 +5246,12 @@ object StreamPlayExtractor : StreamPlay() {
                 return
             }
 
-            servers.amap { serverNode ->
+            servers.safeAmap { serverNode ->
                 try {
                     val lid = serverNode.attr("data-lid").trim()
                     if (lid.isBlank()) {
                         Log.d("Yflix", "Skipping server with empty lid (eid=$eid)")
-                        return@amap
+                        return@safeAmap
                     }
 
                     val serverName =
@@ -5337,7 +5261,7 @@ object StreamPlayExtractor : StreamPlay() {
                         yflixDecode(lid)
                     } catch (e: Exception) {
                         Log.d("Yflix", "Failed to decode lid ($lid): ${e.message}")
-                        return@amap
+                        return@safeAmap
                     }
 
                     val viewResp = runCatching {
@@ -5348,14 +5272,14 @@ object StreamPlayExtractor : StreamPlay() {
                     val result = viewResp?.result
                     if (result.isNullOrBlank()) {
                         Log.d("Yflix", "Empty result for server $serverName (lid=$lid)")
-                        return@amap
+                        return@safeAmap
                     }
 
                     val decodedIframePayload = try {
                         yflixDecodeReverse(result)
                     } catch (e: Exception) {
                         Log.d("Yflix", "Failed to decodeReverse for lid=$lid : ${e.message}")
-                        return@amap
+                        return@safeAmap
                     }
 
                     val iframeUrl = try {
@@ -5371,7 +5295,7 @@ object StreamPlayExtractor : StreamPlay() {
                             "Yflix",
                             "No iframe/video url extracted for server $serverName (lid=$lid)"
                         )
-                        return@amap
+                        return@safeAmap
                     }
 
                     val displayName = "⌜ YFlix ⌟  |  $serverName"
@@ -5625,17 +5549,17 @@ object StreamPlayExtractor : StreamPlay() {
                 runCatching {
                     streamPlayExtractorMapper.readValue<EmbedmasterSourceItem>(it)
                 }.getOrNull()
-            }.filter { it.type == "server" && it.sourceUrl.isNotBlank() }.toList().amap { source ->
+            }.filter { it.type == "server" && it.sourceUrl.isNotBlank() }.toList().safeAmap { source ->
                 val playResponse = safeGet("https://embdmstrplayer.com/play/${source.sourceUrl}")
                 val doc = playResponse.document
                 val baseUrl = getBaseUrl(playResponse.url)
                 val candidateUrls = mutableSetOf<String>()
 
-                doc.select("iframe[src], a[href], source[src], video[src]").amap { el ->
+                doc.select("iframe[src], a[href], source[src], video[src]").safeAmap { el ->
                     val attrName = if (el.hasAttr("src")) "src" else "href"
                     val rawValue = el.attr(attrName).trim()
 
-                    if (rawValue.isEmpty()) return@amap
+                    if (rawValue.isEmpty()) return@safeAmap
 
                     val finalUrl = when {
                         rawValue.startsWith("http") -> rawValue
@@ -5647,7 +5571,7 @@ object StreamPlayExtractor : StreamPlay() {
                     candidateUrls.add(finalUrl)
                 }
 
-                candidateUrls.toList().amap { url ->
+                candidateUrls.toList().safeAmap { url ->
                     if (!url.contains(".php", ignoreCase = true)) {
                         loadExtractor(
                             url,
@@ -5655,7 +5579,7 @@ object StreamPlayExtractor : StreamPlay() {
                             subtitleCallback,
                             callback
                         )
-                        return@amap
+                        return@safeAmap
                     }
 
                     val phpPageText = safeGet(url).text
@@ -5665,7 +5589,7 @@ object StreamPlayExtractor : StreamPlay() {
                         .find(phpPageText)
                         ?.groupValues
                         ?.get(1)
-                        ?: return@amap
+                        ?: return@safeAmap
 
                     callback.invoke(
                         newExtractorLink(
@@ -5805,14 +5729,14 @@ object StreamPlayExtractor : StreamPlay() {
             ?.distinct()
             ?: return
 
-        results.amap { raw ->
+        results.safeAmap { raw ->
             val resolved = runCatching {
                 if ("id=" in raw) getRedirectLinks(raw) else raw
             }.getOrElse {
-                return@amap
+                return@safeAmap
             }
 
-            if (resolved.isBlank()) return@amap
+            if (resolved.isBlank()) return@safeAmap
 
             try {
                 when {
@@ -5862,37 +5786,37 @@ object StreamPlayExtractor : StreamPlay() {
         val searchDoc = response.document
         val entries = searchDoc.select("h2.entry-title > a")
 
-        entries.amap { entry ->
+        entries.safeAmap { entry ->
             val pageDoc = safeGet(entry.attr("href"), timeout = 5000L).document
             val buttons = pageDoc.select("a.maxbutton")
 
             if (episode == null) {
                 // Movie
-                buttons.amap { btn ->
+                buttons.safeAmap { btn ->
                     val intermediateDoc = safeGet(btn.attr("href"), timeout = 5000L).document
                     val link = intermediateDoc.selectFirst("a.get-link-btn")
                         ?.attr("href")
-                        ?: return@amap
+                        ?: return@safeAmap
 
                     getHindMoviezLinks("Hindmoviez", link, callback)
                 }
             } else {
                 // TV Episode
-                buttons.amap { btn ->
+                buttons.safeAmap { btn ->
                     val headerText = btn.parent()
                         ?.parent()
                         ?.previousElementSibling()
                         ?.text()
                         .orEmpty()
 
-                    if (!headerText.contains("Season $season", ignoreCase = true)) return@amap
+                    if (!headerText.contains("Season $season", ignoreCase = true)) return@safeAmap
 
                     val episodeDoc = safeGet(btn.attr("href"), timeout = 5000L).document
                     val episodeLink = episodeDoc
                         .select("h3 > a")
                         .getOrNull(episode - 1)
                         ?.attr("href")
-                        ?: return@amap
+                        ?: return@safeAmap
 
                     getHindMoviezLinks("Hindmoviez", episodeLink, callback)
                 }
@@ -5916,21 +5840,21 @@ object StreamPlayExtractor : StreamPlay() {
         val searchDoc = safeGet(searchUrl).document
         val links = searchDoc.select("article h3 a")
 
-        links.amap { element ->
+        links.safeAmap { element ->
             val postUrl = element.attr("href")
             val postDoc = safeGet(postUrl).document
             val imdbId = postDoc.select("p a:contains(IMDb Rating)").attr("href")
                 .substringAfter("title/").substringBefore("/")
 
             if (imdbId != id.toString()) {
-                return@amap
+                return@safeAmap
             }
 
             if (season == null) {
                 val innerUrl = postDoc.select("div.download-links-div a.btn").attr("href")
                 val innerDoc = safeGet(innerUrl).document
                 val sourceButtons = innerDoc.select("div.downloads-btns-div a.btn")
-                sourceButtons.amap { sourceButton ->
+                sourceButtons.safeAmap { sourceButton ->
                     val sourceLink = sourceButton.attr("href")
                     loadSourceNameExtractor(
                         "Movies4u",
@@ -5942,10 +5866,10 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             } else {
                 val seasonBlocks = postDoc.select("div.downloads-btns-div")
-                seasonBlocks.amap { block ->
+                seasonBlocks.safeAmap { block ->
                     val headerText = block.previousElementSibling()?.text().orEmpty()
                     if (headerText.contains("Season $season", ignoreCase = true)) {
-                        val seasonLink = block.selectFirst("a.btn")?.attr("href") ?: return@amap
+                        val seasonLink = block.selectFirst("a.btn")?.attr("href") ?: return@safeAmap
 
                         val episodeDoc = safeGet(seasonLink).document
                         val episodeBlocks = episodeDoc.select("div.downloads-btns-div")
@@ -5954,7 +5878,7 @@ object StreamPlayExtractor : StreamPlay() {
                             val episodeBlock = episodeBlocks[episode - 1]
                             val episodeLinks = episodeBlock.select("a.btn")
 
-                            episodeLinks.amap { epLink ->
+                            episodeLinks.safeAmap { epLink ->
                                 val sourceLink = epLink.attr("href")
                                 loadSourceNameExtractor(
                                     "Movies4u",
@@ -6148,7 +6072,7 @@ object StreamPlayExtractor : StreamPlay() {
         searchDoc.select("article a[href]")
             .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
             .distinct()
-            .amap { postUrl ->
+            .safeAmap { postUrl ->
 
                 val postRes = safeGet(postUrl)
                 val postDoc = if (postRes.text.contains("Just a moment", true)) {
@@ -6161,7 +6085,7 @@ object StreamPlayExtractor : StreamPlay() {
 
                 postDoc.select("a.maxbutton[href]")
                     .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
-                    .amap { link ->
+                    .safeAmap { link ->
                         loadSourceNameExtractor("CineVood", link, "", subtitleCallback, callback)
                     }
             }
@@ -6210,15 +6134,15 @@ object StreamPlayExtractor : StreamPlay() {
                     titleText.contains(" $queryClean ")
 
             if (isMatch) href else null
-        }.distinct().amap { postUrl ->
+        }.distinct().safeAmap { postUrl ->
             val postDoc = safeGet(postUrl).document
             postDoc.select("div.dlbtn a[href]")
                 .mapNotNull { it.absUrl("href").takeIf(String::isNotBlank) }.distinct()
-                .amap { dlBtnUrl ->
+                .safeAmap { dlBtnUrl ->
                     val dlDoc = safeGet(dlBtnUrl).document
                     dlDoc.select("div.dlink a[href]")
                         .mapNotNull { it.absUrl("href").takeIf(String::isNotBlank) }.distinct()
-                        .amap { finalUrl ->
+                        .safeAmap { finalUrl ->
                             loadExtractor(finalUrl, baseUrl, subtitleCallback, callback)
                         }
                 }
@@ -6251,12 +6175,12 @@ object StreamPlayExtractor : StreamPlay() {
         val response = safeGet(requestUrl, headers).parsedSafe<Dooflix>() ?: return
         val links = response.links
 
-        links.amap { link ->
+        links.safeAmap { link ->
             val streamurl = safeGet(
                 link.url,
                 referer = "https://molop.art/",
                 allowRedirects = false
-            ).headers["location"] ?: return@amap
+            ).headers["location"] ?: return@safeAmap
             callback.invoke(
                 newExtractorLink(
                     "Dooflix",
@@ -6446,18 +6370,18 @@ object StreamPlayExtractor : StreamPlay() {
 
         Log.d("Xpass", "backups: $backups")
 
-        backups.amap { (name, url) ->
+        backups.safeAmap { (name, url) ->
             val fullUrl = if (url.startsWith("http")) url else xpassAPI + url
             Log.d("Xpass", "fullUrl: $fullUrl")
 
-            val json = runCatching { app.get(fullUrl).text }.getOrNull() ?: return@amap
+            val json = runCatching { app.get(fullUrl).text }.getOrNull() ?: return@safeAmap
 
             val sources = runCatching {
                 JSONObject(json)
                     .optJSONArray("playlist")
                     ?.optJSONObject(0)
                     ?.optJSONArray("sources")
-            }.getOrNull() ?: return@amap
+            }.getOrNull() ?: return@safeAmap
 
             val sourceCount = sources.length()
 

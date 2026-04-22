@@ -74,7 +74,11 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
 import android.content.SharedPreferences
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import java.math.BigInteger
+import kotlin.coroutines.cancellation.CancellationException
 
 val sharedPref: SharedPreferences? = null
 val appGlobalSemaphore = Semaphore(
@@ -2026,5 +2030,23 @@ fun solvePowChallenge(challenge: String, difficulty: Int): String? {
         nonce++
         md.reset()
         if (nonce > 10_000_000) return null
+    }
+}
+
+suspend inline fun <A, B> Iterable<A>.safeAmap(
+    concurrency: Int = 5,
+    crossinline f: suspend (A) -> B?
+): Result<List<B>> = runCatching {
+    withContext(Dispatchers.IO.limitedParallelism(concurrency)) {
+        map { item ->
+            async {
+                try {
+                    f(item)
+                } catch (e: Exception) {
+                    Log.e("safeMap", "Request failed for $item $e")
+                    null
+                }
+            }
+        }.awaitAll().filterNotNull()
     }
 }
