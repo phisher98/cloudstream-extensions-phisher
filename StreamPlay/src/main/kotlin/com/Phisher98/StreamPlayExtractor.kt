@@ -5377,8 +5377,7 @@ object StreamPlayExtractor : StreamPlay() {
             "Cookie" to base64Decode("ZGxlX3VzZXJfaWQ9MzI3Mjk7IGRsZV9wYXNzd29yZD04OTQxNzFjNmE4ZGFiMThlZTU5NGQ1YzY1MjAwOWEzNTs=")
         )
 
-        val searchUrl =
-            "$cinemacity/index.php?do=search&subaction=search&search_start=1&full_search=0&story=$imdbId"
+        val searchUrl = "$cinemacity/?do=search&subaction=search&search_start=0&full_search=0&story=$imdbId"
 
         val pageUrl = safeGet(searchUrl, headers)
             .document

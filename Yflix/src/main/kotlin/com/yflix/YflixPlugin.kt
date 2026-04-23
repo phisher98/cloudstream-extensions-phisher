@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.plugins.Plugin
 
 enum class ServerList(val link: Pair<String, Boolean>) {
     Yflix("https://yflix.to" to true),
-    Moviesz("https://1movies.bz" to true),
+    Moviesz("https://1moviesz.to" to true),
     SOLARMovie("https://solarmovie.fi" to true),
     Sfix("https://sflix.fi" to true),
     FlixTor("https://flixtor.mov" to true),
