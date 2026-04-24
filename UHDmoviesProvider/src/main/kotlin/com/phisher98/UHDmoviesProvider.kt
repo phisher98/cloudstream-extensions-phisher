@@ -135,38 +135,38 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
         }
 
         return if (type == TvType.TvSeries) {
-            var pTags = doc.select("p:has(a:contains(Episode))")
-            if (pTags.isEmpty())
-            {
-                pTags = doc.select("div:has(a:contains(Episode))")
-            }
-
             val tvSeriesEpisodes = mutableListOf<Episode>()
             val episodesMap: MutableMap<Pair<Int, Int>, List<String>> = mutableMapOf()
 
-            pTags.mapNotNull { pTag ->
-                val prevPtag = pTag.previousElementSibling()
-                val details = prevPtag ?. text() ?: ""
-                val realSeason = Regex("""(?:Season |S0)(\d+)""").find(details) ?. groupValues
-                    ?. get(1) ?.toIntOrNull() ?: 0
-                val aTags = pTag.select("a:contains(Episode)")
+            var currentSeason = 1
 
-                aTags.mapNotNull { aTag ->
-                    val realEp = Regex("""Episode\s+(\d+)""").find(aTag.toString()) ?. groupValues ?. get(1) ?.toIntOrNull() ?: 0
-                    val epUrl = aTag.attr("href")
-                    val key = Pair(realSeason, realEp)
+            doc.select("pre, p, a:contains(Episode)").forEach { el ->
+                val seasonMatch = Regex("""(?i)(?:season\s*|S)(\d+)""").find(el.text())
+                if (seasonMatch != null) {
+                    currentSeason = seasonMatch.groupValues[1].toIntOrNull() ?: currentSeason
+                }
 
-                    if(!epUrl.isEmpty()) {
-                        if (episodesMap.containsKey(key)) {
-                            val currentList = episodesMap[key] ?: emptyList()
-                            val newList = currentList.toMutableList()
-                            newList.add(epUrl)
-                            episodesMap[key] = newList
-                        } else {
-                            episodesMap[key] = mutableListOf(epUrl)
-                        }
+                if (el.tagName() == "a" && el.text().contains("Episode",ignoreCase = true)) {
+                    if (el.text().contains("Zip", true)) return@forEach
+
+                    val realEp = Regex("""(?i)Episode\s*(\d+)""")
+                        .find(el.text())
+                        ?.groupValues?.get(1)
+                        ?.toIntOrNull() ?: return@forEach
+
+                    val epUrl = el.attr("href")
+                    if (epUrl.isBlank()) return@forEach
+
+                    val key = Pair(currentSeason, realEp)
+
+                    if (episodesMap.containsKey(key)) {
+                        val currentList = episodesMap[key] ?: emptyList()
+                        val newList = currentList.toMutableList()
+                        newList.add(epUrl)
+                        episodesMap[key] = newList
+                    } else {
+                        episodesMap[key] = mutableListOf(epUrl)
                     }
-
                 }
             }
 
@@ -185,22 +185,12 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                     )
                 }
 
-                val epName =
-                    epMeta?.get("name")?.asText()?.takeIf { it.isNotBlank() }
-                        ?: "Episode ${key.second}"
+                val epName = epMeta?.get("name")?.asText() ?: epMeta?.get("title")?.asText()?.takeIf { it.isNotBlank() } ?: "Episode ${key.second}"
+                val epDesc = epMeta?.get("overview")?.asText() ?: epMeta?.get("description")?.asText() ?: ""
+                val epThumb = epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() } ?: ""
+                val aired = epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() } ?: ""
+                val runtime = epMeta?.get("runtime")?.asText()?.filter { it.isDigit() }?.toIntOrNull()
 
-                val epDesc =
-                    epMeta?.get("overview")?.asText()
-                        ?: epMeta?.get("description")?.asText()
-                        ?: ""
-
-                val epThumb =
-                    epMeta?.get("thumbnail")?.asText()?.takeIf { it.isNotBlank() }
-                        ?: ""
-
-                val aired =
-                    epMeta?.get("firstAired")?.asText()?.takeIf { it.isNotBlank() }
-                        ?: ""
                 tvSeriesEpisodes.add(
                     newEpisode(data) {
                         this.name = epName
@@ -208,6 +198,7 @@ class UHDmoviesProvider : MainAPI() { // all providers must be an instance of Ma
                         this.episode = key.second
                         this.posterUrl = epThumb
                         this.description = epDesc
+                        this.runTime = runtime
                         addDate(aired)
                     }
                 )
