@@ -276,7 +276,7 @@ open class Anichi : MainAPI() {
                 AnichiLoadData(id, dubStatus, eps, trackers?.idMal).toJson()
             ) {
                 this.episode = epNum
-                this.name = meta?.title?.get("en") ?: meta?.title?.get("ja") ?: meta?.title?.get("x-jat") ?: "Episode $eps"
+                this.name = meta?.title?.get("en") ?: "Episode $eps"
                 this.score = Score.from10(meta?.rating)
                 this.posterUrl = meta?.image ?: showData.thumbnail
                 this.description = meta?.overview ?: "No summary available"
