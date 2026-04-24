@@ -8,5 +8,6 @@ class IdlixProviderPlugin: BasePlugin() {
     override fun load() {
         registerMainAPI(IdlixProvider())
         registerExtractorAPI(Jeniusplay())
+        registerExtractorAPI(Majorplay())
     }
 }

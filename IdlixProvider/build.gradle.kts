@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 6
+version = 7
 
 
 cloudstream {
@@ -23,6 +23,6 @@ cloudstream {
         "Anime",
         "AsianDrama",
     )
-    isCrossPlatform = true
+    isCrossPlatform = false
     iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/idlix.png"
 }

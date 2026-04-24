@@ -363,14 +363,20 @@ class IdlixProvider : MainAPI() {
         } ?: return false
 
         val iframeurl = WebViewResolver(
-            interceptUrl = Regex("""/video/"""),
-            additionalUrls = listOf(Regex("""/video/""")),
+            interceptUrl = Regex("""/embed/"""),
+            additionalUrls = listOf(Regex("""/embed/""")),
             useOkhttp = false,
             timeout = 15_000L
         )
 
         val finalUrl = app.get("$mainUrl${embedUrl}", interceptor = iframeurl).url
-        loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
+        Log.d(name,finalUrl)
+
+        if (finalUrl.contains("majorplay"))
+        {
+            Majorplay().getUrl(finalUrl)
+
+        } else loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
         return true
     }
 

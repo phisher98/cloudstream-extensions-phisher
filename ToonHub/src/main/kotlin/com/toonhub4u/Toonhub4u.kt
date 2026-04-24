@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 
 class Toonhub4u : MainAPI() {
-    override var mainUrl              = "https://toonhub4u.me"
+    override var mainUrl              = "https://toonhub4u.co"
     override var name                 = "ToonHub4u"
     override val hasMainPage          = true
     override var lang                 = "hi"
