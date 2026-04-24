@@ -363,8 +363,7 @@ class Yflix : MainAPI() {
 
 
                     val iframeUrl = try {
-                        val iframe = extractVideoUrlFromJson(decodedIframePayload)
-                        app.get(iframe, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
+                        extractVideoUrlFromJson(decodedIframePayload)
                     } catch (e: Exception) {
                         Log.d(name, "Failed to extract video url for lid=$lid : ${e.message}")
                         null

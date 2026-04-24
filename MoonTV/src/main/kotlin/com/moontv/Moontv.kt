@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.phisher98.BuildConfig
@@ -353,8 +354,7 @@ class Moontv : MainAPI() {
                     }
 
                     val iframeUrl = try {
-                        val iframe=extractVideoUrlFromJson(decodedPayload)
-                        app.get(iframe, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
+                        extractVideoUrlFromJson(decodedPayload)
                     } catch (e: Exception) {
                         Log.d(name, "extract failed: ${e.message}")
                         null

@@ -1488,8 +1488,7 @@ object StreamPlayExtractor : StreamPlay() {
                                     .parsed<AnimeKaiResponse>().result
 
                             val decodeiframe = decodeReverse(result)
-                            val iframesrc = extractVideoUrlFromJsonAnimekai(decodeiframe)
-                            val iframe = app.get(iframesrc, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
+                            val iframe = extractVideoUrlFromJsonAnimekai(decodeiframe)
 
                             val nameSuffix = when {
                                 type.contains("soft", ignoreCase = true) -> " [Soft Sub]"
@@ -5283,8 +5282,7 @@ object StreamPlayExtractor : StreamPlay() {
                     }
 
                     val iframeUrl = try {
-                        val iframe = yflixextractVideoUrlFromJson(decodedIframePayload)
-                        app.get(iframe, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
+                        yflixextractVideoUrlFromJson(decodedIframePayload)
                     } catch (e: Exception) {
                         Log.d("Yflix", "Failed to extract video url for lid=$lid : ${e.message}")
                         null

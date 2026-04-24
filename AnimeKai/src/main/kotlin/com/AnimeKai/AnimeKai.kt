@@ -364,8 +364,7 @@ class AnimeKai : MainAPI() {
                 .parsed<Response>().result
             val decodeiframe= decodeReverse(result)
 
-            val iframesrc = extractVideoUrlFromJson(decodeiframe)
-            val iframe = app.get(iframesrc, interceptor = CloudflareKiller()).document.select("iframe").attr("src")
+            val iframe = extractVideoUrlFromJson(decodeiframe)
 
             val nameSuffix = if (type == "softsub") " [Soft Sub]" else ""
             val name = "⌜ AnimeKai ⌟  |  $serverName  | $nameSuffix"
