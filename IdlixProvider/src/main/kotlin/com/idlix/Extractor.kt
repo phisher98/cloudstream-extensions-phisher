@@ -73,7 +73,6 @@ class Jeniusplay : ExtractorApi() {
     }
 }
 
-
 class Majorplay : ExtractorApi() {
     override var name = "Majorplay"
     override var mainUrl = "https://*.majorplay.net"
@@ -87,11 +86,25 @@ class Majorplay : ExtractorApi() {
     ) {
         val document = app.get(url, referer = mainUrl).document
         val m3uLink = document.select("source").attr("src")
-        Log.d(name,m3uLink.toString())
-        generateM3u8(name,
-            m3uLink,
-            mainUrl,
-        ).forEach(callback)
+        Log.d(name, m3uLink.toString())
+        generateM3u8(name, m3uLink, mainUrl).forEach(callback)
 
+        val scripts = document.selectFirst("script:containsData(subtitles)")?.data() ?: return
+
+        val subRegex = Regex("""\\"label\\":\\"([^\\"]*?)\\"[^}]*?\\"path\\":\\"([^\\"]*?)\\"""")
+
+        subRegex.findAll(scripts).forEach { match ->
+            val label = match.groupValues[1]
+            var vttUrl = match.groupValues[2]
+
+            if (!vttUrl.startsWith("http")) {
+                vttUrl = mainUrl.trimEnd('/') + vttUrl
+            }
+
+            subtitleCallback.invoke(
+                newSubtitleFile
+                    (label, vttUrl)
+            )
+        }
     }
 }
