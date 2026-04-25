@@ -4101,25 +4101,27 @@ object StreamPlayExtractor : StreamPlay() {
                 }
             return
         }
+        else
+        {
+            val seasonText = "S${season.toString().padStart(2, '0')}"
+            val episodeText = episode?.let { "E${it.toString().padStart(2, '0')}" }
 
-        val seasonText = "S${season.toString().padStart(2, '0')}"
-        val episodeText = episode?.let { "E${it.toString().padStart(2, '0')}" }
-
-        doc.select("div.episode-download-item")
-            .asSequence()
-            .filter {
-                val text = it.text()
-                text.contains(seasonText, true) &&
-                        (episodeText == null || text.contains(episodeText, true))
+            doc.select("div.episode-download-item")
+                .asSequence()
+                .filter {
+                    val text = it.text()
+                    text.contains(seasonText, true) &&
+                            (episodeText == null || text.contains(episodeText, true))
+                }
+                .flatMap { it.select("div.episode-links > a").asSequence() }
+                .map { it.attr("href") }
+                .distinct()
+                .toList()
+                .safeAmap { href ->
+                    val source = runCatching { getRedirectLinks(href) }.getOrNull() ?: return@safeAmap
+                    loadSourceNameExtractor("4KHDHub", source, "", subtitleCallback, callback)
             }
-            .flatMap { it.select("div.episode-links > a").asSequence() }
-            .map { it.attr("href") }
-            .distinct()
-            .toList()
-            .safeAmap { href ->
-                val source = runCatching { getRedirectLinks(href) }.getOrNull() ?: return@safeAmap
-                loadSourceNameExtractor("4KHDHub", source, "", subtitleCallback, callback)
-            }
+        }
     }
 
 
@@ -4167,7 +4169,13 @@ object StreamPlayExtractor : StreamPlay() {
                 ?: continue
 
             val postTitle = document.optString("post_title").lowercase()
-            val permalink = baseUrl + document.optString("permalink")
+            val rawPermalink = document.optString("permalink")
+
+            val permalink = if (rawPermalink.startsWith("http", ignoreCase = true)) {
+                rawPermalink
+            } else {
+                baseUrl + rawPermalink
+            }
 
             if (postTitle.isBlank() || permalink.isBlank()) continue
 
@@ -4219,8 +4227,9 @@ object StreamPlayExtractor : StreamPlay() {
                     doc.select("h3 a:matches(480|720|1080|2160|4K), h4 a:matches(480|720|1080|2160|4K)")
                 for (linkEl in qualityLinks) {
                     val resolvedLink = linkEl.attr("href")
-                    val resolvedWatch =
-                        if ("id=" in resolvedLink) getRedirectLinks(resolvedLink) else resolvedLink
+                    val resolvedWatch = if ("id=" in resolvedLink) {
+                        runCatching { getRedirectLinks(resolvedLink) }.getOrDefault(resolvedLink)
+                    } else resolvedLink
                     loadSourceNameExtractor(
                         "HDhub4u",
                         resolvedWatch,
@@ -4250,9 +4259,10 @@ object StreamPlayExtractor : StreamPlay() {
 
                             episodeDoc.select("h3 a[href], h4 a[href], h5 a[href]")
                                 .mapNotNull { it.absUrl("href").takeIf { url -> url.isNotBlank() } }
-                                .forEach { link ->
-                                    val resolvedWatch =
-                                        if ("id=" in link) getRedirectLinks(link) else link
+                                .forEach { resolvedLink ->
+                                    val resolvedWatch = if ("id=" in resolvedLink) {
+                                        runCatching { getRedirectLinks(resolvedLink) }.getOrDefault(resolvedLink)
+                                    } else resolvedLink
                                     loadSourceNameExtractor(
                                         "HDhub4u",
                                         resolvedWatch,

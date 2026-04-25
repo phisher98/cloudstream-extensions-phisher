@@ -724,7 +724,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
                 val completed = providersCompleted.incrementAndGet()
                 if (completed % 10 == 0 || completed == totalProviders) {
-                    Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers | ${linksFound.get()} links")
+                    Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers")
                 }
                 Unit
             }
@@ -735,7 +735,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 }
                 val completed = providersCompleted.incrementAndGet()
                 if (completed % 10 == 0 || completed == totalProviders) {
-                    Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers | ${linksFound.get()} links")
+                    Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers")
                 }
                 Unit
             }

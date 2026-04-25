@@ -2034,17 +2034,21 @@ fun solvePowChallenge(challenge: String, difficulty: Int): String? {
 }
 
 suspend inline fun <A, B> Iterable<A>.safeAmap(
-    concurrency: Int = 5,
+    concurrency: Int = 7,
     crossinline f: suspend (A) -> B?
 ): Result<List<B>> = runCatching {
-    withContext(Dispatchers.IO.limitedParallelism(concurrency)) {
+    coroutineScope {
+        val semaphore = Semaphore(concurrency)
+
         map { item ->
-            async {
-                try {
-                    f(item)
-                } catch (e: Exception) {
-                    Log.e("safeMap", "Request failed for $item $e")
-                    null
+            async(Dispatchers.IO) {
+                semaphore.withPermit {
+                    try {
+                        f(item)
+                    } catch (e: Exception) {
+                        Log.e("safeMap", "Request failed for $item $e")
+                        null
+                    }
                 }
             }
         }.awaitAll().filterNotNull()

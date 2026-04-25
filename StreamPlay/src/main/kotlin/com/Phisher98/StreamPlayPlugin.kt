@@ -173,7 +173,6 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Akirabox())
         registerExtractorAPI(BuzzServer())
         registerExtractorAPI(FilemoonV2())
-        registerExtractorAPI(Hubstreamdad())
         registerExtractorAPI(StreamwishHG())
         registerExtractorAPI(PixelServer())
         registerExtractorAPI(Streameeeeee())

@@ -32,9 +32,9 @@ object StreamPlayConcurrency {
 
         val recommendedConcurrency: Int
             get() = when (this) {
-                LOW_END -> 4
-                MID_RANGE -> 15
-                HIGH_END -> 30
+                LOW_END -> 8
+                MID_RANGE -> 20
+                HIGH_END -> 40
             }
 
     }

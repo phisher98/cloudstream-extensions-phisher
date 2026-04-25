@@ -2827,17 +2827,13 @@ class Hubstream : VidStack() {
     override var mainUrl = "https://hubstream.*"
 }
 
-class Hubstreamdad : Hblinks() {
-    override var mainUrl = "https://hblinks.*"
-}
-
 class KumiUns : VidStack() {
     override var mainUrl = "https://kumi.uns.wtf"
 }
 
 open class Hblinks : ExtractorApi() {
     override val name = "Hblinks"
-    override val mainUrl = "https://hblinks.*"
+    override val mainUrl = "https://hblinks.dad"
     override val requiresReferer = true
 
     override suspend fun getUrl(
@@ -2846,7 +2842,7 @@ open class Hblinks : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").map {
+        app.get(url).document.select("h3 a,h5 a,div.entry-content p a").forEach {
             val lower = it.absUrl("href").ifBlank { it.attr("href") }
             val href = lower.lowercase()
             when {
