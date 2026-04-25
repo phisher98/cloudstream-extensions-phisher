@@ -372,11 +372,7 @@ class IdlixProvider : MainAPI() {
         val finalUrl = app.get("$mainUrl${embedUrl}", interceptor = iframeurl).url
         Log.d(name,finalUrl)
 
-        if (finalUrl.contains("majorplay"))
-        {
-            Majorplay().getUrl(finalUrl)
-
-        } else loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
+        loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
         return true
     }
 

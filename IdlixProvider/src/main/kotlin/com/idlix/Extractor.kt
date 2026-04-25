@@ -1,6 +1,7 @@
 package com.idlix
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.newSubtitleFile
@@ -86,7 +87,7 @@ class Majorplay : ExtractorApi() {
     ) {
         val document = app.get(url, referer = mainUrl).document
         val m3uLink = document.select("source").attr("src")
-
+        Log.d(name,m3uLink.toString())
         generateM3u8(name,
             m3uLink,
             mainUrl,
