@@ -42,7 +42,6 @@ import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
 import com.phisher98.StreamPlayExtractor.invokeNuvioStreams
 import com.phisher98.StreamPlayExtractor.invokePlaydesi
-import com.phisher98.StreamPlayExtractor.invokePrimeSrc
 import com.phisher98.StreamPlayExtractor.invokeRidomovies
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
@@ -255,9 +254,6 @@ private val providers by lazy {
         Provider("watch32APIHQ", "Watch32 API HQ") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
                 subtitleCallback, callback)
-        },
-        Provider("primesrc", "PrimeSrc") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokePrimeSrc(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("superstream", "SuperStream") { res, _, callback, token, _ ->
             val status = getDubStatus(res)

@@ -3904,49 +3904,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    suspend fun invokePrimeSrc(
-        imdbId: String? = null,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-
-        val headers = mapOf(
-            "accept" to "*/*",
-            "referer" to if (season == null) "$PrimeSrcApi/embed/movie?imdb=$imdbId" else "$PrimeSrcApi/embed/tv?imdb=$imdbId&season=$season&episode=$episode",
-            "sec-ch-ua" to "\"Chromium\";v=\"140\", \"Not=A?Brand\";v=\"24\", \"Google Chrome\";v=\"140\"",
-            "sec-ch-ua-mobile" to "?0",
-            "sec-ch-ua-platform" to "\"Windows\"",
-            "sec-fetch-dest" to "empty",
-            "sec-fetch-mode" to "cors",
-            "sec-fetch-site" to "same-origin",
-            "user-agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-        )
-        val url = if (season == null) {
-            "$PrimeSrcApi/api/v1/s?imdb=$imdbId&type=movie"
-        } else {
-            "$PrimeSrcApi/api/v1/s?imdb=$imdbId&season=$season&episode=$episode&type=tv"
-        }
-
-        val serverList = safeGet(url, timeout = 30, headers = headers).parsedSafe<PrimeSrcServerList>()
-        serverList?.servers?.safeAmap {
-            val rawServerJson =
-                safeGet("$PrimeSrcApi/api/v1/l?key=${it.key}", timeout = 30, headers = headers).text
-            val jsonObject = JSONObject(rawServerJson)
-            loadSourceNameExtractor(
-                "PrimeWire",
-                jsonObject.optString("link", ""),
-                PrimeSrcApi,
-                subtitleCallback,
-                callback,
-                null,
-                it.fileSize ?: ""
-            )
-        }
-
-    }
-
     suspend fun invokeSuperstream(
         token: String? = null,
         imdbId: String? = null,
