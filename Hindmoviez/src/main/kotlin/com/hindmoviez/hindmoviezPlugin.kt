@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.app
 class HindmoviezPlugin : BasePlugin() {
     override fun load() {
         registerMainAPI(Hindmoviez())
+        registerExtractorAPI(Gdshine())
     }
 
     companion object {

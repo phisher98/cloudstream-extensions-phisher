@@ -350,8 +350,8 @@ private val providers by lazy {
         Provider("flixindia", "FlixIndia") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokFlixindia(res.title,res.year, res.season, res.episode, subtitleCallback, callback)
         },
-        Provider("Hindmoviez", "HindMoviez") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, callback)
+        Provider("Hindmoviez", "HindMoviez") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeHindmoviez(res.imdbId, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("Movies4u", "Movies4u") { res, subtitleCallback, callback, _, _ ->
             invokeMovies4u(res.imdbId, res.title,res.year, res.season, res.episode, subtitleCallback ,callback)

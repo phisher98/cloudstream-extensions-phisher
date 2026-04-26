@@ -5731,6 +5731,7 @@ object StreamPlayExtractor : StreamPlay() {
         id: String?,
         season: Int? = null,
         episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val api = getDomains()?.hindmoviez ?: return
@@ -5760,9 +5761,15 @@ object StreamPlayExtractor : StreamPlay() {
                     val intermediateDoc = safeGet(btn.attr("href"), timeout = 5000L).document
                     val link = intermediateDoc.selectFirst("a.get-link-btn")
                         ?.attr("href")
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { href ->
+                            val baseurl=href.substringBefore("/?id=")
+                            val rawId = href.substringAfter("id=")
+                            hindmoviezsignHShare(rawId, baseurl)
+                        }
                         ?: return@safeAmap
-
-                    getHindMoviezLinks("Hindmoviez", link, callback)
+                    Log.d("Phisher 1",link)
+                    getHindMoviezLinks("Hindmoviez", link, subtitleCallback, callback)
                 }
             } else {
                 // TV Episode
@@ -5780,9 +5787,15 @@ object StreamPlayExtractor : StreamPlay() {
                         .select("h3 > a")
                         .getOrNull(episode - 1)
                         ?.attr("href")
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { href ->
+                            val baseurl = href.substringBefore("/?id=")
+                            val rawId = href.substringAfter("id=")
+                            hindmoviezsignHShare(rawId, baseurl)
+                        }
                         ?: return@safeAmap
 
-                    getHindMoviezLinks("Hindmoviez", episodeLink, callback)
+                    getHindMoviezLinks("Hindmoviez", episodeLink, subtitleCallback, callback)
                 }
             }
         }

@@ -1,6 +1,8 @@
 package com.hindmoviez
 
+import android.net.Uri
 import com.google.gson.Gson
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -27,6 +29,7 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -198,10 +201,13 @@ class Hindmoviez : MainAPI() {
                 if (listUrl.isBlank()) return@amap emptyList()
 
                 app.get(listUrl).document
-                    .select("div.entry-content a")
+                    .select("div.entry-content a:contains(Get Links)")
                     .mapNotNull { anchor ->
                         val href = anchor.absUrl("href")
-                        href.takeIf(String::isNotBlank)
+                        if (href.isBlank()) return@mapNotNull null
+                        val baseurl=href.substringBefore("/?id=")
+                        val rawId = href.substringAfter("id=")
+                        signHShare(rawId,baseurl)
                     }
             }
             .flatten()
@@ -253,7 +259,13 @@ class Hindmoviez : MainAPI() {
                         ?.toIntOrNull()
                         ?: return@episodeLoop
 
-                    val epUrl = epAnchor.absUrl("href")
+                    val href = epAnchor.absUrl("href")
+                        .takeIf { it.isNotBlank() } ?: return@episodeLoop
+
+                    val baseurl=href.substringBefore("/?id=")
+                    val rawId = href.substringAfter("id=")
+
+                    val epUrl = signHShare(rawId, baseurl)
                         .takeIf { it.isNotBlank() }
                         ?: return@episodeLoop
 
@@ -322,7 +334,6 @@ class Hindmoviez : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val links: List<String> = tryParseJson<List<String>>(data) ?: return true
-
         val allRequests = links.flatMap { pageUrl ->
             val pageDoc = app.get(pageUrl, timeout = 10000L).document
 
@@ -349,15 +360,24 @@ class Hindmoviez : MainAPI() {
         }
 
         allRequests.amap { (btnUrl, extractedSpecs, fileSize) ->
+            if (btnUrl.contains("gdshine"))
+            {
+                loadExtractor(btnUrl,"$extractedSpecs[$fileSize]",subtitleCallback,callback)
+            }
             try {
                 val doc = app.get(btnUrl, timeout = 10000L).document
                 val quality: Int = getIndexQuality(
                     doc.selectFirst("div.container h2")?.text() ?: ""
                 )
-
                 doc.select("a.button").forEach { link ->
+
                     val href = link.absUrl("href")
-                    if (href.isNotBlank()) {
+
+                    if (href.contains("gdshine"))
+                    {
+                        loadExtractor(href,"$extractedSpecs[$fileSize]",subtitleCallback,callback)
+                    }
+                    else if (href.isNotBlank()) {
                         callback.invoke(
                             newExtractorLink(
                                 link.text(),

@@ -78,6 +78,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import java.math.BigInteger
+import java.net.URLEncoder
 import kotlin.coroutines.cancellation.CancellationException
 
 val sharedPref: SharedPreferences? = null
@@ -1620,6 +1621,7 @@ fun String?.fixTitle(): String? {
 suspend fun getHindMoviezLinks(
     source: String,
     url: String,
+    subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ) {
     val response = app.get(url, timeout = 10000L)
@@ -1644,20 +1646,41 @@ suspend fun getHindMoviezLinks(
 
         // Primary links
         {
-            val redirectUrl = doc.selectFirst("a.btn-info")?.attr("href") ?: return@runAllAsync
-            val redirectDoc = app.get(redirectUrl, referer = response.url, timeout = 10000L).document
+            val redirectUrls = doc.select("div.btn-group a[href]")
+                .mapNotNull { it.absUrl("href").takeIf(String::isNotBlank) }
 
-            redirectDoc.select("a.button").map { btn ->
-                callback(
-                    newExtractorLink(
-                        source,
+            redirectUrls.forEach { redirectUrl ->
+                if (redirectUrl.contains("gdshine")) {
+                    loadExtractor(
+                        redirectUrl,
                         "$source $extractedSpecs[$fileSize]",
-                        btn.attr("href"),
-                        ExtractorLinkType.VIDEO
-                    ) {
-                        this.quality = quality
-                    }
-                )
+                        subtitleCallback,
+                        callback
+                    )
+                    return@forEach
+                }
+
+                val redirectDoc = app.get(
+                    redirectUrl,
+                    referer = response.url,
+                    timeout = 10000L
+                ).document
+
+                redirectDoc.select("a.button[href]").forEach { btn ->
+                    val href = btn.absUrl("href")
+                    if (href.isBlank()) return@forEach
+
+                    callback(
+                        newExtractorLink(
+                            source,
+                            "$source $extractedSpecs[$fileSize]",
+                            href,
+                            ExtractorLinkType.VIDEO
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
             }
         },
 
@@ -2053,4 +2076,33 @@ suspend inline fun <A, B> Iterable<A>.safeAmap(
             }
         }.awaitAll().filterNotNull()
     }
+}
+
+
+val HindmoviezSECRET = base64Decode("NWU5NjA4NWM1NmUwZjU0ZWRhNjU3NzkwYWM1OGQxOWIyNzE0NzljNTA0MzY3ZmM5ZTZhNmMzM2YxZjgyNGU2Yg==")
+const val HindmoviezSERVER_TIME = 1777223025L
+
+fun hindmoviezbase64Url(input: String): String {
+    return base64Encode(input.toByteArray())
+        .replace("+", "-")
+        .replace("/", "_")
+        .replace("=", "")
+}
+
+fun hindmoviezhmacSha256(key: String, data: String): String {
+    val mac = Mac.getInstance("HmacSHA256")
+    val secretKey = SecretKeySpec(key.toByteArray(), "HmacSHA256")
+    mac.init(secretKey)
+    return mac.doFinal(data.toByteArray())
+        .joinToString("") { "%02x".format(it) }
+        .substring(0, 16)
+}
+
+fun hindmoviezsignHShare(rawId: String, domain: String): String {
+    val now = System.currentTimeMillis() / 1000
+    val offset = HindmoviezSERVER_TIME - now
+    val t = now + offset
+    val encoded = hindmoviezbase64Url(rawId)
+    val s = hindmoviezhmacSha256(HindmoviezSECRET, "$encoded|$t")
+    return "$domain/r.php?d=${URLEncoder.encode(encoded, "UTF-8")}&t=$t&s=$s"
 }

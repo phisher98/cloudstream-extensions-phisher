@@ -1,13 +1,19 @@
 package com.hindmoviez
 
+import android.util.Base64
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.SearchQuality
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.base64Encode
 import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
+import java.net.URLEncoder
 import java.text.Normalizer
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 fun cleanTitle(raw: String?): String {
     if (raw.isNullOrBlank()) return ""
@@ -278,4 +284,32 @@ fun extractSpecs(inputString: String): Map<String, List<String>> {
 fun getIndexQuality(str: String?): Int {
     return Regex("(\\d{3,4})[pP]").find(str ?: "")?.groupValues?.getOrNull(1)?.toIntOrNull()
         ?: Qualities.Unknown.value
+}
+
+val SECRET = base64Decode("NWU5NjA4NWM1NmUwZjU0ZWRhNjU3NzkwYWM1OGQxOWIyNzE0NzljNTA0MzY3ZmM5ZTZhNmMzM2YxZjgyNGU2Yg==")
+const val SERVER_TIME = 1777223025L
+
+fun base64Url(input: String): String {
+    return base64Encode(input.toByteArray())
+        .replace("+", "-")
+        .replace("/", "_")
+        .replace("=", "")
+}
+
+fun hmacSha256(key: String, data: String): String {
+    val mac = Mac.getInstance("HmacSHA256")
+    val secretKey = SecretKeySpec(key.toByteArray(), "HmacSHA256")
+    mac.init(secretKey)
+    return mac.doFinal(data.toByteArray())
+        .joinToString("") { "%02x".format(it) }
+        .substring(0, 16)
+}
+
+fun signHShare(rawId: String, domain: String): String {
+    val now = System.currentTimeMillis() / 1000
+    val offset = SERVER_TIME - now
+    val t = now + offset
+    val encoded = base64Url(rawId)
+    val s = hmacSha256(SECRET, "$encoded|$t")
+    return "$domain/r.php?d=${URLEncoder.encode(encoded, "UTF-8")}&t=$t&s=$s"
 }

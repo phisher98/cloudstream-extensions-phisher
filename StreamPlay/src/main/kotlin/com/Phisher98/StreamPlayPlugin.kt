@@ -203,6 +203,7 @@ class StreamPlayPlugin: Plugin() {
         registerExtractorAPI(Luluvdo())
         registerExtractorAPI(Iqsmartgames())
         registerExtractorAPI(Shikshakdaak())
+        registerExtractorAPI(Gdshine())
 
         openSettings = { ctx ->
             val act = ctx as AppCompatActivity
