@@ -94,7 +94,7 @@ val json = """
     "query": "$query"
 }
 """.trimIndent()
-        val host = app.get(mainUrl, allowRedirects = false).headers["location"]
+        val host = app.get(mainUrl, allowRedirects = false).headers["location"] ?: "${mainUrl}/"
         val mediaType = "application/json".toMediaType()
         val requestBody = json.toRequestBody(mediaType)
         val headers= mapOf(
