@@ -1,6 +1,7 @@
 package com.Animekhor
 
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
@@ -8,6 +9,8 @@ import com.lagradost.cloudstream3.extractors.VidHidePro
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.extractors.VidhideExtractor
 import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -43,6 +46,11 @@ class PlayerDonghuaworld: Rumble() {
     override val requiresReferer = true
 }
 
+class Donghuaplanet: Rumble() {
+    override var mainUrl = "https://player.donghuaplanet.com"
+    override val requiresReferer = true
+}
+
 open class Rumble : ExtractorApi() {
     override var name = "Rumble"
     override var mainUrl = "https://rumble.com"
@@ -60,44 +68,55 @@ open class Rumble : ExtractorApi() {
         val playerScript = document.selectFirst("script:containsData(jwplayer)")?.data()
             ?: return
 
-        // Extract sources (mp4 or m3u8)
-        val sourceRegex = """"file"\s*:\s*"(https:[^"]+\.(?:mp4|m3u8)[^"]*)"""".toRegex()
-        val sources = sourceRegex.findAll(playerScript)
+        val sourcesJson = Regex("""sources\s*:\s*(\[[\s\S]*?])""")
+            .find(playerScript)
+            ?.groupValues?.get(1)
+            ?.replace("\\/", "/")
 
-        for ((index, source) in sources.withIndex()) {
-            val index = index + 1
-            val fileUrl = source.groupValues[1].replace("\\/", "/")
-            if (fileUrl.contains(".mp4"))
-            {
-                callback.invoke(
-                    newExtractorLink(
-                        name,
-                        "$name Video Server $index",
-                        url = fileUrl,
-                        INFER_TYPE
-                    ) {
-                        this.referer = ""
-                        this.quality = getQualityFromName("")
+        sourcesJson?.let { raw ->
+            tryParseJson<List<Map<String, String>>>(raw)?.forEach { source ->
+                val fileUrl = source["file"] ?: return@forEach
+                val label = source["label"] ?: ""
+                val type = source["type"] ?: ""
+
+                try {
+                    when {
+                        type.contains("mpegURL") || fileUrl.contains(".m3u8") ->
+                            M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
+
+                        fileUrl.contains(".mp4") ->
+                            callback.invoke(
+                                newExtractorLink(name, "$name $label", url = fileUrl, INFER_TYPE) {
+                                    this.referer = referer ?: mainUrl
+                                    this.quality = getQualityFromName(label)
+                                }
+                            )
                     }
-                )
-            } else M3u8Helper.generateM3u8(name, fileUrl, mainUrl).forEach(callback)
-            val fallback="${mainUrl}/hls-vod/${url.substringAfter("/embed/v").substringBefore("/")}/playlist.m3u8?u=0&b=0"
+                } catch (e: Exception) {
+                    Log.e(name, "Source failed [$label]: ${e.message}")
+                }
+            }
+        }
+
+        val videoId = url.substringAfter("/embed/v").substringBefore("/")
+        if (videoId.isNotEmpty()) {
+            val fallback = "$mainUrl/hls-vod/$videoId/playlist.m3u8?u=0&b=0"
             M3u8Helper.generateM3u8(name, fallback, mainUrl).forEach(callback)
         }
 
+        val tracksJsonRaw = Regex("""tracks\s*=\s*(\[[\s\S]*?])""")
+            .find(playerScript)
+            ?.groupValues?.get(1)
+            ?.replace("\\/", "/")
 
-        // Extract subtitle tracks
-        val trackRegex = """"file"\s*:\s*"(https:[^"]+\.vtt[^"]*)"\s*,\s*"label"\s*:\s*"([^"]+)"""".toRegex()
-        val tracks = trackRegex.findAll(playerScript)
-
-        for (track in tracks) {
-            val fileUrl = track.groupValues[1].replace("\\/", "/")
-            val label = track.groupValues[2]
-
-            subtitleCallback.invoke(
-                newSubtitleFile(label, fileUrl)
-            )
+        tracksJsonRaw?.let { raw ->
+            tryParseJson<List<Map<String, String>>>(raw)?.forEach { track ->
+                val file = track["file"] ?: return@forEach
+                val label = track["label"] ?: "Unknown"
+                if (file.endsWith(".vtt")) {
+                    subtitleCallback.invoke(newSubtitleFile(label, file))
+                }
+            }
         }
     }
 }
-
