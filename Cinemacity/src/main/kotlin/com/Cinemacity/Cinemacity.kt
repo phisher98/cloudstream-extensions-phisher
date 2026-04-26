@@ -128,7 +128,7 @@ class Cinemacity : MainAPI() {
     override suspend fun search(query: String,page: Int): SearchResponseList {
         val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
         val doc = app.get(
-            $mainUrl/?do=search&subaction=search&search_start=0&full_search=0&story=$encodedQuery,
+            "$mainUrl/?do=search&subaction=search&search_start=0&full_search=0&story=$encodedQuery",
             headers = headers
         ).document
         val res = doc.select("div.dar-short_item").mapNotNull { it.toSearchResult() }
