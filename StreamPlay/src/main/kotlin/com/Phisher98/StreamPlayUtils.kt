@@ -2080,7 +2080,6 @@ suspend inline fun <A, B> Iterable<A>.safeAmap(
 
 
 val HindmoviezSECRET = base64Decode("NWU5NjA4NWM1NmUwZjU0ZWRhNjU3NzkwYWM1OGQxOWIyNzE0NzljNTA0MzY3ZmM5ZTZhNmMzM2YxZjgyNGU2Yg==")
-const val HindmoviezSERVER_TIME = 1777223025L
 
 fun hindmoviezbase64Url(input: String): String {
     return base64Encode(input.toByteArray())
@@ -2099,9 +2098,7 @@ fun hindmoviezhmacSha256(key: String, data: String): String {
 }
 
 fun hindmoviezsignHShare(rawId: String, domain: String): String {
-    val now = System.currentTimeMillis() / 1000
-    val offset = HindmoviezSERVER_TIME - now
-    val t = now + offset
+    val t = System.currentTimeMillis() / 1000
     val encoded = hindmoviezbase64Url(rawId)
     val s = hindmoviezhmacSha256(HindmoviezSECRET, "$encoded|$t")
     return "$domain/r.php?d=${URLEncoder.encode(encoded, "UTF-8")}&t=$t&s=$s"
