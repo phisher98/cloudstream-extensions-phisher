@@ -9,5 +9,6 @@ class AllWishPlugin : BasePlugin() {
         registerMainAPI(AllWish())
         registerExtractorAPI(MegaPlay())
         registerExtractorAPI(Zen())
+        registerExtractorAPI(Vidwish())
     }
 }

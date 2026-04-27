@@ -3,6 +3,7 @@ package com.allwish
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
@@ -65,7 +66,7 @@ class AllWish : MainAPI() {
         return results
     }
 
-    override suspend fun search(query: String,page: Int): SearchResponseList? {
+    override suspend fun search(query: String,page: Int): SearchResponseList {
         val res = app.get("$mainUrl/filter?keyword=$query&page=$page").document
         return searchResponseBuilder(res).toNewSearchResponseList()
     }
@@ -148,11 +149,12 @@ class AllWish : MainAPI() {
                             .parsedSafe<APIResponseUrl>()
                         val realUrl = apiRes?.result?.url ?: ""
 
-                        val epIdWithType = when {
-                            sectionType == "dub" -> "[Dub]"
-                            sectionType == "sub" && isHardSub -> "[Hard Sub]"
+                        val epIdWithType = when (sectionType) {
+                            "dub" -> "[Dub]"
+                            "sub" if isHardSub -> "[Hard Sub]"
                             else -> "[Sub]"
                         }
+                        Log.d("Phisher",realUrl)
                         loadExtractor(realUrl,epIdWithType,subtitleCallback,callback)
                     }
                 }

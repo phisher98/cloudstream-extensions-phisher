@@ -18,8 +18,11 @@ import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
+class Vidwish : MegaPlay() {
+    override var mainUrl: String = "https://vidwish.live"
+}
 
-class MegaPlay : ExtractorApi() {
+open class MegaPlay : ExtractorApi() {
         override val name = "MegaPlay"
         override val mainUrl = "https://megaplay.buzz"
         override val requiresReferer = false
@@ -36,8 +39,8 @@ class MegaPlay : ExtractorApi() {
                 "Accept" to "*/*",
                 "Accept-Language" to "en-US,en;q=0.5",
                 "Accept-Encoding" to "gzip, deflate, br, zstd",
-                "Origin" to "https://megaplay.buzz",
-                "Referer" to "https://megaplay.buzz/",
+                "Origin" to "https://vidwish.live",
+                "Referer" to "https://vidwish.live/",
                 "Connection" to "keep-alive",
                 "Pragma" to "no-cache",
                 "Cache-Control" to "no-cache"
@@ -150,7 +153,7 @@ class MegaPlay : ExtractorApi() {
             val start: Long,
             val end: Long,
         )
-    }
+}
 
     class Zen : ExtractorApi() {
         override val name = "Zen"
