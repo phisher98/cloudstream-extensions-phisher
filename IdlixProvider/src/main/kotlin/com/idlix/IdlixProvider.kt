@@ -1,6 +1,5 @@
 package com.idlix
 
-import android.util.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -18,28 +17,25 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SearchResponseList
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.security.MessageDigest
 import java.text.Normalizer
 
 class IdlixProvider : MainAPI() {
@@ -300,100 +296,36 @@ class IdlixProvider : MainAPI() {
 
         val contentId = parsed.id
         val contentType = parsed.type
-
-        val ts = System.currentTimeMillis()
-        val aclrRes = app.get("$mainUrl/pagead/ad_frame.js?_=$ts").text
-        val aclr = Regex("""__aclr\s*=\s*"([a-f0-9]+)"""")
-            .find(aclrRes)
-            ?.groupValues?.getOrNull(1)
-
-
-        val challengejson = """
-{
-    "contentType": "$contentType",
-    "contentId": "$contentId"${if (aclr != null) ",\n    \"clearance\": \"$aclr\"" else ""}
-}
-""".trimIndent()
-
-        val headers = mapOf(
-            "accept" to "*/*",
-            "content-type" to "application/json",
-            "origin" to mainUrl,
-            "referer" to mainUrl,
-            "user-agent" to USER_AGENT,
-        )
-
-        val challengeRes = app.post(
-            "$mainUrl/api/watch/challenge",
-            requestBody = challengejson.toRequestBody("application/json".toMediaType()),
-            headers = headers
-        ).parsedSafe<ChallengeResponse>() ?: return false
-
-        val nonce = solvePow(
-            challengeRes.challenge,
-            challengeRes.difficulty
-        )
-
+        val res = app.get("$mainUrl/api/watch/play-info/$contentType/$contentId").parsedSafe<Res>()
         val solvejson = """
         {
-        "challenge": "${challengeRes.challenge}",
-        "signature": "${challengeRes.signature}",
-        "nonce": $nonce
+            "claim": "${res?.claim}"
         }
         """.trimIndent()
 
-        val solveRes = app.post(
-            "$mainUrl/api/watch/solve",
-            requestBody = solvejson.toRequestBody("application/json".toMediaType()),
-            headers = mapOf(
-                "accept" to "*/*",
-                "content-type" to "application/json",
-                "origin" to mainUrl,
-                "referer" to mainUrl,
-                "user-agent" to USER_AGENT,
-            )
-        ).text
+        val redeemUrl = res?.redeemUrl ?: return false
 
-        val json = JSONObject(solveRes)
+        val iframeResponse = app.post(
+            redeemUrl,
+            requestBody = solvejson.toRequestBody("application/json".toMediaType())
+        ).parsedSafe<Iframe>()
 
-        val embedUrl = when {
-            json.has("embedUrl") -> json.optString("embedUrl")
-            json.has("url") -> json.optString("url")
-            else -> null
-        } ?: return false
+        iframeResponse?.let { iframe ->
+            iframe.url.takeIf { it.isNotBlank() }
+                ?.let { streamUrl ->
+                    generateM3u8(name, streamUrl, mainUrl).forEach(callback)
+                }
 
-        val iframeurl = WebViewResolver(
-            interceptUrl = Regex("""/embed/"""),
-            additionalUrls = listOf(Regex("""/embed/""")),
-            useOkhttp = false,
-            timeout = 15_000L
-        )
-
-        val finalUrl = app.get("$mainUrl${embedUrl}", interceptor = iframeurl).url
-        Log.d(name,finalUrl)
-
-        loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
-        return true
-    }
-
-    fun solvePow(challenge: String, difficulty: Int): Int {
-        val target = "0".repeat(difficulty)
-
-        var nonce = 0
-        while (true) {
-            val hash = sha256(challenge + nonce)
-
-            if (hash.startsWith(target)) {
-                return nonce
+            iframe.subtitles.forEach { subtitle ->
+                subtitleCallback(
+                    newSubtitleFile(
+                        subtitle.label,
+                        subtitle.path
+                    )
+                )
             }
-
-            nonce++
         }
-    }
-
-    fun sha256(input: String): String {
-        val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
-        return bytes.joinToString("") { "%02x".format(it) }
+        return true
     }
 }
 
@@ -431,3 +363,23 @@ fun getSearchQuality(check: String?): SearchQuality? {
     for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
     return null
 }
+
+
+data class Res(
+    val claim: String,
+    val redeemUrl: String,
+)
+
+data class Iframe(
+    val code: String,
+    val url: String,
+    val expiresAt: Long,
+    val subtitles: List<Subtitle>,
+    val videoId: String,
+)
+
+data class Subtitle(
+    val lang: String,
+    val label: String,
+    val path: String,
+)
