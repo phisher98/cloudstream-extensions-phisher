@@ -1,8 +1,6 @@
 package com.hindmoviez
 
-import android.net.Uri
 import com.google.gson.Gson
-import com.lagradost.api.Log
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -158,10 +156,9 @@ class Hindmoviez : MainAPI() {
         val title = name ?: "Unknown"
         val poster = doc.select("meta[property=og:image]").attr("content")
         val descriptions = doc.select("h3")
-            .firstOrNull { it.text().contains("Storyline", ignoreCase = true) }
+            .firstOrNull { it.text().contains("Storyline", true) }
             ?.nextElementSibling()
-            ?.takeIf { it.tagName() == "p" }
-            ?.text()
+            ?.run { if (tagName() == "p") text() else null }
 
         val typeraw = doc.select("h1.entry-title").text()
         val tvtype = if (typeraw.contains("Season", ignoreCase = true)) TvType.TvSeries else TvType.Movie
