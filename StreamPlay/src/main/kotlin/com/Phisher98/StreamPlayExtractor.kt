@@ -74,7 +74,6 @@ import kotlin.math.max
 
 
 val session = Session(Requests().baseClient)
-val globalSemaphore = Semaphore(5)
 
 val webMutex = Mutex()
 private val streamPlayExtractorGson by lazy { Gson() }
@@ -5884,7 +5883,7 @@ object StreamPlayExtractor : StreamPlay() {
                 seasonBlocks.safeAmap { block ->
                     val headerText = block.previousElementSibling()?.text().orEmpty()
                     if (headerText.contains("Season $season", ignoreCase = true)) {
-                        val seasonLink = block.selectFirst("a.btn")?.attr("href") ?: return@safeAmap
+                        val seasonLink = block.select("a.btn").firstOrNull { !it.text().contains("zip", true) }?.attr("href") ?: return@safeAmap
 
                         val episodeDoc = safeGet(seasonLink).document
                         val episodeBlocks = episodeDoc.select("div.downloads-btns-div")

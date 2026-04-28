@@ -48,7 +48,7 @@ class Movies4u : MainAPI() {
     {
         const val TMDBAPIKEY = "1865f43a0549ca50d341dd9ab8b29f49"
         const val TMDBBASE = "https://image.tmdb.org/t/p/original"
-        const val TMDBAPI = "https://wild-surf-4a0d.phisher1.workers.dev"
+        const val TMDBAPI = "https://api.themoviedb.org/3"
     }
 
     override val mainPage = mainPageOf(
@@ -136,7 +136,7 @@ class Movies4u : MainAPI() {
         val document = app.get(url, headers = headers).document
         var title = document.selectFirst("meta[property=og:title]")?.attr("content")?.substringBefore("(")?.trim() ?: "Unknown Title"
         val hrefList = document.select("div.downloads-btns-div a[href]").map { it.attr("href") }
-        val plot = document.selectFirst("h3.movie-title:contains(Storyline:)")?.nextElementSibling()?.takeIf { it.tagName() == "p" }?.text()
+        val plot = document.select("h3.movie-title").firstOrNull { it.text().contains("storyline", true) }?.nextElementSibling()?.text()?.trim()
         val poster = document.selectFirst("div.post-thumbnail img")?.attr("src")
         val typeraw = document.selectFirst("div.single-service-content h1")?.text() ?: ""
         val tvtype = if (typeraw.contains("Series", true)) TvType.TvSeries else TvType.Movie
@@ -231,7 +231,7 @@ class Movies4u : MainAPI() {
         val episodesMap = HashMap<String, MutableList<String>>()
         document.select("div.download-links-div h4").forEach { h4 ->
                 val seasonNum = Regex("""Season\s*(\d+)""", RegexOption.IGNORE_CASE).find(h4.text())?.groupValues?.getOrNull(1)?.toIntOrNull() ?: return@forEach
-                val qualityLinks = h4.nextElementSibling()?.select("a[href]")?.map { it.attr("href") } ?: return@forEach
+            val qualityLinks = h4.nextElementSibling()?.select("a[href]")?.filterNot { it.text().contains("zip", true) }?.map { it.attr("href") } ?: return@forEach
 
                 qualityLinks.forEach { qualityLink ->
                     try {
