@@ -5378,7 +5378,11 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
 
-        suspend fun emitExtractorLinks(files: String) {
+        val subtitleTracks = cinemacityparseSubtitles(
+            playerJson.optString("subtitle")
+        )
+
+        suspend fun emitExtractorLinks(files: String,seasonNum: Int? = null, episodeNum: Int? = null) {
 
             callback.invoke(
                 newExtractorLink(
@@ -5391,6 +5395,36 @@ object StreamPlayExtractor : StreamPlay() {
                     quality = extractQuality(files)
                 }
             )
+
+            val parts = files.split(",")
+            val audioFiles = parts.filter { it.endsWith(".m4a") }
+
+            audioFiles.forEachIndexed { index, _ ->
+
+                val downloads = cinemacitybuildDownloadLinks(
+                    base = files,
+                    subtitles = subtitleTracks,
+                    selectedAudioIndex = index,
+                    title = "CineCity",
+                    season = seasonNum,
+                    episode = episodeNum
+                )
+
+                downloads.forEach { (dlUrl, quality, lang) ->
+
+                    callback.invoke(
+                        newExtractorLink(
+                            "CineCity",
+                            "CineCity • $lang • Download",
+                            dlUrl,
+                            INFER_TYPE
+                        ) {
+                            referer = pageUrl
+                            this.quality = quality
+                        }
+                    )
+                }
+            }
         }
 
         val first = fileArray.getJSONObject(0)
@@ -5398,7 +5432,9 @@ object StreamPlayExtractor : StreamPlay() {
         // MOVIE
         if (!first.has("folder")) {
             emitExtractorLinks(
-                files = first.getString("file")
+                files = first.getString("file"),
+                seasonNum = null,
+                episodeNum = null
             )
             return
         }
@@ -5430,7 +5466,9 @@ object StreamPlayExtractor : StreamPlay() {
                 if (episode != null && episodeNumber != episode) continue
 
                 emitExtractorLinks(
-                    files = epJson.getString("file")
+                    files = epJson.getString("file"),
+                    seasonNum = seasonNumber,
+                    episodeNum = episodeNumber
                 )
             }
         }

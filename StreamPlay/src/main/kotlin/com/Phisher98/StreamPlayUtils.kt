@@ -2103,3 +2103,139 @@ fun hindmoviezsignHShare(rawId: String, domain: String): String {
     val s = hindmoviezhmacSha256(HindmoviezSECRET, "$encoded|$t")
     return "$domain/r.php?d=${URLEncoder.encode(encoded, "UTF-8")}&t=$t&s=$s"
 }
+
+//Cinemacity
+
+fun cinemacityparseSubtitles(raw: String?): JSONArray {
+    val tracks = JSONArray()
+    if (raw.isNullOrBlank()) return tracks
+
+    raw.split(",").forEach { entry ->
+        val match = Regex("""\[(.+?)](https?://.+)""").find(entry.trim())
+        if (match != null) {
+            tracks.put(
+                JSONObject().apply {
+                    put("language", match.groupValues[1])
+                    put("subtitleUrl", match.groupValues[2])
+                }
+            )
+        }
+    }
+    return tracks
+}
+
+fun cinemacitybuildDownloadLinks(
+    base: String,
+    subtitles: JSONArray?,
+    selectedAudioIndex: Int,
+    title: String,
+    season: Int? = null,
+    episode: Int? = null
+): List<Triple<String, Int, String>> {
+
+    val parts = base.split(",").map { it.trim() }
+
+    val videoFiles = parts.filter { it.endsWith(".mp4") }
+    val audioFiles = parts.filter { it.endsWith(".m4a") }
+
+    if (audioFiles.isEmpty()) return emptyList()
+
+    val audio = audioFiles.getOrNull(selectedAudioIndex) ?: return emptyList()
+    val baseUrl = parts.joinToString(",")
+
+    fun normalizeSubtitle(url: String): String? {
+        val marker = "/public_files/"
+        val idx = url.indexOf(marker)
+        return if (idx != -1) url.substring(idx + marker.length) else null
+    }
+
+    fun filterSubs(video: String): String {
+        val baseName = video.substringAfterLast("/")
+            .substringBefore("_web-dl")
+            .substringBefore("_202")
+
+        return subtitles?.let { arr ->
+            (0 until arr.length())
+                .mapNotNull { i ->
+                    arr.optJSONObject(i)
+                        ?.optString("subtitleUrl")
+                        ?.let { normalizeSubtitle(it) }
+                }
+                .filter { it.contains(baseName) }
+                .distinct()
+                .joinToString(",")
+        } ?: ""
+    }
+
+    fun cleanTitle(input: String): String {
+        return input
+            .replace(Regex("[^0-9A-Za-z\\s._-]"), "")
+            .replace(Regex("[\\s_]+"), ".")
+            .replace(Regex("\\.+"), ".")
+            .trim('.')
+    }
+
+    val langRaw = audio.substringAfterLast("_").substringBefore(".m4a")
+    val lang = langRaw.replace("-", " ")
+        .replaceFirstChar { it.uppercase() }
+
+    val results = mutableListOf<Triple<String, Int, String>>()
+
+    for (video in videoFiles) {
+
+        val quality = cinemacityextractQuality(video)
+
+        val res = video.substringAfterLast("_")
+            .substringBefore(".mp4")
+
+        val name = if (season != null && episode != null) {
+            "${cleanTitle(title)}.S${season}E${episode}.${res}.${lang.replace(" ", ".")}"
+        } else {
+            "${cleanTitle(title)}.${res}.${lang.replace(" ", ".")}"
+        }
+
+        val subs = filterSubs(video)
+
+        val finalUrl = cinemacitymakeDownloadHref(
+            base = baseUrl,
+            videoPath = video,
+            audioPath = audio,
+            subtitlePaths = subs,
+            name = name
+        )
+
+        results += Triple(finalUrl, quality, lang)
+    }
+    return results
+}
+
+fun cinemacitymakeDownloadHref(
+    base: String,
+    videoPath: String,
+    audioPath: String,
+    subtitlePaths: String?,
+    name: String
+): String {
+    val qs = buildString {
+        append("?action=download")
+        append("&video=${URLEncoder.encode(videoPath, "UTF-8")}")
+        append("&audio=${URLEncoder.encode(audioPath, "UTF-8")}")
+        if (!subtitlePaths.isNullOrEmpty()) {
+            append("&subtitle=${URLEncoder.encode(subtitlePaths, "UTF-8")}")
+        }
+        append("&name=${URLEncoder.encode(name, "UTF-8")}")
+    }
+    return base + qs
+}
+
+fun cinemacityextractQuality(url: String): Int {
+    return when {
+        url.contains("2160p") -> Qualities.P2160.value
+        url.contains("1440p") -> Qualities.P1440.value
+        url.contains("1080p") -> Qualities.P1080.value
+        url.contains("720p")  -> Qualities.P720.value
+        url.contains("480p")  -> Qualities.P480.value
+        url.contains("360p")  -> Qualities.P360.value
+        else -> Qualities.Unknown.value
+    }
+}

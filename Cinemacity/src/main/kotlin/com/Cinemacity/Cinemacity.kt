@@ -31,7 +31,9 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.newExtractorLink
@@ -47,7 +49,7 @@ class Cinemacity : MainAPI() {
     override var name = "CinemaCity"
     override var lang = "en"
     override val hasMainPage = true
-    override val hasDownloadSupport = false
+    override val hasDownloadSupport = true
     override val hasChromecastSupport = true
     override val hasQuickSearch = false
     override val supportedTypes = setOf(
@@ -289,7 +291,7 @@ class Cinemacity : MainAPI() {
         val episodeRegex = Regex("Episode\\s*(\\d+)", RegexOption.IGNORE_CASE)
 
         val episodeList = mutableListOf<Episode>()
-
+        Log.d("Phisher",fileArray.toString())
         val movieHrefs: String? = fileArray.optJSONObject(0)
                 ?.takeIf { !it.has("folder") }
                 ?.optString("file")
@@ -432,7 +434,6 @@ class Cinemacity : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
         val obj = JSONObject(data)
 
         obj.optJSONArray("subtitleTracks")?.let { subs ->
@@ -469,7 +470,7 @@ class Cinemacity : MainAPI() {
             callback(
                 newExtractorLink(
                     name,
-                    name,
+                    "$name • HLS • Master ",
                     url,
                     INFER_TYPE
                 ) {
@@ -477,6 +478,36 @@ class Cinemacity : MainAPI() {
                     quality = extractQuality(url)
                 }
             )
+
+            val parts = url.split(",")
+            val audioFiles = parts.filter { it.endsWith(".m4a") }
+
+            audioFiles.forEachIndexed { index, _ ->
+
+                val downloads = buildDownloadLinks(
+                    url,
+                    obj.optJSONArray("subtitleTracks"),
+                    index,
+                    title = name,
+                    season = null,
+                    episode = null
+                )
+
+                downloads.forEach { (dlUrl, quality, lang) ->
+
+                    callback(
+                        newExtractorLink(
+                            name,
+                            "$name • $lang • Download",
+                            dlUrl,
+                            ExtractorLinkType.VIDEO
+                        ) {
+                            referer = mainUrl
+                            this.quality = quality
+                        }
+                    )
+                }
+            }
         }
 
         return true
@@ -494,6 +525,7 @@ class Cinemacity : MainAPI() {
             else -> Qualities.Unknown.value
         }
     }
+
 
     fun parseSubtitles(raw: String?): JSONArray {
         val tracks = JSONArray()
@@ -513,4 +545,114 @@ class Cinemacity : MainAPI() {
         return tracks
     }
 
+    fun buildDownloadLinks(
+        base: String,
+        subtitles: JSONArray?,
+        selectedAudioIndex: Int,
+        title: String,
+        season: Int? = null,
+        episode: Int? = null
+    ): List<Triple<String, Int, String>> {
+
+        val parts = base.split(",").map { it.trim() }
+
+        val videoFiles = parts.filter { it.endsWith(".mp4") }
+        val audioFiles = parts.filter { it.endsWith(".m4a") }
+
+        if (audioFiles.isEmpty()) return emptyList()
+
+        val audio = audioFiles.getOrNull(selectedAudioIndex) ?: return emptyList()
+        val baseUrl = parts.joinToString(",")
+
+        fun normalizeSubtitle(url: String): String? {
+            val marker = "/public_files/"
+            val idx = url.indexOf(marker)
+            return if (idx != -1) url.substring(idx + marker.length) else null
+        }
+
+        fun filterSubs(video: String): String {
+            val baseName = video.substringAfterLast("/")
+                .substringBefore("_web-dl")
+                .substringBefore("_202")
+
+            return subtitles?.let { arr ->
+                (0 until arr.length())
+                    .mapNotNull { i ->
+                        arr.optJSONObject(i)
+                            ?.optString("subtitleUrl")
+                            ?.let { normalizeSubtitle(it) }
+                    }
+                    .filter { it.contains(baseName) }
+                    .distinct()
+                    .joinToString(",")
+            } ?: ""
+        }
+
+        fun cleanTitle(input: String): String {
+            return input
+                .replace(Regex("[^0-9A-Za-z\\s._-]"), "")
+                .replace(Regex("[\\s_]+"), ".")
+                .replace(Regex("\\.+"), ".")
+                .trim('.')
+        }
+
+        val langRaw = audio.substringAfterLast("_").substringBefore(".m4a")
+        val lang = langRaw.replace("-", " ")
+            .replaceFirstChar { it.uppercase() }
+
+        val results = mutableListOf<Triple<String, Int, String>>()
+
+        for (video in videoFiles) {
+
+            val quality = extractQuality(video)
+
+            val res = video.substringAfterLast("_")
+                .substringBefore(".mp4")
+
+            val name = if (season != null && episode != null) {
+                val s = season.toString().padStart(2, '0')
+                val e = episode.toString().padStart(2, '0')
+
+                "${cleanTitle(title)}.S${s}E${e}.${res}.${lang.replace(" ", ".")}"
+            } else {
+                val qualityLabel = "WEB-DL"
+
+                "${cleanTitle(title)}.${qualityLabel}.${res}.${lang.replace(" ", ".")}"
+            }
+
+            val subs = filterSubs(video)
+
+            val finalUrl = makeDownloadHref(
+                base = baseUrl,
+                videoPath = video,
+                audioPath = audio,
+                subtitlePaths = subs,
+                name = name
+            )
+
+            results += Triple(finalUrl, quality, lang)
+        }
+
+        return results
+    }
+
+
+    fun makeDownloadHref(
+        base: String,
+        videoPath: String,
+        audioPath: String,
+        subtitlePaths: String?,
+        name: String
+    ): String {
+        val qs = buildString {
+            append("?action=download")
+            append("&video=${URLEncoder.encode(videoPath, "UTF-8")}")
+            append("&audio=${URLEncoder.encode(audioPath, "UTF-8")}")
+            if (!subtitlePaths.isNullOrEmpty()) {
+                append("&subtitle=${URLEncoder.encode(subtitlePaths, "UTF-8")}")
+            }
+            append("&name=${URLEncoder.encode(name, "UTF-8")}")
+        }
+        return base + qs
+    }
 }
