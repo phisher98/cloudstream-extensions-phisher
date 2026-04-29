@@ -36,7 +36,7 @@ import java.text.Normalizer
 
 class Movies4u : MainAPI() {
     override var mainUrl: String = runBlocking {
-        Movies4uProvider.getDomains()?.movies4u ?: "https://movies4u.kitchen"
+        Movies4uProvider.getDomains()?.movies4u ?: "https://new2.movies4u.style"
     }
     override var name = "Movies4u"
     override val hasMainPage = true
@@ -78,7 +78,7 @@ class Movies4u : MainAPI() {
 
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val aTag = selectFirst("h2 a") ?: return null
+        val aTag = selectFirst("h3 a") ?: return null
         val img = selectFirst("img") ?: return null
 
         val href = fixUrl(aTag.attr("href"))
@@ -272,7 +272,7 @@ class Movies4u : MainAPI() {
             newEpisode(links.distinct().toJson()){
                 this.name=when{
                     !meta?.title.isNullOrBlank()-> meta.title
-                    isCompleteSeason->"Complete Season $seasonNum"
+                    isCompleteSeason->"Episode $epNum"
                     else->"Episode $epNum"
                 }
 

@@ -5804,7 +5804,7 @@ object StreamPlayExtractor : StreamPlay() {
         val searchUrl = "$movies4uAPI/?s=$searchQuery"
 
         val searchDoc = safeGet(searchUrl).document
-        val links = searchDoc.select("article h3 a")
+        val links = searchDoc.select("article h4 a")
 
         links.safeAmap { element ->
             val postUrl = element.attr("href")
