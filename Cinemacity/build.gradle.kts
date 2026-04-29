@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 7
+version = 8
 
 
 cloudstream {
@@ -20,7 +20,7 @@ cloudstream {
         "TvSeries",
     )
     language = "en"
-    iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Cinemacity.png"
+    iconUrl= "https://www.google.com/s2/favicons?domain=cinemacity.cc&sz=%size%"
 
     isCrossPlatform = false
 }

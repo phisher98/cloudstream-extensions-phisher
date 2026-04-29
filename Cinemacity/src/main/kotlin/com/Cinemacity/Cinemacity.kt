@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.fixUrlNull
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -31,7 +32,6 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
@@ -131,7 +131,8 @@ class Cinemacity : MainAPI() {
         val encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString())
         val doc = app.get(
             "$mainUrl/?do=search&subaction=search&search_start=0&full_search=0&story=$encodedQuery",
-            headers = headers
+            headers = headers,
+            interceptor = CloudflareKiller()
         ).document
         val res = doc.select("div.dar-short_item").mapNotNull { it.toSearchResult() }
         return res.toNewSearchResponseList()

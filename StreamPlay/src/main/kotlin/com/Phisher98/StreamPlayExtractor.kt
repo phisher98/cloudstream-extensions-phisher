@@ -5295,7 +5295,7 @@ object StreamPlayExtractor : StreamPlay() {
 
         val searchUrl = "$cinemacity/?do=search&subaction=search&search_start=0&full_search=0&story=$imdbId"
 
-        val pageUrl = safeGet(searchUrl, headers)
+        val pageUrl = safeGet(searchUrl, headers, interceptor = CloudflareKiller())
             .document
             .selectFirst("div.dar-short_item > a")
             ?.attr("href")
