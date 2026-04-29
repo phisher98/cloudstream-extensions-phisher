@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 4
+version = 1
 
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Doremon Show in Hindi"
-    language    = "hi"
+    description = "Anime in Multi Lang"
+    language    = "en"
     authors = listOf("Phisher98")
 
     /**
@@ -22,7 +22,7 @@ cloudstream {
     // You can find a list of available types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf("AnimeMovie","Anime","Cartoon")
-    iconUrl= "https://www.google.com/s2/favicons?domain=dorabash.in&sz=%size%"
+    iconUrl= "https://www.google.com/s2/favicons?domain=animedubhindi.me&sz=%size%"
 
 
     isCrossPlatform = false
