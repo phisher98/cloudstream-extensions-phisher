@@ -29,6 +29,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.getAndUnpack
@@ -1551,162 +1552,113 @@ object StreamPlayExtractor : StreamPlay() {
         val japaneseTitle: String? = null
     )
 
-    /*
     suspend fun invokeHianime(
-        animeIds: List<String?>?,
+        malId: Int?,
         episode: Int?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
         dubtype: String?,
-    ) = invokeHiAnimeAnimeSource(
-        name = "HiAnime",
-        apis = hianimeAPIs,
-        ajax = "/ajax/v2",
-        animeIds = animeIds,
-        episode = episode,
-        subtitleCallback = subtitleCallback,
-        callback = callback,
-        dubtype = dubtype
-    )
+    ) {
+        if (malId == null || episode == null) return
 
-     */
+        val name = "HiAnime"
+        val megaBase = "https://megaplay.buzz"
+        val vidwishBase = "https://vidwish.live"
+        val type = if (dubtype.equals("sub", true)) "sub" else "dub"
 
-    suspend fun invokeKaido(
-        animeIds: List<String?>?,
-        episode: Int?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-        dubtype: String?,
-    ) = invokeHiAnimeAnimeSource(
-        name = "Kaido",
-        apis = listOf("https://kaido.to"),
-        ajax = "/ajax",
-        animeIds = animeIds,
-        episode = episode,
-        subtitleCallback = subtitleCallback,
-        callback = callback,
-        dubtype = dubtype
-    )
+        val megaUrl = "$megaBase/stream/mal/$malId/$episode/$type"
 
-    private suspend fun invokeHiAnimeAnimeSource(
-        name: String,
-        apis: List<String>,
-        ajax: String,
-        animeIds: List<String?>?,
-        episode: Int?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-        dubtype: String?,
-    ) = coroutineScope {
+        val doc = try {
+            app.get(megaUrl, referer = megaUrl).document
+        } catch (_: Exception) {
+            return
+        }
 
-        val headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        val episodeNumber = (episode ?: 1).toString()
-        val isMovie = dubtype == "Movie"
-        val api = apis.random()
+        val player = doc.selectFirst("div.fix-area#megaplay-player") ?: return
+        val dataId = player.attr("data-id").takeIf(String::isNotBlank)
+        val realId = player.attr("data-realid").takeIf(String::isNotBlank)
 
-        val globalLimit = 3
-        val semaphore = Semaphore(globalLimit)
+        suspend fun process(
+            displayName: String,
+            apiUrl: String,
+            referer: String,
+            origin: String
+        ) {
 
-        animeIds?.mapNotNull { it }?.map { animeId ->
-            async {
-                semaphore.withPermit {
-                    try {
-                        val (episodeId, servers) = coroutineScope {
+            val mainHeaders = mapOf(
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
+                "Accept" to "*/*",
+                "Origin" to origin,
+                "Referer" to origin,
+                "Connection" to "keep-alive",
+                "Pragma" to "no-cache",
+                "Cache-Control" to "no-cache"
+            )
 
-                            val episodeDeferred = async {
-                                runCatching {
-                                    withTimeoutOrNull(10000) {
-                                        safeGet(
-                                            "$api$ajax/episode/list/$animeId",
-                                            headers = headers
-                                        ).parsedSafe<HianimeResponses>()?.html
-                                            ?.let { Jsoup.parse(it) }
-                                            ?.select("div.ss-list a")
-                                            ?.find { it.attr("data-number") == episodeNumber }
-                                            ?.attr("data-id")
-                                    }
-                                }.getOrNull()
-                            }
+            try {
+                val json = app.get(
+                    apiUrl,
+                    referer = referer,
+                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                ).parsedSafe<HiAnimeSourcesResponse>() ?: return
 
-                            val serversDeferred = async {
-                                val eid = episodeDeferred.await() ?: return@async null
-                                runCatching {
-                                    withTimeoutOrNull(10000) {
-                                        safeGet(
-                                            "$api$ajax/episode/servers?episodeId=$eid",
-                                            headers = headers
-                                        ).parsedSafe<HianimeResponses>()?.html
-                                            ?.let { Jsoup.parse(it) }
-                                            ?.select("div.item.server-item")
-                                            ?.map {
-                                                Triple(
-                                                    it.text(),
-                                                    it.attr("data-id"),
-                                                    it.attr("data-type")
-                                                )
-                                            }
-                                    }
-                                }.getOrNull()
-                            }
+                val file = json.sources?.file
+                if (!file.isNullOrBlank()) {
+                    generateM3u8(
+                        displayName,
+                        file,
+                        origin,
+                        headers = mainHeaders
+                    ).forEach(callback)
+                }
 
-                            episodeDeferred.await() to serversDeferred.await()
-                        }
-
-                        if (episodeId == null || servers.isNullOrEmpty()) return@async
-
-                        val sourceResults = coroutineScope {
-                            servers.map { (label, serverId, type) ->
-                                async {
-                                    semaphore.withPermit {
-                                        try {
-                                            val resolvedType =
-                                                if (type.equals("raw", true)) "SUB" else type
-
-                                            val allow = when {
-                                                isMovie -> true
-                                                dubtype == null -> false
-                                                else -> resolvedType.contains(dubtype, true)
-                                            }
-
-                                            if (!allow) return@async null
-
-                                            val sourceUrl = withTimeoutOrNull(15000) {
-                                                safeGet(
-                                                    "$api$ajax/episode/sources?id=$serverId",
-                                                    headers = headers
-                                                ).parsedSafe<EpisodeServers>()?.link
-                                            }
-
-                                            if (!sourceUrl.isNullOrBlank()) {
-                                                Triple(label, sourceUrl, resolvedType)
-                                            } else null
-
-                                        } catch (_: Exception) {
-                                            null
-                                        }
-                                    }
-                                }
-                            }.awaitAll().filterNotNull()
-                        }
-
-                        sourceResults.forEach { (label, sourceUrl, resolvedType) ->
-                            loadDisplaySourceNameExtractor(
-                                name,
-                                "⌜ $name ⌟ | ${label.uppercase()} | ${resolvedType.uppercase()}",
-                                sourceUrl,
-                                "",
-                                subtitleCallback,
-                                callback
-                            )
-                        }
-
-                    } catch (_: Exception) {
+                val tracks = json.tracks
+                if (!tracks.isNullOrEmpty()) {
+                    tracks.forEach {
+                        val sub = it.file ?: return@forEach
+                        subtitleCallback(newSubtitleFile(it.label ?: "Unknown", sub))
                     }
                 }
-            }
-        }?.awaitAll()
-    }
 
+            } catch (_: Exception) {
+                // isolated failure
+            }
+        }
+
+        // -------- MegaPlay --------
+        dataId?.let {
+            process(
+                displayName = "[$name] MegaPlay",
+                apiUrl = "$megaBase/stream/getSources?id=$it&id=$it",
+                referer = megaUrl,
+                origin = "$megaBase/"
+            )
+        }
+
+        // -------- Vidwish --------
+        realId?.let { rid ->
+            val vidPage = "$vidwishBase/stream/s-2/$rid/$type"
+
+            try {
+                val vidDoc = app.get(vidPage, referer = megaUrl).document
+
+                val vidPlayer = vidDoc.selectFirst("div.fix-area#megaplay-player")
+                val vidDataId = vidPlayer?.attr("data-id")?.takeIf(String::isNotBlank)
+
+                vidDataId?.let { vidId ->
+                    process(
+                        displayName = "[$name] Vidwish",
+                        apiUrl = "$vidwishBase/stream/getSources?id=$vidId&id=$vidId",
+                        referer = vidPage,
+                        origin = "$vidwishBase/"
+                    )
+                }
+
+            } catch (_: Exception) {
+                // ignore
+            }
+        }
+    }
 
     suspend fun invokeKickAssAnime(
         engtitle: String?,

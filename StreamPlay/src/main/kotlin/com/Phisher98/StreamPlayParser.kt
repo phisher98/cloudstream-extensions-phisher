@@ -1011,3 +1011,23 @@ data class HexaSource(
     val server: String? = null,
     val url: String? = null
 )
+
+//MegaPlaybuzz HiAnime
+
+data class HiAnimeSourcesResponse(
+    val sources: HiAnimeSources?,
+    val tracks: List<HiAnimeTrack>?,
+    val t: Long?,
+    val server: Long?,
+)
+
+data class HiAnimeSources(
+    val file: String?,
+)
+
+data class HiAnimeTrack(
+    val file: String?,
+    val label: String?,
+    val kind: String?,
+    val default: Boolean?
+)

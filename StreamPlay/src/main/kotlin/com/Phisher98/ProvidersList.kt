@@ -23,8 +23,8 @@ import com.phisher98.StreamPlayExtractor.invokeEmbedMaster
 import com.phisher98.StreamPlayExtractor.invokeFilmyfiy
 import com.phisher98.StreamPlayExtractor.invokeHdmovie2
 import com.phisher98.StreamPlayExtractor.invokeHexa
+import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeHindmoviez
-import com.phisher98.StreamPlayExtractor.invokeKaido
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
 import com.phisher98.StreamPlayExtractor.invokeKisskh
 import com.phisher98.StreamPlayExtractor.invokeLevidia
@@ -130,18 +130,13 @@ private val providers by lazy {
         Provider("uhdmovies", "UHD Movies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeUhdmovies(res.title, res.year, res.season, res.episode, callback, subtitleCallback)
         },
-        /*
         Provider("hianime", "HiAnime") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
-                invokeHianime(getAnimeIds(res).zoroIds, res.episode, subtitleCallback, callback, getDubStatus(res))
+                val ids = getAnimeIds(res)
+                ids.malId?.let { invokeHianime(it, res.episode, subtitleCallback, callback, getDubStatus(res)) }
             }
         },
-         */
-        Provider("kaido", "Kaido") { res, subtitleCallback, callback, _, _ ->
-            if (res.isAnime) {
-                invokeKaido(getAnimeIds(res).zoroIds, res.episode, subtitleCallback, callback, getDubStatus(res))
-            }
-        },
+
         Provider("animetosho", "AnimeTosho") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
