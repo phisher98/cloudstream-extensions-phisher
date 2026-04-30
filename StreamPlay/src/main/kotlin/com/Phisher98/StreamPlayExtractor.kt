@@ -1552,6 +1552,7 @@ object StreamPlayExtractor : StreamPlay() {
         val japaneseTitle: String? = null
     )
 
+    //Broken for now
     suspend fun invokeHianime(
         malId: Int?,
         episode: Int?,
@@ -1564,6 +1565,7 @@ object StreamPlayExtractor : StreamPlay() {
         val name = "HiAnime"
         val megaBase = "https://megaplay.buzz"
         val vidwishBase = "https://vidwish.live"
+        val megacloudbloggy = "https://megacloud.bloggy.click"
         val type = if (dubtype.equals("sub", true)) "sub" else "dub"
 
         val megaUrl = "$megaBase/stream/mal/$malId/$episode/$type"
@@ -1651,6 +1653,30 @@ object StreamPlayExtractor : StreamPlay() {
                         apiUrl = "$vidwishBase/stream/getSources?id=$vidId&id=$vidId",
                         referer = vidPage,
                         origin = "$vidwishBase/"
+                    )
+                }
+
+            } catch (_: Exception) {
+                // ignore
+            }
+        }
+
+        // -------- Megacloudbloggy --------
+        realId?.let { rid ->
+            val megacloudPage = "$megacloudbloggy/stream/s-3/$rid/$type"
+
+            try {
+                val megacloudDoc = app.get(megacloudPage, referer = megaUrl).document
+
+                val megacloudPlayer = megacloudDoc.selectFirst("div.fix-area#megaplay-player")
+                val megacloudDataId = megacloudPlayer?.attr("data-id")?.takeIf(String::isNotBlank)
+
+                megacloudDataId?.let { vidId ->
+                    process(
+                        displayName = "[$name] MegaCloud",
+                        apiUrl = "$megacloudbloggy/stream/getSources?id=$vidId&id=$vidId",
+                        referer = megacloudbloggy,
+                        origin = "$megacloudbloggy/"
                     )
                 }
 

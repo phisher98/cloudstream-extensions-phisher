@@ -9,6 +9,7 @@ import com.Anichi.AnichiParser.Edges
 import com.Anichi.AnichiParser.JikanResponse
 import com.Anichi.AnichiUtils.aniToMal
 import com.Anichi.AnichiUtils.getTracker
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorRole
 import com.lagradost.cloudstream3.AnimeSearchResponse
@@ -142,7 +143,7 @@ open class Anichi : MainAPI() {
 
     private fun Edges.toSearchResponse(): AnimeSearchResponse? {
         return newAnimeSearchResponse(
-                name ?: englishName ?: nativeName ?: "",
+            englishName ?: name ?: nativeName ?: "",
                 Id ?: return null,
                 fix = false
         ) {
@@ -224,6 +225,7 @@ open class Anichi : MainAPI() {
         val showData = res.parsedSafe<Detail>()?.data?.show ?: return null
 
         val title = showData.name
+
         val description = showData.description
 
         val trackers =
@@ -253,7 +255,7 @@ open class Anichi : MainAPI() {
         val fanart = animeMetadata?.images
             ?.firstOrNull { it.coverType.equals("Fanart", ignoreCase = true) }
             ?.url
-
+        val engtitle = animeMetadata?.titles?.get("en") ?: showData.englishName
         val backgroundposter = fanart ?: data?.bannerImage ?: trackers?.coverImage?.large
 
         val logotvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
@@ -304,11 +306,10 @@ open class Anichi : MainAPI() {
 
         val tvType = if (showData.type?.contains("movie", ignoreCase = true) == true) TvType.AnimeMovie else TvType.Anime
 
-        return newAnimeLoadResponse(title ?: "", url, tvType) {
-            this.engName = showData.altNames?.firstOrNull()
+        return newAnimeLoadResponse(engtitle ?: title ?: "", url, tvType) {
+            this.engName = engtitle
             this.posterUrl = poster ?: trackers?.coverImage?.extraLarge ?: trackers?.coverImage?.large
             this.backgroundPosterUrl = backgroundposter ?: trackers?.coverImage?.extraLarge
-            try { this.logoUrl = logoUrl } catch(_:Throwable){}
             this.score = Score.from100(showData.averageScore)
             this.tags = showData.genres
             this.year = showData.airedStart?.year
