@@ -4,9 +4,12 @@ import com.lagradost.api.Log
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.runBlocking
 
 class Toonstream : MainAPI() {
-    override var mainUrl              = "https://toonstream.dad"
+    override var mainUrl: String = runBlocking {
+        ToonstreamProvider.getDomains()?.Toonstream ?: "https://toonstream.vip"
+    }
     override var name                 = "Toonstream"
     override val hasMainPage          = true
     override var lang                 = "hi"

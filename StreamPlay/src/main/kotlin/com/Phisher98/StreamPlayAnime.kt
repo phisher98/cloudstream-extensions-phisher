@@ -47,6 +47,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnichi
 import com.phisher98.StreamPlayExtractor.invokeAnimeKai
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
+import com.phisher98.StreamPlayExtractor.invokeAnimex
 import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeHianime
 import com.phisher98.StreamPlayExtractor.invokeKickAssAnime
@@ -339,6 +340,7 @@ class StreamPlayAnime : MainAPI() {
             { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
             { invokeKickAssAnime(zorotitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnimeKai(animekaiid , episode, subtitleCallback, callback, dubStatus) },
+            { invokeAnimex(malId, aniid, zorotitle, episode, subtitleCallback, callback, dubStatus) },
             {
                 malId?.let {
                     invokeAnimetosho(

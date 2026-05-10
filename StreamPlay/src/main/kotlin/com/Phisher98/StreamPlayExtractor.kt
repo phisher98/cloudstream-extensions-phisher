@@ -1134,19 +1134,200 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    private fun similarity(a: String?, b: String?): Double {
-        if (a.isNullOrBlank() || b.isNullOrBlank()) return 0.0
-        val tokensA = a.lowercase().split(nonWordSplitRegex).toSet()
-        val tokensB = b.lowercase().split(nonWordSplitRegex).toSet()
-        if (tokensA.isEmpty() || tokensB.isEmpty()) return 0.0
-        val intersection = tokensA.intersect(tokensB).size
-        return intersection.toDouble() / max(tokensA.size, tokensB.size)
+    suspend fun invokeAnimex(
+        malId: Int? = null,
+        anilistId: Int? = null,
+        title: String? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+        dubtype: String?
+    ) {
+        val isMovie = dubtype == "Movie"
+        val json = "application/json; charset=utf-8".toMediaType()
+        val epNum = if (isMovie) 1 else (episode ?: return)
+        val searchTitle = title ?: return
+
+        val headers = mapOf(
+            "Origin" to base64Decode("aHR0cHM6Ly9hbmltZXgub25l"),
+            "Referer" to base64Decode("aHR0cHM6Ly9hbmltZXgub25lLw=="),
+            "User-Agent" to USER_AGENT,
+            "Content-Type" to "application/json"
+        )
+
+        val body = """
+        {
+          "query":"query FastSearch(${'$'}query: String, ${'$'}limit: Int) { catalogAnime(filter: { query: ${'$'}query }, limit: ${'$'}limit) { items { id anilistId malId titleRomaji titleEnglish format } } }",
+          "variables":{
+            "query":"$searchTitle",
+            "limit":10
+          }
+        }
+    """.trimIndent()
+
+        val response = app.post(
+            base64Decode("aHR0cHM6Ly9ncmFwaHFsLmFuaW1leC5vbmUvZ3JhcGhxbA=="),
+            requestBody = body.toRequestBody(json),
+            headers = headers
+        ).parsedSafe<SearchResponse>() ?: return
+
+        val anime = response.data.catalogAnime.items.firstOrNull {
+            when {
+                anilistId != null -> it.anilistId == anilistId
+                malId != null -> it.malId == malId
+                else -> false
+            }
+        } ?: response.data.catalogAnime.items.firstOrNull {
+            it.titleEnglish.equals(searchTitle, true) ||
+                    it.titleRomaji.equals(searchTitle, true)
+        } ?: response.data.catalogAnime.items.firstOrNull() ?: return
+
+        val servers = app.get(
+            base64Decode("aHR0cHM6Ly9wcC5hbmltZXgub25lL3Jlc3QvYXBpL3NlcnZlcnM="),
+            params = mapOf(
+                "id" to anime.id,
+                "epNum" to epNum.toString()
+            ),
+            headers = headers
+        ).parsedSafe<ServerResponse>() ?: return
+
+        val requestTypes = when {
+            isMovie -> listOf("sub", "dub")
+            dubtype.equals("dub", true) -> listOf("dub")
+            else -> listOf("sub")
+        }
+
+        val providers = buildList {
+
+            if ("sub" in requestTypes) {
+                servers.subProviders.forEach {
+                    add("sub" to it.id)
+                }
+            }
+
+            if ("dub" in requestTypes) {
+                servers.dubProviders.forEach {
+                    add("dub" to it.id)
+                }
+            }
+        }.sortedBy { (type, id) ->
+
+            val provider = when (type) {
+                "sub" -> servers.subProviders.find { it.id == id }
+                else -> servers.dubProviders.find { it.id == id }
+            }
+
+            !(provider?.default ?: false)
+        }
+
+        for ((type, providerId) in providers) {
+
+            delay((400L..900L).random())
+
+            runCatching {
+
+                val sourceResponse = app.get(
+                    base64Decode("aHR0cHM6Ly9wcC5hbmltZXgub25lL3Jlc3QvYXBpL3NvdXJjZXM="),
+                    params = mapOf(
+                        "id" to anime.id,
+                        "epNum" to epNum.toString(),
+                        "type" to type,
+                        "providerId" to providerId
+                    ),
+                    headers = headers
+                ).parsedSafe<SourceResponse>() ?: return@runCatching
+
+                val referer = sourceResponse.headers?.get("Referer")
+                    ?: "https://animex.one/"
+
+
+                sourceResponse.sources?.forEach { source ->
+                    val providerInfo = when (type) {
+                        "sub" -> servers.subProviders.find { it.id == providerId }
+                        else -> servers.dubProviders.find { it.id == providerId }
+                    }
+
+                    val subType = providerInfo?.tip
+                        ?.substringBefore(",")
+                        ?.trim()
+                        ?: "Unknown"
+
+                    callback.invoke(
+                        newExtractorLink(
+                            "Animex",
+                            "Animex [$subType] [${type.replaceFirstChar(Char::uppercase)}] [${providerId.replaceFirstChar(Char::uppercase)}]",
+                            source.url
+                        ) {
+                            this.referer = referer
+                            quality = getQualityFromName(source.quality)
+                                .takeIf { it != Qualities.Unknown.value }
+                                ?: Qualities.P1080.value                        }
+                    )
+                }
+
+                sourceResponse.tracks?.forEach { track ->
+                    track.file?.let {
+                        subtitleCallback.invoke(
+                            newSubtitleFile(
+                                track.label ?: "Unknown",
+                                it
+                            )
+                        )
+                    }
+                }
+
+            }.onFailure {
+                println("Animex failed [$type][$providerId] : ${it.message}")
+            }
+        }
     }
 
-    data class AnimeKaiSearchResult(
+    data class SearchResponse(
+        val data: SearchData
+    )
+
+    data class SearchData(
+        val catalogAnime: CatalogAnime
+    )
+
+    data class CatalogAnime(
+        val items: List<AnimeItem>
+    )
+
+    data class AnimeItem(
         val id: String,
-        val title: String,
-        val japaneseTitle: String? = null
+        val anilistId: Int?,
+        val malId: Int?,
+        val titleRomaji: String?,
+        val titleEnglish: String?,
+        val format: String?
+    )
+
+    data class ServerResponse(
+        val subProviders: List<Provider> = emptyList(),
+        val dubProviders: List<Provider> = emptyList()
+    )
+
+    data class Provider(
+        val id: String,
+        val default: Boolean? = false,
+        val tip: String? = null
+    )
+
+    data class SourceResponse(
+        val sources: List<VideoSource>? = null,
+        val tracks: List<Track>? = null,
+        val headers: Map<String, String>? = null
+    )
+
+    data class VideoSource(
+        val url: String,
+        val quality: String? =null
+    )
+
+    data class Track(
+        val file: String? = null,
+        val label: String? = null
     )
 
     //Broken for now

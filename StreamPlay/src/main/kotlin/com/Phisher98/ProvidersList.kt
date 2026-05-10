@@ -9,6 +9,7 @@ import com.phisher98.StreamPlayExtractor.invokeAnichi
 import com.phisher98.StreamPlayExtractor.invokeAnimeKai
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
+import com.phisher98.StreamPlayExtractor.invokeAnimex
 import com.phisher98.StreamPlayExtractor.invokeAnizone
 import com.phisher98.StreamPlayExtractor.invokeBollyflix
 import com.phisher98.StreamPlayExtractor.invokeCineVood
@@ -139,6 +140,12 @@ private val providers by lazy {
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
                 ids.animekaiId?.let { invokeAnimeKai(it, res.episode, subtitleCallback, callback, getDubStatus(res)) }
+            }
+        },
+        Provider("Animex", "Animex") { res, subtitleCallback, callback, _, _ ->
+            if (res.isAnime) {
+                val ids = getAnimeIds(res)
+                invokeAnimex(ids.malId, ids.anilistId, res.title, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("kickass", "KickAssAnime") { res, subtitleCallback, callback, _, _ ->

@@ -86,7 +86,7 @@ class Majorplay : ExtractorApi() {
     ) {
         val document = app.get(url, referer = mainUrl).document
         val m3uLink = document.select("source").attr("src")
-        Log.d(name, m3uLink.toString())
+        Log.d(name, m3uLink)
         generateM3u8(name, m3uLink, mainUrl).forEach(callback)
 
         val scripts = document.selectFirst("script:containsData(subtitles)")?.data() ?: return
