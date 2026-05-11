@@ -1908,10 +1908,11 @@ object StreamPlayExtractor : StreamPlay() {
                 .replace("+", "%20")
         }
 
-        var headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Connection" to "keep-alive",
-            "Origin" to "https://player.videasy.net",
+        val headers = mapOf(
+            "Accept" to "*/*",
+            "User-Agent" to USER_AGENT,
+            "Origin" to "https://www.cineby.sc",
+            "Referer" to "https://www.cineby.sc/"
         )
 
         val servers = listOf(
@@ -1922,10 +1923,16 @@ object StreamPlayExtractor : StreamPlay() {
             "m4uhd",
             "hdmovie",
             "cdn",
-            "primesrcme"
+            "primesrcme",
+            "visioncine",
+            "overflix",
+            "superflix",
+            "cuevana",
+            "lamovie",
+            "mb-flix",
         )
 
-        if (title == null) return
+        if(title == null) return
 
         val firstPass = quote(title)
         val encTitle = quote(firstPass)
@@ -1937,16 +1944,15 @@ object StreamPlayExtractor : StreamPlay() {
                 "$videasyAPI/$server/sources-with-title?title=$encTitle&mediaType=tv&year=$year&tmdbId=$tmdbId&episodeId=$episode&seasonId=$season&imdbId=$imdbId"
             }
 
-            val enc_data = safeGet(url, headers = headers).text
+            val encdata = safeGet(url, headers = headers).text
 
-            val jsonBody = """{"text":"$enc_data","id":"$tmdbId"}"""
-            val requestBody = jsonBody.toRequestBody("application/json".toMediaType())
+            val jsonBody = mapOf("text" to encdata, "id" to tmdbId)
             val response = app.post(
                 "https://enc-dec.app/api/dec-videasy",
-                requestBody = requestBody
+                json = jsonBody
             )
 
-            if (response.isSuccessful) {
+            if(response.isSuccessful) {
                 val json = response.text
                 val result = JSONObject(json).getJSONObject("result")
 
@@ -1955,32 +1961,19 @@ object StreamPlayExtractor : StreamPlay() {
                     val obj = sourcesArray.getJSONObject(i)
                     val quality = obj.getString("quality")
                     val source = obj.getString("url")
-                    var type = INFER_TYPE
 
-                    if (source.contains(".m3u8")) {
-                        headers = headers + mapOf(
-                            "Accept" to "application/vnd.apple.mpegurl,application/x-mpegURL,*/*",
-                            "Referer" to "$videasyAPI/"
-                        )
-                        type = ExtractorLinkType.M3U8
-                    } else if (source.contains(".mp4")) {
-                        headers = headers + mapOf(
-                            "Accept" to "video/mp4,*/*",
-                            "Range" to "bytes=0-",
-                        )
-                        type = ExtractorLinkType.VIDEO
-                    } else if (source.contains(".mkv")) {
-                        headers = headers + mapOf(
-                            "Accept" to "video/x-matroska,*/*",
-                            "Range" to "bytes=0-",
-                        )
-                        type = ExtractorLinkType.VIDEO
+                    val type = if(source.contains(".m3u8")) {
+                        ExtractorLinkType.M3U8
+                    } else if(source.contains(".mp4") || source.contains(".mkv")) {
+                        ExtractorLinkType.VIDEO
+                    } else {
+                        INFER_TYPE
                     }
 
                     callback.invoke(
                         newExtractorLink(
                             "Videasy[${server.uppercase()}]",
-                            "Videasy[${server.uppercase()}] $quality",
+                            "Videasy[${server.uppercase()}]",
                             source,
                             type
                         ) {
