@@ -26,7 +26,7 @@ class FourKHDHub : MainAPI() {
 
     companion object
     {
-        const val TMDBAPI = "https://wild-surf-4a0d.phisher1.workers.dev"
+        const val TMDBAPI = "https://api.themoviedb.org/3"
         const val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
         private const val SIMKL = "https://api.simkl.com"
         const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"

@@ -52,7 +52,7 @@ class HDhub4uProvider : MainAPI() {
     {
         const val TMDBAPIKEY = "1865f43a0549ca50d341dd9ab8b29f49"
         const val TMDBBASE = "https://image.tmdb.org/t/p/original"
-        const val TMDBAPI = "https://wild-surf-4a0d.phisher1.workers.dev"
+        const val TMDBAPI = "https://api.themoviedb.org/3"
         const val TAG = "EpisodeParser"
     }
 
@@ -105,7 +105,7 @@ class HDhub4uProvider : MainAPI() {
 
     override suspend fun search(query: String, page: Int): SearchResponseList {
         val response = app.get(
-            "https://search.pingora.fyi/collections/post/documents/search" +
+            "https://search.hdhub4u.glass/collections/post/documents/search" +
                     "?q=$query" +
                     "&query_by=post_title,category" +
                     "&query_by_weights=4,2" +

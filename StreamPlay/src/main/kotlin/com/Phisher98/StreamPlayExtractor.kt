@@ -3539,7 +3539,7 @@ object StreamPlayExtractor : StreamPlay() {
         if (title.isNullOrBlank()) return
 
         val response = safeGet(
-            "https://search.pingora.fyi/collections/post/documents/search" +
+            "https://search.hdhub4u.glass/collections/post/documents/search" +
                     "?q=$title" +
                     "&query_by=post_title,category" +
                     "&query_by_weights=4,2" +
