@@ -83,10 +83,10 @@ class Cinemacity : MainAPI() {
     override val mainPage = mainPageOf(
         "movies" to "Movies",
         "tv-series" to "TV Series",
-        "xfsearch/genre/anime" to "Anime",
-        "xfsearch/genre/asian" to "Asian",
-        "xfsearch/genre/animation" to "Animation",
-        "xfsearch/genre/documentary" to "Documentary",
+        //"xfsearch/genre/anime" to "Anime",
+        //"xfsearch/genre/asian" to "Asian",
+        //"xfsearch/genre/animation" to "Animation",
+        //"xfsearch/genre/documentary" to "Documentary",
     )
 
     override suspend fun getMainPage(

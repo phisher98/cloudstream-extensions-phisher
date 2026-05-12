@@ -26,13 +26,16 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 class Pmsm : MainAPI() {
-    override var mainUrl = "https://ww192.pencurimoviesubmalay.motorcycles"
+    override var mainUrl: String = runBlocking {
+        PmsmPlugin.getDomains()?.pencurimoviesubmalay ?: "https://ww105.pencurimoviesubmalay.guru"
+    }
     override var name = "PMSM"
     override val hasMainPage = true
     override var lang = "id"
@@ -199,12 +202,6 @@ class Pmsm : MainAPI() {
     private fun extractYear(text: String?): Int? {
         return Regex("""(19|20)\d{2}""").find(text.orEmpty())?.value?.toIntOrNull()
     }
-
-    private data class ZetaOption(
-        val post: String,
-        val nume: String,
-        val type: String
-    )
 
     private data class ZetaPlayerResponse(
         @param:JsonProperty("embed_url") val embedUrl: String? = null,
