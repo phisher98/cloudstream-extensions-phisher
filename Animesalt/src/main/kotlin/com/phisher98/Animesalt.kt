@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -97,7 +98,7 @@ class Animesalt : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         val title =document.selectFirst("h1")?.text()?: throw NotImplementedError("Unable to find title")
-        val poster = fixUrlNull(document.selectFirst("div.bd > div:nth-child(1) > img")?.attr("src"))
+        val poster = fixUrlNull(document.selectFirst("div.bd > div:nth-child(1) > img")?.attr("data-src"))
         val backgroundposter = fixUrlNull(document.selectFirst("div.bgft img")?.attr("data-src"))
         val sections = listOf("Genres", "Languages")
         val tags: List<String> = sections.flatMap { label ->
@@ -157,7 +158,7 @@ class Animesalt : MainAPI() {
                 this.recommendations = recommendations
             }
         } else {
-            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+            newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backgroundposter
                 this.year = year
@@ -173,7 +174,7 @@ class Animesalt : MainAPI() {
             subtitleCallback: (SubtitleFile) -> Unit,
             callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("#options-0 iframe").forEach { iframeElement ->
+        app.get(data).document.select("iframe").forEach { iframeElement ->
             loadExtractor(iframeElement.attr("data-src"),mainUrl,subtitleCallback, callback)
         }
         return true
