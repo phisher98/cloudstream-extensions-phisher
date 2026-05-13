@@ -33,7 +33,6 @@ import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.token
 import org.json.JSONObject
-import java.net.URLEncoder
 
 
 class StreamPlayStremioCatelog(
@@ -98,12 +97,15 @@ class StreamPlayStremioCatelog(
             val metaJson = JSONObject(json).getJSONObject("meta").toString()
             parseJson(metaJson)
         }
+        val encodedId = res.id
 
-        val encodedId = URLEncoder.encode(res.id, "UTF-8")
-
-        val response = app.get("${mainUrl}/meta/${res.type}/$encodedId.json")
+        var response = app.get("${mainUrl}/meta/${res.type}/$encodedId.json")
             .parsedSafe<CatalogResponse>()
-            ?: throw RuntimeException("Failed to load meta")
+
+        if (response == null) {
+            response = app.get("https://v3-cinemeta.strem.io/meta/${res.type}/$encodedId.json")
+                .parsedSafe<CatalogResponse>() ?: throw RuntimeException("Failed to load meta")
+        }
 
         val entry = response.meta
             ?: response.metas?.firstOrNull { it.id == res.id }
