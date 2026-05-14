@@ -22,5 +22,5 @@ cloudstream {
     language = "hi"
     iconUrl = "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/zing.jpg"
 
-    isCrossPlatform = false
+    isCrossPlatform = true
 }
