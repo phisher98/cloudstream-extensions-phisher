@@ -140,7 +140,6 @@ class KayiFamilyTv: MainAPI() {
              }
 
              iframeUrl?.let { url ->
-                 if( url.contains("videa.hu")) println("Videa.hu Found: $url")
                  loadExtractor(
                      if (url.startsWith("//")) "https:$url" else url,
                      data, subtitleCallback, callback
