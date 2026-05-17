@@ -18,11 +18,11 @@ class UltimaPlugin : Plugin() {
 
         UltimaStorageManager.currentMetaProviders.forEach { metaProvider ->
             when (metaProvider.first) {
-                "Simkl" -> if (metaProvider.second) registerMainAPI(Simkl(this))
-                "AniList" -> if (metaProvider.second) registerMainAPI(AniList(this))
-                "MyAnimeList" -> if (metaProvider.second) registerMainAPI(MyAnimeList(this))
-                "TMDB" -> if (metaProvider.second) registerMainAPI(Tmdb(this))
-                "Trakt" -> if (metaProvider.second) registerMainAPI(Trakt(this))
+                //"Simkl" -> if (metaProvider.second) registerMainAPI(Simkl(this))
+                //"AniList" -> if (metaProvider.second) registerMainAPI(AniList(this))
+                //"MyAnimeList" -> if (metaProvider.second) registerMainAPI(MyAnimeList(this))
+                //"TMDB" -> if (metaProvider.second) registerMainAPI(Tmdb(this))
+                //"Trakt" -> if (metaProvider.second) registerMainAPI(Trakt(this))
                 else -> {}
             }
         }
