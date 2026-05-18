@@ -46,17 +46,14 @@ import com.phisher98.StreamPlay.Companion.animepaheAPI
 import kotlinx.coroutines.runBlocking
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 import java.math.BigInteger
 import java.net.URI
-import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -988,6 +985,10 @@ class Shikshakdaak : HubCloud() {
     override var mainUrl: String = "https://shikshakdaak.com"
 }
 
+class Hubcloudone : HubCloud(){
+    override var mainUrl = "https://hubcloud.one"
+}
+
 open class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"
@@ -1700,114 +1701,6 @@ class Iqsmartgames: GDMirrorbot() {
     override var requiresReferer = true
 }
 
-class MegaUpTwoTwo : MegaUp() {
-    override var mainUrl = "https://megaup22.online"
-    override val requiresReferer = true
-}
-
-class Fourspromax : MegaUp() {
-    override var mainUrl = "https://4spromax.site"
-    override val requiresReferer = true
-}
-
-
-open class MegaUp : ExtractorApi() {
-    override var name = "MegaUp"
-    override var mainUrl = "https://megaup.live"
-    override val requiresReferer = true
-
-    companion object {
-        private val HEADERS = mapOf(
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-                "Accept" to "text/html, *//*; q=0.01",
-                "Accept-Language" to "en-US,en;q=0.5",
-                "Sec-GPC" to "1",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-origin",
-                "Priority" to "u=0",
-                "Pragma" to "no-cache",
-                "Cache-Control" to "no-cache",
-                "referer" to "https://animekai.to/",
-        )
-    }
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-
-        val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
-        val encodedResult = app.get(mediaUrl, headers = HEADERS)
-        .parsedSafe<AnimeKaiResponse>()
-        ?.result
-        val displayName = referer ?: this.name
-        if (encodedResult == null) return
-
-        val body = """
-        {
-        "text": "$encodedResult",
-        "agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0"
-        }
-        """.trimIndent()
-            .trim()
-            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val m3u8Data=app.post(BuildConfig.KAIMEG, requestBody = body).text
-
-        if (m3u8Data.isBlank()) {
-            Log.d("Phisher", "Encoded result is null or empty")
-            return
-        }
-
-        try {
-            val root = JSONObject(m3u8Data)
-            val result = root.optJSONObject("result")
-            if (result == null) {
-                Log.d("Error:", "No 'result' object in M3U8 JSON")
-                return
-            }
-
-            val sources = result.optJSONArray("sources") ?: JSONArray()
-            if (sources.length() > 0) {
-                val firstSourceObj = sources.optJSONObject(0)
-                val m3u8File = when {
-                    firstSourceObj != null -> firstSourceObj.optString("file").takeIf { it.isNotBlank() }
-                    else -> {
-                        val maybeString = sources.optString(0)
-                        maybeString.takeIf { it.isNotBlank() }
-                    }
-                }
-                if (m3u8File != null) {
-                    generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
-                } else {
-                    Log.d("Error:", "No 'file' found in first source")
-                }
-            } else {
-                Log.d("Error:", "No sources found in M3U8 data")
-            }
-
-            val tracks = result.optJSONArray("tracks") ?: JSONArray()
-            for (i in 0 until tracks.length()) {
-                val trackObj = tracks.optJSONObject(i) ?: continue
-                val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
-                val file = trackObj.optString("file").takeIf { it.isNotBlank() }
-                if (label != null && file != null) {
-                    subtitleCallback(newSubtitleFile(label, file))
-                }
-            }
-        } catch (_: JSONException) {
-            Log.e("Error", "Failed to parse M3U8 JSON")
-        }
-      }
-
-    data class AnimeKaiResponse(
-        @param:JsonProperty("status") val status: Int,
-        @param:JsonProperty("result") val result: String
-    )
-}
-
 open class GDFlix : ExtractorApi() {
     override val name = "GDFlix"
     override val mainUrl = "https://*.gdflix.*"
@@ -2086,154 +1979,6 @@ class UqloadsXyz : ExtractorApi() {
     }
 }
 
-open class Megacloud : ExtractorApi() {
-    override val name = "Megacloud"
-    override val mainUrl = "https://megacloud.blog"
-    override val requiresReferer = false
-
-    @SuppressLint("NewApi")
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val mainheaders = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0",
-            "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.5",
-            "Accept-Encoding" to "gzip, deflate, br, zstd",
-            "Origin" to "$mainUrl/",
-            "Referer" to "$mainUrl/",
-            "Connection" to "keep-alive",
-            "Pragma" to "no-cache",
-            "Cache-Control" to "no-cache"
-        )
-        try {
-            // --- Primary API Method ---
-            val headers = mapOf(
-                "Accept" to "*/*",
-                "X-Requested-With" to "XMLHttpRequest",
-                "Referer" to mainUrl
-            )
-
-            val id = url.substringAfterLast("/").substringBefore("?")
-            val responsenonce = app.get(url, headers = headers).text
-
-            val match1 = Regex("""\b[a-zA-Z0-9]{48}\b""").find(responsenonce)
-            val match2 = Regex("""\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b.*?\b([a-zA-Z0-9]{16})\b""").find(responsenonce)
-            val nonce = match1?.value ?: match2?.let { it.groupValues[1] + it.groupValues[2] + it.groupValues[3] }
-
-            val apiUrl = "$mainUrl/embed-2/v3/e-1/getSources?id=$id&_k=$nonce"
-            val response = try {
-                val json = app.get(apiUrl, headers).text
-                sharedGson.fromJson(json, MegacloudResponse::class.java)
-            } catch (_: Exception) {
-                null
-            }
-
-            val encoded = response?.sources?.firstOrNull()?.file
-                ?: throw Exception("No sources found")
-            val key = try {
-                val keyJson = app.get("https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json").text
-                sharedGson.fromJson(keyJson, Megakey::class.java)?.mega
-            } catch (_: Exception) { null }
-
-            val m3u8: String = if (".m3u8" in encoded) {
-                encoded
-            } else {
-                val decodeUrl = "https://script.google.com/macros/s/AKfycbxHbYHbrGMXYD2-bC-C43D3njIbU-wGiYQuJL61H4vyy6YVXkybMNNEPJNPPuZrD1gRVA/exec"
-                val fullUrl = "$decodeUrl?encrypted_data=${URLEncoder.encode(encoded, "UTF-8")}" +
-                        "&nonce=${URLEncoder.encode(nonce, "UTF-8")}" +
-                        "&secret=${URLEncoder.encode(key, "UTF-8")}"
-
-                val decryptedResponse = app.get(fullUrl).text
-                Regex("\"file\":\"(.*?)\"").find(decryptedResponse)?.groupValues?.get(1)
-                    ?: throw Exception("Video URL not found in decrypted response")
-            }
-
-            generateM3u8(name, m3u8, mainUrl, headers = mainheaders).forEach(callback)
-
-            response.tracks.forEach { track ->
-                if (track.kind == "captions" || track.kind == "subtitles") {
-                    subtitleCallback(newSubtitleFile(track.label, track.file))
-                }
-            }
-
-        } catch (e: Exception) {
-            // --- Fallback using WebViewResolver ---
-            Log.e("Megacloud", "Primary method failed, using fallback: ${e.message}")
-
-            val jsToClickPlay = """
-                (() => {
-                    const btn = document.querySelector('.jw-icon-display.jw-button-color.jw-reset');
-                    if (btn) { btn.click(); return "clicked"; }
-                    return "button not found";
-                })();
-            """.trimIndent()
-
-            val m3u8Resolver = WebViewResolver(
-                interceptUrl = Regex("""\.m3u8"""),
-                additionalUrls = listOf(Regex("""\.m3u8""")),
-                script = jsToClickPlay,
-                scriptCallback = { result -> Log.d("Megacloud", "JS Result: $result") },
-                useOkhttp = false,
-                timeout = 15_000L
-            )
-
-            val vttResolver = WebViewResolver(
-                interceptUrl = Regex("""\.vtt"""),
-                additionalUrls = listOf(Regex("""\.vtt""")),
-                script = jsToClickPlay,
-                scriptCallback = { result -> Log.d("Megacloud", "Subtitle JS Result: $result") },
-                useOkhttp = false,
-                timeout = 15_000L
-            )
-
-            try {
-                val vttResponse = app.get(url = url, referer = mainUrl, interceptor = vttResolver)
-                val subtitleUrls = listOf(vttResponse.url)
-                    .filter { it.endsWith(".vtt") && !it.contains("thumbnails", ignoreCase = true) }
-                subtitleUrls.forEachIndexed { _, subUrl ->
-                    subtitleCallback(newSubtitleFile("English", subUrl))
-                }
-
-                val fallbackM3u8 = app.get(url = url, referer = mainUrl, interceptor = m3u8Resolver).url
-                generateM3u8(name, fallbackM3u8, mainUrl, headers = mainheaders).forEach(callback)
-
-            } catch (ex: Exception) {
-                Log.e("Megacloud", "Fallback also failed: ${ex.message}")
-            }
-        }
-    }
-
-    data class MegacloudResponse(
-        val sources: List<Source>,
-        val tracks: List<Track>,
-        val encrypted: Boolean,
-        val intro: Intro,
-        val outro: Outro,
-        val server: Long
-    )
-
-    data class Source(
-        val file: String,
-        val type: String
-    )
-
-    data class Track(
-        val file: String,
-        val label: String,
-        val kind: String,
-        val default: Boolean? = null
-    )
-
-    data class Intro(val start: Long, val end: Long)
-    data class Outro(val start: Long, val end: Long)
-    data class Megakey(val rabbit: String, val mega: String)
-}
-
-
 
 class Cdnstreame : ExtractorApi() {
     override val name = "Cdnstreame"
@@ -2332,11 +2077,6 @@ class Cdnstreame : ExtractorApi() {
     }
 }
 
-class Streameeeeee : Megacloud() {
-    override var mainUrl = "https://streameeeeee.site"
-    override val requiresReferer = true
-
-}
 
 class Videostr : ExtractorApi() {
     override val name = "Videostr"
@@ -2662,137 +2402,6 @@ class XdMoviesExtractor : ExtractorApi() {
         val redirect = bypassXD(url) ?: return
         loadExtractor(redirect, "HubCloud", subtitleCallback, callback)
     }
-}
-
-class Rapidairmax : MegaUp() {
-    override var mainUrl = "https://rapidairmax.site"
-    override val requiresReferer = true
-}
-
-open class Rapidshare : ExtractorApi() {
-    override var name = "MegaUp"
-    override var mainUrl = "https://rapidshare.cc"
-    override val requiresReferer = true
-
-    companion object {
-        private val HEADERS = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-            "Accept" to "text/html, *//*; q=0.01",
-            "Accept-Language" to "en-US,en;q=0.5",
-            "Sec-GPC" to "1",
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "Priority" to "u=0",
-            "Pragma" to "no-cache",
-            "Cache-Control" to "no-cache",
-            "referer" to "https://yflix.to/",
-        )
-    }
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-
-        val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
-        val displayName = referer ?: this.name
-
-        val encodedResult = app.get(mediaUrl, headers = HEADERS)
-            .parsedSafe<YflixResponse>()
-            ?.result
-
-        if (encodedResult == null) return
-
-        val body = """
-        {
-        "text": "$encodedResult",
-        "agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0"
-        }
-        """.trimIndent()
-            .trim()
-            .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val m3u8Data=app.post(BuildConfig.KAIMEG, requestBody = body).text
-        if (m3u8Data.isBlank()) {
-            Log.d("Phisher", "Encoded result is null or empty")
-            return
-        }
-
-        try {
-            val root = JSONObject(m3u8Data)
-            val result = root.optJSONObject("result")
-            if (result == null) {
-                Log.d("Error:", "No 'result' object in M3U8 JSON")
-                return
-            }
-
-            val sources = result.optJSONArray("sources") ?: JSONArray()
-            if (sources.length() > 0) {
-                val firstSourceObj = sources.optJSONObject(0)
-                val m3u8File = when {
-                    firstSourceObj != null -> firstSourceObj.optString("file").takeIf { it.isNotBlank() }
-                    else -> {
-                        val maybeString = sources.optString(0)
-                        maybeString.takeIf { it.isNotBlank() }
-                    }
-                }
-                if (m3u8File != null) {
-                    generateM3u8(displayName, m3u8File, mainUrl).forEach(callback)
-                } else {
-                    Log.d("Error:", "No 'file' found in first source")
-                }
-            } else {
-                Log.d("Error:", "No sources found in M3U8 data")
-            }
-
-            val tracks = result.optJSONArray("tracks") ?: JSONArray()
-
-            for (i in 0 until tracks.length()) {
-                val trackObj = tracks.optJSONObject(i) ?: continue
-                val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
-                val file = trackObj.optString("file").takeIf { it.isNotBlank() }
-                if (label != null && file != null) {
-                    subtitleCallback(newSubtitleFile(label, file))
-                }
-            }
-
-            try {
-                val subtitleUrl = URLDecoder.decode(
-                    url.substringAfter("sub.list="),
-                    StandardCharsets.UTF_8.name()
-                )
-
-                val response = app.get(subtitleUrl).text
-                val subtitles = tryParseJson<List<Map<String, Any>>>(response)
-
-                subtitles?.forEach { sub ->
-                    val file = sub["file"]?.toString()
-                    val label = sub["label"]?.toString()
-                    if (!file.isNullOrBlank() && !label.isNullOrBlank()) {
-                        subtitleCallback(
-                            newSubtitleFile(
-                                label,
-                                file
-                            )
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("SubtitleLoader", "Failed to load subtitles: ${e.message}")
-            }
-
-        } catch (_: JSONException) {
-            Log.e("Error", "Failed to parse M3U8 JSON")
-        }
-    }
-
-    data class YflixResponse(
-        @param:JsonProperty("status") val status: Int,
-        @param:JsonProperty("result") val result: String
-    )
-
 }
 
 class HdStream4u : VidHidePro() {
@@ -3681,7 +3290,7 @@ class FlixCloud : ExtractorApi() {
             for (i in 0 until subtitles.length()) {
                 subtitles.optJSONObject(i)?.run {
                     subtitleCallback.invoke(
-                        SubtitleFile(
+                        newSubtitleFile(
                             optString("language"),
                             optString("url")
                         )

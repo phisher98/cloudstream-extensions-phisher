@@ -6,7 +6,6 @@ import com.phisher98.StreamPlayExtractor.invoke2embed
 import com.phisher98.StreamPlayExtractor.invoke4khdhub
 import com.phisher98.StreamPlayExtractor.invokeAllMovieland
 import com.phisher98.StreamPlayExtractor.invokeAnichi
-import com.phisher98.StreamPlayExtractor.invokeAnimeKai
 import com.phisher98.StreamPlayExtractor.invokeAnimepahe
 import com.phisher98.StreamPlayExtractor.invokeAnimetosho
 import com.phisher98.StreamPlayExtractor.invokeAnimex
@@ -51,7 +50,7 @@ import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.invokeXpass
-import com.phisher98.StreamPlayExtractor.invokeYflix
+import com.phisher98.StreamPlayExtractor.invokeZinkmovies
 import com.phisher98.StreamPlayExtractor.invokeZshow
 import com.phisher98.StreamPlayExtractor.invokecinemacity
 import com.phisher98.StreamPlayExtractor.invokehdhub4u
@@ -134,12 +133,6 @@ private val providers by lazy {
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
                 ids.anilistId?.let { invokeReAnime(it, res.episode, subtitleCallback, callback, getDubStatus(res)) }
-            }
-        },
-        Provider("animekai", "AnimeKai") { res, subtitleCallback, callback, _, _ ->
-            if (res.isAnime) {
-                val ids = getAnimeIds(res)
-                ids.animekaiId?.let { invokeAnimeKai(it, res.episode, subtitleCallback, callback, getDubStatus(res)) }
             }
         },
         Provider("Animex", "Animex") { res, subtitleCallback, callback, _, _ ->
@@ -274,12 +267,6 @@ private val providers by lazy {
         Provider("VidEasy", "VidEasy") { res, subtitleCallback, callback, _, _ ->
             invokeVideasy(res.title,res.id, res.imdbId, res.year, res.season,res.episode, subtitleCallback, callback )
         },
-        Provider("YFlix", "YFlix") { res, subtitleCallback, callback, _, _ ->
-            val status = getDubStatus(res)
-            val isAnime = res.isAnime
-            if (isAnime && status != "SUB") return@Provider
-            invokeYflix(res.title, res.season, res.episode, subtitleCallback, callback)
-        },
         Provider("moviesapi", "MoviesApi Club") { res, _, callback, _, _ ->
             invokeMoviesApi(res.id, res.season, res.episode, callback)
         },
@@ -328,7 +315,10 @@ private val providers by lazy {
         },
         Provider("Dudefilms", "Dudefilms") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeDudefilms(res.imdbId, res.season, res.episode, subtitleCallback, callback)
-        }
+        },
+        Provider("Zinkmovies", "Zinkmovies") { res, subtitleCallback, callback, _, _ ->
+            if (!res.isAnime) invokeZinkmovies(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
+        },
     )
 }
 

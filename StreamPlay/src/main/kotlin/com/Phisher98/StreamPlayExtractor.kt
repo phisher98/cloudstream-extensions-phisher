@@ -34,7 +34,6 @@ import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -59,7 +58,6 @@ import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.math.max
 
 
 val session = Session(Requests().baseClient)
@@ -1032,108 +1030,6 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    suspend fun invokeAnimeKai(
-        animekaiid: String? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-        dubtype: String?
-    ) {
-        if (animekaiid.isNullOrBlank()) return
-        val isMovie = dubtype == "Movie"
-        val json = "application/json; charset=utf-8".toMediaType()
-
-        suspend fun decode(text: String?): String {
-            if (text.isNullOrBlank()) return ""
-            return try {
-                val res = safeGet("${BuildConfig.KAIENC}?text=$text").text
-                JSONObject(res).getString("result")
-            } catch (_: Exception) {
-                safeGet("${BuildConfig.KAISVA}/?f=e&d=$text").text
-            }
-        }
-
-        suspend fun decodeReverse(text: String): String {
-            if (text.isBlank()) return ""
-            val jsonBody = """{"text":"$text"}""".toRequestBody(json)
-            return try {
-                val res = app.post(BuildConfig.KAIDEC, requestBody = jsonBody).text
-                JSONObject(res).getString("result")
-            } catch (_: Exception) {
-                safeGet("${BuildConfig.KAISVA}/?f=d&d=$text").text
-            }
-        }
-
-        // Fix 1: decode once, outside the retry loop — animekaiid never changes
-        val decoded = decode(animekaiid)
-
-        // Fix 2: for-loop replaces while+removeAt(0), avoids O(n²) list shifting
-        for (animeKaiUrl in animekaiAPIs.shuffled()) {
-            try {
-                val epRes =
-                    safeGet("$animeKaiUrl/ajax/episodes/list?ani_id=$animekaiid&_=$decoded")
-                        .parsedSafe<AnimeKaiResponse>()?.getDocument()
-
-                // Fix 3: early exit — stop iterating once the target episode is found
-                val targetEp = epRes?.select("div.eplist a")?.firstOrNull { ep ->
-                    val epNum = ep.attr("num").toIntOrNull()
-                    if (isMovie) epNum == 1 else epNum == episode
-                } ?: continue
-
-                val token = targetEp.attr("token")
-                val decodedToken = decode(token)
-
-                val document =
-                    safeGet("$animeKaiUrl/ajax/links/list?token=$token&_=$decodedToken")
-                        .parsed<AnimeKaiResponse>()
-                        .getDocument()
-
-                val types = listOf("sub", "softsub", "dub")
-                val servers = types.flatMap { type ->
-                    document.select("div.server-items[data-id=$type] span.server[data-lid]")
-                        .map { server -> Triple(type, server.attr("data-lid"), server.text()) }
-                }
-
-                // Fix 4: parallel server extraction with coroutineScope + async
-                coroutineScope {
-                    servers.map { (type, lid, serverName) ->
-                        async {
-                            // Fix 5: exact match on type prevents softsub/sub ambiguity
-                            val nameSuffix = when (type.lowercase()) {
-                                "softsub" -> " [Soft Sub]"
-                                "sub"     -> " [SUB]"
-                                "dub"     -> " [DUB]"
-                                else      -> ""
-                            }
-
-                            // Fix 6: extracted allow logic into a readable local function
-                            fun isAllowed(): Boolean {
-                                if (isMovie) return true
-                                if (dubtype == null) return false
-                                return nameSuffix.contains(dubtype, ignoreCase = true)
-                            }
-
-                            if (!isAllowed()) return@async
-
-                            val decodeLid = decode(lid)
-                            val result =
-                                safeGet("$animeKaiUrl/ajax/links/view?id=$lid&_=$decodeLid")
-                                    .parsed<AnimeKaiResponse>().result
-
-                            val decodedIframe = decodeReverse(result)
-                            val iframe = extractVideoUrlFromJsonAnimekai(decodedIframe)
-                            val name = "⌜ AnimeKai ⌟ | $serverName | $nameSuffix"
-                            loadExtractor(iframe, name, subtitleCallback, callback)
-                        }
-                    }.awaitAll()
-                }
-                break // success — no need to try remaining API mirrors
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
     suspend fun invokeAnimex(
         malId: Int? = null,
         anilistId: Int? = null,
@@ -1675,81 +1571,6 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             }
-        }
-    }
-
-
-    internal suspend fun invokeSudatchi(
-        animeId: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit,
-    ) {
-        if (animeId == null) return
-        val ep = episode ?: 1
-        try {
-            val meta = JSONObject(safeGet("$sudatchi/api/anime/$animeId").text)
-
-            val episodes = meta.optJSONArray("episodes")
-                ?: run {
-                    Log.d("Sudatchi", "No episodes array")
-                    return
-                }
-
-            if (episodes.length() == 0) {
-                Log.d("Sudatchi", "No episodes array")
-                return
-            }
-
-            val epObj = episodes.optJSONObject(ep - 1)
-                ?: run {
-                    Log.d("Sudatchi", "Episode not found: $ep")
-                    return
-                }
-
-            val episodeId = epObj.optInt("id")
-            if (episodeId == 0) {
-                Log.d("Sudatchi", "Invalid episodeId")
-                return
-            }
-
-            callback(
-                newExtractorLink(
-                    "Sudatchi",
-                    "Sudatchi",
-                    "$sudatchi/api/streams?episodeId=$episodeId",
-                    ExtractorLinkType.M3U8
-                ) {
-                    this.quality = Qualities.P1080.value
-                }
-            )
-
-            epObj.optJSONArray("Subtitles")?.let { subs ->
-                for (i in 0 until subs.length()) {
-                    subs.optJSONObject(i)?.let { s ->
-
-                        val url = s.optString("url")
-                        if (url.isBlank()) return@let
-
-                        val name = s
-                            .optJSONObject("SubtitlesName")
-                            ?.optString("name")
-                            ?.ifBlank { null }
-                            ?: ""
-
-                        subtitleCallback(
-                            newSubtitleFile(
-                                name.capitalize(),
-                                "$sudatchi$url"
-                            )
-                        )
-                    }
-                }
-            }
-
-
-        } catch (_: Exception) {
-            Log.e("Sudatchi", "Failed")
         }
     }
 
@@ -2915,7 +2736,7 @@ object StreamPlayExtractor : StreamPlay() {
         val permalink = match.optString("permalink")
         if (permalink.isBlank()) return
         val href = if (permalink.startsWith("http")) permalink else domain + permalink
-        val mainDoc = safeGet(href, interceptor = wpRedisInterceptor).document
+        val mainDoc = safeGet(href).document
 
         if (season == null) {
             val seenUrls = Collections.synchronizedSet(mutableSetOf<String>())
@@ -2925,7 +2746,7 @@ object StreamPlayExtractor : StreamPlay() {
                 .filter { it.isNotBlank() }
                 .distinct()
                 .safeAmap { href ->
-                    val servers = runCatching { getMoviesDriveMoviesStreamUrls(href) }.getOrNull() ?: return@safeAmap
+                    val servers = extractMdrive(href)
                     servers.forEach { server ->
                         if (seenUrls.add(server)) {
                             loadSourceNameExtractor("MoviesDrive", server, "", subtitleCallback, callback)
@@ -2933,30 +2754,35 @@ object StreamPlayExtractor : StreamPlay() {
                     }
                 }
             return
-        }
+        } else {
+            val (sSlug, eSlug) = getEpisodeSlug(season, episode)
+            val stag = "Season $season|S$sSlug"
+            val sep = "Ep$eSlug|Ep$episode"
+            val entries = mainDoc.select("h5:matches((?i)$stag)")
+            entries.safeAmap { entry ->
+                val href = entry.nextElementSibling()?.selectFirst("a")?.attr("href") ?: ""
 
-        val seasonRegex = Regex("(?i)Season $season|S0$season")
-        val episodeRegex = Regex("(?i)Ep0$episode|Ep$episode")
+                if (href.isNotBlank()) {
+                    val doc = app.get(href).document
+                    val fEp = doc.selectFirst("h5:matches((?i)$sep)")
+                    val linklist = mutableListOf<String>()
+                    val source1 = fEp?.nextElementSibling()?.selectFirst("a")?.attr("href")
+                    val source2 = fEp?.nextElementSibling()?.nextElementSibling()?.selectFirst("a")?.attr("href")
+                    if (source1 != null) linklist.add(source1)
+                    if (source2 != null) linklist.add(source2)
 
-        //still needs fix
-        mainDoc.select("h5")
-            .asSequence()
-            .filter { it.text().contains(seasonRegex) }
-            .mapNotNull { it.nextElementSibling()?.selectFirst("a")?.attr("href") }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .toList()
-            .safeAmap { seasonPage ->
-                val results = getMoviesDriveSeriesStreamUrls(seasonPage)
-
-                results
-                    .filter { (fileName, _) ->
-                        fileName.contains(seasonRegex) && fileName.contains(episodeRegex)
+                    linklist.safeAmap { url ->
+                        loadSourceNameExtractor(
+                            "MoviesDrive",
+                            url,
+                            "",
+                            subtitleCallback,
+                            callback
+                        )
                     }
-                    .forEach { (_, url) ->
-                        loadSourceNameExtractor("MoviesDrive", url, "", subtitleCallback, callback)
-                    }
+                }
             }
+        }
     }
 
     suspend fun invokeBollyflix(
@@ -4341,154 +4167,6 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
-    suspend fun invokeYflix(
-        title: String?,
-        season: Int? = null,
-        episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        if (title.isNullOrBlank()) return
-
-        val type = if (season == null) "movie" else "tv"
-        val searchUrl = "$yFlix/browser?keyword=${title.trim().replace(" ", "-")}&type=$type"
-
-        val matchedElement = runCatching {
-            val doc = safeGet(searchUrl).document
-            val results = doc.select("div.item")
-            results.firstOrNull { item ->
-                val titleElement = item.selectFirst("div.info a")
-                val name = titleElement?.text()?.trim() ?: return@firstOrNull false
-                name.contains(title, ignoreCase = true)
-            }?.selectFirst("div.info a")
-        }.getOrNull() ?: return
-
-        val href = yFlix + matchedElement.attr("href")
-        val document = safeGet(href).document
-
-        val typee = if (season == null) TvType.Movie else TvType.TvSeries
-
-        val keyword = href.substringAfter("/watch/").substringBefore(".")
-        val dataid = document.select("#movie-rating").attr("data-id")
-        val decoded = yflixDecode(dataid)
-
-        val epRes = app
-            .get("$yFlix/ajax/episodes/list?keyword=$keyword&id=$dataid&_=$decoded")
-            .parsedSafe<YflixResponse>()
-            ?.getDocument()
-
-        val movieNode = epRes?.selectFirst("ul.episodes a")
-
-        suspend fun fetchAndProcessServers(eid: String) {
-            val decodetoken = try {
-                yflixDecode(eid)
-            } catch (e: Exception) {
-                Log.d("Yflix", "Failed to decode eid token: ${e.message}")
-                return
-            }
-
-            val listResp = runCatching {
-                safeGet("$yFlix/ajax/links/list?eid=$eid&_=$decodetoken")
-                    .parsedSafe<YflixResponse>()
-            }.getOrNull()
-
-            val doc = listResp?.getDocument()
-            if (doc == null) {
-                Log.d("Yflix", "No document returned for links list (eid=$eid)")
-                return
-            }
-
-            val servers = doc.select("li.server")
-            if (servers.isEmpty()) {
-                Log.d("Yflix", "No servers found in the links list (eid=$eid)")
-                return
-            }
-
-            servers.safeAmap { serverNode ->
-                try {
-                    val lid = serverNode.attr("data-lid").trim()
-                    if (lid.isBlank()) {
-                        Log.d("Yflix", "Skipping server with empty lid (eid=$eid)")
-                        return@safeAmap
-                    }
-
-                    val serverName =
-                        serverNode.selectFirst("span")?.text()?.trim()?.ifEmpty { "Server" }
-
-                    val decodelid = try {
-                        yflixDecode(lid)
-                    } catch (e: Exception) {
-                        Log.d("Yflix", "Failed to decode lid ($lid): ${e.message}")
-                        return@safeAmap
-                    }
-
-                    val viewResp = runCatching {
-                        safeGet("$yFlix/ajax/links/view?id=$lid&_=$decodelid")
-                            .parsedSafe<YflixResponse>()
-                    }.getOrNull()
-
-                    val result = viewResp?.result
-                    if (result.isNullOrBlank()) {
-                        Log.d("Yflix", "Empty result for server $serverName (lid=$lid)")
-                        return@safeAmap
-                    }
-
-                    val decodedIframePayload = try {
-                        yflixDecodeReverse(result)
-                    } catch (e: Exception) {
-                        Log.d("Yflix", "Failed to decodeReverse for lid=$lid : ${e.message}")
-                        return@safeAmap
-                    }
-
-                    val iframeUrl = try {
-                        yflixextractVideoUrlFromJson(decodedIframePayload)
-                    } catch (e: Exception) {
-                        Log.d("Yflix", "Failed to extract video url for lid=$lid : ${e.message}")
-                        null
-                    }
-
-                    if (iframeUrl.isNullOrBlank()) {
-                        Log.d(
-                            "Yflix",
-                            "No iframe/video url extracted for server $serverName (lid=$lid)"
-                        )
-                        return@safeAmap
-                    }
-
-                    val displayName = "⌜ YFlix ⌟  |  $serverName"
-                    loadExtractor(iframeUrl, displayName, subtitleCallback, callback)
-                } catch (inner: Exception) {
-                    Log.d("Yflix", "Error processing server node: ${inner.message}")
-                }
-            }
-        }
-
-        val eid = if (typee == TvType.TvSeries) {
-            val targetSeason = season ?: return
-            val targetEpisode = episode ?: return
-
-            val seasonBlocks = epRes?.select("ul.episodes") ?: return
-            var found: String? = null
-            loop@ for (seasonBlock in seasonBlocks) {
-                val seasonNumber = seasonBlock.attr("data-season").toIntOrNull() ?: 1
-                if (seasonNumber != targetSeason) continue
-
-                val eps = seasonBlock.select("a")
-                for ((index, ep) in eps.withIndex()) {
-                    val epNum = ep.attr("num").toIntOrNull() ?: (index + 1)
-                    if (epNum == targetEpisode) {
-                        found = ep.attr("eid")
-                        break@loop
-                    }
-                }
-            }
-            found
-        } else {
-            movieNode?.attr("eid")
-        } ?: return
-        fetchAndProcessServers(eid)
-    }
-
     suspend fun invokeMoviesApi(
         id: Int?,
         season: Int? = null,
@@ -5337,4 +5015,245 @@ object StreamPlayExtractor : StreamPlay() {
             }
         }
     }
+
+    suspend fun invokeZinkmovies(
+        title: String? = null,
+        year: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val domain = getDomains()?.zinkmovies ?: return
+        val searchDoc = app.get("$domain/?s=${title} $year").document
+        val typeSpan = if (season != null) "span.tvshows" else "span.movies"
+
+        val matchUrls = searchDoc.select("div.result-item article")
+            .filter { article ->
+                article.selectFirst(typeSpan) != null &&
+                        article.selectFirst("div.title a")
+                            ?.text()
+                            ?.replace(":", "")
+                            ?.replace("-", " ")
+                            ?.replace(Regex("\\s+"), " ")
+                            ?.trim()
+                            ?.contains(
+                                title
+                                    ?.replace(":", "")
+                                    ?.replace("-", " ")
+                                    ?.replace(Regex("\\s+"), " ")
+                                    ?.trim() ?: "",
+                                ignoreCase = true
+                            ) == true &&
+                        (
+                                year == null ||
+                                        article.selectFirst("span.year")
+                                            ?.text()
+                                            ?.trim() == year.toString()
+                                )
+            }
+            .mapNotNull {
+                it.selectFirst("div.title a")?.attr("href")
+            }.distinct()
+
+        if (matchUrls.isEmpty()) return
+
+        matchUrls.safeAmap { matchUrl ->
+            val detailDoc = app.get(matchUrl).document
+            val content = detailDoc.selectFirst("div.wp-content") ?: return@safeAmap
+
+            if (season != null && episode != null) {
+                extractSeasonLinks(content, season).safeAmap { seasonBtnUrl ->
+
+                    val episodeDoc = app.get(seasonBtnUrl).document
+                    val episodeUrl = episodeDoc.select("a.maxbutton-download-now")
+                        .firstOrNull { a ->
+                            Regex("""EPISODE\s*-\s*0*(\d+)""", RegexOption.IGNORE_CASE)
+                                .find(a.text())?.groupValues?.get(1)?.toIntOrNull() == episode
+                        }?.attr("href") ?: return@safeAmap
+
+                    getZinkLinks(episodeUrl, subtitleCallback, callback)
+                }
+            } else {
+                content.select("div.movie-button-container a.movie-simple-button")
+                    .mapNotNull { it.attr("href").takeIf(String::isNotBlank) }
+                    .safeAmap {
+                        getZinkLinks(it, subtitleCallback, callback)
+                    }
+            }
+        }
+    }
+
+
+    fun extractSeasonLinks(content: Element, season: Int): List<String> {
+        val links = mutableListOf<String>()
+        var inTargetSeason = false
+        content.children().forEach { child ->
+            when {
+                child.hasClass("lgtagmessage") -> {
+                    inTargetSeason = Regex("""Season\s+0*$season\b""", RegexOption.IGNORE_CASE)
+                        .containsMatchIn(child.text())
+                }
+                child.hasClass("movie-button-container") && inTargetSeason -> {
+                    child.selectFirst("a.movie-simple-button")
+                        ?.attr("href")
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { links.add(it) }
+                }
+            }
+        }
+        return links
+    }
+
+    suspend fun generateZinkLinks(url: String): List<ZinkLink> {
+        return runCatching {
+
+            val firstDoc = app.get(url).document
+            val title = firstDoc.select("h1.file-title").text()
+            val firstHtml = firstDoc.html()
+
+            val randomId = Regex("""generateDownloadLink\(['"]([^'"]+)""")
+                .find(firstHtml)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?: return emptyList()
+
+            val ajaxEndpoint = Regex("""https://[^"'\\s]+ajax_generate_token\.php""")
+                .find(firstHtml)
+                ?.value
+                ?: return emptyList()
+
+            val downloadBase = Regex("""https://[^"'\\s]+/dl/""")
+                .find(firstHtml)
+                ?.value
+                ?: return emptyList()
+
+            val token = retry  { app.post(
+                url = "$ajaxEndpoint?random_id=$randomId",
+                data = mapOf(
+                    "random_id" to randomId
+                ),
+                headers = mapOf(
+                    "X-Requested-With" to "XMLHttpRequest"
+                )
+            ).parsedSafe<ZinkTokenResponse>()
+                ?.token
+
+            } ?: return emptyList()
+
+            val generatedUrl = downloadBase + token
+
+            val generatedDoc = app.get(generatedUrl).document
+
+            val results = generatedDoc
+                .select("#mirror-buttons a[href]")
+                .mapNotNull { element ->
+
+                    val href = element.attr("href").trim()
+
+                    if (href.isBlank()) return@mapNotNull null
+
+                    ZinkLink(
+                        name = element.text()
+                            .replace("Generate", "", true)
+                            .trim(),
+                        url = href,
+                        title = title,
+                    )
+                }
+                .toMutableList()
+
+            generatedDoc.selectFirst("#worker-btn")?.let { btn: Element ->
+
+                val workerId = Regex("""handleServerRequest\(['"]worker['"]\s*,\s*['"]([^'"]+)""")
+                    .find(btn.attr("onclick"))
+                    ?.groupValues
+                    ?.getOrNull(1)
+
+                val serverHandler = Regex("""SERVER_HANDLER_URL\s*=\s*["']([^"']+)""")
+                    .find(generatedDoc.html())
+                    ?.groupValues
+                    ?.getOrNull(1)
+
+                if (
+                    !workerId.isNullOrBlank() &&
+                    !serverHandler.isNullOrBlank()
+                ) {
+
+                    runCatching {
+
+                        val workerJson = JSONObject(
+                            app.post(
+                                url = serverHandler,
+                                requestBody = """
+                                {
+                                    "server":"worker",
+                                    "random_id":"$workerId"
+                                }
+                            """.trimIndent().toRequestBody(),
+                                headers = mapOf(
+                                    "X-Requested-With" to "XMLHttpRequest",
+                                    "Content-Type" to "application/json",
+                                    "Origin" to generatedUrl.substringBefore("/dl/"),
+                                    "Referer" to generatedUrl
+                                )
+                            ).text
+                        )
+
+                        workerJson.optString("url")
+                            .ifBlank {
+                                workerJson.optString("download")
+                            }
+                            .takeIf { it.isNotBlank() }
+                            ?.let {
+                                results += ZinkLink(
+                                    name = "WORKER",
+                                    url = it,
+                                    title = title,
+                                )
+                            }
+
+                    }
+                }
+            }
+
+            results.distinctBy { it.url }
+
+        }.getOrElse {
+            emptyList()
+        }
+    }
+
+
+    suspend fun getZinkLinks(
+        source: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        generateZinkLinks(source).safeAmap { link ->
+
+            val simplifiedTitle = cleanTitle(link.title)
+
+            if (link.name.contains("worker", true)) {
+                callback(
+                    newExtractorLink(
+                        source = "Zinkmovies Worker",
+                        name = "Zinkmovies Worker $simplifiedTitle",
+                        url = link.url
+                    ) {
+                        this.quality = getIndexQuality(link.title)
+                    }
+                )
+            } else {
+                loadSourceNameExtractor(
+                    "Zinkmovies",
+                    link.url,
+                    "",
+                    subtitleCallback,
+                    callback
+                )
+            }
+        }
+    }
+
 }

@@ -1,11 +1,7 @@
 package com.phisher98
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
-import org.json.JSONObject
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 
 //Anichi
 
@@ -67,24 +63,6 @@ data class TmdbDate(
     val lastWeekStart: String,
     val monthStart: String
 )
-
-data class MoflixResponse(
-    @param:JsonProperty("title") val title: Episode? = null,
-    @param:JsonProperty("episode") val episode: Episode? = null,
-) {
-    data class Episode(
-        @param:JsonProperty("id") val id: Int? = null,
-        @param:JsonProperty("videos") val videos: ArrayList<Videos>? = arrayListOf(),
-    ) {
-        data class Videos(
-            @param:JsonProperty("name") val name: String? = null,
-            @param:JsonProperty("category") val category: String? = null,
-            @param:JsonProperty("src") val src: String? = null,
-            @param:JsonProperty("quality") val quality: String? = null,
-        )
-    }
-}
-
 data class AniMedia(
     @param:JsonProperty("id") var id: Int? = null,
     @param:JsonProperty("idMal") var idMal: Int? = null
@@ -203,17 +181,6 @@ data class JikanResponse(
     @param:JsonProperty("data") val data: JikanData? = null,
 )
 
-//Hianime
-
-data class EpisodeServers(
-    val type: String? = null,
-    val link: String? = null,
-    val server: Long? = null,
-    val sources: List<Any?>? = null,
-    val tracks: List<Any?>? = null
-)
-
-
 //anime animepahe parser
 
 data class animepahe(
@@ -264,11 +231,6 @@ data class MALSyncResponses(
     @param:JsonProperty("Sites") val sites: MALSyncSites? = null,
 )
 
-data class HianimeResponses(
-    @param:JsonProperty("html") val html: String? = null,
-    @param:JsonProperty("link") val link: String? = null,
-)
-
 data class AllMovielandEpisodeFolder(
     @param:JsonProperty("title") val title: String? = null,
     @param:JsonProperty("id") val id: String? = null,
@@ -293,77 +255,6 @@ data class AllMovielandPlaylist(
     @param:JsonProperty("key") val key: String? = null,
     @param:JsonProperty("href") val href: String? = null,
 )
-
-data class ShowflixResultsMovies(
-    @param:JsonProperty("objectId")
-    val objectId: String? = null,
-    @param:JsonProperty("name")
-    val name: String? = null,
-    @param:JsonProperty("releaseYear")
-    val releaseYear: Int? = null,
-    @param:JsonProperty("tmdbId")
-    val tmdbId: Int? = null,
-    @param:JsonProperty("embedLinks")
-    val embedLinks: Map<String, String>? = null,
-    @param:JsonProperty("languages")
-    val languages: List<String>? = null,
-    @param:JsonProperty("genres")
-    val genres: List<String>? = null,
-    @param:JsonProperty("backdropURL")
-    val backdropURL: String? = null,
-    @param:JsonProperty("posterURL")
-    val posterURL: String? = null,
-    @param:JsonProperty("hdLink")
-    val hdLink: String? = null,
-    @param:JsonProperty("hubCloudLink")
-    val hubCloudLink: String? = null,
-    @param:JsonProperty("storyline")
-    val storyline: String? = null,
-    @param:JsonProperty("rating")
-    val rating: String? = null,
-    @param:JsonProperty("createdAt")
-    val createdAt: String? = null,
-    @param:JsonProperty("updatedAt")
-    val updatedAt: String? = null
-)
-
-data class ShowflixResultsSeries(
-    @param:JsonProperty("objectId")
-    val objectId: String? = null,
-    @param:JsonProperty("seriesName")
-    val seriesName: String? = null,
-    @param:JsonProperty("releaseYear")
-    val releaseYear: Int? = null,
-    @param:JsonProperty("tmdbId")
-    val tmdbId: Int? = null,
-    @param:JsonProperty("streamwish")
-    val streamwish: Map<String, List<String>>? = null,
-    @param:JsonProperty("filelions")
-    val filelions: Map<String, List<String>>? = null,
-    @param:JsonProperty("streamruby")
-    val streamruby: Map<String, List<String>>? = null,
-    @param:JsonProperty("languages")
-    val languages: List<String>? = null,
-    @param:JsonProperty("genres")
-    val genres: List<String>? = null,
-    @param:JsonProperty("backdropURL")
-    val backdropURL: String? = null,
-    @param:JsonProperty("posterURL")
-    val posterURL: String? = null,
-    @param:JsonProperty("hdLink")
-    val hdLink: String? = null,
-    @param:JsonProperty("hubCloudLink")
-    val hubCloudLink: String? = null,
-    @param:JsonProperty("storyline")
-    val storyline: String? = null,
-    @param:JsonProperty("rating")
-    val rating: String? = null,
-    @param:JsonProperty("createdAt")
-    val createdAt: String? = null,
-    @param:JsonProperty("updatedAt")
-    val updatedAt: String? = null
-)
-
 data class RidoContentable(
     @param:JsonProperty("imdbId") var imdbId: String? = null,
     @param:JsonProperty("tmdbId") var tmdbId: Int? = null,
@@ -377,14 +268,6 @@ data class RidoItems(
 data class RidoData(
     @param:JsonProperty("url") var url: String? = null,
     @param:JsonProperty("items") var items: ArrayList<RidoItems>? = arrayListOf(),
-)
-
-data class RidoResponses(
-    @param:JsonProperty("data") var data: ArrayList<RidoData>? = arrayListOf(),
-)
-
-data class RidoSearch(
-    @param:JsonProperty("data") var data: RidoData? = null,
 )
 
 data class NepuSearch(
@@ -536,19 +419,6 @@ data class SubtitleKAA(
     val src: String,
 )
 
-
-data class AnimeKaiResponse(
-    @param:JsonProperty("result") val result: String
-) {
-    fun getDocument(): Document {
-        return Jsoup.parse(result)
-    }
-}
-
-fun extractVideoUrlFromJsonAnimekai(jsonData: String): String {
-    val jsonObject = JSONObject(jsonData)
-    return jsonObject.getString("url")
-}
 data class AnichiStream(
     @param:JsonProperty("format") val format: String? = null,
     @param:JsonProperty("audio_lang") val audio_lang: String? = null,
@@ -624,6 +494,7 @@ data class DomainsParser(
     val fibdrama: String,
     val xprimehub: String,
     val m4ufree: String,
+    val zinkmovies: String,
 )
 
 
@@ -728,23 +599,6 @@ data class Watch32(
     val link: String,
 )
 
-data class MorphDaum(
-    val title: String,
-    val link: String,
-)
-
-data class CinemaOSReponse(
-    val data: CinemaOSReponseData,
-    val encrypted: Boolean,
-)
-
-data class CinemaOSReponseData(
-    val encrypted: String,
-    val cin: String,
-    val mao: String,
-    val salt: String,
-)
-
 //Vidlink
 data class VidlinkResponse(
     @SerializedName("stream") val stream: VidlinkStream
@@ -753,18 +607,6 @@ data class VidlinkResponse(
 data class VidlinkStream(
     @SerializedName("playlist") val playlist: String
 )
-data class VidlinkCaption(
-    val id: String,
-    val url: String,
-    val language: String,
-    val type: String,
-    val hasCorsRestrictions: Boolean,
-)
-
-data class PrimeSrcServerList(
-    val servers: List<PrimeSrcServer>,
-)
-
 data class PrimeSrcServer(
     val name: String,
     val key: String,
@@ -814,31 +656,6 @@ data class VidFastServersTrack(
     val label: String?
 )
 
-data class NuvioStreams(
-    val streams: List<NuvioStreamsStream>,
-)
-
-data class NuvioStreamsStream(
-    val name: String,
-    val title: String,
-    val url: String,
-    val type: String,
-    val availability: Long,
-    val behaviorHints: NuvioStreamsBehaviorHints,
-)
-
-data class NuvioStreamsBehaviorHints(
-    val notWebReady: Boolean,
-)
-
-data class YflixResponse(
-    @get:JsonProperty("result") val result: String
-) {
-    fun getDocument(): Document {
-        return Jsoup.parse(result)
-    }
-}
-
 class SearchData : ArrayList<SearchData.SearchDataItem>() {
     data class SearchDataItem(
         val audio_languages: String,
@@ -853,56 +670,6 @@ class SearchData : ArrayList<SearchData.SearchDataItem>() {
         val type: String
     )
 }
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class EmbedmasterSourceItem(
-    val id: Any? = null,
-    val type: String? = null,
-    @param:JsonProperty("source_type")
-    val sourceType: Long? = null,
-    @param:JsonProperty("source_quality")
-    val sourceQuality: String? = null,
-    @param:JsonProperty("source_name")
-    val sourceName: String? = null,
-    @param:JsonProperty("source_title")
-    val sourceTitle: String? = null,
-    @param:JsonProperty("source_subtitle")
-    val sourceSubtitle: Boolean? = null,
-    @param:JsonProperty("source_icon")
-    val sourceIcon: Long? = null,
-    @param:JsonProperty("source_url")
-    val sourceUrl: String,
-)
-
-data class Server(
-    val name: String,
-    val quality: String,
-    val type: String,
-    val url: String,
-    val headers: BidSrcHeaders?,
-)
-
-data class BidSrcHeaders(
-    @param:JsonProperty("Referer")
-    val referer: String,
-    @param:JsonProperty("Origin")
-    val origin: String,
-)
-
-data class Flixindia(
-    val results: List<FlixindiaResult>,
-    val query: String,
-    val count: Long,
-)
-
-data class FlixindiaResult(
-    val id: Long,
-    val title: String,
-    val url: String,
-    @param:JsonProperty("created_at")
-    val createdAt: String,
-)
-
 
 //Vegamovies
 
@@ -943,30 +710,6 @@ data class DooflixLink(
     val createdAt: String,
     @param:JsonProperty("updated_at")
     val updatedAt: String,
-)
-
-//kuudere
-data class KuudereSearch(
-    val success: Boolean?,
-    val results: List<KuudereResult>?
-)
-
-data class KuudereResult(
-    val id: String?,
-    val title: String?,
-    val details: String?
-)
-
-data class KuudereWatch(
-    val episode_links: List<KuudereEpisodeLink>?
-)
-
-data class KuudereEpisodeLink(
-    val serverId: Int?,
-    val serverName: String?,
-    val episodeNumber: Int?,
-    val dataType: String?,
-    val dataLink: String?,
 )
 
 //Hexa
@@ -1014,14 +757,6 @@ data class HiAnimeTrack(
     val label: String?,
     val kind: String?,
     val default: Boolean?
-)
-
-data class Moviesdrive(
-    val hits: List<Hit>,
-)
-
-data class Hit(
-    val url: String,
 )
 
 //vaplayer
@@ -1076,3 +811,13 @@ data class ReAnimeStreamResult(
     val stream: String,
 )
 
+data class ZinkTokenResponse(
+    val status: String? = null,
+    val token: String? = null
+)
+
+data class ZinkLink(
+    val name: String,
+    val url: String,
+    val title: String,
+)

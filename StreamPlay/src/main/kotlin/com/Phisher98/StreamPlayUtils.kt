@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -42,6 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -55,13 +57,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.math.BigInteger
 import java.net.URI
 import java.net.URL
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.spec.KeySpec
 import java.text.SimpleDateFormat
 import java.util.Arrays
+import java.util.Base64
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -73,14 +79,6 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
-import android.content.SharedPreferences
-import android.os.Build
-import androidx.annotation.RequiresApi
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import java.math.BigInteger
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 
 val sharedPref: SharedPreferences? = null
 val appGlobalSemaphore = Semaphore(
@@ -2240,8 +2238,6 @@ fun cinemacityextractQuality(url: String): Int {
         else -> Qualities.Unknown.value
     }
 }
-
-@RequiresApi(Build.VERSION_CODES.O)
 fun moviesdrivebase64Decode(input: String): String {
     return try {
         val normalized = input
@@ -2298,7 +2294,7 @@ suspend fun getMoviesDriveMoviesStreamUrls(inputUrl: String): List<String> {
             }.distinct()
 
     } catch (_: Exception) {
-        emptyList()
+        listOf(inputUrl)
     }
 }
 
@@ -2342,4 +2338,25 @@ suspend fun getMoviesDriveSeriesStreamUrls(inputUrl: String): List<Pair<String, 
     } catch (_: Exception) {
         emptyList()
     }
+}
+
+suspend fun <T> retry(
+    times: Int = 3,
+    delayMs: Long = 1000,
+    block: suspend () -> T?
+): T? {
+
+    repeat(times - 1) {
+        runCatching {
+            block()
+        }.getOrNull()?.let {
+            return it
+        }
+
+        delay(delayMs)
+    }
+
+    return runCatching {
+        block()
+    }.getOrNull()
 }
