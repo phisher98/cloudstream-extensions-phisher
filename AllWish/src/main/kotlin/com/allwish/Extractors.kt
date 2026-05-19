@@ -1,6 +1,7 @@
 package com.allwish
 
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -54,24 +55,34 @@ open class MegaPlay : ExtractorApi() {
                 val id = app.get(url, headers = headers).document.selectFirst("#megaplay-player")?.attr("data-id")
 
                 val apiUrl = "$mainUrl/stream/getSources?id=$id&id=$id"
-                val gson = Gson()
-                val response = try {
-                    val json = app.get(apiUrl, headers).text
-                    gson.fromJson(json, MegaPlay::class.java)
-                } catch (_: Exception) {
-                    null
-                }
 
-                val encoded = response?.sources?.file
+                val response = runCatching {
+                    app.get(apiUrl, headers).parsedSafe<MegaPlayResponse>()
+                }.getOrNull()
+
+                val m3u8 = response?.sources?.file
                     ?: throw Exception("No sources found")
 
-                val m3u8: String = encoded
-
-                M3u8Helper.generateM3u8(name, m3u8, mainUrl, headers = mainheaders).forEach(callback)
+                M3u8Helper.generateM3u8(
+                    name,
+                    m3u8,
+                    mainUrl,
+                    headers = mainheaders
+                ).forEach(callback)
 
                 response.tracks.forEach { track ->
+                    val file = track.file ?: return@forEach
+                    val label = track.label ?: "Unknown"
+
                     if (track.kind == "captions" || track.kind == "subtitles") {
-                        subtitleCallback(newSubtitleFile(track.label, track.file))
+                        subtitleCallback(
+                            newSubtitleFile(label, file)
+                            {
+                                this.headers = mapOf(
+                                    "Referer" to "$mainUrl/"
+                                )
+                            }
+                        )
                     }
                 }
             } catch (e: Exception) {
@@ -121,35 +132,29 @@ open class MegaPlay : ExtractorApi() {
             }
         }
 
-        data class MegaPlay(
-            val sources: Sources,
-            val tracks: List<Track>,
-            val t: Long,
-            val intro: Intro,
-            val outro: Outro,
-            val server: Long,
-        )
+    data class MegaPlayResponse(
+        @SerializedName("sources")
+        val sources: Sources? = null,
 
-        data class Sources(
-            val file: String,
-        )
+        @SerializedName("tracks")
+        val tracks: List<Track> = emptyList()
+    )
 
-        data class Track(
-            val file: String,
-            val label: String,
-            val kind: String,
-            val default: Boolean?,
-        )
+    data class Sources(
+        @SerializedName("file")
+        val file: String? = null
+    )
 
-        data class Intro(
-            val start: Long,
-            val end: Long,
-        )
+    data class Track(
+        @SerializedName("file")
+        val file: String? = null,
 
-        data class Outro(
-            val start: Long,
-            val end: Long,
-        )
+        @SerializedName("label")
+        val label: String? = null,
+
+        @SerializedName("kind")
+        val kind: String? = null
+    )
 }
 
     class Zen : ExtractorApi() {

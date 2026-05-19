@@ -1292,7 +1292,14 @@ object StreamPlayExtractor : StreamPlay() {
                 if (!tracks.isNullOrEmpty()) {
                     tracks.forEach {
                         val sub = it.file ?: return@forEach
-                        subtitleCallback(newSubtitleFile(it.label ?: "Unknown", sub))
+                        subtitleCallback(
+                            newSubtitleFile(it.label ?: "Unknown", sub)
+                            {
+                                this.headers = mapOf(
+                                    "Referer" to "$origin/"
+                                )
+                            }
+                        )
                     }
                 }
 
