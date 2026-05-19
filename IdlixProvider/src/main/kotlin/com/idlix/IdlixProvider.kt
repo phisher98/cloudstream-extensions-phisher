@@ -1,5 +1,6 @@
 package com.idlix
 
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -30,10 +31,11 @@ import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
-import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.Normalizer
@@ -159,6 +161,12 @@ class IdlixProvider : MainAPI() {
             "$mainUrl/api/movies/${data.slug}/related"
         }
 
+        val weburl =if (data.seasons != null) {
+            "$mainUrl/series/${data.slug}"
+        } else {
+            "$mainUrl/movie/${data.slug}"
+        }
+
         val recommendations = try {
             app.get(relatedUrl, referer = mainUrl)
                 .parsedSafe<ApiResponse>()?.data?.mapNotNull { item ->
@@ -246,7 +254,7 @@ class IdlixProvider : MainAPI() {
                 }
             }
 
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newTvSeriesLoadResponse(title, weburl, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backdrop
                 this.logoUrl = logourl
@@ -261,7 +269,7 @@ class IdlixProvider : MainAPI() {
                 this.recommendations = recommendations
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie,  LoadData(
+            newMovieLoadResponse(title, weburl, TvType.Movie,  LoadData(
                 id = data.id ?: "",
                 type = "movie"
             ).toJson()) {
@@ -289,42 +297,92 @@ class IdlixProvider : MainAPI() {
     ): Boolean {
 
         val parsed = try {
-            AppUtils.parseJson<LoadData>(data)
+            parseJson<LoadData>(data)
         } catch (_: Exception) {
             null
         } ?: return false
 
         val contentId = parsed.id
         val contentType = parsed.type
-        val res = app.get("$mainUrl/api/watch/play-info/$contentType/$contentId").parsedSafe<Res>()
-        val solvejson = """
-        {
-            "claim": "${res?.claim}"
-        }
-        """.trimIndent()
 
-        val redeemUrl = res?.redeemUrl ?: return false
+        val headers = mapOf(
+            "Referer" to "$mainUrl/",
+            "Origin" to mainUrl,
+            "Accept" to "*/*",
+            "Content-Type" to "application/json"
+        )
+
+        val playResponse = app.get(
+            "$mainUrl/api/watch/play-info/$contentType/$contentId",
+            headers = headers
+        )
+
+        val cookies = playResponse.cookies
+        val playInfo = playResponse.parsedSafe<Res>() ?: return false
+
+        // WAIT
+        val waitTime = (
+                playInfo.unlockAt -
+                        playInfo.serverNow
+                ).coerceAtLeast(0)
+        val totalWait = waitTime / 1000
+        var elapsed = 0L
+        while (elapsed < totalWait) {
+            Log.d(name, "Waiting: ${elapsed}s / ${totalWait}s")
+            delay(1000)
+            elapsed++
+        }
+
+        val claimJson = """
+    {
+        "gateToken": "${playInfo.gateToken}"
+    }
+    """.trimIndent()
+
+        val claimApi = app.post(
+            "$mainUrl/api/watch/session/claim",
+            headers = headers,
+            cookies = cookies,
+            requestBody = claimJson.toRequestBody(
+                "application/json".toMediaType()
+            )
+        ).parsedSafe<RedeemRes>() ?: return false
+
+        val redeemJson = """
+    {
+        "claim": "${claimApi.claim}"
+    }
+    """.trimIndent()
 
         val iframeResponse = app.post(
-            redeemUrl,
-            requestBody = solvejson.toRequestBody("application/json".toMediaType())
-        ).parsedSafe<Iframe>()
+            claimApi.redeemUrl,
+            headers = headers,
+            cookies = cookies,
+            requestBody = redeemJson.toRequestBody(
+                "application/json".toMediaType()
+            )
+        ).parsedSafe<Iframe>() ?: return false
 
-        iframeResponse?.let { iframe ->
-            iframe.url.takeIf { it.isNotBlank() }
-                ?.let { streamUrl ->
-                    generateM3u8(name, streamUrl, mainUrl).forEach(callback)
-                }
+        iframeResponse.url
+            ?.takeIf { it.isNotBlank() }
+            ?.let { streamUrl ->
 
-            iframe.subtitles.forEach { subtitle ->
-                subtitleCallback(
-                    newSubtitleFile(
-                        subtitle.label,
-                        subtitle.path
-                    )
-                )
+                generateM3u8(
+                    name,
+                    streamUrl,
+                    mainUrl
+                ).forEach(callback)
             }
+
+        iframeResponse.subtitles.forEach { subtitle ->
+            subtitleCallback(
+                newSubtitleFile(
+                    subtitle.label,
+                    subtitle.path
+                )
+            )
         }
+
         return true
     }
 }
@@ -366,16 +424,29 @@ fun getSearchQuality(check: String?): SearchQuality? {
 
 
 data class Res(
-    val claim: String,
-    val redeemUrl: String,
+    val gateToken: String,
+    val serverNow: Long,
+    val unlockAt: Long,
 )
 
-data class Iframe(
-    val code: String,
-    val url: String,
-    val expiresAt: Long,
-    val subtitles: List<Subtitle>,
+data class RedeemRes(
+    val kind: String,
+    val claim: String,
+    val redeemUrl: String,
     val videoId: String,
+    val title: String,
+    val durationSec: Long,
+    val viewerTier: String,
+    val maxHeight: Long,
+)
+
+
+data class Iframe(
+    val code: String? = null,
+    val url: String? = null,
+    val expiresAt: Long? = null,
+    val subtitles: List<Subtitle> = emptyList(),
+    val videoId: String? = null,
 )
 
 data class Subtitle(
