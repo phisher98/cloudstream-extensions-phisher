@@ -147,7 +147,7 @@ class UltimaReorder(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
 
             sectionView.background = LayerDrawable(
                 arrayOf(
-                    ColorDrawable(if (section == selectedSection) 0x2200FF00.toInt() else Color.TRANSPARENT),
+                    ColorDrawable(if (section == selectedSection) 0x2200FF00 else Color.TRANSPARENT),
                     getDrawable("outline")
                 )
             )

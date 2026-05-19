@@ -123,7 +123,7 @@ class AniList(val plugin: UltimaPlugin) : MainAPI() {
                     false
                 )
             var homePageList =
-                repo.library()?.getOrThrow()!!.allLibraryLists.mapNotNull {
+                repo.library().getOrThrow()!!.allLibraryLists.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(plugin.activity ?: return@mapNotNull null)

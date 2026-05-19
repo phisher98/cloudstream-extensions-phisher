@@ -1,5 +1,6 @@
 package com.IStreamFlare
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.annotations.SerializedName
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.base64DecodeArray
@@ -12,148 +13,202 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 data class HomeRes(
-    @SerializedName("TMDB_ID")
-    val tmdbId: String?,
 
-    @SerializedName("banner")
-    val banner: String?,
+    @JsonProperty("TMDB_ID")
+    val tmdbId: String? = null,
 
-    @SerializedName("content_type")
-    val contentType: String,
+    @JsonProperty("banner")
+    val banner: String? = null,
 
-    @SerializedName("custom_tag")
-    val customTag: CustomTag?,
+    @JsonProperty("content_type")
+    val contentType: String? = null,
 
-    @SerializedName("description")
-    val description: String?,
+    @JsonProperty("custom_tag")
+    val customTag: CustomTag? = null,
 
-    @SerializedName("downloadable")
-    val downloadable: String?,
+    @JsonProperty("description")
+    val description: String? = null,
 
-    @SerializedName("genres")
-    val genres: String?,
+    @JsonProperty("downloadable")
+    val downloadable: String? = null,
 
-    @SerializedName("id")
-    val id: String,
+    @JsonProperty("genres")
+    val genres: String? = null,
 
-    @SerializedName("name")
-    val name: String,
+    @JsonProperty("id")
+    val id: String = "",
 
-    @SerializedName("poster")
-    val poster: String?,
+    @JsonProperty("name")
+    val name: String = "",
 
-    @SerializedName("release_date")
-    val releaseDate: String?,
+    @JsonProperty("poster")
+    val poster: String? = null,
 
-    @SerializedName("runtime")
-    val runtime: String?,
+    @JsonProperty("release_date")
+    val releaseDate: String? = null,
 
-    @SerializedName("status")
-    val status: String?,
+    @JsonProperty("runtime")
+    val runtime: String? = null,
 
-    @SerializedName("type")
-    val type: String?,
+    @JsonProperty("status")
+    val status: String? = null,
 
-    @SerializedName("youtube_trailer")
-    val youtubeTrailer: String?,
-    @SerializedName("url") val url: String?,
+    @JsonProperty("type")
+    val type: String? = null,
+
+    @JsonProperty("youtube_trailer")
+    val youtubeTrailer: String? = null,
+
+    @JsonProperty("url")
+    val url: String? = null,
 )
 
 data class CustomTag(
-    @SerializedName("background_color")
-    val backgroundColor: String?,
 
-    @SerializedName("content_id")
-    val contentId: String?,
+    @JsonProperty("background_color")
+    val backgroundColor: String? = null,
 
-    @SerializedName("content_type")
-    val contentType: String?,
+    @JsonProperty("content_id")
+    val contentId: String? = null,
 
-    @SerializedName("custom_tags_id")
-    val customTagsId: String?,
+    @JsonProperty("content_type")
+    val contentType: String? = null,
 
-    @SerializedName("custom_tags_name")
-    val customTagsName: String?,
+    @JsonProperty("custom_tags_id")
+    val customTagsId: String? = null,
 
-    @SerializedName("id")
-    val id: String?,
+    @JsonProperty("custom_tags_name")
+    val customTagsName: String? = null,
 
-    @SerializedName("text_color")
-    val textColor: String?
+    @JsonProperty("id")
+    val id: String? = null,
+
+    @JsonProperty("text_color")
+    val textColor: String? = null,
 )
 
-
 data class StreamLinks(
-    val id: String,
-    val name: String,
-    val size: String,
-    val quality: String,
-    @SerializedName("link_order")
-    val linkOrder: String,
-    @SerializedName("movie_id")
-    val movieId: String,
-    val url: String,
-    val type: String,
-    val status: String,
-    @SerializedName("skip_available")
-    val skipAvailable: String,
-    @SerializedName("intro_start")
-    val introStart: String,
-    @SerializedName("intro_end")
-    val introEnd: String,
-    @SerializedName("end_credits_marker")
-    val endCreditsMarker: String,
-    @SerializedName("link_type")
-    val linkType: String,
-    @SerializedName("drm_uuid")
-    val drmUuid: String,
-    @SerializedName("drm_license_uri")
-    val drmLicenseUri: String,
+
+    @JsonProperty("id")
+    val id: String = "",
+
+    @JsonProperty("name")
+    val name: String = "",
+
+    @JsonProperty("size")
+    val size: String = "",
+
+    @JsonProperty("quality")
+    val quality: String = "",
+
+    @JsonProperty("link_order")
+    val linkOrder: String = "",
+
+    @JsonProperty("movie_id")
+    val movieId: String = "",
+
+    @JsonProperty("url")
+    val url: String = "",
+
+    @JsonProperty("type")
+    val type: String = "",
+
+    @JsonProperty("status")
+    val status: String = "",
+
+    @JsonProperty("skip_available")
+    val skipAvailable: String = "",
+
+    @JsonProperty("intro_start")
+    val introStart: String = "",
+
+    @JsonProperty("intro_end")
+    val introEnd: String = "",
+
+    @JsonProperty("end_credits_marker")
+    val endCreditsMarker: String = "",
+
+    @JsonProperty("link_type")
+    val linkType: String = "",
+
+    @JsonProperty("drm_uuid")
+    val drmUuid: String = "",
+
+    @JsonProperty("drm_license_uri")
+    val drmLicenseUri: String = "",
 )
 
 data class SeasonRes(
-    val id: String,
-    @SerializedName("Session_Name")
-    val sessionName: String,
-    @SerializedName("season_order")
-    val seasonOrder: String,
-    @SerializedName("web_series_id")
-    val webSeriesId: String,
-    val status: String
-)
 
+    @JsonProperty("id")
+    val id: String = "",
+
+    @JsonProperty("Session_Name")
+    val sessionName: String = "",
+
+    @JsonProperty("season_order")
+    val seasonOrder: String = "",
+
+    @JsonProperty("web_series_id")
+    val webSeriesId: String = "",
+
+    @JsonProperty("status")
+    val status: String = "",
+)
 
 data class EpisodesRes(
-    val id: String,
-    @SerializedName("Episoade_Name")
-    val episoadeName: String,
-    @SerializedName("episoade_image")
-    val episoadeImage: String,
-    @SerializedName("episoade_description")
-    val episoadeDescription: String,
-    @SerializedName("episoade_order")
-    val episoadeOrder: String,
-    @SerializedName("season_id")
-    val seasonId: String,
-    val downloadable: String,
-    val type: String,
-    val status: String,
-    val source: String,
-    val url: String,
-    @SerializedName("skip_available")
-    val skipAvailable: String,
-    @SerializedName("intro_start")
-    val introStart: String,
-    @SerializedName("intro_end")
-    val introEnd: String,
-    @SerializedName("end_credits_marker")
-    val endCreditsMarker: String,
-    @SerializedName("drm_uuid")
-    val drmUuid: String,
-    @SerializedName("drm_license_uri")
-    val drmLicenseUri: String
-)
 
+    @JsonProperty("id")
+    val id: String = "",
+
+    @JsonProperty("Episoade_Name")
+    val episoadeName: String = "",
+
+    @JsonProperty("episoade_image")
+    val episoadeImage: String = "",
+
+    @JsonProperty("episoade_description")
+    val episoadeDescription: String = "",
+
+    @JsonProperty("episoade_order")
+    val episoadeOrder: String = "",
+
+    @JsonProperty("season_id")
+    val seasonId: String = "",
+
+    @JsonProperty("downloadable")
+    val downloadable: String = "",
+
+    @JsonProperty("type")
+    val type: String = "",
+
+    @JsonProperty("status")
+    val status: String = "",
+
+    @JsonProperty("source")
+    val source: String = "",
+
+    @JsonProperty("url")
+    val url: String = "",
+
+    @JsonProperty("skip_available")
+    val skipAvailable: String = "",
+
+    @JsonProperty("intro_start")
+    val introStart: String = "",
+
+    @JsonProperty("intro_end")
+    val introEnd: String = "",
+
+    @JsonProperty("end_credits_marker")
+    val endCreditsMarker: String = "",
+
+    @JsonProperty("drm_uuid")
+    val drmUuid: String = "",
+
+    @JsonProperty("drm_license_uri")
+    val drmLicenseUri: String = "",
+)
 
 data class LoadDataObject(
     val id: String,

@@ -131,20 +131,20 @@ data class Search(
 )
 
 data class SearchResult(
-    val id: String,
-    val loklokContentId: String,
-    val isSub: Boolean,
-    val title: String,
-    val image: String,
-    val type: String,
-    val year: String,
-    val source: String,
-    val status: String,
-    val loklokCategory: Long,
-    val episodes: List<Any?>,
-    val description: String,
-    val genres: List<String>,
-    val otherTitles: List<String>,
+    val id: String? = null,
+    val loklokContentId: String? = null,
+    val isSub: Boolean = false,
+    val title: String? = null,
+    val image: String? = null,
+    val type: String? = null,
+    val year: String? = null,
+    val source: String? = null,
+    val status: String? = null,
+    val loklokCategory: Long? = null,
+    val episodes: List<Any?> = emptyList(),
+    val description: String? = null,
+    val genres: List<String> = emptyList(),
+    val otherTitles: List<String> = emptyList(),
 )
 
 data class MediaResult(

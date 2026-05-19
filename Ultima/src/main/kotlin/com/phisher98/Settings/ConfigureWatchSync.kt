@@ -171,7 +171,7 @@ class UltimaConfigureWatchSync(private val plugin: UltimaPlugin) : BottomSheetDi
                         if (currentDevice) deviceName.isChecked = false
                         else activeDevices.add(device.deviceId)
                     } else activeDevices.remove(device.deviceId)
-                    deviceData?.enabledDevices = activeDevices
+                    deviceData.enabledDevices = activeDevices
                 }
                 devicesListLayout.addView(syncDeviceView)
             }

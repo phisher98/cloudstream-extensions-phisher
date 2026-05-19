@@ -161,7 +161,7 @@ class Simkl(val plugin: UltimaPlugin) : MainAPI() {
                     false
                 )
             val homePageList =
-                repo.library()?.getOrThrow()?.allLibraryLists?.mapNotNull {
+                repo.library().getOrThrow()?.allLibraryLists?.mapNotNull {
                     if (it.items.isEmpty()) return@mapNotNull null
                     val libraryName =
                         it.name.asString(plugin.activity ?: return@mapNotNull null)

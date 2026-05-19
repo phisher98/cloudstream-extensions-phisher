@@ -134,9 +134,6 @@ class UltimaConfigureExtensions(val plugin: UltimaPlugin) : BottomSheetDialogFra
             checkBox.text = section.name
             checkBox.makeTvCompatible()
 
-            // Auto-enable sections by default if not already toggled
-            if (section.enabled == null) section.enabled = true
-
             checkBox.isChecked = section.enabled == true
             checkBox.setOnCheckedChangeListener { _, isChecked ->
                 section.enabled = isChecked

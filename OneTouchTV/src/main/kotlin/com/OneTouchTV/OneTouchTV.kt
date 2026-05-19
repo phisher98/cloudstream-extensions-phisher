@@ -1,10 +1,8 @@
 package com.OneTouchTV
 
-import com.google.gson.Gson
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
-import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
@@ -25,13 +23,13 @@ import com.lagradost.cloudstream3.newSubtitleFile
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 
 class OneTouchTV : MainAPI() {
     override var mainUrl = base64Decode("aHR0cHM6Ly9hcGkzLmRldmNvcnAubWU=")
@@ -61,16 +59,16 @@ class OneTouchTV : MainAPI() {
             throw ErrorLoadingException("Failed to decrypt response: ${e.message}")
         }
 
-        val gson = Gson()
         val results: List<SearchResult> = try {
             if (decryptedJson.trim().startsWith("[")) {
-                gson.fromJson(decryptedJson, Array<SearchResult>::class.java).toList()
+                parseJson<Array<SearchResult>>(decryptedJson).toList()
             } else {
-                val parsed = gson.fromJson(decryptedJson, Search::class.java)
-                parsed.result
+                parseJson<Search>(decryptedJson).result
             }
         } catch (e: Exception) {
-            throw ErrorLoadingException("Failed to parse decrypted JSON: ${e.message}")
+            throw ErrorLoadingException(
+                "Failed to parse decrypted JSON: ${e.message}"
+            )
         }
 
         if (results.isEmpty()) {
@@ -79,7 +77,7 @@ class OneTouchTV : MainAPI() {
 
         return results.map { result ->
             newTvSeriesSearchResponse(
-                result.title,
+                result.title ?: "UnKnown",
                 "$mainUrl/vod/${result.id}/detail",
                 if (result.type.equals("movie", true)) TvType.Movie else TvType.TvSeries
             ) {
@@ -105,9 +103,11 @@ class OneTouchTV : MainAPI() {
         }
 
         val parser = try {
-            Gson().fromJson(decryptedJson, MediaResult::class.java)
+            parseJson<MediaResult>(decryptedJson)
         } catch (e: Exception) {
-            throw ErrorLoadingException("Failed to parse decrypted JSON: ${e.message}")
+            throw ErrorLoadingException(
+                "Failed to parse decrypted JSON: ${e.message}"
+            )
         }
 
         val allRawMedia = buildList {
@@ -220,106 +220,114 @@ class OneTouchTV : MainAPI() {
 
 
     override suspend fun load(url: String): LoadResponse {
+
         val rawResponse = try {
             app.get(url).text
         } catch (e: Exception) {
-            throw ErrorLoadingException("Failed to fetch raw response: ${e.message}")
+            throw ErrorLoadingException(
+                "Failed to fetch raw response: ${e.message}"
+            )
         }
 
         val decryptedJson = try {
-            val raw = decryptString(rawResponse)
-            raw
+            decryptString(rawResponse)
         } catch (e: Exception) {
-            throw ErrorLoadingException("Failed to decrypt response: ${e.message}")
+            throw ErrorLoadingException(
+                "Failed to decrypt response: ${e.message}"
+            )
         }
 
-        val obj = JSONObject(decryptedJson)
-        val title = obj.optString("title", "Unknown Title")
-        val poster = obj.optString("image", "null")
-        val backgroundposter = obj.optString("poster", "")
-            .replace("image-7wk.pages.dev","image-v1.pages.dev")
-            .takeIf { it.isNotBlank() && it != "null" }
-            ?: obj.optString("image", "")
-        val description = obj.optString("description", "")
-        val year = obj.optString("year", "").toIntOrNull()
-        val status = getStatus(obj.optString("status", ""))
+        val parser = try {
+            parseJson<LoadData>(decryptedJson)
+        } catch (e: Exception) {
+            throw ErrorLoadingException(
+                "Failed to parse decrypted JSON: ${e.message}"
+            )
+        }
 
-        val actorsJsonArray = obj.optJSONArray("actors")
-        val actors = mutableListOf<ActorData>()
+        val title = parser.title ?: "Unknown Title"
 
-        if (actorsJsonArray != null) {
-            for (i in 0 until actorsJsonArray.length()) {
-                val actorObj = actorsJsonArray.getJSONObject(i)
-                val actorName = actorObj.optString("name", "")
-                val actorImage = actorObj.optString("image", "")
+        val poster = parser.image ?: "null"
 
-                actors.add(
-                    ActorData(
-                        Actor(
-                            actorName,
-                            actorImage,
-                        )
-                    )
+        val backgroundposter = parser.poster
+            ?.replace(
+                "image-7wk.pages.dev",
+                "image-v1.pages.dev"
+            )
+            ?.takeIf { it.isNotBlank() && it != "null" }
+            ?: (parser.image ?: "")
+
+        val description = parser.description ?: ""
+
+        val year = parser.year?.toIntOrNull()
+
+        val status = getStatus(parser.status ?: "")
+
+        val actors = parser.actors.map {
+            ActorData(
+                Actor(
+                    it.name ?: "",
+                    it.image ?: ""
                 )
-            }
+            )
         }
 
-        val tags = mutableListOf<String>()
-        val tagsJson = obj.optJSONArray("genres")
-        if (tagsJson != null) {
-            for (i in 0 until tagsJson.length()) {
-                tags.add(tagsJson.optString(i).capitalize())
-            }
+        val tags = parser.genres.map {
+            it.replaceFirstChar(Char::uppercase)
         }
 
-        val episodes = mutableListOf<Episode>()
-        val episodesJson = obj.optJSONArray("episodes")
+        val episodes = parser.episodes.mapNotNull { ep ->
 
-        if (episodesJson != null) {
-            for (i in 0 until episodesJson.length()) {
-                val ep = episodesJson.getJSONObject(i)
-                val epStr = ep.optString("episode", "?")
-                val identifier = ep.optString("identifier", "")
-                val playId = ep.optString("playId", "")
-                episodes.add(
-                    newEpisode("$mainUrl/vod/$identifier/episode/$playId") {
-                        name = "Episode $epStr"
-                    }
-                )
+            val identifier = ep.identifier ?: return@mapNotNull null
+            val playId = ep.playId ?: return@mapNotNull null
+
+            newEpisode(
+                "$mainUrl/vod/$identifier/episode/$playId"
+            ) {
+                name = "Episode ${ep.episode ?: "?"}"
             }
         }
 
         val recommendation: List<SearchResponse> = try {
-            val rawResponse = app.get("$mainUrl/vod/top").text
 
-            val decryptedJson = try {
-                decryptString(rawResponse)
+            val rawTopResponse = app.get("$mainUrl/vod/top").text
+
+            val topJson = try {
+                decryptString(rawTopResponse)
             } catch (e: Exception) {
-                throw ErrorLoadingException("Failed to decrypt response: ${e.message}")
+                throw ErrorLoadingException(
+                    "Failed to decrypt response: ${e.message}"
+                )
             }
 
-            val gson = Gson()
-            val parser = try {
-                gson.fromJson(decryptedJson, OneTouchTVParser::class.java)
+            val topParser = try {
+                parseJson<OneTouchTVParser>(topJson)
             } catch (e: Exception) {
-                throw ErrorLoadingException("Failed to parse decrypted JSON: ${e.message}")
+                throw ErrorLoadingException(
+                    "Failed to parse decrypted JSON: ${e.message}"
+                )
             }
 
             val allMedia = buildList {
-                parser.day?.forEach { add(it.toMedia()) }
-                parser.week?.forEach { add(it.toMedia()) }
-                parser.month?.forEach { add(it.toMedia()) }
+                topParser.day?.forEach { add(it.toMedia()) }
+                topParser.week?.forEach { add(it.toMedia()) }
+                topParser.month?.forEach { add(it.toMedia()) }
             }
 
             allMedia.map { it.toSearchResponse() }
 
         } catch (e: Exception) {
-            throw ErrorLoadingException("Failed to load recommendations: ${e.message}")
+            throw ErrorLoadingException(
+                "Failed to load recommendations: ${e.message}"
+            )
         }
 
-
-
-        return newTvSeriesLoadResponse(title,url, type = TvType.TvSeries, episodes = episodes.reversed()) {
+        return newTvSeriesLoadResponse(
+            title,
+            url,
+            type = TvType.TvSeries,
+            episodes = episodes.reversed()
+        ) {
             this.backgroundPosterUrl = backgroundposter
             this.posterUrl = poster
             this.plot = description
@@ -327,7 +335,7 @@ class OneTouchTV : MainAPI() {
             this.showStatus = status
             this.year = year
             this.actors = actors
-            this.recommendations =recommendation
+            this.recommendations = recommendation
         }
     }
 
@@ -386,4 +394,27 @@ class OneTouchTV : MainAPI() {
             else -> ShowStatus.Completed
         }
     }
+
+    data class LoadData(
+        val title: String? = null,
+        val image: String? = null,
+        val poster: String? = null,
+        val description: String? = null,
+        val year: String? = null,
+        val status: String? = null,
+        val actors: List<ActorItem> = emptyList(),
+        val genres: List<String> = emptyList(),
+        val episodes: List<EpisodeItem> = emptyList()
+    )
+
+    data class ActorItem(
+        val name: String? = null,
+        val image: String? = null
+    )
+
+    data class EpisodeItem(
+        val episode: String? = null,
+        val identifier: String? = null,
+        val playId: String? = null
+    )
 }
