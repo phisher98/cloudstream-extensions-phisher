@@ -1,7 +1,6 @@
 package com.allwish
 
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
@@ -133,26 +132,23 @@ open class MegaPlay : ExtractorApi() {
         }
 
     data class MegaPlayResponse(
-        @SerializedName("sources")
+        @JsonProperty("sources")
         val sources: Sources? = null,
-
-        @SerializedName("tracks")
+        @JsonProperty("tracks")
         val tracks: List<Track> = emptyList()
     )
 
     data class Sources(
-        @SerializedName("file")
+        @JsonProperty("file")
         val file: String? = null
     )
 
     data class Track(
-        @SerializedName("file")
+        @JsonProperty("file")
         val file: String? = null,
-
-        @SerializedName("label")
+        @JsonProperty("label")
         val label: String? = null,
-
-        @SerializedName("kind")
+        @JsonProperty("kind")
         val kind: String? = null
     )
 }
