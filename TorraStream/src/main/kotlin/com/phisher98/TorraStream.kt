@@ -44,6 +44,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.random.Random
 
 class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
     override var name = "TorraStream"
@@ -120,7 +121,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val adultQuery =
             if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669|190370"
         val type = if (request.data.contains("/movie")) "movie" else "tv"
-        val home = app.get("${request.data}$adultQuery&page=$page")
+        val home = app.get("${request.data}$adultQuery&page=$page&random=${Random.nextInt()}")
             .parsedSafe<Results>()?.results?.mapNotNull { media ->
                 media.toSearchResponse(type)
             } ?: throw ErrorLoadingException("Invalid Json reponse")
@@ -153,9 +154,9 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         val data = parseJson<Data>(url)
         val type = getType(data.type)
         val resUrl = if (type == TvType.Movie) {
-            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&append_to_response=keywords,credits,external_ids,videos,recommendations"
+            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&append_to_response=keywords,credits,external_ids,videos,recommendations&random=${Random.nextInt()}"
         } else {
-            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=keywords,credits,external_ids,videos,recommendations"
+            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&append_to_response=keywords,credits,external_ids,videos,recommendations&random=${Random.nextInt()}"
         }
         val res = app.get(resUrl).parsedSafe<MediaDetail>()
             ?: throw ErrorLoadingException("Invalid Json Response")
@@ -208,7 +209,7 @@ class TorraStream(private val sharedPref: SharedPreferences) : TmdbProvider() {
         return if (type == TvType.TvSeries) {
             val episodes = res.seasons?.amap { season ->
                 val mediaType = data.type ?: "tv"
-                app.get("$tmdbAPI/$mediaType/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
+                app.get("$tmdbAPI/$mediaType/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&random=${Random.nextInt()}")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
                         newEpisode(LoadData(
                             res.title,

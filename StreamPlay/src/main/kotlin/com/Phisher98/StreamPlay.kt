@@ -45,6 +45,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
+import kotlin.random.Random
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
     override var name = "StreamPlay"
@@ -231,7 +232,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         "/discover/tv?api_key=$apiKey&with_networks=49" to "HBO",
         "/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
         "/discover/tv?api_key=$apiKey&with_networks=3353" to "Peacock",
-        "/discover/movie?api_key=$apiKey&sort_by=popularity.desc&with_origin_country=IN&release_date.gte=${getDate().lastWeekStart}&release_date.lte=${getDate().today}" to "Trending Indian Movies",
+        "/discover/movie?api_key=$apiKey&language=en-US&page=1&sort_by=popularity.desc&with_origin_country=IN&release_date.gte=${getDate().lastWeekStart}&release_date.lte=${getDate().today}" to "Trending Indian Movies",
         "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}" to "Airing Today Anime",
         "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}" to "On The Air Anime",
         "/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
@@ -284,9 +285,10 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         val type = if (request.data.contains("/movie")) "movie" else "tv"
 
         val home = app.get(
-            url = "$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page",
+            url = "$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page&random=${Random.nextInt()}",
             timeout = 10000,
         ).parsed<Results>().results?.mapNotNull {
+            Log.d("Phisher",it.toString())
             it.toSearchResponse(type)
         } ?: emptyList()
 
@@ -334,17 +336,17 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         val append = "alternative_titles,credits,external_ids,videos,recommendations,images"
 
         val resUrl = if (type == TvType.Movie) {
-            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
+            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append&random=${Random.nextInt()}"
         } else {
-            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
+            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append&random=${Random.nextInt()}"
         }
 
         // English data only if different from current language
         val enResUrl = if (langCode != "en-US") {
             if (type == TvType.Movie) {
-                "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US"
+                "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US&random=${Random.nextInt()}"
             } else {
-                "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US"
+                "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US&random=${Random.nextInt()}"
             }
         } else null
 
@@ -442,7 +444,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                     async {
                         semaphore.withPermit {
                             withTimeoutOrNull(5000) {
-                                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
+                                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode&random=${Random.nextInt()}")
                                     .parsedSafe<MediaDetailEpisodes>()
                                     ?.episodes
                                     ?.map { eps ->
