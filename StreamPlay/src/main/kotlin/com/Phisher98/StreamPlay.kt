@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addKitsuId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.Score
 import com.lagradost.cloudstream3.SearchResponse
@@ -24,7 +25,6 @@ import com.lagradost.cloudstream3.addDate
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newEpisode
@@ -46,7 +46,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 
-open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
+open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
     override var name = "StreamPlay"
     override val hasMainPage = true
     override val instantLinkLoading = true
@@ -76,7 +76,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         private val apiMutex = Mutex() // Prevents race conditions
         private const val TAG = "StreamPlay"
-
         suspend fun getApiBase(): String {
             StreamPlayCache.getCachedApiBase()?.let {
                 currentBaseUrl = it
@@ -173,14 +172,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
 
-        /** ALL SOURCES */
-
-        val animekaiAPIs = listOf(
-            "https://animekai.fi",
-            "https://animekai.fo",
-            "https://animekai.gs",
-            "https://anikai.to"
-        )
         const val reanime = "https://reanime.to"
         const val kissKhAPI = "https://kisskh.nl"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
@@ -205,11 +196,9 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vidlink = "https://vidlink.pro"
         const val vidfastProApi = "https://vidfast.pro"
         const val videasyAPI = "https://api.videasy.net"
-        const val yFlix = "https://yflix.to"
         const val moviesClubApi = "https://moviesapi.club"
         const val cinemacity = "https://cinemacity.cc"
         const val hexaSU = "https://theemoviedb.hexa.su"
-        const val sudatchi = "https://sudatchi.com"
         const val mappleAPI = "https://mapple.uk"
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val xpassAPI = "https://play.xpass.top"
@@ -293,13 +282,13 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             timeout = 10000
         ).parsedSafe<Results>()?.results?.mapNotNull {
             it.toSearchResponse(type)
-        } ?: throw ErrorLoadingException("Invalid Json response")
+        } ?: emptyList()
         return newHomePageResponse(request.name, home)
     }
 
     private fun Media.toSearchResponse(type: String? = null): SearchResponse? {
         return newMovieSearchResponse(
-            title ?: name ?: originalTitle ?: return null,
+            title ?: name ?: originalTitle ?: originalName ?: return null,
             Data(id = id, type = mediaType ?: type).toJson(),
             TvType.Movie,
         ) {
@@ -718,7 +707,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 if (completed % 10 == 0 || completed == totalProviders) {
                     Log.d(TAG, "⏳ Progress: $completed/$totalProviders providers")
                 }
-                Unit
             }
         }
 
@@ -776,6 +764,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         @param:JsonProperty("name") val name: String? = null,
         @param:JsonProperty("title") val title: String? = null,
         @param:JsonProperty("original_title") val originalTitle: String? = null,
+        @param:JsonProperty("original_name") val originalName: String? = null,
         @param:JsonProperty("media_type") val mediaType: String? = null,
         @param:JsonProperty("poster_path") val posterPath: String? = null,
         @param:JsonProperty("vote_average") val voteAverage: Double? = null,
