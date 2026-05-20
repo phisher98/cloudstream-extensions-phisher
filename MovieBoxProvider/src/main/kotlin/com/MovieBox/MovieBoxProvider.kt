@@ -43,12 +43,13 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.net.URLEncoder
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.max
 import java.security.SecureRandom
+import kotlin.random.Random
+
 class MovieBoxProvider : MainAPI() {
     override var mainUrl = "https://api3.aoneroom.com"
     override var name = "MovieBox"
@@ -904,11 +905,11 @@ private suspend fun searchAndPick(
         return JSONObject(text).optJSONArray("results")
     }
 
-    val multiResults = doSearch("search/multi", "&query=${URLEncoder.encode(normTitle, "UTF-8")}" + (if (year != null) "&year=$year" else ""))
+    val multiResults = doSearch("search/multi", "&query=$normTitle" + (if (year != null) "&year=$year" else ""))
     val searchQueues: List<Pair<String, org.json.JSONArray?>> = listOf(
         "multi" to multiResults,
-        "tv" to doSearch("search/tv", "&query=${URLEncoder.encode(normTitle, "UTF-8")}" + (if (year != null) "&first_air_date_year=$year" else "")),
-        "movie" to doSearch("search/movie", "&query=${URLEncoder.encode(normTitle, "UTF-8")}" + (if (year != null) "&year=$year" else ""))
+        "tv" to doSearch("search/tv", "&query=$normTitle" + (if (year != null) "&first_air_date_year=$year" else "")),
+        "movie" to doSearch("search/movie", "&query=$normTitle" + (if (year != null) "&year=$year" else ""))
     )
 
     var bestId: Int? = null
@@ -984,7 +985,7 @@ private suspend fun searchAndPick(
 
     // fetch details for external_ids
     val detailKind = if (bestIsTv) "tv" else "movie"
-    val detailUrl = "https://api.themoviedb.org/3/$detailKind/$bestId?api_key=1865f43a0549ca50d341dd9ab8b29f49&append_to_response=external_ids"
+    val detailUrl = "https://api.themoviedb.org/3/$detailKind/$bestId?api_key=1865f43a0549ca50d341dd9ab8b29f49&append_to_response=external_ids&random=${Random.nextInt()}"
     val detailText = app.get(detailUrl).text
     val detailJson = JSONObject(detailText)
     val imdbId = detailJson.optJSONObject("external_ids")?.optString("imdb_id")
@@ -1037,9 +1038,9 @@ suspend fun fetchTmdbLogoUrl(
     if (tmdbId == null) return null
 
     val url = if (type == TvType.Movie)
-        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey"
+        "$tmdbAPI/movie/$tmdbId/images?api_key=$apiKey&random=${Random.nextInt()}"
     else
-        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey"
+        "$tmdbAPI/tv/$tmdbId/images?api_key=$apiKey&random=${Random.nextInt()}"
 
     val json = runCatching { JSONObject(app.get(url).text) }.getOrNull() ?: return null
     val logos = json.optJSONArray("logos") ?: return null
