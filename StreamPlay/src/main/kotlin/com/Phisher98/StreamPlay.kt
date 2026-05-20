@@ -45,6 +45,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
+import kotlin.random.Random
 
 open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
     override var name = "StreamPlay"
@@ -275,14 +276,22 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val tmdbAPI = resolveApiBase()
 
-        val adultQuery = if (settingsForProvider.enableAdult) "" else "&without_keywords=190370|13059|226161|195669"
+        val adultQuery = if (settingsForProvider.enableAdult) {
+            ""
+        } else {
+            "&without_keywords=190370|13059|226161|195669"
+        }
+
         val type = if (request.data.contains("/movie")) "movie" else "tv"
+
         val home = app.get(
-            "$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page",
-            timeout = 10000
-        ).parsedSafe<Results>()?.results?.mapNotNull {
+            url = "$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page&random=${Random.nextInt()}",
+            timeout = 10000,
+        ).parsed<Results>().results?.mapNotNull {
+            Log.d("Phisher",it.toString())
             it.toSearchResponse(type)
         } ?: emptyList()
+
         return newHomePageResponse(request.name, home)
     }
 
@@ -327,17 +336,17 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         val append = "alternative_titles,credits,external_ids,videos,recommendations,images"
 
         val resUrl = if (type == TvType.Movie) {
-            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
+            "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append&random=${Random.nextInt()}"
         } else {
-            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append"
+            "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=$langCode&append_to_response=$append&random=${Random.nextInt()}"
         }
 
         // English data only if different from current language
         val enResUrl = if (langCode != "en-US") {
             if (type == TvType.Movie) {
-                "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US"
+                "$tmdbAPI/movie/${data.id}?api_key=$apiKey&language=en-US&random=${Random.nextInt()}"
             } else {
-                "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US"
+                "$tmdbAPI/tv/${data.id}?api_key=$apiKey&language=en-US&random=${Random.nextInt()}"
             }
         } else null
 
@@ -435,7 +444,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                     async {
                         semaphore.withPermit {
                             withTimeoutOrNull(5000) {
-                                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode")
+                                app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey&language=$langCode&random=${Random.nextInt()}")
                                     .parsedSafe<MediaDetailEpisodes>()
                                     ?.episodes
                                     ?.map { eps ->
