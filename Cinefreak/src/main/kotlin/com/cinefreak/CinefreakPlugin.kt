@@ -37,7 +37,7 @@ class CinefreakPlugin: BasePlugin() {
 
         data class Domains(
             val hubcloud: String,
-            val zinkmovies: String,
+            val cinefreak: String,
         )
     }
 }

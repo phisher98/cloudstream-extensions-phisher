@@ -41,7 +41,7 @@ import java.text.Normalizer
 
 open class Cinefreak : MainAPI() {
     override var mainUrl: String = runBlocking {
-        "https://cinefreak.nl"
+        CinefreakPlugin.getDomains()?.cinefreak ?: "https://cinefreak.nl"
     }
     override var name = "Cinefreak"
     override var lang = "bn"
