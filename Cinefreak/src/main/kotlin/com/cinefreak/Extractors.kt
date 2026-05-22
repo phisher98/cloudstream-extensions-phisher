@@ -39,6 +39,74 @@ class Hubdrive : ExtractorApi() {
     }
 }
 
+
+class Neodrive : ExtractorApi() {
+
+    override val name = "Neodrive"
+    override val mainUrl = "https://new.neodrive.site"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(url).document
+
+        val quality = getIndexQuality(doc.select("div.mb-8 h2").text())
+
+        doc.select("div.grid a").forEach { element ->
+
+            val text = element.text().trim()
+            val href = element.attr("href").trim()
+
+            if (href.isBlank()) return@forEach
+
+            when {
+
+                text.contains("FSL", true) -> {
+
+                    callback.invoke(
+                        newExtractorLink(
+                            source = "FSL",
+                            name = "$name FSL",
+                            url = href,
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+
+                text.equals("Cloud Download", true) -> {
+
+                    val secondDoc = app.get(
+                        "$mainUrl$href",
+                        referer = url
+                    ).document
+
+                    val finalUrl = Regex(
+                        """const\s+downloadUrl\s*=\s*"([^"]+)""""
+                    ).find(secondDoc.html())
+                        ?.groupValues
+                        ?.getOrNull(1)
+                        ?: return@forEach
+
+                    callback.invoke(
+                        newExtractorLink(
+                            source = "Cloud",
+                            name = "$name Cloud",
+                            url = finalUrl,
+                        ) {
+                            this.quality = quality
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
 open class HubCloud : ExtractorApi() {
 
     override val name = "Hub-Cloud"

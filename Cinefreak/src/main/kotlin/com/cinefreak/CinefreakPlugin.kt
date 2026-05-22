@@ -16,6 +16,7 @@ class CinefreakPlugin: BasePlugin() {
         registerExtractorAPI(HUBCDN())
         registerExtractorAPI(PixelDrainDev())
         registerExtractorAPI(Hubcloudone())
+        registerExtractorAPI(Neodrive())
     }
 
     companion object {
