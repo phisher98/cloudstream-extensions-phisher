@@ -61,6 +61,15 @@ class Neodrive : ExtractorApi() {
             val text = element.text().trim()
             val href = element.attr("href").trim()
 
+            val fileSize = doc.select("td.info-label")
+                .find {
+                    it.text().contains("File Size", true)
+                }
+                ?.nextElementSibling()
+                ?.text()
+                ?.trim()
+                .orEmpty()
+
             if (href.isBlank()) return@forEach
 
             when {
@@ -70,7 +79,7 @@ class Neodrive : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             source = "FSL",
-                            name = "$name FSL",
+                            name = "$name [FSL] $fileSize",
                             url = href,
                         ) {
                             this.quality = quality
@@ -95,7 +104,7 @@ class Neodrive : ExtractorApi() {
                     callback.invoke(
                         newExtractorLink(
                             source = "Cloud",
-                            name = "$name Cloud",
+                            name = "$name [Cloud] $fileSize",
                             url = finalUrl,
                         ) {
                             this.quality = quality

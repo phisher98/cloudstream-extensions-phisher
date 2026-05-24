@@ -1,6 +1,7 @@
 package com.cinefreak
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.ActorData
 import com.lagradost.cloudstream3.Episode
@@ -427,34 +428,45 @@ open class Cinefreak : MainAPI() {
         if (tvtype == TvType.Movie) {
 
             val movieLinks = mutableMapOf<String, String>()
+            val qualityCount = mutableMapOf<String, Int>()
 
-            doc.select("div.download-links-div").forEach { container ->
+            doc.select("h4.movie-title").forEach { titleEl ->
 
-                container.select("h4.movie-title").forEach { titleEl ->
+                val quality = Regex("""(480p|720p|1080p|2160p)""")
+                    .find(titleEl.text())
+                    ?.value
+                    ?: return@forEach
 
-                    val quality = Regex("""(480p|720p|1080p|2160p)""")
-                        .find(titleEl.text())
-                        ?.value
-                        ?: return@forEach
+                val container = titleEl.nextElementSibling()
+                    ?: return@forEach
 
-                    titleEl.nextElementSibling()
-                        ?.select("a.dlbtn-download[href]")
-                        ?.forEach { a ->
+                container.select("a.dlbtn-download[href]")
+                    .forEach { element ->
 
-                            val href = a.attr("href").trim()
+                        val href = element.attr("href")
+                            .trim()
 
-                            if (href.isNotBlank()) {
-                                movieLinks["Download $quality"] = href
+                        if (href.isNotEmpty()) {
+
+                            val count = (qualityCount[quality] ?: 0) + 1
+                            qualityCount[quality] = count
+
+                            val key = if (count == 1) {
+                                quality
+                            } else {
+                                "${quality}_$count"
                             }
+
+                            movieLinks[key] = href
                         }
-                }
+                    }
             }
 
             return newMovieLoadResponse(
                 title,
                 url,
                 TvType.Movie,
-                listOf(movieLinks.toJson())
+                movieLinks.toJson()
             ) {
                 this.backgroundPosterUrl = background
                 this.recommendations = recommendations
@@ -550,9 +562,9 @@ open class Cinefreak : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        Log.d("Phisher",data)
 
         val links = mutableMapOf<String, String>()
-
         tryParseJson<Map<String, Any>>(data)
             ?.get("links")
             ?.let { map ->
@@ -562,12 +574,10 @@ open class Cinefreak : MainAPI() {
             }
 
         if (links.isEmpty()) {
-            tryParseJson<List<String>>(data)?.forEach { json ->
-                tryParseJson<Map<String, String>>(json)
-                    ?.forEach { (k, v) ->
-                        links[k] = v
-                    }
-            }
+            tryParseJson<Map<String, String>>(data)
+                ?.forEach { (k, v) ->
+                    links[k] = v
+                }
         }
 
         if (links.isEmpty()) return false
@@ -591,6 +601,19 @@ open class Cinefreak : MainAPI() {
 
             val doc = app.get(decoded).document
 
+            val fileSize = doc
+                .select("tr")
+                .find {
+                    it.selectFirst("td")
+                        ?.text()
+                        ?.contains("File Size", true) == true
+                }
+                ?.select("td.text-right")
+                ?.lastOrNull()
+                ?.text()
+                ?.trim()
+                .orEmpty()
+
             doc.select("a[href]").forEach { a ->
 
                 val text = a.text().trim()
@@ -611,7 +634,7 @@ open class Cinefreak : MainAPI() {
                         callback(
                             newExtractorLink(
                                 source = "[FSL]",
-                                name = "$name [FSL]",
+                                name = "$name [FSL] $fileSize",
                                 url = href,
                                 type = INFER_TYPE
                             ) {
@@ -634,7 +657,7 @@ open class Cinefreak : MainAPI() {
                                 callback(
                                     newExtractorLink(
                                         source = "[ResumeCloud]",
-                                        name = "$name [ResumeCloud]",
+                                        name = "$name [ResumeCloud] $fileSize",
                                         url = finalLink,
                                         type = INFER_TYPE
                                     ) {
