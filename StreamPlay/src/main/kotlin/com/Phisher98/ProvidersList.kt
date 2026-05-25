@@ -47,7 +47,6 @@ import com.phisher98.StreamPlayExtractor.invokeVidSrcXyz
 import com.phisher98.StreamPlayExtractor.invokeVideasy
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidzee
-import com.phisher98.StreamPlayExtractor.invokeWatch32APIHQ
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
 import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
 import com.phisher98.StreamPlayExtractor.invokeXpass
@@ -208,10 +207,6 @@ private val providers by lazy {
         },
         Provider("moviesdrive", "MoviesDrive") { res, subtitleCallback, callback, _, _ ->
             invokeMoviesdrive(res.imdbId, res.season, res.episode, subtitleCallback, callback)
-        },
-        Provider("watch32APIHQ", "Watch32 API HQ") { res, subtitleCallback, callback, _, _ ->
-            if (!res.isAnime) invokeWatch32APIHQ(res.title, res.season, res.episode,
-                subtitleCallback, callback)
         },
         Provider("superstream", "SuperStream") { res, _, callback, token, _ ->
             val status = getDubStatus(res)
