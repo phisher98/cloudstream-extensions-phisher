@@ -1390,7 +1390,7 @@ class Kwik : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
-        val res = app.get(url,referer=animepaheAPI)
+        val res = app.get(url,referer="${animepaheAPI}/")
         val script =
             res.document.selectFirst("script:containsData(function(p,a,c,k,e,d))")?.data()
         val unpacked = getAndUnpack(script ?: return)

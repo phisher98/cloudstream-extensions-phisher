@@ -366,7 +366,7 @@ class AnimePahe : MainAPI() {
         val episodeUrl = parsed.getUrl() ?: ""
         val document= app.get(episodeUrl, headers= headers).document
         document.select("#resolutionMenu button")
-            .map {
+            .forEach {
                 val dubText = it.select("span").text().lowercase()
                 val type = if ("eng" in dubText) "DUB" else "SUB"
 
@@ -382,7 +382,7 @@ class AnimePahe : MainAPI() {
                     loadCustomExtractor(
                         "Animepahe $source [$type]",
                         href,
-                        "",
+                        mainUrl,
                         subtitleCallback,
                         callback,
                         quality
@@ -405,7 +405,7 @@ class AnimePahe : MainAPI() {
             loadCustomExtractor(
                 "Animepahe Pahe $source [$type]",
                 href,
-                "",
+                mainUrl,
                 subtitleCallback,
                 callback,
                 quality.toIntOrNull()
