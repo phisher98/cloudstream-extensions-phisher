@@ -161,11 +161,6 @@ data class IndexMedia(
     @param:JsonProperty("name") val name: String? = null,
     @param:JsonProperty("modifiedTime") val modifiedTime: String? = null,
 )
-
-data class IndexData(
-    @param:JsonProperty("files") val files: ArrayList<IndexMedia>? = arrayListOf(),
-)
-
 data class JikanExternal(
     @param:JsonProperty("name") val name: String? = null,
     @param:JsonProperty("url") val url: String? = null,
@@ -264,12 +259,6 @@ data class RidoItems(
     @param:JsonProperty("slug") var slug: String? = null,
     @param:JsonProperty("contentable") var contentable: RidoContentable? = null,
 )
-
-data class RidoData(
-    @param:JsonProperty("url") var url: String? = null,
-    @param:JsonProperty("items") var items: ArrayList<RidoItems>? = arrayListOf(),
-)
-
 data class NepuSearch(
     @param:JsonProperty("data") val data: ArrayList<Data>? = arrayListOf(),
 ) {
@@ -607,15 +596,6 @@ data class VidlinkResponse(
 data class VidlinkStream(
     @SerializedName("playlist") val playlist: String
 )
-data class PrimeSrcServer(
-    val name: String,
-    val key: String,
-    @param:JsonProperty("file_size")
-    val fileSize: String?,
-    @param:JsonProperty("file_name")
-    val fileName: String?,
-)
-
 
 data class VidFastRes(
     val status: Long,
@@ -762,14 +742,27 @@ data class HiAnimeTrack(
 //vaplayer
 
 data class Vaplayer(
-    val data: VaplayerData,
-    @param:JsonProperty("default_subs")
-    val defaultSubs: List<Any?>,
+    @JsonProperty("data")
+    val data: VaplayerData? = null,
+
+    @JsonProperty("default_subs")
+    val defaultSubs: List<VaplayerSub>? = null
 )
 
 data class VaplayerData(
-    @param:JsonProperty("stream_urls")
-    val streamUrls: List<String>,
+    @JsonProperty("stream_urls")
+    val streamUrls: List<String>? = null
+)
+
+data class VaplayerSub(
+    @JsonProperty("lang")
+    val lang: String? = null,
+
+    @JsonProperty("code")
+    val code: String? = null,
+
+    @JsonProperty("url")
+    val url: String? = null
 )
 
 //ReAnime

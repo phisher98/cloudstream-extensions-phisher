@@ -1,5 +1,6 @@
 package com.phisher98
 
+import android.util.Log
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlayExtractor.invoke2embed
@@ -138,7 +139,7 @@ private val providers by lazy {
         Provider("Animex", "Animex") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
-                invokeAnimex(ids.malId, ids.anilistId, res.title, res.episode, subtitleCallback, callback, getDubStatus(res))
+                invokeAnimex(ids.malId, ids.anilistId, res.jpTitle, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("kickass", "KickAssAnime") { res, subtitleCallback, callback, _, _ ->
@@ -156,7 +157,7 @@ private val providers by lazy {
         Provider("anichi", "Anichi / AllAnime") { res, subtitleCallback, callback, _, _ ->
             if (res.isAnime) {
                 val ids = getAnimeIds(res)
-                invokeAnichi(ids.zoroTitle, res.title, ids.tmdbYear, res.episode, subtitleCallback, callback, getDubStatus(res))
+                invokeAnichi(res.jpTitle, res.title, ids.tmdbYear, res.episode, subtitleCallback, callback, getDubStatus(res))
             }
         },
         Provider("tokyoinsider", "Tokyo Insider") { res, _, callback, _, _ ->
@@ -164,9 +165,10 @@ private val providers by lazy {
                 invokeTokyoInsider(res.jpTitle, res.title, res.episode, callback, getDubStatus(res))
             }
         },
-        Provider("anizone", "AniZone") { res, _, callback, _, _ ->
+        Provider("anizone", "AniZone") { res, subtitleCallback, callback, _, _ ->
+            Log.d("Phisher",res.jpTitle.toString())
             if (res.isAnime) {
-                invokeAnizone(res.jpTitle, res.title, res.episode, callback, getDubStatus(res))
+                invokeAnizone(res.jpTitle, res.episode, subtitleCallback , callback, getDubStatus(res))
             }
         },
         Provider("topmovies", "Top Movies") { res, subtitleCallback, callback, _, _ ->
@@ -310,8 +312,8 @@ private val providers by lazy {
         Provider("Xpass", "Xpass") { res, _, callback, _, _ ->
             if (!res.isAnime) invokeXpass(res.id, res.season, res.episode, callback, )
         },
-        Provider("vaplayer", "Vaplayer") { res, _, callback, _, _ ->
-            if (!res.isAnime) invokevaplayer(res.id, res.season, res.episode, callback)
+        Provider("vaplayer", "Vaplayer") { res, subtitleCallback, callback, _, _ ->
+            invokevaplayer(res.id, res.season, res.episode, subtitleCallback, callback)
         },
         Provider("Dudefilms", "Dudefilms") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeDudefilms(res.imdbId, res.season, res.episode, subtitleCallback, callback)

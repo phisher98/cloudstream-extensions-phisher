@@ -1,6 +1,7 @@
 package com.phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.activity
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.HomePageList
@@ -313,11 +314,11 @@ class StreamPlayAnime : MainAPI() {
         val anititle = mediaData.title
         val anidbEid = mediaData.anidbEid
         val aniid = mediaData.aniId
-        val season= jpTitle?.let { extractSeason(it) }
+        //val season= jpTitle?.let { extractSeason(it) }
         val year=mediaData.year
         val malsync = app.get("$malsyncAPI/mal/anime/$malId").parsedSafe<MALSyncResponses>()?.sites
         val zoro = malsync?.zoro
-        val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
+        //val zorotitle = zoro?.values?.firstNotNullOfOrNull { it["title"] }?.replace(":", " ")
         val kaasSlug = malsync?.KickAssAnime?.values?.firstNotNullOfOrNull { it["identifier"] }
 
         val dubStatus: String? =
@@ -333,10 +334,10 @@ class StreamPlayAnime : MainAPI() {
                 }
             },
 
-            { invokeAnizone(jpTitle,zorotitle, episode, callback, dubStatus) },
+            { invokeAnizone(jpTitle, episode, subtitleCallback, callback, dubStatus) },
             { invokeAnichi(jpTitle, anititle, year, episode, subtitleCallback, callback, dubStatus) },
-            { invokeKickAssAnime(zorotitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
-            { invokeAnimex(malId, aniid, zorotitle, episode, subtitleCallback, callback, dubStatus) },
+            { invokeKickAssAnime(jpTitle,kaasSlug, episode, subtitleCallback, callback, dubStatus) },
+            { invokeAnimex(malId, aniid, jpTitle, episode, subtitleCallback, callback, dubStatus) },
             {
                 malId?.let {
                     invokeAnimetosho(

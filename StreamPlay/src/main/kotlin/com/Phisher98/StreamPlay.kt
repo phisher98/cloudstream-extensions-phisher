@@ -287,7 +287,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
             url = "$tmdbAPI${request.data}$adultQuery&language=$langCode&page=$page",
             timeout = 10000,
         ).parsed<Results>().results?.mapNotNull {
-            Log.d("Phisher",it.toString())
             it.toSearchResponse(type)
         } ?: emptyList()
 
@@ -447,7 +446,6 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                                     .parsedSafe<MediaDetailEpisodes>()
                                     ?.episodes
                                     ?.map { eps ->
-
                                         newEpisode(
                                             LinkData(
                                                 data.id,
@@ -465,7 +463,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
                                                 airedYear = year,
                                                 lastSeason = lastSeason,
                                                 epsTitle = eps.name,
-                                                jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
+                                                jpTitle = res.alternative_titles?.results
+                                                    ?.firstOrNull {
+                                                        it.iso_3166_1 == "JP" &&
+                                                                it.type?.equals("romaji", ignoreCase = true) == true
+                                                    }?.title,
                                                 date = season.airDate,
                                                 airedDate = res.releaseDate ?: res.firstAirDate,
                                                 isAsian = isAsian,
@@ -496,7 +498,11 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
             if (isAnime) {
                 val imdbId = res.external_ids?.imdb_id.orEmpty()
                 val animeVideos = cineRes?.meta?.videos?.filter { it.season != 0 } ?: emptyList()
-                val jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title
+                val jpTitle = res.alternative_titles?.results
+                    ?.firstOrNull {
+                        it.iso_3166_1 == "JP" &&
+                                it.type?.equals("romaji", ignoreCase = true) == true
+                    }?.title
                     ?: cineRes?.meta?.name
                 val syncMetaData = withTimeoutOrNull(4000) {
                     app.get("https://api.ani.zip/mappings?imdb_id=$imdbId").text

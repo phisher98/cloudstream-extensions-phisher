@@ -326,61 +326,44 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
     suspend fun invokeAnizone(
-        jptitle: String? = null,
-        engtitle: String? = null,
+        title: String? = null,
         episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
-        dubtype: String?,
+        dubtype: String?
     ) {
+
         if (dubtype == null || (!dubtype.equals(
                 "SUB",
                 ignoreCase = true
             ) && !dubtype.equals("Movie", ignoreCase = true))
         ) return
 
-        val searchResponse = safeGet("https://anizone.to/anime?search=${jptitle}")
-        if (searchResponse.code != 200) return
+        val url = "https://anizone.to/anime?search=$title"
 
-        val href = searchResponse.document
-            .select("div.h-6.inline.truncate a")
-            .firstOrNull {
-                it.text().equals(jptitle, ignoreCase = true)
-            }?.attr("href")
-            ?: run {
-                if (engtitle.isNullOrBlank()) null
-                else {
-                    val fallback = safeGet("https://anizone.to/anime?search=${engtitle}")
-                    if (fallback.code != 200) null
-                    else fallback.document
-                        .select("div.h-6.inline.truncate a")
-                        .firstOrNull {
-                            val jp = jptitle ?: return@firstOrNull false
+        val link = app.get(url).document.select("div.truncate > a").firstOrNull {
+            it.text().contains(title.toString(), ignoreCase = true)
+        }?.attr("href") ?: return
 
-                            fun norm(s: String) =
-                                s.lowercase()
-                                    .replace(Regex("[-:]"), " ")
-                                    .replace(Regex("\\s+"), " ")
-                                    .trim()
+        val document = app.get("$link/$episode").document
 
-                            norm(it.text()).startsWith(norm(jp))
-                        }
-                        ?.attr("href")
-                }
-            }
+        document.select("track").forEach {
+            subtitleCallback.invoke(
+                newSubtitleFile(
+                    getLanguage(it.attr("label")),
+                    it.attr("src")
+                )
+            )
+        }
 
-        if (href.isNullOrBlank()) return
-        val episodeResponse = safeGet("$href/$episode")
-        if (episodeResponse.code != 200) return
-        val m3u8 = episodeResponse.document.select("media-player").attr("src")
-        if (m3u8.isBlank()) return
+        val source = document.select("media-player").attr("src")
         callback.invoke(
             newExtractorLink(
                 "Anizone",
-                "⌜ Anizone ⌟",
-                url = m3u8,
-                INFER_TYPE
+                "⌜ Anizone ⌟ Multi Audio 🌐",
+                source,
+                type = ExtractorLinkType.M3U8,
             ) {
-                this.referer = ""
                 this.quality = Qualities.P1080.value
             }
         )
@@ -4119,7 +4102,6 @@ object StreamPlayExtractor : StreamPlay() {
         }.getOrNull() ?: return
 
         val serversList = serversRoot.result
-        Log.d("Phisher",serversList.toJson())
 
         if (serversList.isEmpty()) return
 
@@ -4944,9 +4926,10 @@ object StreamPlayExtractor : StreamPlay() {
         tmdb: Int? = null,
         season: Int? = null,
         episode: Int? = null,
+        subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val url = if(season == null) {
+        val url = if (season == null) {
             "$vaplayer/api.php?tmdb=$tmdb&type=movie"
         } else {
             "$vaplayer/api.php?tmdb=$tmdb&type=tv&season=$season&episode=$episode"
@@ -4954,16 +4937,26 @@ object StreamPlayExtractor : StreamPlay() {
 
         val refer = "https://brightpathsignals.com/"
 
-        val streamurls = app.get(url, referer = refer).parsedSafe<Vaplayer>()?.data?.streamUrls ?: return
-        var index = 1
+        val response = app.get(url, referer = refer)
+            .parsedSafe<Vaplayer>() ?: return
 
-        streamurls.forEach { streamUrl ->
+        val streamUrls = response.data?.streamUrls ?: return
+
+        response.defaultSubs?.forEach { sub ->
+            subtitleCallback.invoke(
+                newSubtitleFile(
+                    sub.lang ?: sub.code ?: "Unknown",
+                    sub.url ?: return@forEach
+                )
+            )
+        }
+
+        streamUrls.forEachIndexed { index, streamUrl ->
             generateM3u8(
-                "Vaplayer Server $index",
+                "Vaplayer Server ${index + 1}",
                 streamUrl,
                 refer
             ).forEach(callback)
-            index++
         }
     }
 
