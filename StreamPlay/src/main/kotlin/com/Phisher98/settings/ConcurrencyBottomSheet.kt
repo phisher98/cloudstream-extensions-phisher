@@ -78,8 +78,16 @@ class ConcurrencyBottomSheet(
         val btnIncrease = view.findView<Button>("btn_increase")
         val btnClose = view.findView<Button>("btn_close")
 
+        btnDecrease.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D32F2F"))
+        btnDecrease.setTextColor(android.graphics.Color.WHITE)
         btnDecrease.makeTvCompatible()
+
+        btnIncrease.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#1E88E5"))
+        btnIncrease.setTextColor(android.graphics.Color.WHITE)
         btnIncrease.makeTvCompatible()
+
+        btnClose.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2196F3"))
+        btnClose.setTextColor(android.graphics.Color.WHITE)
         btnClose.makeTvCompatible()
         fun updateUI() {
             tvValue.text = currentValue.toString()

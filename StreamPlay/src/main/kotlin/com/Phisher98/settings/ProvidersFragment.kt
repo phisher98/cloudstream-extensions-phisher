@@ -106,8 +106,10 @@ class ProvidersFragment(
 
         btnSelectAll = view.findView("btn_select_all")
         btnDeselectAll = view.findView("btn_deselect_all")
-        //btnSelectAll.makeTvCompatible()
-        //btnDeselectAll.makeTvCompatible()
+        btnSelectAll.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#1F6FEB"))
+        btnSelectAll.setTextColor(android.graphics.Color.WHITE)
+        btnDeselectAll.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#BB2D3B"))
+        btnDeselectAll.setTextColor(android.graphics.Color.WHITE)
         container = view.findView("list_container")
         container.makeTvCompatible()
         providers = buildProviders().sortedBy { it.name.lowercase() }
@@ -190,6 +192,13 @@ class ProvidersFragment(
         val btnSaveProfile = view.findView<Button>("btn_save_profile")
         val btnLoadProfile = view.findView<Button>("btn_load_profile")
         val btnDeleteProfile = view.findView<Button>("btn_delete_profile")
+
+        btnSaveProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#1E88E5"))
+        btnSaveProfile.setTextColor(android.graphics.Color.WHITE)
+        btnLoadProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2E7D32"))
+        btnLoadProfile.setTextColor(android.graphics.Color.WHITE)
+        btnDeleteProfile.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#C62828"))
+        btnDeleteProfile.setTextColor(android.graphics.Color.WHITE)
 
         btnSaveProfile.setOnClickListener {
             val input = android.widget.EditText(requireContext())

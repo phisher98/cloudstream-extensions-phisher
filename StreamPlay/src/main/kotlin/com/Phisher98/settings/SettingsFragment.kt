@@ -77,9 +77,12 @@ class SettingsFragment(
         val loginButton = view.findView<Button>("loginButton")
 
         tokenInput.background = getDrawable("input_text_selector")
-        addButton.background = getDrawable("btn_purple_selector")
-        resetButton.background = getDrawable("btn_red_selector")
-        loginButton.background = getDrawable("btn_blue_selector")
+        addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#6200EE"))
+        addButton.setTextColor(android.graphics.Color.WHITE)
+        resetButton.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D32F2F"))
+        resetButton.setTextColor(android.graphics.Color.WHITE)
+        loginButton.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4285F4"))
+        loginButton.setTextColor(android.graphics.Color.WHITE)
         val webView = view.findView<WebView>("authWebView")
         val savedToken = sharedPref.getString("token", null)
         if (!savedToken.isNullOrEmpty()) {

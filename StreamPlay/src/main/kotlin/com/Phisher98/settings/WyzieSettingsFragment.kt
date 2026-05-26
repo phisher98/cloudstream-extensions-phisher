@@ -76,9 +76,12 @@ class WyzieSettingsFragment(
 
         cardContainer.background = getDrawable("settings_item_background")
         wyzieKeyInput.background = getDrawable("input_text_selector")
-        getKeyButton.background = getDrawable("btn_blue_selector")
-        saveButton.background = getDrawable("btn_purple_selector")
-        resetButton.background = getDrawable("btn_red_selector")
+        getKeyButton.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4285F4"))
+        getKeyButton.setTextColor(android.graphics.Color.WHITE)
+        saveButton.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#6200EE"))
+        saveButton.setTextColor(android.graphics.Color.WHITE)
+        resetButton.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#D32F2F"))
+        resetButton.setTextColor(android.graphics.Color.WHITE)
 
         val savedKey = sharedPref.getString("wyzie_key", null)
         if (!savedKey.isNullOrEmpty()) {
