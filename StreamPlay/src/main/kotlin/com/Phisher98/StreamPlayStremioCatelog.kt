@@ -30,7 +30,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.phisher98.StreamPlay.Companion.dahmerMoviesAPI
 import com.phisher98.StreamPlayExtractor.invokeSubtitleAPI
-import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import com.phisher98.StreamPlayExtractor.invokeWYZIESubs
 import com.phisher98.StreamPlayExtractor.token
 import org.json.JSONObject
 
@@ -156,7 +156,7 @@ class StreamPlayStremioCatelog(
             },
             {
                 try {
-                    invokeWyZIESUBAPI(imdb, res.season, res.episode, subtitleCallback)
+                    invokeWYZIESubs(imdb, res.season, res.episode, subtitleCallback)
                 } catch (_: Throwable) {
                     // ignore failure
                 }

@@ -35,7 +35,6 @@ class StreamPlayPlugin: Plugin() {
     private val PREF_KEY_LINKS = "streamplay_stremio_saved_links"
 
     override fun load(context: Context) {
-
         val sharedPref = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
 
         // Initialize StreamPlay optimizations

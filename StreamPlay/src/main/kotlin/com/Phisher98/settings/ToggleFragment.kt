@@ -12,7 +12,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Switch
 import androidx.core.content.edit
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.fragment.app.DialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlay
@@ -23,8 +23,24 @@ import com.phisher98.StreamPlayStremioCatelogFrag
 
 class ToggleFragment(
     plugin: StreamPlayPlugin,
-    private val sharedPref: SharedPreferences
-) : BottomSheetDialogFragment() {
+    private val sharedPref: SharedPreferences,
+    private val onDismissCallback: (() -> Unit)? = null
+) : DialogFragment() {
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.apply {
+            val displayMetrics = resources.displayMetrics
+            val maxDialogWidth = (500 * displayMetrics.density).toInt()
+            val width = if (displayMetrics.widthPixels > 0 && displayMetrics.widthPixels > maxDialogWidth) {
+                maxDialogWidth
+            } else {
+                (displayMetrics.widthPixels * 0.9f).toInt()
+            }
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+    }
 
     private val res: Resources = plugin.resources ?: throw Exception("Unable to access plugin resources")
 
@@ -86,6 +102,10 @@ class ToggleFragment(
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val root = getLayout("fragment_toggle_extensions", inflater, container)
+        val drawableId = res.getIdentifier("dialog_background", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        if (drawableId != 0) {
+            root.background = res.getDrawable(drawableId, null)
+        }
         val extensionList = root.findView<LinearLayout>("toggle_list_container")
         val stremioLinks = loadStremioLinks()
         val apis = buildList {
@@ -159,5 +179,10 @@ class ToggleFragment(
             dismiss()
         }
         return root
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissCallback?.invoke()
     }
 }

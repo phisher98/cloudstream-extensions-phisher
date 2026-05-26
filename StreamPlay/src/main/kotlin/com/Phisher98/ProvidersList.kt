@@ -49,7 +49,7 @@ import com.phisher98.StreamPlayExtractor.invokeVideasy
 import com.phisher98.StreamPlayExtractor.invokeVidlink
 import com.phisher98.StreamPlayExtractor.invokeVidzee
 import com.phisher98.StreamPlayExtractor.invokeWatchsomuch
-import com.phisher98.StreamPlayExtractor.invokeWyZIESUBAPI
+import com.phisher98.StreamPlayExtractor.invokeWYZIESubs
 import com.phisher98.StreamPlayExtractor.invokeXpass
 import com.phisher98.StreamPlayExtractor.invokeZinkmovies
 import com.phisher98.StreamPlayExtractor.invokeZshow
@@ -288,7 +288,7 @@ private val providers by lazy {
             if (!res.isAnime) invokeMapple(res.id, res.season, res.episode ,callback)
         },
         Provider("WyZIESUB", "WyZIESUB (Subtitles)") { res, subtitleCallback, _, _, _ ->
-            invokeWyZIESUBAPI(res.imdbId, res.season, res.episode, subtitleCallback)
+            invokeWYZIESubs(res.imdbId, res.season, res.episode, subtitleCallback)
         },
         Provider("SubtitleAPI", "SubtitleAPI (Subtitles)") { res, subtitleCallback, _, _, _ ->
             invokeSubtitleAPI(res.imdbId, res.season, res.episode, subtitleCallback)

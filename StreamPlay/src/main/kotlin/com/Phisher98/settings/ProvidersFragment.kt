@@ -16,8 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.edit
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.fragment.app.DialogFragment
 import androidx.core.view.isNotEmpty
 import androidx.core.widget.addTextChangedListener
 import com.lagradost.cloudstream3.CommonActivity.showToast
@@ -28,8 +27,9 @@ private val PREFS_PROFILES = "provider_profiles"
 
 class ProvidersFragment(
     private val plugin: StreamPlayPlugin,
-    private val sharedPref: SharedPreferences
-) : BottomSheetDialogFragment() {
+    private val sharedPref: SharedPreferences,
+    private val onDismissCallback: (() -> Unit)? = null
+) : DialogFragment() {
 
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
     private lateinit var btnSave: ImageButton
@@ -66,20 +66,26 @@ class ProvidersFragment(
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        return getLayout("fragment_providers", inflater, container)
+        val view = getLayout("fragment_providers", inflater, container)
+        val drawableId = res.getIdentifier("dialog_background", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        if (drawableId != 0) {
+            view.background = res.getDrawable(drawableId, null)
+        }
+        return view
     }
 
     override fun onStart() {
         super.onStart()
-        dialog?.let { dlg ->
-            val bottomSheet = dlg.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-            bottomSheet?.let { sheet ->
-                val behavior = BottomSheetBehavior.from(sheet)
-                behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                behavior.isDraggable = true
-                behavior.skipCollapsed = true
-                sheet.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        dialog?.window?.apply {
+            val displayMetrics = resources.displayMetrics
+            val maxDialogWidth = (500 * displayMetrics.density).toInt()
+            val width = if (displayMetrics.widthPixels > 0 && displayMetrics.widthPixels > maxDialogWidth) {
+                maxDialogWidth
+            } else {
+                (displayMetrics.widthPixels * 0.9f).toInt()
             }
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         }
     }
     @SuppressLint("SetTextI18n")
@@ -263,7 +269,7 @@ class ProvidersFragment(
     }
 
     private fun dismissFragment() {
-        parentFragmentManager.beginTransaction().remove(this).commitAllowingStateLoss()
+        dismiss()
     }
 
     inner class ProviderAdapter(
@@ -350,5 +356,8 @@ class ProvidersFragment(
         android.widget.Toast.makeText(requireContext(), msg, android.widget.Toast.LENGTH_SHORT).show()
     }
 
-
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissCallback?.invoke()
+    }
 }

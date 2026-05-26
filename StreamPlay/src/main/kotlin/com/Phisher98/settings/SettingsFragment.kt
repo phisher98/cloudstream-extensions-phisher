@@ -11,9 +11,7 @@ import android.webkit.*
 import android.widget.Button
 import android.widget.EditText
 import androidx.annotation.RequiresApi
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.fragment.app.DialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
 import com.lagradost.cloudstream3.CommonActivity.showToast
@@ -21,8 +19,19 @@ import com.lagradost.cloudstream3.CommonActivity.showToast
 class SettingsFragment(
     plugin: StreamPlayPlugin,
     private val sharedPref: SharedPreferences,
-) : BottomSheetDialogFragment() {
+    private val onDismissCallback: (() -> Unit)? = null
+) : DialogFragment() {
     private val res = plugin.resources ?: throw Exception("Unable to read resources")
+
+    private fun getDrawable(name: String): android.graphics.drawable.Drawable {
+        val id = res.getIdentifier(name, "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        return res.getDrawable(id, null) ?: throw Exception("Drawable $name not found")
+    }
+
+    private fun View.makeTvCompatible() {
+        val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.background = res.getDrawable(outlineId, null)
+    }
 
     private fun <T : View> View.findView(name: String): T {
         val id = res.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
@@ -35,15 +44,26 @@ class SettingsFragment(
     ): View? {
         val id = res.getIdentifier("settings_fragment", "layout", BuildConfig.LIBRARY_PACKAGE_NAME)
         val layout = res.getLayout(id)
-        return inflater.inflate(layout, container, false)
+        val view = inflater.inflate(layout, container, false)
+        val drawableId = res.getIdentifier("dialog_background", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        if (drawableId != 0) {
+            view.background = res.getDrawable(drawableId, null)
+        }
+        return view
     }
 
     override fun onStart() {
         super.onStart()
-        (dialog as? BottomSheetDialog)?.behavior?.apply {
-            state = BottomSheetBehavior.STATE_EXPANDED
-            skipCollapsed = true
-            isDraggable = false // optional: prevent dragging at all
+        dialog?.window?.apply {
+            val displayMetrics = resources.displayMetrics
+            val maxDialogWidth = (500 * displayMetrics.density).toInt()
+            val width = if (displayMetrics.widthPixels > 0 && displayMetrics.widthPixels > maxDialogWidth) {
+                maxDialogWidth
+            } else {
+                (displayMetrics.widthPixels * 0.9f).toInt()
+            }
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         }
     }
 
@@ -55,6 +75,11 @@ class SettingsFragment(
         val addButton = view.findView<Button>("addButton")
         val resetButton = view.findView<Button>("resetButton")
         val loginButton = view.findView<Button>("loginButton")
+
+        tokenInput.background = getDrawable("input_text_selector")
+        addButton.background = getDrawable("btn_purple_selector")
+        resetButton.background = getDrawable("btn_red_selector")
+        loginButton.background = getDrawable("btn_blue_selector")
         val webView = view.findView<WebView>("authWebView")
         val savedToken = sharedPref.getString("token", null)
         if (!savedToken.isNullOrEmpty()) {
@@ -152,5 +177,10 @@ class SettingsFragment(
                 }
             }
         }
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissCallback?.invoke()
     }
 }

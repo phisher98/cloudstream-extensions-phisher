@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.extractors.helper.AesHelper.cryptoAESHandler
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -63,12 +64,9 @@ import javax.crypto.spec.SecretKeySpec
 val session = Session(Requests().baseClient)
 
 val webMutex = Mutex()
-private val streamPlayExtractorGson by lazy { Gson() }
 private val streamPlayExtractorMapper by lazy { jacksonObjectMapper() }
-private val nonWordSplitRegex = Regex("\\W+")
 private val normalizeAlphaNumSpaceRegex = Regex("[^a-z0-9 ]")
 private val normalizeAlphaNumRegex = Regex("[^a-z0-9]")
-private val wyzieSubListType by lazy { object : TypeToken<List<WyZIESUB>>() {}.type }
 
 
 object StreamPlayExtractor : StreamPlay() {
@@ -1673,32 +1671,34 @@ object StreamPlayExtractor : StreamPlay() {
     }
 
 
-    suspend fun invokeWyZIESUBAPI(
+    suspend fun invokeWYZIESubs(
         id: String? = null,
         season: Int? = null,
         episode: Int? = null,
-        subtitleCallback: (SubtitleFile) -> Unit
+        subtitleCallback: (SubtitleFile) -> Unit,
     ) {
-        if (id.isNullOrBlank()) return
+        val key = wyziekey.takeIf { !it.isNullOrBlank() } ?: return
 
-        val url = buildString {
-            append("$WyZIESUBAPI/search?id=$id")
-            if (season != null && episode != null) append("&season=$season&episode=$episode")
+        val url = if (season != null) {
+            "$WYZIESubsAPI/search?id=$id&season=$season&episode=$episode&source=all&key=$key"
+        } else {
+            "$WYZIESubsAPI/search?id=$id&source=all&key=$key"
         }
 
-        val response = safeGet(url)
-        if (response.code != 200) return
+        val data = app.get(
+            url,
+            timeout = 10000
+        ).parsedSafe<Array<WYZIESubtitle>>() ?: return
 
-        val subtitles = runCatching {
-            streamPlayExtractorGson.fromJson<List<WyZIESUB>>(
-                response.toString(),
-                wyzieSubListType
+        data.forEach { sub ->
+            val lang = sub.language ?: return@forEach
+
+            subtitleCallback.invoke(
+                newSubtitleFile(
+                    sub.display ?: getLanguage(lang),
+                    sub.url
+                )
             )
-        }.getOrElse { emptyList() }
-
-        subtitles.forEach {
-            val language = it.display.replaceFirstChar { ch -> ch.titlecase(Locale.getDefault()) }
-            subtitleCallback(newSubtitleFile(language, it.url))
         }
     }
 

@@ -1,4 +1,4 @@
-package com.Phisher98
+package com.phisher98
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
@@ -11,7 +11,7 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.fragment.app.DialogFragment
 import com.phisher98.BuildConfig
 import com.phisher98.StreamPlayPlugin
 import androidx.core.content.edit
@@ -19,8 +19,24 @@ import androidx.core.widget.addTextChangedListener
 
 class LanguageSelectFragment(
     plugin: StreamPlayPlugin,
-    private val sharedPref: SharedPreferences
-) : BottomSheetDialogFragment() {
+    private val sharedPref: SharedPreferences,
+    private val onDismissCallback: (() -> Unit)? = null
+) : DialogFragment() {
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.apply {
+            val displayMetrics = resources.displayMetrics
+            val maxDialogWidth = (500 * displayMetrics.density).toInt()
+            val width = if (displayMetrics.widthPixels > 0 && displayMetrics.widthPixels > maxDialogWidth) {
+                maxDialogWidth
+            } else {
+                (displayMetrics.widthPixels * 0.9f).toInt()
+            }
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+    }
 
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
 
@@ -109,6 +125,10 @@ class LanguageSelectFragment(
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
 
         val root = getLayout("fragment_language_select", inflater, container)
+        val drawableId = res.getIdentifier("dialog_background", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        if (drawableId != 0) {
+            root.background = res.getDrawable(drawableId, null)
+        }
 
         val recycler: RecyclerView = root.findView("languageRecycler")
         val search: EditText = root.findView("searchLanguage")
@@ -181,4 +201,8 @@ class LanguageSelectFragment(
         }
     }
 
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissCallback?.invoke()
+    }
 }

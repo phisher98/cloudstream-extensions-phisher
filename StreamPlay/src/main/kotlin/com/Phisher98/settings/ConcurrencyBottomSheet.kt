@@ -9,15 +9,20 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.core.content.edit
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.fragment.app.DialogFragment
 
 class ConcurrencyBottomSheet(
     plugin: StreamPlayPlugin,
-    private val sharedPref: SharedPreferences
-) : BottomSheetDialogFragment() {
+    private val sharedPref: SharedPreferences,
+    private val onDismissCallback: (() -> Unit)? = null
+) : DialogFragment() {
 
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
+
+    private fun View.makeTvCompatible() {
+        val outlineId = res.getIdentifier("outline", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        this.background = res.getDrawable(outlineId, null)
+    }
 
     // Single source of truth with proper clamp
     private var currentValue = sharedPref
@@ -41,22 +46,26 @@ class ConcurrencyBottomSheet(
             BuildConfig.LIBRARY_PACKAGE_NAME
         )
         val layout = res.getLayout(layoutId)
-        return inflater.inflate(layout, container, false)
+        val view = inflater.inflate(layout, container, false)
+        val drawableId = res.getIdentifier("dialog_background", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        if (drawableId != 0) {
+            view.background = res.getDrawable(drawableId, null)
+        }
+        return view
     }
 
     override fun onStart() {
         super.onStart()
-        dialog?.let { dlg ->
-            val bottomSheet = dlg.findViewById<View>(
-                com.google.android.material.R.id.design_bottom_sheet
-            )
-            bottomSheet?.let { sheet ->
-                val behavior = BottomSheetBehavior.from(sheet)
-                behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                behavior.isDraggable = true
-                behavior.skipCollapsed = true
-                sheet.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        dialog?.window?.apply {
+            val displayMetrics = resources.displayMetrics
+            val maxDialogWidth = (500 * displayMetrics.density).toInt()
+            val width = if (displayMetrics.widthPixels > 0 && displayMetrics.widthPixels > maxDialogWidth) {
+                maxDialogWidth
+            } else {
+                (displayMetrics.widthPixels * 0.9f).toInt()
             }
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         }
     }
 
@@ -68,6 +77,10 @@ class ConcurrencyBottomSheet(
         val btnDecrease = view.findView<Button>("btn_decrease")
         val btnIncrease = view.findView<Button>("btn_increase")
         val btnClose = view.findView<Button>("btn_close")
+
+        btnDecrease.makeTvCompatible()
+        btnIncrease.makeTvCompatible()
+        btnClose.makeTvCompatible()
         fun updateUI() {
             tvValue.text = currentValue.toString()
             btnDecrease.isEnabled = currentValue > 1
@@ -102,5 +115,10 @@ class ConcurrencyBottomSheet(
         sharedPref.edit {
             putInt("provider_concurrency", currentValue)
         }
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissCallback?.invoke()
     }
 }

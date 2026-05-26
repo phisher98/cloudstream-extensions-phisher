@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Focused state (TV focus / keyboard navigation) -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#1E1E1E" />
+            <stroke android:width="2dp" android:color="#FFFFFF" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+
+    <!-- Pressed state (mobile click / active state) -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#2D2D2D" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+
+    <!-- Default state -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#1E1E1E" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+</selector>

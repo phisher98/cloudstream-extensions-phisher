@@ -20,7 +20,7 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.fragment.app.DialogFragment
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import org.json.JSONArray
@@ -28,8 +28,24 @@ import org.json.JSONObject
 
 class StreamPlayStremioAddonFrag(
     plugin: StreamPlayPlugin,
-    private val sharedPref: SharedPreferences
-) : BottomSheetDialogFragment() {
+    private val sharedPref: SharedPreferences,
+    private val onDismissCallback: (() -> Unit)? = null
+) : DialogFragment() {
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.apply {
+            val displayMetrics = resources.displayMetrics
+            val maxDialogWidth = (500 * displayMetrics.density).toInt()
+            val width = if (displayMetrics.widthPixels > 0 && displayMetrics.widthPixels > maxDialogWidth) {
+                maxDialogWidth
+            } else {
+                (displayMetrics.widthPixels * 0.9f).toInt()
+            }
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+    }
     private val PREF_KEY_LINKS = StreamPlayStremioAddonSettings.PREF_KEY_LINKS
     private val res = plugin.resources ?: throw Exception("Unable to access plugin resources")
 
@@ -58,6 +74,10 @@ class StreamPlayStremioAddonFrag(
     @SuppressLint("DiscouragedApi")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = getLayout("streamplay_stremio_addon_bottom_sheet_layout", inflater, container)
+        val drawableId = res.getIdentifier("dialog_background", "drawable", BuildConfig.LIBRARY_PACKAGE_NAME)
+        if (drawableId != 0) {
+            view.background = res.getDrawable(drawableId, null)
+        }
         val addlinks: ImageView = view.findView("addlinks")
         val showlinks: ImageView = view.findView("showlinks")
         val saveIcon: ImageView = view.findView("saveIcon")
@@ -294,5 +314,10 @@ class StreamPlayStremioAddonFrag(
                 notifyItemRemoved(idx)
             }
         }
+    }
+
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        onDismissCallback?.invoke()
     }
 }

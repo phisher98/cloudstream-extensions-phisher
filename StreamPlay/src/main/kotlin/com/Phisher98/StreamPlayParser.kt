@@ -84,15 +84,13 @@ data class AniSearch(
 
 //WyZIESUBAPI
 
-data class WyZIESUB(
-    val id: String,
+data class WYZIESubtitle(
+    @JsonProperty("url")
     val url: String,
-    val flagUrl: String,
-    val format: String,
-    val display: String,
-    val language: String,
-    val media: String,
-    val isHearingImpaired: Boolean,
+    @JsonProperty("display")
+    val display: String? = null,
+    @JsonProperty("language")
+    val language: String? = null,
 )
 
 data class ResponseHash(

@@ -59,13 +59,28 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         TvType.Cartoon,
     )
 
-    val token: String? = sharedPref?.getString("token", null)
-    val langCode = sharedPref?.getString("tmdb_language_code", "en-US")
+    init {
+        if (sharedPref != null) {
+            companionSharedPref = sharedPref
+        }
+    }
+
+    val token: String?
+        get() = (sharedPref ?: companionSharedPref)?.getString("token", null)
+
+    val langCode: String?
+        get() = (sharedPref ?: companionSharedPref)?.getString("tmdb_language_code", "en-US")
+
+    val wyziekey: String?
+        get() = (sharedPref ?: companionSharedPref)?.getString("wyzie_key", null)
+
 
     val wpRedisInterceptor by lazy { CloudflareKiller() }
 
     /** AUTHOR : hexated & Phisher & Code */
     companion object {
+        var companionSharedPref: SharedPreferences? = null
+
         /** TOOLS */
         private const val OFFICIAL_TMDB_URL = "https://api.themoviedb.org/3"
         private const val Cinemeta = "https://aiometadata.elfhosted.com/stremio/b7cb164b-074b-41d5-b458-b3a834e197bb"
@@ -184,6 +199,7 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         const val animepaheAPI = "https://animepahe.pw"
         const val SubtitlesAPI = "https://opensubtitles-v3.strem.io"
         const val WyZIESUBAPI = "https://sub.wyzie.ru"
+        const val WYZIESubsAPI = "https://sub.wyzie.ru"
         const val RiveStreamAPI = "https://www.rivestream.app"
         const val thrirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
         const val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
