@@ -202,6 +202,8 @@ open class StreamPlay(val sharedPref: SharedPreferences? = null) : MainAPI() {
         const val twoEmbedAPI = "https://www.2embed.cc"
         const val xpassAPI = "https://play.xpass.top"
         const val vaplayer = "https://streamdata.vaplayer.ru"
+        const val peachifyAPI = "https://peachify.top"
+
         fun getType(t: String?): TvType {
             return when (t) {
                 "movie" -> TvType.Movie

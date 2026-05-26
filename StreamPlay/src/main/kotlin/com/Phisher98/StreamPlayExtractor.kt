@@ -5155,4 +5155,207 @@ object StreamPlayExtractor : StreamPlay() {
         }
     }
 
+    suspend fun invokePeachify(
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        callback: (ExtractorLink) -> Unit
+    ) {
+
+        data class ProxyData(
+            val url: String,
+            val headers: Map<String, String>
+        )
+
+        val requestHeaders = mapOf(
+            "Accept"          to "*/*",
+            "Accept-Language" to "en-US,en;q=0.5",
+            "Origin"          to peachifyAPI,
+            "Referer"         to "$peachifyAPI/",
+            "Sec-Fetch-Dest"  to "empty",
+            "Sec-Fetch-Mode"  to "cors",
+            "Sec-Fetch-Site"  to "cross-site",
+            "User-Agent"      to "Mozilla/5.0 (X11; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0"
+        )
+
+        val servers = listOf(
+            "https://usa.eat-peach.sbs/holly",
+            "https://usa.eat-peach.sbs/multi",
+            "https://usa.eat-peach.sbs/ice",
+            "https://usa.eat-peach.sbs/air",
+            "https://usa.eat-peach.sbs/net",
+            "https://uwu.peachify.top/moviebox"
+        )
+
+        servers.safeAmap { server ->
+
+            val apiUrl = if (season == null) {
+                "$server/movie/$tmdbId"
+            } else {
+                "$server/tv/$tmdbId/$season/$episode"
+            }
+
+            val text = app.get(
+                apiUrl,
+                headers = requestHeaders
+            ).text
+
+            val encrypt = JSONObject(text)
+                .optString("data")
+                .ifEmpty { return@safeAmap }
+
+            val decrypted = peachifyDecrypt(encrypt)
+                ?: return@safeAmap
+
+            val json = JSONObject(decrypted)
+
+            val provider = json.optString(
+                "providerName",
+                "Peachify"
+            )
+
+            val sources = json.optJSONArray("sources")
+                ?: return@safeAmap
+
+            for (i in 0 until sources.length()) {
+
+                val src = sources.getJSONObject(i)
+
+                val rawUrl = src
+                    .optString("url")
+                    .ifEmpty { continue }
+
+                val dub = src.optString("dub", "")
+
+                val srcType = src.optString(
+                    "type",
+                    "hls"
+                )
+
+                val quality = src.optInt(
+                    "quality",
+                    0
+                )
+
+                val srcHeaders = src.optJSONObject("headers")
+
+                val isProxy =
+                    rawUrl.contains("/m3u8-proxy") ||
+                            rawUrl.contains("/mp4-proxy")
+
+                val proxyData = if (isProxy) {
+
+                    val query = rawUrl
+                        .substringAfter("?", "")
+                        .split("&")
+                        .mapNotNull { param ->
+
+                            val parts = param.split("=", limit = 2)
+
+                            if (parts.size != 2) {
+                                return@mapNotNull null
+                            }
+
+                            val key = runCatching {
+                                URLDecoder.decode(parts[0], "UTF-8")
+                            }.getOrNull() ?: return@mapNotNull null
+
+                            val value = runCatching {
+                                URLDecoder.decode(parts[1], "UTF-8")
+                            }.getOrNull() ?: return@mapNotNull null
+
+                            key to value
+                        }
+                        .toMap()
+
+                    val finalUrl = query["url"] ?: rawUrl
+
+                    val proxyHeaders = query["headers"]
+                        ?.let { headersJson ->
+
+                            runCatching {
+                                tryParseJson<Map<String, String>>(headersJson)
+                            }.getOrNull()
+
+                        }
+                        ?: emptyMap()
+
+                    ProxyData(
+                        url = finalUrl,
+                        headers = proxyHeaders
+                    )
+
+                } else {
+
+                    ProxyData(
+                        url = rawUrl,
+                        headers = buildMap {
+
+                            srcHeaders?.keys()?.forEach { key ->
+
+                                put(
+                                    key,
+                                    srcHeaders.optString(key)
+                                )
+                            }
+                        }
+                    )
+                }
+
+                val finalUrl = proxyData.url
+                val proxyHeaders = proxyData.headers
+
+                val finalReferer =
+                    proxyHeaders["referer"]
+                        ?: srcHeaders?.optString("referer")
+                        ?: "$peachifyAPI/"
+
+                val finalOrigin =
+                    proxyHeaders["origin"]
+                        ?: srcHeaders?.optString("origin")
+                        ?: peachifyAPI
+
+                val finalUA =
+                    proxyHeaders["user-agent"]
+                        ?: srcHeaders?.optString("user-agent")
+                        ?: USER_AGENT
+
+                val name = buildString {
+
+                    append(
+                        "Peachify [${provider.capitalize()}]"
+                    )
+
+                    if (dub.isNotEmpty()) {
+                        append(" • $dub")
+                    }
+                }
+
+                val type = if (srcType == "hls") {
+                    ExtractorLinkType.M3U8
+                } else {
+                    INFER_TYPE
+                }
+
+                callback.invoke(
+                    newExtractorLink(
+                        source = "Peachify",
+                        name = name,
+                        url = finalUrl,
+                        type = type
+                    ) {
+
+                        this.headers = mapOf(
+                            "Origin"     to finalOrigin,
+                            "Referer"    to finalReferer,
+                            "User-Agent" to finalUA
+                        )
+
+                        this.quality = quality
+                    }
+                )
+            }
+        }
+    }
+
 }

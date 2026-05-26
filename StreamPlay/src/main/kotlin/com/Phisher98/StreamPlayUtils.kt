@@ -59,12 +59,10 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.math.BigInteger
 import java.net.URI
-import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.security.spec.KeySpec
 import java.text.SimpleDateFormat
 import java.util.Arrays
 import java.util.Base64
@@ -73,10 +71,8 @@ import java.util.Date
 import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.Mac
-import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.min
 
@@ -2178,4 +2174,53 @@ suspend fun <T> retry(
     return runCatching {
         block()
     }.getOrNull()
+}
+
+//Peachify
+fun peachifyDecrypt(encrypt: String): String? {
+    return try {
+
+        val parts = encrypt.split(".")
+        if (parts.size != 3) return null
+
+        val iv = b64UrlDecode(parts[0])
+
+        val cipherText =
+            b64UrlDecode(parts[1]) +
+                    b64UrlDecode(parts[2])
+
+        val keyBytes = "a8f2a1b5e9c470814f6b2c3a5d8e7f9c1a2b3c4d5e3f7a8b8cad1e2d0a4d5c5b"
+            .chunked(2).map {
+                    it.toInt(16).toByte()
+                }
+            .toByteArray()
+
+        val cipher = Cipher.getInstance(
+            "AES/GCM/NoPadding"
+        )
+
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            SecretKeySpec(keyBytes, "AES"),
+            GCMParameterSpec(128, iv)
+        )
+        String(cipher.doFinal(cipherText), Charsets.UTF_8)
+    } catch ( _: Exception) {
+        Log.e("Peachify", "Decrypt failed")
+        null
+    }
+}
+
+fun b64UrlDecode(data: String): ByteArray {
+
+    val fixed = data
+        .replace('-', '+')
+        .replace('_', '/')
+        .let {
+            it + "=".repeat(
+                (4 - it.length % 4) % 4
+            )
+        }
+
+    return base64DecodeArray(fixed)
 }

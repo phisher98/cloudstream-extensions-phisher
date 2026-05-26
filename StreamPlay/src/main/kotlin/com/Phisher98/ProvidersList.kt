@@ -33,6 +33,7 @@ import com.phisher98.StreamPlayExtractor.invokeMoviesmod
 import com.phisher98.StreamPlayExtractor.invokeMultimovies
 import com.phisher98.StreamPlayExtractor.invokeNepu
 import com.phisher98.StreamPlayExtractor.invokeNinetv
+import com.phisher98.StreamPlayExtractor.invokePeachify
 import com.phisher98.StreamPlayExtractor.invokeReAnime
 import com.phisher98.StreamPlayExtractor.invokeRiveStream
 import com.phisher98.StreamPlayExtractor.invokeRogmovies
@@ -315,6 +316,9 @@ private val providers by lazy {
         },
         Provider("Zinkmovies", "Zinkmovies") { res, subtitleCallback, callback, _, _ ->
             if (!res.isAnime) invokeZinkmovies(res.title, res.year, res.season, res.episode, subtitleCallback, callback)
+        },
+        Provider("Peachify", "Peachify") { res, _, callback, _, _ ->
+            if (!res.isAnime) invokePeachify(res.id, res.season, res.episode, callback)
         },
     )
 }
