@@ -256,6 +256,7 @@ open class Fibwatch : MainAPI() {
 
             return@withContext newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
+                this.posterHeaders = mapOf("Referer" to mainUrl)
                 this.plot = description
                 this.tags = document.select("div.tags-list a[rel='tag']").map { it.text() }
                 this.recommendations = recommendations
@@ -263,9 +264,11 @@ open class Fibwatch : MainAPI() {
         } else {
             return@withContext newMovieLoadResponse(title, url, TvType.Movie, out.toJson()) {
                 this.posterUrl = poster
+                this.posterHeaders = mapOf("Referer" to mainUrl)
                 this.plot = description
                 this.tags = document.select("div.tags-list a[rel='tag']").map { it.text() }
                 this.recommendations = recommendations
+
             }
         }
     }
@@ -279,7 +282,6 @@ open class Fibwatch : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher", data)
         val loadData = tryParseJson<LoadlinksOut>(data) ?: return true
 
         val currentUrls = loadData.current.map { it.url.trim() }.toSet()
