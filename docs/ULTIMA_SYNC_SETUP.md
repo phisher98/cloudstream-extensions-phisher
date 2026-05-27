@@ -1,66 +1,94 @@
-# 🔄 Ultima Cross Device Watch Sync Setup Guide
+# 🚀 Ultima Sync: Firebase Setup Guide
 
-> ⚠️ **Important:** This setup requires creating a **private GitHub project** and generating a **personal access token (PAT)**.
-
----
-
-## 🚀 Step-by-Step Instructions
-
-### 1. Log In to GitHub
-- Go to [https://github.com](https://github.com) and sign in to your account.
-
-### 2. Create a New Private Project
-- Create a **new private GitHub project** (any template works).
-- Note the project number (usually formatted like `#1`, `#2`, etc.).
-
-### 3. Generate a Personal Access Token
-- Navigate to: [https://github.com/settings/tokens/new](https://github.com/settings/tokens/new)  
-  *(Or: Settings → Developer Settings → Personal Access Tokens → Tokens (Classic) → Generate new token)*
-- Set the **expiration** to `No expiration`.
-- Select **"Project"** scope with **"Full control of projects"** permission.
-- Click **Generate token**.
-- 🔐 **Copy and save the token** — it won't be shown again.
+This guide will show you how to set up your own free **Firebase Realtime Database** and configure the **Ultima** plugin in Cloudstream to enable seamless, real-time cross-device sync for your settings, bookmarks, repositories, and extensions.
 
 ---
 
-## 🔧 Configure Ultima
+## 📂 Step 1: Create a Firebase Project
 
-### 4. Open Ultima Settings
-- Go to **`Ultima Settings → Cross Device Watch Sync → Login Data`**.
-
-### 5. Fill in the Following:
-- **Token**: Paste your GitHub personal access token.
-- **Project number**: Enter the project number (e.g., `#1`).
-- **Device name**: Choose a unique name for this device.
-
-### 6. Repeat on Other Devices
-- Repeat steps 4–5 on any other devices you want to sync, using a **different device name** for each one.
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Click **Add Project** (or **Create a project**).
+3. Enter a project name (e.g., `My-Cloudstream-Sync`).
+4. Click **Continue**.
+5. *Optional*: Turn off **Google Analytics** for this project (it's not needed and makes creation faster).
+6. Click **Create Project** and wait for it to load, then click **Continue**.
 
 ---
 
-## 🔁 Sync Behavior
+## 💾 Step 2: Create a Realtime Database
 
-- Enable **"Sync this device"** on the main device you want to sync content **from**.
-- Synced content will appear on all other devices **with Ultima installed and configured** using the same GitHub credentials.
-
----
-
-## 📱 Device Management
-
-- View linked devices:  
-  Go to **Ultima Settings → Cross Device Watch Sync**.
-  
-- To enable sync history for a device:  
-  Toggle the switch next to its name to view its synced content on Ultima’s homepage.
-
-- Don’t forget to **click the Save icon 💾** in the top-right corner after making changes.
+1. In the left-hand sidebar menu, click **Build** and select **Realtime Database**.
+2. Click the **Create Database** button.
+3. Select a **Database Location** close to you (e.g., United States, Europe, or Asia) and click **Next**.
+4. Set the Security Rules:
+   - Select **Start in test mode** (this initializes database rules to allow read/write access).
+5. Click **Enable**.
 
 ---
 
-## ⚠️ Important Notes
+## 🔒 Step 3: Configure Database Security Rules (Crucial)
 
-- For synced content to **play properly** across devices:
-  - Each device must have **the same list of extensions installed**.
-  - Configurations of those extensions should **match exactly**.
+By default, "Test Mode" rules expire after 30 days and allow anyone with your database URL to access your data. To secure your database and prevent expiration, follow these steps:
+
+1. In your Realtime Database dashboard, click on the **Rules** tab at the top.
+2. Replace the default rules with the following rules:
+   ```json
+   {
+     "rules": {
+       ".read": true,
+       ".write": true
+     }
+   }
+   ```
+   > [!TIP]
+   > For even tighter security, you can restrict read/write access to only your private sync key path:
+   > ```json
+   > {
+   >   "rules": {
+   >     "sync": {
+   >       "$syncKey": {
+   >         ".read": true,
+   >         ".write": true
+   >       }
+   >     }
+   >   }
+   > }
+   > ```
+3. Click the **Publish** button to save and apply the new rules.
 
 ---
+
+## 🔗 Step 4: Retrieve your Database URL
+
+1. Click on the **Data** tab in your Realtime Database dashboard.
+2. Copy the reference URL showing at the top (it looks like `https://your-project-name-default-rtdb.firebaseio.com/`).
+   - *Note: Make sure the URL ends with a forward slash `/`.*
+
+---
+
+## ⚙️ Step 5: Configure Ultima in Cloudstream
+
+Now that your database is ready, configure the sync settings inside the **Ultima** plugin on your devices:
+
+1. Open **Cloudstream** on your device.
+2. Go to **Settings** ➔ **Extensions** ➔ **Ultima** ➔ **Open Settings**.
+3. Under the **Sync Settings** section:
+   - Toggle **Use Custom Database** to **ON**.
+   - **Firebase Database URL**: Paste your copied URL (`https://your-project-name-default-rtdb.firebaseio.com/`).
+   - **Sync Passkey / Sync Key**: Choose a private, complex secret key (e.g. `my_super_secret_sync_key_999`). 
+     - *Important: This key acts as your password. Whichever devices use the same Sync Key and Firebase URL will sync together!*
+   - **Device Name**: Provide a recognizable name for the current device (e.g. `My Phone` or `Living Room TV`).
+4. Choose what you want to sync:
+   - Enable **Backup Device** if you want this device to upload its settings.
+   - Enable **Restore Device** if you want this device to pull/receive settings from your other devices.
+   - Select individual checkboxes (Bookmarks, Resume Watching, Extensions, Repositories, Theme, Layout, etc.) to customize what is synced.
+5. Click **Save Settings**.
+6. Tap **Sync Now (Force Sync)** to trigger your first manual backup/restore!
+
+---
+
+### 🎉 Troubleshooting & Tips
+
+- **Extensions Loading Delay**: When syncing to a new device, missing extensions will download automatically from their repositories in the background. The plugin will hot-reload them and refresh your providers list automatically—no app restart required!
+- **Zero KB Error Safeguard**: Ultima contains built-in checks that detect empty or corrupted `.cs3` files and automatically repairs them by redownloading them from their source repositories.
+- **Sync Loops**: The sync engine compares local data hashes and will automatically ignore redundant updates to save battery and data usage.
