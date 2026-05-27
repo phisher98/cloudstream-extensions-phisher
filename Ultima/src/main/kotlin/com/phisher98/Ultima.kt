@@ -84,41 +84,31 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
 
         return try {
             if (request.name == "watch_sync") {
-                val creds = sm.appSettingsSyncCreds ?: return null
-                if (!creds.isLoggedIn()) return null
-
-                val syncedDevices = UltimaSettingsSyncUtils.fetchDevices(context!!)
-                val filteredDevices = syncedDevices?.filter {
-                    it.deviceId != creds.deviceId
-                } ?: emptyList()
-
-                if (filteredDevices.isEmpty()) {
-                    Log.w("getMainPage", "No enabled devices found in the synced list.")
-                    return null
-                }
-
+                val sharedData = UltimaSettingsSyncUtils.fetchSharedData(context!!)
+                val syncedContentJson = sharedData?.syncedData
                 val homeSections = ArrayList<HomePageList>()
 
-                for (device in filteredDevices) {
-                    val syncedContentJson = device.syncedData ?: continue
+                if (!syncedContentJson.isNullOrBlank()) {
                     val backupFile = try {
-                        mapper.readValue<BackupFile>(syncedContentJson)
+                        mapper.readValue<com.phisher98.BackupFile>(syncedContentJson)
                     } catch (e: Exception) {
                         null
-                    } ?: continue
-
-                    val resumeWatchingKey = backupFile.datastore.string?.keys?.find { it.endsWith("/result_resume_watching") }
-                    val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string[it] }
-                    val resumeWatchingList = resumeWatchingJson?.let {
-                        try {
-                            mapper.readValue<List<com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult>>(it)
-                        } catch (e: Exception) {
-                            null
-                        }
                     }
 
-                    if (!resumeWatchingList.isNullOrEmpty()) {
-                        homeSections += HomePageList("Continue from: ${device.name}", resumeWatchingList)
+                    if (backupFile != null) {
+                        val resumeWatchingKey = backupFile.datastore.string?.keys?.find { it.contains("result_resume_watching") }
+                        val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string[it] }
+                        val resumeWatchingList = resumeWatchingJson?.let {
+                            try {
+                                mapper.readValue<List<com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult>>(it)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+
+                        if (!resumeWatchingList.isNullOrEmpty()) {
+                            homeSections += HomePageList("Continue from Cloud", resumeWatchingList)
+                        }
                     }
                 }
 

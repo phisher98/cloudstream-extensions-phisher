@@ -43,6 +43,12 @@ object UltimaStorageManager {
             setKey("ULTIMA_APP_SETTINGS_SYNC_CREDS", value)
         }
 
+    var lastLocalSyncTime: Long
+        get() = getKey("ULTIMA_LAST_LOCAL_SYNC_TIME") ?: 0L
+        set(value) {
+            setKey("ULTIMA_LAST_LOCAL_SYNC_TIME", value)
+        }
+
     // #endregion - custom data variables
 
     fun deleteAllData() {
@@ -52,7 +58,8 @@ object UltimaStorageManager {
                         "ULTIMA_EXTENSIONS_LIST",
                         "ULTIMA_CURRENT_META_PROVIDERS",
                         "ULTIMA_CURRENT_MEDIA_PROVIDERS",
-                        "ULTIMA_APP_SETTINGS_SYNC_CREDS"
+                        "ULTIMA_APP_SETTINGS_SYNC_CREDS",
+                        "ULTIMA_LAST_LOCAL_SYNC_TIME"
                 )
                 .forEach { setKey(it, null) }
     }

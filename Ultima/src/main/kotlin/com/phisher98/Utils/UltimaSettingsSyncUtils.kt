@@ -58,7 +58,13 @@ data class AppSettingsSyncCreds(
 data class FirebaseDevice(
     @JsonProperty("name") var name: String = "",
     @JsonProperty("deviceId") var deviceId: String = "",
-    @JsonProperty("syncedData") var syncedData: String? = null
+    @JsonProperty("lastActive") var lastActive: Long = 0L
+)
+
+data class FirebaseSharedData(
+    @JsonProperty("lastUpdated") var lastUpdated: Long = 0L,
+    @JsonProperty("syncedData") var syncedData: String? = null,
+    @JsonProperty("writerDevice") var writerDevice: String? = null
 )
 
 object UltimaSettingsSyncUtils {
@@ -119,22 +125,54 @@ object UltimaSettingsSyncUtils {
         }
     }
 
-    suspend fun syncThisDevice(context: Context, backupData: String): Pair<Boolean, String?> {
+    suspend fun fetchSharedData(context: Context): FirebaseSharedData? {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
+        if (!creds.isLoggedIn()) return null
+        
+        return try {
+            val url = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
+            val res = app.get(url)
+            if (res.code == 200) {
+                val body = res.text
+                if (body.isEmpty() || body == "null") return null
+                mapper.readValue<FirebaseSharedData>(body)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun pushSharedData(context: Context, backupData: String, timestamp: Long): Pair<Boolean, String?> {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false to "Credentials not found"
         if (!creds.isLoggedIn()) return false to "Not logged in"
         
         return try {
-            val url = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
-            val device = FirebaseDevice(creds.deviceName ?: "Unknown Device", creds.deviceId ?: "", backupData)
-            val res = app.put(url, json = device)
-            if (res.code in 200..299) {
+            // 1. Update shared data
+            val sharedUrl = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
+            val shared = FirebaseSharedData(timestamp, backupData, creds.deviceName ?: "Unknown Device")
+            val sharedRes = app.put(sharedUrl, json = shared)
+            
+            // 2. Update device status
+            val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
+            val device = FirebaseDevice(creds.deviceName ?: "Unknown Device", creds.deviceId ?: "", timestamp)
+            app.put(deviceUrl, json = device)
+            
+            if (sharedRes.code in 200..299) {
                 true to "Sync success"
             } else {
-                false to "Sync failed with code ${res.code}"
+                false to "Sync failed with code ${sharedRes.code}"
             }
         } catch (e: Exception) {
             false to e.message
         }
+    }
+
+    suspend fun syncThisDevice(context: Context, backupData: String): Pair<Boolean, String?> {
+        // Compatibility wrapper: push to shared data and register device
+        val now = System.currentTimeMillis()
+        return pushSharedData(context, backupData, now)
     }
 
     suspend fun deregisterThisDevice(): Pair<Boolean, String?> {

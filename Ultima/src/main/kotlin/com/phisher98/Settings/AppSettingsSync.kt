@@ -220,6 +220,53 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
         }
         // #endregion
 
+        // #region - sync now button
+        settings.findView<Button>("sync_now_btn").apply {
+            setOnClickListener {
+                val creds = sm.appSettingsSyncCreds
+                if (creds == null || !creds.isLoggedIn()) {
+                    showToast("Configure credentials first")
+                    return@setOnClickListener
+                }
+                activity?.lifecycle?.coroutineScope?.launch {
+                    try {
+                        showToast("Forcing sync...")
+                        // 1. Fetch from cloud and restore (force restore regardless of timestamps)
+                        val sharedData = UltimaSettingsSyncUtils.fetchSharedData(context)
+                        if (sharedData != null && !sharedData.syncedData.isNullOrBlank()) {
+                            val backupFile = mapper.readValue<BackupFile>(sharedData.syncedData!!)
+                            plugin.lastOtherDeviceData = sharedData.syncedData
+                            plugin.lastBackupData = sharedData.syncedData
+                            UltimaBackupUtils.restore(context, backupFile, true, true)
+                            UltimaStorageManager.lastLocalSyncTime = sharedData.lastUpdated
+                            plugin.reload()
+                            showToast("Restored from cloud (${sharedData.writerDevice})")
+                        } else {
+                            showToast("No data in cloud to restore.")
+                        }
+
+                        // 2. Perform a backup and push
+                        val now = System.currentTimeMillis()
+                        val data = UltimaBackupUtils.getBackup(context, getResumeWatching())?.toJson() ?: ""
+                        if (data.isNotBlank()) {
+                            val res = UltimaSettingsSyncUtils.pushSharedData(context, data, now)
+                            if (res.first) {
+                                UltimaStorageManager.lastLocalSyncTime = now
+                                plugin.lastOtherDeviceData = data
+                                plugin.lastBackupData = data
+                                showToast("Backup pushed to cloud successfully")
+                            } else {
+                                showToast("Backup failed: ${res.second}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        showToast("Sync failed: ${e.message}")
+                    }
+                }
+            }
+        }
+        // #endregion
+
         // #region - selective sync checkboxes
         val backupBookmarksCb = settings.findView<CheckBox>("backup_bookmarks")
         val backupResumeWatchingCb = settings.findView<CheckBox>("backup_resume_watching")
@@ -329,18 +376,15 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
     private suspend fun restoreFromCloud(context: Context) {
         val creds = sm.appSettingsSyncCreds ?: return
         try {
-            val devices = UltimaSettingsSyncUtils.fetchDevices(context)
-            if (!devices.isNullOrEmpty()) {
-                val otherDevice = devices.firstOrNull { it.deviceId != creds.deviceId }
-                if (otherDevice != null && !otherDevice.syncedData.isNullOrBlank()) {
-                    val backupFile = mapper.readValue<BackupFile>(otherDevice.syncedData!!)
-                    UltimaBackupUtils.restore(context, backupFile, true, true)
-                    showToast("Restored settings from ${otherDevice.name}")
-                } else {
-                    showToast("No other devices found to restore from")
-                }
+            val sharedData = UltimaSettingsSyncUtils.fetchSharedData(context)
+            if (sharedData != null && !sharedData.syncedData.isNullOrBlank()) {
+                val backupFile = mapper.readValue<BackupFile>(sharedData.syncedData!!)
+                UltimaBackupUtils.restore(context, backupFile, true, true)
+                UltimaStorageManager.lastLocalSyncTime = sharedData.lastUpdated
+                plugin.reload()
+                showToast("Restored settings from cloud (${sharedData.writerDevice ?: "unknown"})")
             } else {
-                showToast("No backup devices found")
+                showToast("No settings found in the cloud")
             }
         } catch (e: Exception) {
             showToast("Restore failed: ${e.message}")

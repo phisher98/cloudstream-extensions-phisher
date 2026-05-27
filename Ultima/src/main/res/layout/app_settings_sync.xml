@@ -105,6 +105,16 @@
             android:padding="5dp"
             android:layout_marginVertical="5dp" />
 
+        <!-- Sync Now Button -->
+        <Button
+            android:id="@+id/sync_now_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sync Now (Force Sync)"
+            android:textSize="16sp"
+            android:layout_marginVertical="5dp"
+            android:focusable="true" />
+
         <!-- Divider -->
         <ImageView
             android:layout_width="match_parent"
