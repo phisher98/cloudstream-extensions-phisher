@@ -143,20 +143,20 @@ class UltimaSettings(val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
         }
         // #endregion - building reorder button and its click listener
 
-        // #region - building reorder button and its click listener
-        val watchSyncBtn = settings.findView<ImageView>("watch_sync_img")
-        watchSyncBtn.setImageDrawable(getDrawable("edit_icon"))
-        watchSyncBtn.makeTvCompatible()
-        watchSyncBtn.setOnClickListener {
-            val reorder = UltimaConfigureWatchSync(plugin)
-            reorder.show(
+        // #region - building app settings sync button and its click listener
+        val appSettingsSyncBtn = settings.findView<ImageView>("app_settings_sync_img")
+        appSettingsSyncBtn.setImageDrawable(getDrawable("edit_icon"))
+        appSettingsSyncBtn.makeTvCompatible()
+        appSettingsSyncBtn.setOnClickListener {
+            val appSync = UltimaConfigureAppSettingsSync(plugin)
+            appSync.show(
                 activity?.supportFragmentManager
-                    ?: throw Exception("Unable to open reorder settings"),
+                    ?: throw Exception("Unable to open app settings sync settings"),
                 ""
             )
             dismiss()
         }
-        // #endregion - building reorder button and its click listener
+        // #endregion - building app settings sync button and its click listener
 
         val guideIcon = settings.findView<ImageView>("guide_icon")
         guideIcon.setImageDrawable(getDrawable("ic_eye"))

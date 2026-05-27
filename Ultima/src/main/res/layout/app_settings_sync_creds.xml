@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="25dp"
+        android:orientation="vertical">
+
+        <!-- Device Name Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Device name"
+            android:textSize="18sp"
+            android:layout_marginBottom="5dp" />
+
+        <EditText
+            android:id="@+id/device_name"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:padding="5dp"
+            android:layout_marginBottom="15dp"
+            android:inputType="text" />
+
+        <!-- Sync Key Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sync Passphrase / Key"
+            android:textSize="18sp"
+            android:layout_marginBottom="5dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/sync_key"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:padding="5dp"
+                android:hint="Enter or generate sync key"
+                android:inputType="text" />
+
+            <Button
+                android:id="@+id/generate_key_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gen"
+                android:textSize="12sp"
+                android:layout_marginStart="5dp" />
+        </LinearLayout>
+
+        <!-- Use Custom Database Switch -->
+        <Switch
+            android:id="@+id/custom_db_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Use Custom Firebase Database"
+            android:textSize="16sp"
+            android:layout_marginBottom="15dp" />
+
+        <!-- Custom DB Config Section -->
+        <LinearLayout
+            android:id="@+id/custom_db_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Firebase RTDB URL"
+                android:textSize="18sp"
+                android:layout_marginBottom="5dp" />
+
+            <EditText
+                android:id="@+id/firebase_url"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:padding="5dp"
+                android:hint="https://your-project-default-rtdb.firebaseio.com/"
+                android:inputType="textUri" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

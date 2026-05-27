@@ -148,7 +148,7 @@
                     android:layout_height="wrap_content"
                     android:padding="5dp"
                     android:focusable="true"
-                    android:nextFocusDown="@id/watch_sync_img"
+                    android:nextFocusDown="@id/app_settings_sync_img"
                     android:nextFocusUp="@id/config_img" />
 
             </LinearLayout>
@@ -165,7 +165,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_rowWeight="1"
-                android:text="Cross Device Watch Sync"
+                android:text="Ultima Settings &amp; Data Sync"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -175,7 +175,7 @@
                 android:gravity="right">
 
                 <ImageView
-                    android:id="@+id/watch_sync_img"
+                    android:id="@+id/app_settings_sync_img"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="5dp"
@@ -213,7 +213,7 @@
                     android:padding="5dp"
                     android:focusable="true"
                     android:nextFocusDown="@id/delete_img"
-                    android:nextFocusUp="@id/watch_sync_img" />
+                    android:nextFocusUp="@id/app_settings_sync_img" />
 
             </LinearLayout>
 

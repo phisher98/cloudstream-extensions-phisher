@@ -5,8 +5,6 @@ package com.phisher98
 import com.phisher98.UltimaUtils.ExtensionInfo
 import com.phisher98.UltimaUtils.MediaProviderState
 import com.phisher98.UltimaUtils.SectionInfo
-import com.phisher98.WatchSyncUtils.WatchSyncCreds
-import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.getKey
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 
@@ -38,10 +36,11 @@ object UltimaStorageManager {
             setKey("ULTIMA_CURRENT_MEDIA_PROVIDERS", value)
         }
 
-    var deviceSyncCreds: WatchSyncCreds?
-        get() = getKey("ULTIMA_WATCH_SYNC_CREDS")
+
+    var appSettingsSyncCreds: AppSettingsSyncCreds?
+        get() = getKey("ULTIMA_APP_SETTINGS_SYNC_CREDS")
         set(value) {
-            setKey("ULTIMA_WATCH_SYNC_CREDS", value)
+            setKey("ULTIMA_APP_SETTINGS_SYNC_CREDS", value)
         }
 
     // #endregion - custom data variables
@@ -53,30 +52,33 @@ object UltimaStorageManager {
                         "ULTIMA_EXTENSIONS_LIST",
                         "ULTIMA_CURRENT_META_PROVIDERS",
                         "ULTIMA_CURRENT_MEDIA_PROVIDERS",
-                        "ULTIMA_WATCH_SYNC_CREDS"
+                        "ULTIMA_APP_SETTINGS_SYNC_CREDS"
                 )
                 .forEach { setKey(it, null) }
     }
 
 
-    fun fetchExtensions(): Array<ExtensionInfo> = synchronized(allProviders) {
-        val cachedExtensions = getKey<Array<ExtensionInfo>>("ULTIMA_EXTENSIONS_LIST")
-        val providers = allProviders.filter { it.name != "Ultima" }
+    fun fetchExtensions(): Array<ExtensionInfo> {
+        val providers = UltimaUtils.getAllProviders()
+        return synchronized(providers) {
+            val cachedExtensions = getKey<Array<ExtensionInfo>>("ULTIMA_EXTENSIONS_LIST")
+            val filtered = providers.filter { it.name != "Ultima" }
 
-        providers.map { provider ->
-            val existing = cachedExtensions?.find { it.name == provider.name }
-            existing ?: ExtensionInfo(
-                name = provider.name,
-                provider.mainPage.map { section ->
-                    SectionInfo(
-                        name = section.name,
-                        section.data,
-                        provider.name,
-                        false
-                    )
-                }.toTypedArray()
-            )
-        }.toTypedArray()
+            filtered.map { provider ->
+                val existing = cachedExtensions?.find { it.name == provider.name }
+                existing ?: ExtensionInfo(
+                    name = provider.name,
+                    provider.mainPage.map { section ->
+                        SectionInfo(
+                            name = section.name,
+                            section.data,
+                            provider.name,
+                            false
+                        )
+                    }.toTypedArray()
+                )
+            }.toTypedArray()
+        }
     }
 
 

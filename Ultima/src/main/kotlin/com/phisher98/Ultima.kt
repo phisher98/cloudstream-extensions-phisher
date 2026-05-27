@@ -1,8 +1,9 @@
 package com.phisher98
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.CloudStreamApp.Companion.context
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageList
@@ -28,7 +29,6 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     override val hasMainPage = true
     override val hasQuickSearch = false
     private val sm = UltimaStorageManager
-    private val deviceSyncData = sm.deviceSyncCreds
 
     private val mapper = jacksonObjectMapper()
     private var sectionNamesList: List<String> = emptyList()
@@ -78,18 +78,18 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
     override val mainPage get() = loadSections()
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
-        val creds = sm.deviceSyncCreds
-        creds?.syncThisDevice()
-
         if (request.name.isEmpty()) {
             throw ErrorLoadingException("Select sections from the extension's settings page to show here.")
         }
 
         return try {
             if (request.name == "watch_sync") {
-                val syncedDevices = creds?.fetchDevices()
+                val creds = sm.appSettingsSyncCreds ?: return null
+                if (!creds.isLoggedIn()) return null
+
+                val syncedDevices = UltimaSettingsSyncUtils.fetchDevices(context!!)
                 val filteredDevices = syncedDevices?.filter {
-                    deviceSyncData?.enabledDevices?.contains(it.deviceId) == true
+                    it.deviceId != creds.deviceId
                 } ?: emptyList()
 
                 if (filteredDevices.isEmpty()) {
@@ -97,17 +97,35 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                     return null
                 }
 
-                val homeSections = ArrayList<HomePageList>(filteredDevices.size)
+                val homeSections = ArrayList<HomePageList>()
 
                 for (device in filteredDevices) {
-                    val syncedContent = device.syncedData ?: continue
-                    homeSections += HomePageList("Continue from: ${device.name}", syncedContent)
+                    val syncedContentJson = device.syncedData ?: continue
+                    val backupFile = try {
+                        mapper.readValue<BackupFile>(syncedContentJson)
+                    } catch (e: Exception) {
+                        null
+                    } ?: continue
+
+                    val resumeWatchingKey = backupFile.datastore.string?.keys?.find { it.endsWith("/result_resume_watching") }
+                    val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string[it] }
+                    val resumeWatchingList = resumeWatchingJson?.let {
+                        try {
+                            mapper.readValue<List<com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult>>(it)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+
+                    if (!resumeWatchingList.isNullOrEmpty()) {
+                        homeSections += HomePageList("Continue from: ${device.name}", resumeWatchingList)
+                    }
                 }
 
                 newHomePageResponse(homeSections, false)
             } else {
                 val section = AppUtils.parseJson<SectionInfo>(request.data)
-                val provider = allProviders.find { it.name == section.pluginName }
+                val provider = UltimaUtils.getAllProviders().find { it.name == section.pluginName }
                     ?: throw ErrorLoadingException("Provider '${section.pluginName}' is not available.")
 
                 val liveData = provider.mainPage
@@ -154,7 +172,7 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
         val tasks = mutableListOf<suspend () -> List<SearchResponse>>()
 
         for ((pluginName, _) in enabledSections) {
-            val provider = allProviders.find { it.name == pluginName } ?: continue
+            val provider = UltimaUtils.getAllProviders().find { it.name == pluginName } ?: continue
 
             tasks += suspend {
                 try {
@@ -193,7 +211,7 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                 }
             }
 
-        val providersToTry = allProviders.filter { it.name in enabledPlugins }
+        val providersToTry = UltimaUtils.getAllProviders().filter { it.name in enabledPlugins }
 
         for (provider in providersToTry) {
             try {
