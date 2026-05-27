@@ -3934,8 +3934,8 @@ object StreamPlayExtractor : StreamPlay() {
             m3u8url,
             referer = referer,
             headers = mapOf(
-                "Origin"  to origin,
-                "Referer" to referer
+                "Origin"  to vidlink,
+                "Referer" to "$vidlink/"
             )
         ).forEach(callback)
     }
