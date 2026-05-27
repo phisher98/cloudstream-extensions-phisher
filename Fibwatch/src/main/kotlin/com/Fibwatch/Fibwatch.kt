@@ -77,6 +77,7 @@ open class Fibwatch : MainAPI() {
         val posterUrl = fixUrlNull(this.select("img").attr("src"))
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
+            this.posterHeaders = mapOf("Referer" to mainUrl)
         }
     }
 
@@ -278,7 +279,7 @@ open class Fibwatch : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("Phisher",data.toString())
+        Log.d("Phisher", data)
         val loadData = tryParseJson<LoadlinksOut>(data) ?: return true
 
         val currentUrls = loadData.current.map { it.url.trim() }.toSet()
@@ -321,9 +322,10 @@ open class Fibwatch : MainAPI() {
                 newExtractorLink(
                     mainUrl,
                     this.name,
-                    url = finalUrl
+                    finalUrl
                 ) {
                     this.quality = getQualityFromName(item.quality)
+                    this.headers = mapOf("Referer" to mainUrl)
                 }
             )
         }
