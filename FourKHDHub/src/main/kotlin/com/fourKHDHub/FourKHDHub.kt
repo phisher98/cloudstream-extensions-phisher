@@ -55,7 +55,7 @@ class FourKHDHub : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val url = "$mainUrl/${request.data}/page/$page"
+        val url = "$mainUrl${if (request.data.isNotBlank()) "/${request.data}" else ""}${if (page > 1) "/page/$page" else ""}"
         val document = app.get(url).document
         val results = document.select("div.card-grid a").mapNotNull {
                 it.toSearchResult()
