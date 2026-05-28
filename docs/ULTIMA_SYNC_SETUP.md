@@ -83,7 +83,9 @@ Now that your database is ready, configure the sync settings inside the **Ultima
    - Enable **Restore Device** if you want this device to pull/receive settings from your other devices.
    - Select individual checkboxes (Bookmarks, Resume Watching, Extensions, Repositories, Theme, Layout, etc.) to customize what is synced.
 5. Click **Save Settings**.
-6. Tap **Sync Now (Force Sync)** to trigger your first manual backup/restore!
+6. **For your first sync on a new/secondary device**:
+   - Tap **Pull changes from the cloud** first. This fetches your existing settings from the database so they are not overwritten by the new device's empty/default settings.
+   - Once the data is successfully restored, you can safely enable **Backup Device** (if you want this device to upload changes in the future) and tap **Sync Now (Force Sync)** to keep everything in sync!
 
 ---
 
@@ -91,4 +93,5 @@ Now that your database is ready, configure the sync settings inside the **Ultima
 
 - **Extensions Loading Delay**: When syncing to a new device, missing extensions will download automatically from their repositories in the background. The plugin will hot-reload them and refresh your providers list automatically—no app restart required!
 - **Zero KB Error Safeguard**: Ultima contains built-in checks that detect empty or corrupted `.cs3` files and automatically repairs them by redownloading them from their source repositories.
-- **Sync Loops**: The sync engine compares local data hashes and will automatically ignore redundant updates to save battery and data usage. fix in this to mentiomn user need to use pull first and then sync so it won't push empty ones instead fetch it from other devices and then push it 
+- **Sync Loops**: The sync engine compares local data hashes and will automatically ignore redundant updates to save battery and data usage.
+- **Preventing Overwriting with Empty Settings**: When linking a new/empty device to an existing sync network, always perform a **Pull changes from the cloud** first before pushing or running a full sync. This ensures you fetch your data from the database instead of pushing empty/default settings from the new device, which would overwrite your existing backups.
