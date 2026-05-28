@@ -91,4 +91,4 @@ Now that your database is ready, configure the sync settings inside the **Ultima
 
 - **Extensions Loading Delay**: When syncing to a new device, missing extensions will download automatically from their repositories in the background. The plugin will hot-reload them and refresh your providers list automatically—no app restart required!
 - **Zero KB Error Safeguard**: Ultima contains built-in checks that detect empty or corrupted `.cs3` files and automatically repairs them by redownloading them from their source repositories.
-- **Sync Loops**: The sync engine compares local data hashes and will automatically ignore redundant updates to save battery and data usage.
+- **Sync Loops**: The sync engine compares local data hashes and will automatically ignore redundant updates to save battery and data usage. fix in this to mentiomn user need to use pull first and then sync so it won't push empty ones instead fetch it from other devices and then push it 
