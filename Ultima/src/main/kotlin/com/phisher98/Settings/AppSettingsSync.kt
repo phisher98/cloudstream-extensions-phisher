@@ -132,7 +132,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
 
                         activity?.lifecycle?.coroutineScope?.launch {
                             showToast("Credentials saved. Performing initial sync...")
-                            plugin.pushAllCategories(context)
+                            plugin.mergeAndSyncAllCategories(context)
                             showToast("Initial sync complete!")
                             refreshDevicesList(settings, inflater, container)
                             updateLastSyncInfo(settings)
@@ -164,9 +164,9 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                     sm.appSettingsSyncCreds = creds
                     if (checked) {
                         activity?.lifecycle?.coroutineScope?.launch {
-                            showToast("Pushing all categories...")
-                            plugin.pushAllCategories(context)
-                            showToast("Push complete!")
+                            showToast("Syncing all categories...")
+                            plugin.mergeAndSyncAllCategories(context)
+                            showToast("Sync complete!")
                             updateLastSyncInfo(settings)
                         }
                     }
@@ -189,9 +189,9 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                     sm.appSettingsSyncCreds = creds
                     if (checked) {
                         activity?.lifecycle?.coroutineScope?.launch {
-                            showToast("Pulling from cloud...")
-                            val restored = plugin.forcePullAllCategories(context)
-                            showToast(if (restored) "Restored from cloud" else "Already up to date")
+                            showToast("Syncing all categories...")
+                            plugin.mergeAndSyncAllCategories(context)
+                            showToast("Sync complete!")
                             updateLastSyncInfo(settings)
                         }
                     }
@@ -215,11 +215,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                     try {
                         showToast("Force syncing all categories...")
 
-                        // 1. Pull all categories from cloud (force)
-                        plugin.forcePullAllCategories(context)
-
-                        // 2. Push all categories to cloud
-                        plugin.pushAllCategories(context)
+                        plugin.mergeAndSyncAllCategories(context)
 
                         showToast("Force sync complete!")
                         updateLastSyncInfo(settings)
@@ -231,38 +227,147 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
         }
         // #endregion
 
-        // #region - unified sync category checkboxes
-        val syncExtensionsCb = settings.findView<CheckBox>("sync_extensions")
-        val syncBookmarksCb = settings.findView<CheckBox>("sync_bookmarks")
-        val syncResumeWatchingCb = settings.findView<CheckBox>("sync_resume_watching")
-        val syncSearchHistoryCb = settings.findView<CheckBox>("sync_search_history")
-        val syncSettingsCb = settings.findView<CheckBox>("sync_settings")
+        // #region - granular sync category checkboxes
+        val backupExtensionsCb = settings.findView<CheckBox>("backup_extensions")
+        val restoreExtensionsCb = settings.findView<CheckBox>("restore_extensions")
+        
+        val backupBookmarksCb = settings.findView<CheckBox>("backup_bookmarks")
+        val restoreBookmarksCb = settings.findView<CheckBox>("restore_bookmarks")
+        
+        val backupResumeWatchingCb = settings.findView<CheckBox>("backup_resume_watching")
+        val restoreResumeWatchingCb = settings.findView<CheckBox>("restore_resume_watching")
+        
+        val backupSearchHistoryCb = settings.findView<CheckBox>("backup_search_history")
+        val restoreSearchHistoryCb = settings.findView<CheckBox>("restore_search_history")
+        
+        val backupPlayerCb = settings.findView<CheckBox>("backup_player")
+        val restorePlayerCb = settings.findView<CheckBox>("restore_player")
+        
+        val backupSubtitlesCb = settings.findView<CheckBox>("backup_subtitles")
+        val restoreSubtitlesCb = settings.findView<CheckBox>("restore_subtitles")
+        
+        val backupThemeCb = settings.findView<CheckBox>("backup_theme")
+        val restoreThemeCb = settings.findView<CheckBox>("restore_theme")
+        
+        val backupLayoutCb = settings.findView<CheckBox>("backup_layout")
+        val restoreLayoutCb = settings.findView<CheckBox>("restore_layout")
+        
+        val backupDownloadsCb = settings.findView<CheckBox>("backup_downloads")
+        val restoreDownloadsCb = settings.findView<CheckBox>("restore_downloads")
+        
+        val backupGeneralCb = settings.findView<CheckBox>("backup_general")
+        val restoreGeneralCb = settings.findView<CheckBox>("restore_general")
+
+        listOf(
+            backupExtensionsCb, restoreExtensionsCb,
+            backupBookmarksCb, restoreBookmarksCb,
+            backupResumeWatchingCb, restoreResumeWatchingCb,
+            backupSearchHistoryCb, restoreSearchHistoryCb,
+            backupPlayerCb, restorePlayerCb,
+            backupSubtitlesCb, restoreSubtitlesCb,
+            backupThemeCb, restoreThemeCb,
+            backupLayoutCb, restoreLayoutCb,
+            backupDownloadsCb, restoreDownloadsCb,
+            backupGeneralCb, restoreGeneralCb
+        ).forEach { it.makeTvCompatible() }
 
         val currentCreds = sm.appSettingsSyncCreds ?: AppSettingsSyncCreds()
 
-        syncExtensionsCb.isChecked = currentCreds.syncExtensions
-        syncBookmarksCb.isChecked = currentCreds.syncBookmarks
-        syncResumeWatchingCb.isChecked = currentCreds.syncResumeWatching
-        syncSearchHistoryCb.isChecked = currentCreds.syncSearchHistory
-        syncSettingsCb.isChecked = currentCreds.syncSettings
+        backupExtensionsCb.isChecked = currentCreds.backupExtensions
+        restoreExtensionsCb.isChecked = currentCreds.restoreExtensions
+        
+        backupBookmarksCb.isChecked = currentCreds.backupBookmarks
+        restoreBookmarksCb.isChecked = currentCreds.restoreBookmarks
+        
+        backupResumeWatchingCb.isChecked = currentCreds.backupResumeWatching
+        restoreResumeWatchingCb.isChecked = currentCreds.restoreResumeWatching
+        
+        backupSearchHistoryCb.isChecked = currentCreds.backupSearchHistory
+        restoreSearchHistoryCb.isChecked = currentCreds.restoreSearchHistory
+        
+        backupPlayerCb.isChecked = currentCreds.backupPlayer
+        restorePlayerCb.isChecked = currentCreds.restorePlayer
+        
+        backupSubtitlesCb.isChecked = currentCreds.backupSubtitles
+        restoreSubtitlesCb.isChecked = currentCreds.restoreSubtitles
+        
+        backupThemeCb.isChecked = currentCreds.backupTheme
+        restoreThemeCb.isChecked = currentCreds.restoreTheme
+        
+        backupLayoutCb.isChecked = currentCreds.backupLayout
+        restoreLayoutCb.isChecked = currentCreds.restoreLayout
+        
+        backupDownloadsCb.isChecked = currentCreds.backupDownloads
+        restoreDownloadsCb.isChecked = currentCreds.restoreDownloads
+        
+        backupGeneralCb.isChecked = currentCreds.backupGeneral
+        restoreGeneralCb.isChecked = currentCreds.restoreGeneral
 
         val checkboxListener = CompoundButton.OnCheckedChangeListener { _, _ ->
             val creds = sm.appSettingsSyncCreds ?: AppSettingsSyncCreds()
 
-            creds.syncExtensions = syncExtensionsCb.isChecked
-            creds.syncBookmarks = syncBookmarksCb.isChecked
-            creds.syncResumeWatching = syncResumeWatchingCb.isChecked
-            creds.syncSearchHistory = syncSearchHistoryCb.isChecked
-            creds.syncSettings = syncSettingsCb.isChecked
+            creds.backupExtensions = backupExtensionsCb.isChecked
+            creds.restoreExtensions = restoreExtensionsCb.isChecked
+            
+            creds.backupBookmarks = backupBookmarksCb.isChecked
+            creds.restoreBookmarks = restoreBookmarksCb.isChecked
+            
+            creds.backupResumeWatching = backupResumeWatchingCb.isChecked
+            creds.restoreResumeWatching = restoreResumeWatchingCb.isChecked
+            
+            creds.backupSearchHistory = backupSearchHistoryCb.isChecked
+            creds.restoreSearchHistory = restoreSearchHistoryCb.isChecked
+            
+            creds.backupPlayer = backupPlayerCb.isChecked
+            creds.restorePlayer = restorePlayerCb.isChecked
+            
+            creds.backupSubtitles = backupSubtitlesCb.isChecked
+            creds.restoreSubtitles = restoreSubtitlesCb.isChecked
+            
+            creds.backupTheme = backupThemeCb.isChecked
+            creds.restoreTheme = restoreThemeCb.isChecked
+            
+            creds.backupLayout = backupLayoutCb.isChecked
+            creds.restoreLayout = restoreLayoutCb.isChecked
+            
+            creds.backupDownloads = backupDownloadsCb.isChecked
+            creds.restoreDownloads = restoreDownloadsCb.isChecked
+            
+            creds.backupGeneral = backupGeneralCb.isChecked
+            creds.restoreGeneral = restoreGeneralCb.isChecked
 
             sm.appSettingsSyncCreds = creds
         }
 
-        syncExtensionsCb.setOnCheckedChangeListener(checkboxListener)
-        syncBookmarksCb.setOnCheckedChangeListener(checkboxListener)
-        syncResumeWatchingCb.setOnCheckedChangeListener(checkboxListener)
-        syncSearchHistoryCb.setOnCheckedChangeListener(checkboxListener)
-        syncSettingsCb.setOnCheckedChangeListener(checkboxListener)
+        backupExtensionsCb.setOnCheckedChangeListener(checkboxListener)
+        restoreExtensionsCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupBookmarksCb.setOnCheckedChangeListener(checkboxListener)
+        restoreBookmarksCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupResumeWatchingCb.setOnCheckedChangeListener(checkboxListener)
+        restoreResumeWatchingCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupSearchHistoryCb.setOnCheckedChangeListener(checkboxListener)
+        restoreSearchHistoryCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupPlayerCb.setOnCheckedChangeListener(checkboxListener)
+        restorePlayerCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupSubtitlesCb.setOnCheckedChangeListener(checkboxListener)
+        restoreSubtitlesCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupThemeCb.setOnCheckedChangeListener(checkboxListener)
+        restoreThemeCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupLayoutCb.setOnCheckedChangeListener(checkboxListener)
+        restoreLayoutCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupDownloadsCb.setOnCheckedChangeListener(checkboxListener)
+        restoreDownloadsCb.setOnCheckedChangeListener(checkboxListener)
+        
+        backupGeneralCb.setOnCheckedChangeListener(checkboxListener)
+        restoreGeneralCb.setOnCheckedChangeListener(checkboxListener)
         // #endregion
 
         // Load devices list + last sync info
@@ -344,6 +449,16 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
             }
 
             devicesListLayout.addView(deviceView)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val dialog = dialog as? com.google.android.material.bottomsheet.BottomSheetDialog
+        val bottomSheet = dialog?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+        if (bottomSheet != null) {
+            com.google.android.material.bottomsheet.BottomSheetBehavior.from(bottomSheet).state = 
+                com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
         }
     }
 

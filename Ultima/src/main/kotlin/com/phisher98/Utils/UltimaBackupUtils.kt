@@ -19,7 +19,7 @@ import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.mapper
 import java.security.MessageDigest
-
+import androidx.core.content.edit
 
 
 data class BackupVars(
@@ -136,6 +136,9 @@ object UltimaBackupUtils {
         "ULTIMA_APP_SETTINGS_SYNC_CREDS",
         "used_fstream_providers_v3",
         "fstream_version",
+        // Exclude active homepage provider from sync so each device keeps its local selection
+        "home_api_used",
+        "home_api",
     )
 
     private fun String.isTransferable(): Boolean {
@@ -184,6 +187,64 @@ object UltimaBackupUtils {
         return SyncCategory.SETTINGS
     }
 
+    fun classifySettingsKey(key: String): SettingsSubCategory {
+        val lowerKey = key.lowercase()
+        return when {
+            // Player settings
+            lowerKey.contains("player") || lowerKey.contains("video") || lowerKey.contains("play") || 
+            lowerKey.contains("buffer") || lowerKey.contains("resize") || lowerKey.contains("skip") || 
+            lowerKey.contains("volume") || lowerKey.contains("brightness") || lowerKey.contains("gesture") ||
+            lowerKey.contains("speed") || lowerKey.contains("decoder") || lowerKey.contains("render") ||
+            lowerKey.contains("fit") || lowerKey.contains("aspect") -> SettingsSubCategory.PLAYER
+
+            // Subtitles settings
+            lowerKey.contains("subtitle") || lowerKey.contains("sub") || lowerKey.contains("caption") ||
+            lowerKey.contains("lang") || lowerKey.contains("font") -> SettingsSubCategory.SUBTITLES
+
+            // Theme settings
+            lowerKey.contains("theme") || lowerKey.contains("dark") || lowerKey.contains("color") || 
+            lowerKey.contains("accent") || lowerKey.contains("primary") || lowerKey.contains("style") -> SettingsSubCategory.THEME
+
+            // Layout settings
+            lowerKey.contains("layout") || lowerKey.contains("view") || lowerKey.contains("grid") || 
+            lowerKey.contains("list") || lowerKey.contains("home") || lowerKey.contains("card") ||
+            lowerKey.contains("tab") || lowerKey.contains("row") || lowerKey.contains("show_") ||
+            lowerKey.contains("homepage") -> SettingsSubCategory.LAYOUT
+
+            // Downloads settings
+            lowerKey.contains("download") || lowerKey.contains("down") || lowerKey.contains("path") -> SettingsSubCategory.DOWNLOADS
+
+            // General settings
+            else -> SettingsSubCategory.GENERAL
+        }
+    }
+
+    fun isKeyBackupEnabled(key: String, category: SyncCategory, creds: AppSettingsSyncCreds): Boolean {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> creds.backupExtensions
+            SyncCategory.BOOKMARKS -> creds.backupBookmarks
+            SyncCategory.RESUME_WATCHING -> creds.backupResumeWatching
+            SyncCategory.SEARCH_HISTORY -> creds.backupSearchHistory
+            SyncCategory.SETTINGS -> {
+                val sub = classifySettingsKey(key)
+                creds.isSettingsBackupEnabled(sub)
+            }
+        }
+    }
+
+    fun isKeyRestoreEnabled(key: String, category: SyncCategory, creds: AppSettingsSyncCreds): Boolean {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> creds.restoreExtensions
+            SyncCategory.BOOKMARKS -> creds.restoreBookmarks
+            SyncCategory.RESUME_WATCHING -> creds.restoreResumeWatching
+            SyncCategory.SEARCH_HISTORY -> creds.restoreSearchHistory
+            SyncCategory.SETTINGS -> {
+                val sub = classifySettingsKey(key)
+                creds.isSettingsRestoreEnabled(sub)
+            }
+        }
+    }
+
     fun computeHash(data: String): String {
         val digest = MessageDigest.getInstance("MD5")
         val bytes = digest.digest(data.toByteArray())
@@ -192,13 +253,16 @@ object UltimaBackupUtils {
 
     @Suppress("UNCHECKED_CAST")
     fun getBackupForCategory(context: Context, category: SyncCategory, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>? = null): BackupFile? {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
         val allData = context.getSharedPrefs().all.filter { entry ->
             entry.key.isTransferable() && classifyKey(entry.key) == category &&
-            isResumeWatchingRelevant(entry.key, resumeWatching)
+            isResumeWatchingRelevant(entry.key, resumeWatching) &&
+            isKeyBackupEnabled(entry.key, category, creds)
         }
         val allSettings = context.getDefaultSharedPrefs().all.filter { entry ->
             entry.key.isTransferable() && classifyKey(entry.key) == category &&
-            isResumeWatchingRelevant(entry.key, resumeWatching)
+            isResumeWatchingRelevant(entry.key, resumeWatching) &&
+            isKeyBackupEnabled(entry.key, category, creds)
         }
 
         if (allData.isEmpty() && allSettings.isEmpty()) return null
@@ -232,7 +296,7 @@ object UltimaBackupUtils {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun buildBackupVars(data: Map<String, *>): BackupVars {
+    private fun buildBackupVars(data: Map<String, *>) : BackupVars {
         return BackupVars(
             data.filter { it.value is Boolean } as? Map<String, Boolean>,
             data.filter { it.value is Int } as? Map<String, Int>,
@@ -247,25 +311,27 @@ object UltimaBackupUtils {
         Log.d(TAG, "Restoring category: ${category.key}")
 
         // Restore datastore prefs
-        restoreBackupVars(context, backupFile.datastore, isSettings = false)
+        restoreBackupVars(context, category, backupFile.datastore, isSettings = false)
         // Restore default settings prefs
-        restoreBackupVars(context, backupFile.settings, isSettings = true)
+        restoreBackupVars(context, category, backupFile.settings, isSettings = true)
     }
 
-    private fun restoreBackupVars(context: Context, vars: BackupVars, isSettings: Boolean) {
+    private fun restoreBackupVars(context: Context, category: SyncCategory, vars: BackupVars, isSettings: Boolean) {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
         val editor = editor(context, isSettings)
-        vars.bool?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
-        vars.int?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
-        vars.float?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
-        vars.long?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
-        vars.stringSet?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
+        vars.bool?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
+        vars.int?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
+        vars.float?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
+        vars.long?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
+        vars.stringSet?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
         // Strings last — excludes PLUGINS_KEY and REPOSITORIES_KEY (handled separately for extensions)
         vars.string?.forEach { (k, v) ->
             if (k.isTransferable() &&
                 !k.equals("PLUGINS_KEY", ignoreCase = true) &&
                 !k.equals(REPOSITORIES_KEY, ignoreCase = true) &&
                 !k.equals("plugins_repositories", ignoreCase = true) &&
-                !k.equals("repositories", ignoreCase = true)) {
+                !k.equals("repositories", ignoreCase = true) &&
+                isKeyRestoreEnabled(k, category, creds)) {
                 editor.setKeyRaw(k, v)
             }
         }
@@ -312,17 +378,17 @@ object UltimaBackupUtils {
 
                     val mergedReposJson = mergedRepos.toTypedArray().toJson()
 
-                    context.getDefaultSharedPrefs().edit()
-                        .putString(REPOSITORIES_KEY, mergedReposJson)
-                        .putString("plugins_repositories", mergedReposJson)
-                        .putString("repositories", mergedReposJson)
-                        .apply()
+                    context.getDefaultSharedPrefs().edit {
+                        putString(REPOSITORIES_KEY, mergedReposJson)
+                            .putString("plugins_repositories", mergedReposJson)
+                            .putString("repositories", mergedReposJson)
+                    }
 
-                    context.getSharedPrefs().edit()
-                        .putString(REPOSITORIES_KEY, mergedReposJson)
-                        .putString("plugins_repositories", mergedReposJson)
-                        .putString("repositories", mergedReposJson)
-                        .apply()
+                    context.getSharedPrefs().edit {
+                        putString(REPOSITORIES_KEY, mergedReposJson)
+                            .putString("plugins_repositories", mergedReposJson)
+                            .putString("repositories", mergedReposJson)
+                    }
 
                     setKey(REPOSITORIES_KEY, mergedRepos.toTypedArray())
                     try {
@@ -334,16 +400,16 @@ object UltimaBackupUtils {
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to merge repos: ${e.message}")
                     // Fallback: write incoming directly
-                    context.getDefaultSharedPrefs().edit()
-                        .putString(REPOSITORIES_KEY, repoValue)
-                        .putString("plugins_repositories", repoValue)
-                        .putString("repositories", repoValue)
-                        .apply()
-                    context.getSharedPrefs().edit()
-                        .putString(REPOSITORIES_KEY, repoValue)
-                        .putString("plugins_repositories", repoValue)
-                        .putString("repositories", repoValue)
-                        .apply()
+                    context.getDefaultSharedPrefs().edit {
+                        putString(REPOSITORIES_KEY, repoValue)
+                            .putString("plugins_repositories", repoValue)
+                            .putString("repositories", repoValue)
+                    }
+                    context.getSharedPrefs().edit {
+                        putString(REPOSITORIES_KEY, repoValue)
+                            .putString("plugins_repositories", repoValue)
+                            .putString("repositories", repoValue)
+                    }
                     try {
                         val repoArray = mapper.readValue<Array<RepositoryData>>(repoValue)
                         setKey(REPOSITORIES_KEY, repoArray)
@@ -423,17 +489,15 @@ object UltimaBackupUtils {
                             val response = com.lagradost.cloudstream3.app.get(downloadUrl)
                             if (response.code == 200) {
                                 val body = response.okhttpResponse.body
-                                if (body != null) {
-                                    tempFile.outputStream().use { fos ->
-                                        body.byteStream().use { bis -> bis.copyTo(fos) }
-                                    }
-                                    if (tempFile.exists() && tempFile.length() > 0) {
-                                        localFile.parentFile?.mkdirs()
-                                        tempFile.copyTo(localFile, overwrite = true)
-                                        downloadedAny = true
-                                        newlyDownloaded.add(plugin.internalName)
-                                        updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath, url = targetUrl))
-                                    }
+                                tempFile.outputStream().use { fos ->
+                                    body.byteStream().use { bis -> bis.copyTo(fos) }
+                                }
+                                if (tempFile.exists() && tempFile.length() > 0) {
+                                    localFile.parentFile?.mkdirs()
+                                    tempFile.copyTo(localFile, overwrite = true)
+                                    downloadedAny = true
+                                    newlyDownloaded.add(plugin.internalName)
+                                    updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath, url = targetUrl))
                                 }
                             }
                         } finally {
@@ -519,5 +583,43 @@ object UltimaBackupUtils {
             datastore = buildBackupVars(allData),
             settings = buildBackupVars(allSettings)
         )
+    }
+
+    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?): BackupFile? {
+        if (local == null) return cloud
+        if (cloud == null) return local
+
+        return BackupFile(
+            datastore = mergeBackupVars(local.datastore, cloud.datastore),
+            settings = mergeBackupVars(local.settings, cloud.settings)
+        )
+    }
+
+    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars): BackupVars {
+        return BackupVars(
+            bool = mergeMaps(local.bool, cloud.bool),
+            int = mergeMaps(local.int, cloud.int),
+            string = mergeMaps(local.string, cloud.string),
+            float = mergeMaps(local.float, cloud.float),
+            long = mergeMaps(local.long, cloud.long),
+            stringSet = mergeMaps(local.stringSet, cloud.stringSet)
+        )
+    }
+
+    private fun <K, V> mergeMaps(local: Map<K, V>?, cloud: Map<K, V>?): Map<K, V>? {
+        if (local == null) return cloud
+        if (cloud == null) return local
+        val merged = HashMap<K, V>(local)
+        merged.putAll(cloud)
+        return merged
+    }
+
+    fun BackupVars.isEmpty(): Boolean {
+        return bool.isNullOrEmpty() &&
+               int.isNullOrEmpty() &&
+               string.isNullOrEmpty() &&
+               float.isNullOrEmpty() &&
+               long.isNullOrEmpty() &&
+               stringSet.isNullOrEmpty()
     }
 }

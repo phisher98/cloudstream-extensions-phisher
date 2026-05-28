@@ -72,6 +72,57 @@ data class AppSettingsSyncCreds(
             SyncCategory.SETTINGS -> syncSettings
         }
     }
+
+    fun isBackupEnabled(category: SyncCategory): Boolean {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> backupExtensions
+            SyncCategory.BOOKMARKS -> backupBookmarks
+            SyncCategory.RESUME_WATCHING -> backupResumeWatching
+            SyncCategory.SEARCH_HISTORY -> backupSearchHistory
+            SyncCategory.SETTINGS -> backupPlayer || backupSubtitles || backupTheme || backupLayout || backupDownloads || backupGeneral
+        }
+    }
+
+    fun isRestoreEnabled(category: SyncCategory): Boolean {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> restoreExtensions
+            SyncCategory.BOOKMARKS -> restoreBookmarks
+            SyncCategory.RESUME_WATCHING -> restoreResumeWatching
+            SyncCategory.SEARCH_HISTORY -> restoreSearchHistory
+            SyncCategory.SETTINGS -> restorePlayer || restoreSubtitles || restoreTheme || restoreLayout || restoreDownloads || restoreGeneral
+        }
+    }
+
+    fun isSettingsBackupEnabled(sub: SettingsSubCategory): Boolean {
+        return when (sub) {
+            SettingsSubCategory.PLAYER -> backupPlayer
+            SettingsSubCategory.SUBTITLES -> backupSubtitles
+            SettingsSubCategory.THEME -> backupTheme
+            SettingsSubCategory.LAYOUT -> backupLayout
+            SettingsSubCategory.DOWNLOADS -> backupDownloads
+            SettingsSubCategory.GENERAL -> backupGeneral
+        }
+    }
+
+    fun isSettingsRestoreEnabled(sub: SettingsSubCategory): Boolean {
+        return when (sub) {
+            SettingsSubCategory.PLAYER -> restorePlayer
+            SettingsSubCategory.SUBTITLES -> restoreSubtitles
+            SettingsSubCategory.THEME -> restoreTheme
+            SettingsSubCategory.LAYOUT -> restoreLayout
+            SettingsSubCategory.DOWNLOADS -> restoreDownloads
+            SettingsSubCategory.GENERAL -> restoreGeneral
+        }
+    }
+}
+
+enum class SettingsSubCategory {
+    PLAYER,
+    SUBTITLES,
+    THEME,
+    LAYOUT,
+    DOWNLOADS,
+    GENERAL
 }
 
 // --- Sync v2 Category System ---

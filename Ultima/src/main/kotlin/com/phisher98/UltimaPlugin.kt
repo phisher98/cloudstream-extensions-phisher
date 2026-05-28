@@ -90,7 +90,7 @@ class UltimaPlugin : Plugin() {
         val resumeWatching = getResumeWatching()
 
         for (category in dirty) {
-            if (!creds.isCategoryEnabled(category)) continue
+            if (!creds.isBackupEnabled(category)) continue
 
             try {
                 val backup = UltimaBackupUtils.getBackupForCategory(context, category, resumeWatching)
@@ -141,7 +141,7 @@ class UltimaPlugin : Plugin() {
 
         try {
             for (category in SyncCategory.entries) {
-                if (!creds.isCategoryEnabled(category)) continue
+                if (!creds.isRestoreEnabled(category)) continue
 
                 val cloudMeta = manifest.getMeta(category) ?: continue
                 val localTs = UltimaStorageManager.getCategoryTimestamp(category)
@@ -218,7 +218,7 @@ class UltimaPlugin : Plugin() {
 
                 // Split and push each category
                 for (category in SyncCategory.entries) {
-                    if (!creds.isCategoryEnabled(category)) continue
+                    if (!creds.isBackupEnabled(category)) continue
 
                     val categoryBackup = UltimaBackupUtils.getBackupForCategory(context, category, resumeWatching)
                     if (categoryBackup != null) {
@@ -349,7 +349,7 @@ class UltimaPlugin : Plugin() {
         val resumeWatching = getResumeWatching()
 
         for (category in SyncCategory.entries) {
-            if (!creds.isCategoryEnabled(category)) continue
+            if (!creds.isBackupEnabled(category)) continue
 
             try {
                 val backup = UltimaBackupUtils.getBackupForCategory(context, category, resumeWatching) ?: continue
@@ -376,6 +376,108 @@ class UltimaPlugin : Plugin() {
             } catch (e: Throwable) {
                 Log.e(TAG, "afterPluginsLoadedEvent invoke failed: ${e.message}")
             }
+        }
+    }
+
+    private suspend fun restoreAndReload(context: Context, category: SyncCategory, backupFile: BackupFile) {
+        when (category) {
+            SyncCategory.EXTENSIONS -> {
+                UltimaBackupUtils.restoreCategory(context, category, backupFile)
+                UltimaBackupUtils.restoreExtensionsCategory(context, backupFile)
+            }
+            SyncCategory.BOOKMARKS -> {
+                UltimaBackupUtils.restoreCategory(context, category, backupFile)
+                withContext(Dispatchers.Main) {
+                    try { MainActivity.bookmarksUpdatedEvent(true) } catch (_: Throwable) {}
+                }
+            }
+            else -> {
+                UltimaBackupUtils.restoreCategory(context, category, backupFile)
+            }
+        }
+    }
+
+    suspend fun mergeAndSyncCategory(context: Context, category: SyncCategory) {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return
+        if (!creds.isLoggedIn()) return
+
+        val isBackup = creds.isBackupEnabled(category)
+        val isRestore = creds.isRestoreEnabled(category)
+
+        if (!isBackup && !isRestore) return
+
+        try {
+            // 1. Fetch cloud data
+            val cloudPayload = UltimaSettingsSyncUtils.fetchCategory(context, category)
+            val cloudBackup = if (cloudPayload != null && cloudPayload.data.isNotBlank()) {
+                try {
+                    mapper.readValue<BackupFile>(cloudPayload.data)
+                } catch (e: Exception) {
+                    null
+                }
+            } else null
+
+            // 2. Get local data
+            val resumeWatching = getResumeWatching()
+            val localBackup = UltimaBackupUtils.getBackupForCategory(context, category, resumeWatching)
+
+            // 3. Check emptiness
+            val isLocalEmpty = localBackup == null || 
+                ((localBackup.datastore.bool.isNullOrEmpty() && localBackup.datastore.int.isNullOrEmpty() && localBackup.datastore.string.isNullOrEmpty() && localBackup.datastore.float.isNullOrEmpty() && localBackup.datastore.long.isNullOrEmpty() && localBackup.datastore.stringSet.isNullOrEmpty()) &&
+                 (localBackup.settings.bool.isNullOrEmpty() && localBackup.settings.int.isNullOrEmpty() && localBackup.settings.string.isNullOrEmpty() && localBackup.settings.float.isNullOrEmpty() && localBackup.settings.long.isNullOrEmpty() && localBackup.settings.stringSet.isNullOrEmpty()))
+
+            val isCloudEmpty = cloudBackup == null ||
+                ((cloudBackup.datastore.bool.isNullOrEmpty() && cloudBackup.datastore.int.isNullOrEmpty() && cloudBackup.datastore.string.isNullOrEmpty() && cloudBackup.datastore.float.isNullOrEmpty() && cloudBackup.datastore.long.isNullOrEmpty() && cloudBackup.datastore.stringSet.isNullOrEmpty()) &&
+                 (cloudBackup.settings.bool.isNullOrEmpty() && cloudBackup.settings.int.isNullOrEmpty() && cloudBackup.settings.string.isNullOrEmpty() && cloudBackup.settings.float.isNullOrEmpty() && cloudBackup.settings.long.isNullOrEmpty() && cloudBackup.settings.stringSet.isNullOrEmpty()))
+
+            if (isLocalEmpty) {
+                // Local is empty: pull from cloud if available
+                if (!isCloudEmpty && cloudBackup != null && isRestore) {
+                    Log.d(TAG, "Local is empty for ${category.key}, pulling from cloud")
+                    restoreAndReload(context, category, cloudBackup)
+                    // Update local state hash and timestamp to match cloud
+                    val manifest = UltimaSettingsSyncUtils.fetchManifest(context)
+                    val cloudMeta = manifest?.getMeta(category)
+                    if (cloudMeta != null) {
+                        UltimaStorageManager.setCategoryTimestamp(category, cloudMeta.ts)
+                        UltimaStorageManager.setCategoryHash(category, cloudMeta.hash)
+                    }
+                }
+            } else if (isCloudEmpty) {
+                // Cloud is empty: push local to cloud if available
+                if (localBackup != null && isBackup) {
+                    Log.d(TAG, "Cloud is empty for ${category.key}, pushing local to cloud")
+                    val data = localBackup.toJson()
+                    val hash = UltimaBackupUtils.computeHash(data)
+                    UltimaSettingsSyncUtils.pushCategory(context, category, data, hash)
+                }
+            } else {
+                // Both have data: merge them
+                if (localBackup != null && cloudBackup != null) {
+                    Log.d(TAG, "Merging local and cloud data for ${category.key}")
+                    val mergedBackup = UltimaBackupUtils.mergeBackupFiles(localBackup, cloudBackup)
+                    if (mergedBackup != null) {
+                        // Write merged data locally if restore is enabled
+                        if (isRestore) {
+                            restoreAndReload(context, category, mergedBackup)
+                        }
+                        // Push merged data to cloud if backup is enabled
+                        if (isBackup) {
+                            val data = mergedBackup.toJson()
+                            val hash = UltimaBackupUtils.computeHash(data)
+                            UltimaSettingsSyncUtils.pushCategory(context, category, data, hash)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error merging and syncing category ${category.key}: ${e.message}")
+        }
+    }
+
+    suspend fun mergeAndSyncAllCategories(context: Context) {
+        for (category in SyncCategory.entries) {
+            mergeAndSyncCategory(context, category)
         }
     }
 }
