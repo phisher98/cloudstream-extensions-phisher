@@ -49,6 +49,28 @@ object UltimaStorageManager {
             setKey("ULTIMA_LAST_LOCAL_SYNC_TIME", value)
         }
 
+    var syncV2Migrated: Boolean
+        get() = getKey("ULTIMA_SYNC_V2_MIGRATED") ?: false
+        set(value) {
+            setKey("ULTIMA_SYNC_V2_MIGRATED", value)
+        }
+
+    fun getCategoryTimestamp(category: SyncCategory): Long {
+        return getKey("ULTIMA_SYNC_TS_${category.key}") ?: 0L
+    }
+
+    fun setCategoryTimestamp(category: SyncCategory, ts: Long) {
+        setKey("ULTIMA_SYNC_TS_${category.key}", ts)
+    }
+
+    fun getCategoryHash(category: SyncCategory): String {
+        return getKey("ULTIMA_SYNC_HASH_${category.key}") ?: ""
+    }
+
+    fun setCategoryHash(category: SyncCategory, hash: String) {
+        setKey("ULTIMA_SYNC_HASH_${category.key}", hash)
+    }
+
     // #endregion - custom data variables
 
     fun deleteAllData() {
@@ -59,9 +81,15 @@ object UltimaStorageManager {
                         "ULTIMA_CURRENT_META_PROVIDERS",
                         "ULTIMA_CURRENT_MEDIA_PROVIDERS",
                         "ULTIMA_APP_SETTINGS_SYNC_CREDS",
-                        "ULTIMA_LAST_LOCAL_SYNC_TIME"
+                        "ULTIMA_LAST_LOCAL_SYNC_TIME",
+                        "ULTIMA_SYNC_V2_MIGRATED"
                 )
                 .forEach { setKey(it, null) }
+        // Clear per-category sync state
+        SyncCategory.entries.forEach { cat ->
+            setKey("ULTIMA_SYNC_TS_${cat.key}", null)
+            setKey("ULTIMA_SYNC_HASH_${cat.key}", null)
+        }
     }
 
 

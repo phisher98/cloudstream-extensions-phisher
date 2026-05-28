@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.api.Log
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -18,7 +19,15 @@ data class AppSettingsSyncCreds(
     @param:JsonProperty("deviceId") var deviceId: String? = null,
     @param:JsonProperty("backupDevice") var backupDevice: Boolean = false,
     @param:JsonProperty("restoreDevice") var restoreDevice: Boolean = false,
-    
+
+    // Unified category sync toggles (v2)
+    @param:JsonProperty("syncExtensions") var syncExtensions: Boolean = true,
+    @param:JsonProperty("syncBookmarks") var syncBookmarks: Boolean = true,
+    @param:JsonProperty("syncResumeWatching") var syncResumeWatching: Boolean = true,
+    @param:JsonProperty("syncSearchHistory") var syncSearchHistory: Boolean = true,
+    @param:JsonProperty("syncSettings") var syncSettings: Boolean = true,
+
+    // Legacy per-category toggles (kept for backward compat deserialization)
     @param:JsonProperty("backupBookmarks") var backupBookmarks: Boolean = true,
     @param:JsonProperty("backupResumeWatching") var backupResumeWatching: Boolean = true,
     @param:JsonProperty("backupSearchHistory") var backupSearchHistory: Boolean = true,
@@ -29,7 +38,7 @@ data class AppSettingsSyncCreds(
     @param:JsonProperty("backupLayout") var backupLayout: Boolean = true,
     @param:JsonProperty("backupDownloads") var backupDownloads: Boolean = true,
     @param:JsonProperty("backupGeneral") var backupGeneral: Boolean = true,
-    
+
     @param:JsonProperty("restoreBookmarks") var restoreBookmarks: Boolean = true,
     @param:JsonProperty("restoreResumeWatching") var restoreResumeWatching: Boolean = true,
     @param:JsonProperty("restoreSearchHistory") var restoreSearchHistory: Boolean = true,
@@ -53,7 +62,74 @@ data class AppSettingsSyncCreds(
     fun isLoggedIn(): Boolean {
         return !syncKey.isNullOrEmpty()
     }
+
+    fun isCategoryEnabled(category: SyncCategory): Boolean {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> syncExtensions
+            SyncCategory.BOOKMARKS -> syncBookmarks
+            SyncCategory.RESUME_WATCHING -> syncResumeWatching
+            SyncCategory.SEARCH_HISTORY -> syncSearchHistory
+            SyncCategory.SETTINGS -> syncSettings
+        }
+    }
 }
+
+// --- Sync v2 Category System ---
+
+enum class SyncCategory(val key: String) {
+    EXTENSIONS("extensions"),
+    SETTINGS("settings"),
+    BOOKMARKS("bookmarks"),
+    RESUME_WATCHING("resume_watching"),
+    SEARCH_HISTORY("search_history");
+
+    companion object {
+        fun fromKey(key: String): SyncCategory? = entries.find { it.key == key }
+    }
+}
+
+data class SyncCategoryMeta(
+    @JsonProperty("ts") val ts: Long = 0L,
+    @JsonProperty("hash") val hash: String = "",
+    @JsonProperty("device") val device: String = ""
+)
+
+data class SyncManifest(
+    @JsonProperty("extensions") val extensions: SyncCategoryMeta? = null,
+    @JsonProperty("settings") val settings: SyncCategoryMeta? = null,
+    @JsonProperty("bookmarks") val bookmarks: SyncCategoryMeta? = null,
+    @JsonProperty("resume_watching") val resumeWatching: SyncCategoryMeta? = null,
+    @JsonProperty("search_history") val searchHistory: SyncCategoryMeta? = null,
+    @JsonProperty("version") val version: Int = 2
+) {
+    fun getMeta(category: SyncCategory): SyncCategoryMeta? {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> extensions
+            SyncCategory.SETTINGS -> settings
+            SyncCategory.BOOKMARKS -> bookmarks
+            SyncCategory.RESUME_WATCHING -> resumeWatching
+            SyncCategory.SEARCH_HISTORY -> searchHistory
+        }
+    }
+
+    fun withUpdated(category: SyncCategory, meta: SyncCategoryMeta): SyncManifest {
+        return when (category) {
+            SyncCategory.EXTENSIONS -> copy(extensions = meta)
+            SyncCategory.SETTINGS -> copy(settings = meta)
+            SyncCategory.BOOKMARKS -> copy(bookmarks = meta)
+            SyncCategory.RESUME_WATCHING -> copy(resumeWatching = meta)
+            SyncCategory.SEARCH_HISTORY -> copy(searchHistory = meta)
+        }
+    }
+}
+
+data class SyncCategoryPayload(
+    @JsonProperty("data") val data: String = "",
+    @JsonProperty("ts") val ts: Long = 0L,
+    @JsonProperty("device") val device: String = ""
+)
+
+// --- Legacy v1 types (kept for migration) ---
 
 data class FirebaseDevice(
     @JsonProperty("name") var name: String = "",
@@ -68,7 +144,8 @@ data class FirebaseSharedData(
 )
 
 object UltimaSettingsSyncUtils {
-    
+    private const val TAG = "UltimaSync"
+
     fun getDeviceId(packageName: String, context: Context): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         if (!androidId.isNullOrEmpty()) {
@@ -81,7 +158,7 @@ object UltimaSettingsSyncUtils {
                 if (!serialNumber.isNullOrEmpty()) {
                     return md5(packageName + serialNumber)
                 }
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
             }
         } else {
             @Suppress("DEPRECATION")
@@ -95,7 +172,7 @@ object UltimaSettingsSyncUtils {
         return md5(packageName + UUID.nameUUIDFromBytes(deviceInfo.toByteArray()).toString())
     }
 
-    private fun md5(input: String): String {
+    fun md5(input: String): String {
         val digest = MessageDigest.getInstance("MD5")
         val bytes = digest.digest(input.toByteArray())
         val sb = StringBuilder()
@@ -105,10 +182,105 @@ object UltimaSettingsSyncUtils {
         return sb.toString()
     }
 
+    // --- v2 Manifest/Category API ---
+
+    suspend fun fetchManifest(context: Context): SyncManifest? {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
+        if (!creds.isLoggedIn()) return null
+
+        return try {
+            val url = "${creds.activeUrl}sync/${creds.syncKey}/manifest.json"
+            val res = app.get(url)
+            if (res.code == 200) {
+                val body = res.text
+                if (body.isEmpty() || body == "null") return null
+                mapper.readValue<SyncManifest>(body)
+            } else null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchManifest failed: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun pushManifest(context: Context, manifest: SyncManifest): Boolean {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
+        if (!creds.isLoggedIn()) return false
+
+        return try {
+            val url = "${creds.activeUrl}sync/${creds.syncKey}/manifest.json"
+            val res = app.put(url, json = manifest)
+            res.code in 200..299
+        } catch (e: Exception) {
+            Log.e(TAG, "pushManifest failed: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun fetchCategory(context: Context, category: SyncCategory): SyncCategoryPayload? {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
+        if (!creds.isLoggedIn()) return null
+
+        return try {
+            val url = "${creds.activeUrl}sync/${creds.syncKey}/categories/${category.key}.json"
+            val res = app.get(url)
+            if (res.code == 200) {
+                val body = res.text
+                if (body.isEmpty() || body == "null") return null
+                mapper.readValue<SyncCategoryPayload>(body)
+            } else null
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchCategory(${category.key}) failed: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun pushCategory(context: Context, category: SyncCategory, data: String, hash: String): Boolean {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
+        if (!creds.isLoggedIn()) return false
+
+        val now = System.currentTimeMillis()
+        val deviceName = creds.deviceName ?: "Unknown"
+
+        return try {
+            // 1. Push the category data
+            val catUrl = "${creds.activeUrl}sync/${creds.syncKey}/categories/${category.key}.json"
+            val payload = SyncCategoryPayload(data, now, deviceName)
+            val catRes = app.put(catUrl, json = payload)
+
+            if (catRes.code !in 200..299) {
+                Log.e(TAG, "pushCategory(${category.key}) failed: HTTP ${catRes.code}")
+                return false
+            }
+
+            // 2. Update the manifest for this category
+            val currentManifest = fetchManifest(context) ?: SyncManifest()
+            val meta = SyncCategoryMeta(now, hash, deviceName)
+            val updatedManifest = currentManifest.withUpdated(category, meta)
+            pushManifest(context, updatedManifest)
+
+            // 3. Update device status
+            val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
+            val device = FirebaseDevice(deviceName, creds.deviceId ?: "", now)
+            app.put(deviceUrl, json = device)
+
+            // 4. Save local timestamp and hash
+            UltimaStorageManager.setCategoryTimestamp(category, now)
+            UltimaStorageManager.setCategoryHash(category, hash)
+
+            Log.d(TAG, "Pushed category ${category.key} successfully (hash=$hash)")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "pushCategory(${category.key}) error: ${e.message}")
+            false
+        }
+    }
+
+    // --- Legacy v1 API (kept for migration + device list) ---
+
     suspend fun fetchDevices(context: Context): List<FirebaseDevice>? {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
         if (!creds.isLoggedIn()) return null
-        
+
         return try {
             val url = "${creds.activeUrl}sync/${creds.syncKey}/devices.json"
             val res = app.get(url)
@@ -117,18 +289,14 @@ object UltimaSettingsSyncUtils {
                 if (body.isEmpty() || body == "null") return emptyList()
                 val map = mapper.readValue<Map<String, FirebaseDevice>>(body)
                 map.values.toList()
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            null
-        }
+            } else null
+        } catch (e: Exception) { null }
     }
 
     suspend fun fetchSharedData(context: Context): FirebaseSharedData? {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return null
         if (!creds.isLoggedIn()) return null
-        
+
         return try {
             val url = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
             val res = app.get(url)
@@ -136,29 +304,34 @@ object UltimaSettingsSyncUtils {
                 val body = res.text
                 if (body.isEmpty() || body == "null") return null
                 mapper.readValue<FirebaseSharedData>(body)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            null
-        }
+            } else null
+        } catch (e: Exception) { null }
+    }
+
+    suspend fun deleteSharedData(context: Context): Boolean {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
+        if (!creds.isLoggedIn()) return false
+
+        return try {
+            val url = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
+            val res = app.delete(url)
+            res.code in 200..299
+        } catch (e: Exception) { false }
     }
 
     suspend fun pushSharedData(context: Context, backupData: String, timestamp: Long): Pair<Boolean, String?> {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false to "Credentials not found"
         if (!creds.isLoggedIn()) return false to "Not logged in"
-        
+
         return try {
-            // 1. Update shared data
             val sharedUrl = "${creds.activeUrl}sync/${creds.syncKey}/shared_data.json"
             val shared = FirebaseSharedData(timestamp, backupData, creds.deviceName ?: "Unknown Device")
             val sharedRes = app.put(sharedUrl, json = shared)
-            
-            // 2. Update device status
+
             val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
             val device = FirebaseDevice(creds.deviceName ?: "Unknown Device", creds.deviceId ?: "", timestamp)
             app.put(deviceUrl, json = device)
-            
+
             if (sharedRes.code in 200..299) {
                 true to "Sync success"
             } else {
@@ -170,7 +343,6 @@ object UltimaSettingsSyncUtils {
     }
 
     suspend fun syncThisDevice(context: Context, backupData: String): Pair<Boolean, String?> {
-        // Compatibility wrapper: push to shared data and register device
         val now = System.currentTimeMillis()
         return pushSharedData(context, backupData, now)
     }
@@ -178,7 +350,7 @@ object UltimaSettingsSyncUtils {
     suspend fun deregisterThisDevice(): Pair<Boolean, String?> {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false to "Credentials not found"
         if (!creds.isLoggedIn()) return false to "Not logged in"
-        
+
         return try {
             val url = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
             val res = app.delete(url)
@@ -186,6 +358,23 @@ object UltimaSettingsSyncUtils {
                 true to "Device removed"
             } else {
                 false to "Failed to remove device with code ${res.code}"
+            }
+        } catch (e: Exception) {
+            false to e.message
+        }
+    }
+
+    suspend fun removeDevice(deviceId: String): Pair<Boolean, String?> {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false to "Credentials not found"
+        if (!creds.isLoggedIn()) return false to "Not logged in"
+
+        return try {
+            val url = "${creds.activeUrl}sync/${creds.syncKey}/devices/$deviceId.json"
+            val res = app.delete(url)
+            if (res.code in 200..299) {
+                true to "Device removed"
+            } else {
+                false to "Failed with code ${res.code}"
             }
         } catch (e: Exception) {
             false to e.message

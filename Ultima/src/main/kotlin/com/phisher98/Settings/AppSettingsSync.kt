@@ -15,14 +15,13 @@ import androidx.lifecycle.coroutineScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
-import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.lagradost.cloudstream3.mapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomSheetDialogFragment() {
@@ -89,7 +88,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                 val generateKeyBtn = credsView.findView<Button>("generate_key_btn")
 
                 val currentCreds = sm.appSettingsSyncCreds ?: AppSettingsSyncCreds()
-                
+
                 deviceNameInput.setText(currentCreds.deviceName ?: Build.MODEL)
                 syncKeyInput.setText(currentCreds.syncKey)
                 customDbSwitch.isChecked = currentCreds.useCustomDatabase
@@ -121,43 +120,22 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
 
                         val deviceId = currentCreds.deviceId ?: UltimaSettingsSyncUtils.getDeviceId(packageName, context)
 
-                        val newCreds = AppSettingsSyncCreds(
+                        val newCreds = currentCreds.copy(
                             useCustomDatabase = useCustom,
                             firebaseUrl = if (fbUrl.isEmpty()) null else fbUrl,
                             syncKey = key,
                             deviceName = if (devName.isEmpty()) Build.MODEL else devName,
-                            deviceId = deviceId,
-                            backupDevice = currentCreds.backupDevice,
-                            restoreDevice = currentCreds.restoreDevice,
-                            backupBookmarks = currentCreds.backupBookmarks,
-                            backupResumeWatching = currentCreds.backupResumeWatching,
-                            backupSearchHistory = currentCreds.backupSearchHistory,
-                            backupExtensions = currentCreds.backupExtensions,
-                            backupPlayer = currentCreds.backupPlayer,
-                            backupSubtitles = currentCreds.backupSubtitles,
-                            backupTheme = currentCreds.backupTheme,
-                            backupLayout = currentCreds.backupLayout,
-                            backupDownloads = currentCreds.backupDownloads,
-                            backupGeneral = currentCreds.backupGeneral,
-                            restoreBookmarks = currentCreds.restoreBookmarks,
-                            restoreResumeWatching = currentCreds.restoreResumeWatching,
-                            restoreSearchHistory = currentCreds.restoreSearchHistory,
-                            restoreExtensions = currentCreds.restoreExtensions,
-                            restorePlayer = currentCreds.restorePlayer,
-                            restoreSubtitles = currentCreds.restoreSubtitles,
-                            restoreTheme = currentCreds.restoreTheme,
-                            restoreLayout = currentCreds.restoreLayout,
-                            restoreDownloads = currentCreds.restoreDownloads,
-                            restoreGeneral = currentCreds.restoreGeneral
+                            deviceId = deviceId
                         )
 
                         sm.appSettingsSyncCreds = newCreds
 
                         activity?.lifecycle?.coroutineScope?.launch {
-                            val data = UltimaBackupUtils.getBackup(context, getResumeWatching())?.toJson() ?: ""
-                            val syncRes = UltimaSettingsSyncUtils.syncThisDevice(context, data)
-                            showToast(if (syncRes.first) "Device registered and synced" else "Error registering: ${syncRes.second}")
+                            showToast("Credentials saved. Performing initial sync...")
+                            plugin.pushAllCategories(context)
+                            showToast("Initial sync complete!")
                             refreshDevicesList(settings, inflater, container)
+                            updateLastSyncInfo(settings)
                         }
                     }
                     .setNegativeButton("Reset") { _, _ ->
@@ -166,6 +144,7 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                             sm.appSettingsSyncCreds = null
                             showToast("Sync credentials removed: ${deleteRes.second ?: "Reset successful"}")
                             refreshDevicesList(settings, inflater, container)
+                            updateLastSyncInfo(settings)
                         }
                     }
                     .show()
@@ -185,9 +164,10 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                     sm.appSettingsSyncCreds = creds
                     if (checked) {
                         activity?.lifecycle?.coroutineScope?.launch {
-                            val data = UltimaBackupUtils.getBackup(context, getResumeWatching())?.toJson() ?: ""
-                            val res = UltimaSettingsSyncUtils.syncThisDevice(context, data)
-                            showToast(res.second)
+                            showToast("Pushing all categories...")
+                            plugin.pushAllCategories(context)
+                            showToast("Push complete!")
+                            updateLastSyncInfo(settings)
                         }
                     }
                 } else if (checked) {
@@ -209,7 +189,10 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                     sm.appSettingsSyncCreds = creds
                     if (checked) {
                         activity?.lifecycle?.coroutineScope?.launch {
-                            restoreFromCloud(context)
+                            showToast("Pulling from cloud...")
+                            val restored = plugin.forcePullAllCategories(context)
+                            showToast(if (restored) "Restored from cloud" else "Already up to date")
+                            updateLastSyncInfo(settings)
                         }
                     }
                 } else if (checked) {
@@ -230,35 +213,16 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
                 }
                 activity?.lifecycle?.coroutineScope?.launch {
                     try {
-                        showToast("Forcing sync...")
-                        // 1. Fetch from cloud and restore (force restore regardless of timestamps)
-                        val sharedData = UltimaSettingsSyncUtils.fetchSharedData(context)
-                        if (sharedData != null && !sharedData.syncedData.isNullOrBlank()) {
-                            val backupFile = mapper.readValue<BackupFile>(sharedData.syncedData!!)
-                            plugin.lastOtherDeviceData = sharedData.syncedData
-                            plugin.lastBackupData = sharedData.syncedData
-                            UltimaBackupUtils.restore(context, backupFile, true, true)
-                            UltimaStorageManager.lastLocalSyncTime = sharedData.lastUpdated
-                            plugin.reload()
-                            showToast("Restored from cloud (${sharedData.writerDevice})")
-                        } else {
-                            showToast("No data in cloud to restore.")
-                        }
+                        showToast("Force syncing all categories...")
 
-                        // 2. Perform a backup and push
-                        val now = System.currentTimeMillis()
-                        val data = UltimaBackupUtils.getBackup(context, getResumeWatching())?.toJson() ?: ""
-                        if (data.isNotBlank()) {
-                            val res = UltimaSettingsSyncUtils.pushSharedData(context, data, now)
-                            if (res.first) {
-                                UltimaStorageManager.lastLocalSyncTime = now
-                                plugin.lastOtherDeviceData = data
-                                plugin.lastBackupData = data
-                                showToast("Backup pushed to cloud successfully")
-                            } else {
-                                showToast("Backup failed: ${res.second}")
-                            }
-                        }
+                        // 1. Pull all categories from cloud (force)
+                        plugin.forcePullAllCategories(context)
+
+                        // 2. Push all categories to cloud
+                        plugin.pushAllCategories(context)
+
+                        showToast("Force sync complete!")
+                        updateLastSyncInfo(settings)
                     } catch (e: Exception) {
                         showToast("Sync failed: ${e.message}")
                     }
@@ -267,127 +231,65 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
         }
         // #endregion
 
-        // #region - selective sync checkboxes
-        val backupBookmarksCb = settings.findView<CheckBox>("backup_bookmarks")
-        val backupResumeWatchingCb = settings.findView<CheckBox>("backup_resume_watching")
-        val backupSearchHistoryCb = settings.findView<CheckBox>("backup_search_history")
-        val backupExtensionsCb = settings.findView<CheckBox>("backup_extensions")
-        val backupPlayerCb = settings.findView<CheckBox>("backup_player")
-        val backupSubtitlesCb = settings.findView<CheckBox>("backup_subtitles")
-        val backupThemeCb = settings.findView<CheckBox>("backup_theme")
-        val backupLayoutCb = settings.findView<CheckBox>("backup_layout")
-        val backupDownloadsCb = settings.findView<CheckBox>("backup_downloads")
-        val backupGeneralCb = settings.findView<CheckBox>("backup_general")
-
-        val restoreBookmarksCb = settings.findView<CheckBox>("restore_bookmarks")
-        val restoreResumeWatchingCb = settings.findView<CheckBox>("restore_resume_watching")
-        val restoreSearchHistoryCb = settings.findView<CheckBox>("restore_search_history")
-        val restoreExtensionsCb = settings.findView<CheckBox>("restore_extensions")
-        val restorePlayerCb = settings.findView<CheckBox>("restore_player")
-        val restoreSubtitlesCb = settings.findView<CheckBox>("restore_subtitles")
-        val restoreThemeCb = settings.findView<CheckBox>("restore_theme")
-        val restoreLayoutCb = settings.findView<CheckBox>("restore_layout")
-        val restoreDownloadsCb = settings.findView<CheckBox>("restore_downloads")
-        val restoreGeneralCb = settings.findView<CheckBox>("restore_general")
+        // #region - unified sync category checkboxes
+        val syncExtensionsCb = settings.findView<CheckBox>("sync_extensions")
+        val syncBookmarksCb = settings.findView<CheckBox>("sync_bookmarks")
+        val syncResumeWatchingCb = settings.findView<CheckBox>("sync_resume_watching")
+        val syncSearchHistoryCb = settings.findView<CheckBox>("sync_search_history")
+        val syncSettingsCb = settings.findView<CheckBox>("sync_settings")
 
         val currentCreds = sm.appSettingsSyncCreds ?: AppSettingsSyncCreds()
-        
-        backupBookmarksCb.isChecked = currentCreds.backupBookmarks
-        backupResumeWatchingCb.isChecked = currentCreds.backupResumeWatching
-        backupSearchHistoryCb.isChecked = currentCreds.backupSearchHistory
-        backupExtensionsCb.isChecked = currentCreds.backupExtensions
-        backupPlayerCb.isChecked = currentCreds.backupPlayer
-        backupSubtitlesCb.isChecked = currentCreds.backupSubtitles
-        backupThemeCb.isChecked = currentCreds.backupTheme
-        backupLayoutCb.isChecked = currentCreds.backupLayout
-        backupDownloadsCb.isChecked = currentCreds.backupDownloads
-        backupGeneralCb.isChecked = currentCreds.backupGeneral
 
-        restoreBookmarksCb.isChecked = currentCreds.restoreBookmarks
-        restoreResumeWatchingCb.isChecked = currentCreds.restoreResumeWatching
-        restoreSearchHistoryCb.isChecked = currentCreds.restoreSearchHistory
-        restoreExtensionsCb.isChecked = currentCreds.restoreExtensions
-        restorePlayerCb.isChecked = currentCreds.restorePlayer
-        restoreSubtitlesCb.isChecked = currentCreds.restoreSubtitles
-        restoreThemeCb.isChecked = currentCreds.restoreTheme
-        restoreLayoutCb.isChecked = currentCreds.restoreLayout
-        restoreDownloadsCb.isChecked = currentCreds.restoreDownloads
-        restoreGeneralCb.isChecked = currentCreds.restoreGeneral
+        syncExtensionsCb.isChecked = currentCreds.syncExtensions
+        syncBookmarksCb.isChecked = currentCreds.syncBookmarks
+        syncResumeWatchingCb.isChecked = currentCreds.syncResumeWatching
+        syncSearchHistoryCb.isChecked = currentCreds.syncSearchHistory
+        syncSettingsCb.isChecked = currentCreds.syncSettings
 
         val checkboxListener = CompoundButton.OnCheckedChangeListener { _, _ ->
             val creds = sm.appSettingsSyncCreds ?: AppSettingsSyncCreds()
-            
-            creds.backupBookmarks = backupBookmarksCb.isChecked
-            creds.backupResumeWatching = backupResumeWatchingCb.isChecked
-            creds.backupSearchHistory = backupSearchHistoryCb.isChecked
-            creds.backupExtensions = backupExtensionsCb.isChecked
-            creds.backupPlayer = backupPlayerCb.isChecked
-            creds.backupSubtitles = backupSubtitlesCb.isChecked
-            creds.backupTheme = backupThemeCb.isChecked
-            creds.backupLayout = backupLayoutCb.isChecked
-            creds.backupDownloads = backupDownloadsCb.isChecked
-            creds.backupGeneral = backupGeneralCb.isChecked
 
-            creds.restoreBookmarks = restoreBookmarksCb.isChecked
-            creds.restoreResumeWatching = restoreResumeWatchingCb.isChecked
-            creds.restoreSearchHistory = restoreSearchHistoryCb.isChecked
-            creds.restoreExtensions = restoreExtensionsCb.isChecked
-            creds.restorePlayer = restorePlayerCb.isChecked
-            creds.restoreSubtitles = restoreSubtitlesCb.isChecked
-            creds.restoreTheme = restoreThemeCb.isChecked
-            creds.restoreLayout = restoreLayoutCb.isChecked
-            creds.restoreDownloads = restoreDownloadsCb.isChecked
-            creds.restoreGeneral = restoreGeneralCb.isChecked
-            
+            creds.syncExtensions = syncExtensionsCb.isChecked
+            creds.syncBookmarks = syncBookmarksCb.isChecked
+            creds.syncResumeWatching = syncResumeWatchingCb.isChecked
+            creds.syncSearchHistory = syncSearchHistoryCb.isChecked
+            creds.syncSettings = syncSettingsCb.isChecked
+
             sm.appSettingsSyncCreds = creds
         }
-        
-        backupBookmarksCb.setOnCheckedChangeListener(checkboxListener)
-        backupResumeWatchingCb.setOnCheckedChangeListener(checkboxListener)
-        backupSearchHistoryCb.setOnCheckedChangeListener(checkboxListener)
-        backupExtensionsCb.setOnCheckedChangeListener(checkboxListener)
-        backupPlayerCb.setOnCheckedChangeListener(checkboxListener)
-        backupSubtitlesCb.setOnCheckedChangeListener(checkboxListener)
-        backupThemeCb.setOnCheckedChangeListener(checkboxListener)
-        backupLayoutCb.setOnCheckedChangeListener(checkboxListener)
-        backupDownloadsCb.setOnCheckedChangeListener(checkboxListener)
-        backupGeneralCb.setOnCheckedChangeListener(checkboxListener)
 
-        restoreBookmarksCb.setOnCheckedChangeListener(checkboxListener)
-        restoreResumeWatchingCb.setOnCheckedChangeListener(checkboxListener)
-        restoreSearchHistoryCb.setOnCheckedChangeListener(checkboxListener)
-        restoreExtensionsCb.setOnCheckedChangeListener(checkboxListener)
-        restorePlayerCb.setOnCheckedChangeListener(checkboxListener)
-        restoreSubtitlesCb.setOnCheckedChangeListener(checkboxListener)
-        restoreThemeCb.setOnCheckedChangeListener(checkboxListener)
-        restoreLayoutCb.setOnCheckedChangeListener(checkboxListener)
-        restoreDownloadsCb.setOnCheckedChangeListener(checkboxListener)
-        restoreGeneralCb.setOnCheckedChangeListener(checkboxListener)
+        syncExtensionsCb.setOnCheckedChangeListener(checkboxListener)
+        syncBookmarksCb.setOnCheckedChangeListener(checkboxListener)
+        syncResumeWatchingCb.setOnCheckedChangeListener(checkboxListener)
+        syncSearchHistoryCb.setOnCheckedChangeListener(checkboxListener)
+        syncSettingsCb.setOnCheckedChangeListener(checkboxListener)
         // #endregion
 
-        // Load devices list
+        // Load devices list + last sync info
         activity?.lifecycle?.coroutineScope?.launch {
             refreshDevicesList(settings, inflater, container)
+            updateLastSyncInfo(settings)
         }
 
         return settings
     }
 
-    private suspend fun restoreFromCloud(context: Context) {
-        val creds = sm.appSettingsSyncCreds ?: return
-        try {
-            val sharedData = UltimaSettingsSyncUtils.fetchSharedData(context)
-            if (sharedData != null && !sharedData.syncedData.isNullOrBlank()) {
-                val backupFile = mapper.readValue<BackupFile>(sharedData.syncedData!!)
-                UltimaBackupUtils.restore(context, backupFile, true, true)
-                UltimaStorageManager.lastLocalSyncTime = sharedData.lastUpdated
-                plugin.reload()
-                showToast("Restored settings from cloud (${sharedData.writerDevice ?: "unknown"})")
-            } else {
-                showToast("No settings found in the cloud")
+    private fun updateLastSyncInfo(rootView: View) {
+        val infoView = rootView.findView<TextView>("last_sync_info")
+        val sb = StringBuilder()
+
+        for (category in SyncCategory.entries) {
+            val ts = sm.getCategoryTimestamp(category)
+            if (ts > 0) {
+                val time = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(ts))
+                sb.appendLine("${category.key}: $time")
             }
-        } catch (e: Exception) {
-            showToast("Restore failed: ${e.message}")
+        }
+
+        if (sb.isEmpty()) {
+            infoView.text = "No sync data yet"
+        } else {
+            infoView.text = "Last synced:\n$sb"
         }
     }
 
@@ -402,13 +304,45 @@ class UltimaConfigureAppSettingsSync(private val plugin: UltimaPlugin) : BottomS
             val isCurrent = device.deviceId == creds.deviceId
             val deviceView = getLayout("watch_sync_device", inflater, container)
             val nameSwitch = deviceView.findView<Switch>("watch_sync_device_name")
-            
-            // We use the switch layout but disable it since it's read-only for showing registered devices
+
             nameSwitch.text = device.name + if (isCurrent) " (current device)" else ""
             nameSwitch.isChecked = true
-            nameSwitch.isClickable = false
-            nameSwitch.focusable = View.NOT_FOCUSABLE
-            
+            nameSwitch.isClickable = true
+            nameSwitch.isFocusable = true
+
+            nameSwitch.setOnCheckedChangeListener { _, isChecked ->
+                if (!isChecked) {
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Remove Device")
+                        .setMessage("Remove '${device.name}' from sync network?")
+                        .setPositiveButton("Remove") { _, _ ->
+                            activity?.lifecycle?.coroutineScope?.launch {
+                                val deleteRes = UltimaSettingsSyncUtils.removeDevice(device.deviceId)
+                                if (deleteRes.first) {
+                                    showToast("Removed ${device.name}")
+                                    if (isCurrent) {
+                                        sm.appSettingsSyncCreds = null
+                                        updateLastSyncInfo(rootView)
+                                    }
+                                    refreshDevicesList(rootView, inflater, container)
+                                } else {
+                                    showToast("Failed: ${deleteRes.second}")
+                                    nameSwitch.isChecked = true
+                                }
+                            }
+                        }
+                        .setNegativeButton("Cancel") { dialog, _ ->
+                            nameSwitch.isChecked = true
+                            dialog.dismiss()
+                        }
+                        .setOnCancelListener {
+                            nameSwitch.isChecked = true
+                        }
+                        .show()
+                        .setDefaultFocus()
+                }
+            }
+
             devicesListLayout.addView(deviceView)
         }
     }

@@ -2,7 +2,6 @@ package com.phisher98
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.app.Activity
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.DataStore.getDefaultSharedPrefs
@@ -11,7 +10,6 @@ import com.lagradost.api.Log
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.plugins.PluginData
 import com.lagradost.cloudstream3.plugins.RepositoryManager
-import com.lagradost.cloudstream3.plugins.RepositoryManager.convertRawGitUrl
 import com.lagradost.cloudstream3.plugins.SitePlugin
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.File
@@ -20,6 +18,7 @@ import com.lagradost.cloudstream3.ui.settings.extensions.REPOSITORIES_KEY
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
 import com.lagradost.cloudstream3.CloudStreamApp.Companion.setKey
 import com.lagradost.cloudstream3.mapper
+import java.security.MessageDigest
 
 
 
@@ -69,6 +68,8 @@ data class UltimaEditor(
 }
 
 object UltimaBackupUtils {
+    private const val TAG = "UltimaSync"
+
     val nonTransferableKeys = listOf(
         "anilist_unixtime",
         "anilist_token",
@@ -137,170 +138,141 @@ object UltimaBackupUtils {
         "fstream_version",
     )
 
-    private fun String.isResume(): Boolean {
+    private fun String.isTransferable(): Boolean {
         return !nonTransferableKeys.any { this.contains(it) }
     }
 
-    private fun shouldBackupKey(key: String, creds: AppSettingsSyncCreds): Boolean {
+    // --- v2 Category System ---
+
+    fun classifyKey(key: String): SyncCategory? {
         val lowerKey = key.lowercase()
+
+        // Non-transferable keys don't belong to any category
+        if (!key.isTransferable()) return null
+
+        // Bookmarks
         if (lowerKey.contains("result_favorites_state_data") || lowerKey.contains("result_watch_state")) {
-            return creds.backupBookmarks
+            return SyncCategory.BOOKMARKS
         }
-        if (lowerKey.contains("result_resume_watching") || lowerKey.contains("video_pos_dur") || 
-            lowerKey.contains("download_header_cache") || lowerKey.contains("result_season") || 
+
+        // Resume watching
+        if (lowerKey.contains("result_resume_watching") || lowerKey.contains("video_pos_dur") ||
+            lowerKey.contains("download_header_cache") || lowerKey.contains("result_season") ||
             lowerKey.contains("result_dub") || lowerKey.contains("result_episode")) {
-            return creds.backupResumeWatching
+            return SyncCategory.RESUME_WATCHING
         }
+
+        // Search history
         if (lowerKey.contains("search_history")) {
-            return creds.backupSearchHistory
+            return SyncCategory.SEARCH_HISTORY
         }
-        if (lowerKey.contains("plugins_key_local")) {
-            return false
-        }
+
+        // Extensions (never sync local plugins)
+        if (lowerKey.contains("plugins_key_local")) return null
+
         if (lowerKey.contains("plugins_key") ||
             lowerKey.contains("plugins_repositories") ||
             lowerKey.contains("repositories") ||
-            lowerKey.contains("ultima_extensions_list") || lowerKey.contains("ultima_current_meta_providers") ||
+            lowerKey.contains("ultima_extensions_list") ||
+            lowerKey.contains("ultima_current_meta_providers") ||
             lowerKey.contains("ultima_current_media_providers") ||
             key.equals(REPOSITORIES_KEY, ignoreCase = true)) {
-            return creds.backupExtensions
+            return SyncCategory.EXTENSIONS
         }
-        if (lowerKey.contains("sub") || lowerKey.contains("caption")) {
-            return creds.backupSubtitles
-        }
-        if (lowerKey.contains("player")) {
-            return creds.backupPlayer
-        }
-        if (lowerKey.contains("theme") || lowerKey.contains("accent") || lowerKey.contains("color")) {
-            return creds.backupTheme
-        }
-        if (lowerKey.contains("layout") || lowerKey.contains("home") || lowerKey.contains("ui") || 
-            lowerKey.contains("poster") || lowerKey.contains("ext_name_on_home")) {
-            return creds.backupLayout
-        }
-        if (lowerKey.contains("download")) {
-            return creds.backupDownloads
-        }
-        return creds.backupGeneral
+
+        // Everything else is settings
+        return SyncCategory.SETTINGS
     }
 
-    private fun shouldRestoreKey(key: String, creds: AppSettingsSyncCreds): Boolean {
-        val lowerKey = key.lowercase()
-        if (lowerKey.contains("result_favorites_state_data") || lowerKey.contains("result_watch_state")) {
-            return creds.restoreBookmarks
-        }
-        if (lowerKey.contains("result_resume_watching") || lowerKey.contains("video_pos_dur") || 
-            lowerKey.contains("download_header_cache") || lowerKey.contains("result_season") || 
-            lowerKey.contains("result_dub") || lowerKey.contains("result_episode")) {
-            return creds.restoreResumeWatching
-        }
-        if (lowerKey.contains("search_history")) {
-            return creds.restoreSearchHistory
-        }
-        if (lowerKey.contains("plugins_key_local")) {
-            return false
-        }
-        if (lowerKey.contains("plugins_key") ||
-            lowerKey.contains("plugins_repositories") ||
-            lowerKey.contains("repositories") ||
-            lowerKey.contains("ultima_extensions_list") || lowerKey.contains("ultima_current_meta_providers") ||
-            lowerKey.contains("ultima_current_media_providers") ||
-            key.equals(REPOSITORIES_KEY, ignoreCase = true)) {
-            return creds.restoreExtensions
-        }
-        if (lowerKey.contains("sub") || lowerKey.contains("caption")) {
-            return creds.restoreSubtitles
-        }
-        if (lowerKey.contains("player")) {
-            return creds.restorePlayer
-        }
-        if (lowerKey.contains("theme") || lowerKey.contains("accent") || lowerKey.contains("color")) {
-            return creds.restoreTheme
-        }
-        if (lowerKey.contains("layout") || lowerKey.contains("home") || lowerKey.contains("ui") || 
-            lowerKey.contains("poster") || lowerKey.contains("ext_name_on_home")) {
-            return creds.restoreLayout
-        }
-        if (lowerKey.contains("download")) {
-            return creds.restoreDownloads
-        }
-        return creds.restoreGeneral
-    }
-
-    private fun String.isBackup(resumeWatching: List<DataStoreHelper.ResumeWatchingResult>? = null): Boolean {
-        var check = !nonTransferableKeys.any { this.contains(it) }
-        if (check) {
-            if (this.contains("download_header_cache")) {
-                val id = this.split("/").getOrNull(1)?.toIntOrNull()
-                check = id?.let { intId ->
-                    resumeWatching?.any { if (it.parentId != null) it.parentId == intId else it.id == intId } == true
-                } ?: false
-            } else if (this.contains("video_pos_dur")) {
-                val id = this.split("/").getOrNull(2)?.toIntOrNull()
-                check = id?.let { intId ->
-                    resumeWatching?.any { it.id == intId } == true
-                } ?: false
-            } else if (this.contains("result_season") || this.contains("result_dub") || this.contains("result_episode")) {
-                val id = this.split("/").getOrNull(2)?.toIntOrNull()
-                check = id?.let { intId ->
-                    resumeWatching?.any { it.parentId == intId } == true
-                } ?: false
-            }
-        }
-        
-        return check
+    fun computeHash(data: String): String {
+        val digest = MessageDigest.getInstance("MD5")
+        val bytes = digest.digest(data.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun getBackup(context: Context?, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>?): BackupFile? {
-        if (context == null) return null
+    fun getBackupForCategory(context: Context, category: SyncCategory, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>? = null): BackupFile? {
+        val allData = context.getSharedPrefs().all.filter { entry ->
+            entry.key.isTransferable() && classifyKey(entry.key) == category &&
+            isResumeWatchingRelevant(entry.key, resumeWatching)
+        }
+        val allSettings = context.getDefaultSharedPrefs().all.filter { entry ->
+            entry.key.isTransferable() && classifyKey(entry.key) == category &&
+            isResumeWatchingRelevant(entry.key, resumeWatching)
+        }
 
-        val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
-        val allData = context.getSharedPrefs().all.filter { it.key.isBackup(resumeWatching) && shouldBackupKey(it.key, creds) }
-        val allSettings = context.getDefaultSharedPrefs().all.filter { it.key.isBackup(resumeWatching) && shouldBackupKey(it.key, creds) }
-
-        val allDataSorted = BackupVars(
-            allData.filter { it.value is Boolean } as? Map<String, Boolean>,
-            allData.filter { it.value is Int } as? Map<String, Int>,
-            allData.filter { it.value is String } as? Map<String, String>,
-            allData.filter { it.value is Float } as? Map<String, Float>,
-            allData.filter { it.value is Long } as? Map<String, Long>,
-            allData.filter { it.value as? Set<String> != null } as? Map<String, Set<String>>
-        )
-
-        val allSettingsSorted = BackupVars(
-            allSettings.filter { it.value is Boolean } as? Map<String, Boolean>,
-            allSettings.filter { it.value is Int } as? Map<String, Int>,
-            allSettings.filter { it.value is String } as? Map<String, String>,
-            allSettings.filter { it.value is Float } as? Map<String, Float>,
-            allSettings.filter { it.value is Long } as? Map<String, Long>,
-            allSettings.filter { it.value as? Set<String> != null } as? Map<String, Set<String>>
-        )
+        if (allData.isEmpty() && allSettings.isEmpty()) return null
 
         return BackupFile(
-            allDataSorted,
-            allSettingsSorted
+            datastore = buildBackupVars(allData),
+            settings = buildBackupVars(allSettings)
         )
     }
 
-    fun editor(context: Context, isEditingAppSettings: Boolean = false): UltimaEditor {
-        val editor: SharedPreferences.Editor = if (isEditingAppSettings) context.getDefaultSharedPrefs().edit() else context.getSharedPrefs().edit()
-        return UltimaEditor(editor)
+    private fun isResumeWatchingRelevant(key: String, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>?): Boolean {
+        if (resumeWatching == null) return true
+        val lowerKey = key.lowercase()
+        if (lowerKey.contains("download_header_cache")) {
+            val id = key.split("/").getOrNull(1)?.toIntOrNull()
+            return id?.let { intId ->
+                resumeWatching.any { if (it.parentId != null) it.parentId == intId else it.id == intId }
+            } ?: false
+        } else if (lowerKey.contains("video_pos_dur")) {
+            val id = key.split("/").getOrNull(2)?.toIntOrNull()
+            return id?.let { intId ->
+                resumeWatching.any { it.id == intId }
+            } ?: false
+        } else if (lowerKey.contains("result_season") || lowerKey.contains("result_dub") || lowerKey.contains("result_episode")) {
+            val id = key.split("/").getOrNull(2)?.toIntOrNull()
+            return id?.let { intId ->
+                resumeWatching.any { it.parentId == intId }
+            } ?: false
+        }
+        return true
     }
 
-    fun <T> Context.restoreMap(
-        map: Map<String, T>?,
-        isEditingAppSettings: Boolean = false
-    ) {
-        val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
-        val editor2 = editor(this, isEditingAppSettings)
-        map?.forEach {
-            if (it.key.isResume() && shouldRestoreKey(it.key, creds)) {
-                editor2.setKeyRaw(it.key, it.value)
+    @Suppress("UNCHECKED_CAST")
+    private fun buildBackupVars(data: Map<String, *>): BackupVars {
+        return BackupVars(
+            data.filter { it.value is Boolean } as? Map<String, Boolean>,
+            data.filter { it.value is Int } as? Map<String, Int>,
+            data.filter { it.value is String } as? Map<String, String>,
+            data.filter { it.value is Float } as? Map<String, Float>,
+            data.filter { it.value is Long } as? Map<String, Long>,
+            data.filter { it.value as? Set<String> != null } as? Map<String, Set<String>>
+        )
+    }
+
+    fun restoreCategory(context: Context, category: SyncCategory, backupFile: BackupFile) {
+        Log.d(TAG, "Restoring category: ${category.key}")
+
+        // Restore datastore prefs
+        restoreBackupVars(context, backupFile.datastore, isSettings = false)
+        // Restore default settings prefs
+        restoreBackupVars(context, backupFile.settings, isSettings = true)
+    }
+
+    private fun restoreBackupVars(context: Context, vars: BackupVars, isSettings: Boolean) {
+        val editor = editor(context, isSettings)
+        vars.bool?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
+        vars.int?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
+        vars.float?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
+        vars.long?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
+        vars.stringSet?.forEach { (k, v) -> if (k.isTransferable()) editor.setKeyRaw(k, v) }
+        // Strings last — excludes PLUGINS_KEY and REPOSITORIES_KEY (handled separately for extensions)
+        vars.string?.forEach { (k, v) ->
+            if (k.isTransferable() &&
+                !k.equals("PLUGINS_KEY", ignoreCase = true) &&
+                !k.equals(REPOSITORIES_KEY, ignoreCase = true) &&
+                !k.equals("plugins_repositories", ignoreCase = true) &&
+                !k.equals("repositories", ignoreCase = true)) {
+                editor.setKeyRaw(k, v)
             }
         }
-        editor2.apply()
+        editor.apply()
     }
+
+    // --- Extensions-specific restore logic ---
 
     private fun forceConvertRawGitUrl(url: String): String {
         val ghRegex = Regex("^https://raw\\.githubusercontent\\.com/([A-Za-z0-9_-]+)/([A-Za-z0-9_.-]+)/(.*)$")
@@ -309,317 +281,243 @@ object UltimaBackupUtils {
         return "https://cdn.jsdelivr.net/gh/$user/$repo@$rest"
     }
 
-    suspend fun restore(
-        context: Context?,
-        backupFile: BackupFile,
-        restoreSettings: Boolean,
-        restoreDataStore: Boolean
-    ) {
-        if (context == null) return
+    suspend fun restoreExtensionsCategory(context: Context, backupFile: BackupFile) {
+        Log.d(TAG, "Restoring extensions category with download/load logic")
 
-        val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
+        // 1. Merge repositories first
+        mergeRepositories(context, backupFile)
 
-        // 1. Restore standard settings first (excluding PLUGINS_KEY and REPOSITORIES_KEY) to register repositories, bookmarks, etc.
-        if (restoreSettings) {
-            val filteredSettingsBool = backupFile.settings.bool
-            val filteredSettingsInt = backupFile.settings.int
-            val filteredSettingsString = backupFile.settings.string?.filterKeys { 
-                !it.equals("PLUGINS_KEY", ignoreCase = true) &&
-                !it.equals(REPOSITORIES_KEY, ignoreCase = true) &&
-                !it.equals("plugins_repositories", ignoreCase = true) &&
-                !it.equals("repositories", ignoreCase = true)
-            }
-            val filteredSettingsFloat = backupFile.settings.float
-            val filteredSettingsLong = backupFile.settings.long
-            val filteredSettingsStringSet = backupFile.settings.stringSet
+        // 2. Download and load plugins
+        downloadAndLoadPlugins(context, backupFile)
+    }
 
-            context.restoreMap(filteredSettingsBool, true)
-            context.restoreMap(filteredSettingsInt, true)
-            context.restoreMap(filteredSettingsString, true)
-            context.restoreMap(filteredSettingsFloat, true)
-            context.restoreMap(filteredSettingsLong, true)
-            context.restoreMap(filteredSettingsStringSet, true)
-        }
-
-        if (restoreDataStore) {
-            val filteredDataStoreBool = backupFile.datastore.bool
-            val filteredDataStoreInt = backupFile.datastore.int
-            val filteredDataStoreString = backupFile.datastore.string?.filterKeys {
-                !it.equals("PLUGINS_KEY", ignoreCase = true) && 
-                !it.equals("PLUGINS_KEY_LOCAL", ignoreCase = true) &&
-                !it.equals(REPOSITORIES_KEY, ignoreCase = true) &&
-                !it.equals("plugins_repositories", ignoreCase = true) &&
-                !it.equals("repositories", ignoreCase = true)
-            }
-            val filteredDataStoreFloat = backupFile.datastore.float
-            val filteredDataStoreLong = backupFile.datastore.long
-            val filteredDataStoreStringSet = backupFile.datastore.stringSet
-
-            context.restoreMap(filteredDataStoreBool)
-            context.restoreMap(filteredDataStoreInt)
-            context.restoreMap(filteredDataStoreString)
-            context.restoreMap(filteredDataStoreFloat)
-            context.restoreMap(filteredDataStoreLong)
-            context.restoreMap(filteredDataStoreStringSet)
-        }
-
-        // 1.5. If restoreExtensions is enabled, merge repositories with the incoming backup to prevent overwriting local repos
-        if (creds.restoreExtensions) {
-            try {
-                val repoValue = backupFile.settings.string?.entries?.find { 
-                    it.key.equals(REPOSITORIES_KEY, ignoreCase = true) || 
+    private fun mergeRepositories(context: Context, backupFile: BackupFile) {
+        try {
+            val repoValue = backupFile.settings.string?.entries?.find {
+                it.key.equals(REPOSITORIES_KEY, ignoreCase = true) ||
+                it.key.equals("plugins_repositories", ignoreCase = true) ||
+                it.key.equals("repositories", ignoreCase = true)
+            }?.value
+                ?: backupFile.datastore.string?.entries?.find {
+                    it.key.equals(REPOSITORIES_KEY, ignoreCase = true) ||
                     it.key.equals("plugins_repositories", ignoreCase = true) ||
                     it.key.equals("repositories", ignoreCase = true)
                 }?.value
-                    ?: backupFile.datastore.string?.entries?.find { 
-                        it.key.equals(REPOSITORIES_KEY, ignoreCase = true) || 
-                        it.key.equals("plugins_repositories", ignoreCase = true) ||
-                        it.key.equals("repositories", ignoreCase = true)
-                    }?.value
-                
-                if (!repoValue.isNullOrBlank()) {
+
+            if (!repoValue.isNullOrBlank()) {
+                try {
+                    val incomingRepos = mapper.readValue<Array<RepositoryData>>(repoValue)
+                    val currentRepos = RepositoryManager.getRepositories()
+                    val mergedRepos = (currentRepos + incomingRepos).distinctBy { it.url.trim().lowercase() }
+
+                    val mergedReposJson = mergedRepos.toTypedArray().toJson()
+
+                    context.getDefaultSharedPrefs().edit()
+                        .putString(REPOSITORIES_KEY, mergedReposJson)
+                        .putString("plugins_repositories", mergedReposJson)
+                        .putString("repositories", mergedReposJson)
+                        .apply()
+
+                    context.getSharedPrefs().edit()
+                        .putString(REPOSITORIES_KEY, mergedReposJson)
+                        .putString("plugins_repositories", mergedReposJson)
+                        .putString("repositories", mergedReposJson)
+                        .apply()
+
+                    setKey(REPOSITORIES_KEY, mergedRepos.toTypedArray())
                     try {
-                        val incomingRepos = mapper.readValue<Array<RepositoryData>>(repoValue)
-                        val currentRepos = RepositoryManager.getRepositories()
-                        // Merge current and incoming, keeping all unique by url
-                        val mergedRepos = (currentRepos + incomingRepos).distinctBy { it.url.trim().lowercase() }
-                        
-                        val mergedReposJson = mergedRepos.toTypedArray().toJson()
-                        
-                        // Write to all possible keys to be absolutely sure
-                        context.getDefaultSharedPrefs().edit()
-                            .putString(REPOSITORIES_KEY, mergedReposJson)
-                            .putString("plugins_repositories", mergedReposJson)
-                            .putString("repositories", mergedReposJson)
-                            .apply()
-                            
-                        context.getSharedPrefs().edit()
-                            .putString(REPOSITORIES_KEY, mergedReposJson)
-                            .putString("plugins_repositories", mergedReposJson)
-                            .putString("repositories", mergedReposJson)
-                            .apply()
-                            
-                        setKey(REPOSITORIES_KEY, mergedRepos.toTypedArray())
+                        setKey("plugins_repositories", mergedRepos.toTypedArray())
+                        setKey("repositories", mergedRepos.toTypedArray())
+                    } catch (_: Exception) {}
+
+                    Log.d(TAG, "Merged repos: ${currentRepos.size} local + ${incomingRepos.size} incoming = ${mergedRepos.size} merged")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to merge repos: ${e.message}")
+                    // Fallback: write incoming directly
+                    context.getDefaultSharedPrefs().edit()
+                        .putString(REPOSITORIES_KEY, repoValue)
+                        .putString("plugins_repositories", repoValue)
+                        .putString("repositories", repoValue)
+                        .apply()
+                    context.getSharedPrefs().edit()
+                        .putString(REPOSITORIES_KEY, repoValue)
+                        .putString("plugins_repositories", repoValue)
+                        .putString("repositories", repoValue)
+                        .apply()
+                    try {
+                        val repoArray = mapper.readValue<Array<RepositoryData>>(repoValue)
+                        setKey(REPOSITORIES_KEY, repoArray)
+                    } catch (_: Exception) {}
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Repository merge error: ${e.message}")
+        }
+    }
+
+    private suspend fun downloadAndLoadPlugins(context: Context, backupFile: BackupFile) {
+        val pluginsJson = backupFile.datastore.string?.entries?.find { it.key.equals("PLUGINS_KEY", ignoreCase = true) }?.value
+            ?: backupFile.settings.string?.entries?.find { it.key.equals("PLUGINS_KEY", ignoreCase = true) }?.value
+
+        if (pluginsJson.isNullOrBlank()) return
+
+        val pluginsList = try {
+            mapper.readValue<Array<PluginData>>(pluginsJson)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse plugins JSON: ${e.message}")
+            return
+        }
+
+        // Fetch all online plugins from configured repos
+        val allOnlinePlugins = mutableListOf<Pair<String, SitePlugin>>()
+        val repositories = RepositoryManager.getRepositories()
+        for (repo in repositories) {
+            try {
+                val repoPlugins = RepositoryManager.getRepoPlugins(repo.url)
+                if (repoPlugins != null) allOnlinePlugins.addAll(repoPlugins)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to fetch plugins for repo ${repo.url}: ${e.message}")
+            }
+        }
+
+        // Detect deleted plugins
+        val currentLocalPlugins = PluginManager.getPluginsOnline()
+        val incomingNames = pluginsList.map { it.internalName }.toSet()
+        val deletedPlugins = currentLocalPlugins.filter {
+            !incomingNames.contains(it.internalName) &&
+            !it.internalName.equals("Ultima", ignoreCase = true)
+        }
+
+        val updatedPluginsList = mutableListOf<PluginData>()
+        val newlyDownloaded = mutableSetOf<String>()
+        var downloadedAny = false
+
+        for (plugin in pluginsList) {
+            if (plugin.internalName.equals("Ultima", ignoreCase = true)) continue
+
+            val match = allOnlinePlugins.find { it.second.internalName.equals(plugin.internalName, ignoreCase = true) }
+
+            val localFile = if (match != null) {
+                PluginManager.getPluginPath(context, plugin.internalName, match.first)
+            } else {
+                val cleanPath = plugin.filePath.replace('\\', '/')
+                val relativePath = if (cleanPath.contains("Extensions/")) {
+                    "Extensions/" + cleanPath.substringAfter("Extensions/")
+                } else {
+                    "Extensions/DefaultRepo/" + cleanPath.substringAfterLast('/')
+                }
+                File(context.filesDir, relativePath)
+            }
+
+            val targetUrl = match?.second?.url ?: plugin.url
+
+            if (localFile.exists() && localFile.length() > 0) {
+                updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath))
+            } else {
+                if (!targetUrl.isNullOrBlank()) {
+                    val downloadUrl = forceConvertRawGitUrl(targetUrl)
+                    Log.d(TAG, "Downloading plugin: ${plugin.internalName} from $downloadUrl")
+                    try {
+                        val tempFile = File.createTempFile(plugin.internalName, ".tmp", context.cacheDir)
                         try {
-                            setKey("plugins_repositories", mergedRepos.toTypedArray())
-                            setKey("repositories", mergedRepos.toTypedArray())
-                        } catch (e: Exception) {
-                            Log.w("UltimaSync", "Optional setKey failed: ${e.message}")
+                            val response = com.lagradost.cloudstream3.app.get(downloadUrl)
+                            if (response.code == 200) {
+                                val body = response.okhttpResponse.body
+                                if (body != null) {
+                                    tempFile.outputStream().use { fos ->
+                                        body.byteStream().use { bis -> bis.copyTo(fos) }
+                                    }
+                                    if (tempFile.exists() && tempFile.length() > 0) {
+                                        localFile.parentFile?.mkdirs()
+                                        tempFile.copyTo(localFile, overwrite = true)
+                                        downloadedAny = true
+                                        newlyDownloaded.add(plugin.internalName)
+                                        updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath, url = targetUrl))
+                                    }
+                                }
+                            }
+                        } finally {
+                            if (tempFile.exists()) tempFile.delete()
                         }
-                        
-                        Log.d("UltimaSync", "Merged and restored repositories successfully. Current: ${currentRepos.size}, Incoming: ${incomingRepos.size}, Merged: ${mergedRepos.size}")
                     } catch (e: Exception) {
-                        Log.e("UltimaSync", "Failed to merge repositories: ${e.message}")
-                        // Fallback: write incoming repos directly to all possible keys
-                        context.getDefaultSharedPrefs().edit()
-                            .putString(REPOSITORIES_KEY, repoValue)
-                            .putString("plugins_repositories", repoValue)
-                            .putString("repositories", repoValue)
-                            .apply()
-                        context.getSharedPrefs().edit()
-                            .putString(REPOSITORIES_KEY, repoValue)
-                            .putString("plugins_repositories", repoValue)
-                            .putString("repositories", repoValue)
-                            .apply()
-                        try {
-                            val repoArray = mapper.readValue<Array<RepositoryData>>(repoValue)
-                            setKey(REPOSITORIES_KEY, repoArray)
-                            setKey("plugins_repositories", repoArray)
-                            setKey("repositories", repoArray)
-                        } catch (e2: Exception) {
-                            Log.e("UltimaSync", "Failed fallback repositories restore: ${e2.message}")
-                        }
+                        Log.e(TAG, "Download error for ${plugin.internalName}: ${e.message}")
                     }
+                }
+
+                // Clean up 0 KB files
+                if (localFile.exists() && localFile.length() == 0L) {
+                    try { localFile.delete() } catch (_: Exception) {}
+                }
+            }
+        }
+
+        // Unload deleted plugins
+        for (plugin in deletedPlugins) {
+            try {
+                PluginManager.unloadPlugin(plugin.filePath)
+                val file = File(plugin.filePath)
+                if (file.exists()) file.delete()
+                Log.d(TAG, "Unloaded deleted plugin: ${plugin.internalName}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error unloading ${plugin.internalName}: ${e.message}")
+            }
+        }
+
+        // Save updated PLUGINS_KEY
+        val updatedJson = updatedPluginsList.toTypedArray().toJson()
+        context.getSharedPrefs().edit().putString("PLUGINS_KEY", updatedJson).apply()
+        try {
+            setKey("PLUGINS_KEY", updatedPluginsList.toTypedArray())
+        } catch (_: Exception) {}
+
+        // Load/reload plugins
+        var loadedAny = false
+        for (plugin in updatedPluginsList) {
+            try {
+                val isLoaded = PluginManager.plugins.containsKey(plugin.filePath)
+                val isNew = newlyDownloaded.contains(plugin.internalName)
+
+                if (isLoaded && isNew) {
+                    PluginManager.unloadPlugin(plugin.filePath)
+                }
+
+                if (!isLoaded || isNew) {
+                    val apiName = plugin.internalName.replace("provider", "", ignoreCase = true)
+                    val loaded = PluginManager.loadSinglePlugin(context, apiName) || PluginManager.loadSinglePlugin(context, plugin.internalName)
+                    if (loaded) loadedAny = true
                 }
             } catch (e: Exception) {
-                Log.e("UltimaSync", "Failed to restore repositories directly: ${e.message}")
+                Log.e(TAG, "Error loading ${plugin.internalName}: ${e.message}")
             }
         }
 
-        // 2. Query repositories and download missing extensions
-        if (creds.restoreExtensions) {
-            val pluginsJson = backupFile.datastore.string?.entries?.find { it.key.equals("PLUGINS_KEY", ignoreCase = true) }?.value
-                ?: backupFile.settings.string?.entries?.find { it.key.equals("PLUGINS_KEY", ignoreCase = true) }?.value
-            if (!pluginsJson.isNullOrBlank()) {
-                val pluginsList = try {
-                    com.lagradost.cloudstream3.mapper.readValue<Array<PluginData>>(pluginsJson)
-                } catch (e: Exception) {
-                    Log.e("UltimaSync", "Failed to parse plugins JSON: ${e.message}")
-                    null
-                }
-
-                if (pluginsList != null) {
-                    // Fetch all online plugins from all configured repositories
-                    val allOnlinePlugins = mutableListOf<Pair<String, SitePlugin>>()
-                    val repositories = RepositoryManager.getRepositories()
-                    for (repo in repositories) {
-                        try {
-                            val repoPlugins = RepositoryManager.getRepoPlugins(repo.url)
-                            if (repoPlugins != null) {
-                                allOnlinePlugins.addAll(repoPlugins)
-                            }
-                        } catch (e: Exception) {
-                            Log.e("UltimaSync", "Failed to fetch plugins for repository ${repo.url}: ${e.message}")
-                        }
-                    }
-
-                    val currentLocalOnlinePlugins = PluginManager.getPluginsOnline()
-                    val incomingInternalNames = pluginsList.map { it.internalName }.toSet()
-                    val deletedPlugins = currentLocalOnlinePlugins.filter { 
-                        !incomingInternalNames.contains(it.internalName) && 
-                        !it.internalName.equals("Ultima", ignoreCase = true) 
-                    }
-
-                    val updatedPluginsList = mutableListOf<PluginData>()
-                    val newlyDownloadedPlugins = mutableSetOf<String>()
-                    var downloadedAny = false
-
-                    for (plugin in pluginsList) {
-                        // Explicit safeguard: skip Ultima itself
-                        if (plugin.internalName.equals("Ultima", ignoreCase = true)) {
-                            continue
-                        }
-
-                        // Try to find the plugin in the fetched repository plugins
-                        val match = allOnlinePlugins.find { it.second.internalName.equals(plugin.internalName, ignoreCase = true) }
-
-                        val localFile = if (match != null) {
-                            PluginManager.getPluginPath(context, plugin.internalName, match.first)
-                        } else {
-                            val cleanPath = plugin.filePath.replace('\\', '/')
-                            val relativePath = if (cleanPath.contains("Extensions/")) {
-                                "Extensions/" + cleanPath.substringAfter("Extensions/")
-                            } else {
-                                "Extensions/DefaultRepo/" + cleanPath.substringAfterLast('/')
-                            }
-                            File(context.filesDir, relativePath)
-                        }
-
-                        // Determine target download URL
-                        val targetUrl = match?.second?.url ?: plugin.url
-
-                        if (localFile.exists() && localFile.length() > 0) {
-                            Log.d("UltimaSync", "Plugin file already exists: ${localFile.absolutePath}")
-                            // Just update path
-                            updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath))
-                        } else {
-                            // If the file does not exist, download it
-                            if (!targetUrl.isNullOrBlank()) {
-                                // Apply conversion for raw github blocking
-                                val downloadUrl = forceConvertRawGitUrl(targetUrl)
-                                Log.d("UltimaSync", "Downloading plugin: ${plugin.internalName} from $downloadUrl")
-                                try {
-                                    val tempFile = File.createTempFile(plugin.internalName, ".tmp", context.cacheDir)
-                                    try {
-                                        val response = com.lagradost.cloudstream3.app.get(downloadUrl)
-                                        if (response.code == 200) {
-                                            val body = response.okhttpResponse.body
-                                            tempFile.outputStream().use { fos ->
-                                                body.byteStream().use { bis ->
-                                                    bis.copyTo(fos)
-                                                }
-                                            }
-                                            if (tempFile.exists() && tempFile.length() > 0) {
-                                                localFile.parentFile?.mkdirs()
-                                                tempFile.copyTo(localFile, overwrite = true)
-                                                Log.d("UltimaSync", "Downloaded ${plugin.internalName} successfully to ${localFile.absolutePath} (${tempFile.length()} bytes)")
-                                                downloadedAny = true
-                                                newlyDownloadedPlugins.add(plugin.internalName)
-                                                updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath, url = targetUrl))
-                                            } else {
-                                                Log.e("UltimaSync", "Downloaded file is empty (0 bytes) for ${plugin.internalName}")
-                                            }
-                                        } else {
-                                            Log.e("UltimaSync", "Failed to download ${plugin.internalName}: HTTP ${response.code}")
-                                        }
-                                    } finally {
-                                        if (tempFile.exists()) {
-                                            tempFile.delete()
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("UltimaSync", "Error downloading plugin ${plugin.internalName}: ${e.message}")
-                                }
-                            } else {
-                                Log.e("UltimaSync", "No download URL available for missing plugin: ${plugin.internalName}")
-                            }
-
-                            // Final safeguard: if download failed, ensure we delete any 0 KB file that might be there
-                            if (localFile.exists() && localFile.length() == 0L) {
-                                try {
-                                    localFile.delete()
-                                    Log.d("UltimaSync", "Cleaned up 0 KB file for ${plugin.internalName}")
-                                } catch (e: Exception) {
-                                    Log.e("UltimaSync", "Failed to delete 0 KB file for ${plugin.internalName}: ${e.message}")
-                                }
-                            }
-                        }
-                    }
-
-                    // Unload and delete any plugins that were deleted on the other device
-                    for (plugin in deletedPlugins) {
-                        try {
-                            Log.d("UltimaSync", "Unloading and deleting plugin ${plugin.internalName} since it was deleted on another device")
-                            PluginManager.unloadPlugin(plugin.filePath)
-                            val file = File(plugin.filePath)
-                            if (file.exists()) {
-                                file.delete()
-                            }
-                        } catch (e: Exception) {
-                            Log.e("UltimaSync", "Error deleting plugin ${plugin.internalName}: ${e.message}")
-                        }
-                    }
-
-                    // Save the updated list back into both SharedPreferences and Datastore
-                    val updatedPluginsJson = updatedPluginsList.toTypedArray().toJson()
-                    context.getSharedPrefs().edit().putString("PLUGINS_KEY", updatedPluginsJson).apply()
-                    try {
-                        setKey("PLUGINS_KEY", updatedPluginsList.toTypedArray())
-                        Log.d("UltimaSync", "Saved PLUGINS_KEY to Datastore successfully")
-                    } catch (e: Exception) {
-                        Log.e("UltimaSync", "Failed to save PLUGINS_KEY to Datastore: ${e.message}")
-                    }
-
-                    // Load/Reload all plugins in the list to make sure they are active
-                    var loadedAny = false
-                    for (plugin in updatedPluginsList) {
-                        try {
-                            val isLoaded = PluginManager.plugins.containsKey(plugin.filePath)
-                            val isNew = newlyDownloadedPlugins.contains(plugin.internalName)
-
-                            // If the plugin is already loaded, but we just downloaded a new version, unload it first to force hot-reload
-                            if (isLoaded && isNew) {
-                                Log.d("UltimaSync", "Unloading old version of plugin ${plugin.internalName} for hot-reload")
-                                PluginManager.unloadPlugin(plugin.filePath)
-                            }
-
-                            // Load if it's not loaded, or if we just unloaded it (meaning isNew is true)
-                            if (!isLoaded || isNew) {
-                                val apiName = plugin.internalName.replace("provider", "", ignoreCase = true)
-                                // Try loading with both the stripped API name and original internalName to bypass loadSinglePlugin mismatch
-                                val loaded = PluginManager.loadSinglePlugin(context, apiName) || PluginManager.loadSinglePlugin(context, plugin.internalName)
-                                Log.d("UltimaSync", "Loaded plugin ${plugin.internalName} directly: $loaded")
-                                if (loaded) {
-                                    loadedAny = true
-                                }
-                            } else {
-                                Log.d("UltimaSync", "Plugin ${plugin.internalName} is already loaded and not updated, skipping load")
-                            }
-                        } catch (e: Exception) {
-                            Log.e("UltimaSync", "Error loading plugin ${plugin.internalName}: ${e.message}")
-                        }
-                    }
-
-                    // Refresh UI if we downloaded, loaded, or deleted any plugins
-                    if (downloadedAny || loadedAny || deletedPlugins.isNotEmpty()) {
-                        try {
-                            com.lagradost.cloudstream3.MainActivity.afterPluginsLoadedEvent.invoke(true)
-                        } catch (e: Throwable) {
-                            Log.w("UltimaSync", "afterPluginsLoadedEvent invoke failed: ${e.message}")
-                        }
-                    }
-                }
-            }
+        // Refresh UI
+        if (downloadedAny || loadedAny || deletedPlugins.isNotEmpty()) {
+            try {
+                com.lagradost.cloudstream3.MainActivity.afterPluginsLoadedEvent.invoke(true)
+            } catch (_: Throwable) {}
         }
+    }
+
+    // --- Shared utility methods ---
+
+    fun editor(context: Context, isEditingAppSettings: Boolean = false): UltimaEditor {
+        val editor: SharedPreferences.Editor = if (isEditingAppSettings) context.getDefaultSharedPrefs().edit() else context.getSharedPrefs().edit()
+        return UltimaEditor(editor)
+    }
+
+    // --- Legacy v1 methods (kept for migration) ---
+
+    @Suppress("UNCHECKED_CAST")
+    fun getBackup(context: Context?, resumeWatching: List<DataStoreHelper.ResumeWatchingResult>?): BackupFile? {
+        if (context == null) return null
+
+        val allData = context.getSharedPrefs().all.filter { it.key.isTransferable() }
+        val allSettings = context.getDefaultSharedPrefs().all.filter { it.key.isTransferable() }
+
+        return BackupFile(
+            datastore = buildBackupVars(allData),
+            settings = buildBackupVars(allSettings)
+        )
     }
 }
