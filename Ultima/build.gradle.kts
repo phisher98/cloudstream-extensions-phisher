@@ -10,7 +10,7 @@ dependencies {
     cloudstream("com.lagradost:cloudstream3:pre-release")
 }
 // use an integer for version numbers
-version = 41
+version = 42
 
 cloudstream {
     // All of these properties are optional, you can safely remove them

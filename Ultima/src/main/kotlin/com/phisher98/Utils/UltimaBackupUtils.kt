@@ -139,10 +139,20 @@ object UltimaBackupUtils {
         // Exclude active homepage provider from sync so each device keeps its local selection
         "home_api_used",
         "home_api",
+        "user_selected_homepage_api",
+
+        // Exclude UI tab selections and sorting modes
+        "last_sync_api_key",
+        "home_pref_homepage",
+        "library_sorting_mode",
+        "results_sorting_mode",
+        "library_folder",
+        "viewpager_item_key"
     )
 
     private fun String.isTransferable(): Boolean {
-        return !nonTransferableKeys.any { this.contains(it) }
+        val lower = this.lowercase()
+        return !nonTransferableKeys.any { lower.contains(it) }
     }
 
     // --- v2 Category System ---
@@ -318,6 +328,7 @@ object UltimaBackupUtils {
 
     private fun restoreBackupVars(context: Context, category: SyncCategory, vars: BackupVars, isSettings: Boolean) {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
+        val prefs = if (isSettings) context.getDefaultSharedPrefs() else context.getSharedPrefs()
         val editor = editor(context, isSettings)
         vars.bool?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
         vars.int?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
@@ -332,7 +343,14 @@ object UltimaBackupUtils {
                 !k.equals("plugins_repositories", ignoreCase = true) &&
                 !k.equals("repositories", ignoreCase = true) &&
                 isKeyRestoreEnabled(k, category, creds)) {
-                editor.setKeyRaw(k, v)
+                
+                val localVal = prefs.getString(k, null)
+                val cloudTs = extractTimestamp(v)
+                val localTs = extractTimestamp(localVal)
+                
+                if (localVal == null || (cloudTs == 0L && localTs == 0L) || cloudTs > localTs) {
+                    editor.setKeyRaw(k, v)
+                }
             }
         }
         editor.apply()
@@ -599,11 +617,47 @@ object UltimaBackupUtils {
         return BackupVars(
             bool = mergeMaps(local.bool, cloud.bool),
             int = mergeMaps(local.int, cloud.int),
-            string = mergeMaps(local.string, cloud.string),
             float = mergeMaps(local.float, cloud.float),
             long = mergeMaps(local.long, cloud.long),
+            string = mergeStringMaps(local.string, cloud.string),
             stringSet = mergeMaps(local.stringSet, cloud.stringSet)
         )
+    }
+
+    private fun extractTimestamp(json: String?): Long {
+        if (json == null) return 0L
+        try {
+            val updateTimeMatch = "\"updateTime\":\\s*(\\d+)".toRegex().find(json)
+            if (updateTimeMatch != null) {
+                return updateTimeMatch.groupValues[1].toLong()
+            }
+            val latestUpdatedTimeMatch = "\"latestUpdatedTime\":\\s*(\\d+)".toRegex().find(json)
+            if (latestUpdatedTimeMatch != null) {
+                return latestUpdatedTimeMatch.groupValues[1].toLong()
+            }
+        } catch (e: Exception) {}
+        return 0L
+    }
+
+    private fun mergeStringMaps(local: Map<String, String>?, cloud: Map<String, String>?): Map<String, String>? {
+        if (local == null) return cloud
+        if (cloud == null) return local
+        val merged = HashMap<String, String>(local)
+        
+        for ((key, cloudVal) in cloud) {
+            val localVal = local[key]
+            if (localVal == null) {
+                merged[key] = cloudVal
+            } else {
+                val cloudTs = extractTimestamp(cloudVal)
+                val localTs = extractTimestamp(localVal)
+                
+                if ((cloudTs == 0L && localTs == 0L) || cloudTs > localTs) {
+                    merged[key] = cloudVal
+                }
+            }
+        }
+        return merged
     }
 
     private fun <K, V> mergeMaps(local: Map<K, V>?, cloud: Map<K, V>?): Map<K, V>? {
@@ -623,3 +677,4 @@ object UltimaBackupUtils {
                stringSet.isNullOrEmpty()
     }
 }
+

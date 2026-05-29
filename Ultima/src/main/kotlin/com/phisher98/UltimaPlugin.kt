@@ -32,11 +32,11 @@ class UltimaPlugin : Plugin() {
     private var dataPrefsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var defaultPrefsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var pushJob: Job? = null
+    private var sseCall: okhttp3.Call? = null
 
     companion object {
         private const val TAG = "UltimaSync"
         private const val PUSH_DEBOUNCE_MS = 5000L
-        private const val POLL_INTERVAL_MS = 60_000L
     }
 
     // --- Category Dirty Tracking ---
@@ -322,22 +322,83 @@ class UltimaPlugin : Plugin() {
             if (!isRestoring) markDirty(SyncCategory.BOOKMARKS)
         }
 
-        // Periodic manifest poll loop
-        CoroutineScope(Dispatchers.IO).launch {
-            while (isActive) {
-                delay(POLL_INTERVAL_MS)
+        val app = context.applicationContext as? android.app.Application
+        app?.registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: android.app.Activity) {
+                if (activity is com.lagradost.cloudstream3.MainActivity) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val creds = UltimaStorageManager.appSettingsSyncCreds
+                            if (creds != null && creds.isLoggedIn() && creds.restoreDevice) {
+                                pullChangedCategories(activity)
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
+            override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) {}
+            override fun onActivityStarted(activity: android.app.Activity) {}
+            override fun onActivityPaused(activity: android.app.Activity) {}
+            override fun onActivityStopped(activity: android.app.Activity) {}
+            override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) {}
+            override fun onActivityDestroyed(activity: android.app.Activity) {}
+        })
+
+        startSseListener(context)
+    }
+
+    private fun startSseListener(context: Context) {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return
+        if (!creds.isLoggedIn() || !creds.restoreDevice) return
+
+        sseCall?.cancel()
+        val url = "${creds.activeUrl}sync/${creds.syncKey}/manifest.json"
+        val request = okhttp3.Request.Builder()
+            .url(url)
+            .addHeader("Accept", "text/event-stream")
+            .build()
+
+        sseCall = com.lagradost.cloudstream3.app.baseClient.newCall(request)
+        sseCall?.enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                Log.e(TAG, "SSE connection failed: ${e.message}, reconnecting in 5s...")
+                CoroutineScope(Dispatchers.IO).launch {
+                    delay(5000)
+                    if (UltimaStorageManager.appSettingsSyncCreds?.isLoggedIn() == true) {
+                        startSseListener(context)
+                    }
+                }
+            }
+
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                val source = response.body?.source() ?: return
                 try {
-                    val currentCreds = UltimaStorageManager.appSettingsSyncCreds
-                    if (currentCreds != null && currentCreds.isLoggedIn()) {
-                        if (currentCreds.restoreDevice) {
-                            pullChangedCategories(context)
+                    while (!source.exhausted()) {
+                        val line = source.readUtf8Line() ?: break
+                        if (line.startsWith("event: put") || line.startsWith("event: patch")) {
+                            val dataLine = source.readUtf8Line()
+                            if (dataLine != null && dataLine.startsWith("data: ")) {
+                                val json = dataLine.substring(6)
+                                if (json != "null") {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        pullChangedCategories(context)
+                                    }
+                                }
+                            }
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Periodic poll error: ${e.message}")
+                    Log.e(TAG, "SSE read error: ${e.message}")
+                } finally {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        delay(5000)
+                        if (UltimaStorageManager.appSettingsSyncCreds?.isLoggedIn() == true) {
+                            startSseListener(context)
+                        }
+                    }
                 }
             }
-        }
+        })
     }
 
     // --- Force push all categories (used for initial setup + Sync Now) ---
@@ -372,9 +433,10 @@ class UltimaPlugin : Plugin() {
     fun reload() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                afterPluginsLoadedEvent.invoke(true)
+                MainActivity.bookmarksUpdatedEvent.invoke(true)
+                MainActivity.reloadLibraryEvent.invoke(true)
             } catch (e: Throwable) {
-                Log.e(TAG, "afterPluginsLoadedEvent invoke failed: ${e.message}")
+                Log.e(TAG, "reload events invoke failed: ${e.message}")
             }
         }
     }
