@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import com.lagradost.api.Log
 import com.lagradost.cloudstream3.MainActivity
-import com.lagradost.cloudstream3.MainActivity.Companion.afterPluginsLoadedEvent
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import com.lagradost.cloudstream3.ui.home.HomeViewModel.Companion.getResumeWatching
@@ -258,7 +257,7 @@ class UltimaPlugin : Plugin() {
     // --- Plugin Lifecycle ---
 
     override fun load(context: Context) {
-        activity = context as AppCompatActivity
+        activity = context as? AppCompatActivity
         registerMainAPI(Ultima(this))
 
         UltimaStorageManager.currentMetaProviders.forEach { metaProvider ->
