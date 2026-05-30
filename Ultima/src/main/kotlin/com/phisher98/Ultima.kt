@@ -84,32 +84,36 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
 
         return try {
             if (request.name == "watch_sync") {
-                val sharedData = UltimaSettingsSyncUtils.fetchSharedData(context!!)
-                val syncedContentJson = sharedData?.syncedData
+                val ctx = context ?: return null
                 val homeSections = ArrayList<HomePageList>()
 
-                if (!syncedContentJson.isNullOrBlank()) {
-                    val backupFile = try {
-                        mapper.readValue<com.phisher98.BackupFile>(syncedContentJson)
-                    } catch (e: Exception) {
-                        null
-                    }
+                try {
+                    val payload = UltimaSettingsSyncUtils.fetchCategory(ctx, SyncCategory.RESUME_WATCHING)
+                    if (payload != null && payload.data.isNotBlank()) {
+                        val backupFile = try {
+                            mapper.readValue<com.phisher98.BackupFile>(payload.data)
+                        } catch (e: Exception) {
+                            null
+                        }
 
-                    if (backupFile != null) {
-                        val resumeWatchingKey = backupFile.datastore.string?.keys?.find { it.contains("result_resume_watching") }
-                        val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string[it] }
-                        val resumeWatchingList = resumeWatchingJson?.let {
-                            try {
-                                mapper.readValue<List<com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult>>(it)
-                            } catch (e: Exception) {
-                                null
+                        if (backupFile != null) {
+                            val resumeWatchingKey = backupFile.datastore.string?.keys?.find { it.contains("result_resume_watching") }
+                            val resumeWatchingJson = resumeWatchingKey?.let { backupFile.datastore.string?.get(it) }
+                            val resumeWatchingList = resumeWatchingJson?.let {
+                                try {
+                                    mapper.readValue<List<com.lagradost.cloudstream3.utils.DataStoreHelper.ResumeWatchingResult>>(it)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
+
+                            if (!resumeWatchingList.isNullOrEmpty()) {
+                                homeSections += HomePageList("Continue from Cloud", resumeWatchingList)
                             }
                         }
-
-                        if (!resumeWatchingList.isNullOrEmpty()) {
-                            homeSections += HomePageList("Continue from Cloud", resumeWatchingList)
-                        }
                     }
+                } catch (e: Exception) {
+                    Log.e("getMainPage", "Error loading watch_sync: ${e.message}")
                 }
 
                 newHomePageResponse(homeSections, false)

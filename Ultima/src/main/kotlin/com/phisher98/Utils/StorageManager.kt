@@ -71,6 +71,14 @@ object UltimaStorageManager {
         setKey("ULTIMA_SYNC_HASH_${category.key}", hash)
     }
 
+    fun getCategorySyncedKeys(category: SyncCategory): Set<String> {
+        return getKey<Array<String>>("ULTIMA_SYNCED_KEYS_${category.key}")?.toSet() ?: emptySet()
+    }
+
+    fun setCategorySyncedKeys(category: SyncCategory, keys: Set<String>) {
+        setKey("ULTIMA_SYNCED_KEYS_${category.key}", keys.toTypedArray())
+    }
+
     // #endregion - custom data variables
 
     fun deleteAllData() {
@@ -89,6 +97,7 @@ object UltimaStorageManager {
         SyncCategory.entries.forEach { cat ->
             setKey("ULTIMA_SYNC_TS_${cat.key}", null)
             setKey("ULTIMA_SYNC_HASH_${cat.key}", null)
+            setKey("ULTIMA_SYNCED_KEYS_${cat.key}", null)
         }
     }
 

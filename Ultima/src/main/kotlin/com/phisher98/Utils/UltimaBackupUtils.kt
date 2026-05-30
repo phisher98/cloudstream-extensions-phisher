@@ -13,6 +13,12 @@ import com.lagradost.cloudstream3.plugins.RepositoryManager
 import com.lagradost.cloudstream3.plugins.SitePlugin
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.File
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.ui.settings.extensions.REPOSITORIES_KEY
 import com.lagradost.cloudstream3.ui.settings.extensions.RepositoryData
@@ -63,7 +69,6 @@ data class UltimaEditor(
 
     fun apply() {
         editor.apply()
-        System.gc()
     }
 }
 
@@ -152,7 +157,7 @@ object UltimaBackupUtils {
 
     private fun String.isTransferable(): Boolean {
         val lower = this.lowercase()
-        return !nonTransferableKeys.any { lower.contains(it) }
+        return !nonTransferableKeys.any { lower.contains(it.lowercase()) }
     }
 
     // --- v2 Category System ---
@@ -324,12 +329,40 @@ object UltimaBackupUtils {
         restoreBackupVars(context, category, backupFile.datastore, isSettings = false)
         // Restore default settings prefs
         restoreBackupVars(context, category, backupFile.settings, isSettings = true)
+
+        try {
+            val keys = getBackupFileKeys(backupFile)
+            UltimaStorageManager.setCategorySyncedKeys(category, keys)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save synced keys on restore: ${e.message}")
+        }
     }
 
     private fun restoreBackupVars(context: Context, category: SyncCategory, vars: BackupVars, isSettings: Boolean) {
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: AppSettingsSyncCreds()
         val prefs = if (isSettings) context.getDefaultSharedPrefs() else context.getSharedPrefs()
         val editor = editor(context, isSettings)
+        
+        // Delete local keys that are missing in the incoming backup (only for dynamic categories)
+        if (isDynamicCategory(category)) {
+            val incomingKeys = mutableSetOf<String>()
+            vars.bool?.keys?.let { incomingKeys.addAll(it) }
+            vars.int?.keys?.let { incomingKeys.addAll(it) }
+            vars.float?.keys?.let { incomingKeys.addAll(it) }
+            vars.long?.keys?.let { incomingKeys.addAll(it) }
+            vars.stringSet?.keys?.let { incomingKeys.addAll(it) }
+            vars.string?.keys?.let { incomingKeys.addAll(it) }
+
+            prefs.all.forEach { (k, _) ->
+                if (k.isTransferable() && classifyKey(k) == category && isKeyRestoreEnabled(k, category, creds)) {
+                    if (!incomingKeys.contains(k)) {
+                        Log.d(TAG, "Removing deleted local key: $k")
+                        editor.editor.remove(k)
+                    }
+                }
+            }
+        }
+
         vars.bool?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
         vars.int?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
         vars.float?.forEach { (k, v) -> if (k.isTransferable() && isKeyRestoreEnabled(k, category, creds)) editor.setKeyRaw(k, v) }
@@ -452,15 +485,22 @@ object UltimaBackupUtils {
             return
         }
 
-        // Fetch all online plugins from configured repos
+        // Fetch all online plugins from configured repos (in parallel)
         val allOnlinePlugins = mutableListOf<Pair<String, SitePlugin>>()
         val repositories = RepositoryManager.getRepositories()
-        for (repo in repositories) {
-            try {
-                val repoPlugins = RepositoryManager.getRepoPlugins(repo.url)
-                if (repoPlugins != null) allOnlinePlugins.addAll(repoPlugins)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to fetch plugins for repo ${repo.url}: ${e.message}")
+        coroutineScope {
+            val deferreds = repositories.map { repo ->
+                async(Dispatchers.IO) {
+                    try {
+                        RepositoryManager.getRepoPlugins(repo.url)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to fetch plugins for repo ${repo.url}: ${e.message}")
+                        null
+                    }
+                }
+            }
+            deferreds.awaitAll().forEach { result ->
+                if (result != null) allOnlinePlugins.addAll(result)
             }
         }
 
@@ -476,59 +516,82 @@ object UltimaBackupUtils {
         val newlyDownloaded = mutableSetOf<String>()
         var downloadedAny = false
 
-        for (plugin in pluginsList) {
-            if (plugin.internalName.equals("Ultima", ignoreCase = true)) continue
+        val downloadSemaphore = Semaphore(4)
+        coroutineScope {
+            val downloadResults = pluginsList.filter {
+                !it.internalName.equals("Ultima", ignoreCase = true)
+            }.map { plugin ->
+                async(Dispatchers.IO) {
+                    downloadSemaphore.withPermit {
+                        val match = allOnlinePlugins.find { it.second.internalName.equals(plugin.internalName, ignoreCase = true) }
 
-            val match = allOnlinePlugins.find { it.second.internalName.equals(plugin.internalName, ignoreCase = true) }
+                        val localFile = if (match != null) {
+                            PluginManager.getPluginPath(context, plugin.internalName, match.first)
+                        } else {
+                            val cleanPath = plugin.filePath.replace('\\', '/')
+                            val relativePath = if (cleanPath.contains("Extensions/")) {
+                                "Extensions/" + cleanPath.substringAfter("Extensions/")
+                            } else {
+                                "Extensions/DefaultRepo/" + cleanPath.substringAfterLast('/')
+                            }
+                            File(context.filesDir, relativePath)
+                        }
 
-            val localFile = if (match != null) {
-                PluginManager.getPluginPath(context, plugin.internalName, match.first)
-            } else {
-                val cleanPath = plugin.filePath.replace('\\', '/')
-                val relativePath = if (cleanPath.contains("Extensions/")) {
-                    "Extensions/" + cleanPath.substringAfter("Extensions/")
-                } else {
-                    "Extensions/DefaultRepo/" + cleanPath.substringAfterLast('/')
-                }
-                File(context.filesDir, relativePath)
-            }
+                        val targetUrl = match?.second?.url ?: plugin.url
 
-            val targetUrl = match?.second?.url ?: plugin.url
-
-            if (localFile.exists() && localFile.length() > 0) {
-                updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath))
-            } else {
-                if (!targetUrl.isNullOrBlank()) {
-                    val downloadUrl = forceConvertRawGitUrl(targetUrl)
-                    Log.d(TAG, "Downloading plugin: ${plugin.internalName} from $downloadUrl")
-                    try {
-                        val tempFile = File.createTempFile(plugin.internalName, ".tmp", context.cacheDir)
-                        try {
-                            val response = com.lagradost.cloudstream3.app.get(downloadUrl)
-                            if (response.code == 200) {
-                                val body = response.okhttpResponse.body
-                                tempFile.outputStream().use { fos ->
-                                    body.byteStream().use { bis -> bis.copyTo(fos) }
-                                }
-                                if (tempFile.exists() && tempFile.length() > 0) {
-                                    localFile.parentFile?.mkdirs()
-                                    tempFile.copyTo(localFile, overwrite = true)
-                                    downloadedAny = true
-                                    newlyDownloaded.add(plugin.internalName)
-                                    updatedPluginsList.add(plugin.copy(filePath = localFile.absolutePath, url = targetUrl))
+                        if (localFile.exists() && localFile.length() > 0) {
+                            Triple(plugin.copy(filePath = localFile.absolutePath), false, false)
+                        } else {
+                            var downloaded = false
+                            var resultPlugin: PluginData? = null
+                            if (!targetUrl.isNullOrBlank()) {
+                                val downloadUrl = forceConvertRawGitUrl(targetUrl)
+                                Log.d(TAG, "Downloading plugin: ${plugin.internalName} from $downloadUrl")
+                                try {
+                                    val tempFile = File.createTempFile(plugin.internalName, ".tmp", context.cacheDir)
+                                    try {
+                                        val response = com.lagradost.cloudstream3.app.get(downloadUrl)
+                                        if (response.code == 200) {
+                                            val body = response.okhttpResponse.body
+                                            tempFile.outputStream().use { fos ->
+                                                body.byteStream().use { bis -> bis.copyTo(fos) }
+                                            }
+                                            if (tempFile.exists() && tempFile.length() > 0) {
+                                                localFile.parentFile?.mkdirs()
+                                                tempFile.copyTo(localFile, overwrite = true)
+                                                downloaded = true
+                                                resultPlugin = plugin.copy(filePath = localFile.absolutePath, url = targetUrl)
+                                            }
+                                        }
+                                    } finally {
+                                        if (tempFile.exists()) tempFile.delete()
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Download error for ${plugin.internalName}: ${e.message}")
                                 }
                             }
-                        } finally {
-                            if (tempFile.exists()) tempFile.delete()
+
+                            // Clean up 0 KB files
+                            if (localFile.exists() && localFile.length() == 0L) {
+                                try { localFile.delete() } catch (_: Exception) {}
+                            }
+
+                            if (resultPlugin != null) {
+                                Triple(resultPlugin!!, true, true)
+                            } else {
+                                null
+                            }
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Download error for ${plugin.internalName}: ${e.message}")
                     }
                 }
+            }.awaitAll()
 
-                // Clean up 0 KB files
-                if (localFile.exists() && localFile.length() == 0L) {
-                    try { localFile.delete() } catch (_: Exception) {}
+            for (result in downloadResults) {
+                if (result != null) {
+                    val (pluginData, isNewlyDownloaded, wasDownloaded) = result
+                    updatedPluginsList.add(pluginData)
+                    if (isNewlyDownloaded) newlyDownloaded.add(pluginData.internalName)
+                    if (wasDownloaded) downloadedAny = true
                 }
             }
         }
@@ -603,24 +666,232 @@ object UltimaBackupUtils {
         )
     }
 
+
+
+    fun getBackupFileKeys(backupFile: BackupFile): Set<String> {
+        val keys = mutableSetOf<String>()
+        backupFile.datastore.bool?.keys?.let { keys.addAll(it) }
+        backupFile.datastore.int?.keys?.let { keys.addAll(it) }
+        backupFile.datastore.float?.keys?.let { keys.addAll(it) }
+        backupFile.datastore.long?.keys?.let { keys.addAll(it) }
+        backupFile.datastore.stringSet?.keys?.let { keys.addAll(it) }
+        backupFile.datastore.string?.keys?.let { keys.addAll(it) }
+        backupFile.settings.bool?.keys?.let { keys.addAll(it) }
+        backupFile.settings.int?.keys?.let { keys.addAll(it) }
+        backupFile.settings.float?.keys?.let { keys.addAll(it) }
+        backupFile.settings.long?.keys?.let { keys.addAll(it) }
+        backupFile.settings.stringSet?.keys?.let { keys.addAll(it) }
+        backupFile.settings.string?.keys?.let { keys.addAll(it) }
+        return keys
+    }
+
+    fun isDynamicCategory(category: SyncCategory): Boolean {
+        return category == SyncCategory.BOOKMARKS ||
+               category == SyncCategory.RESUME_WATCHING ||
+               category == SyncCategory.SEARCH_HISTORY
+    }
+
+    fun extractIdFromKey(key: String): Int? {
+        val lower = key.lowercase()
+        return when {
+            lower.contains("download_header_cache") -> key.split("/").getOrNull(1)?.toIntOrNull()
+            lower.contains("video_pos_dur") -> key.split("/").getOrNull(2)?.toIntOrNull()
+            lower.contains("result_season") -> key.split("/").getOrNull(2)?.toIntOrNull()
+            lower.contains("result_dub") -> key.split("/").getOrNull(2)?.toIntOrNull()
+            lower.contains("result_episode") -> key.split("/").getOrNull(2)?.toIntOrNull()
+            lower.contains("result_favorites_state_data") -> key.split("/").getOrNull(1)?.toIntOrNull()
+            lower.contains("result_watch_state") -> key.split("/").getOrNull(1)?.toIntOrNull()
+            lower.contains("result_resume_watching") -> key.split("/").getOrNull(1)?.toIntOrNull()
+            else -> null
+        }
+    }
+
+    fun getKeyTimestamp(
+        key: String,
+        category: SyncCategory,
+        localStringMap: Map<String, String>?,
+        cloudStringMap: Map<String, String>?
+    ): Long {
+        // If the key is a string key that directly contains a timestamp, extract it
+        val directLocalVal = localStringMap?.get(key)
+        if (directLocalVal != null) {
+            val ts = extractTimestamp(directLocalVal)
+            if (ts > 0L) return ts
+        }
+        val directCloudVal = cloudStringMap?.get(key)
+        if (directCloudVal != null) {
+            val ts = extractTimestamp(directCloudVal)
+            if (ts > 0L) return ts
+        }
+
+        // If not found, try to find a related key with the same ID
+        val id = extractIdFromKey(key) ?: return 0L
+        
+        // Look for favorites / resume watching / search history keys with this ID
+        val relatedKeys = when (category) {
+            SyncCategory.BOOKMARKS -> listOf("result_favorites_state_data/$id")
+            SyncCategory.RESUME_WATCHING -> listOf("result_resume_watching/$id", "video_pos_dur/$id")
+            else -> emptyList()
+        }
+
+        for (relKey in relatedKeys) {
+            val localVal = localStringMap?.get(relKey)
+            if (localVal != null) {
+                val ts = extractTimestamp(localVal)
+                if (ts > 0L) return ts
+            }
+            val cloudVal = cloudStringMap?.get(relKey)
+            if (cloudVal != null) {
+                val ts = extractTimestamp(cloudVal)
+                if (ts > 0L) return ts
+            }
+        }
+
+        // Fuzzy match for video_pos_dur if needed
+        if (category == SyncCategory.RESUME_WATCHING) {
+            localStringMap?.forEach { (k, v) ->
+                if (k.contains("video_pos_dur") && k.contains("/$id")) {
+                    val ts = extractTimestamp(v)
+                    if (ts > 0L) return ts
+                }
+            }
+            cloudStringMap?.forEach { (k, v) ->
+                if (k.contains("video_pos_dur") && k.contains("/$id")) {
+                    val ts = extractTimestamp(v)
+                    if (ts > 0L) return ts
+                }
+            }
+        }
+
+        return 0L
+    }
+
+    private fun <T> mergeCategoryMap(
+        category: SyncCategory,
+        local: Map<String, T>?,
+        cloud: Map<String, T>?,
+        localCategoryTs: Long,
+        localStrings: Map<String, String>?,
+        cloudStrings: Map<String, String>?
+    ): Map<String, T>? {
+        if (local == null && cloud == null) return null
+
+        val lastSyncedKeys = if (isDynamicCategory(category)) {
+            UltimaStorageManager.getCategorySyncedKeys(category)
+        } else {
+            emptySet()
+        }
+
+        if (local == null) {
+            val nonNullCloud = cloud ?: return null
+            if (localCategoryTs == 0L || !isDynamicCategory(category) || lastSyncedKeys.isEmpty()) return nonNullCloud
+            return nonNullCloud.filter { (key, _) ->
+                val inLastSync = lastSyncedKeys.contains(key)
+                if (!inLastSync) {
+                    true
+                } else {
+                    val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                    itemTs > localCategoryTs
+                }
+            }
+        }
+        if (cloud == null) {
+            val nonNullLocal = local
+            if (localCategoryTs == 0L || !isDynamicCategory(category) || lastSyncedKeys.isEmpty()) return nonNullLocal
+            return nonNullLocal.filter { (key, _) ->
+                val inLastSync = lastSyncedKeys.contains(key)
+                if (!inLastSync) {
+                    true
+                } else {
+                    val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                    itemTs > localCategoryTs
+                }
+            }
+        }
+
+        val merged = HashMap<String, T>()
+
+        // 1. Keys present in both or only in local
+        for ((key, localVal) in local) {
+            val cloudVal = cloud[key]
+            if (cloudVal != null) {
+                val localTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                val cloudTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                if (cloudTs > localTs) {
+                    merged[key] = cloudVal
+                } else {
+                    merged[key] = localVal
+                }
+            } else {
+                if (localCategoryTs == 0L || !isDynamicCategory(category) || lastSyncedKeys.isEmpty()) {
+                    merged[key] = localVal
+                } else {
+                    val inLastSync = lastSyncedKeys.contains(key)
+                    if (!inLastSync) {
+                        merged[key] = localVal
+                    } else {
+                        val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                        if (itemTs > localCategoryTs) {
+                            merged[key] = localVal
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Keys present only in cloud
+        for ((key, cloudVal) in cloud) {
+            if (!local.containsKey(key)) {
+                if (localCategoryTs == 0L || !isDynamicCategory(category) || lastSyncedKeys.isEmpty()) {
+                    merged[key] = cloudVal
+                } else {
+                    val inLastSync = lastSyncedKeys.contains(key)
+                    if (!inLastSync) {
+                        merged[key] = cloudVal
+                    } else {
+                        val itemTs = getKeyTimestamp(key, category, localStrings, cloudStrings)
+                        if (itemTs > localCategoryTs) {
+                            merged[key] = cloudVal
+                        }
+                    }
+                }
+            }
+        }
+
+        return merged
+    }
+
     fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?): BackupFile? {
+        return mergeBackupFiles(local, cloud, 0L)
+    }
+
+    fun mergeBackupFiles(local: BackupFile?, cloud: BackupFile?, localCategoryTs: Long): BackupFile? {
         if (local == null) return cloud
         if (cloud == null) return local
 
+        val sampleKey = local.datastore.string?.keys?.firstOrNull()
+            ?: local.settings.string?.keys?.firstOrNull()
+            ?: local.datastore.bool?.keys?.firstOrNull()
+            ?: local.settings.bool?.keys?.firstOrNull()
+            ?: cloud.datastore.string?.keys?.firstOrNull()
+            ?: cloud.settings.string?.keys?.firstOrNull()
+
+        val category = sampleKey?.let { classifyKey(it) } ?: SyncCategory.SETTINGS
+
         return BackupFile(
-            datastore = mergeBackupVars(local.datastore, cloud.datastore),
-            settings = mergeBackupVars(local.settings, cloud.settings)
+            datastore = mergeBackupVars(local.datastore, cloud.datastore, localCategoryTs, category),
+            settings = mergeBackupVars(local.settings, cloud.settings, localCategoryTs, category)
         )
     }
 
-    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars): BackupVars {
+    private fun mergeBackupVars(local: BackupVars, cloud: BackupVars, localCategoryTs: Long, category: SyncCategory): BackupVars {
         return BackupVars(
-            bool = mergeMaps(local.bool, cloud.bool),
-            int = mergeMaps(local.int, cloud.int),
-            float = mergeMaps(local.float, cloud.float),
-            long = mergeMaps(local.long, cloud.long),
-            string = mergeStringMaps(local.string, cloud.string),
-            stringSet = mergeMaps(local.stringSet, cloud.stringSet)
+            bool = mergeCategoryMap(category, local.bool, cloud.bool, localCategoryTs, local.string, cloud.string),
+            int = mergeCategoryMap(category, local.int, cloud.int, localCategoryTs, local.string, cloud.string),
+            float = mergeCategoryMap(category, local.float, cloud.float, localCategoryTs, local.string, cloud.string),
+            long = mergeCategoryMap(category, local.long, cloud.long, localCategoryTs, local.string, cloud.string),
+            string = mergeCategoryMap(category, local.string, cloud.string, localCategoryTs, local.string, cloud.string),
+            stringSet = mergeCategoryMap(category, local.stringSet, cloud.stringSet, localCategoryTs, local.string, cloud.string)
         )
     }
 
@@ -635,37 +906,12 @@ object UltimaBackupUtils {
             if (latestUpdatedTimeMatch != null) {
                 return latestUpdatedTimeMatch.groupValues[1].toLong()
             }
+            val searchedAtMatch = "\"searchedAt\":\\s*(\\d+)".toRegex().find(json)
+            if (searchedAtMatch != null) {
+                return searchedAtMatch.groupValues[1].toLong()
+            }
         } catch (e: Exception) {}
         return 0L
-    }
-
-    private fun mergeStringMaps(local: Map<String, String>?, cloud: Map<String, String>?): Map<String, String>? {
-        if (local == null) return cloud
-        if (cloud == null) return local
-        val merged = HashMap<String, String>(local)
-        
-        for ((key, cloudVal) in cloud) {
-            val localVal = local[key]
-            if (localVal == null) {
-                merged[key] = cloudVal
-            } else {
-                val cloudTs = extractTimestamp(cloudVal)
-                val localTs = extractTimestamp(localVal)
-                
-                if ((cloudTs == 0L && localTs == 0L) || cloudTs > localTs) {
-                    merged[key] = cloudVal
-                }
-            }
-        }
-        return merged
-    }
-
-    private fun <K, V> mergeMaps(local: Map<K, V>?, cloud: Map<K, V>?): Map<K, V>? {
-        if (local == null) return cloud
-        if (cloud == null) return local
-        val merged = HashMap<K, V>(local)
-        merged.putAll(cloud)
-        return merged
     }
 
     fun BackupVars.isEmpty(): Boolean {

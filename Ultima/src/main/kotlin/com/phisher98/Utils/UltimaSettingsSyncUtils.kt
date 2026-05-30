@@ -8,6 +8,10 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.api.Log
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -285,45 +289,94 @@ object UltimaSettingsSyncUtils {
         }
     }
 
-    suspend fun pushCategory(context: Context, category: SyncCategory, data: String, hash: String): Boolean {
-        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
-        if (!creds.isLoggedIn()) return false
+    /**
+     * Batch push multiple categories in parallel.
+     * Uploads category payloads concurrently, then does a single manifest read-modify-write
+     * and single device status update.
+     * @param categoryData map of SyncCategory to Pair(jsonData, hash)
+     * @return set of categories that were successfully pushed
+     */
+    suspend fun pushCategories(
+        context: Context,
+        categoryData: Map<SyncCategory, Pair<String, String>>
+    ): Set<SyncCategory> {
+        val creds = UltimaStorageManager.appSettingsSyncCreds ?: return emptySet()
+        if (!creds.isLoggedIn()) return emptySet()
+        if (categoryData.isEmpty()) return emptySet()
 
         val now = System.currentTimeMillis()
         val deviceName = creds.deviceName ?: "Unknown"
+        val successfulCategories = mutableSetOf<SyncCategory>()
 
-        return try {
-            // 1. Push the category data
-            val catUrl = "${creds.activeUrl}sync/${creds.syncKey}/categories/${category.key}.json"
-            val payload = SyncCategoryPayload(data, now, deviceName)
-            val catRes = app.put(catUrl, json = payload)
-
-            if (catRes.code !in 200..299) {
-                Log.e(TAG, "pushCategory(${category.key}) failed: HTTP ${catRes.code}")
-                return false
+        try {
+            // 1. Push all category payloads in parallel
+            coroutineScope {
+                val jobs = categoryData.map { (category, dataPair) ->
+                    async(Dispatchers.IO) {
+                        try {
+                            val catUrl = "${creds.activeUrl}sync/${creds.syncKey}/categories/${category.key}.json"
+                            val payload = SyncCategoryPayload(dataPair.first, now, deviceName)
+                            val catRes = app.put(catUrl, json = payload)
+                            if (catRes.code in 200..299) {
+                                category to true
+                            } else {
+                                Log.e(TAG, "pushCategories: ${category.key} failed HTTP ${catRes.code}")
+                                category to false
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "pushCategories: ${category.key} error: ${e.message}")
+                            category to false
+                        }
+                    }
+                }
+                val results = jobs.awaitAll()
+                results.filter { it.second }.forEach { successfulCategories.add(it.first) }
             }
 
-            // 2. Update the manifest for this category
+            if (successfulCategories.isEmpty()) return emptySet()
+
+            // 2. Single manifest read-modify-write for all successful categories
             val currentManifest = fetchManifest(context) ?: SyncManifest()
-            val meta = SyncCategoryMeta(now, hash, deviceName)
-            val updatedManifest = currentManifest.withUpdated(category, meta)
+            var updatedManifest = currentManifest
+            for (category in successfulCategories) {
+                val hash = categoryData[category]?.second ?: ""
+                val meta = SyncCategoryMeta(now, hash, deviceName)
+                updatedManifest = updatedManifest.withUpdated(category, meta)
+            }
             pushManifest(context, updatedManifest)
 
-            // 3. Update device status
+            // 3. Single device status update
             val deviceUrl = "${creds.activeUrl}sync/${creds.syncKey}/devices/${creds.deviceId}.json"
             val device = FirebaseDevice(deviceName, creds.deviceId ?: "", now)
             app.put(deviceUrl, json = device)
 
-            // 4. Save local timestamp and hash
-            UltimaStorageManager.setCategoryTimestamp(category, now)
-            UltimaStorageManager.setCategoryHash(category, hash)
+            // 4. Save local timestamps and hashes for successful categories
+            for (category in successfulCategories) {
+                val hash = categoryData[category]?.second ?: ""
+                val data = categoryData[category]?.first ?: ""
+                UltimaStorageManager.setCategoryTimestamp(category, now)
+                UltimaStorageManager.setCategoryHash(category, hash)
+                
+                try {
+                    val backupFile = mapper.readValue<com.phisher98.BackupFile>(data)
+                    val keys = UltimaBackupUtils.getBackupFileKeys(backupFile)
+                    UltimaStorageManager.setCategorySyncedKeys(category, keys)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update local synced keys for ${category.key}: ${e.message}")
+                }
+            }
 
-            Log.d(TAG, "Pushed category ${category.key} successfully (hash=$hash)")
-            true
+            Log.d(TAG, "Batch pushed ${successfulCategories.size}/${categoryData.size} categories")
         } catch (e: Exception) {
-            Log.e(TAG, "pushCategory(${category.key}) error: ${e.message}")
-            false
+            Log.e(TAG, "pushCategories batch error: ${e.message}")
         }
+
+        return successfulCategories
+    }
+
+    suspend fun pushCategory(context: Context, category: SyncCategory, data: String, hash: String): Boolean {
+        val result = pushCategories(context, mapOf(category to Pair(data, hash)))
+        return result.contains(category)
     }
 
     // --- Legacy v1 API (kept for migration + device list) ---
