@@ -36,6 +36,7 @@ class UltimaPlugin : Plugin() {
     @Volatile
     private var restoringUntil = 0L
     private val RESTORE_GUARD_MS = 300L  // 300ms guard after restore completes
+    private val sseLock = Any()
 
     // Guard against concurrent pull operations
     private val pullMutex = Mutex()
@@ -99,6 +100,7 @@ class UltimaPlugin : Plugin() {
     // --- Restore Logic ---
 
     private suspend fun pullChangedCategories(context: Context, force: Boolean = false): Boolean {
+        val appContext = context.applicationContext
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return false
         if (!creds.isLoggedIn() || !creds.restoreDevice) return false
 
@@ -109,7 +111,7 @@ class UltimaPlugin : Plugin() {
         }
 
         try {
-            val manifest = UltimaSettingsSyncUtils.fetchManifest(context)
+            val manifest = UltimaSettingsSyncUtils.fetchManifest(appContext)
             if (manifest == null) {
                 Log.d(TAG, "No manifest found in cloud")
                 return false
@@ -133,7 +135,7 @@ class UltimaPlugin : Plugin() {
                 categoriesToFetch.map { (category, meta) ->
                     async(Dispatchers.IO) {
                         try {
-                            val payload = UltimaSettingsSyncUtils.fetchCategory(context, category)
+                            val payload = UltimaSettingsSyncUtils.fetchCategory(appContext, category)
                             if (payload != null && payload.data.isNotBlank()) {
                                 Triple(category, meta, payload)
                             } else null
@@ -158,17 +160,17 @@ class UltimaPlugin : Plugin() {
 
                         when (category) {
                             SyncCategory.EXTENSIONS -> {
-                                UltimaBackupUtils.restoreCategory(context, category, backupFile)
-                                UltimaBackupUtils.restoreExtensionsCategory(context, backupFile)
+                                UltimaBackupUtils.restoreCategory(appContext, category, backupFile)
+                                UltimaBackupUtils.restoreExtensionsCategory(appContext, backupFile)
                             }
                             SyncCategory.BOOKMARKS -> {
-                                UltimaBackupUtils.restoreCategory(context, category, backupFile)
+                                UltimaBackupUtils.restoreCategory(appContext, category, backupFile)
                                 withContext(Dispatchers.Main) {
                                     try { MainActivity.bookmarksUpdatedEvent(true) } catch (_: Throwable) {}
                                 }
                             }
                             else -> {
-                                UltimaBackupUtils.restoreCategory(context, category, backupFile)
+                                UltimaBackupUtils.restoreCategory(appContext, category, backupFile)
                             }
                         }
 
@@ -344,6 +346,7 @@ class UltimaPlugin : Plugin() {
         app?.registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: android.app.Activity) {
                 if (activity is com.lagradost.cloudstream3.MainActivity) {
+                    this@UltimaPlugin.activity = activity as? AppCompatActivity
                     pluginScope.launch {
                         try {
                             val currentCreds = UltimaStorageManager.appSettingsSyncCreds
@@ -360,130 +363,175 @@ class UltimaPlugin : Plugin() {
             override fun onActivityPaused(activity: android.app.Activity) {}
             override fun onActivityStopped(activity: android.app.Activity) {}
             override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) {}
-            override fun onActivityDestroyed(activity: android.app.Activity) {}
+            override fun onActivityDestroyed(activity: android.app.Activity) {
+                if (activity === this@UltimaPlugin.activity) {
+                    this@UltimaPlugin.activity = null
+                }
+            }
         })
 
         startSseListener(context)
     }
 
     fun startSseListener(context: Context, force: Boolean = false) {
-        val creds = UltimaStorageManager.appSettingsSyncCreds
-        if (creds == null || !creds.isLoggedIn() || !creds.restoreDevice) {
-            sseCall?.cancel()
-            sseCall = null
-            isSseConnected = false
-            lastSseSyncKey = null
-            lastSseUrl = null
-            return
-        }
-
-        val activeUrl = creds.activeUrl
-        val syncKey = creds.syncKey
-
-        if (!force && isSseConnected && lastSseSyncKey == syncKey && lastSseUrl == activeUrl) {
-            Log.d(TAG, "SSE listener already connected to correct URL and key, skipping restart")
-            return
-        }
-
-        sseCall?.cancel()
-        isSseConnected = false
-        lastSseSyncKey = syncKey
-        lastSseUrl = activeUrl
-
-        // Firebase REST Streaming requires ?alt=sse
-        val url = "${activeUrl}sync/${syncKey}/manifest.json?alt=sse"
-        val request = okhttp3.Request.Builder()
-            .url(url)
-            .addHeader("Accept", "text/event-stream")
-            .build()
-
-        Log.d(TAG, "Starting SSE listener for URL: $url")
-
-        val sseClient = com.lagradost.cloudstream3.app.baseClient.newBuilder()
-            .readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .build()
-
-        sseCall = sseClient.newCall(request)
-        sseCall?.enqueue(object : okhttp3.Callback {
-            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
-                if (call.isCanceled()) return
+        val appContext = context.applicationContext
+        synchronized(sseLock) {
+            val creds = UltimaStorageManager.appSettingsSyncCreds
+            if (creds == null || !creds.isLoggedIn() || !creds.restoreDevice) {
+                sseCall?.cancel()
+                sseCall = null
                 isSseConnected = false
-                sseRetryCount++
-                val backoffMs = calculateSseBackoff()
-                Log.e(TAG, "SSE connection failed: ${e.message}, reconnecting in ${backoffMs}ms (retry #$sseRetryCount)")
-                pluginScope.launch {
-                    delay(backoffMs)
-                    if (UltimaStorageManager.appSettingsSyncCreds?.isLoggedIn() == true) {
-                        startSseListener(context)
-                    }
-                }
+                lastSseSyncKey = null
+                lastSseUrl = null
+                return
             }
 
-            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                if (response.code != 200) {
-                    isSseConnected = false
-                    sseRetryCount++
+            val activeUrl = creds.activeUrl
+            val syncKey = creds.syncKey
+
+            if (!force && isSseConnected && lastSseSyncKey == syncKey && lastSseUrl == activeUrl) {
+                Log.d(TAG, "SSE listener already connected to correct URL and key, skipping restart")
+                return
+            }
+
+            sseCall?.cancel()
+            isSseConnected = false
+            lastSseSyncKey = syncKey
+            lastSseUrl = activeUrl
+
+            // Firebase REST Streaming requires ?alt=sse
+            val url = "${activeUrl}sync/${syncKey}/manifest.json?alt=sse"
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .addHeader("Accept", "text/event-stream")
+                .build()
+
+            Log.d(TAG, "Starting SSE listener for URL: $url")
+
+            val sseClient = com.lagradost.cloudstream3.app.baseClient.newBuilder()
+                .readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .build()
+
+            val call = sseClient.newCall(request)
+            sseCall = call
+
+            call.enqueue(object : okhttp3.Callback {
+                override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                    synchronized(sseLock) {
+                        if (sseCall !== call) return
+                        isSseConnected = false
+                        sseCall = null
+                        sseRetryCount++
+                    }
+                    if (call.isCanceled()) return
                     val backoffMs = calculateSseBackoff()
-                    Log.e(TAG, "SSE connection failed with HTTP code ${response.code}, reconnecting in ${backoffMs}ms")
+                    Log.e(TAG, "SSE connection failed: ${e.message}, reconnecting in ${backoffMs}ms")
                     pluginScope.launch {
                         delay(backoffMs)
-                        if (UltimaStorageManager.appSettingsSyncCreds?.isLoggedIn() == true) {
-                            startSseListener(context)
-                        }
+                        startSseListener(appContext)
                     }
-                    return
                 }
 
-                // Reset backoff and set connected on successful connection
-                isSseConnected = true
-                sseRetryCount = 0
-                val source = response.body?.source() ?: return
-                try {
-                    var currentEvent: String? = null
-                    while (!source.exhausted()) {
-                        val line = source.readUtf8Line() ?: break
-
-                        // Skip blank lines (SSE protocol uses blank lines as event delimiters)
-                        if (line.isBlank()) {
-                            currentEvent = null
-                            continue
+                override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                    synchronized(sseLock) {
+                        if (sseCall !== call) {
+                            response.close()
+                            return
                         }
-
-                        if (line.startsWith("event:")) {
-                            currentEvent = line.substring(6).trim()
-                            continue
-                        }
-
-                        if (line.startsWith("data:") && (currentEvent == "put" || currentEvent == "patch")) {
-                            val json = line.substring(5).trim()
-                            if (json != "null" && json.isNotEmpty()) {
-                                pluginScope.launch {
-                                    pullChangedCategories(context)
-                                }
+                    }
+                    if (response.code != 200) {
+                        synchronized(sseLock) {
+                            if (sseCall !== call) {
+                                response.close()
+                                return
                             }
-                            currentEvent = null
+                            isSseConnected = false
+                            sseCall = null
+                            sseRetryCount++
                         }
-                    }
-                } catch (e: Exception) {
-                    isSseConnected = false
-                    if (!call.isCanceled()) {
-                        Log.e(TAG, "SSE read error: ${e.message}")
-                    }
-                } finally {
-                    isSseConnected = false
-                    if (!call.isCanceled()) {
-                        sseRetryCount++
+                        response.close()
                         val backoffMs = calculateSseBackoff()
+                        Log.e(TAG, "SSE connection failed with HTTP code ${response.code}, reconnecting in ${backoffMs}ms")
                         pluginScope.launch {
                             delay(backoffMs)
-                            if (UltimaStorageManager.appSettingsSyncCreds?.isLoggedIn() == true) {
-                                startSseListener(context)
+                            startSseListener(appContext)
+                        }
+                        return
+                    }
+
+                    synchronized(sseLock) {
+                        if (sseCall !== call) {
+                            response.close()
+                            return
+                        }
+                        isSseConnected = true
+                        sseRetryCount = 0
+                    }
+
+                    val source = response.body?.source() ?: return
+                    try {
+                        var currentEvent: String? = null
+                        while (true) {
+                            synchronized(sseLock) {
+                                if (sseCall !== call) return
+                            }
+                            if (source.exhausted()) break
+                            val line = source.readUtf8Line() ?: break
+
+                            // Skip blank lines (SSE protocol uses blank lines as event delimiters)
+                            if (line.isBlank()) {
+                                currentEvent = null
+                                continue
+                            }
+
+                            if (line.startsWith("event:")) {
+                                currentEvent = line.substring(6).trim()
+                                continue
+                            }
+
+                            if (line.startsWith("data:") && (currentEvent == "put" || currentEvent == "patch")) {
+                                val json = line.substring(5).trim()
+                                if (json != "null" && json.isNotEmpty()) {
+                                    pluginScope.launch {
+                                        pullChangedCategories(appContext)
+                                    }
+                                }
+                                currentEvent = null
+                            }
+                        }
+                    } catch (e: Exception) {
+                        synchronized(sseLock) {
+                            if (sseCall === call) {
+                                isSseConnected = false
+                            }
+                        }
+                        if (!call.isCanceled()) {
+                            Log.e(TAG, "SSE read error: ${e.message}")
+                        }
+                    } finally {
+                        response.close()
+                        var shouldRetry = false
+                        synchronized(sseLock) {
+                            if (sseCall === call) {
+                                isSseConnected = false
+                                sseCall = null
+                                if (!call.isCanceled()) {
+                                    sseRetryCount++
+                                    shouldRetry = true
+                                }
+                            }
+                        }
+                        if (shouldRetry) {
+                            val backoffMs = calculateSseBackoff()
+                            pluginScope.launch {
+                                delay(backoffMs)
+                                startSseListener(appContext)
                             }
                         }
                     }
                 }
-            }
-        })
+            })
+        }
     }
 
     private fun calculateSseBackoff(): Long {
@@ -528,6 +576,8 @@ class UltimaPlugin : Plugin() {
 
     fun reload() {
         pluginScope.launch(Dispatchers.Main) {
+            val act = activity
+            if (act == null || act.isFinishing || act.isDestroyed) return@launch
             try {
                 MainActivity.bookmarksUpdatedEvent.invoke(true)
                 MainActivity.reloadLibraryEvent.invoke(true)
@@ -644,13 +694,14 @@ class UltimaPlugin : Plugin() {
     }
 
     suspend fun mergeAndSyncAllCategories(context: Context) {
+        val appContext = context.applicationContext
         val creds = UltimaStorageManager.appSettingsSyncCreds ?: return
         if (!creds.isLoggedIn()) return
 
         consumeDirtyCategories()
 
         // Fetch manifest once for all categories
-        val manifest = UltimaSettingsSyncUtils.fetchManifest(context)
+        val manifest = UltimaSettingsSyncUtils.fetchManifest(appContext)
         val resumeWatching = getResumeWatching()
 
         // Fetch all cloud category payloads in parallel
@@ -662,7 +713,7 @@ class UltimaPlugin : Plugin() {
             enabledCategories.map { category ->
                 async(Dispatchers.IO) {
                     try {
-                        val payload = UltimaSettingsSyncUtils.fetchCategory(context, category)
+                        val payload = UltimaSettingsSyncUtils.fetchCategory(appContext, category)
                         category to payload
                     } catch (e: Exception) {
                         Log.e(TAG, "Error fetching category ${category.key}: ${e.message}")
@@ -674,6 +725,7 @@ class UltimaPlugin : Plugin() {
 
         // Process each category and collect pushes
         val categoriesToPush = mutableMapOf<SyncCategory, Pair<String, String>>()
+        var restoredAny = false
 
         for (category in enabledCategories) {
             val isBackup = creds.isBackupEnabled(category)
@@ -686,7 +738,7 @@ class UltimaPlugin : Plugin() {
                     try { mapper.readValue<BackupFile>(cloudPayload.data) } catch (_: Exception) { null }
                 } else null
 
-                val localBackup = UltimaBackupUtils.getBackupForCategory(context, category, resumeWatching)
+                val localBackup = UltimaBackupUtils.getBackupForCategory(appContext, category, resumeWatching)
 
                 val isLocalEmpty = localBackup == null ||
                     ((localBackup.datastore.bool.isNullOrEmpty() && localBackup.datastore.int.isNullOrEmpty() && localBackup.datastore.string.isNullOrEmpty() && localBackup.datastore.float.isNullOrEmpty() && localBackup.datastore.long.isNullOrEmpty() && localBackup.datastore.stringSet.isNullOrEmpty()) &&
@@ -705,7 +757,8 @@ class UltimaPlugin : Plugin() {
                             Log.d(TAG, "Local is empty for ${category.key}, pulling from cloud")
                             isRestoring = true
                             try {
-                                restoreAndReload(context, category, cloudBackup)
+                                restoreAndReload(appContext, category, cloudBackup)
+                                restoredAny = true
                             } finally {
                                 isRestoring = false
                                 restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
@@ -743,7 +796,8 @@ class UltimaPlugin : Plugin() {
                                 Log.d(TAG, "Merged data different from local for ${category.key}, restoring")
                                 isRestoring = true
                                 try {
-                                    restoreAndReload(context, category, mergedBackup)
+                                    restoreAndReload(appContext, category, mergedBackup)
+                                    restoredAny = true
                                 } finally {
                                     isRestoring = false
                                     restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
@@ -768,7 +822,7 @@ class UltimaPlugin : Plugin() {
 
         // Batch push all categories that need pushing
         if (categoriesToPush.isNotEmpty()) {
-            val pushed = UltimaSettingsSyncUtils.pushCategories(context, categoriesToPush)
+            val pushed = UltimaSettingsSyncUtils.pushCategories(appContext, categoriesToPush)
             Log.d(TAG, "Batch pushed ${pushed.size}/${categoriesToPush.size} categories in mergeAndSyncAll")
             val failed = categoriesToPush.keys - pushed
             if (failed.isNotEmpty()) {
@@ -780,6 +834,8 @@ class UltimaPlugin : Plugin() {
             }
         }
 
-        reload()
+        if (restoredAny) {
+            reload()
+        }
     }
 }

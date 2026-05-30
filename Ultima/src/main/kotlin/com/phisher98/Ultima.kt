@@ -91,7 +91,7 @@ class Ultima(val plugin: UltimaPlugin) : MainAPI() {
                     val payload = UltimaSettingsSyncUtils.fetchCategory(ctx, SyncCategory.RESUME_WATCHING)
                     if (payload != null && payload.data.isNotBlank()) {
                         val backupFile = try {
-                            mapper.readValue<com.phisher98.BackupFile>(payload.data)
+                            mapper.readValue<BackupFile>(payload.data)
                         } catch (e: Exception) {
                             null
                         }
