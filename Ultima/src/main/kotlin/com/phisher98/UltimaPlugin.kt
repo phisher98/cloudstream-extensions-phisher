@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.lagradost.cloudstream3.CloudStreamApp
 
 @CloudstreamPlugin
@@ -34,15 +35,17 @@ class UltimaPlugin : Plugin() {
     private var isRestoring = false
     @Volatile
     private var restoringUntil = 0L
-    private val RESTORE_GUARD_MS = 300L  // 300ms guard after restore completes
+    private val RESTORE_GUARD_MS = 5_000L  // 5s guard after restore completes to cover async pref callbacks
     private val sseLock = Any()
 
     // Guard against concurrent pull operations
     private val pullMutex = Mutex()
+    private val syncMutex = Mutex()  // Prevents push and pull from overlapping
 
     private var dataPrefsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var defaultPrefsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var pushJob: Job? = null
+    private var ssePullJob: Job? = null  // Debounced SSE pull
     private var sseCall: okhttp3.Call? = null
     @Volatile
     private var isSseConnected = false
@@ -55,9 +58,15 @@ class UltimaPlugin : Plugin() {
     private val SSE_MAX_BACKOFF_MS = 60_000L
     private val SSE_BASE_DELAY_MS = 5_000L
 
+    // Track our own pushes to ignore the resulting SSE events
+    @Volatile
+    private var lastPushTimestamp = 0L
+
     companion object {
         private const val TAG = "UltimaSync"
-        private const val PUSH_DEBOUNCE_MS = 500L  // Reduced to 500ms for instant real-time sync
+        private const val PUSH_DEBOUNCE_MS = 2_000L  // 2s debounce to batch changes and prevent rapid-fire pushes
+        private const val SSE_PULL_DEBOUNCE_MS = 3_000L  // 3s debounce for SSE-triggered pulls
+        private const val IGNORE_OWN_PUSH_MS = 5_000L  // Ignore SSE events within 5s of our own push
     }
 
     // --- Category Dirty Tracking ---
@@ -92,7 +101,9 @@ class UltimaPlugin : Plugin() {
         pushJob?.cancel()
         pushJob = pluginScope.launch {
             delay(PUSH_DEBOUNCE_MS)
-            mergeAndSyncAllCategories(ctx)
+            syncMutex.withLock {
+                mergeAndSyncAllCategories(ctx)
+            }
         }
     }
 
@@ -184,10 +195,11 @@ class UltimaPlugin : Plugin() {
                     }
                 }
             } finally {
-                isRestoring = false
-                // Keep the guard window active to prevent async SharedPreferences notifications
-                // from triggering a push-back loop
+                // Keep isRestoring true briefly to block async pref change callbacks
                 restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
+                withContext(Dispatchers.Main) {
+                    isRestoring = false
+                }
             }
 
             if (restoredAny) {
@@ -491,8 +503,19 @@ class UltimaPlugin : Plugin() {
                             if (line.startsWith("data:") && (currentEvent == "put" || currentEvent == "patch")) {
                                 val json = line.substring(5).trim()
                                 if (json != "null" && json.isNotEmpty()) {
-                                    pluginScope.launch {
-                                        pullChangedCategories(appContext)
+                                    // Ignore SSE events that are from our own recent push
+                                    val timeSinceLastPush = System.currentTimeMillis() - lastPushTimestamp
+                                    if (timeSinceLastPush < IGNORE_OWN_PUSH_MS) {
+                                        Log.d(TAG, "SSE: Ignoring event within ${timeSinceLastPush}ms of our own push")
+                                    } else {
+                                        // Debounce SSE-triggered pulls: cancel previous and wait
+                                        ssePullJob?.cancel()
+                                        ssePullJob = pluginScope.launch {
+                                            delay(SSE_PULL_DEBOUNCE_MS)
+                                            syncMutex.withLock {
+                                                pullChangedCategories(appContext)
+                                            }
+                                        }
                                     }
                                 }
                                 currentEvent = null
@@ -562,7 +585,9 @@ class UltimaPlugin : Plugin() {
         }
 
         if (categoryData.isNotEmpty()) {
+            lastPushTimestamp = System.currentTimeMillis()
             val pushed = UltimaSettingsSyncUtils.pushCategories(context, categoryData)
+            lastPushTimestamp = System.currentTimeMillis()
             Log.d(TAG, "Force-pushed ${pushed.size}/${categoryData.size} categories")
         }
     }
@@ -645,8 +670,10 @@ class UltimaPlugin : Plugin() {
                     try {
                         restoreAndReload(context, category, cloudBackup)
                     } finally {
-                        isRestoring = false
                         restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
+                        withContext(Dispatchers.Main) {
+                            isRestoring = false
+                        }
                     }
                     // Use the cloud payload timestamp directly instead of re-fetching manifest
                     UltimaStorageManager.setCategoryTimestamp(category, cloudPayload?.ts ?: System.currentTimeMillis())
@@ -660,6 +687,7 @@ class UltimaPlugin : Plugin() {
                     val data = localBackup.toJson()
                     val hash = UltimaBackupUtils.computeHash(data)
                     UltimaSettingsSyncUtils.pushCategory(context, category, data, hash)
+                    lastPushTimestamp = System.currentTimeMillis()
                 }
             } else {
                 // Both have data: merge them
@@ -674,8 +702,10 @@ class UltimaPlugin : Plugin() {
                             try {
                                 restoreAndReload(context, category, mergedBackup)
                             } finally {
-                                isRestoring = false
                                 restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
+                                withContext(Dispatchers.Main) {
+                                    isRestoring = false
+                                }
                             }
                         }
                         // Push merged data to cloud if backup is enabled
@@ -683,6 +713,7 @@ class UltimaPlugin : Plugin() {
                             val data = mergedBackup.toJson()
                             val hash = UltimaBackupUtils.computeHash(data)
                             UltimaSettingsSyncUtils.pushCategory(context, category, data, hash)
+                            lastPushTimestamp = System.currentTimeMillis()
                         }
                     }
                 }
@@ -759,8 +790,10 @@ class UltimaPlugin : Plugin() {
                                 restoreAndReload(appContext, category, cloudBackup)
                                 restoredAny = true
                             } finally {
-                                isRestoring = false
                                 restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
+                                withContext(Dispatchers.Main) {
+                                    isRestoring = false
+                                }
                             }
                             if (cloudMeta != null) {
                                 UltimaStorageManager.setCategoryTimestamp(category, cloudMeta.ts)
@@ -798,8 +831,10 @@ class UltimaPlugin : Plugin() {
                                     restoreAndReload(appContext, category, mergedBackup)
                                     restoredAny = true
                                 } finally {
-                                    isRestoring = false
                                     restoringUntil = System.currentTimeMillis() + RESTORE_GUARD_MS
+                                    withContext(Dispatchers.Main) {
+                                        isRestoring = false
+                                    }
                                 }
                                 UltimaStorageManager.setCategoryHash(category, hash)
                                 if (cloudMeta != null) {
@@ -821,7 +856,9 @@ class UltimaPlugin : Plugin() {
 
         // Batch push all categories that need pushing
         if (categoriesToPush.isNotEmpty()) {
+            lastPushTimestamp = System.currentTimeMillis()
             val pushed = UltimaSettingsSyncUtils.pushCategories(appContext, categoriesToPush)
+            lastPushTimestamp = System.currentTimeMillis()
             Log.d(TAG, "Batch pushed ${pushed.size}/${categoriesToPush.size} categories in mergeAndSyncAll")
             val failed = categoriesToPush.keys - pushed
             if (failed.isNotEmpty()) {
