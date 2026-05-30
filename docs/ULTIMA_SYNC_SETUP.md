@@ -40,20 +40,6 @@ By default, "Test Mode" rules expire after 30 days and allow anyone with your da
      }
    }
    ```
-   > [!TIP]
-   > For even tighter security, you can restrict read/write access to only your private sync key path:
-   > ```json
-   > {
-   >   "rules": {
-   >     "sync": {
-   >       "$syncKey": {
-   >         ".read": true,
-   >         ".write": true
-   >       }
-   >     }
-   >   }
-   > }
-   > ```
 3. Click the **Publish** button to save and apply the new rules.
 
 ---
