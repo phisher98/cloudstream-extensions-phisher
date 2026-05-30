@@ -170,10 +170,8 @@ class UltimaPlugin : Plugin() {
 
                         when (category) {
                             SyncCategory.EXTENSIONS -> {
-                                // Only restore preferences (repo list, plugin list) during background sync.
-                                // Do NOT call restoreExtensionsCategory here — it downloads/unloads/loads
-                                // plugins which can unload Ultima itself and crash the extension.
                                 UltimaBackupUtils.restoreCategory(appContext, category, backupFile)
+                                UltimaBackupUtils.restoreExtensionsCategory(appContext, backupFile)
                             }
                             SyncCategory.BOOKMARKS -> {
                                 UltimaBackupUtils.restoreCategory(appContext, category, backupFile)
@@ -616,9 +614,8 @@ class UltimaPlugin : Plugin() {
     private suspend fun restoreAndReload(context: Context, category: SyncCategory, backupFile: BackupFile) {
         when (category) {
             SyncCategory.EXTENSIONS -> {
-                // Only restore preferences. Do NOT download/unload/load plugins here —
-                // it can unload Ultima itself and crash the extension.
                 UltimaBackupUtils.restoreCategory(context, category, backupFile)
+                UltimaBackupUtils.restoreExtensionsCategory(context, backupFile)
             }
             SyncCategory.BOOKMARKS -> {
                 UltimaBackupUtils.restoreCategory(context, category, backupFile)
