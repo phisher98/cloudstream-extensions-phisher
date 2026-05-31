@@ -1,4 +1,4 @@
-package com.Animecloud
+package com.animecloud
 
 import com.lagradost.cloudstream3.plugins.BasePlugin
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin

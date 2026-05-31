@@ -1,8 +1,27 @@
-package com.Animecloud
+package com.animecloud
 
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageList
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbUrl
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.fixUrlNull
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newAnimeSearchResponse
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class Animecloud : MainAPI() {
     override var mainUrl              = "https://fireani.me"
@@ -14,14 +33,14 @@ class Animecloud : MainAPI() {
     override val supportedTypes       = setOf(TvType.Movie,TvType.Anime)
 
     override val mainPage = mainPageOf(
-        "best-last-7d?page=" to "Trending",
-        "genre?genere=Action&page=" to "Action",
-        "genre?genere=Drama&page=" to "Drama",
-        "genre?genere=Komödie&page=" to "Comedy",
-        "genre?genere=Mystery&page=" to "Mystery",
-        "genre?genere=Romanze&page=" to "Romanze",
-        "genre?genere=Abenteuer&page=" to "Abenteuer",
-        "genre?genere=EngSub&page=" to "EngSub",
+        "ListAnimesByViewCount" to "Trending",
+        "ListAnimesByGenre|Action" to "Action",
+        "ListAnimesByGenre|Drama" to "Drama",
+        "ListAnimesByGenre|Drama" to "Comedy",
+        "ListAnimesByGenre|Mystery" to "Mystery",
+        "ListAnimesByGenre|Romanze" to "Romanze",
+        "ListAnimesByGenre|Abenteuer" to "Abenteuer",
+        "ListAnimesByGenre|EngSub" to "EngSub",
     )
 
     override suspend fun getMainPage(
@@ -29,9 +48,19 @@ class Animecloud : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
 
-        val url = "$mainUrl/api/animes/${request.data}$page"
+        val url = "$mainUrl/api.v1.anime.AnimeService/${request.data.substringBeforeLast("|")}"
+        val json = if (request.data.contains("|"))"""
+            {
+            "page": $page,
+            "genre": "${request.data.substringAfterLast("|")}"
+            }
+        """.trimMargin() else """
+           {
+            "page": $page
+            }
+        """.trimIndent()
 
-        val response = app.get(url).parsedSafe<Home>()
+        val response = app.post(url, requestBody = json.toRequestBody("application/json".toMediaType())).parsedSafe<Home>()
             ?: return newHomePageResponse(
                 list = HomePageList(
                     name = request.name,
@@ -54,7 +83,7 @@ class Animecloud : MainAPI() {
     }
 
     private fun HomeDaum.toSearchResult(): SearchResponse {
-        val href = "$mainUrl/api/anime?slug=${this.slug}"
+        val href = this.slug
         val posterslug= this.poster
         return newMovieSearchResponse(
             name = this.title,
@@ -69,64 +98,93 @@ class Animecloud : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        val searchResponse = app.get("$mainUrl/api/anime/search?q=$query").parsedSafe<SearchParser>()?.data?.map { it.toSearchResponse() }
+        val json = """
+        {
+            "q": "$query"
+        }
+        """.trimIndent()
+        val searchResponse = app.post("$mainUrl/api.v1.AnimeSearchService/SearchAnimes", requestBody = json.toRequestBody("application/json".toMediaType())).parsedSafe<SearchDaum>()
+            ?.data?.map { it.toSearchResponse() }
         return searchResponse
     }
 
-    private fun Daum.toSearchResponse(): SearchResponse {
+    private fun Search.toSearchResponse(): SearchResponse {
         val title=this.title
         val poster= fixUrlNull("$mainUrl/img/posters/${this.poster}")
-        val href= "$mainUrl/api/anime?slug=${this.slug}"
-        return newAnimeSearchResponse(
-            title,
-            href,
-            TvType.TvSeries,
+        val href= this.slug
+        return newAnimeSearchResponse(title, href, TvType.TvSeries,
         ) {
             this.posterUrl=poster
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document= app.get(url).parsedSafe<EpisodeParser>()?.data
-        val title = document?.title ?: "Unknown"
-        val imdburl=document?.imdb
-        val poster= fixUrlNull("$mainUrl/img/posters/${document?.poster}")
-        val backgroundurl = "$mainUrl/img/posters/bg-${document?.backdrop}.webp"
-        val description = document?.desc
-        val genres=document?.generes
-        val animeSeasons= document?.animeSeasons
-        val episodes = mutableListOf<Episode>()
-        animeSeasons?.map { info->
-             var season:String
-             season = info.season
-             if (season.contains("Filme")) season="0"
-             info.animeEpisodes.map {
-                 val episode=it.episode?.toIntOrNull()
-                 val epname="Episode $episode "
-                 val epposter="${mainUrl}/img/thumbs/${it.image}"
-                 val animename=url.substringAfterLast("slug=")
-                 val searchSeason = if (season == "0") "Filme" else season
-                 val href = "$mainUrl/api/anime/episode?slug=$animename&season=$searchSeason&episode=$episode"
-                 episodes+= newEpisode(href)
-                     {
-                         this.name=epname
-                         this.season=season.toIntOrNull()
-                         this.episode=episode
-                         this.posterUrl=epposter
-                     }
-             }
+        val json = """
+        {
+            "slug": "${url.substringAfterLast("/")}"
         }
-        return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
-                this.posterUrl = poster
-                this.backgroundPosterUrl = backgroundurl
-                this.plot = description
-                this.tags = genres
-                addImdbUrl(imdburl)
+        """.trimIndent()
+
+        val document = app.post("$mainUrl/api.v1.anime.AnimeService/GetAnime",
+            requestBody = json.toRequestBody("application/json".toMediaType())
+        ).parsedSafe<EpisodeParser>()?.data
+            ?: throw ErrorLoadingException("Failed to load anime")
+
+        val title = document.title
+        val poster = document.poster?.let { "$mainUrl/img/posters/$it" }
+        val backgroundUrl = document.backdrop?.let { "$mainUrl/img/posters/bg-$it.webp" }
+
+        val episodes = mutableListOf<Episode>()
+
+        document.animeSeasons.forEach { seasonInfo ->
+            val season = if (seasonInfo.season.contains("Filme", true)) {
+                0
+            } else {
+                seasonInfo.season.toIntOrNull()
+            }
+
+            val searchSeason = if (season == 0) {
+                "Filme"
+            } else {
+                seasonInfo.season
+            }
+
+            seasonInfo.animeEpisodes.forEach { ep ->
+                val episodeNumber = ep.episode.toIntOrNull()
+                val href = "$mainUrl/&slug=${document.slug}&season=$searchSeason&episode=${ep.episode}"
+                episodes += newEpisode(href) {
+                    this.name = "Episode ${ep.episode}"
+                    this.season = season
+                    this.episode = episodeNumber
+                    this.posterUrl = ep.image?.let { "$mainUrl/img/thumbs/$it" }
+                }
+            }
+        }
+
+        return newTvSeriesLoadResponse(
+            title, url, TvType.Anime, episodes
+        ) {
+            this.posterUrl = poster
+            this.backgroundPosterUrl = backgroundUrl
+            this.plot = document.desc
+            this.tags = document.generes
+            document.imdb?.let {
+                addImdbUrl(it)
+            }
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        app.get(data).parsedSafe<AnimecloudEP>()?.data?.anime_episode_links?.map {
+        val json = """
+        {
+            "slug": "${data.substringAfterLast("&slug=").substringBefore("&")}",
+            "season": "${data.substringAfterLast("&season=").substringBefore("&")}",
+            "episode": "${data.substringAfterLast("&episode=").substringBefore("&")}"
+        }
+        """.trimIndent()
+
+        app.post("$mainUrl/api.v1.anime.AnimeService/GetEpisode", requestBody = json.toRequestBody("application/json".toMediaType())).
+        parsedSafe<Loadlinks>()?.data?.animeEpisodeLinks?.forEach {
             val dubtype=it.lang
             val href=it.link
             loadSourceNameExtractor("$name ${dubtype.uppercase()}",href, "", subtitleCallback, callback, quality = "1080P")

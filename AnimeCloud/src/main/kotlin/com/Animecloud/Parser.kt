@@ -1,6 +1,5 @@
-package com.Animecloud
+package com.animecloud
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -10,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+
 data class Home(
     val data: List<HomeDaum>,
     val pages: Long,
@@ -18,186 +18,142 @@ data class Home(
 
 data class HomeDaum(
     val id: Long,
-    @param:JsonProperty("created_at")
-    val createdAt: String?,
-    @param:JsonProperty("updated_at")
-    val updatedAt: String?,
     val slug: String,
     val title: String,
-    @param:JsonProperty("alternate_titles")
-    val alternateTitles: String?,
-    val generes: Any?,
-    val imdb: String?,
-    val tmdb: Long,
-    @param:JsonProperty("tmdb_type")
-    val tmdbType: String,
-    val anilist: Any?,
-    val desc: String?,
-    val start: Long,
-    val end: Long?,
-    val poster: String,
-    val backdrop: String,
-    @param:JsonProperty("vote_avg")
-    val voteAvg: Double,
-    @param:JsonProperty("vote_count")
-    val voteCount: Long,
-    @param:JsonProperty("item_type")
-    val itemType: String,
-    @param:JsonProperty("view_count")
-    val viewCount: Long,
-)
-
-data class EpisodeParser(
-    val data: Data?,
-    val status: Long?,
-)
-
-data class Data(
-    val id: Long?,
-    @param:JsonProperty("created_at")
-    val createdAt: String?,
-    @param:JsonProperty("updated_at")
-    val updatedAt: String?,
-    @param:JsonProperty("last_sync")
-    val lastSync: String?,
-    val slug: String?,
-    val title: String?,
-    @param:JsonProperty("alternate_titles")
-    val alternateTitles: String?,
-    val generes: List<String>?,
-    val imdb: String?,
-    val tmdb: Long?,
-    @param:JsonProperty("tmdb_type")
-    val tmdbType: String?,
-    val anilist: Any?,
-    val desc: String?,
-    val start: Long?,
-    val end: Long?,
-    val poster: String?,
-    val backdrop: String?,
-    @param:JsonProperty("vote_avg")
-    val voteAvg: Double?,
-    @param:JsonProperty("vote_count")
-    val voteCount: Long?,
-    @param:JsonProperty("item_type")
-    val itemType: String?,
-    @param:JsonProperty("anime_seasons")
-    val animeSeasons: List<AnimeSeason>?,
-)
-
-data class AnimeSeason(
-    val id: Long?,
-    @param:JsonProperty("created_at")
-    val createdAt: String?,
-    @param:JsonProperty("updated_at")
-    val updatedAt: String?,
-    val season: String,
-    @param:JsonProperty("anime_id")
-    val animeId: Long?,
-    @param:JsonProperty("anime_episodes")
-    val animeEpisodes: List<AnimeEpisode>,
-)
-
-data class AnimeEpisode(
-    val id: Long?,
-    @param:JsonProperty("created_at")
-    val createdAt: String?,
-    @param:JsonProperty("updated_at")
-    val updatedAt: String?,
-    @param:JsonProperty("last_sync")
-    val lastSync: String?,
-    val episode: String?,
-    val image: String?,
-    @param:JsonProperty("view_count")
-    val viewCount: Long?,
-    @param:JsonProperty("anime_season_id")
-    val animeSeasonId: Long?,
-    @param:JsonProperty("has_ger_sub")
-    val hasGerSub: Boolean?,
-    @param:JsonProperty("has_ger_dub")
-    val hasGerDub: Boolean?,
-    @param:JsonProperty("has_eng_sub")
-    val hasEngSub: Boolean?,
-    @param:JsonProperty("anime_episode_links")
-    val animeEpisodeLinks: Any?,
-)
-
-
-
-
-data class AnimecloudEP(
-    val `data`: Data,
-    val status: Int
-) {
-    data class Data(
-        val anime_episode_links: List<AnimeEpisodeLink>,
-        val anime_season_id: Int,
-        val dislike_count: Int,
-        val episode: String,
-        val has_eng_sub: Boolean,
-        val has_ger_dub: Boolean,
-        val has_ger_sub: Boolean,
-        val id: Int,
-        val image: String,
-        val like_count: Int,
-        val view_count: Int
-    ) {
-        data class AnimeEpisodeLink(
-            val anime_episode_id: Int,
-            val created_at: String,
-            val id: Int,
-            val lang: String,
-            val link: String,
-            val name: String,
-            val updated_at: String
-        )
-    }
-}
-
-
-//SearchParser
-
-data class SearchParser(
-    val data: List<Daum>,
-    val pages: Long,
-    val status: Long,
-)
-
-data class Daum(
-    val id: Long,
-    @param:JsonProperty("created_at")
-    val createdAt: String,
-    @param:JsonProperty("updated_at")
-    val updatedAt: String,
-    @param:JsonProperty("last_sync")
-    val lastSync: String,
-    val slug: String,
-    val title: String,
-    @param:JsonProperty("alternate_titles")
     val alternateTitles: String,
     val generes: List<String>,
     val imdb: String?,
     val tmdb: Long,
-    @param:JsonProperty("tmdb_type")
-    val tmdbType: String,
-    val anilist: Any?,
     val desc: String,
     val start: Long,
     val end: Long?,
     val poster: String,
-    val backdrop: String,
-    @param:JsonProperty("vote_avg")
     val voteAvg: Double,
-    @param:JsonProperty("vote_count")
     val voteCount: Long,
-    @param:JsonProperty("item_type")
+    val createdAt: String,
+    val updatedAt: String,
+    val lastSync: String,
+    val tmdbType: String,
+    val anilist: Long,
+    val anilistSyncAttempts: Long,
+    val anilistSuggestedScore: Long,
+    val anilistReviewRequired: Boolean,
+    val backdrop: String,
     val itemType: String,
-    @param:JsonProperty("anime_seasons")
-    val animeSeasons: Any?,
+    val blockSync: Boolean,
+    val blockEpisodeSync: Boolean,
+    val excludeFromAnilist: Boolean,
+    val autoCache: Boolean,
+    val takedownExpiresAt: String?,
+    val takedownAuthOnly: Boolean?,
+)
+
+data class EpisodeParser(
+    val data: Data,
+    val status: Long,
+)
+
+data class Data(
+    val id: Long,
+    val slug: String,
+    val title: String,
+    val alternateTitles: String? = null,
+    val generes: List<String> = emptyList(),
+    val imdb: String? = null,
+    val tmdb: Long? = null,
+    val desc: String? = null,
+    val start: Long? = null,
+    val end: Long? = null,
+    val poster: String? = null,
+    val voteAvg: Double? = null,
+    val voteCount: Long? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val lastSync: String? = null,
+    val tmdbType: String? = null,
+    val anilist: Long? = null,
+    val anilistSyncAttempts: Long? = null,
+    val anilistSuggestedScore: Long? = null,
+    val anilistReviewRequired: Boolean? = null,
+    val backdrop: String? = null,
+    val itemType: String? = null,
+    val blockSync: Boolean? = null,
+    val blockEpisodeSync: Boolean? = null,
+    val excludeFromAnilist: Boolean? = null,
+    val autoCache: Boolean? = null,
+    val animeSeasons: List<AnimeSeason> = emptyList(),
+)
+
+data class AnimeSeason(
+    val id: Long,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val season: String,
+    val animeId: Long,
+    val animeEpisodes: List<AnimeEpisode> = emptyList(),
+)
+
+data class AnimeEpisode(
+    val id: Long,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val episode: String,
+    val image: String? = null,
+    val animeSeasonId: Long,
+    val lastSync: String? = null,
 )
 
 
 
+data class Loadlinks(
+    val data: LoadlinksData,
+    val status: Long,
+)
+
+data class LoadlinksData(
+    val id: Long,
+    val episode: String,
+    val animeSeasonId: Long,
+    val hasGerSub: Boolean,
+    val hasEngSub: Boolean,
+    val hasGerDub: Boolean,
+    val likeCount: Long,
+    val animeEpisodeLinks: List<AnimeEpisodeLink>,
+)
+
+data class AnimeEpisodeLink(
+    val id: Long,
+    val createdAt: String,
+    val updatedAt: String,
+    val link: String,
+    val lang: String,
+    val animeEpisodeId: Long?,
+    val name: String,
+)
+
+//SearchParser
+
+data class SearchDaum(
+    val data: List<Search>,
+    val pages: Long,
+    val status: Long,
+)
+
+data class Search(
+    val id: Long,
+    val slug: String,
+    val title: String,
+    val alternateTitles: String,
+    val generes: List<String>,
+    val imdb: String?,
+    val tmdb: Long,
+    val desc: String,
+    val start: Long,
+    val end: Long?,
+    val poster: String,
+    val voteAvg: Double,
+    val voteCount: Long,
+)
 suspend fun loadSourceNameExtractor(
     source: String,
     url: String,
